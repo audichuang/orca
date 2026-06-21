@@ -949,7 +949,8 @@ describe('fetchWorktrees', () => {
 
     expect(store.getState().worktreesByRepo.repo1).toEqual([worktree])
     const lineageCalls = runtimeEnvironmentCall.mock.calls.filter(
-      ([args]: [RuntimeEnvironmentCallRequest]) => args.method === 'worktree.lineageList'
+      (args: unknown[]) =>
+        (args[0] as RuntimeEnvironmentCallRequest).method === 'worktree.lineageList'
     )
     expect(lineageCalls).toHaveLength(0)
   })
@@ -979,7 +980,8 @@ describe('fetchWorktrees', () => {
     await store.getState().fetchWorktrees('repo1')
 
     const lineageCalls = runtimeEnvironmentCall.mock.calls.filter(
-      ([args]: [RuntimeEnvironmentCallRequest]) => args.method === 'worktree.lineageList'
+      (args: unknown[]) =>
+        (args[0] as RuntimeEnvironmentCallRequest).method === 'worktree.lineageList'
     )
     expect(lineageCalls).toHaveLength(1)
   })
@@ -1042,10 +1044,11 @@ describe('fetchWorktrees', () => {
 
     // The env-2 lineage call must target env-2's host, not the active env-1.
     const lineageCalls = runtimeEnvironmentCall.mock.calls.filter(
-      ([args]: [RuntimeEnvironmentCallRequest]) => args.method === 'worktree.lineageList'
+      (args: unknown[]) =>
+        (args[0] as RuntimeEnvironmentCallRequest).method === 'worktree.lineageList'
     )
     expect(lineageCalls).toHaveLength(1)
-    expect(lineageCalls[0][0].selector).toBe('env-2')
+    expect((lineageCalls[0][0] as { selector: string }).selector).toBe('env-2')
     // env-1's existing lineage row is preserved; env-2's row is merged in.
     expect(store.getState().worktreeLineageById).toEqual({
       [activeWorktree.id]: activeLineage,
