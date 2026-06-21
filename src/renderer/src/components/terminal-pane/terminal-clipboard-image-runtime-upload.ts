@@ -16,6 +16,10 @@ import {
   joinRuntimePasteImagesDir,
   resolveTerminalDropWorktreePath
 } from './terminal-drop-worktree-path'
+import {
+  ensureRuntimePasteImagesGitignore,
+  pruneRuntimePasteImages
+} from './runtime-paste-images-maintenance'
 
 type ToastId = string | number
 type ToastApi = {
@@ -33,6 +37,9 @@ export type MakeTerminalClipboardImageSaverDeps = {
   importExternalPathsToRuntime: typeof ImportExternalPathsToRuntime
   deleteLocalImageTempFile: (filePath: string) => Promise<void>
   toast: ToastApi
+  // Why: injected so Task 4 tests can stub these without hitting the network.
+  ensureGitignore?: typeof ensureRuntimePasteImagesGitignore
+  pruneImages?: typeof pruneRuntimePasteImages
 }
 
 export type TerminalClipboardImageSaver = (args?: {
@@ -42,6 +49,8 @@ export type TerminalClipboardImageSaver = (args?: {
 export function makeTerminalClipboardImageSaver(
   deps: MakeTerminalClipboardImageSaverDeps
 ): TerminalClipboardImageSaver {
+  const doEnsureGitignore = deps.ensureGitignore ?? ensureRuntimePasteImagesGitignore
+  const doPruneImages = deps.pruneImages ?? pruneRuntimePasteImages
   return async (args) => {
     const state = deps.getOwnerState()
     const environmentId = getRuntimeEnvironmentIdForWorktree(state, deps.worktreeId)
@@ -70,6 +79,16 @@ export function makeTerminalClipboardImageSaver(
           )
         )
       }
+      // Best-effort: write .orca/.gitignore once before upload so paste images
+      // never appear in git status. Failures are swallowed.
+      await doEnsureGitignore(
+        {
+          settings: getSettingsForWorktreeRuntimeOwner(state, deps.worktreeId),
+          worktreeId: deps.worktreeId,
+          worktreePath
+        },
+        deps.worktreeId
+      )
       pending = deps.toast.loading(
         translate(
           'auto.components.terminal.pane.clipboardImagePaste.uploading',
@@ -94,6 +113,17 @@ export function makeTerminalClipboardImageSaver(
             : 'Image upload to runtime did not complete'
         )
       }
+      // Fire-and-forget: prune old paste images after a successful upload.
+      // Never awaited so it never delays the paste result.
+      void doPruneImages(
+        {
+          settings: getSettingsForWorktreeRuntimeOwner(state, deps.worktreeId),
+          worktreeId: deps.worktreeId,
+          worktreePath
+        },
+        deps.worktreeId,
+        worktreePath
+      ).catch(() => {})
       // files.* upload is worktree-relative; inject the absolute remote path the
       // agent can read, matching the worktree's path separator.
       return isTerminalDropWindowsPathLike(worktreePath)

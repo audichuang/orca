@@ -49,6 +49,9 @@ function makeDeps(overrides = {}) {
     }),
     deleteLocalImageTempFile: vi.fn().mockResolvedValue(undefined),
     toast: { loading: vi.fn(() => 't'), dismiss: vi.fn(), error: vi.fn() },
+    // Stub maintenance helpers so tests stay isolated from the network.
+    ensureGitignore: vi.fn().mockResolvedValue(undefined),
+    pruneImages: vi.fn().mockResolvedValue(undefined),
     ...overrides
   }
 }
