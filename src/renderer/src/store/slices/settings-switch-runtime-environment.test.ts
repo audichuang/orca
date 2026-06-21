@@ -2,16 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppState } from '../types'
 import type { SettingsSlice } from './settings'
 
-const refreshRuntimeEnvironmentProjects = vi.fn(async () => {})
+const refreshRuntimeEnvironmentProjects = vi.fn(
+  async (_store: unknown, _environmentId: unknown) => {}
+)
 const clearRuntimeEnvironmentDirty = vi.fn()
 
 vi.mock('./runtime-environment-project-refresh', () => ({
-  refreshRuntimeEnvironmentProjects: (...args: unknown[]) =>
-    refreshRuntimeEnvironmentProjects(...args)
+  refreshRuntimeEnvironmentProjects: (store: unknown, environmentId: unknown) =>
+    refreshRuntimeEnvironmentProjects(store, environmentId)
 }))
 vi.mock('@/runtime/runtime-environment-refresh-dirty', () => ({
   markRuntimeEnvironmentDirty: vi.fn(),
-  clearRuntimeEnvironmentDirty: (...args: unknown[]) => clearRuntimeEnvironmentDirty(...args),
+  clearRuntimeEnvironmentDirty: (environmentId: unknown) =>
+    clearRuntimeEnvironmentDirty(environmentId),
   isRuntimeEnvironmentDirty: vi.fn(() => false)
 }))
 vi.mock('@/runtime/runtime-rpc-client', () => ({
