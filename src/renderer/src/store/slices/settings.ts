@@ -22,6 +22,8 @@ import {
 import { bumpProviderRuntimeSessionGeneration } from '@/lib/provider-runtime-context'
 import { normalizeUiLanguage } from '../../../../shared/ui-language'
 import { translate } from '@/i18n/i18n'
+import { refreshRuntimeEnvironmentProjects } from './runtime-environment-project-refresh'
+import { clearRuntimeEnvironmentDirty } from '@/runtime/runtime-environment-refresh-dirty'
 
 export type SettingsSlice = SettingsSearchState & {
   settings: GlobalSettings | null
@@ -150,11 +152,20 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
           (nextSettings as GlobalSettings | undefined) ??
           (s.settings ? { ...s.settings, activeRuntimeEnvironmentId: nextId } : null)
       }))
-      // Why: hydration is host-merged by downstream slices. Switching focus
-      // should add/update the selected host without discarding other hosts.
-      await get().fetchRepos()
-      await get().fetchAllWorktrees()
-      await get().fetchWorktreeLineage()
+      // Why: hydrate ONLY the newly-active env's host via the shared env-scoped
+      // primitive (one host-correct lineage fetch) — never the cross-host
+      // fetchAllWorktrees scan, which storms every host and double-fetches what
+      // the primitive already covers. Clearing dirty marks the env's data fresh
+      // again after its stale-while-non-active period.
+      if (nextId) {
+        await refreshRuntimeEnvironmentProjects({ getState: get }, nextId)
+        clearRuntimeEnvironmentDirty(nextId)
+      } else {
+        // Local mode: no remote env to hydrate — fall back to the local repo/worktree fetch.
+        await get().fetchRepos()
+        await get().fetchAllWorktrees()
+        await get().fetchWorktreeLineage()
+      }
       await get().fetchBrowserSessionProfiles()
       return true
     } catch (err) {
