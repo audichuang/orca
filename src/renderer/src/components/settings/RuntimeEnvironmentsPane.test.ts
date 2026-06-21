@@ -208,4 +208,19 @@ describe('RuntimeEnvironmentsPane host details', () => {
     expect(getActiveServerModeDescription(false)).toContain('default Host')
     expect(getActiveServerModeDescription(false)).toContain('paired Orca runtime')
   })
+
+  // Why: the Connect handler must go through the shared env-scoped primitive so
+  // lineage is fetched once against the connected host. There is no exported
+  // unit seam for the inline handler, so this asserts the wiring at the source
+  // level — guarding against a regression back to the per-repo N+1 lineage.
+  it('Connect refreshes projects via the shared primitive, not the per-repo N+1', async () => {
+    const fs = await import('node:fs/promises')
+    const path = await import('node:path')
+    const source = await fs.readFile(
+      path.resolve(__dirname, './RuntimeEnvironmentsPane.tsx'),
+      'utf8'
+    )
+    expect(source).toContain('refreshRuntimeEnvironmentProjects(useAppStore, environment.id)')
+    expect(source).not.toContain('repos.map((repo) => useAppStore.getState().fetchWorktrees(')
+  })
 })
