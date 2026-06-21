@@ -298,6 +298,34 @@ describe('applyPendingDeletionsToRepos', () => {
     applyPendingDeletionsToRepos(repos, groups, tombstones, 'env-1')
     expect(repos[0]).toEqual(original[0])
   })
+
+  it('leaves repos owned by a different host untouched even when ids/group collide (host guard)', () => {
+    // The merged repo list is multi-host: a repo with the SAME group id or the
+    // SAME explicit id can belong to a different execution host and must not be
+    // detached or hidden by this environment's tombstone.
+    const groups = [makeGroup({ id: 'group-1', parentGroupId: null })]
+    const repos = [
+      // Owned by the tombstone's env → should be removed.
+      makeRepo({ id: 'owned', projectGroupId: 'group-1', executionHostId: 'runtime:env-1' }),
+      // Same group id, but owned by another host → must be left alone.
+      makeRepo({ id: 'other-host', projectGroupId: 'group-1', executionHostId: 'runtime:env-2' }),
+      // Same explicit pendingProjectIds id, but owned by another host → left alone.
+      makeRepo({ id: 'owned', projectGroupId: 'group-1', executionHostId: 'ssh:relay' })
+    ]
+    const tombstones = [
+      makeTombstone({
+        groupId: 'group-1',
+        removeContainedProjects: true,
+        pendingProjectIds: ['owned'],
+        subtreeGroupIds: ['group-1']
+      })
+    ]
+    const ownsRepo = (repo: Repo): boolean => repo.executionHostId === 'runtime:env-1'
+    const result = applyPendingDeletionsToRepos(repos, groups, tombstones, 'env-1', { ownsRepo })
+    // env-2 repo and the ssh repo survive unchanged; only the env-1 repo is removed.
+    expect(result.map((r) => r.executionHostId)).toEqual(['runtime:env-2', 'ssh:relay'])
+    expect(result.every((r) => r.projectGroupId === 'group-1')).toBe(true)
+  })
 })
 
 describe('filterFolderWorkspacesByPendingDeletions', () => {

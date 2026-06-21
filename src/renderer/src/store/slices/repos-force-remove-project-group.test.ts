@@ -376,6 +376,118 @@ describe('fetch filtering with pending tombstones', () => {
     expect(repoInState?.projectGroupId).toBeNull()
   })
 
+  it('fetchRepos applies the tombstone filter when the active target is a runtime environment', async () => {
+    // Why (B1): the startup repo path (fetchRepos) must apply the same tombstone
+    // filter as fetchRuntimeEnvironmentRepos when the active target is a runtime
+    // environment, or a force-removed repo resurfaces on app restart.
+    const ownedRepo: Repo = {
+      ...remoteRepo,
+      id: 'owned',
+      projectGroupId: projectGroup.id,
+      executionHostId: 'runtime:env-1'
+    }
+    runtimeEnvironmentCall.mockImplementation((args: RuntimeEnvironmentCallRequest) => {
+      if (args.method === 'repo.list') {
+        return Promise.resolve({
+          id: 'rpc-repo-list',
+          ok: true,
+          result: { repos: [ownedRepo] },
+          _meta: { runtimeId: 'runtime-remote' }
+        })
+      }
+      if (args.method === 'project.list') {
+        return Promise.resolve({
+          id: 'rpc-project-list',
+          ok: true,
+          result: { projects: [] },
+          _meta: { runtimeId: 'runtime-remote' }
+        })
+      }
+      if (args.method === 'projectHostSetup.list') {
+        return Promise.resolve({
+          id: 'rpc-setup-list',
+          ok: true,
+          result: { setups: [] },
+          _meta: { runtimeId: 'runtime-remote' }
+        })
+      }
+      return Promise.reject(new Error(`Unexpected method: ${args.method}`))
+    })
+    const hardRemoveTombstone: PendingProjectGroupDeletion = {
+      ...tombstone,
+      removeContainedProjects: true,
+      pendingProjectIds: ['owned']
+    }
+    const store = createTestStore()
+    store.setState({
+      settings: { activeRuntimeEnvironmentId: 'env-1' } as never,
+      projectGroups: [projectGroup],
+      pendingProjectGroupDeletions: [hardRemoveTombstone]
+    } as never)
+
+    await store.getState().fetchRepos()
+
+    // The force-removed repo must be hidden, not resurface.
+    expect(store.getState().repos.find((r) => r.id === 'owned')).toBeUndefined()
+  })
+
+  it('fetchRepos leaves a tombstoned-group repo owned by a DIFFERENT host untouched (M5 host guard)', async () => {
+    // The merged repo list is multi-host. A repo on another host sharing the
+    // tombstoned group id must not be detached by env-1's tombstone.
+    const otherHostRepo: Repo = {
+      ...remoteRepo,
+      id: 'other-host',
+      projectGroupId: projectGroup.id,
+      executionHostId: 'runtime:env-2'
+    }
+    runtimeEnvironmentCall.mockImplementation((args: RuntimeEnvironmentCallRequest) => {
+      if (args.method === 'repo.list') {
+        return Promise.resolve({
+          id: 'rpc-repo-list',
+          ok: true,
+          result: { repos: [] },
+          _meta: { runtimeId: 'runtime-remote' }
+        })
+      }
+      if (args.method === 'project.list') {
+        return Promise.resolve({
+          id: 'rpc-project-list',
+          ok: true,
+          result: { projects: [] },
+          _meta: { runtimeId: 'runtime-remote' }
+        })
+      }
+      if (args.method === 'projectHostSetup.list') {
+        return Promise.resolve({
+          id: 'rpc-setup-list',
+          ok: true,
+          result: { setups: [] },
+          _meta: { runtimeId: 'runtime-remote' }
+        })
+      }
+      return Promise.reject(new Error(`Unexpected method: ${args.method}`))
+    })
+    const detachTombstone: PendingProjectGroupDeletion = {
+      ...tombstone,
+      removeContainedProjects: false
+    }
+    const store = createTestStore()
+    store.setState({
+      settings: { activeRuntimeEnvironmentId: 'env-1' } as never,
+      projectGroups: [projectGroup],
+      // Pre-seed the other-host repo (it is merged with the env-1 fetch result).
+      repos: [otherHostRepo],
+      pendingProjectGroupDeletions: [detachTombstone]
+    } as never)
+
+    await store.getState().fetchRuntimeEnvironmentRepos('env-1')
+
+    const repoInState = store.getState().repos.find((r) => r.id === 'other-host')
+    expect(repoInState).toBeDefined()
+    // Different-host repo keeps its group id — not detached.
+    expect(repoInState?.projectGroupId).toBe(projectGroup.id)
+  })
+
   it('fetchFolderWorkspaces filters out tombstoned group workspaces', async () => {
     const workspace: FolderWorkspace = {
       id: 'fw-2',
@@ -553,21 +665,18 @@ describe('replayPendingDeletionsForEnvironment', () => {
     expect(store.getState().pendingProjectGroupDeletions).toEqual([])
   })
 
-  it('keeps tombstone and skips group delete when repo.rm fails with a transport error', async () => {
+  it('keeps tombstone and skips group delete when repo.rm fails with a transport error (rejected promise)', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const tombstoneWithRepo: PendingProjectGroupDeletion = {
       ...tombstone,
       removeContainedProjects: true,
       pendingProjectIds: ['unreachable-repo']
     }
+    // Transport failure = the IPC call promise rejects (daemon never responded),
+    // distinct from an app-level RuntimeRpcCallError ({ ok: false }).
     runtimeEnvironmentCall.mockImplementation((args: RuntimeEnvironmentCallRequest) => {
       if (args.method === 'repo.rm') {
-        return Promise.resolve({
-          id: 'rpc-rm',
-          ok: false,
-          error: { code: 'runtime_error', message: 'network timeout' },
-          _meta: { runtimeId: 'runtime-remote' }
-        })
+        return Promise.reject(new Error('network timeout'))
       }
       return Promise.resolve({ id: 'rpc', ok: true, result: {}, _meta: { runtimeId: 'remote' } })
     })
@@ -584,21 +693,92 @@ describe('replayPendingDeletionsForEnvironment', () => {
     )
     expect(deleteCalls).toHaveLength(0)
     expect(pendingRemove).not.toHaveBeenCalled()
-    // Tombstone still present
+    // Tombstone still present — retry on next reconnect
     expect(store.getState().pendingProjectGroupDeletions).toHaveLength(1)
     consoleError.mockRestore()
   })
 
-  it('keeps tombstone when projectGroup.delete RPC throws', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+  it('proceeds to delete the group and clears the tombstone when repo.rm returns an app-level error (daemon responded)', async () => {
+    // M4: a non-repo_not_found RuntimeRpcCallError means the daemon responded
+    // with an app-level error. This is terminal, not transport — retrying it
+    // forever would deadlock the tombstone. The user's intent was to remove the
+    // group, so we log the failed repo and still delete the group + clear it.
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const tombstoneWithRepo: PendingProjectGroupDeletion = {
+      ...tombstone,
+      removeContainedProjects: true,
+      pendingProjectIds: ['stubborn-repo']
+    }
+    runtimeEnvironmentCall.mockImplementation((args: RuntimeEnvironmentCallRequest) => {
+      if (args.method === 'repo.rm') {
+        return Promise.resolve({
+          id: 'rpc-rm',
+          ok: false,
+          error: { code: 'repo_in_use', message: 'repo busy' },
+          _meta: { runtimeId: 'runtime-remote' }
+        })
+      }
+      if (args.method === 'projectGroup.delete') {
+        return Promise.resolve({
+          id: 'rpc-gd',
+          ok: true,
+          result: { deleted: true },
+          _meta: { runtimeId: 'runtime-remote' }
+        })
+      }
+      return Promise.resolve({ id: 'rpc', ok: true, result: {}, _meta: { runtimeId: 'remote' } })
+    })
+    const store = createTestStore()
+    store.setState({
+      pendingProjectGroupDeletions: [tombstoneWithRepo]
+    } as never)
+
+    await store.getState().replayPendingDeletionsForEnvironment('env-1')
+
+    const deleteCalls = runtimeEnvironmentCall.mock.calls.filter(
+      (call) => call[0]?.method === 'projectGroup.delete'
+    )
+    expect(deleteCalls).toHaveLength(1)
+    expect(pendingRemove).toHaveBeenCalledOnce()
+    expect(store.getState().pendingProjectGroupDeletions).toEqual([])
+    // App-level failure was logged (not silently swallowed).
+    expect(consoleWarn).toHaveBeenCalled()
+    consoleWarn.mockRestore()
+  })
+
+  it('clears the tombstone when projectGroup.delete returns an app-level error (daemon responded)', async () => {
+    // The delete RPC responding at all (even ok:false) means the daemon
+    // processed the intent — clear the tombstone instead of retrying forever.
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     runtimeEnvironmentCall.mockImplementation((args: RuntimeEnvironmentCallRequest) => {
       if (args.method === 'projectGroup.delete') {
         return Promise.resolve({
           id: 'rpc-gd',
           ok: false,
-          error: { code: 'runtime_error', message: 'server error' },
+          error: { code: 'group_not_found', message: 'already gone' },
           _meta: { runtimeId: 'runtime-remote' }
         })
+      }
+      return Promise.resolve({ id: 'rpc', ok: true, result: {}, _meta: { runtimeId: 'remote' } })
+    })
+    const store = createTestStore()
+    store.setState({
+      pendingProjectGroupDeletions: [tombstone]
+    } as never)
+
+    await store.getState().replayPendingDeletionsForEnvironment('env-1')
+
+    expect(pendingRemove).toHaveBeenCalledOnce()
+    expect(store.getState().pendingProjectGroupDeletions).toEqual([])
+    expect(consoleWarn).toHaveBeenCalled()
+    consoleWarn.mockRestore()
+  })
+
+  it('keeps tombstone when projectGroup.delete fails with a transport error (rejected promise)', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    runtimeEnvironmentCall.mockImplementation((args: RuntimeEnvironmentCallRequest) => {
+      if (args.method === 'projectGroup.delete') {
+        return Promise.reject(new Error('connection reset'))
       }
       return Promise.resolve({ id: 'rpc', ok: true, result: {}, _meta: { runtimeId: 'remote' } })
     })

@@ -49,7 +49,7 @@ import {
   getWebRuntimeEnvironmentsSearchEntry
 } from './runtime-environments-search'
 import { unwrapRuntimeRpcResult } from '@/runtime/runtime-rpc-client'
-import { refreshRuntimeEnvironmentProjects } from '@/store/slices/runtime-environment-project-refresh'
+import { replayThenRefreshRuntimeEnvironment } from '@/store/slices/runtime-environment-project-refresh'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
@@ -633,9 +633,10 @@ export function RuntimeEnvironmentsPane({
       }
       // Why: Connect is not the Active Server selector anymore, but connected
       // hosts should still contribute their projects/workspaces to the sidebar.
-      // Use the shared env-scoped primitive so lineage is fetched once against
-      // the connected host (no N+1), foreground since this is user-initiated.
-      await refreshRuntimeEnvironmentProjects(useAppStore, environment.id)
+      // Use the shared replay+refresh primitive so pending tombstones replay and
+      // lineage is fetched once against the connected host (no N+1), foreground
+      // since this is user-initiated.
+      await replayThenRefreshRuntimeEnvironment(useAppStore, environment.id)
       if (mountedRef.current) {
         toast.success(
           translate(

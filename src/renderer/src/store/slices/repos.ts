@@ -597,6 +597,21 @@ function mergeById<T extends { id: string }>(base: readonly T[], overlay: readon
   return merged
 }
 
+// Why (M5): the merged repo list is multi-host. Tombstones for one environment
+// must only filter/detach repos owned by THAT environment's host, never another
+// host's repo that happens to share a group id or repo id.
+function applyEnvironmentTombstonesToRepos(
+  repos: readonly Repo[],
+  groups: readonly ProjectGroup[],
+  tombstones: readonly PendingProjectGroupDeletion[],
+  environmentId: string
+): Repo[] {
+  const expectedHostId = toRuntimeExecutionHostId(environmentId)
+  return applyPendingDeletionsToRepos(repos, groups, tombstones, environmentId, {
+    ownsRepo: (repo) => getRepoExecutionHostId(repo) === expectedHostId
+  })
+}
+
 function mergeFetchedReposForHost(
   previous: readonly Repo[],
   fetched: Repo[],
@@ -1057,10 +1072,22 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
     try {
       const target = getActiveRuntimeTarget(get().settings)
       const {
-        repos: reconciledRepos,
+        repos: fetchedRepos,
         projectCompatibility,
         hostId
       } = await fetchReposForTarget(target, get().repos)
+      // Why (B1): the startup repo path must apply the same host-guarded
+      // tombstone filter as fetchRuntimeEnvironmentRepos when the active target
+      // is a runtime environment, or a force-removed repo resurfaces on restart.
+      const reconciledRepos =
+        target.kind === 'environment'
+          ? applyEnvironmentTombstonesToRepos(
+              fetchedRepos,
+              get().projectGroups,
+              get().pendingProjectGroupDeletions,
+              target.environmentId
+            )
+          : fetchedRepos
       set((s) => {
         const validRepoIds = new Set(reconciledRepos.map((repo) => repo.id))
         return {
@@ -1093,9 +1120,10 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
         hostId
       } = await fetchReposForTarget(target, get().repos, options)
       // Why: apply pending tombstones so force-removed repos stay hidden even
-      // when the daemon is back online and still returns them.
+      // when the daemon is back online and still returns them. Host-guarded so a
+      // multi-host merge cannot detach another host's repo (M5).
       const tombstones = get().pendingProjectGroupDeletions
-      const filteredRepos = applyPendingDeletionsToRepos(
+      const filteredRepos = applyEnvironmentTombstonesToRepos(
         reconciledRepos,
         get().projectGroups,
         tombstones,

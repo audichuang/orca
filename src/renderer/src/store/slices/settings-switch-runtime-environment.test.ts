@@ -2,14 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppState } from '../types'
 import type { SettingsSlice } from './settings'
 
-const refreshRuntimeEnvironmentProjects = vi.fn(
+const replayThenRefreshRuntimeEnvironment = vi.fn(
   async (_store: unknown, _environmentId: unknown) => {}
 )
 const clearRuntimeEnvironmentDirty = vi.fn()
 
 vi.mock('./runtime-environment-project-refresh', () => ({
-  refreshRuntimeEnvironmentProjects: (store: unknown, environmentId: unknown) =>
-    refreshRuntimeEnvironmentProjects(store, environmentId)
+  replayThenRefreshRuntimeEnvironment: (store: unknown, environmentId: unknown) =>
+    replayThenRefreshRuntimeEnvironment(store, environmentId)
 }))
 vi.mock('@/runtime/runtime-environment-refresh-dirty', () => ({
   markRuntimeEnvironmentDirty: vi.fn(),
@@ -87,12 +87,13 @@ describe('switchRuntimeEnvironment hydrate', () => {
     return { slice, get }
   }
 
-  it('hydrates the newly-active env via the shared primitive and clears its dirty flag', async () => {
+  it('replays + refreshes the newly-active env via the shared primitive and clears its dirty flag', async () => {
     const { slice, get } = await makeSlice()
     const ok = await slice.switchRuntimeEnvironment('env-2')
     expect(ok).toBe(true)
-    // One env-scoped hydrate against the newly-active env — never the cross-host scan.
-    expect(refreshRuntimeEnvironmentProjects).toHaveBeenCalledWith({ getState: get }, 'env-2')
+    // B3: switching must run replay + the correctly-ordered refresh via the
+    // shared primitive — never the bare refresh and never the cross-host scan.
+    expect(replayThenRefreshRuntimeEnvironment).toHaveBeenCalledWith({ getState: get }, 'env-2')
     expect(fetchAllWorktrees).not.toHaveBeenCalled()
     expect(clearRuntimeEnvironmentDirty).toHaveBeenCalledWith('env-2')
     // Browser session profiles are still hydrated on switch.

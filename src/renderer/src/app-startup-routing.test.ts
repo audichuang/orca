@@ -18,6 +18,25 @@ describe('renderer startup runtime routing', () => {
     )
   })
 
+  it('hydrates pending project-group deletions before the first repo/group/workspace fetch', () => {
+    // Why (B1): tombstones must be in state before any fetch whose filter depends
+    // on them, or a force-removed group/repo resurfaces on app restart.
+    const source = readFileSync(join(process.cwd(), 'src/renderer/src/App.tsx'), 'utf8')
+    const startupBlockStart = source.indexOf('void (async () => {')
+    const startupBlockEnd = source.indexOf('const persistedUI = await window.api.ui.get()')
+    const startupBlock = source.slice(startupBlockStart, startupBlockEnd)
+
+    const hydrateIndex = startupBlock.indexOf('await actions.hydratePendingProjectGroupDeletions()')
+    const reposIndex = startupBlock.indexOf('await actions.fetchRepos()')
+    const groupsIndex = startupBlock.indexOf('await actions.fetchProjectGroups()')
+    const workspacesIndex = startupBlock.indexOf('await actions.fetchFolderWorkspaces()')
+
+    expect(hydrateIndex).toBeGreaterThanOrEqual(0)
+    expect(hydrateIndex).toBeLessThan(reposIndex)
+    expect(hydrateIndex).toBeLessThan(groupsIndex)
+    expect(hydrateIndex).toBeLessThan(workspacesIndex)
+  })
+
   it('waits for first-window startup services before terminal reconnect', () => {
     const source = readFileSync(join(process.cwd(), 'src/renderer/src/App.tsx'), 'utf8')
     const reconnectIndex = source.indexOf('await actions.reconnectPersistedTerminals')

@@ -3434,7 +3434,7 @@ describe('useIpcEvents CLI-created worktree activation', () => {
       isRuntimeEnvironmentDirty: vi.fn(() => false)
     }))
     vi.doMock('@/store/slices/runtime-environment-project-refresh', () => ({
-      refreshRuntimeEnvironmentProjects: vi.fn()
+      replayThenRefreshRuntimeEnvironment: vi.fn()
     }))
 
     vi.doMock('../store', () => ({
@@ -3674,7 +3674,7 @@ describe('useIpcEvents CLI-created worktree activation', () => {
       isRuntimeEnvironmentDirty: vi.fn(() => false)
     }))
     vi.doMock('@/store/slices/runtime-environment-project-refresh', () => ({
-      refreshRuntimeEnvironmentProjects: vi.fn()
+      replayThenRefreshRuntimeEnvironment: vi.fn()
     }))
 
     vi.doMock('../store', () => ({
@@ -3884,7 +3884,7 @@ describe('useIpcEvents CLI-created worktree activation', () => {
       isRuntimeEnvironmentDirty: vi.fn(() => false)
     }))
     vi.doMock('@/store/slices/runtime-environment-project-refresh', () => ({
-      refreshRuntimeEnvironmentProjects: vi.fn()
+      replayThenRefreshRuntimeEnvironment: vi.fn()
     }))
 
     vi.doMock('../store', () => ({
@@ -4453,6 +4453,25 @@ describe('runtime event coalescing', () => {
     const workspacesOrder = harness.fetchFolderWorkspaces.mock.invocationCallOrder[0]
     expect(replayOrder).toBeLessThan(groupsOrder!)
     expect(replayOrder).toBeLessThan(workspacesOrder!)
+  })
+
+  it('reposChanged for active env fetches groups before repos (live subtree recompute)', async () => {
+    // Why (B2): repos must be fetched AFTER groups so the tombstone repo filter
+    // can recompute the live subtree against the freshly-fetched groups, and
+    // exactly once so the reconnect storm cannot double-fetch them.
+    const harness = await useRuntimeEventHarness({ activeEnvironmentId: 'envA', repoId: 'repo1' })
+
+    harness.emit('envA', { type: 'reposChanged' })
+
+    await vi.advanceTimersByTimeAsync(200)
+    await harness.flush()
+
+    expect(harness.fetchRuntimeEnvironmentRepos).toHaveBeenCalledTimes(1)
+    const groupsOrder = harness.fetchProjectGroups.mock.invocationCallOrder[0]
+    const reposOrder = harness.fetchRuntimeEnvironmentRepos.mock.invocationCallOrder[0]
+    const workspacesOrder = harness.fetchFolderWorkspaces.mock.invocationCallOrder[0]
+    expect(groupsOrder).toBeLessThan(reposOrder!)
+    expect(reposOrder).toBeLessThan(workspacesOrder!)
   })
 })
 

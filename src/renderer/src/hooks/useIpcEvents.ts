@@ -82,7 +82,7 @@ import { subscribeRuntimeClientEvents } from '@/runtime/runtime-client-events'
 import { createRuntimeClientEventsSync } from './runtime-client-events-sync'
 import { createKeyedRefreshScheduler } from './keyed-refresh-scheduler'
 import { markRuntimeEnvironmentDirty } from '@/runtime/runtime-environment-refresh-dirty'
-import { refreshRuntimeEnvironmentProjects } from '@/store/slices/runtime-environment-project-refresh'
+import { replayThenRefreshRuntimeEnvironment } from '@/store/slices/runtime-environment-project-refresh'
 import { detectLanguage } from '@/lib/language-detect'
 import { parsePaneKey } from '../../../shared/stable-pane-id'
 import { collectLeafIdsInOrder } from '@/components/terminal-pane/layout-serialization'
@@ -933,18 +933,12 @@ export function useIpcEvents(): void {
       debounceMs: 200,
       minIntervalMs: 0,
       refresh: async (environmentId) => {
-        // Why: replay tombstones first so the subsequent repo/group/workspace
-        // fetches see the environment in a post-deletion state, preventing
-        // force-removed items from resurfacing on reconnect.
-        await useAppStore.getState().replayPendingDeletionsForEnvironment(environmentId)
-        // Why: scheduler-driven repos refresh rides the background lane so it
-        // yields transport capacity to user-initiated runtime calls (Piece 3).
-        await refreshRuntimeEnvironmentProjects(useAppStore, environmentId, { background: true })
-        // Why: refreshRuntimeEnvironmentProjects only covers repos/worktrees/lineage;
-        // groups and workspaces must also be refetched so tombstone filters apply
-        // to the reconnected environment's full project model.
-        await useAppStore.getState().fetchProjectGroups()
-        await useAppStore.getState().fetchFolderWorkspaces()
+        // Why: the shared primitive enforces replay → groups → repos →
+        // workspaces → worktrees/lineage so force-removed items cannot resurface
+        // and the repo/workspace tombstone filters see freshly-fetched groups.
+        // Scheduler-driven refresh rides the background lane so it yields
+        // transport capacity to user-initiated runtime calls (Piece 3).
+        await replayThenRefreshRuntimeEnvironment(useAppStore, environmentId, { background: true })
       },
       onError: (error) => {
         console.error('Failed to refresh runtime repos:', error)

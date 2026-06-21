@@ -22,7 +22,7 @@ import {
 import { bumpProviderRuntimeSessionGeneration } from '@/lib/provider-runtime-context'
 import { normalizeUiLanguage } from '../../../../shared/ui-language'
 import { translate } from '@/i18n/i18n'
-import { refreshRuntimeEnvironmentProjects } from './runtime-environment-project-refresh'
+import { replayThenRefreshRuntimeEnvironment } from './runtime-environment-project-refresh'
 import { clearRuntimeEnvironmentDirty } from '@/runtime/runtime-environment-refresh-dirty'
 
 export type SettingsSlice = SettingsSearchState & {
@@ -153,12 +153,13 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
           (s.settings ? { ...s.settings, activeRuntimeEnvironmentId: nextId } : null)
       }))
       // Why: hydrate ONLY the newly-active env's host via the shared env-scoped
-      // primitive (one host-correct lineage fetch) — never the cross-host
-      // fetchAllWorktrees scan, which storms every host and double-fetches what
-      // the primitive already covers. Clearing dirty marks the env's data fresh
-      // again after its stale-while-non-active period.
+      // primitive — replay pending tombstones first, then refresh groups/repos/
+      // workspaces/lineage in order (one host-correct lineage fetch). Never the
+      // cross-host fetchAllWorktrees scan, which storms every host and
+      // double-fetches what the primitive covers. Clearing dirty marks the env's
+      // data fresh again after its stale-while-non-active period.
       if (nextId) {
-        await refreshRuntimeEnvironmentProjects({ getState: get }, nextId)
+        await replayThenRefreshRuntimeEnvironment({ getState: get }, nextId)
         clearRuntimeEnvironmentDirty(nextId)
       } else {
         // Local mode: no remote env to hydrate — fall back to the local repo/worktree fetch.

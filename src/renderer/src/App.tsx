@@ -838,10 +838,12 @@ function App(): React.JSX.Element {
         // Load settings first so a persisted remote runtime does not boot against
         // the local filesystem and then hydrate stale local workspace state.
         await actions.fetchSettings()
-        await actions.fetchRepos()
-        // Why: tombstones must be in state before the first group/workspace
-        // fetch so the filter helpers have the full pending-deletion set.
+        // Why (B1): tombstones must be in state before the first repo/group/
+        // workspace fetch — fetchRepos applies the tombstone filter for an active
+        // runtime environment, so hydration has to complete first or a
+        // force-removed repo/group resurfaces on restart.
         await actions.hydratePendingProjectGroupDeletions()
+        await actions.fetchRepos()
         await actions.fetchProjectGroups()
         await actions.fetchFolderWorkspaces()
         await actions.fetchAllWorktrees()

@@ -49,8 +49,14 @@ export function applyPendingDeletionsToRepos(
   repos: readonly Repo[],
   groups: readonly ProjectGroup[],
   tombstones: readonly PendingProjectGroupDeletion[],
-  environmentId: string
+  environmentId: string,
+  // Why: the merged repo list spans multiple hosts. A repo only counts as
+  // owned by this environment if ownsRepo says so; same-id/same-group repos on
+  // other hosts must be passed through untouched. Defaults to "owns all" for
+  // back-compatible callers (and the pure unit tests).
+  options?: { ownsRepo?: (repo: Repo) => boolean }
 ): Repo[] {
+  const ownsRepo = options?.ownsRepo ?? (() => true)
   const tombstonedGroupIds = collectTombstonedGroupIds(groups, tombstones, environmentId)
   const relevant = selectPendingDeletionsForEnvironment(tombstones, environmentId)
 
@@ -75,6 +81,12 @@ export function applyPendingDeletionsToRepos(
 
   const result: Repo[] = []
   for (const repo of repos) {
+    if (!ownsRepo(repo)) {
+      // Repo belongs to a different host — this environment's tombstones must
+      // never detach or hide it, even on a group-id or repo-id collision.
+      result.push(repo)
+      continue
+    }
     const inSubtree = repo.projectGroupId != null && tombstonedGroupIds.has(repo.projectGroupId)
     const explicitlyRemoved = explicitRemoveIds.has(repo.id)
 

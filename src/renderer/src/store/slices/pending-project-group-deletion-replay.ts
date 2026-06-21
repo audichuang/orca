@@ -7,8 +7,12 @@ import { callRuntimeRpc, RuntimeRpcCallError } from '../../runtime/runtime-rpc-c
 // interleave partial-replay state for the same environment.
 const replayLocksByEnvironment = new Map<string, Promise<void>>()
 
-function isRepoNotFound(err: unknown): boolean {
-  return err instanceof RuntimeRpcCallError && err.code === 'repo_not_found'
+// Why: an app-level error means the daemon responded (callRuntimeRpc throws a
+// RuntimeRpcCallError on { ok:false }); a transport/timeout failure rejects with
+// any other error. Only transport failures are worth retrying — an app error is
+// terminal and must not deadlock the tombstone in an infinite retry loop.
+function isAppLevelError(err: unknown): err is RuntimeRpcCallError {
+  return err instanceof RuntimeRpcCallError
 }
 
 async function replaySingleTombstone(
@@ -21,15 +25,28 @@ async function replaySingleTombstone(
       try {
         await callRuntimeRpc(target, 'repo.rm', { repo: repoId }, { timeoutMs: 15_000 })
       } catch (err) {
-        // repo_not_found means the repo is already gone — treat as success
-        if (!isRepoNotFound(err)) {
-          // Transport failure: keep tombstone, skip group delete
-          console.error(
-            `[force-remove-replay] repo.rm failed for repo ${repoId}, keeping tombstone`,
+        if (err instanceof RuntimeRpcCallError && err.code === 'repo_not_found') {
+          // Repo already gone — idempotent success.
+          continue
+        }
+        if (isAppLevelError(err)) {
+          // Daemon responded with an app error (e.g. repo locked). This is
+          // terminal: log it but keep going so the group delete still detaches
+          // the repo and the tombstone can clear — the user's intent was to
+          // remove the group, not to retry this repo forever.
+          console.warn(
+            `[force-remove-replay] repo.rm rejected by daemon for repo ${repoId} (${err.code}); proceeding with group delete`,
             err
           )
-          return 'keep'
+          continue
         }
+        // Transport/timeout failure: daemon never responded. Keep the tombstone
+        // and skip the group delete so the next reconnect retries.
+        console.error(
+          `[force-remove-replay] repo.rm transport failure for repo ${repoId}, keeping tombstone`,
+          err
+        )
+        return 'keep'
       }
     }
   }
@@ -44,8 +61,18 @@ async function replaySingleTombstone(
     // Whether deleted:true or deleted:false, intent was fulfilled — clear tombstone
     return 'cleared'
   } catch (err) {
+    if (isAppLevelError(err)) {
+      // Daemon responded (group already gone / rejected). Clear the tombstone
+      // rather than retry an app error forever.
+      console.warn(
+        `[force-remove-replay] projectGroup.delete rejected by daemon for group ${tombstone.groupId} (${err.code}); clearing tombstone`,
+        err
+      )
+      return 'cleared'
+    }
+    // Transport/timeout failure: keep the tombstone and retry on next reconnect.
     console.error(
-      `[force-remove-replay] projectGroup.delete failed for group ${tombstone.groupId}, keeping tombstone`,
+      `[force-remove-replay] projectGroup.delete transport failure for group ${tombstone.groupId}, keeping tombstone`,
       err
     )
     return 'keep'
