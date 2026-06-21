@@ -84,7 +84,7 @@ import { createKeyedRefreshScheduler } from './keyed-refresh-scheduler'
 import { markRuntimeEnvironmentDirty } from '@/runtime/runtime-environment-refresh-dirty'
 import { replayThenRefreshRuntimeEnvironment } from '@/store/slices/runtime-environment-project-refresh'
 import { detectLanguage } from '@/lib/language-detect'
-import { parsePaneKey } from '../../../shared/stable-pane-id'
+import { makePaneKey, parsePaneKey } from '../../../shared/stable-pane-id'
 import { collectLeafIdsInOrder } from '@/components/terminal-pane/layout-serialization'
 import { track } from '@/lib/telemetry'
 import { singlePaneLayoutSnapshot } from '@/store/slices/terminal-helpers'
@@ -1303,6 +1303,10 @@ export function useIpcEvents(): void {
           requestId,
           worktreeId,
           command,
+          env,
+          launchConfig,
+          launchToken,
+          launchAgent,
           title,
           ptyId,
           activate,
@@ -1385,6 +1389,19 @@ export function useIpcEvents(): void {
               store.setTabCustomTitle(tab.id, title, { recordInteraction: false })
             }
             if (leafId && ptyId) {
+              const launchPaneKey = tryMakePaneKey(tab.id, leafId)
+              if (launchConfig) {
+                if (launchPaneKey) {
+                  store.registerAgentLaunchConfig(launchPaneKey, launchConfig, {
+                    ...(launchAgent ? { agentType: launchAgent } : {}),
+                    ...(launchToken ? { launchToken } : {}),
+                    tabId: tab.id,
+                    leafId
+                  })
+                }
+              } else if (!splitFromLeafId && launchPaneKey) {
+                store.clearAgentLaunchConfig(launchPaneKey)
+              }
               if (splitFromLeafId) {
                 // Why: runtime-spawned split PTYs already carry the parent tab's
                 // paneKey. Reusing the existing tab preserves native split-pane
@@ -1439,7 +1456,13 @@ export function useIpcEvents(): void {
               }
             }
             if (command) {
-              store.queueTabStartupCommand(tab.id, { command })
+              store.queueTabStartupCommand(tab.id, {
+                command,
+                ...(env ? { env } : {}),
+                ...(launchConfig ? { launchConfig } : {}),
+                ...(launchToken ? { launchToken } : {}),
+                ...(launchAgent ? { launchAgent } : {})
+              })
             }
             if (requestId) {
               window.api.ui.replyTerminalCreate({
@@ -1546,6 +1569,10 @@ export function useIpcEvents(): void {
           if (data.command) {
             store.queueTabStartupCommand(tab.id, {
               command: data.command,
+              ...(data.env ? { env: data.env } : {}),
+              ...(data.launchConfig ? { launchConfig: data.launchConfig } : {}),
+              ...(data.launchToken ? { launchToken: data.launchToken } : {}),
+              ...(data.launchAgent ? { launchAgent: data.launchAgent } : {}),
               ...(data.startupCommandDelivery
                 ? { startupCommandDelivery: data.startupCommandDelivery }
                 : {})
@@ -2836,7 +2863,12 @@ export function useIpcEvents(): void {
           worktreeId: statusWorktreeId,
           terminalHandle: data.terminalHandle
         },
-        data.providerSession ? { providerSession: data.providerSession } : undefined
+        data.providerSession || data.launchToken
+          ? {
+              ...(data.providerSession ? { providerSession: data.providerSession } : {}),
+              ...(data.launchToken ? { launchToken: data.launchToken } : {})
+            }
+          : undefined
       )
       applyResolvedAgentTerminalTitleToTab(store, data.paneKey, title, terminalTitle)
       if (options?.replay !== true && statusWorktreeId) {
@@ -3106,6 +3138,14 @@ function hasRuntimeBackedWorktreeAttribution(data: AgentStatusIpcPayload): boole
     (typeof data.terminalHandle === 'string' && data.terminalHandle.length > 0) ||
     data.orchestration !== undefined
   )
+}
+
+function tryMakePaneKey(tabId: string, leafId: string): string | null {
+  try {
+    return makePaneKey(tabId, leafId)
+  } catch {
+    return null
+  }
 }
 
 function applyResolvedAgentTerminalTitleToTab(

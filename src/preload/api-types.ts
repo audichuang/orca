@@ -15,6 +15,7 @@ import type { TerminalPaneSplitSource } from '../shared/feature-education-teleme
 import type { TaskSourceContext } from '../shared/task-source-context'
 import type { ProjectExecutionRuntimeResolution } from '../shared/project-execution-runtime'
 import type { StartupCommandDelivery } from '../shared/codex-startup-delivery'
+import type { SleepingAgentLaunchConfig } from '../shared/agent-session-resume'
 import type {
   FolderWorkspacePathStatus,
   FolderWorkspacePathStatusRequest
@@ -1021,6 +1022,9 @@ export type PreloadApi = {
       cwd?: string
       env?: Record<string, string>
       command?: string
+      launchConfig?: SleepingAgentLaunchConfig
+      launchToken?: string
+      launchAgent?: TuiAgent
       startupCommandDelivery?: StartupCommandDelivery
       connectionId?: string | null
       worktreeId?: string
@@ -1042,6 +1046,7 @@ export type PreloadApi = {
       telemetry?: { agent_kind: AgentKind; launch_source: LaunchSource; request_kind: RequestKind }
     }) => Promise<{
       id: string
+      launchConfig?: SleepingAgentLaunchConfig
       snapshot?: string
       snapshotCols?: number
       snapshotRows?: number
@@ -2380,6 +2385,10 @@ export type PreloadApi = {
         requestId?: string
         worktreeId: string
         command?: string
+        env?: Record<string, string>
+        launchConfig?: SleepingAgentLaunchConfig
+        launchToken?: string
+        launchAgent?: TuiAgent
         title?: string
         ptyId?: string
         activate?: boolean
@@ -2397,6 +2406,10 @@ export type PreloadApi = {
         afterTabId?: string
         targetGroupId?: string
         command?: string
+        env?: Record<string, string>
+        launchConfig?: SleepingAgentLaunchConfig
+        launchToken?: string
+        launchAgent?: TuiAgent
         startupCommandDelivery?: StartupCommandDelivery
         title?: string
         activate?: boolean

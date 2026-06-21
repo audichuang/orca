@@ -1865,6 +1865,9 @@ export const createWorktreeSlice: StateCreator<AppState, [], [], WorktreeSlice> 
                       ? {
                           startupCommand: startup.command,
                           ...(startup.env ? { startupEnv: startup.env } : {}),
+                          ...(startup.launchConfig
+                            ? { startupLaunchConfig: startup.launchConfig }
+                            : {}),
                           ...(startup.startupCommandDelivery
                             ? { startupCommandDelivery: startup.startupCommandDelivery }
                             : {}),

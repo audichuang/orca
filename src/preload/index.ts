@@ -11,6 +11,7 @@ import type { AgentHookInstallStatus } from '../shared/agent-hook-types'
 import type { TerminalPaneSplitSource } from '../shared/feature-education-telemetry'
 import type { ProjectExecutionRuntimeResolution } from '../shared/project-execution-runtime'
 import type { StartupCommandDelivery } from '../shared/codex-startup-delivery'
+import type { SleepingAgentLaunchConfig } from '../shared/agent-session-resume'
 import type {
   BaseRefSearchResult,
   BaseRefDefaultResult,
@@ -44,6 +45,7 @@ import type {
   FloatingTerminalCwdRequest,
   MarkdownDocument,
   SearchResult,
+  TuiAgent,
   UpdateStatus,
   WorktreeBaseStatusEvent,
   WorktreeDefaultTabsLaunch,
@@ -706,6 +708,9 @@ const api = {
       cwd?: string
       env?: Record<string, string>
       command?: string
+      launchConfig?: SleepingAgentLaunchConfig
+      launchToken?: string
+      launchAgent?: TuiAgent
       startupCommandDelivery?: StartupCommandDelivery
       connectionId?: string | null
       worktreeId?: string
@@ -726,6 +731,7 @@ const api = {
       telemetry?: { agent_kind: AgentKind; launch_source: LaunchSource; request_kind: RequestKind }
     }): Promise<{
       id: string
+      launchConfig?: SleepingAgentLaunchConfig
       snapshot?: string
       snapshotCols?: number
       snapshotRows?: number
@@ -3010,6 +3016,10 @@ const api = {
         requestId?: string
         worktreeId: string
         command?: string
+        env?: Record<string, string>
+        launchConfig?: SleepingAgentLaunchConfig
+        launchToken?: string
+        launchAgent?: TuiAgent
         title?: string
         ptyId?: string
         activate?: boolean
@@ -3026,6 +3036,10 @@ const api = {
           requestId?: string
           worktreeId: string
           command?: string
+          env?: Record<string, string>
+          launchConfig?: SleepingAgentLaunchConfig
+          launchToken?: string
+          launchAgent?: TuiAgent
           title?: string
           ptyId?: string
           activate?: boolean
@@ -3046,6 +3060,10 @@ const api = {
         afterTabId?: string
         targetGroupId?: string
         command?: string
+        env?: Record<string, string>
+        launchConfig?: SleepingAgentLaunchConfig
+        launchToken?: string
+        launchAgent?: TuiAgent
         startupCommandDelivery?: StartupCommandDelivery
         title?: string
         activate?: boolean
@@ -3059,6 +3077,10 @@ const api = {
           afterTabId?: string
           targetGroupId?: string
           command?: string
+          env?: Record<string, string>
+          launchConfig?: SleepingAgentLaunchConfig
+          launchToken?: string
+          launchAgent?: TuiAgent
           startupCommandDelivery?: StartupCommandDelivery
           title?: string
           activate?: boolean
