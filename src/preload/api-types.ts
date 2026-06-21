@@ -2470,6 +2470,7 @@ export type PreloadApi = {
     saveClipboardImageAsTempFile: (args?: {
       connectionId?: string | null
     }) => Promise<string | null>
+    deleteClipboardImageTempFile: (filePath: string) => Promise<void>
     writeClipboardText: (text: string) => Promise<void>
     writeSelectionClipboardText: (text: string) => Promise<void>
     writeClipboardImage: (dataUrl: string) => Promise<void>

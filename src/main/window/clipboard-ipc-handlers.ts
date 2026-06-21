@@ -1,10 +1,13 @@
 import {
   clipboard,
+  app,
   ipcMain,
   nativeImage,
   type IpcMainInvokeEvent,
   type WebContents
 } from 'electron'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import {
   assertClipboardTextWriteWithinLimitWithYield,
   assertClipboardTextWithinLimitWithYield,
@@ -33,6 +36,7 @@ export function registerClipboardHandlers(): void {
   ipcMain.removeHandler('clipboard:writeSelectionText')
   ipcMain.removeHandler('clipboard:writeImage')
   ipcMain.removeHandler('clipboard:saveImageAsTempFile')
+  ipcMain.removeHandler('clipboard:deleteImageTempFile')
 
   ipcMain.handle('clipboard:readText', async (event, options?: ReadClipboardTextOptions) => {
     assertTrustedClipboardSender(event)
@@ -58,6 +62,20 @@ export function registerClipboardHandlers(): void {
       }
       assertClipboardImageDimensionsWithinLimit(image.getSize())
       return saveClipboardImageBufferAsTempFile(image.toPNG(), args)
+    }
+  )
+  ipcMain.handle(
+    'clipboard:deleteImageTempFile',
+    async (event, filePath: string): Promise<void> => {
+      assertTrustedClipboardSender(event)
+      // Why: only ever clean files we wrote under the OS temp dir; never let the
+      // renderer delete an arbitrary path through this channel.
+      const tempRoot = path.resolve(app.getPath('temp'))
+      const resolved = path.resolve(filePath)
+      if (resolved !== tempRoot && !resolved.startsWith(tempRoot + path.sep)) {
+        throw new Error('Refusing to delete path outside temp dir')
+      }
+      await fs.rm(resolved, { force: true })
     }
   )
   ipcMain.handle('clipboard:writeText', async (event, text: string) => {

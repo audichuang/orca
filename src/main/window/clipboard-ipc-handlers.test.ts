@@ -10,6 +10,7 @@ const {
   removeHandlerMock,
   handleMock,
   fsWriteFileMock,
+  fsRmMock,
   clipboardReadTextMock,
   clipboardWriteTextMock,
   clipboardReadImageMock,
@@ -21,6 +22,7 @@ const {
   removeHandlerMock: vi.fn(),
   handleMock: vi.fn(),
   fsWriteFileMock: vi.fn(),
+  fsRmMock: vi.fn(),
   clipboardReadTextMock: vi.fn(),
   clipboardWriteTextMock: vi.fn(),
   clipboardReadImageMock: vi.fn(),
@@ -32,7 +34,8 @@ const {
 
 vi.mock('node:fs/promises', () => ({
   default: {
-    writeFile: fsWriteFileMock
+    writeFile: fsWriteFileMock,
+    rm: fsRmMock
   }
 }))
 
@@ -121,6 +124,7 @@ describe('registerClipboardHandlers', () => {
     removeHandlerMock.mockReset()
     handleMock.mockReset()
     fsWriteFileMock.mockReset()
+    fsRmMock.mockReset()
     clipboardReadTextMock.mockReset()
     clipboardWriteTextMock.mockReset()
     clipboardReadImageMock.mockReset()
@@ -304,6 +308,7 @@ describe('registerClipboardHandlers', () => {
     expect(removeHandlerMock).toHaveBeenCalledWith('clipboard:writeSelectionText')
     expect(removeHandlerMock).toHaveBeenCalledWith('clipboard:writeImage')
     expect(removeHandlerMock).toHaveBeenCalledWith('clipboard:saveImageAsTempFile')
+    expect(removeHandlerMock).toHaveBeenCalledWith('clipboard:deleteImageTempFile')
   })
 
   it('saves clipboard images to a local temp file when no connection is provided', async () => {
@@ -450,5 +455,36 @@ describe('registerClipboardHandlers', () => {
 
     expect(nativeImageCreateFromBufferMock).toHaveBeenCalled()
     expect(clipboardWriteImageMock).not.toHaveBeenCalled()
+  })
+
+  it('deletes a temp file inside the app temp dir', async () => {
+    registerClipboardHandlers()
+
+    const handlers = getRegisteredHandlers()
+    await handlers.get('clipboard:deleteImageTempFile')?.(
+      makeClipboardEvent(),
+      '/tmp/orca-paste-1760000000000-x.png'
+    )
+    expect(fsRmMock).toHaveBeenCalledWith('/tmp/orca-paste-1760000000000-x.png', { force: true })
+  })
+
+  it('refuses to delete a path outside the app temp dir', async () => {
+    registerClipboardHandlers()
+
+    const handlers = getRegisteredHandlers()
+    await expect(
+      handlers.get('clipboard:deleteImageTempFile')?.(makeClipboardEvent(), '/etc/passwd')
+    ).rejects.toThrow('Refusing to delete path outside temp dir')
+    expect(fsRmMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects deleteImageTempFile from an untrusted sender', async () => {
+    setTrustedClipboardRendererWebContentsId(17)
+    registerClipboardHandlers()
+
+    const handlers = getRegisteredHandlers()
+    await expect(
+      handlers.get('clipboard:deleteImageTempFile')?.(makeClipboardEvent({ id: 42 }), '/tmp/x.png')
+    ).rejects.toThrow('Unauthorized clipboard IPC sender')
   })
 })

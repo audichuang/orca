@@ -3243,6 +3243,8 @@ const api = {
     saveClipboardImageAsTempFile: (args?: {
       connectionId?: string | null
     }): Promise<string | null> => ipcRenderer.invoke('clipboard:saveImageAsTempFile', args),
+    deleteClipboardImageTempFile: (filePath: string): Promise<void> =>
+      ipcRenderer.invoke('clipboard:deleteImageTempFile', filePath),
     writeClipboardText: (text: string): Promise<void> =>
       ipcRenderer.invoke('clipboard:writeText', text),
     writeSelectionClipboardText: (text: string): Promise<void> =>
