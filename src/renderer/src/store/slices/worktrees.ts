@@ -662,7 +662,8 @@ function settingsForWorktreeOwner(
 
 async function listDetectedWorktreesForRepo(
   settings: AppState['settings'],
-  repoId: string
+  repoId: string,
+  options?: { background?: boolean }
 ): Promise<DetectedWorktreeListResult> {
   const target = getActiveRuntimeTarget(settings)
   if (target.kind === 'local') {
@@ -680,7 +681,7 @@ async function listDetectedWorktreesForRepo(
       target,
       'worktree.detectedList',
       { repo: repoId },
-      { timeoutMs: 15_000 }
+      { timeoutMs: 15_000, background: options?.background }
     )
   } catch (error) {
     if (!isRuntimeMethodNotFoundError(error)) {
@@ -690,13 +691,16 @@ async function listDetectedWorktreesForRepo(
       target,
       'worktree.list',
       { repo: repoId, limit: REMOTE_WORKTREE_LIST_PARITY_LIMIT },
-      { timeoutMs: 15_000 }
+      { timeoutMs: 15_000, background: options?.background }
     )
     return toLegacyDetectedWorktreeResult(repoId, legacy)
   }
 }
 
-async function listWorktreeLineageForRuntime(settings: AppState['settings']): Promise<{
+async function listWorktreeLineageForRuntime(
+  settings: AppState['settings'],
+  options?: { background?: boolean }
+): Promise<{
   worktreeLineageById: Record<string, WorktreeLineage>
   workspaceLineageByChildKey: Record<string, WorkspaceLineage>
 }> {
@@ -723,7 +727,10 @@ async function listWorktreeLineageForRuntime(settings: AppState['settings']): Pr
     await callRuntimeRpc<{
       lineage: Record<string, WorktreeLineage>
       workspaceLineage?: Record<string, WorkspaceLineage>
-    }>(target, 'worktree.lineageList', undefined, { timeoutMs: 15_000 })
+    }>(target, 'worktree.lineageList', undefined, {
+      timeoutMs: 15_000,
+      background: options?.background
+    })
   )
 }
 
