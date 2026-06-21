@@ -983,6 +983,75 @@ describe('fetchWorktrees', () => {
     )
     expect(lineageCalls).toHaveLength(1)
   })
+
+  it('refreshes lineage for a specific env host without touching another host rows', async () => {
+    const store = createTestStore()
+    // Active env is env-1; we refresh the non-active env-2.
+    const activeWorktree = makeWorktree({
+      id: 'repo-active::/remote/wt-a',
+      repoId: 'repo-active',
+      path: '/remote/wt-a',
+      branch: 'refs/heads/active',
+      hostId: 'runtime:env-1'
+    })
+    const otherWorktree = makeWorktree({
+      id: 'repo-other::/remote/wt-b',
+      repoId: 'repo-other',
+      path: '/remote/wt-b',
+      branch: 'refs/heads/other',
+      hostId: 'runtime:env-2'
+    })
+    const activeLineage = makeLineage({ worktreeId: activeWorktree.id })
+    const freshOtherLineage = makeLineage({ worktreeId: otherWorktree.id })
+    store.setState({
+      settings: { activeRuntimeEnvironmentId: 'env-1' } as never,
+      repos: [
+        {
+          id: 'repo-active',
+          path: '/a',
+          displayName: 'A',
+          badgeColor: '#000',
+          addedAt: 0,
+          executionHostId: 'runtime:env-1'
+        },
+        {
+          id: 'repo-other',
+          path: '/b',
+          displayName: 'B',
+          badgeColor: '#000',
+          addedAt: 0,
+          executionHostId: 'runtime:env-2'
+        }
+      ],
+      worktreesByRepo: { 'repo-active': [activeWorktree], 'repo-other': [otherWorktree] },
+      worktreeLineageById: { [activeWorktree.id]: activeLineage }
+    } as Partial<AppState>)
+    runtimeEnvironmentCall.mockImplementation(({ method }: RuntimeEnvironmentCallRequest) =>
+      Promise.resolve({
+        id: 'rpc-1',
+        ok: true,
+        result:
+          method === 'worktree.lineageList'
+            ? { lineage: { [freshOtherLineage.worktreeId]: freshOtherLineage } }
+            : makeDetectedResult('repo-other', []),
+        _meta: { runtimeId: 'runtime-remote' }
+      })
+    )
+
+    await store.getState().refreshWorktreeLineageForRuntimeEnvironment('env-2')
+
+    // The env-2 lineage call must target env-2's host, not the active env-1.
+    const lineageCalls = runtimeEnvironmentCall.mock.calls.filter(
+      ([args]: [RuntimeEnvironmentCallRequest]) => args.method === 'worktree.lineageList'
+    )
+    expect(lineageCalls).toHaveLength(1)
+    expect(lineageCalls[0][0].selector).toBe('env-2')
+    // env-1's existing lineage row is preserved; env-2's row is merged in.
+    expect(store.getState().worktreeLineageById).toEqual({
+      [activeWorktree.id]: activeLineage,
+      [freshOtherLineage.worktreeId]: freshOtherLineage
+    })
+  })
 })
 
 describe('worktree lineage state', () => {

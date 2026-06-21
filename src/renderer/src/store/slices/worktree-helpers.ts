@@ -117,6 +117,7 @@ export type WorktreeSlice = {
   ) => Promise<boolean>
   fetchAllWorktrees: () => Promise<void>
   fetchWorktreeLineage: () => Promise<void>
+  refreshWorktreeLineageForRuntimeEnvironment: (environmentId: string | null) => Promise<void>
   updateWorktreeLineage: (
     worktreeId: string,
     args: { parentWorktreeId?: string; noParent?: boolean }

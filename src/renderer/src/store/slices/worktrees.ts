@@ -29,7 +29,8 @@ import { tabHasLivePty } from '@/lib/tab-has-live-pty'
 import {
   callRuntimeRpc,
   getActiveRuntimeTarget,
-  RuntimeRpcCallError
+  RuntimeRpcCallError,
+  settingsForRuntimeOwner
 } from '../../runtime/runtime-rpc-client'
 import { toRuntimeWorktreeSelector } from '../../runtime/runtime-worktree-selector'
 import { getHostedReviewCacheKey, refreshHostedReviewCard } from './hosted-review'
@@ -1581,6 +1582,18 @@ export const createWorktreeSlice: StateCreator<AppState, [], [], WorktreeSlice> 
       await refreshWorktreeLineageForSettings(get().settings, set)
     } catch (err) {
       console.error('Failed to fetch worktree lineage:', err)
+    }
+  },
+
+  refreshWorktreeLineageForRuntimeEnvironment: async (environmentId) => {
+    try {
+      // Why: a refresh round must fetch lineage from the *refreshed* env's host
+      // and host-merge under that host id — never the global active env — or a
+      // non-active server's round corrupts the active host's lineage map.
+      const scoped = settingsForRuntimeOwner(get().settings, environmentId) as AppState['settings']
+      await refreshWorktreeLineageForSettings(scoped, set)
+    } catch (err) {
+      console.error('Failed to fetch worktree lineage for runtime environment:', err)
     }
   },
 
