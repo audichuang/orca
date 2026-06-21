@@ -1,4 +1,4 @@
-import type { AddressInfo } from 'net'
+import { createServer, type AddressInfo } from 'net'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocketClient, { WebSocketServer, type WebSocket } from 'ws'
 import { encodePairingOffer, parsePairingCode, type PairingOffer } from './pairing'
@@ -30,6 +30,19 @@ afterEach(async () => {
 })
 
 describe('subscribeRemoteRuntimeRequest', () => {
+  it('includes transport error details when subscription connection cannot open', async () => {
+    const pairing = await createUnavailablePairing()
+
+    await expect(
+      subscribeRemoteRuntimeRequest(pairing, 'terminal.subscribe', {}, 1000, {
+        onResponse: vi.fn(),
+        onError: vi.fn()
+      })
+    ).rejects.toThrow(
+      /Could not connect to the remote Orca runtime at ws:\/\/127\.0\.0\.1:\d+\. Transport error: connect ECONNREFUSED/
+    )
+  })
+
   it('includes WebSocket close details when subscription admission is rejected', async () => {
     const server = await createClosingServer(1013, 'Maximum connections reached')
 
@@ -142,6 +155,14 @@ describe('subscribeRemoteRuntimeRequest', () => {
 })
 
 describe('sendRemoteRuntimeRequest', () => {
+  it('includes transport error details when one-shot connection cannot open', async () => {
+    const pairing = await createUnavailablePairing()
+
+    await expect(sendRemoteRuntimeRequest(pairing, 'status.get', {}, 1000)).rejects.toThrow(
+      /Could not connect to the remote Orca runtime at ws:\/\/127\.0\.0\.1:\d+\. Transport error: connect ECONNREFUSED/
+    )
+  })
+
   it('includes WebSocket close details when one-shot admission is rejected', async () => {
     const server = await createClosingServer(1013, 'Maximum connections reached')
 
@@ -311,6 +332,40 @@ async function createSubscriptionServer(
 
 function sendEncrypted(ws: WebSocket, sharedKey: Uint8Array, message: unknown): void {
   ws.send(encrypt(JSON.stringify(message), sharedKey))
+}
+
+async function createUnavailablePairing(): Promise<PairingOffer> {
+  const serverKeyPair = generateKeyPair()
+  const port = await reserveClosedPort()
+  const pairing = parsePairingCode(
+    encodePairingOffer({
+      v: 2,
+      endpoint: `ws://127.0.0.1:${port}`,
+      deviceToken: 'device-token',
+      publicKeyB64: publicKeyToBase64(serverKeyPair.publicKey)
+    })
+  )
+  if (!pairing) {
+    throw new Error('Failed to create test pairing')
+  }
+  return pairing
+}
+
+async function reserveClosedPort(): Promise<number> {
+  const server = createServer()
+  return await new Promise<number>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address() as AddressInfo
+      server.close((error) => {
+        if (error) {
+          reject(error)
+          return
+        }
+        resolve(address.port)
+      })
+    })
+  })
 }
 
 async function createClosingServer(

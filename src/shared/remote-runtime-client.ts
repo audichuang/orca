@@ -20,6 +20,7 @@ import {
   RuntimeRpcEnvelopeSchema,
   type RuntimeRpcResponse
 } from './runtime-rpc-envelope'
+import { formatRemoteRuntimeConnectFailureMessage } from './remote-runtime-connection-error'
 // Re-export so existing value importers of `RemoteRuntimeClientError` are
 // unaffected; the class lives in a ws-free module so type-only consumers
 // (and mobile's typecheck) don't compile this file's Node-only deps.
@@ -157,12 +158,12 @@ export async function sendRemoteRuntimeRequest<TResult>(
       )
     }
 
-    function onError(): void {
+    function onError(error: Error): void {
       finish({
         ok: false,
         error: new RemoteRuntimeClientError(
           'remote_runtime_unavailable',
-          'Could not connect to the remote Orca runtime.'
+          formatRemoteRuntimeConnectFailureMessage(pairing.endpoint, error)
         )
       })
     }
@@ -459,11 +460,11 @@ export async function subscribeRemoteRuntimeRequest<TResult>(
       )
     }
 
-    function onError(): void {
+    function onError(error: Error): void {
       fail(
         new RemoteRuntimeClientError(
           'remote_runtime_unavailable',
-          'Could not connect to the remote Orca runtime.'
+          formatRemoteRuntimeConnectFailureMessage(pairing.endpoint, error)
         )
       )
     }

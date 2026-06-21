@@ -11,6 +11,7 @@ import {
   invalidRemoteRuntimeResponseError,
   remoteRuntimeUnavailableError
 } from './remote-runtime-request-frames'
+import { formatRemoteRuntimeConnectFailureMessage } from './remote-runtime-connection-error'
 
 export type RemoteRuntimeWebSocket = {
   ws: WebSocket
@@ -45,10 +46,12 @@ export function openRemoteRuntimeWebSocket(
       })
     )
   }
-  const onError = (): void => {
+  const onError = (error: Error): void => {
     callbacks.onError(
       ws,
-      remoteRuntimeUnavailableError('Could not connect to the remote Orca runtime.')
+      remoteRuntimeUnavailableError(
+        formatRemoteRuntimeConnectFailureMessage(pairing.endpoint, error)
+      )
     )
   }
   const onClose = (code: number, reason: Buffer): void => callbacks.onClose(ws, code, reason)
