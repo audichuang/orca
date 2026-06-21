@@ -13,6 +13,11 @@ import { splitWebRuntimeTerminal } from '@/runtime/web-runtime-session'
 import { pasteTerminalText } from './terminal-bracketed-paste'
 import { pasteTerminalClipboard } from './terminal-clipboard-paste'
 import {
+  makeTerminalClipboardImageSaver,
+  type TerminalClipboardImageSaver
+} from './terminal-clipboard-image-runtime-upload'
+import { importExternalPathsToRuntime } from '@/runtime/runtime-file-client'
+import {
   executeTerminalPastePlan,
   planTerminalPasteWithYield,
   type TerminalPasteSource,
@@ -36,11 +41,35 @@ import {
 } from './terminal-agent-session-fork'
 import { recordCreatedTerminalPaneSplit } from './terminal-pane-split-completion'
 import { useAppStore } from '@/store'
+import type { GlobalSettings } from '../../../../shared/types'
+import { type WorktreeRuntimeOwnerState } from '@/lib/worktree-runtime-owner'
 import { translate } from '@/i18n/i18n'
 import { recordTerminalUserInputForLeaf } from './terminal-input-activity'
 import { copyTerminalHandleForPane } from './terminal-handle-copy'
 
 const CLOSE_ALL_CONTEXT_MENUS_EVENT = 'orca-close-all-context-menus'
+
+// Builds a saver that uploads the clipboard image to the runtime when the
+// worktree is backed by a runtime environment, falling back to local temp-file.
+function buildClipboardImageSaver(
+  saverWorktreeId: string,
+  fallbackCwd: string | undefined,
+  connectionId: string | null
+): TerminalClipboardImageSaver {
+  return makeTerminalClipboardImageSaver({
+    worktreeId: saverWorktreeId,
+    fallbackCwd,
+    connectionId,
+    // Why: AppState.settings is GlobalSettings | null but the saver only uses it
+    // when a runtime environment is active (settings must be loaded by then).
+    getOwnerState: () =>
+      useAppStore.getState() as WorktreeRuntimeOwnerState & { settings: GlobalSettings },
+    saveLocalImageTempFile: window.api.ui.saveClipboardImageAsTempFile,
+    importExternalPathsToRuntime,
+    deleteLocalImageTempFile: window.api.ui.deleteClipboardImageTempFile,
+    toast
+  })
+}
 
 export function recordContextMenuCreatedTerminalPaneSplit(
   createdPane: unknown,
@@ -288,7 +317,7 @@ export function useTerminalPaneContextMenu({
     const connectionId = getConnectionId(worktreeId) ?? null
     const result = await pasteTerminalClipboard({
       readClipboardText: window.api.ui.readClipboardText,
-      saveClipboardImageAsTempFile: window.api.ui.saveClipboardImageAsTempFile,
+      saveClipboardImageAsTempFile: buildClipboardImageSaver(worktreeId, fallbackCwd, connectionId),
       connectionId,
       forceBracketedMultilineTextPaste,
       pasteText: (text, options) => executeMenuPasteText(pane, source, text, options),

@@ -95,7 +95,11 @@ import {
   isHostAuthoritativeLayout,
   planTerminalLiveLayoutInsertions
 } from './terminal-live-layout-reconciliation'
-import type { TerminalQuickCommand, TerminalQuickCommandScope } from '../../../../shared/types'
+import type {
+  GlobalSettings,
+  TerminalQuickCommand,
+  TerminalQuickCommandScope
+} from '../../../../shared/types'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import { getRepoIdFromWorktreeId } from '../../../../shared/worktree-id'
 import { refitAndRefreshAllTerminalPanes } from '@/lib/pane-manager/pane-manager-registry'
@@ -112,6 +116,13 @@ import { keybindingMatchesAction } from '../../../../shared/keybindings'
 import { pasteTerminalClipboard } from './terminal-clipboard-paste'
 import { scheduleImagePasteWebglAtlasRecovery } from './terminal-webgl-paste-recovery'
 import { restoreTerminalFitToDesktop, restoreTerminalFitsToDesktop } from './terminal-fit-restore'
+import {
+  makeTerminalClipboardImageSaver,
+  type TerminalClipboardImageSaver
+} from './terminal-clipboard-image-runtime-upload'
+import { importExternalPathsToRuntime } from '@/runtime/runtime-file-client'
+import { type WorktreeRuntimeOwnerState } from '@/lib/worktree-runtime-owner'
+import { toast } from 'sonner'
 
 // Why: registry lives in a leaf module so the store slice can import it
 // without re-entering the `slice → TerminalPane → store → slice` cycle
@@ -194,6 +205,28 @@ function formatClipboardImagePasteError(error: unknown): string {
   return `Image paste failed: ${detail}`
 }
 
+// Builds a saver that uploads the clipboard image to the runtime when the
+// worktree is backed by a runtime environment, falling back to local temp-file.
+function buildClipboardImageSaver(
+  saverWorktreeId: string,
+  fallbackCwd: string | undefined,
+  connectionId: string | null
+): TerminalClipboardImageSaver {
+  return makeTerminalClipboardImageSaver({
+    worktreeId: saverWorktreeId,
+    fallbackCwd,
+    connectionId,
+    // Why: AppState.settings is GlobalSettings | null but the saver only uses it
+    // when a runtime environment is active (settings must be loaded by then).
+    getOwnerState: () =>
+      useAppStore.getState() as WorktreeRuntimeOwnerState & { settings: GlobalSettings },
+    saveLocalImageTempFile: window.api.ui.saveClipboardImageAsTempFile,
+    importExternalPathsToRuntime,
+    deleteLocalImageTempFile: window.api.ui.deleteClipboardImageTempFile,
+    toast
+  })
+}
+
 function isXtermHelperTextarea(target: EventTarget | null): target is HTMLElement {
   return target instanceof HTMLElement && target.classList.contains('xterm-helper-textarea')
 }
@@ -260,6 +293,10 @@ export default function TerminalPane({
   isActiveRef.current = isActive
   const isVisibleRef = useRef(isVisible)
   isVisibleRef.current = isVisible
+  // Why: cwd is a fallback for image-saver inside the paste effect; a ref keeps
+  // it live without adding it to the effect dep array (it's not a control dep).
+  const cwdRef = useRef(cwd)
+  cwdRef.current = cwd
 
   const [expandedPaneId, setExpandedPaneId] = useState<number | null>(null)
   // Why: tracked in React state (not derived from managerRef.getPanes().length)
@@ -1549,7 +1586,11 @@ export default function TerminalPane({
       const activeElementAtDispatch = document.activeElement
       void pasteTerminalClipboard({
         readClipboardText: window.api.ui.readClipboardText,
-        saveClipboardImageAsTempFile: window.api.ui.saveClipboardImageAsTempFile,
+        saveClipboardImageAsTempFile: buildClipboardImageSaver(
+          worktreeId,
+          cwdRef.current,
+          connectionId
+        ),
         connectionId,
         forceBracketedMultilineTextPaste,
         pasteText: (text, options) =>
@@ -1673,7 +1714,11 @@ export default function TerminalPane({
       const connectionId = getConnectionId(worktreeId) ?? null
       void pasteTerminalClipboard({
         readClipboardText: window.api.ui.readClipboardText,
-        saveClipboardImageAsTempFile: window.api.ui.saveClipboardImageAsTempFile,
+        saveClipboardImageAsTempFile: buildClipboardImageSaver(
+          worktreeId,
+          cwdRef.current,
+          connectionId
+        ),
         connectionId,
         forceBracketedMultilineTextPaste,
         pasteText: (text, options) =>
