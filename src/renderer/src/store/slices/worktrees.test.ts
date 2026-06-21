@@ -953,6 +953,36 @@ describe('fetchWorktrees', () => {
     )
     expect(lineageCalls).toHaveLength(0)
   })
+
+  it('still refreshes lineage exactly once when skipLineageRefresh is not set', async () => {
+    const store = createTestStore()
+    const worktree = makeWorktree({
+      id: 'repo1::/remote/wt1',
+      repoId: 'repo1',
+      path: '/remote/wt1',
+      branch: 'refs/heads/remote'
+    })
+    store.setState({ settings: { activeRuntimeEnvironmentId: 'env-1' } as never })
+    runtimeEnvironmentCall.mockImplementation(({ method }: RuntimeEnvironmentCallRequest) => {
+      const result =
+        method === 'worktree.lineageList'
+          ? { lineage: {} }
+          : makeDetectedResult('repo1', [worktree])
+      return Promise.resolve({
+        id: 'rpc-1',
+        ok: true,
+        result,
+        _meta: { runtimeId: 'runtime-remote' }
+      })
+    })
+
+    await store.getState().fetchWorktrees('repo1')
+
+    const lineageCalls = runtimeEnvironmentCall.mock.calls.filter(
+      ([args]: [RuntimeEnvironmentCallRequest]) => args.method === 'worktree.lineageList'
+    )
+    expect(lineageCalls).toHaveLength(1)
+  })
 })
 
 describe('worktree lineage state', () => {
