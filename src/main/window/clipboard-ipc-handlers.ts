@@ -69,10 +69,10 @@ export function registerClipboardHandlers(): void {
     async (event, filePath: string): Promise<void> => {
       assertTrustedClipboardSender(event)
       // Why: only ever clean files we wrote under the OS temp dir; never let the
-      // renderer delete an arbitrary path through this channel.
+      // renderer delete an arbitrary path (or the temp root itself) through this channel.
       const tempRoot = path.resolve(app.getPath('temp'))
       const resolved = path.resolve(filePath)
-      if (resolved !== tempRoot && !resolved.startsWith(tempRoot + path.sep)) {
+      if (!resolved.startsWith(tempRoot + path.sep)) {
         throw new Error('Refusing to delete path outside temp dir')
       }
       await fs.rm(resolved, { force: true })

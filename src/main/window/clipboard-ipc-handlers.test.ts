@@ -478,6 +478,16 @@ describe('registerClipboardHandlers', () => {
     expect(fsRmMock).not.toHaveBeenCalled()
   })
 
+  it('refuses to delete the temp root dir itself', async () => {
+    registerClipboardHandlers()
+
+    const handlers = getRegisteredHandlers()
+    await expect(
+      handlers.get('clipboard:deleteImageTempFile')?.(makeClipboardEvent(), '/tmp')
+    ).rejects.toThrow('Refusing to delete path outside temp dir')
+    expect(fsRmMock).not.toHaveBeenCalled()
+  })
+
   it('rejects deleteImageTempFile from an untrusted sender', async () => {
     setTrustedClipboardRendererWebContentsId(17)
     registerClipboardHandlers()
@@ -486,5 +496,6 @@ describe('registerClipboardHandlers', () => {
     await expect(
       handlers.get('clipboard:deleteImageTempFile')?.(makeClipboardEvent({ id: 42 }), '/tmp/x.png')
     ).rejects.toThrow('Unauthorized clipboard IPC sender')
+    expect(fsRmMock).not.toHaveBeenCalled()
   })
 })
