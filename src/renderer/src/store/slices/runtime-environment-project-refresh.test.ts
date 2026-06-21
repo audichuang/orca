@@ -88,4 +88,12 @@ describe('refreshRuntimeEnvironmentProjects', () => {
     const source = await fs.readFile(path.resolve(__dirname, '../../hooks/useIpcEvents.ts'), 'utf8')
     expect(source).toContain('refreshRuntimeEnvironmentProjects(useAppStore, environmentId)')
   })
+
+  it('worktreesChanged uses env-scoped lineage, not the bare active-env fetch (source wiring)', async () => {
+    const fs = await import('node:fs/promises')
+    const path = await import('node:path')
+    const source = await fs.readFile(path.resolve(__dirname, '../../hooks/useIpcEvents.ts'), 'utf8')
+    expect(source).toContain('fetchWorktrees(repoId, { skipLineageRefresh: true })')
+    expect(source).toContain('refreshWorktreeLineageForRuntimeEnvironment(environmentId)')
+  })
 })

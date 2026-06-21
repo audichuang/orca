@@ -739,6 +739,7 @@ export function useIpcEvents(): void {
     unsubs.push(attachMobileMarkdownBridge())
 
     const handleWorktreesChanged = async (
+      environmentId: string | null,
       repoId: string,
       renamed?: { oldWorktreeId: string; newWorktreeId: string }
     ): Promise<void> => {
@@ -766,8 +767,12 @@ export function useIpcEvents(): void {
       const before =
         getAuthoritativeDetectedWorktreeIds(state, repoId) ??
         getVisibleWorktreeIdsForRepo(state, repoId)
-      await state.fetchWorktrees(repoId)
-      await useAppStore.getState().fetchWorktreeLineage()
+      // Why: suppress fetchWorktrees' internal lineage refresh and do one
+      // host-correct lineage fetch for the changed env's host — the old bare
+      // fetchWorktreeLineage() fetched the active env's host, wrong for a
+      // non-active server's worktreesChanged.
+      await state.fetchWorktrees(repoId, { skipLineageRefresh: true })
+      await useAppStore.getState().refreshWorktreeLineageForRuntimeEnvironment(environmentId)
       // Why: changing the worktree's id unmounts the active pane without
       // re-rendering it under the new id. Now that the list has refreshed,
       // re-activate the renamed worktree so its tab model reconciles and the
@@ -867,7 +872,7 @@ export function useIpcEvents(): void {
       }
       if (event.type === 'worktreesChanged') {
         void ensureRuntimeEventRepoKnown(environmentId, event.repoId).then(() =>
-          handleWorktreesChanged(event.repoId)
+          handleWorktreesChanged(environmentId, event.repoId)
         )
         return
       }
@@ -935,7 +940,7 @@ export function useIpcEvents(): void {
           }
           // A folder rename changes the worktree id; handleWorktreesChanged
           // re-keys state and shields it from the deletion diff (see there).
-          await handleWorktreesChanged(data.repoId, data.renamed)
+          await handleWorktreesChanged(null, data.repoId, data.renamed)
         }
       )
     )
