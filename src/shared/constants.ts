@@ -254,6 +254,7 @@ export function getDefaultSettings(homedir: string): GlobalSettings {
     minimizeToTrayOnClose: false,
     terminalClipboardOnSelect: false,
     terminalAllowOsc52Clipboard: false,
+    terminalRemoteClipboardImagePaste: true,
     claudeAgentTeamsMode: 'off',
     setupScriptLaunchMode: 'new-tab',
     terminalScrollbackBytes: 10_000_000,

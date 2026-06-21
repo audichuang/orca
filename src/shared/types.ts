@@ -2482,6 +2482,11 @@ export type GlobalSettings = {
    *  — can silently rewrite the user's clipboard). Opt-in preserves the
    *  conservative default while making the capability one toggle away. */
   terminalAllowOsc52Clipboard: boolean
+  /** Why: lets Ctrl/Cmd+V upload a locally-copied image into the active remote
+   *  runtime worktree (.orca/paste-images) so a remote agent receives a readable
+   *  path. Default true because the paste gesture is explicit; can be disabled to
+   *  stop local clipboard images leaving the machine on paste. */
+  terminalRemoteClipboardImagePaste: boolean
   /** Experimental Claude Code Agent Teams integration. Native panes use a
    *  tmux-compatible shim so teammate output stays on Orca's normal PTY path. */
   claudeAgentTeamsMode?: ClaudeAgentTeamsMode

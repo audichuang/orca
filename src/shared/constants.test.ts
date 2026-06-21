@@ -102,6 +102,10 @@ describe('getDefaultSettings', () => {
     })
     expect(settings.agentYoloDefaultsMigrated).toBe(true)
   })
+
+  it('defaults remote clipboard image paste to enabled', () => {
+    expect(getDefaultSettings('/tmp').terminalRemoteClipboardImagePaste).toBe(true)
+  })
 })
 
 describe('getDefaultPrimarySelectionMiddleClickPaste', () => {
