@@ -776,8 +776,12 @@ export function useIpcEvents(): void {
       // host-correct lineage fetch for the changed env's host — the old bare
       // fetchWorktreeLineage() fetched the active env's host, wrong for a
       // non-active server's worktreesChanged.
-      await state.fetchWorktrees(repoId, { skipLineageRefresh: true })
-      await useAppStore.getState().refreshWorktreeLineageForRuntimeEnvironment(environmentId)
+      // Why: event-driven worktree refresh rides the background lane so it
+      // yields transport capacity to user-initiated runtime calls (Piece 3).
+      await state.fetchWorktrees(repoId, { skipLineageRefresh: true, background: true })
+      await useAppStore
+        .getState()
+        .refreshWorktreeLineageForRuntimeEnvironment(environmentId, { background: true })
       // Why: changing the worktree's id unmounts the active pane without
       // re-rendering it under the new id. Now that the list has refreshed,
       // re-activate the renamed worktree so its tab model reconciles and the
@@ -831,8 +835,12 @@ export function useIpcEvents(): void {
       const before =
         getAuthoritativeDetectedWorktreeIds(state, repoId) ??
         getVisibleWorktreeIdsForRepo(state, repoId)
-      await state.fetchWorktrees(repoId, { skipLineageRefresh: true })
-      await useAppStore.getState().refreshWorktreeLineageForRuntimeEnvironment(environmentId)
+      // Why: event-driven worktree refresh rides the background lane so it
+      // yields transport capacity to user-initiated runtime calls (Piece 3).
+      await state.fetchWorktrees(repoId, { skipLineageRefresh: true, background: true })
+      await useAppStore
+        .getState()
+        .refreshWorktreeLineageForRuntimeEnvironment(environmentId, { background: true })
       const afterState = useAppStore.getState()
       const after = getAuthoritativeDetectedWorktreeIds(afterState, repoId)
       if (!after) {
@@ -900,7 +908,9 @@ export function useIpcEvents(): void {
       if ((useAppStore.getState().repos ?? []).some((repo) => repo.id === repoId)) {
         return
       }
-      await useAppStore.getState().fetchRuntimeEnvironmentRepos(environmentId)
+      // Why: backfilling an unknown repo is part of the event-driven refresh
+      // storm, so it rides the background lane (Piece 3).
+      await useAppStore.getState().fetchRuntimeEnvironmentRepos(environmentId, { background: true })
     }
 
     const worktreeRefreshScheduler = createKeyedRefreshScheduler({
@@ -923,7 +933,9 @@ export function useIpcEvents(): void {
       debounceMs: 200,
       minIntervalMs: 0,
       refresh: async (environmentId) => {
-        await refreshRuntimeEnvironmentProjects(useAppStore, environmentId)
+        // Why: scheduler-driven repos refresh rides the background lane so it
+        // yields transport capacity to user-initiated runtime calls (Piece 3).
+        await refreshRuntimeEnvironmentProjects(useAppStore, environmentId, { background: true })
       },
       onError: (error) => {
         console.error('Failed to refresh runtime repos:', error)

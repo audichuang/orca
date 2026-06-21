@@ -7,11 +7,15 @@ import type { AppState } from '../types'
 // correct host) instead of N+1 times against the active host.
 export async function refreshRuntimeEnvironmentProjects(
   store: Pick<StoreApi<AppState>, 'getState'>,
-  environmentId: string
+  environmentId: string,
+  options?: { background?: boolean }
 ): Promise<void> {
-  const repos = await store.getState().fetchRuntimeEnvironmentRepos(environmentId)
+  const background = options?.background
+  const repos = await store.getState().fetchRuntimeEnvironmentRepos(environmentId, { background })
   await Promise.all(
-    repos.map((repo) => store.getState().fetchWorktrees(repo.id, { skipLineageRefresh: true }))
+    repos.map((repo) =>
+      store.getState().fetchWorktrees(repo.id, { skipLineageRefresh: true, background })
+    )
   )
-  await store.getState().refreshWorktreeLineageForRuntimeEnvironment(environmentId)
+  await store.getState().refreshWorktreeLineageForRuntimeEnvironment(environmentId, { background })
 }

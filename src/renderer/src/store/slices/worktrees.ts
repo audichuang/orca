@@ -830,9 +830,12 @@ function applyWorktreeLineageUpdate(
 
 async function refreshWorktreeLineageForSettings(
   settings: AppState['settings'],
-  set: Parameters<StateCreator<AppState>>[0]
+  set: Parameters<StateCreator<AppState>>[0],
+  options?: { background?: boolean }
 ): Promise<void> {
-  const lineage = await listWorktreeLineageForRuntime(settings)
+  const lineage = await listWorktreeLineageForRuntime(settings, {
+    background: options?.background
+  })
   const hostId = getSettingsFocusedExecutionHostId(settings)
   set((s) => ({
     worktreeLineageById: mergeLineageForHost(s, hostId, lineage.worktreeLineageById),
@@ -1426,7 +1429,9 @@ export const createWorktreeSlice: StateCreator<AppState, [], [], WorktreeSlice> 
   fetchWorktrees: async (repoId, options) => {
     try {
       const settings = settingsForRepoOwner(get(), repoId)
-      const detected = await listDetectedWorktreesForRepo(settings, repoId)
+      const detected = await listDetectedWorktreesForRepo(settings, repoId, {
+        background: options?.background
+      })
       if (options?.requireAuthoritative && !detected.authoritative) {
         return false
       }
@@ -1592,13 +1597,13 @@ export const createWorktreeSlice: StateCreator<AppState, [], [], WorktreeSlice> 
     }
   },
 
-  refreshWorktreeLineageForRuntimeEnvironment: async (environmentId) => {
+  refreshWorktreeLineageForRuntimeEnvironment: async (environmentId, options) => {
     try {
       // Why: a refresh round must fetch lineage from the *refreshed* env's host
       // and host-merge under that host id — never the global active env — or a
       // non-active server's round corrupts the active host's lineage map.
       const scoped = settingsForRuntimeOwner(get().settings, environmentId) as AppState['settings']
-      await refreshWorktreeLineageForSettings(scoped, set)
+      await refreshWorktreeLineageForSettings(scoped, set, { background: options?.background })
     } catch (err) {
       console.error('Failed to fetch worktree lineage for runtime environment:', err)
     }
