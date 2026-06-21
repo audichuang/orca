@@ -802,6 +802,10 @@ export type RepoSlice = {
     options: { removeContainedProjects: boolean }
   ) => Promise<{ environmentId: string; groupId: string } | null>
   replayPendingDeletionsForEnvironment: (environmentId: string) => Promise<void>
+  /** Reverts a local force-remove: removes the tombstone from persistence and
+   * state, then re-fetches the environment so the group reappears in the UI.
+   * Called by the undo action in the force-remove success toast. */
+  undoForceRemoveProjectGroup: (environmentId: string, groupId: string) => Promise<void>
   /** Removes all tombstones for an environment that has been permanently deleted.
    * Called after the main-process remove handler clears its own copy. */
   clearPendingProjectGroupDeletionsForEnvironment: (environmentId: string) => void
@@ -1020,6 +1024,26 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
 
   replayPendingDeletionsForEnvironment: (environmentId) =>
     doReplayPendingDeletions(get, set, environmentId),
+
+  undoForceRemoveProjectGroup: async (environmentId, groupId) => {
+    try {
+      await window.api.pendingProjectGroupDeletions.remove({ environmentId, groupId })
+    } catch (err) {
+      console.error('Failed to remove pending project group deletion tombstone:', err)
+    }
+    // Why: remove tombstone from renderer state even if persistence fails so
+    // the group can reappear immediately after undo.
+    set((s) => ({
+      pendingProjectGroupDeletions: s.pendingProjectGroupDeletions.filter(
+        (t) => !(t.environmentId === environmentId && t.groupId === groupId)
+      )
+    }))
+    // Why: re-fetch so filtered-out groups and repos from this tombstone are
+    // restored in the sidebar without requiring a full reconnect.
+    await get().fetchRuntimeEnvironmentRepos(environmentId)
+    await get().fetchProjectGroups()
+    await get().fetchFolderWorkspaces()
+  },
 
   clearPendingProjectGroupDeletionsForEnvironment: (environmentId) => {
     set((s) => ({

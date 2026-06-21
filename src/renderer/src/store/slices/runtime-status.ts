@@ -2,7 +2,23 @@ import type { StateCreator } from 'zustand'
 import type { AppState } from '../types'
 import type { PublicKnownRuntimeEnvironment } from '../../../../shared/runtime-environments'
 import type { RuntimeStatus } from '../../../../shared/runtime-types'
-import { unwrapRuntimeRpcResult } from '@/runtime/runtime-rpc-client'
+import { unwrapRuntimeRpcResult, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
+
+/** Returns true when the active target is a runtime environment and we have no
+ * live status for it (null status = failed probe, absent = never checked).
+ * Used to skip the remote delete path and jump straight to local force-remove. */
+export function isActiveEnvironmentOffline(
+  state: Pick<AppState, 'settings' | 'runtimeStatusByEnvironmentId'>
+): boolean {
+  const target = getActiveRuntimeTarget(state.settings)
+  if (target.kind !== 'environment') {
+    return false
+  }
+  const entry = state.runtimeStatusByEnvironmentId.get(target.environmentId)
+  // Why: absent entry means never probed; null status means probe failed — both
+  // indicate the environment is not reachable, so treat both as offline.
+  return !entry || entry.status === null
+}
 
 /** Live status for one saved runtime environment, as last observed by the
  * renderer. `status === null` records a probe that failed or timed out so the

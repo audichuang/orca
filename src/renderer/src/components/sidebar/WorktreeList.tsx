@@ -202,7 +202,9 @@ import { getRepositoryIconSectionId } from '@/components/settings/repository-set
 import { keybindingMatchesAction } from '../../../../shared/keybindings'
 import { ProjectGroupNameDialog } from './ProjectGroupNameDialog'
 import { ProjectGroupDeleteDialog } from './ProjectGroupDeleteDialog'
+import { ForceRemoveConfirmDialog } from './ForceRemoveConfirmDialog'
 import { selectProjectGroupRemovalTargets } from '@/store/slices/project-group-removal-targets'
+import { isActiveEnvironmentOffline } from '@/store/slices/runtime-status'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
 import {
   effectiveExternalWorktreeVisibility,
@@ -5494,9 +5496,14 @@ const WorktreeList = React.memo(function WorktreeList({
   const deleteProjectGroupWithContainedProjects = useAppStore(
     (s) => s.deleteProjectGroupWithContainedProjects
   )
+  const forceRemoveProjectGroupLocally = useAppStore((s) => s.forceRemoveProjectGroupLocally)
+  const undoForceRemoveProjectGroup = useAppStore((s) => s.undoForceRemoveProjectGroup)
   const [projectGroupNameDialog, setProjectGroupNameDialog] =
     useState<ProjectGroupNameDialogState | null>(null)
   const [projectGroupDeleteDialog, setProjectGroupDeleteDialog] =
+    useState<ProjectGroupDeleteDialogState | null>(null)
+  // Holds the context for the "unreachable → confirm force-remove" dialog.
+  const [forceRemoveConfirmDialog, setForceRemoveConfirmDialog] =
     useState<ProjectGroupDeleteDialogState | null>(null)
 
   const handleCreateGroupFromRepo = useCallback((repo: Repo) => {
@@ -5562,20 +5569,71 @@ const WorktreeList = React.memo(function WorktreeList({
     setProjectGroupDeleteDialog({ groupId, groupName, removeContainedProjects: false })
   }, [])
 
+  /** Shows the undo toast after a successful local force-remove. */
+  const showForceRemoveUndoToast = useCallback(
+    (environmentId: string, groupId: string) => {
+      toast.success(
+        translate(
+          'auto.components.sidebar.WorktreeList.forceRemoveSuccess',
+          'Group removed locally'
+        ),
+        {
+          description: translate(
+            'auto.components.sidebar.WorktreeList.forceRemoveSuccessDesc',
+            'Will sync automatically when the environment reconnects.'
+          ),
+          action: {
+            label: translate('auto.components.sidebar.WorktreeList.forceRemoveUndo', 'Undo'),
+            onClick: () => {
+              void undoForceRemoveProjectGroup(environmentId, groupId)
+            }
+          }
+        }
+      )
+    },
+    [undoForceRemoveProjectGroup]
+  )
+
+  /** Runs the local force-remove for a given group and shows the undo toast. */
+  const runForceRemoveLocally = useCallback(
+    async (groupId: string, removeContainedProjects: boolean) => {
+      const result = await forceRemoveProjectGroupLocally(groupId, { removeContainedProjects })
+      if (result) {
+        showForceRemoveUndoToast(result.environmentId, result.groupId)
+      }
+    },
+    [forceRemoveProjectGroupLocally, showForceRemoveUndoToast]
+  )
+
   const handleConfirmDeleteProjectGroup = useCallback(async () => {
     if (!projectGroupDeleteDialog) {
       return
     }
+    const { groupId, groupName } = projectGroupDeleteDialog
+    // Why: if the active environment is offline, skip the remote call entirely
+    // and go straight to local force-remove so the UI stays responsive.
+    if (isActiveEnvironmentOffline({ settings, runtimeStatusByEnvironmentId })) {
+      setProjectGroupDeleteDialog(null)
+      await runForceRemoveLocally(groupId, projectGroupRemoveContainedProjects)
+      return
+    }
     try {
-      const result = await deleteProjectGroupWithContainedProjects(
-        projectGroupDeleteDialog.groupId,
-        {
-          removeContainedProjects: projectGroupRemoveContainedProjects
-        }
-      )
+      const result = await deleteProjectGroupWithContainedProjects(groupId, {
+        removeContainedProjects: projectGroupRemoveContainedProjects
+      })
       // Why: a missing group is already in the desired end state, so close
       // quietly; only a real delete failure warrants an error toast.
       if (result.status === 'group-delete-failed') {
+        if (result.reason === 'unreachable') {
+          // Why: the environment went offline after the dialog opened; offer the
+          // user a second chance to force-remove locally instead of just erroring.
+          setForceRemoveConfirmDialog({
+            groupId,
+            groupName,
+            removeContainedProjects: projectGroupRemoveContainedProjects
+          })
+          return
+        }
         toast.error(
           translate(
             'auto.components.sidebar.WorktreeList.groupDeleteFailed',
@@ -5619,8 +5677,20 @@ const WorktreeList = React.memo(function WorktreeList({
   }, [
     deleteProjectGroupWithContainedProjects,
     projectGroupRemoveContainedProjects,
-    projectGroupDeleteDialog
+    projectGroupDeleteDialog,
+    settings,
+    runtimeStatusByEnvironmentId,
+    runForceRemoveLocally
   ])
+
+  const handleConfirmForceRemove = useCallback(async () => {
+    if (!forceRemoveConfirmDialog) {
+      return
+    }
+    const { groupId, removeContainedProjects } = forceRemoveConfirmDialog
+    setForceRemoveConfirmDialog(null)
+    await runForceRemoveLocally(groupId, removeContainedProjects)
+  }, [forceRemoveConfirmDialog, runForceRemoveLocally])
 
   const handleCreateFolderWorkspace = useCallback(
     (projectGroup: ProjectGroup) => {
@@ -6004,6 +6074,16 @@ const WorktreeList = React.memo(function WorktreeList({
           }
         }}
         onConfirm={handleConfirmDeleteProjectGroup}
+      />
+      <ForceRemoveConfirmDialog
+        open={forceRemoveConfirmDialog !== null}
+        groupName={forceRemoveConfirmDialog?.groupName ?? ''}
+        onOpenChange={(open) => {
+          if (!open) {
+            setForceRemoveConfirmDialog(null)
+          }
+        }}
+        onConfirm={handleConfirmForceRemove}
       />
       <VirtualizedWorktreeViewport
         key={viewportResetKey}
