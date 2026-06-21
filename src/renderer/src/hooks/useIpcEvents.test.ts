@@ -3638,7 +3638,7 @@ describe('runtime event coalescing', () => {
       await Promise.resolve()
     }
 
-    const emit = (envId: string, event: { type: string; repoId?: string }) => {
+    const emit = (_envId: string, event: { type: string; repoId?: string }) => {
       if (!runtimeOnResponse) {
         throw new Error('Runtime subscribe callback not captured')
       }
