@@ -1438,7 +1438,9 @@ export const createWorktreeSlice: StateCreator<AppState, [], [], WorktreeSlice> 
             ...(removedIds.length > 0 ? buildWorktreePurgeState(s, removedIds) : {})
           }
         })
-        await refreshRemoteWorktreeLineageBestEffort(settings, set)
+        if (!options?.skipLineageRefresh) {
+          await refreshRemoteWorktreeLineageBestEffort(settings, set)
+        }
         return detected.authoritative
       }
 
@@ -1472,7 +1474,9 @@ export const createWorktreeSlice: StateCreator<AppState, [], [], WorktreeSlice> 
           ...(removedIds.length > 0 ? buildWorktreePurgeState(s, removedIds) : {})
         }
       })
-      await refreshRemoteWorktreeLineageBestEffort(settings, set)
+      if (!options?.skipLineageRefresh) {
+        await refreshRemoteWorktreeLineageBestEffort(settings, set)
+      }
       return detected.authoritative
     } catch (err) {
       console.error(`Failed to fetch worktrees for repo ${repoId}:`, err)
