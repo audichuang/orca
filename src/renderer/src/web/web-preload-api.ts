@@ -2014,6 +2014,9 @@ function createWebUiApi(): NonNullable<Partial<PreloadApi>['ui']> {
       }
       return saveClipboardImageAsTempFileInRuntime(contentBase64, args)
     },
+    // The web client uploads images directly to the runtime and returns a remote
+    // path; no local OS temp file is ever created, so there is nothing to delete.
+    deleteClipboardImageTempFile: () => Promise.resolve(),
     writeClipboardText: async (text) => {
       await assertClipboardTextWriteWithinLimitWithYield(text)
       await (navigator.clipboard?.writeText?.(text) ?? Promise.resolve())
