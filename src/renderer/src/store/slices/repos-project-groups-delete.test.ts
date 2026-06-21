@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createTestStore } from './store-test-helpers'
+import { createTestStore, makeWorktree, makeTab } from './store-test-helpers'
 import type { FolderWorkspace, ProjectGroup, Repo } from '../../../../shared/types'
 import {
   createCompatibleRuntimeStatusResponseIfNeeded,
@@ -7,6 +7,7 @@ import {
 } from '../../runtime/runtime-compatibility-test-fixture'
 import { clearRuntimeCompatibilityCacheForTests } from '../../runtime/runtime-rpc-client'
 import type { DeleteProjectGroupResult } from './repos'
+import { purgeProjectLocalState } from './repos'
 
 const remoteRepo: Repo = {
   id: 'remote-repo',
@@ -332,22 +333,83 @@ describe('purgeProjectLocalState stopRemoteTerminals flag', () => {
       _meta: { runtimeId: 'runtime-remote' }
     })
     const store = createTestStore()
+    const worktreeId = `${remoteRepo2.id}::/remote-path/wt`
+    const tab = makeTab({ id: 'tab-env-1', worktreeId })
     store.setState({
       settings: { activeRuntimeEnvironmentId: 'env-2' } as never,
-      repos: [{ ...remoteRepo2, projectGroupId: null }]
-    })
+      repos: [{ ...remoteRepo2, projectGroupId: null }],
+      worktreesByRepo: {
+        [remoteRepo2.id]: [makeWorktree({ id: worktreeId, repoId: remoteRepo2.id })]
+      },
+      tabsByWorktree: {
+        [worktreeId]: [tab]
+      },
+      ptyIdsByTabId: {
+        'tab-env-1': ['remote:pty-env-1']
+      }
+    } as never)
 
     await store.getState().removeProject(remoteRepo2.id)
 
-    // terminal.stop should have been called (plus the repo.rm call)
+    // terminal.stop must be called at least once — one call per worktree
     const terminalStopCalls = runtimeEnvironmentCall.mock.calls.filter(
       (call) => call[0]?.method === 'terminal.stop'
     )
-    expect(terminalStopCalls.length).toBeGreaterThanOrEqual(0)
+    expect(terminalStopCalls.length).toBeGreaterThan(0)
+    expect(terminalStopCalls[0][0]).toMatchObject({
+      selector: 'env-2',
+      method: 'terminal.stop',
+      params: { worktree: `id:${worktreeId}` }
+    })
     // repo.rm was called
     const repoRmCalls = runtimeEnvironmentCall.mock.calls.filter(
       (call) => call[0]?.method === 'repo.rm'
     )
     expect(repoRmCalls.length).toBe(1)
+  })
+
+  it('does not call terminal.stop RPC but clears local state when stopRemoteTerminals is false', async () => {
+    // Why: the offline force-remove path skips terminal.stop RPCs (unreachable
+    // runtime), but must still evict all worktree / tab / pty state locally.
+    const store = createTestStore()
+    const worktreeId = `${remoteRepo2.id}::/remote-path/wt2`
+    const tab = makeTab({ id: 'tab-env-2', worktreeId })
+    store.setState({
+      settings: { activeRuntimeEnvironmentId: 'env-2' } as never,
+      repos: [{ ...remoteRepo2, projectGroupId: null }],
+      worktreesByRepo: {
+        [remoteRepo2.id]: [makeWorktree({ id: worktreeId, repoId: remoteRepo2.id })]
+      },
+      tabsByWorktree: {
+        [worktreeId]: [tab]
+      },
+      ptyIdsByTabId: {
+        'tab-env-2': ['pty-local-2']
+      }
+    } as never)
+
+    const { get, set } = (() => {
+      let capturedGet: (() => ReturnType<typeof store.getState>) | null = null
+      let capturedSet: ((partial: unknown) => void) | null = null
+      // Access get/set through a store subscription shim
+      capturedGet = store.getState
+      capturedSet = store.setState
+      return { get: capturedGet, set: capturedSet }
+    })()
+
+    await purgeProjectLocalState(get, set as never, remoteRepo2.id, {
+      stopRemoteTerminals: false
+    })
+
+    // terminal.stop must NOT have been called
+    const terminalStopCalls = runtimeEnvironmentCall.mock.calls.filter(
+      (call) => call[0]?.method === 'terminal.stop'
+    )
+    expect(terminalStopCalls.length).toBe(0)
+
+    // Local state must be cleared
+    expect(store.getState().worktreesByRepo[remoteRepo2.id]).toBeUndefined()
+    expect(store.getState().tabsByWorktree[worktreeId]).toBeUndefined()
+    expect(store.getState().ptyIdsByTabId['tab-env-2']).toBeUndefined()
   })
 })
