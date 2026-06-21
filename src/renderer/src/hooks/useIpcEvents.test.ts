@@ -3395,8 +3395,13 @@ describe('useIpcEvents CLI-created worktree activation', () => {
     await Promise.resolve()
     await Promise.resolve()
 
-    expect(fetchWorktrees).toHaveBeenCalledWith('repo-1', { skipLineageRefresh: true })
-    expect(refreshWorktreeLineageForRuntimeEnvironment).toHaveBeenCalledWith('env-1')
+    expect(fetchWorktrees).toHaveBeenCalledWith('repo-1', {
+      skipLineageRefresh: true,
+      background: true
+    })
+    expect(refreshWorktreeLineageForRuntimeEnvironment).toHaveBeenCalledWith('env-1', {
+      background: true
+    })
     // The bare cross-host lineage fetch must not be called.
     expect(fetchWorktreeLineage).not.toHaveBeenCalled()
     vi.useRealTimers()
@@ -4346,9 +4351,14 @@ describe('runtime event coalescing', () => {
     await harness.flush()
 
     expect(harness.fetchWorktrees).toHaveBeenCalledTimes(1)
-    expect(harness.fetchWorktrees).toHaveBeenCalledWith('repo1', { skipLineageRefresh: true })
+    expect(harness.fetchWorktrees).toHaveBeenCalledWith('repo1', {
+      skipLineageRefresh: true,
+      background: true
+    })
     expect(harness.refreshWorktreeLineageForRuntimeEnvironment).toHaveBeenCalledTimes(1)
-    expect(harness.refreshWorktreeLineageForRuntimeEnvironment).toHaveBeenCalledWith('envA')
+    expect(harness.refreshWorktreeLineageForRuntimeEnvironment).toHaveBeenCalledWith('envA', {
+      background: true
+    })
     // Never the bare cross-host lineage fetch.
     expect(harness.fetchWorktreeLineage).not.toHaveBeenCalled()
   })
@@ -4363,8 +4373,14 @@ describe('runtime event coalescing', () => {
     await harness.flush()
 
     expect(harness.fetchWorktrees).toHaveBeenCalledTimes(2)
-    expect(harness.fetchWorktrees).toHaveBeenCalledWith('repo1', { skipLineageRefresh: true })
-    expect(harness.fetchWorktrees).toHaveBeenCalledWith('repo2', { skipLineageRefresh: true })
+    expect(harness.fetchWorktrees).toHaveBeenCalledWith('repo1', {
+      skipLineageRefresh: true,
+      background: true
+    })
+    expect(harness.fetchWorktrees).toHaveBeenCalledWith('repo2', {
+      skipLineageRefresh: true,
+      background: true
+    })
   })
 
   it('does not coalesce the local worktrees.onChanged (rename) path', async () => {
