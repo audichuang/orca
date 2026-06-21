@@ -81,4 +81,11 @@ describe('refreshRuntimeEnvironmentProjects', () => {
     expect(fetchWorktrees).not.toHaveBeenCalled()
     expect(refreshWorktreeLineageForRuntimeEnvironment).toHaveBeenCalledExactlyOnceWith('env-1')
   })
+
+  it('is invoked from the reposChanged client-event branch (source wiring)', async () => {
+    const fs = await import('node:fs/promises')
+    const path = await import('node:path')
+    const source = await fs.readFile(path.resolve(__dirname, '../../hooks/useIpcEvents.ts'), 'utf8')
+    expect(source).toContain('refreshRuntimeEnvironmentProjects(useAppStore, environmentId)')
+  })
 })

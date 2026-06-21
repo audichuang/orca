@@ -2,6 +2,7 @@
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '../store'
+import { refreshRuntimeEnvironmentProjects } from '../store/slices/runtime-environment-project-refresh'
 import { getWorktreeMapFromState, getRepoMapFromState } from '@/store/selectors'
 import { applyUIZoom } from '@/lib/ui-zoom'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
@@ -858,11 +859,10 @@ export function useIpcEvents(): void {
 
     const handleRuntimeClientEvent = (environmentId: string, event: RuntimeClientEvent): void => {
       if (event.type === 'reposChanged') {
-        const state = useAppStore.getState()
-        void state.fetchRuntimeEnvironmentRepos(environmentId).then(async (repos) => {
-          await Promise.all(repos.map((repo) => useAppStore.getState().fetchWorktrees(repo.id)))
-          await useAppStore.getState().fetchWorktreeLineage()
-        })
+        // Why: route through the shared env-scoped primitive so the round issues
+        // exactly one host-correct lineage fetch instead of the bare active-env
+        // fetchWorktreeLineage() (which fetched the wrong host for non-active envs).
+        void refreshRuntimeEnvironmentProjects(useAppStore, environmentId)
         return
       }
       if (event.type === 'worktreesChanged') {
