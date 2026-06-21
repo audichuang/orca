@@ -296,6 +296,19 @@ export type ProjectGroup = {
   updatedAt: number
 }
 
+/** Tombstone written locally when the user force-removes a group while the
+ *  owning runtime environment is offline. Replayed to the daemon on reconnect. */
+export type PendingProjectGroupDeletion = {
+  environmentId: string
+  groupId: string
+  removeContainedProjects: boolean
+  /** Repo ids selected for removal at the moment the tombstone was created; empty when removeContainedProjects is false. */
+  pendingProjectIds: string[]
+  /** Snapshot of subtree group ids at tombstone-creation time; used as fallback when live groups are unavailable. */
+  subtreeGroupIds: string[]
+  createdAt: number
+}
+
 export type WorkspaceScope =
   | { type: 'worktree'; worktreeId: string }
   | { type: 'folder'; folderWorkspaceId: string }
