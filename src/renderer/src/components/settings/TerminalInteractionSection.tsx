@@ -172,6 +172,36 @@ export function TerminalInteractionSection({
             }
           />
         </SearchableSetting>
+
+        <SearchableSetting
+          id="terminal-remote-clipboard-image-paste"
+          title={translate(
+            'auto.components.settings.TerminalPane.remoteImagePasteTitle',
+            'Paste Images into Remote Runtimes'
+          )}
+          description={translate(
+            'auto.components.settings.TerminalPane.remoteImagePasteDesc',
+            'When a worktree runs on a remote runtime, Ctrl/Cmd+V uploads a copied image into the worktree and pastes its path for the agent.'
+          )}
+          keywords={['clipboard', 'image', 'paste', 'remote', 'runtime', 'worktree', 'screenshot']}
+        >
+          <SettingsSwitchRow
+            label={translate(
+              'auto.components.settings.TerminalPane.remoteImagePasteTitle',
+              'Paste Images into Remote Runtimes'
+            )}
+            description={translate(
+              'auto.components.settings.TerminalPane.remoteImagePasteRowDesc',
+              'Upload locally-copied images to the remote worktree on paste.'
+            )}
+            checked={settings.terminalRemoteClipboardImagePaste}
+            onChange={() =>
+              updateSettings({
+                terminalRemoteClipboardImagePaste: !settings.terminalRemoteClipboardImagePaste
+              })
+            }
+          />
+        </SearchableSetting>
       </div>
     </section>
   )
