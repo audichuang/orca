@@ -506,6 +506,9 @@ export function RuntimeEnvironmentsPane({
         }
       }
       await window.api.runtimeEnvironments.remove({ selector: environment.id })
+      // Why: main process cleared its tombstone copy above; sync renderer state
+      // so stale tombstones for the deleted environment don't accumulate.
+      useAppStore.getState().clearPendingProjectGroupDeletionsForEnvironment(environment.id)
       await loadEnvironments()
       if (mountedRef.current) {
         toast.success(

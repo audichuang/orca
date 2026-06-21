@@ -4130,7 +4130,9 @@ describe('runtime event coalescing', () => {
         getState: () => ({
           fetchRepos: vi.fn(),
           fetchRuntimeEnvironmentRepos,
-          fetchProjectGroups: vi.fn(),
+          fetchProjectGroups: vi.fn().mockResolvedValue(undefined),
+          fetchFolderWorkspaces: vi.fn().mockResolvedValue(undefined),
+          replayPendingDeletionsForEnvironment: vi.fn().mockResolvedValue(undefined),
           fetchWorktrees,
           fetchWorktreeLineage,
           refreshWorktreeLineageForRuntimeEnvironment,

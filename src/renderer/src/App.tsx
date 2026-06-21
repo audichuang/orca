@@ -421,7 +421,8 @@ function App(): React.JSX.Element {
       setActiveView: s.setActiveView,
       updateSettings: s.updateSettings,
       pruneLastVisitedTimestamps: s.pruneLastVisitedTimestamps,
-      seedActiveWorktreeLastVisitedIfMissing: s.seedActiveWorktreeLastVisitedIfMissing
+      seedActiveWorktreeLastVisitedIfMissing: s.seedActiveWorktreeLastVisitedIfMissing,
+      hydratePendingProjectGroupDeletions: s.hydratePendingProjectGroupDeletions
     }))
   )
 
@@ -838,6 +839,9 @@ function App(): React.JSX.Element {
         // the local filesystem and then hydrate stale local workspace state.
         await actions.fetchSettings()
         await actions.fetchRepos()
+        // Why: tombstones must be in state before the first group/workspace
+        // fetch so the filter helpers have the full pending-deletion set.
+        await actions.hydratePendingProjectGroupDeletions()
         await actions.fetchProjectGroups()
         await actions.fetchFolderWorkspaces()
         await actions.fetchAllWorktrees()

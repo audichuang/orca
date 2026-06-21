@@ -698,3 +698,51 @@ describe('replayPendingDeletionsForEnvironment', () => {
     expect(callOrder.indexOf('first-end')).toBeLessThan(callOrder.indexOf('second-start'))
   })
 })
+
+// ── clearPendingProjectGroupDeletionsForEnvironment ───────────────────────────
+
+describe('clearPendingProjectGroupDeletionsForEnvironment', () => {
+  const tombstone2: PendingProjectGroupDeletion = {
+    environmentId: 'env-2',
+    groupId: 'group-x',
+    removeContainedProjects: false,
+    pendingProjectIds: [],
+    subtreeGroupIds: ['group-x'],
+    createdAt: 200
+  }
+
+  it('removes all tombstones for the given environment and keeps others', () => {
+    const store = createTestStore()
+    store.setState({ pendingProjectGroupDeletions: [tombstone, tombstone2] } as never)
+
+    store.getState().clearPendingProjectGroupDeletionsForEnvironment('env-1')
+
+    expect(store.getState().pendingProjectGroupDeletions).toEqual([tombstone2])
+  })
+
+  it('is a no-op when the environment has no tombstones', () => {
+    const store = createTestStore()
+    store.setState({ pendingProjectGroupDeletions: [tombstone2] } as never)
+
+    store.getState().clearPendingProjectGroupDeletionsForEnvironment('env-1')
+
+    expect(store.getState().pendingProjectGroupDeletions).toEqual([tombstone2])
+  })
+
+  it('clears all tombstones when every entry belongs to the removed environment', () => {
+    const extra: PendingProjectGroupDeletion = {
+      environmentId: 'env-1',
+      groupId: 'group-2',
+      removeContainedProjects: true,
+      pendingProjectIds: ['proj-a'],
+      subtreeGroupIds: ['group-2'],
+      createdAt: 300
+    }
+    const store = createTestStore()
+    store.setState({ pendingProjectGroupDeletions: [tombstone, extra] } as never)
+
+    store.getState().clearPendingProjectGroupDeletionsForEnvironment('env-1')
+
+    expect(store.getState().pendingProjectGroupDeletions).toHaveLength(0)
+  })
+})

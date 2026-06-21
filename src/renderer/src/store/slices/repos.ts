@@ -802,6 +802,9 @@ export type RepoSlice = {
     options: { removeContainedProjects: boolean }
   ) => Promise<{ environmentId: string; groupId: string } | null>
   replayPendingDeletionsForEnvironment: (environmentId: string) => Promise<void>
+  /** Removes all tombstones for an environment that has been permanently deleted.
+   * Called after the main-process remove handler clears its own copy. */
+  clearPendingProjectGroupDeletionsForEnvironment: (environmentId: string) => void
   fetchRepos: () => Promise<void>
   fetchRuntimeEnvironmentRepos: (
     environmentId: string,
@@ -1017,6 +1020,14 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
 
   replayPendingDeletionsForEnvironment: (environmentId) =>
     doReplayPendingDeletions(get, set, environmentId),
+
+  clearPendingProjectGroupDeletionsForEnvironment: (environmentId) => {
+    set((s) => ({
+      pendingProjectGroupDeletions: s.pendingProjectGroupDeletions.filter(
+        (t) => t.environmentId !== environmentId
+      )
+    }))
+  },
 
   fetchRepos: async () => {
     try {

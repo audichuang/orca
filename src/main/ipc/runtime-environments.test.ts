@@ -175,6 +175,44 @@ describe('registerRuntimeEnvironmentHandlers', () => {
     expect(await list(null, undefined)).toEqual([])
   })
 
+  it('calls clearPendingProjectGroupDeletionsForEnvironment on the store when removing an environment', async () => {
+    const mockStore = {
+      clearPendingProjectGroupDeletionsForEnvironment: vi.fn()
+    }
+    registerRuntimeEnvironmentHandlers(mockStore as never)
+
+    const add = handler<
+      { name: string; pairingCode: string },
+      { environment: { id: string; name: string } }
+    >('runtimeEnvironments:addFromPairingCode')
+    const added = await add(null, { name: 'gc-test', pairingCode: pairingCode() })
+
+    const remove = handler<{ selector: string }, { removed: { id: string; name: string } }>(
+      'runtimeEnvironments:remove'
+    )
+    await remove(null, { selector: added.environment.id })
+
+    expect(mockStore.clearPendingProjectGroupDeletionsForEnvironment).toHaveBeenCalledWith(
+      added.environment.id
+    )
+  })
+
+  it('does not throw when no store is provided during remove', async () => {
+    registerRuntimeEnvironmentHandlers()
+
+    const add = handler<
+      { name: string; pairingCode: string },
+      { environment: { id: string; name: string } }
+    >('runtimeEnvironments:addFromPairingCode')
+    const added = await add(null, { name: 'no-store', pairingCode: pairingCode() })
+
+    const remove = handler<{ selector: string }, { removed: { id: string; name: string } }>(
+      'runtimeEnvironments:remove'
+    )
+    const result = remove(null, { selector: added.environment.id })
+    expect(result).toMatchObject({ removed: { id: added.environment.id } })
+  })
+
   it('disconnects a saved runtime without removing it', async () => {
     registerRuntimeEnvironmentHandlers()
 

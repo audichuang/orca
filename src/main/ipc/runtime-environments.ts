@@ -13,6 +13,7 @@ import {
 import type { RuntimeStatus } from '../../shared/runtime-types'
 import type { RuntimeRpcResponse } from '../../shared/runtime-rpc-envelope'
 import type { RemoteRuntimeSubscription } from '../../shared/remote-runtime-client'
+import type { Store } from '../persistence'
 import { closeRemoteRuntimeRequestConnection } from './runtime-environment-request-connections'
 import {
   callRuntimeEnvironment,
@@ -57,7 +58,7 @@ function closeSubscriptionsForEnvironment(environmentId: string): void {
   }
 }
 
-export function registerRuntimeEnvironmentHandlers(): void {
+export function registerRuntimeEnvironmentHandlers(store?: Store): void {
   // Why: keep direct re-registration safe even though register-core-handlers
   // normally guards this path; otherwise the binary send listener can stack.
   resetSharedControlSupport()
@@ -94,6 +95,9 @@ export function registerRuntimeEnvironmentHandlers(): void {
         clearSharedControlSupport(args.selector)
       }
       closeSubscriptionsForEnvironment(removed.id)
+      // Why: the environment is gone permanently; tombstones for it can never
+      // be replayed, so evict them from the persistence store now.
+      store?.clearPendingProjectGroupDeletionsForEnvironment(removed.id)
       return { removed: redactRuntimeEnvironment(removed) }
     }
   )

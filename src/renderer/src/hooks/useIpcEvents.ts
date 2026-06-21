@@ -933,9 +933,18 @@ export function useIpcEvents(): void {
       debounceMs: 200,
       minIntervalMs: 0,
       refresh: async (environmentId) => {
+        // Why: replay tombstones first so the subsequent repo/group/workspace
+        // fetches see the environment in a post-deletion state, preventing
+        // force-removed items from resurfacing on reconnect.
+        await useAppStore.getState().replayPendingDeletionsForEnvironment(environmentId)
         // Why: scheduler-driven repos refresh rides the background lane so it
         // yields transport capacity to user-initiated runtime calls (Piece 3).
         await refreshRuntimeEnvironmentProjects(useAppStore, environmentId, { background: true })
+        // Why: refreshRuntimeEnvironmentProjects only covers repos/worktrees/lineage;
+        // groups and workspaces must also be refetched so tombstone filters apply
+        // to the reconnected environment's full project model.
+        await useAppStore.getState().fetchProjectGroups()
+        await useAppStore.getState().fetchFolderWorkspaces()
       },
       onError: (error) => {
         console.error('Failed to refresh runtime repos:', error)
