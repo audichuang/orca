@@ -3480,6 +3480,13 @@
           "897e5d3d4c": "그룹 삭제 및 프로젝트 제거",
           "fec7e9c8ae": "그룹 삭제"
         },
+        "ForceRemoveConfirmDialog": {
+          "title": "원격 환경 오프라인",
+          "desc": "\"{{value0}}\"을(를) 소유한 원격 환경이 현재 오프라인입니다. 로컬에서 강제 제거하시겠습니까? 환경이 다시 연결되면 삭제가 자동으로 동기화됩니다.",
+          "cancel": "취소",
+          "confirming": "제거 중…",
+          "confirm": "로컬에서 강제 제거"
+        },
         "ProjectGroupNameDialog": {
           "d99a034073": "취소",
           "83dfbc5313": "그룹 이름",
@@ -3884,6 +3891,9 @@
           "f94466bc39": "그룹 삭제 후에도 {{value0}}/{{value1}} 프로젝트{{value2}}가 남아 있습니다.",
           "groupDeleteFailed": "그룹을 삭제하지 못했습니다.",
           "groupDeleteFailedDesc": "그룹을 삭제하는 중 문제가 발생했습니다. 제거된 프로젝트는 없습니다.",
+          "forceRemoveSuccess": "그룹이 로컬에서 제거되었습니다.",
+          "forceRemoveSuccessDesc": "환경이 다시 연결되면 자동으로 동기화됩니다.",
+          "forceRemoveUndo": "실행 취소",
           "7a8b9c0d1e": "업데이트 필요",
           "hostAuthNeeded": "인증 필요",
           "hostDisconnected": "Disconnected",

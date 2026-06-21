@@ -204,7 +204,7 @@ import { ProjectGroupNameDialog } from './ProjectGroupNameDialog'
 import { ProjectGroupDeleteDialog } from './ProjectGroupDeleteDialog'
 import { ForceRemoveConfirmDialog } from './ForceRemoveConfirmDialog'
 import { selectProjectGroupRemovalTargets } from '@/store/slices/project-group-removal-targets'
-import { isActiveEnvironmentOffline } from '@/store/slices/runtime-status'
+import { resolveProjectGroupDeleteAction } from './project-group-delete-action'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
 import {
   effectiveExternalWorktreeVisibility,
@@ -5610,9 +5610,16 @@ const WorktreeList = React.memo(function WorktreeList({
       return
     }
     const { groupId, groupName } = projectGroupDeleteDialog
-    // Why: if the active environment is offline, skip the remote call entirely
-    // and go straight to local force-remove so the UI stays responsive.
-    if (isActiveEnvironmentOffline({ settings, runtimeStatusByEnvironmentId })) {
+    const group = projectGroups.find((g) => g.id === groupId)
+    // Why: only skip the remote call when the group is actually owned by the
+    // active environment — not merely whenever some env is offline. A group
+    // owned by a different environment must still go through the normal path.
+    const deleteAction = resolveProjectGroupDeleteAction({
+      group,
+      settings,
+      runtimeStatusByEnvironmentId
+    })
+    if (deleteAction === 'force-remove-locally') {
       setProjectGroupDeleteDialog(null)
       await runForceRemoveLocally(groupId, projectGroupRemoveContainedProjects)
       return
@@ -5678,6 +5685,7 @@ const WorktreeList = React.memo(function WorktreeList({
     deleteProjectGroupWithContainedProjects,
     projectGroupRemoveContainedProjects,
     projectGroupDeleteDialog,
+    projectGroups,
     settings,
     runtimeStatusByEnvironmentId,
     runForceRemoveLocally
@@ -5688,8 +5696,13 @@ const WorktreeList = React.memo(function WorktreeList({
       return
     }
     const { groupId, removeContainedProjects } = forceRemoveConfirmDialog
-    setForceRemoveConfirmDialog(null)
-    await runForceRemoveLocally(groupId, removeContainedProjects)
+    // Why: close the dialog in finally so it always clears even if the
+    // force-remove throws, keeping the UI in a consistent state.
+    try {
+      await runForceRemoveLocally(groupId, removeContainedProjects)
+    } finally {
+      setForceRemoveConfirmDialog(null)
+    }
   }, [forceRemoveConfirmDialog, runForceRemoveLocally])
 
   const handleCreateFolderWorkspace = useCallback(
