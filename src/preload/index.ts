@@ -564,6 +564,12 @@ const api = {
     importNested: (args) => ipcRenderer.invoke('projectGroups:importNested', args)
   } satisfies PreloadApi['projectGroups'],
 
+  pendingProjectGroupDeletions: {
+    list: () => ipcRenderer.invoke('pendingProjectGroupDeletions:list'),
+    add: (args) => ipcRenderer.invoke('pendingProjectGroupDeletions:add', args),
+    remove: (args) => ipcRenderer.invoke('pendingProjectGroupDeletions:remove', args)
+  } satisfies PreloadApi['pendingProjectGroupDeletions'],
+
   folderWorkspaces: {
     list: () => ipcRenderer.invoke('folderWorkspaces:list'),
     getPathStatus: (args) => ipcRenderer.invoke('folderWorkspaces:getPathStatus', args),

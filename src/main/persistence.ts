@@ -48,6 +48,7 @@ import type {
   RepoProjectHostSetupMethod,
   Repo,
   ProjectGroup,
+  PendingProjectGroupDeletion,
   FolderWorkspace,
   SparsePreset,
   WorktreeMeta,
@@ -3442,6 +3443,48 @@ export class Store {
     )
     this.scheduleSave()
     return true
+  }
+
+  getPendingProjectGroupDeletions(): PendingProjectGroupDeletion[] {
+    return [...(this.state.pendingProjectGroupDeletions ?? [])]
+  }
+
+  addPendingProjectGroupDeletion(
+    entry: Omit<PendingProjectGroupDeletion, 'createdAt'>
+  ): PendingProjectGroupDeletion {
+    // Deduplicate by (environmentId, groupId): remove any existing tombstone before inserting.
+    const existing = this.state.pendingProjectGroupDeletions ?? []
+    const filtered = existing.filter(
+      (t) => !(t.environmentId === entry.environmentId && t.groupId === entry.groupId)
+    )
+    const newEntry: PendingProjectGroupDeletion = { ...entry, createdAt: Date.now() }
+    this.state.pendingProjectGroupDeletions = [...filtered, newEntry]
+    this.scheduleSave()
+    return newEntry
+  }
+
+  removePendingProjectGroupDeletion(environmentId: string, groupId: string): boolean {
+    const existing = this.state.pendingProjectGroupDeletions ?? []
+    const filtered = existing.filter(
+      (t) => !(t.environmentId === environmentId && t.groupId === groupId)
+    )
+    if (filtered.length === existing.length) {
+      return false
+    }
+    this.state.pendingProjectGroupDeletions = filtered
+    this.scheduleSave()
+    return true
+  }
+
+  clearPendingProjectGroupDeletionsForEnvironment(environmentId: string): number {
+    const existing = this.state.pendingProjectGroupDeletions ?? []
+    const filtered = existing.filter((t) => t.environmentId !== environmentId)
+    const removed = existing.length - filtered.length
+    if (removed > 0) {
+      this.state.pendingProjectGroupDeletions = filtered
+      this.scheduleSave()
+    }
+    return removed
   }
 
   getFolderWorkspaces(): FolderWorkspace[] {

@@ -8510,3 +8510,153 @@ describe('Store host-partitioned workspace sessions', () => {
     expect(store.getWorkspaceSession('runtime:bad').activeRepoId).toBeNull()
   })
 })
+
+// ─── pendingProjectGroupDeletions ───────────────────────────────────────────
+describe('pendingProjectGroupDeletions', () => {
+  it('add stores a tombstone retrievable by getPendingProjectGroupDeletions', async () => {
+    const store = await createStore()
+    const entry = store.addPendingProjectGroupDeletion({
+      environmentId: 'runtime:env-1',
+      groupId: 'grp-a',
+      removeContainedProjects: true,
+      pendingProjectIds: ['r1', 'r2'],
+      subtreeGroupIds: ['grp-a', 'grp-b']
+    })
+
+    expect(entry).toMatchObject({
+      environmentId: 'runtime:env-1',
+      groupId: 'grp-a',
+      removeContainedProjects: true,
+      pendingProjectIds: ['r1', 'r2'],
+      subtreeGroupIds: ['grp-a', 'grp-b']
+    })
+    expect(typeof entry.createdAt).toBe('number')
+    expect(store.getPendingProjectGroupDeletions()).toHaveLength(1)
+    expect(store.getPendingProjectGroupDeletions()[0]).toEqual(entry)
+  })
+
+  it('re-add with same (environmentId, groupId) deduplicates to one entry with new values', async () => {
+    const store = await createStore()
+    store.addPendingProjectGroupDeletion({
+      environmentId: 'runtime:env-1',
+      groupId: 'grp-a',
+      removeContainedProjects: false,
+      pendingProjectIds: [],
+      subtreeGroupIds: ['grp-a']
+    })
+    const second = store.addPendingProjectGroupDeletion({
+      environmentId: 'runtime:env-1',
+      groupId: 'grp-a',
+      removeContainedProjects: true,
+      pendingProjectIds: ['r1'],
+      subtreeGroupIds: ['grp-a', 'grp-b']
+    })
+
+    const all = store.getPendingProjectGroupDeletions()
+    expect(all).toHaveLength(1)
+    expect(all[0]).toEqual(second)
+    expect(all[0].removeContainedProjects).toBe(true)
+    expect(all[0].pendingProjectIds).toEqual(['r1'])
+  })
+
+  it('different environmentId entries coexist', async () => {
+    const store = await createStore()
+    store.addPendingProjectGroupDeletion({
+      environmentId: 'runtime:env-1',
+      groupId: 'grp-a',
+      removeContainedProjects: false,
+      pendingProjectIds: [],
+      subtreeGroupIds: []
+    })
+    store.addPendingProjectGroupDeletion({
+      environmentId: 'runtime:env-2',
+      groupId: 'grp-a',
+      removeContainedProjects: false,
+      pendingProjectIds: [],
+      subtreeGroupIds: []
+    })
+
+    expect(store.getPendingProjectGroupDeletions()).toHaveLength(2)
+  })
+
+  it('different groupId entries coexist', async () => {
+    const store = await createStore()
+    store.addPendingProjectGroupDeletion({
+      environmentId: 'runtime:env-1',
+      groupId: 'grp-a',
+      removeContainedProjects: false,
+      pendingProjectIds: [],
+      subtreeGroupIds: []
+    })
+    store.addPendingProjectGroupDeletion({
+      environmentId: 'runtime:env-1',
+      groupId: 'grp-b',
+      removeContainedProjects: false,
+      pendingProjectIds: [],
+      subtreeGroupIds: []
+    })
+
+    expect(store.getPendingProjectGroupDeletions()).toHaveLength(2)
+  })
+
+  it('removePendingProjectGroupDeletion returns true on hit and false on miss', async () => {
+    const store = await createStore()
+    store.addPendingProjectGroupDeletion({
+      environmentId: 'runtime:env-1',
+      groupId: 'grp-a',
+      removeContainedProjects: false,
+      pendingProjectIds: [],
+      subtreeGroupIds: []
+    })
+
+    expect(store.removePendingProjectGroupDeletion('runtime:env-1', 'grp-a')).toBe(true)
+    expect(store.getPendingProjectGroupDeletions()).toHaveLength(0)
+    expect(store.removePendingProjectGroupDeletion('runtime:env-1', 'grp-a')).toBe(false)
+  })
+
+  it('clearPendingProjectGroupDeletionsForEnvironment clears only the target env and returns count', async () => {
+    const store = await createStore()
+    store.addPendingProjectGroupDeletion({
+      environmentId: 'runtime:env-1',
+      groupId: 'grp-a',
+      removeContainedProjects: false,
+      pendingProjectIds: [],
+      subtreeGroupIds: []
+    })
+    store.addPendingProjectGroupDeletion({
+      environmentId: 'runtime:env-1',
+      groupId: 'grp-b',
+      removeContainedProjects: false,
+      pendingProjectIds: [],
+      subtreeGroupIds: []
+    })
+    store.addPendingProjectGroupDeletion({
+      environmentId: 'runtime:env-2',
+      groupId: 'grp-c',
+      removeContainedProjects: false,
+      pendingProjectIds: [],
+      subtreeGroupIds: []
+    })
+
+    const count = store.clearPendingProjectGroupDeletionsForEnvironment('runtime:env-1')
+    expect(count).toBe(2)
+    const remaining = store.getPendingProjectGroupDeletions()
+    expect(remaining).toHaveLength(1)
+    expect(remaining[0].environmentId).toBe('runtime:env-2')
+  })
+
+  it('loading data without pendingProjectGroupDeletions field returns empty array without error', async () => {
+    writeDataFile({
+      schemaVersion: 1,
+      repos: [],
+      worktreeMeta: {},
+      settings: {},
+      ui: {},
+      githubCache: { pr: {}, issue: {} }
+      // pendingProjectGroupDeletions intentionally absent
+    })
+
+    const store = await createStore()
+    expect(store.getPendingProjectGroupDeletions()).toEqual([])
+  })
+})

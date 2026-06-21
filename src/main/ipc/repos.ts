@@ -673,6 +673,19 @@ const ProjectGroupMoveProjectArgs = z.object({
   order: z.number().finite().optional()
 })
 
+const PendingProjectGroupDeletionAddArgs = z.object({
+  environmentId: z.string().min(1),
+  groupId: z.string().min(1),
+  removeContainedProjects: z.boolean(),
+  pendingProjectIds: z.array(z.string()),
+  subtreeGroupIds: z.array(z.string())
+})
+
+const PendingProjectGroupDeletionRemoveArgs = z.object({
+  environmentId: z.string().min(1),
+  groupId: z.string().min(1)
+})
+
 const ProjectHostSetupExistingFolderIpcArgs = z.object({
   projectId: z.string().min(1),
   hostId: z.string().min(1),
@@ -1112,6 +1125,9 @@ export function registerRepoHandlers(mainWindow: BrowserWindow, store: Store): v
   ipcMain.removeHandler('projectGroups:scanNested')
   ipcMain.removeHandler('projectGroups:cancelNestedScan')
   ipcMain.removeHandler('projectGroups:importNested')
+  ipcMain.removeHandler('pendingProjectGroupDeletions:list')
+  ipcMain.removeHandler('pendingProjectGroupDeletions:add')
+  ipcMain.removeHandler('pendingProjectGroupDeletions:remove')
   ipcMain.removeHandler('folderWorkspaces:list')
   ipcMain.removeHandler('folderWorkspaces:create')
   ipcMain.removeHandler('folderWorkspaces:update')
@@ -1576,6 +1592,26 @@ export function registerRepoHandlers(mainWindow: BrowserWindow, store: Store): v
       }
     }
   )
+
+  ipcMain.handle('pendingProjectGroupDeletions:list', () => store.getPendingProjectGroupDeletions())
+
+  ipcMain.handle('pendingProjectGroupDeletions:add', (_event, rawArgs: unknown) => {
+    const args = parseProjectGroupIpcArgs(
+      PendingProjectGroupDeletionAddArgs,
+      rawArgs,
+      'invalid_pending_project_group_deletion_add_args'
+    )
+    return store.addPendingProjectGroupDeletion(args)
+  })
+
+  ipcMain.handle('pendingProjectGroupDeletions:remove', (_event, rawArgs: unknown): boolean => {
+    const args = parseProjectGroupIpcArgs(
+      PendingProjectGroupDeletionRemoveArgs,
+      rawArgs,
+      'invalid_pending_project_group_deletion_remove_args'
+    )
+    return store.removePendingProjectGroupDeletion(args.environmentId, args.groupId)
+  })
 
   ipcMain.handle(
     'repos:add',

@@ -145,6 +145,7 @@ import type {
   ProjectHostSetupUpdateArgs,
   ProjectHostSetupUpdateResult,
   FolderWorkspace,
+  PendingProjectGroupDeletion,
   ProjectGroupImportResult,
   ProjectGroupImportMode,
   ShellHydrationFailureReason,
@@ -878,6 +879,13 @@ export type PreloadApi = {
       scanId?: string
       mode: ProjectGroupImportMode
     }) => Promise<ProjectGroupImportResult>
+  }
+  pendingProjectGroupDeletions: {
+    list: () => Promise<PendingProjectGroupDeletion[]>
+    add: (
+      args: Omit<PendingProjectGroupDeletion, 'createdAt'>
+    ) => Promise<PendingProjectGroupDeletion>
+    remove: (args: { environmentId: string; groupId: string }) => Promise<boolean>
   }
   folderWorkspaces: {
     list: () => Promise<FolderWorkspace[]>

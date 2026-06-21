@@ -3355,6 +3355,9 @@ export type PersistedState = {
   onboarding: OnboardingState
   /** Main-owned telemetry de-dupe marker; never exposed through PersistedUIState. */
   featureInteractionTelemetryBuckets?: FeatureInteractionTelemetryBucketState
+  /** Tombstones for project groups force-removed while the owning environment was offline.
+   *  Absent on legacy files; treated as empty array on load. */
+  pendingProjectGroupDeletions?: PendingProjectGroupDeletion[]
 }
 
 // ─── Filesystem ─────────────────────────────────────────────
