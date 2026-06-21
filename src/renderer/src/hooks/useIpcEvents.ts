@@ -81,6 +81,8 @@ import { attachMobileMarkdownBridge } from '@/runtime/mobile-markdown-bridge'
 import { subscribeRuntimeClientEvents } from '@/runtime/runtime-client-events'
 import { createRuntimeClientEventsSync } from './runtime-client-events-sync'
 import { createKeyedRefreshScheduler } from './keyed-refresh-scheduler'
+import { markRuntimeEnvironmentDirty } from '@/runtime/runtime-environment-refresh-dirty'
+import { refreshRuntimeEnvironmentProjects } from '@/store/slices/runtime-environment-project-refresh'
 import { detectLanguage } from '@/lib/language-detect'
 import { parsePaneKey } from '../../../shared/stable-pane-id'
 import { collectLeafIdsInOrder } from '@/components/terminal-pane/layout-serialization'
@@ -921,13 +923,7 @@ export function useIpcEvents(): void {
       debounceMs: 200,
       minIntervalMs: 0,
       refresh: async (environmentId) => {
-        const repos = await useAppStore.getState().fetchRuntimeEnvironmentRepos(environmentId)
-        await Promise.all(
-          repos.map((repo) =>
-            useAppStore.getState().fetchWorktrees(repo.id, { skipLineageRefresh: true })
-          )
-        )
-        await useAppStore.getState().refreshWorktreeLineageForRuntimeEnvironment(environmentId)
+        await refreshRuntimeEnvironmentProjects(useAppStore, environmentId)
       },
       onError: (error) => {
         console.error('Failed to refresh runtime repos:', error)
@@ -936,10 +932,23 @@ export function useIpcEvents(): void {
 
     const handleRuntimeClientEvent = (environmentId: string, event: RuntimeClientEvent): void => {
       if (event.type === 'reposChanged') {
+        // Why: heavy refresh is gated to the active env — a non-active server's
+        // repo change only marks it dirty (hydrated host-correct on switch). The
+        // shared primitive issues exactly one host-correct lineage fetch per round.
+        if (environmentId !== getActiveRuntimeEnvironmentId()) {
+          markRuntimeEnvironmentDirty(environmentId)
+          return
+        }
         reposRefreshScheduler.request(environmentId)
         return
       }
       if (event.type === 'worktreesChanged') {
+        // Why: same active-only gate as reposChanged — non-active servers go stale
+        // (marked dirty) instead of storming the renderer with refresh fan-out.
+        if (environmentId !== getActiveRuntimeEnvironmentId()) {
+          markRuntimeEnvironmentDirty(environmentId)
+          return
+        }
         worktreeRefreshScheduler.request(worktreeRefreshKey(environmentId, event.repoId))
         return
       }
