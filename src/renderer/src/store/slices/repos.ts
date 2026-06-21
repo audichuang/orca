@@ -75,7 +75,7 @@ import {
   applyPendingDeletionsToRepos,
   filterFolderWorkspacesByPendingDeletions
 } from '../../../../shared/pending-project-group-deletions'
-import { replayPendingDeletionsForEnvironment as doReplayPendingDeletions } from './pending-project-group-deletion-replay'
+import { doReplayPendingDeletions } from './pending-project-group-deletion-replay'
 
 const ERROR_TOAST_DURATION = 60_000
 const SAFE_AUTO_FORK_SYNC_COOLDOWN_MS = 10 * 60 * 1000

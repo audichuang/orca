@@ -78,7 +78,7 @@ async function doReplay(
   }
 }
 
-export function replayPendingDeletionsForEnvironment(
+export function doReplayPendingDeletions(
   get: () => AppState,
   set: (partial: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void,
   environmentId: string

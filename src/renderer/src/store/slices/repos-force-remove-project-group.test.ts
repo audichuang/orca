@@ -626,4 +626,75 @@ describe('replayPendingDeletionsForEnvironment', () => {
     expect(pendingRemove).not.toHaveBeenCalled()
     expect(store.getState().pendingProjectGroupDeletions).toHaveLength(1)
   })
+
+  it('serializes two replays for the same environment — second RPC does not start until first finishes', async () => {
+    // Why: the per-environment lock chains promises, so the second replay must
+    // not begin its RPC work while the first replay is still in-flight.
+    let releaseFirstReplay!: () => void
+    const firstReplayGate = new Promise<void>((resolve) => {
+      releaseFirstReplay = resolve
+    })
+
+    const callOrder: string[] = []
+    // tombstone belongs to env-1 (group-1); tombstone2 is the second tombstone
+    // processed by the second chained replay
+    const tombstone2: PendingProjectGroupDeletion = {
+      environmentId: 'env-1',
+      groupId: 'group-2',
+      removeContainedProjects: false,
+      pendingProjectIds: [],
+      subtreeGroupIds: ['group-2'],
+      createdAt: 200
+    }
+
+    // Use runtimeEnvironmentCall (the inner mock, invoked after the compat check)
+    // so the blocking behaviour sits at the actual RPC layer.
+    // First call (group-1 / first replay): block until gate released.
+    // Second call (group-2 / second replay): record order and succeed immediately.
+    runtimeEnvironmentCall.mockImplementation((args: RuntimeEnvironmentCallRequest) => {
+      if (args.method === 'projectGroup.delete') {
+        if (callOrder.length === 0) {
+          // first replay's RPC — block until released
+          callOrder.push('first-start')
+          return firstReplayGate.then(() => {
+            callOrder.push('first-end')
+            return {
+              id: 'rpc-gd-1',
+              ok: true,
+              result: { deleted: true },
+              _meta: { runtimeId: 'runtime-remote' }
+            }
+          })
+        }
+        // second replay's RPC — only reachable after first finishes
+        callOrder.push('second-start')
+        return Promise.resolve({
+          id: 'rpc-gd-2',
+          ok: true,
+          result: { deleted: true },
+          _meta: { runtimeId: 'runtime-remote' }
+        })
+      }
+      return Promise.resolve({ id: 'rpc', ok: true, result: {}, _meta: { runtimeId: 'remote' } })
+    })
+
+    const store = createTestStore()
+    store.setState({
+      pendingProjectGroupDeletions: [tombstone, tombstone2]
+    } as never)
+
+    // Start both replays without awaiting either — they share the same envId lock
+    const first = store.getState().replayPendingDeletionsForEnvironment('env-1')
+    const second = store.getState().replayPendingDeletionsForEnvironment('env-1')
+
+    // Release the first replay's gate so both can run to completion
+    releaseFirstReplay()
+    await first
+    await second
+
+    // Serialization guarantee: first-end must precede second-start.
+    // If the lock were absent, second-start could appear before first-end.
+    expect(callOrder).toEqual(['first-start', 'first-end', 'second-start'])
+    expect(callOrder.indexOf('first-end')).toBeLessThan(callOrder.indexOf('second-start'))
+  })
 })
