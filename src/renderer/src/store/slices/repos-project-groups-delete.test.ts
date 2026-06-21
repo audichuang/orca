@@ -388,14 +388,9 @@ describe('purgeProjectLocalState stopRemoteTerminals flag', () => {
       }
     } as never)
 
-    const { get, set } = (() => {
-      let capturedGet: (() => ReturnType<typeof store.getState>) | null = null
-      let capturedSet: ((partial: unknown) => void) | null = null
-      // Access get/set through a store subscription shim
-      capturedGet = store.getState
-      capturedSet = store.setState
-      return { get: capturedGet, set: capturedSet }
-    })()
+    // Why: store.getState/setState satisfy purgeProjectLocalState's get/set signatures directly.
+    const get = store.getState
+    const set = store.setState
 
     await purgeProjectLocalState(get, set as never, remoteRepo2.id, {
       stopRemoteTerminals: false

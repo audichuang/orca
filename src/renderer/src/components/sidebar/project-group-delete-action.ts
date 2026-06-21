@@ -1,12 +1,13 @@
-import type { ProjectGroup } from '../../../../shared/types'
-import type { AppState } from '@/store/types'
+import type { ProjectGroup, GlobalSettings } from '../../../../shared/types'
 import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import { toRuntimeExecutionHostId } from '../../../../shared/execution-host'
 import type { RuntimeEnvironmentStatus } from '@/store/slices/runtime-status'
 
 type DeleteActionInput = {
   group: ProjectGroup | undefined
-  settings: AppState['settings']
+  // Why: only activeRuntimeEnvironmentId is read here (via getActiveRuntimeTarget),
+  // so a Pick keeps callers with partial objects type-safe without casts.
+  settings: Pick<GlobalSettings, 'activeRuntimeEnvironmentId'> | null | undefined
   runtimeStatusByEnvironmentId: Map<string, RuntimeEnvironmentStatus>
 }
 
