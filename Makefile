@@ -13,11 +13,12 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor typecheck clean all
+.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all
 
 help:
 	@echo "Orca local build (arm64 only):"
 	@echo "  make all        first time: install + native helper + dmg + open it"
+	@echo "  make update     after 'git pull': pnpm install + build + reinstall to /Applications"
 	@echo "  make app        FAST: build .app and install straight to /Applications (no dmg)"
 	@echo "  make dmg        build the arm64 .dmg and open it (drag-to-Applications flow)"
 	@echo "  make build      FAST: build dist/mac-arm64/Orca.app only (no install, no dmg)"
@@ -89,6 +90,11 @@ run:
 
 logs:
 	tail -f "$(LOG)"
+
+# After `git pull`: sync deps, rebuild (arm64, fast), reinstall to /Applications.
+# Then run it with: make run
+update: install app
+	@echo ">> updated to $$(git rev-parse --short HEAD). launch with: make run"
 
 # One-shot debug bundle: environment, installed-app state, signing/Gatekeeper,
 # local network + reachability to your server, and the tail of $(LOG).
