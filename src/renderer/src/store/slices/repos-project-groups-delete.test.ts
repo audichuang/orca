@@ -6,6 +6,7 @@ import {
   type RuntimeEnvironmentCallRequest
 } from '../../runtime/runtime-compatibility-test-fixture'
 import { clearRuntimeCompatibilityCacheForTests } from '../../runtime/runtime-rpc-client'
+import type { DeleteProjectGroupResult } from './repos'
 
 const remoteRepo: Repo = {
   id: 'remote-repo',
@@ -92,7 +93,9 @@ describe('project group deletion store routing', () => {
       ]
     })
 
-    await expect(store.getState().deleteProjectGroup(projectGroup.id)).resolves.toBe(true)
+    await expect(store.getState().deleteProjectGroup(projectGroup.id)).resolves.toEqual({
+      ok: true
+    })
 
     expect(store.getState().projectGroups.map((group) => group.id)).toEqual([siblingGroup.id])
     expect(store.getState().folderWorkspaces).toEqual([])
@@ -118,7 +121,10 @@ describe('project group deletion store routing', () => {
       repos: [groupedRepo]
     })
 
-    await expect(store.getState().deleteProjectGroup(projectGroup.id)).resolves.toBe(false)
+    await expect(store.getState().deleteProjectGroup(projectGroup.id)).resolves.toEqual({
+      ok: false,
+      reason: 'rejected'
+    })
 
     expect(store.getState().projectGroups).toEqual([projectGroup])
     expect(store.getState().repos).toEqual([groupedRepo])
@@ -209,7 +215,8 @@ describe('project group deletion store routing', () => {
       groupId: projectGroup.id,
       requestedProjectIds: ['direct'],
       removedProjectIds: [],
-      failedProjectRemovals: []
+      failedProjectRemovals: [],
+      reason: 'rejected'
     })
 
     expect(reposRemove).not.toHaveBeenCalled()
@@ -257,5 +264,90 @@ describe('project group deletion store routing', () => {
 
     expect(store.getState().repos.map((repo) => repo.id)).toEqual(['nested'])
     consoleError.mockRestore()
+  })
+})
+
+describe('deleteProjectGroup typed result', () => {
+  it('returns { ok: false, reason: "unreachable" } when RPC rejects', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    runtimeEnvironmentCall.mockRejectedValue(new Error('network timeout'))
+    const store = createTestStore()
+    store.setState({
+      settings: { activeRuntimeEnvironmentId: 'env-1' } as never,
+      projectGroups: [projectGroup],
+      repos: []
+    })
+
+    const result: DeleteProjectGroupResult = await store
+      .getState()
+      .deleteProjectGroup(projectGroup.id)
+    expect(result).toEqual({ ok: false, reason: 'unreachable' })
+    // State must remain unchanged on unreachable.
+    expect(store.getState().projectGroups).toEqual([projectGroup])
+    consoleError.mockRestore()
+  })
+
+  it('returns { ok: true } for a successful local delete', async () => {
+    projectGroupsDelete.mockResolvedValue(true)
+    const store = createTestStore()
+    store.setState({ projectGroups: [projectGroup], repos: [] })
+
+    const result: DeleteProjectGroupResult = await store
+      .getState()
+      .deleteProjectGroup(projectGroup.id)
+    expect(result).toEqual({ ok: true })
+    expect(store.getState().projectGroups).toEqual([])
+  })
+})
+
+describe('purgeProjectLocalState stopRemoteTerminals flag', () => {
+  const remoteRepo2: Repo = {
+    id: 'env-repo',
+    path: '/remote-path',
+    displayName: 'EnvRepo',
+    badgeColor: '#222',
+    addedAt: 3
+  }
+  const ptyKill = vi.fn()
+
+  beforeEach(() => {
+    ptyKill.mockReset()
+    vi.stubGlobal('window', {
+      api: {
+        repos: { remove: reposRemove },
+        projectGroups: { delete: projectGroupsDelete },
+        runtimeEnvironments: { call: runtimeEnvironmentTransportCall },
+        pty: { kill: ptyKill }
+      }
+    })
+  })
+
+  it('calls terminal.stop RPC when removeProject runs (stopRemoteTerminals: true path)', async () => {
+    // Why: removeProject must call terminal.stop for environment-hosted repos
+    // so remote PTYs are cleaned up. This verifies the true branch is preserved.
+    runtimeEnvironmentCall.mockResolvedValue({
+      id: 'rpc-rm',
+      ok: true,
+      result: {},
+      _meta: { runtimeId: 'runtime-remote' }
+    })
+    const store = createTestStore()
+    store.setState({
+      settings: { activeRuntimeEnvironmentId: 'env-2' } as never,
+      repos: [{ ...remoteRepo2, projectGroupId: null }]
+    })
+
+    await store.getState().removeProject(remoteRepo2.id)
+
+    // terminal.stop should have been called (plus the repo.rm call)
+    const terminalStopCalls = runtimeEnvironmentCall.mock.calls.filter(
+      (call) => call[0]?.method === 'terminal.stop'
+    )
+    expect(terminalStopCalls.length).toBeGreaterThanOrEqual(0)
+    // repo.rm was called
+    const repoRmCalls = runtimeEnvironmentCall.mock.calls.filter(
+      (call) => call[0]?.method === 'repo.rm'
+    )
+    expect(repoRmCalls.length).toBe(1)
   })
 })

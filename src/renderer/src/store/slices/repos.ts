@@ -112,6 +112,10 @@ export type DeleteProjectGroupWithContainedProjectsOptions = {
   removeContainedProjects: boolean
 }
 
+export type DeleteProjectGroupResult =
+  | { ok: true }
+  | { ok: false; reason: 'unreachable' | 'rejected' }
+
 export type ProjectRemovalFailure = {
   projectId: string
   reason: string
@@ -126,11 +130,19 @@ export type DeleteProjectGroupWithContainedProjectsResult =
       failedProjectRemovals: ProjectRemovalFailure[]
     }
   | {
-      status: 'missing-group' | 'group-delete-failed'
+      status: 'missing-group'
       groupId: string
       requestedProjectIds: string[]
       removedProjectIds: []
       failedProjectRemovals: []
+    }
+  | {
+      status: 'group-delete-failed'
+      groupId: string
+      requestedProjectIds: string[]
+      removedProjectIds: []
+      failedProjectRemovals: []
+      reason: 'unreachable' | 'rejected'
     }
 
 function normalizeNestedRepoScanResult(scan: NestedRepoScanResult): NestedRepoScanResult {
@@ -197,6 +209,149 @@ function getKnownRepoWorktreeIds(state: AppState, projectId: string): string[] {
   }
   return [...ids]
 }
+
+// Why: extracted from removeProject so the offline force-remove path (Task 4)
+// can reuse all local state cleanup without hanging on terminal.stop RPCs when
+// the runtime environment is unreachable.
+async function purgeProjectLocalState(
+  get: () => AppState,
+  set: (partial: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void,
+  projectId: string,
+  opts: { stopRemoteTerminals: boolean }
+): Promise<void> {
+  get().clearOrcaHookTrustForRepo(projectId)
+  const repoPath = get().repos.find((repo) => repo.id === projectId)?.path
+  get().evictGitHubRepoCaches(projectId, repoPath)
+  const { clearRepoSlugCacheEntry } = await import('../../lib/repo-slug-index')
+  clearRepoSlugCacheEntry(projectId)
+
+  // Kill PTYs for all worktrees belonging to this repo
+  const worktreeIds = getKnownRepoWorktreeIds(get(), projectId)
+  const killedTabIds = new Set<string>()
+  const killedPtyIds = new Set<string>()
+  if (opts.stopRemoteTerminals) {
+    const target = getActiveRuntimeTarget(settingsForRepoOwner(get(), projectId))
+    if (target.kind === 'environment') {
+      await Promise.allSettled(
+        worktreeIds.map((worktreeId) =>
+          callRuntimeRpc(
+            target,
+            'terminal.stop',
+            { worktree: toRuntimeWorktreeSelector(worktreeId) },
+            { timeoutMs: 15_000 }
+          )
+        )
+      )
+    }
+  }
+  for (const wId of worktreeIds) {
+    const tabs = get().tabsByWorktree[wId] ?? []
+    for (const tab of tabs) {
+      killedTabIds.add(tab.id)
+      for (const ptyId of get().ptyIdsByTabId[tab.id] ?? []) {
+        killedPtyIds.add(ptyId)
+        if (!ptyId.startsWith('remote:')) {
+          window.api.pty.kill(ptyId)
+        }
+      }
+    }
+  }
+
+  // Why: route project removal through the canonical per-worktree purge so all
+  // ~30 worktree-scoped maps are evicted. removeProject previously hand-deleted
+  // only a handful (tabs/layouts/ptys), leaking the rest (unified tabs, groups,
+  // git status, browser, everActivated, …) per worktree of every removed repo.
+  // Runs before the repo-scoped set() below so the purge still sees tabsByWorktree.
+  get().purgeWorktreeTerminalState(worktreeIds)
+
+  set((s) => {
+    const nextWorktrees = { ...s.worktreesByRepo }
+    delete nextWorktrees[projectId]
+    const nextDetectedWorktrees = { ...s.detectedWorktreesByRepo }
+    delete nextDetectedWorktrees[projectId]
+    const nextTabs = { ...s.tabsByWorktree }
+    const nextLayouts = { ...s.terminalLayoutsByTabId }
+    const nextPtyIdsByTabId = { ...s.ptyIdsByTabId }
+    const nextRuntimePaneTitlesByTabId = { ...s.runtimePaneTitlesByTabId }
+    const nextSuppressedPtyExitIds = { ...s.suppressedPtyExitIds }
+    for (const wId of worktreeIds) {
+      delete nextTabs[wId]
+    }
+    for (const tabId of killedTabIds) {
+      delete nextLayouts[tabId]
+      delete nextPtyIdsByTabId[tabId]
+      delete nextRuntimePaneTitlesByTabId[tabId]
+    }
+    for (const ptyId of killedPtyIds) {
+      nextSuppressedPtyExitIds[ptyId] = true
+    }
+    // Why: editor state is worktree-scoped. Removing a repo must also
+    // remove open editor files and per-worktree active-file tracking for
+    // all worktrees that belonged to the repo, otherwise orphaned entries
+    // would persist in the session save and pollute state.
+    const worktreeIdSet = new Set(worktreeIds)
+    const nextOpenFiles = s.openFiles.filter((f) => !worktreeIdSet.has(f.worktreeId))
+    const nextActiveFileIdByWorktree = { ...s.activeFileIdByWorktree }
+    const nextActiveTabTypeByWorktree = { ...s.activeTabTypeByWorktree }
+    for (const wId of worktreeIds) {
+      delete nextActiveFileIdByWorktree[wId]
+      delete nextActiveTabTypeByWorktree[wId]
+    }
+    const activeFileCleared = s.activeFileId
+      ? s.openFiles.some((f) => f.id === s.activeFileId && worktreeIdSet.has(f.worktreeId))
+      : false
+    // Why: pruneLastVisitedTimestamps defers entries for repos missing
+    // from worktreesByRepo (treats them as not-yet-hydrated SSH repos).
+    // Drop this repo's timestamps explicitly so they cannot survive prune
+    // forever after the repo is removed.
+    let nextLastVisitedAtByWorktreeId = s.lastVisitedAtByWorktreeId
+    for (const id of Object.keys(s.lastVisitedAtByWorktreeId)) {
+      if (getRepoIdFromWorktreeId(id) === projectId) {
+        if (nextLastVisitedAtByWorktreeId === s.lastVisitedAtByWorktreeId) {
+          nextLastVisitedAtByWorktreeId = { ...s.lastVisitedAtByWorktreeId }
+        }
+        delete nextLastVisitedAtByWorktreeId[id]
+      }
+    }
+    const nextRepos = s.repos.filter((r) => r.id !== projectId)
+    return {
+      repos: nextRepos,
+      ...projectCompatibilityFromRepos(nextRepos),
+      activeRepoId: s.activeRepoId === projectId ? null : s.activeRepoId,
+      filterRepoIds: s.filterRepoIds.filter((id) => id !== projectId),
+      worktreesByRepo: nextWorktrees,
+      detectedWorktreesByRepo: nextDetectedWorktrees,
+      tabsByWorktree: nextTabs,
+      ptyIdsByTabId: nextPtyIdsByTabId,
+      runtimePaneTitlesByTabId: nextRuntimePaneTitlesByTabId,
+      suppressedPtyExitIds: nextSuppressedPtyExitIds,
+      terminalLayoutsByTabId: nextLayouts,
+      activeTabId: s.activeTabId && killedTabIds.has(s.activeTabId) ? null : s.activeTabId,
+      openFiles: nextOpenFiles,
+      activeFileIdByWorktree: nextActiveFileIdByWorktree,
+      activeTabTypeByWorktree: nextActiveTabTypeByWorktree,
+      activeFileId: activeFileCleared ? null : s.activeFileId,
+      activeTabType: activeFileCleared ? 'terminal' : s.activeTabType,
+      lastVisitedAtByWorktreeId: nextLastVisitedAtByWorktreeId,
+      folderWorkspacePathStatuses: {},
+      sortEpoch: s.sortEpoch + 1,
+      // Why: removing the last repo while in settings leaves activeView as
+      // 'settings', which renders an empty settings pane instead of Landing.
+      // Also clear activeWorktreeId so App renders Landing (it checks
+      // !activeWorktreeId). Without this, the terminal surface shows instead.
+      ...(nextRepos.length === 0
+        ? {
+            activeView: 'terminal' as const,
+            activeWorktreeId: null,
+            activeWorkspaceKey: null,
+            activeRepoId: null
+          }
+        : {})
+    }
+  })
+}
+
+export { purgeProjectLocalState }
 
 function getRuntimeTargetHostId(
   target: ReturnType<typeof getActiveRuntimeTarget>
@@ -722,7 +877,7 @@ export type RepoSlice = {
     groupId: string,
     updates: Partial<Pick<ProjectGroup, 'name' | 'isCollapsed' | 'tabOrder' | 'color'>>
   ) => Promise<boolean>
-  deleteProjectGroup: (groupId: string) => Promise<boolean>
+  deleteProjectGroup: (groupId: string) => Promise<DeleteProjectGroupResult>
   deleteProjectGroupWithContainedProjects: (
     groupId: string,
     options: DeleteProjectGroupWithContainedProjectsOptions
@@ -1164,7 +1319,7 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
               )
             ).deleted
       if (!deleted) {
-        return false
+        return { ok: false, reason: 'rejected' as const }
       }
       set((s) => {
         const deletedGroupIds = getProjectGroupSubtreeIds(s.projectGroups, groupId)
@@ -1181,10 +1336,10 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
           folderWorkspacePathStatuses: {}
         }
       })
-      return true
+      return { ok: true as const }
     } catch (err) {
       console.error('Failed to delete project group:', err)
-      return false
+      return { ok: false, reason: 'unreachable' as const }
     }
   },
 
@@ -1201,14 +1356,15 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
       }
     }
 
-    const deleted = await get().deleteProjectGroup(groupId)
-    if (!deleted) {
+    const deleteResult = await get().deleteProjectGroup(groupId)
+    if (!deleteResult.ok) {
       return {
         status: 'group-delete-failed',
         groupId,
         requestedProjectIds,
         removedProjectIds: [],
-        failedProjectRemovals: []
+        failedProjectRemovals: [],
+        reason: deleteResult.reason
       }
     }
 
@@ -1654,133 +1810,7 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
         ? window.api.repos.remove({ repoId: projectId })
         : callRuntimeRpc(target, 'repo.rm', { repo: projectId }, { timeoutMs: 15_000 }))
 
-      get().clearOrcaHookTrustForRepo(projectId)
-      const repoPath = get().repos.find((repo) => repo.id === projectId)?.path
-      get().evictGitHubRepoCaches(projectId, repoPath)
-      const { clearRepoSlugCacheEntry } = await import('../../lib/repo-slug-index')
-      clearRepoSlugCacheEntry(projectId)
-
-      // Kill PTYs for all worktrees belonging to this repo
-      const worktreeIds = getKnownRepoWorktreeIds(get(), projectId)
-      const killedTabIds = new Set<string>()
-      const killedPtyIds = new Set<string>()
-      if (target.kind === 'environment') {
-        await Promise.allSettled(
-          worktreeIds.map((worktreeId) =>
-            callRuntimeRpc(
-              target,
-              'terminal.stop',
-              { worktree: toRuntimeWorktreeSelector(worktreeId) },
-              { timeoutMs: 15_000 }
-            )
-          )
-        )
-      }
-      for (const wId of worktreeIds) {
-        const tabs = get().tabsByWorktree[wId] ?? []
-        for (const tab of tabs) {
-          killedTabIds.add(tab.id)
-          for (const ptyId of get().ptyIdsByTabId[tab.id] ?? []) {
-            killedPtyIds.add(ptyId)
-            if (!ptyId.startsWith('remote:')) {
-              window.api.pty.kill(ptyId)
-            }
-          }
-        }
-      }
-
-      // Why: route project removal through the canonical per-worktree purge so all
-      // ~30 worktree-scoped maps are evicted. removeProject previously hand-deleted
-      // only a handful (tabs/layouts/ptys), leaking the rest (unified tabs, groups,
-      // git status, browser, everActivated, …) per worktree of every removed repo.
-      // Runs before the repo-scoped set() below so the purge still sees tabsByWorktree.
-      get().purgeWorktreeTerminalState(worktreeIds)
-
-      set((s) => {
-        const nextWorktrees = { ...s.worktreesByRepo }
-        delete nextWorktrees[projectId]
-        const nextDetectedWorktrees = { ...s.detectedWorktreesByRepo }
-        delete nextDetectedWorktrees[projectId]
-        const nextTabs = { ...s.tabsByWorktree }
-        const nextLayouts = { ...s.terminalLayoutsByTabId }
-        const nextPtyIdsByTabId = { ...s.ptyIdsByTabId }
-        const nextRuntimePaneTitlesByTabId = { ...s.runtimePaneTitlesByTabId }
-        const nextSuppressedPtyExitIds = { ...s.suppressedPtyExitIds }
-        for (const wId of worktreeIds) {
-          delete nextTabs[wId]
-        }
-        for (const tabId of killedTabIds) {
-          delete nextLayouts[tabId]
-          delete nextPtyIdsByTabId[tabId]
-          delete nextRuntimePaneTitlesByTabId[tabId]
-        }
-        for (const ptyId of killedPtyIds) {
-          nextSuppressedPtyExitIds[ptyId] = true
-        }
-        // Why: editor state is worktree-scoped. Removing a repo must also
-        // remove open editor files and per-worktree active-file tracking for
-        // all worktrees that belonged to the repo, otherwise orphaned entries
-        // would persist in the session save and pollute state.
-        const worktreeIdSet = new Set(worktreeIds)
-        const nextOpenFiles = s.openFiles.filter((f) => !worktreeIdSet.has(f.worktreeId))
-        const nextActiveFileIdByWorktree = { ...s.activeFileIdByWorktree }
-        const nextActiveTabTypeByWorktree = { ...s.activeTabTypeByWorktree }
-        for (const wId of worktreeIds) {
-          delete nextActiveFileIdByWorktree[wId]
-          delete nextActiveTabTypeByWorktree[wId]
-        }
-        const activeFileCleared = s.activeFileId
-          ? s.openFiles.some((f) => f.id === s.activeFileId && worktreeIdSet.has(f.worktreeId))
-          : false
-        // Why: pruneLastVisitedTimestamps defers entries for repos missing
-        // from worktreesByRepo (treats them as not-yet-hydrated SSH repos).
-        // Drop this repo's timestamps explicitly so they cannot survive prune
-        // forever after the repo is removed.
-        let nextLastVisitedAtByWorktreeId = s.lastVisitedAtByWorktreeId
-        for (const id of Object.keys(s.lastVisitedAtByWorktreeId)) {
-          if (getRepoIdFromWorktreeId(id) === projectId) {
-            if (nextLastVisitedAtByWorktreeId === s.lastVisitedAtByWorktreeId) {
-              nextLastVisitedAtByWorktreeId = { ...s.lastVisitedAtByWorktreeId }
-            }
-            delete nextLastVisitedAtByWorktreeId[id]
-          }
-        }
-        const nextRepos = s.repos.filter((r) => r.id !== projectId)
-        return {
-          repos: nextRepos,
-          ...projectCompatibilityFromRepos(nextRepos),
-          activeRepoId: s.activeRepoId === projectId ? null : s.activeRepoId,
-          filterRepoIds: s.filterRepoIds.filter((id) => id !== projectId),
-          worktreesByRepo: nextWorktrees,
-          detectedWorktreesByRepo: nextDetectedWorktrees,
-          tabsByWorktree: nextTabs,
-          ptyIdsByTabId: nextPtyIdsByTabId,
-          runtimePaneTitlesByTabId: nextRuntimePaneTitlesByTabId,
-          suppressedPtyExitIds: nextSuppressedPtyExitIds,
-          terminalLayoutsByTabId: nextLayouts,
-          activeTabId: s.activeTabId && killedTabIds.has(s.activeTabId) ? null : s.activeTabId,
-          openFiles: nextOpenFiles,
-          activeFileIdByWorktree: nextActiveFileIdByWorktree,
-          activeTabTypeByWorktree: nextActiveTabTypeByWorktree,
-          activeFileId: activeFileCleared ? null : s.activeFileId,
-          activeTabType: activeFileCleared ? 'terminal' : s.activeTabType,
-          lastVisitedAtByWorktreeId: nextLastVisitedAtByWorktreeId,
-          folderWorkspacePathStatuses: {},
-          sortEpoch: s.sortEpoch + 1,
-          // Why: removing the last repo while in settings leaves activeView as
-          // 'settings', which renders an empty settings pane instead of Landing.
-          // Also clear activeWorktreeId so App renders Landing (it checks
-          // !activeWorktreeId). Without this, the terminal surface shows instead.
-          ...(nextRepos.length === 0
-            ? {
-                activeView: 'terminal' as const,
-                activeWorktreeId: null,
-                activeWorkspaceKey: null,
-                activeRepoId: null
-              }
-            : {})
-        }
-      })
+      await purgeProjectLocalState(get, set, projectId, { stopRemoteTerminals: true })
     } catch (err) {
       console.error('Failed to remove repo:', err)
     }
