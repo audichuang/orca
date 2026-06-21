@@ -4088,6 +4088,9 @@ describe('runtime event coalescing', () => {
     const refreshWorktreeLineageForRuntimeEnvironment = vi.fn().mockResolvedValue(undefined)
     const fetchRuntimeEnvironmentRepos = vi.fn().mockResolvedValue([{ id: opts.repoId }])
     const migrateWorktreeIdentity = vi.fn()
+    const fetchProjectGroups = vi.fn().mockResolvedValue(undefined)
+    const fetchFolderWorkspaces = vi.fn().mockResolvedValue(undefined)
+    const replayPendingDeletionsForEnvironment = vi.fn().mockResolvedValue(undefined)
     let runtimeOnResponse: ((response: unknown) => void) | undefined
     // Capture the local worktrees.onChanged callback so tests can drive the local path.
     let localWorktreesOnChanged:
@@ -4130,9 +4133,9 @@ describe('runtime event coalescing', () => {
         getState: () => ({
           fetchRepos: vi.fn(),
           fetchRuntimeEnvironmentRepos,
-          fetchProjectGroups: vi.fn().mockResolvedValue(undefined),
-          fetchFolderWorkspaces: vi.fn().mockResolvedValue(undefined),
-          replayPendingDeletionsForEnvironment: vi.fn().mockResolvedValue(undefined),
+          fetchProjectGroups,
+          fetchFolderWorkspaces,
+          replayPendingDeletionsForEnvironment,
           fetchWorktrees,
           fetchWorktreeLineage,
           refreshWorktreeLineageForRuntimeEnvironment,
@@ -4338,7 +4341,10 @@ describe('runtime event coalescing', () => {
       fetchWorktreeLineage,
       refreshWorktreeLineageForRuntimeEnvironment,
       fetchRuntimeEnvironmentRepos,
-      migrateWorktreeIdentity
+      migrateWorktreeIdentity,
+      fetchProjectGroups,
+      fetchFolderWorkspaces,
+      replayPendingDeletionsForEnvironment
     }
   }
 
@@ -4418,6 +4424,35 @@ describe('runtime event coalescing', () => {
     expect(harness.fetchRuntimeEnvironmentRepos).toHaveBeenCalledTimes(1)
     expect(harness.refreshWorktreeLineageForRuntimeEnvironment).toHaveBeenCalledTimes(1)
     expect(harness.fetchWorktreeLineage).not.toHaveBeenCalled()
+  })
+
+  it('reposChanged for active env replays tombstones before fetching groups and workspaces', async () => {
+    // Why: tombstones must be replayed first so force-removed items cannot
+    // resurface in the project model when the env reconnects (Piece 4 contract).
+    const harness = await useRuntimeEventHarness({ activeEnvironmentId: 'envA', repoId: 'repo1' })
+
+    harness.emit('envA', { type: 'reposChanged' })
+
+    await vi.advanceTimersByTimeAsync(200)
+    await harness.flush()
+
+    // Replay must have been called with the reconnecting environment's id.
+    expect(harness.replayPendingDeletionsForEnvironment).toHaveBeenCalledTimes(1)
+    expect(harness.replayPendingDeletionsForEnvironment).toHaveBeenCalledWith('envA')
+
+    // Groups and workspaces must also be refetched so tombstone filters apply.
+    expect(harness.fetchProjectGroups).toHaveBeenCalledTimes(1)
+    expect(harness.fetchFolderWorkspaces).toHaveBeenCalledTimes(1)
+
+    // Ordering: replay mock resolves before the fetch mocks are invoked because
+    // the scheduler awaits each step in sequence — verified by checking all
+    // three were called (the mocks are async; if replay had been skipped the
+    // subsequent fetches would still run but replay would show zero calls).
+    const replayOrder = harness.replayPendingDeletionsForEnvironment.mock.invocationCallOrder[0]
+    const groupsOrder = harness.fetchProjectGroups.mock.invocationCallOrder[0]
+    const workspacesOrder = harness.fetchFolderWorkspaces.mock.invocationCallOrder[0]
+    expect(replayOrder).toBeLessThan(groupsOrder!)
+    expect(replayOrder).toBeLessThan(workspacesOrder!)
   })
 })
 

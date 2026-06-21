@@ -209,7 +209,7 @@ describe('registerRuntimeEnvironmentHandlers', () => {
     const remove = handler<{ selector: string }, { removed: { id: string; name: string } }>(
       'runtimeEnvironments:remove'
     )
-    const result = remove(null, { selector: added.environment.id })
+    const result = await remove(null, { selector: added.environment.id })
     expect(result).toMatchObject({ removed: { id: added.environment.id } })
   })
 
