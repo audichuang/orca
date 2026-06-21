@@ -1,6 +1,7 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { importExternalPathsToRuntime } from '@/runtime/runtime-file-client'
+import { isWebClientLocation } from '@/lib/web-client-location'
 import type { GlobalSettings } from '../../../../shared/types'
 import type { WorktreeRuntimeOwnerState } from '@/lib/worktree-runtime-owner'
 import {
@@ -15,6 +16,13 @@ export function buildClipboardImageSaver(
   fallbackCwd: string | undefined,
   connectionId: string | null
 ): TerminalClipboardImageSaver {
+  // Why: the web preload's saveClipboardImageAsTempFile already uploads to the
+  // runtime and returns a remote path directly; stageExternalPathsForRuntimeUpload
+  // is a stub returning { sources: [] }, so the desktop upload factory would always
+  // fail with "Image upload to runtime did not complete" in the web client.
+  if (isWebClientLocation()) {
+    return window.api.ui.saveClipboardImageAsTempFile
+  }
   return makeTerminalClipboardImageSaver({
     worktreeId,
     fallbackCwd,
