@@ -2826,22 +2826,28 @@ describe('web runtimeEnvironments background lane parity', () => {
     vi.restoreAllMocks()
   })
 
-  it('demotes an explicit-background runtimeEnvironments.call behind a foreground call', async () => {
+  it('demotes explicit-background runtimeEnvironments.calls behind a foreground call', async () => {
     const started: string[] = []
-    const pending: ((value: RuntimeRpcResponse<unknown>) => void)[] = []
+    // Why: repo.list/project.list/projectHostSetup.list are NOT background methods
+    // by name. Each blocks until resolved so the background lane (concurrency 2)
+    // stays saturated by the first two, forcing the third to queue. A foreground
+    // call must still overtake. This fails if `background` forwarding is removed:
+    // the three demoted calls would land on the foreground lane (concurrency 8)
+    // and all start immediately, leaving none pending.
+    const pendingBackground: ((value: RuntimeRpcResponse<unknown>) => void)[] = []
     vi.doMock('./web-runtime-client', () => ({
       WebRuntimeClient: class {
         async call(method: string): Promise<RuntimeRpcResponse<unknown>> {
           started.push(method)
-          if (method === 'repo.list') {
-            return await new Promise((resolve) => pending.push(resolve))
+          if (method === 'terminal.send') {
+            return {
+              id: `call-${started.length}`,
+              ok: true,
+              result: {},
+              _meta: { runtimeId: 'runtime-1' }
+            }
           }
-          return {
-            id: `call-${started.length}`,
-            ok: true,
-            result: {},
-            _meta: { runtimeId: 'runtime-1' }
-          }
+          return await new Promise((resolve) => pendingBackground.push(resolve))
         }
 
         close(): void {}
@@ -2854,27 +2860,58 @@ describe('web runtimeEnvironments background lane parity', () => {
     installWebPreloadApi()
 
     const selector = 'web-env-1' // id written by writeStoredRuntimeEnvironment
-    const demoted = globals.window.api.runtimeEnvironments.call({
+    const demotedRepoList = globals.window.api.runtimeEnvironments.call({
       selector,
       method: 'repo.list',
       background: true
     })
-    await vi.waitFor(() => expect(started).toEqual(['repo.list']))
+    const demotedProjectList = globals.window.api.runtimeEnvironments.call({
+      selector,
+      method: 'project.list',
+      background: true
+    })
+    const demotedHostSetup = globals.window.api.runtimeEnvironments.call({
+      selector,
+      method: 'projectHostSetup.list',
+      background: true
+    })
+    // Only two of the three demoted calls start — the background lane caps at 2.
+    await vi.waitFor(() => expect(started).toEqual(['repo.list', 'project.list']))
 
-    // A foreground call must overtake the in-flight-capped background repo.list.
+    // A foreground call must overtake the saturated background lane.
     const foreground = await globals.window.api.runtimeEnvironments.call({
       selector,
       method: 'terminal.send'
     })
     expect(foreground).toMatchObject({ ok: true })
-    expect(started).toEqual(['repo.list', 'terminal.send'])
+    expect(started).toEqual(['repo.list', 'project.list', 'terminal.send'])
+    // projectHostSetup.list is still queued (background lane saturated) — proves
+    // the third demoted call rode the background lane, not the foreground one.
+    expect(pendingBackground).toHaveLength(2)
+    expect(started).not.toContain('projectHostSetup.list')
 
-    pending.shift()?.({
+    // Self-heal: draining the in-flight background calls releases the queued one.
+    pendingBackground.shift()?.({
       id: 'repo-list',
       ok: true,
       result: {},
       _meta: { runtimeId: 'runtime-1' }
     })
-    await expect(demoted).resolves.toMatchObject({ ok: true })
+    pendingBackground.shift()?.({
+      id: 'project-list',
+      ok: true,
+      result: {},
+      _meta: { runtimeId: 'runtime-1' }
+    })
+    await expect(demotedRepoList).resolves.toMatchObject({ ok: true })
+    await expect(demotedProjectList).resolves.toMatchObject({ ok: true })
+    await vi.waitFor(() => expect(started).toContain('projectHostSetup.list'))
+    pendingBackground.shift()?.({
+      id: 'project-host-setup-list',
+      ok: true,
+      result: {},
+      _meta: { runtimeId: 'runtime-1' }
+    })
+    await expect(demotedHostSetup).resolves.toMatchObject({ ok: true })
   })
 })
