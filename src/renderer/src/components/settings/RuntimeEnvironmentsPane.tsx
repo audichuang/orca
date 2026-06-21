@@ -631,11 +631,12 @@ export function RuntimeEnvironmentsPane({
         }
         return false
       }
-      // Why: Connect is not the Active Server selector anymore, but connected
-      // hosts should still contribute their projects/workspaces to the sidebar.
-      // Use the shared replay+refresh primitive so pending tombstones replay and
-      // lineage is fetched once against the connected host (no N+1), foreground
-      // since this is user-initiated.
+      // Why: Connect is not the Active Server selector, so this env is normally
+      // non-active. The shared primitive replays this env's tombstones and
+      // refreshes its repos/worktrees/lineage once against the connected host (no
+      // N+1), foreground since user-initiated. Its active-scoped groups/workspaces
+      // fetch is skipped unless this env is the active target (B3-Connect),
+      // matching the pre-Task-7 Connect behavior of never re-fetching groups.
       await replayThenRefreshRuntimeEnvironment(useAppStore, environment.id)
       if (mountedRef.current) {
         toast.success(

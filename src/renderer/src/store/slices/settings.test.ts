@@ -107,9 +107,11 @@ beforeEach(() => {
                   ? { profiles: [] }
                   : method === 'projectGroup.list'
                     ? { groups: [] }
-                    : method === 'worktree.lineageList'
-                      ? { lineage: { [env2Lineage.worktreeId]: env2Lineage } }
-                      : {}
+                    : method === 'folderWorkspace.list'
+                      ? { folderWorkspaces: [] }
+                      : method === 'worktree.lineageList'
+                        ? { lineage: { [env2Lineage.worktreeId]: env2Lineage } }
+                        : {}
       return Promise.resolve({ id: 'rpc-1', ok: true, result, _meta: { runtimeId: 'runtime-2' } })
     }
   )
@@ -267,6 +269,14 @@ describe('createSettingsSlice runtime switching', () => {
     expect(runtimeEnvironmentCall).toHaveBeenCalledWith(
       expect.objectContaining({ selector: 'env-2', method: 'worktree.lineageList' })
     )
+    // B3: env-switch now runs a full refresh of the newly-active env, so the
+    // active-scoped groups/workspaces fetches go out against env-2.
+    expect(runtimeEnvironmentCall).toHaveBeenCalledWith(
+      expect.objectContaining({ selector: 'env-2', method: 'projectGroup.list' })
+    )
+    expect(runtimeEnvironmentCall).toHaveBeenCalledWith(
+      expect.objectContaining({ selector: 'env-2', method: 'folderWorkspace.list' })
+    )
     expect(runtimeEnvironmentCall).not.toHaveBeenCalledWith(
       expect.objectContaining({ selector: 'env-1', method: 'terminal.close' })
     )
@@ -277,7 +287,10 @@ describe('createSettingsSlice runtime switching', () => {
     expect(store.getState().repos.find((repo) => repo.id === 'repo-env-2')?.executionHostId).toBe(
       'runtime:env-2'
     )
-    expect(store.getState().projectGroups.map((group) => group.id)).toEqual(['group-env-1'])
+    // B3: switching to env-2 (now active) does a full refresh, so projectGroups
+    // reflects the newly-active env's list (the mock returns none) — env-1's
+    // group is no longer the active host's data.
+    expect(store.getState().projectGroups).toEqual([])
     expect(store.getState().worktreesByRepo['repo-env-1']?.map((worktree) => worktree.id)).toEqual([
       'repo-env-1::/env-1/repo'
     ])

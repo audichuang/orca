@@ -843,8 +843,12 @@ function App(): React.JSX.Element {
         // runtime environment, so hydration has to complete first or a
         // force-removed repo/group resurfaces on restart.
         await actions.hydratePendingProjectGroupDeletions()
-        await actions.fetchRepos()
+        // Why (B1): groups must be fetched BEFORE repos — fetchRepos applies the
+        // project-group tombstone filter against the current projectGroups, so a
+        // stale/empty group tree at repo-fetch time lets a force-removed repo
+        // resurface. Order: groups → repos → workspaces.
         await actions.fetchProjectGroups()
+        await actions.fetchRepos()
         await actions.fetchFolderWorkspaces()
         await actions.fetchAllWorktrees()
         await actions.fetchWorktreeLineage()

@@ -37,6 +37,27 @@ describe('renderer startup runtime routing', () => {
     expect(hydrateIndex).toBeLessThan(workspacesIndex)
   })
 
+  it('fetches project groups before repos on startup so the repo tombstone filter sees fresh groups', () => {
+    // Why (B1): fetchRepos applies the project-group tombstone filter against the
+    // current get().projectGroups; if repos are fetched before groups, the live
+    // subtree recompute runs against a stale/empty group tree and a force-removed
+    // repo can resurface on restart. Order must be groups → repos → workspaces.
+    const source = readFileSync(join(process.cwd(), 'src/renderer/src/App.tsx'), 'utf8')
+    const startupBlockStart = source.indexOf('void (async () => {')
+    const startupBlockEnd = source.indexOf('const persistedUI = await window.api.ui.get()')
+    const startupBlock = source.slice(startupBlockStart, startupBlockEnd)
+
+    const groupsIndex = startupBlock.indexOf('await actions.fetchProjectGroups()')
+    const reposIndex = startupBlock.indexOf('await actions.fetchRepos()')
+    const workspacesIndex = startupBlock.indexOf('await actions.fetchFolderWorkspaces()')
+
+    expect(groupsIndex).toBeGreaterThanOrEqual(0)
+    expect(reposIndex).toBeGreaterThanOrEqual(0)
+    expect(workspacesIndex).toBeGreaterThanOrEqual(0)
+    expect(groupsIndex).toBeLessThan(reposIndex)
+    expect(reposIndex).toBeLessThan(workspacesIndex)
+  })
+
   it('waits for first-window startup services before terminal reconnect', () => {
     const source = readFileSync(join(process.cwd(), 'src/renderer/src/App.tsx'), 'utf8')
     const reconnectIndex = source.indexOf('await actions.reconnectPersistedTerminals')

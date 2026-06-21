@@ -648,14 +648,16 @@ async function fetchReposForTarget(
   hostId: ReturnType<typeof getRuntimeTargetHostId>
 }> {
   const fetchedRepos =
-    target.kind === 'local'
+    // Why: a reconnecting/partial daemon can return an envelope without a `repos`
+    // array; coerce to [] so the downstream map/filter chain cannot crash.
+    (target.kind === 'local'
       ? await window.api.repos.list()
       : (
           await callRuntimeRpc<{ repos: Repo[] }>(target, 'repo.list', undefined, {
             timeoutMs: 15_000,
             background: options?.background
           })
-        ).repos
+        ).repos) ?? []
   const hostId = getRuntimeTargetHostId(target)
   const repos = fetchedRepos.map((repo) => repoWithFetchedOwner(repo, target))
   const fetchedProjectCompatibility = await fetchProjectHostSetupCompatibility(
@@ -1154,8 +1156,10 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
   fetchProjectGroups: async () => {
     try {
       const target = getActiveRuntimeTarget(get().settings)
+      // Why: a reconnecting/partial daemon can return an envelope without a
+      // `groups` array; coerce to [] so the map/filter chain cannot crash.
       const rawGroups =
-        target.kind === 'local'
+        (target.kind === 'local'
           ? await window.api.projectGroups.list()
           : (
               await callRuntimeRpc<{ groups: ProjectGroup[] }>(
@@ -1166,7 +1170,7 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
                   timeoutMs: 15_000
                 }
               )
-            ).groups
+            ).groups) ?? []
       const ownedGroups = rawGroups.map((group) => projectGroupWithFetchedOwner(group, target))
       // Why: filter tombstoned groups so a reconnected daemon returning stale
       // data doesn't resurface groups the user force-removed locally.
@@ -1190,8 +1194,10 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
   fetchFolderWorkspaces: async () => {
     try {
       const target = getActiveRuntimeTarget(get().settings)
+      // Why: a reconnecting/partial daemon can return an envelope without a
+      // `folderWorkspaces` array; coerce to [] so the tombstone filter cannot crash.
       const rawWorkspaces =
-        target.kind === 'local'
+        (target.kind === 'local'
           ? await window.api.folderWorkspaces.list()
           : (
               await callRuntimeRpc<{ folderWorkspaces: FolderWorkspace[] }>(
@@ -1200,7 +1206,7 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
                 undefined,
                 { timeoutMs: 15_000 }
               )
-            ).folderWorkspaces
+            ).folderWorkspaces) ?? []
       // Why: filter tombstoned workspaces so they don't reappear after reconnect.
       const environmentId = target.kind === 'environment' ? target.environmentId : null
       const folderWorkspaces = environmentId

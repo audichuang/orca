@@ -6,7 +6,10 @@ import { replayThenRefreshRuntimeEnvironment } from './runtime-environment-proje
 // Why: B1/B2/B3 hinge on ONE shared primitive enforcing the exact order
 // replay → groups → repos → workspaces → worktrees/lineage, fetching repos
 // exactly once and only after groups (so the live subtree recompute can see
-// the freshly-fetched groups).
+// the freshly-fetched groups). The active-scoped fetchProjectGroups/
+// fetchFolderWorkspaces (B3-Connect) run ONLY when the refreshed env is the
+// active runtime target; a Connect of a non-active env replays + refreshes its
+// own repos/worktrees/lineage but must not re-fetch the active env's groups.
 function makeStore(overrides: Partial<AppState> = {}): {
   store: Pick<StoreApi<AppState>, 'getState'>
   calls: string[]
@@ -37,6 +40,9 @@ function makeStore(overrides: Partial<AppState> = {}): {
     fetchWorktrees,
     refreshWorktreeLineageForRuntimeEnvironment,
     fetchWorktreeLineage,
+    // Default: env-1 is the active runtime target so the active-scoped
+    // groups/workspaces fetches run (switch / reconnect-of-active case).
+    settings: { activeRuntimeEnvironmentId: 'env-1' },
     ...overrides
   } as unknown as AppState
 
@@ -56,7 +62,7 @@ function makeStore(overrides: Partial<AppState> = {}): {
 }
 
 describe('replayThenRefreshRuntimeEnvironment', () => {
-  it('runs replay → groups → repos → workspaces → worktrees → lineage in order', async () => {
+  it('runs replay → groups → repos → workspaces → worktrees → lineage in order when active', async () => {
     const { store, calls, mocks } = makeStore()
 
     await replayThenRefreshRuntimeEnvironment(store, 'env-1')
@@ -65,7 +71,7 @@ describe('replayThenRefreshRuntimeEnvironment', () => {
     expect(mocks.replayPendingDeletionsForEnvironment).toHaveBeenCalledWith('env-1')
   })
 
-  it('fetches repos exactly once and only after groups', async () => {
+  it('fetches repos exactly once and only after groups when active', async () => {
     const { store, mocks } = makeStore()
 
     await replayThenRefreshRuntimeEnvironment(store, 'env-1')
@@ -111,5 +117,37 @@ describe('replayThenRefreshRuntimeEnvironment', () => {
       'env-1',
       { background: undefined }
     )
+  })
+
+  it('skips the active-scoped groups/workspaces fetches when the env is NOT active (Connect)', async () => {
+    // Why (B3-Connect): Connect of a non-active env must replay + refresh only
+    // its own repos/worktrees/lineage. fetchProjectGroups/fetchFolderWorkspaces
+    // read the ACTIVE runtime target, so running them here would re-fetch the
+    // wrong host's groups/workspaces — the old refresh never did this.
+    const { store, calls, mocks } = makeStore({
+      settings: { activeRuntimeEnvironmentId: 'env-active' }
+    } as never)
+
+    await replayThenRefreshRuntimeEnvironment(store, 'env-1')
+
+    expect(calls).toEqual(['replay', 'repos', 'worktrees', 'lineage'])
+    expect(mocks.replayPendingDeletionsForEnvironment).toHaveBeenCalledWith('env-1')
+    expect(mocks.fetchProjectGroups).not.toHaveBeenCalled()
+    expect(mocks.fetchFolderWorkspaces).not.toHaveBeenCalled()
+    expect(mocks.fetchRuntimeEnvironmentRepos).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips the active-scoped fetches when the active target is local', async () => {
+    // Why (B3-Connect): a local active target means no env is active; Connect of
+    // a saved env must not fetch local groups/workspaces.
+    const { store, calls, mocks } = makeStore({
+      settings: { activeRuntimeEnvironmentId: null }
+    } as never)
+
+    await replayThenRefreshRuntimeEnvironment(store, 'env-1')
+
+    expect(calls).toEqual(['replay', 'repos', 'worktrees', 'lineage'])
+    expect(mocks.fetchProjectGroups).not.toHaveBeenCalled()
+    expect(mocks.fetchFolderWorkspaces).not.toHaveBeenCalled()
   })
 })

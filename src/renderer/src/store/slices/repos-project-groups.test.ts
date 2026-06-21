@@ -147,6 +147,68 @@ describe('project group store routing', () => {
     expect(runtimeEnvironmentCall).not.toHaveBeenCalled()
   })
 
+  it('defends against an undefined groups payload from the runtime transport', async () => {
+    // Why (Fix R): a reconnecting/partial daemon can return an envelope without
+    // a `groups` array; fetchProjectGroups must coerce to [] instead of crashing
+    // the filter/map chain.
+    runtimeEnvironmentCall.mockResolvedValue({
+      id: 'rpc-list-groups',
+      ok: true,
+      result: {},
+      _meta: { runtimeId: 'runtime-remote' }
+    })
+    const store = createTestStore()
+    store.setState({
+      settings: { activeRuntimeEnvironmentId: 'env-1' } as never,
+      // Seed stale groups so a swallowed throw (no `?? []`) would leave them in
+      // place; the defensive coercion must replace them with the empty list.
+      projectGroups: [{ ...projectGroup, parentPath: '/workspace/platform' }]
+    })
+
+    await expect(store.getState().fetchProjectGroups()).resolves.toBeUndefined()
+
+    expect(store.getState().projectGroups).toEqual([])
+  })
+
+  it('defends against an undefined folder-workspaces payload from the runtime transport', async () => {
+    // Why (Fix R): switch/reconnect now fetches folder workspaces during a full
+    // refresh; a daemon returning an envelope without `folderWorkspaces` must
+    // coerce to [] rather than throw inside the tombstone filter.
+    runtimeEnvironmentCall.mockResolvedValue({
+      id: 'rpc-list-workspaces',
+      ok: true,
+      result: {},
+      _meta: { runtimeId: 'runtime-remote' }
+    })
+    const store = createTestStore()
+    store.setState({
+      settings: { activeRuntimeEnvironmentId: 'env-1' } as never,
+      // Seed a stale workspace so a swallowed throw (no `?? []`) would leave it
+      // in place; the defensive coercion must replace it with the empty list.
+      folderWorkspaces: [
+        {
+          id: 'folder-workspace-1',
+          projectGroupId: projectGroup.id,
+          name: 'Refund fix',
+          folderPath: '/workspace/platform',
+          linkedTask: null,
+          comment: '',
+          isArchived: false,
+          isUnread: false,
+          isPinned: false,
+          sortOrder: 1,
+          lastActivityAt: 0,
+          createdAt: 1,
+          updatedAt: 1
+        }
+      ] as FolderWorkspace[]
+    })
+
+    await expect(store.getState().fetchFolderWorkspaces()).resolves.toBeUndefined()
+
+    expect(store.getState().folderWorkspaces).toEqual([])
+  })
+
   it('stamps runtime-fetched SSH folder groups with the runtime owner', async () => {
     const folderGroup = {
       ...projectGroup,
