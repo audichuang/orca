@@ -724,7 +724,7 @@ function getRuntimeClientEventEnvironmentKey(): string {
 }
 
 const worktreeRefreshKey = (environmentId: string, repoId: string): string =>
-  `${environmentId} ${repoId}`
+  `${environmentId}\u0000${repoId}`
 
 function getWorktreeRuntimeEnvironmentId(worktreeId: string | null | undefined): string | null {
   return getRuntimeEnvironmentIdForWorktree(useAppStore.getState(), worktreeId)
@@ -910,7 +910,7 @@ export function useIpcEvents(): void {
       debounceMs: 200,
       minIntervalMs: 0,
       refresh: async (key) => {
-        const [environmentId = '', repoId = ''] = key.split(' ')
+        const [environmentId = '', repoId = ''] = key.split('\u0000')
         await ensureRuntimeEventRepoKnown(environmentId, repoId)
         await handleWorktreesChangedRuntime(environmentId, repoId)
       },
