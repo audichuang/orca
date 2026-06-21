@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import type { AppState } from '../types'
 import type {
   GlobalSettings,
+  PendingProjectGroupDeletion,
   Project,
   ProjectUpdateArgs,
   Repo,
@@ -69,6 +70,12 @@ import {
 } from '../../../../shared/execution-host'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
 import { formatFolderWorkspaceCreateError } from '../../lib/folder-workspace-path-status'
+import {
+  filterGroupsByPendingDeletions,
+  applyPendingDeletionsToRepos,
+  filterFolderWorkspacesByPendingDeletions
+} from '../../../../shared/pending-project-group-deletions'
+import { replayPendingDeletionsForEnvironment as doReplayPendingDeletions } from './pending-project-group-deletion-replay'
 
 const ERROR_TOAST_DURATION = 60_000
 const SAFE_AUTO_FORK_SYNC_COOLDOWN_MS = 10 * 60 * 1000
@@ -787,7 +794,14 @@ export type RepoSlice = {
   projectGroups: ProjectGroup[]
   folderWorkspaces: FolderWorkspace[]
   folderWorkspacePathStatuses: Record<string, FolderWorkspacePathStatusCacheEntry>
+  pendingProjectGroupDeletions: PendingProjectGroupDeletion[]
   activeRepoId: string | null
+  hydratePendingProjectGroupDeletions: () => Promise<void>
+  forceRemoveProjectGroupLocally: (
+    groupId: string,
+    options: { removeContainedProjects: boolean }
+  ) => Promise<{ environmentId: string; groupId: string } | null>
+  replayPendingDeletionsForEnvironment: (environmentId: string) => Promise<void>
   fetchRepos: () => Promise<void>
   fetchRuntimeEnvironmentRepos: (
     environmentId: string,
@@ -894,6 +908,54 @@ export type RepoSlice = {
   reorderRepos: (orderedIds: string[]) => Promise<void>
 }
 
+async function applyLocalProjectGroupRemoval(
+  get: () => AppState,
+  set: (partial: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void,
+  groupId: string,
+  options: { removeContainedProjects: boolean }
+): Promise<void> {
+  const subtreeIds = getProjectGroupSubtreeIds(get().projectGroups, groupId)
+
+  // Collect folder workspace ids belonging to the subtree and purge terminal state.
+  const subtreeWorkspaceIds = get()
+    .folderWorkspaces.filter((ws) => subtreeIds.has(ws.projectGroupId))
+    .map((ws) => ws.id)
+  const workspaceKeys = subtreeWorkspaceIds.map(folderWorkspaceKey)
+  if (workspaceKeys.length > 0) {
+    get().purgeWorktreeTerminalState(workspaceKeys)
+  }
+
+  // Collect repo ids in the subtree before mutating state.
+  const subtreeRepoIds = get()
+    .repos.filter((r) => r.projectGroupId != null && subtreeIds.has(r.projectGroupId))
+    .map((r) => r.id)
+
+  if (options.removeContainedProjects) {
+    // Offline removal: skip terminal.stop RPCs, clear all local state per repo.
+    for (const repoId of subtreeRepoIds) {
+      await purgeProjectLocalState(get, set, repoId, { stopRemoteTerminals: false })
+    }
+    set((s) => ({
+      projectGroups: s.projectGroups.filter((g) => !subtreeIds.has(g.id)),
+      folderWorkspaces: s.folderWorkspaces.filter((ws) => !subtreeIds.has(ws.projectGroupId)),
+      repos: s.repos.filter((r) => !subtreeRepoIds.includes(r.id)),
+      folderWorkspacePathStatuses: {}
+    }))
+  } else {
+    // Detach repos — keep them but clear their groupId.
+    set((s) => ({
+      projectGroups: s.projectGroups.filter((g) => !subtreeIds.has(g.id)),
+      folderWorkspaces: s.folderWorkspaces.filter((ws) => !subtreeIds.has(ws.projectGroupId)),
+      repos: s.repos.map((r) =>
+        r.projectGroupId != null && subtreeIds.has(r.projectGroupId)
+          ? { ...r, projectGroupId: null }
+          : r
+      ),
+      folderWorkspacePathStatuses: {}
+    }))
+  }
+}
+
 export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, get) => ({
   repos: [],
   projects: [],
@@ -901,7 +963,60 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
   projectGroups: [],
   folderWorkspaces: [],
   folderWorkspacePathStatuses: {},
+  pendingProjectGroupDeletions: [],
   activeRepoId: null,
+
+  hydratePendingProjectGroupDeletions: async () => {
+    try {
+      const pendingProjectGroupDeletions = await window.api.pendingProjectGroupDeletions.list()
+      set({ pendingProjectGroupDeletions })
+    } catch (err) {
+      console.error('Failed to hydrate pending project group deletions:', err)
+    }
+  },
+
+  forceRemoveProjectGroupLocally: async (groupId, options) => {
+    const group = get().projectGroups.find((g) => g.id === groupId)
+    if (!group) {
+      return null
+    }
+    const activeTarget = getActiveRuntimeTarget(get().settings)
+    // Only runtime-environment-owned groups may be force-removed locally.
+    if (activeTarget.kind !== 'environment') {
+      return null
+    }
+    const { environmentId } = activeTarget
+    const expectedHostId = toRuntimeExecutionHostId(environmentId)
+    if (group.executionHostId !== expectedHostId) {
+      return null
+    }
+
+    const subtreeIds = getProjectGroupSubtreeIds(get().projectGroups, groupId)
+    const subtreeGroupIds = [...subtreeIds]
+    const pendingProjectIds = options.removeContainedProjects
+      ? get()
+          .repos.filter((r) => r.projectGroupId != null && subtreeIds.has(r.projectGroupId))
+          .map((r) => r.id)
+      : []
+
+    const entry = await window.api.pendingProjectGroupDeletions.add({
+      environmentId,
+      groupId,
+      removeContainedProjects: options.removeContainedProjects,
+      pendingProjectIds,
+      subtreeGroupIds
+    })
+    set((s) => ({
+      pendingProjectGroupDeletions: [...s.pendingProjectGroupDeletions, entry]
+    }))
+
+    await applyLocalProjectGroupRemoval(get, set, groupId, options)
+
+    return { environmentId, groupId }
+  },
+
+  replayPendingDeletionsForEnvironment: (environmentId) =>
+    doReplayPendingDeletions(get, set, environmentId),
 
   fetchRepos: async () => {
     try {
@@ -942,9 +1057,18 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
         projectCompatibility,
         hostId
       } = await fetchReposForTarget(target, get().repos, options)
-      const validRepoIds = new Set(reconciledRepos.map((repo) => repo.id))
+      // Why: apply pending tombstones so force-removed repos stay hidden even
+      // when the daemon is back online and still returns them.
+      const tombstones = get().pendingProjectGroupDeletions
+      const filteredRepos = applyPendingDeletionsToRepos(
+        reconciledRepos,
+        get().projectGroups,
+        tombstones,
+        environmentId
+      )
+      const validRepoIds = new Set(filteredRepos.map((repo) => repo.id))
       set((s) => ({
-        repos: reconciledRepos,
+        repos: filteredRepos,
         ...projectCompatibility,
         activeRepoId: s.activeRepoId && validRepoIds.has(s.activeRepoId) ? s.activeRepoId : null,
         filterRepoIds: s.filterRepoIds.filter((projectId) => validRepoIds.has(projectId)),
@@ -953,7 +1077,7 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
           validRepoIds
         )
       }))
-      const fetchedHostRepos = reconciledRepos.filter(
+      const fetchedHostRepos = filteredRepos.filter(
         (repo) => getRepoExecutionHostId(repo) === hostId
       )
       scheduleSafeAutoForkSync(get, fetchedHostRepos)
@@ -967,7 +1091,7 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
   fetchProjectGroups: async () => {
     try {
       const target = getActiveRuntimeTarget(get().settings)
-      const projectGroups =
+      const rawGroups =
         target.kind === 'local'
           ? await window.api.projectGroups.list()
           : (
@@ -980,8 +1104,19 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
                 }
               )
             ).groups
+      const ownedGroups = rawGroups.map((group) => projectGroupWithFetchedOwner(group, target))
+      // Why: filter tombstoned groups so a reconnected daemon returning stale
+      // data doesn't resurface groups the user force-removed locally.
+      const environmentId = target.kind === 'environment' ? target.environmentId : null
+      const projectGroups = environmentId
+        ? filterGroupsByPendingDeletions(
+            ownedGroups,
+            get().pendingProjectGroupDeletions,
+            environmentId
+          )
+        : ownedGroups
       set({
-        projectGroups: projectGroups.map((group) => projectGroupWithFetchedOwner(group, target)),
+        projectGroups,
         folderWorkspacePathStatuses: {}
       })
     } catch (err) {
@@ -992,7 +1127,7 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
   fetchFolderWorkspaces: async () => {
     try {
       const target = getActiveRuntimeTarget(get().settings)
-      const folderWorkspaces =
+      const rawWorkspaces =
         target.kind === 'local'
           ? await window.api.folderWorkspaces.list()
           : (
@@ -1003,6 +1138,16 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
                 { timeoutMs: 15_000 }
               )
             ).folderWorkspaces
+      // Why: filter tombstoned workspaces so they don't reappear after reconnect.
+      const environmentId = target.kind === 'environment' ? target.environmentId : null
+      const folderWorkspaces = environmentId
+        ? filterFolderWorkspacesByPendingDeletions(
+            rawWorkspaces,
+            get().projectGroups,
+            get().pendingProjectGroupDeletions,
+            environmentId
+          )
+        : rawWorkspaces
       set({ folderWorkspaces, folderWorkspacePathStatuses: {} })
     } catch (err) {
       console.error('Failed to fetch folder workspaces:', err)
