@@ -104,7 +104,27 @@ describe('makeTerminalClipboardImageSaver', () => {
     expect(deps.importExternalPathsToRuntime).not.toHaveBeenCalled()
   })
 
-  it('windows-adjusts the injected path and still cleans the temp on failure', async () => {
+  it('converts forward-slashes to backslashes in the returned path on a Windows-like worktree', async () => {
+    const deps = makeDeps({
+      fallbackCwd: 'C:\\repo',
+      importExternalPathsToRuntime: vi.fn().mockResolvedValue({
+        results: [
+          {
+            sourcePath: '/tmp/orca-paste-1-x.png',
+            status: 'imported',
+            destPath: 'C:/repo/.orca/paste-images/orca-paste-1-x.png',
+            kind: 'file',
+            renamed: false
+          }
+        ]
+      })
+    })
+    const save = makeTerminalClipboardImageSaver(deps)
+    const result = await save()
+    expect(result).toBe('C:\\repo\\.orca\\paste-images\\orca-paste-1-x.png')
+  })
+
+  it('cleans the temp file when the upload fails', async () => {
     const deps = makeDeps({
       fallbackCwd: 'C:\\repo',
       importExternalPathsToRuntime: vi.fn().mockRejectedValue(new Error('boom'))
