@@ -80,6 +80,9 @@ import {
 import { attachMobileMarkdownBridge } from '@/runtime/mobile-markdown-bridge'
 import { subscribeRuntimeClientEvents } from '@/runtime/runtime-client-events'
 import { createRuntimeClientEventsSync } from './runtime-client-events-sync'
+import { createKeyedRefreshScheduler } from './keyed-refresh-scheduler'
+import { markRuntimeEnvironmentDirty } from '@/runtime/runtime-environment-refresh-dirty'
+import { refreshRuntimeEnvironmentProjects } from '@/store/slices/runtime-environment-project-refresh'
 import { detectLanguage } from '@/lib/language-detect'
 import { parsePaneKey } from '../../../shared/stable-pane-id'
 import { collectLeafIdsInOrder } from '@/components/terminal-pane/layout-serialization'
@@ -720,6 +723,9 @@ function getRuntimeClientEventEnvironmentKey(): string {
   return buildRuntimeClientEventEnvironmentKey(getRuntimeClientEventEnvironmentIds())
 }
 
+const worktreeRefreshKey = (environmentId: string, repoId: string): string =>
+  `${environmentId}\u0000${repoId}`
+
 function getWorktreeRuntimeEnvironmentId(worktreeId: string | null | undefined): string | null {
   return getRuntimeEnvironmentIdForWorktree(useAppStore.getState(), worktreeId)
 }
@@ -738,6 +744,7 @@ export function useIpcEvents(): void {
     unsubs.push(attachMobileMarkdownBridge())
 
     const handleWorktreesChanged = async (
+      environmentId: string | null,
       repoId: string,
       renamed?: { oldWorktreeId: string; newWorktreeId: string }
     ): Promise<void> => {
@@ -765,8 +772,16 @@ export function useIpcEvents(): void {
       const before =
         getAuthoritativeDetectedWorktreeIds(state, repoId) ??
         getVisibleWorktreeIdsForRepo(state, repoId)
-      await state.fetchWorktrees(repoId)
-      await useAppStore.getState().fetchWorktreeLineage()
+      // Why: suppress fetchWorktrees' internal lineage refresh and do one
+      // host-correct lineage fetch for the changed env's host — the old bare
+      // fetchWorktreeLineage() fetched the active env's host, wrong for a
+      // non-active server's worktreesChanged.
+      // Why: event-driven worktree refresh rides the background lane so it
+      // yields transport capacity to user-initiated runtime calls (Piece 3).
+      await state.fetchWorktrees(repoId, { skipLineageRefresh: true, background: true })
+      await useAppStore
+        .getState()
+        .refreshWorktreeLineageForRuntimeEnvironment(environmentId, { background: true })
       // Why: changing the worktree's id unmounts the active pane without
       // re-rendering it under the new id. Now that the list has refreshed,
       // re-activate the renamed worktree so its tab model reconciles and the
@@ -797,6 +812,46 @@ export function useIpcEvents(): void {
         if (expiry <= now) {
           recentlyRenamedWorktreeIdExpiry.delete(id)
         }
+      }
+      if (removed.length > 0) {
+        console.warn(
+          `[worktree-purge] diff-based purge removing state for ${removed.length} worktree(s):`,
+          removed
+        )
+        afterState.purgeWorktreeTerminalState(removed)
+        afterState.removeWorkspaceSpaceWorktrees(removed)
+      }
+    }
+
+    // Runtime client-event worktrees-changed: no `renamed` payload (the runtime
+    // event carries only repoId — runtime-client-events.ts), so this skips the
+    // rename re-key/grace logic entirely. Uses Piece 1's single host-correct
+    // lineage fetch instead of the bare cross-host fetchWorktreeLineage().
+    const handleWorktreesChangedRuntime = async (
+      environmentId: string,
+      repoId: string
+    ): Promise<void> => {
+      const state = useAppStore.getState()
+      const before =
+        getAuthoritativeDetectedWorktreeIds(state, repoId) ??
+        getVisibleWorktreeIdsForRepo(state, repoId)
+      // Why: event-driven worktree refresh rides the background lane so it
+      // yields transport capacity to user-initiated runtime calls (Piece 3).
+      await state.fetchWorktrees(repoId, { skipLineageRefresh: true, background: true })
+      await useAppStore
+        .getState()
+        .refreshWorktreeLineageForRuntimeEnvironment(environmentId, { background: true })
+      const afterState = useAppStore.getState()
+      const after = getAuthoritativeDetectedWorktreeIds(afterState, repoId)
+      if (!after) {
+        return
+      }
+      const removed: string[] = []
+      for (const id of before) {
+        if (after.has(id)) {
+          continue
+        }
+        removed.push(id)
       }
       if (removed.length > 0) {
         console.warn(
@@ -853,22 +908,60 @@ export function useIpcEvents(): void {
       if ((useAppStore.getState().repos ?? []).some((repo) => repo.id === repoId)) {
         return
       }
-      await useAppStore.getState().fetchRuntimeEnvironmentRepos(environmentId)
+      // Why: backfilling an unknown repo is part of the event-driven refresh
+      // storm, so it rides the background lane (Piece 3).
+      await useAppStore.getState().fetchRuntimeEnvironmentRepos(environmentId, { background: true })
     }
+
+    const worktreeRefreshScheduler = createKeyedRefreshScheduler({
+      // 200ms debounce, 0 min-interval: overlap protection is one-in-flight +
+      // dirty, so an externally-created worktree (CLI/agent) stays visible
+      // promptly. Do not reuse the 5s repos throttle here (design §5 Piece 2).
+      debounceMs: 200,
+      minIntervalMs: 0,
+      refresh: async (key) => {
+        const [environmentId = '', repoId = ''] = key.split('\u0000')
+        await ensureRuntimeEventRepoKnown(environmentId, repoId)
+        await handleWorktreesChangedRuntime(environmentId, repoId)
+      },
+      onError: (error) => {
+        console.error('Failed to refresh runtime worktrees:', error)
+      }
+    })
+
+    const reposRefreshScheduler = createKeyedRefreshScheduler({
+      debounceMs: 200,
+      minIntervalMs: 0,
+      refresh: async (environmentId) => {
+        // Why: scheduler-driven repos refresh rides the background lane so it
+        // yields transport capacity to user-initiated runtime calls (Piece 3).
+        await refreshRuntimeEnvironmentProjects(useAppStore, environmentId, { background: true })
+      },
+      onError: (error) => {
+        console.error('Failed to refresh runtime repos:', error)
+      }
+    })
 
     const handleRuntimeClientEvent = (environmentId: string, event: RuntimeClientEvent): void => {
       if (event.type === 'reposChanged') {
-        const state = useAppStore.getState()
-        void state.fetchRuntimeEnvironmentRepos(environmentId).then(async (repos) => {
-          await Promise.all(repos.map((repo) => useAppStore.getState().fetchWorktrees(repo.id)))
-          await useAppStore.getState().fetchWorktreeLineage()
-        })
+        // Why: heavy refresh is gated to the active env — a non-active server's
+        // repo change only marks it dirty (hydrated host-correct on switch). The
+        // shared primitive issues exactly one host-correct lineage fetch per round.
+        if (environmentId !== getActiveRuntimeEnvironmentId()) {
+          markRuntimeEnvironmentDirty(environmentId)
+          return
+        }
+        reposRefreshScheduler.request(environmentId)
         return
       }
       if (event.type === 'worktreesChanged') {
-        void ensureRuntimeEventRepoKnown(environmentId, event.repoId).then(() =>
-          handleWorktreesChanged(event.repoId)
-        )
+        // Why: same active-only gate as reposChanged — non-active servers go stale
+        // (marked dirty) instead of storming the renderer with refresh fan-out.
+        if (environmentId !== getActiveRuntimeEnvironmentId()) {
+          markRuntimeEnvironmentDirty(environmentId)
+          return
+        }
+        worktreeRefreshScheduler.request(worktreeRefreshKey(environmentId, event.repoId))
         return
       }
       if (event.type === 'linearLinkedIssueUpdated') {
@@ -906,6 +999,8 @@ export function useIpcEvents(): void {
       })
     )
     unsubs.push(runtimeClientEventsSync.stop)
+    unsubs.push(worktreeRefreshScheduler.stop)
+    unsubs.push(reposRefreshScheduler.stop)
 
     unsubs.push(
       window.api.repos.onChanged(() => {
@@ -935,7 +1030,7 @@ export function useIpcEvents(): void {
           }
           // A folder rename changes the worktree id; handleWorktreesChanged
           // re-keys state and shields it from the deletion diff (see there).
-          await handleWorktreesChanged(data.repoId, data.renamed)
+          await handleWorktreesChanged(null, data.repoId, data.renamed)
         }
       )
     )

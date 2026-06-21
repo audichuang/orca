@@ -1,0 +1,109 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createKeyedRefreshScheduler } from './keyed-refresh-scheduler'
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(0)
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+describe('createKeyedRefreshScheduler', () => {
+  it('coalesces a burst for one key into a single run after debounceMs', async () => {
+    const refresh = vi.fn().mockResolvedValue(undefined)
+    const scheduler = createKeyedRefreshScheduler({ refresh, debounceMs: 200 })
+
+    scheduler.request('A')
+    scheduler.request('A')
+    scheduler.request('A')
+    expect(refresh).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(200)
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(refresh).toHaveBeenCalledWith('A')
+  })
+
+  it('reschedules exactly once when a key is requested again while its run is in flight', async () => {
+    let resolveRun!: () => void
+    const refresh = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveRun = resolve
+        })
+    )
+    const scheduler = createKeyedRefreshScheduler({ refresh, debounceMs: 200 })
+
+    scheduler.request('A')
+    await vi.advanceTimersByTimeAsync(200)
+    expect(refresh).toHaveBeenCalledTimes(1)
+
+    // Mark dirty again while the first run is still in flight.
+    scheduler.request('A')
+    expect(refresh).toHaveBeenCalledTimes(1)
+
+    // Finish the in-flight run; the pending flag must trigger exactly one reschedule.
+    resolveRun()
+    await Promise.resolve()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(refresh).toHaveBeenCalledTimes(2)
+
+    // No further runs after the dirty flag is consumed.
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(refresh).toHaveBeenCalledTimes(2)
+  })
+
+  it('runs distinct keys independently', async () => {
+    const refresh = vi.fn().mockResolvedValue(undefined)
+    const scheduler = createKeyedRefreshScheduler({ refresh, debounceMs: 200 })
+
+    scheduler.request('A\u0000r1')
+    scheduler.request('A\u0000r2')
+
+    await vi.advanceTimersByTimeAsync(200)
+    expect(refresh).toHaveBeenCalledTimes(2)
+    expect(refresh).toHaveBeenCalledWith('A\u0000r1')
+    expect(refresh).toHaveBeenCalledWith('A\u0000r2')
+  })
+
+  it('throttles repeated bursts of one key by minIntervalMs', async () => {
+    const refresh = vi.fn().mockResolvedValue(undefined)
+    const scheduler = createKeyedRefreshScheduler({
+      refresh,
+      debounceMs: 200,
+      minIntervalMs: 5000
+    })
+
+    // First run is NOT throttled (lastStartedAt === 0): it fires after debounceMs.
+    scheduler.request('A')
+    await vi.advanceTimersByTimeAsync(200) // t=200: first run starts; lastStartedAt=200
+    expect(refresh).toHaveBeenCalledTimes(1)
+
+    // Second burst arrives well within the min-interval window. Its delay is
+    // throttled to lastStartedAt + minIntervalMs = 200 + 5000 = 5200.
+    scheduler.request('A')
+    await vi.advanceTimersByTimeAsync(200) // t=400: still held (5200 not reached)
+    expect(refresh).toHaveBeenCalledTimes(1)
+
+    // Advance past lastStartedAt + minIntervalMs (5200). From t=400, +4800 → t=5200.
+    await vi.advanceTimersByTimeAsync(4800)
+    expect(refresh).toHaveBeenCalledTimes(2)
+  })
+
+  it('stop() clears pending timers so no run fires', async () => {
+    const refresh = vi.fn().mockResolvedValue(undefined)
+    const scheduler = createKeyedRefreshScheduler({ refresh, debounceMs: 200 })
+
+    scheduler.request('A')
+    scheduler.stop()
+
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(refresh).not.toHaveBeenCalled()
+
+    // request() after stop() is ignored.
+    scheduler.request('B')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(refresh).not.toHaveBeenCalled()
+  })
+})

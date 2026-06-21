@@ -1,0 +1,120 @@
+export type KeyedRefreshSchedulerDeps = {
+  /** Runs the actual refresh for a given key. Awaited; rejections go to onError. */
+  refresh: (key: string) => Promise<void>
+  /** Debounce window collapsing a burst into one run. Default 200ms. */
+  debounceMs?: number
+  /** Minimum spacing between run starts for the same key. Default 0. */
+  minIntervalMs?: number
+  /** Injectable clock for tests. Default Date.now. */
+  now?: () => number
+  /** Reports a rejected refresh without aborting the scheduler. */
+  onError?: (error: unknown) => void
+}
+
+export type KeyedRefreshScheduler = {
+  /** Marks `key` dirty and (re)arms its debounce/throttle timer. */
+  request: (key: string) => void
+  /** Clears every key's timer and the entry map; further request() is ignored. */
+  stop: () => void
+}
+
+type KeyedRefreshEntry = {
+  inFlight: boolean
+  lastStartedAt: number
+  pending: boolean
+  timer: ReturnType<typeof setTimeout> | null
+}
+
+const DEFAULT_DEBOUNCE_MS = 200
+const DEFAULT_MIN_INTERVAL_MS = 0
+
+export function createKeyedRefreshScheduler(
+  deps: KeyedRefreshSchedulerDeps
+): KeyedRefreshScheduler {
+  const debounceMs = deps.debounceMs ?? DEFAULT_DEBOUNCE_MS
+  const minIntervalMs = deps.minIntervalMs ?? DEFAULT_MIN_INTERVAL_MS
+  const now = deps.now ?? Date.now
+  const entries = new Map<string, KeyedRefreshEntry>()
+  let stopped = false
+
+  const getEntry = (key: string): KeyedRefreshEntry => {
+    let entry = entries.get(key)
+    if (!entry) {
+      entry = { inFlight: false, lastStartedAt: 0, pending: false, timer: null }
+      entries.set(key, entry)
+    }
+    return entry
+  }
+
+  const schedule = (key: string): void => {
+    if (stopped) {
+      return
+    }
+    const entry = getEntry(key)
+    // Why: one-in-flight is the overlap guard; a live timer is the debounce
+    // guard. If either is set, the pending flag alone carries the dirty signal
+    // and the existing run/timer will pick it up.
+    if (entry.inFlight || entry.timer) {
+      return
+    }
+    // Why: minIntervalMs is the spacing between run *starts* — it must not delay
+    // the first run (lastStartedAt === 0 means "never run"), only subsequent ones.
+    const throttleWait =
+      entry.lastStartedAt === 0 ? 0 : Math.max(0, minIntervalMs - (now() - entry.lastStartedAt))
+    const delay = Math.max(debounceMs, throttleWait)
+    entry.timer = setTimeout(() => {
+      entry.timer = null
+      void run(key)
+    }, delay)
+  }
+
+  const run = async (key: string): Promise<void> => {
+    if (stopped) {
+      return
+    }
+    const entry = getEntry(key)
+    if (!entry.pending) {
+      return
+    }
+    entry.pending = false
+    entry.inFlight = true
+    entry.lastStartedAt = now()
+    try {
+      await deps.refresh(key)
+    } catch (error) {
+      deps.onError?.(error)
+    } finally {
+      entry.inFlight = false
+      // Why: if the key went dirty again during the run, reschedule exactly
+      // once so the latest change is still picked up without unbounded loops.
+      if (entry.pending && !stopped) {
+        schedule(key)
+      }
+    }
+  }
+
+  return {
+    request: (key: string): void => {
+      if (stopped) {
+        return
+      }
+      // A `\u0000`-joined key trims to a stable value; it is empty only when both
+      // halves are empty. Keep the guard for parity with the per-env scheduler.
+      if (key.trim() === '') {
+        return
+      }
+      getEntry(key).pending = true
+      schedule(key)
+    },
+    stop: (): void => {
+      stopped = true
+      for (const entry of entries.values()) {
+        if (entry.timer) {
+          clearTimeout(entry.timer)
+          entry.timer = null
+        }
+      }
+      entries.clear()
+    }
+  }
+}

@@ -29,7 +29,8 @@ import { tabHasLivePty } from '@/lib/tab-has-live-pty'
 import {
   callRuntimeRpc,
   getActiveRuntimeTarget,
-  RuntimeRpcCallError
+  RuntimeRpcCallError,
+  settingsForRuntimeOwner
 } from '../../runtime/runtime-rpc-client'
 import { toRuntimeWorktreeSelector } from '../../runtime/runtime-worktree-selector'
 import { getHostedReviewCacheKey, refreshHostedReviewCard } from './hosted-review'
@@ -661,7 +662,8 @@ function settingsForWorktreeOwner(
 
 async function listDetectedWorktreesForRepo(
   settings: AppState['settings'],
-  repoId: string
+  repoId: string,
+  options?: { background?: boolean }
 ): Promise<DetectedWorktreeListResult> {
   const target = getActiveRuntimeTarget(settings)
   if (target.kind === 'local') {
@@ -679,7 +681,7 @@ async function listDetectedWorktreesForRepo(
       target,
       'worktree.detectedList',
       { repo: repoId },
-      { timeoutMs: 15_000 }
+      { timeoutMs: 15_000, background: options?.background }
     )
   } catch (error) {
     if (!isRuntimeMethodNotFoundError(error)) {
@@ -689,13 +691,16 @@ async function listDetectedWorktreesForRepo(
       target,
       'worktree.list',
       { repo: repoId, limit: REMOTE_WORKTREE_LIST_PARITY_LIMIT },
-      { timeoutMs: 15_000 }
+      { timeoutMs: 15_000, background: options?.background }
     )
     return toLegacyDetectedWorktreeResult(repoId, legacy)
   }
 }
 
-async function listWorktreeLineageForRuntime(settings: AppState['settings']): Promise<{
+async function listWorktreeLineageForRuntime(
+  settings: AppState['settings'],
+  options?: { background?: boolean }
+): Promise<{
   worktreeLineageById: Record<string, WorktreeLineage>
   workspaceLineageByChildKey: Record<string, WorkspaceLineage>
 }> {
@@ -722,7 +727,10 @@ async function listWorktreeLineageForRuntime(settings: AppState['settings']): Pr
     await callRuntimeRpc<{
       lineage: Record<string, WorktreeLineage>
       workspaceLineage?: Record<string, WorkspaceLineage>
-    }>(target, 'worktree.lineageList', undefined, { timeoutMs: 15_000 })
+    }>(target, 'worktree.lineageList', undefined, {
+      timeoutMs: 15_000,
+      background: options?.background
+    })
   )
 }
 
@@ -822,9 +830,12 @@ function applyWorktreeLineageUpdate(
 
 async function refreshWorktreeLineageForSettings(
   settings: AppState['settings'],
-  set: Parameters<StateCreator<AppState>>[0]
+  set: Parameters<StateCreator<AppState>>[0],
+  options?: { background?: boolean }
 ): Promise<void> {
-  const lineage = await listWorktreeLineageForRuntime(settings)
+  const lineage = await listWorktreeLineageForRuntime(settings, {
+    background: options?.background
+  })
   const hostId = getSettingsFocusedExecutionHostId(settings)
   set((s) => ({
     worktreeLineageById: mergeLineageForHost(s, hostId, lineage.worktreeLineageById),
@@ -1418,7 +1429,9 @@ export const createWorktreeSlice: StateCreator<AppState, [], [], WorktreeSlice> 
   fetchWorktrees: async (repoId, options) => {
     try {
       const settings = settingsForRepoOwner(get(), repoId)
-      const detected = await listDetectedWorktreesForRepo(settings, repoId)
+      const detected = await listDetectedWorktreesForRepo(settings, repoId, {
+        background: options?.background
+      })
       if (options?.requireAuthoritative && !detected.authoritative) {
         return false
       }
@@ -1438,7 +1451,9 @@ export const createWorktreeSlice: StateCreator<AppState, [], [], WorktreeSlice> 
             ...(removedIds.length > 0 ? buildWorktreePurgeState(s, removedIds) : {})
           }
         })
-        await refreshRemoteWorktreeLineageBestEffort(settings, set)
+        if (!options?.skipLineageRefresh) {
+          await refreshRemoteWorktreeLineageBestEffort(settings, set)
+        }
         return detected.authoritative
       }
 
@@ -1472,7 +1487,9 @@ export const createWorktreeSlice: StateCreator<AppState, [], [], WorktreeSlice> 
           ...(removedIds.length > 0 ? buildWorktreePurgeState(s, removedIds) : {})
         }
       })
-      await refreshRemoteWorktreeLineageBestEffort(settings, set)
+      if (!options?.skipLineageRefresh) {
+        await refreshRemoteWorktreeLineageBestEffort(settings, set)
+      }
       return detected.authoritative
     } catch (err) {
       console.error(`Failed to fetch worktrees for repo ${repoId}:`, err)
@@ -1577,6 +1594,18 @@ export const createWorktreeSlice: StateCreator<AppState, [], [], WorktreeSlice> 
       await refreshWorktreeLineageForSettings(get().settings, set)
     } catch (err) {
       console.error('Failed to fetch worktree lineage:', err)
+    }
+  },
+
+  refreshWorktreeLineageForRuntimeEnvironment: async (environmentId, options) => {
+    try {
+      // Why: a refresh round must fetch lineage from the *refreshed* env's host
+      // and host-merge under that host id — never the global active env — or a
+      // non-active server's round corrupts the active host's lineage map.
+      const scoped = settingsForRuntimeOwner(get().settings, environmentId) as AppState['settings']
+      await refreshWorktreeLineageForSettings(scoped, set, { background: options?.background })
+    } catch (err) {
+      console.error('Failed to fetch worktree lineage for runtime environment:', err)
     }
   },
 

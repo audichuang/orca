@@ -49,6 +49,7 @@ import {
   getWebRuntimeEnvironmentsSearchEntry
 } from './runtime-environments-search'
 import { unwrapRuntimeRpcResult } from '@/runtime/runtime-rpc-client'
+import { refreshRuntimeEnvironmentProjects } from '@/store/slices/runtime-environment-project-refresh'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
@@ -627,12 +628,11 @@ export function RuntimeEnvironmentsPane({
         }
         return false
       }
-      const store = useAppStore.getState()
       // Why: Connect is not the Active Server selector anymore, but connected
       // hosts should still contribute their projects/workspaces to the sidebar.
-      const repos = await store.fetchRuntimeEnvironmentRepos(environment.id)
-      await Promise.all(repos.map((repo) => useAppStore.getState().fetchWorktrees(repo.id)))
-      await useAppStore.getState().fetchWorktreeLineage()
+      // Use the shared env-scoped primitive so lineage is fetched once against
+      // the connected host (no N+1), foreground since this is user-initiated.
+      await refreshRuntimeEnvironmentProjects(useAppStore, environment.id)
       if (mountedRef.current) {
         toast.success(
           translate(

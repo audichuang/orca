@@ -111,9 +111,16 @@ export type WorktreeSlice = {
    */
   hasHydratedWorktreePurge: boolean
   fetchDetectedWorktrees: (repoId: string) => Promise<DetectedWorktreeListResult | null>
-  fetchWorktrees: (repoId: string, options?: { requireAuthoritative?: boolean }) => Promise<boolean>
+  fetchWorktrees: (
+    repoId: string,
+    options?: { requireAuthoritative?: boolean; skipLineageRefresh?: boolean; background?: boolean }
+  ) => Promise<boolean>
   fetchAllWorktrees: () => Promise<void>
   fetchWorktreeLineage: () => Promise<void>
+  refreshWorktreeLineageForRuntimeEnvironment: (
+    environmentId: string | null,
+    options?: { background?: boolean }
+  ) => Promise<void>
   updateWorktreeLineage: (
     worktreeId: string,
     args: { parentWorktreeId?: string; noParent?: boolean }

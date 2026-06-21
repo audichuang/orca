@@ -3502,6 +3502,7 @@ const api = {
       method: string
       params?: unknown
       timeoutMs?: number
+      background?: boolean
     }): Promise<RuntimeRpcResponse<unknown>> =>
       ipcRenderer.invoke('runtimeEnvironments:call', args),
     subscribe: async (
