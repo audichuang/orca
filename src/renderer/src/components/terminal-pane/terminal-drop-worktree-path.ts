@@ -17,3 +17,12 @@ export function joinRuntimeTerminalDropDir(worktreePath: string): string {
   }
   return `${worktreePath.replace(/[\\/]+$/, '')}/.orca/drops`
 }
+
+// Why: clipboard-image paste lands beside terminal file drops under the
+// gitignored .orca/ dir; mirror joinRuntimeTerminalDropDir's separator handling.
+export function joinRuntimePasteImagesDir(worktreePath: string): string {
+  if (isTerminalDropWindowsPathLike(worktreePath)) {
+    return `${worktreePath.replace(/[\\/]+$/, '').replace(/\//g, '\\')}\\.orca\\paste-images`
+  }
+  return `${worktreePath.replace(/[\\/]+$/, '')}/.orca/paste-images`
+}
