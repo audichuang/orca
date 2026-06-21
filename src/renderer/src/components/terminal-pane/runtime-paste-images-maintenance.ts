@@ -13,11 +13,11 @@ export async function ensureRuntimePasteImagesGitignore(
   ctx: RuntimeFileOperationArgs,
   worktreeId: string
 ): Promise<void> {
-  const target = getActiveRuntimeTarget(ctx.settings)
-  if (target.kind !== 'environment') {
-    return
-  }
   try {
+    const target = getActiveRuntimeTarget(ctx.settings)
+    if (target.kind !== 'environment') {
+      return
+    }
     await callRuntimeRpc(
       target,
       'files.writeBase64',
@@ -29,7 +29,7 @@ export async function ensureRuntimePasteImagesGitignore(
       { timeoutMs: 15_000 }
     )
   } catch {
-    // already exists or transient — non-fatal for the paste flow.
+    // already exists, transient, or getActiveRuntimeTarget threw — non-fatal for the paste flow.
   }
 }
 
@@ -44,12 +44,12 @@ export async function pruneRuntimePasteImages(
   worktreePath: string,
   opts?: { keep?: number }
 ): Promise<void> {
-  const target = getActiveRuntimeTarget(ctx.settings)
-  if (target.kind !== 'environment') {
-    return
-  }
-  const keep = opts?.keep ?? DEFAULT_KEEP
   try {
+    const target = getActiveRuntimeTarget(ctx.settings)
+    if (target.kind !== 'environment') {
+      return
+    }
+    const keep = opts?.keep ?? DEFAULT_KEEP
     const entries = await readRuntimeDirectory(ctx, joinRuntimePasteImagesDir(worktreePath))
     const stale = entries
       .map((entry) => entry.name)
@@ -72,6 +72,6 @@ export async function pruneRuntimePasteImages(
       )
     )
   } catch {
-    // listing failed (dir missing, transient) — pruning is best-effort.
+    // listing failed, getActiveRuntimeTarget threw, or transient error — pruning is best-effort.
   }
 }

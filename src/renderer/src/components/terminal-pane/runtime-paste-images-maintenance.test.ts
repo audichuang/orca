@@ -7,7 +7,7 @@ vi.mock('@/runtime/runtime-rpc-client', () => ({
 }))
 
 import { readRuntimeDirectory } from '@/runtime/runtime-file-client'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import {
   ensureRuntimePasteImagesGitignore,
   pruneRuntimePasteImages
@@ -58,5 +58,23 @@ describe('ensureRuntimePasteImagesGitignore', () => {
       new Error('invalid_relative_path? no — exists')
     )
     await expect(ensureRuntimePasteImagesGitignore(ctx as never, 'wt-1')).resolves.toBeUndefined()
+  })
+
+  it('never throws when getActiveRuntimeTarget throws synchronously', async () => {
+    ;(getActiveRuntimeTarget as never as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+      throw new Error('bad')
+    })
+    await expect(ensureRuntimePasteImagesGitignore(ctx as never, 'wt-1')).resolves.toBeUndefined()
+  })
+})
+
+describe('pruneRuntimePasteImages — getActiveRuntimeTarget throws', () => {
+  it('never throws when getActiveRuntimeTarget throws synchronously', async () => {
+    ;(getActiveRuntimeTarget as never as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+      throw new Error('bad')
+    })
+    await expect(
+      pruneRuntimePasteImages(ctx as never, 'wt-1', '/remote/repo')
+    ).resolves.toBeUndefined()
   })
 })
