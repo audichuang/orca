@@ -2436,7 +2436,9 @@
             "9acaf92093": "窗格操作",
             "1bce81dba6": "模拟器",
             "1ff1c77616": "浏览器",
-            "586d2ac445": "terminal"
+            "586d2ac445": "terminal",
+            "addSplitPane": "添加拆分窗格",
+            "closePaneColumn": "关闭拆分窗格"
           },
           "AiVaultSessionDropLayer": {
             "dropOntoTerminalPane": "拖放到 terminal 面板以恢复此会话。",
@@ -2444,6 +2446,9 @@
             "localWorkspacesOnly": "从历史恢复仅支持本地工作区。",
             "openLocalWorkspace": "恢复会话前请先打开一个本地工作区。",
             "sessionQueued": "会话已排队"
+          },
+          "TabGroupDropOverlay": {
+            "paneColumnLabel": "新建拆分"
           }
         },
         "bar": {
@@ -2514,7 +2519,9 @@
             "cb3eadefd2": "Blue",
             "20baa43c05": "没有任何",
             "60f958ec75": "引脚标签",
-            "417722e9c2": "取消固定标签"
+            "417722e9c2": "取消固定标签",
+            "splitTerminalRight": "向右拆分终端",
+            "splitTerminalDown": "向下拆分终端"
           },
           "TabBar": {
             "b1a132357f": "新标签页",
@@ -2606,6 +2613,13 @@
                 }
               }
             }
+          },
+          "TabWorkspaceLayoutMenuSection": {
+            "right": "右",
+            "left": "左",
+            "down": "下",
+            "up": "上",
+            "moveToPaneColumn": "将标签页移至拆分"
           }
         }
       },
@@ -9140,15 +9154,15 @@
             "monthsAgo": "{{value0}} 个月前",
             "yearsAgo": "{{value0}} 年前",
             "sessionId": "会话 ID",
-            "originalAsk": "Original ask",
-            "latestTurns": "Latest turns",
-            "noPreviewAvailable": "No conversation preview available",
-            "messageCount": "{{value0}} msgs",
-            "userRole": "You",
-            "agentRole": "Agent",
-            "toolRole": "Tool",
-            "systemRole": "System",
-            "sessionRole": "Session"
+            "originalAsk": "原始请求",
+            "latestTurns": "最近轮次",
+            "noPreviewAvailable": "没有可用的对话预览",
+            "messageCount": "{{value0}} 条消息",
+            "userRole": "你",
+            "agentRole": "智能体",
+            "toolRole": "工具",
+            "systemRole": "系统",
+            "sessionRole": "会话"
           },
           "AiVaultSessionRow": {
             "resumeAgentSession": "恢复 {{value0}} 会话",
@@ -9166,13 +9180,13 @@
             "showDetails": "显示详情",
             "moreSessionActions": "更多会话操作",
             "moreActions": "更多操作",
-            "noPreviewAvailable": "No conversation preview available",
-            "dragToResume": "Drag to resume in a new tab",
-            "userRole": "You",
-            "agentRole": "Agent",
-            "toolRole": "Tool",
-            "systemRole": "System",
-            "sessionRole": "Session"
+            "noPreviewAvailable": "没有可用的对话预览",
+            "dragToResume": "拖动以在新标签页中恢复",
+            "userRole": "你",
+            "agentRole": "智能体",
+            "toolRole": "工具",
+            "systemRole": "系统",
+            "sessionRole": "会话"
           },
           "FileExplorerNameFilter": {
             "26fb73c6e3": "查找文件",
