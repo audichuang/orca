@@ -102,7 +102,9 @@ test-results/
 playwright-report/
 
 # Agent skill installations (machine-local, populated by agent tooling)
-/.claude/skills/
+# Tool-installed skills stay local; hand-written fork skills are allow-listed below.
+/.claude/skills/*
+!/.claude/skills/sync-upstream/
 /.agents/skills/
 /skills-lock.json
 
