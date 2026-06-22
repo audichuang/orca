@@ -78,6 +78,7 @@ import {
   releaseBrowserAutomationVisibility
 } from '@/components/browser-pane/browser-automation-visibility'
 import { attachMobileMarkdownBridge } from '@/runtime/mobile-markdown-bridge'
+import { closeMobileSessionTabInStore } from '@/runtime/mobile-session-tab-close'
 import { subscribeRuntimeClientEvents } from '@/runtime/runtime-client-events'
 import { createRuntimeClientEventsSync } from './runtime-client-events-sync'
 import { createKeyedRefreshScheduler } from './keyed-refresh-scheduler'
@@ -1702,7 +1703,10 @@ export function useIpcEvents(): void {
         guardPinnedTabClose({
           isPinned: isPinnedSessionTab(store, worktreeId, tabId),
           tabLabel: resolvePinnedTabLabel(store, worktreeId, tabId),
-          onClose: () => useAppStore.getState().closeUnifiedTab(tabId)
+          onClose: () => {
+            const currentStore = useAppStore.getState()
+            closeMobileSessionTabInStore(currentStore, worktreeId, tabId)
+          }
         })
       })
     )
