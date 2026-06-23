@@ -2567,6 +2567,7 @@ export type PreloadApi = {
       method: string
       params?: unknown
       timeoutMs?: number
+      background?: boolean
     }) => Promise<RuntimeRpcResponse<unknown>>
     subscribe: (
       args: {
