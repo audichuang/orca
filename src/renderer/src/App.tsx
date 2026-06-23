@@ -130,6 +130,7 @@ import {
   canGoForwardWorktreeHistory
 } from '@/store/slices/worktree-nav-history'
 import { selectFloatingVisibleTabCount } from './store/selectors'
+import { hydrateStartupProjectModelHosts } from './store/slices/runtime-environment-project-refresh'
 import type { VirtualizedScrollAnchor } from './hooks/useVirtualizedScrollAnchor'
 import type { RemoteWorkspacePatchResult } from '../../shared/remote-workspace-types'
 import type { OnboardingState, UpdateStatus } from '../../shared/types'
@@ -386,9 +387,6 @@ function App(): React.JSX.Element {
   const actions = useAppStore(
     useShallow((s) => ({
       toggleSidebar: s.toggleSidebar,
-      fetchRepos: s.fetchRepos,
-      fetchProjectGroups: s.fetchProjectGroups,
-      fetchFolderWorkspaces: s.fetchFolderWorkspaces,
       fetchAllWorktrees: s.fetchAllWorktrees,
       fetchWorktreeLineage: s.fetchWorktreeLineage,
       fetchSettings: s.fetchSettings,
@@ -843,13 +841,10 @@ function App(): React.JSX.Element {
         // runtime environment, so hydration has to complete first or a
         // force-removed repo/group resurfaces on restart.
         await actions.hydratePendingProjectGroupDeletions()
-        // Why (B1): groups must be fetched BEFORE repos — fetchRepos applies the
-        // project-group tombstone filter against the current projectGroups, so a
-        // stale/empty group tree at repo-fetch time lets a force-removed repo
-        // resurface. Order: groups → repos → workspaces.
-        await actions.fetchProjectGroups()
-        await actions.fetchRepos()
-        await actions.fetchFolderWorkspaces()
+        // Why: Projects is multi-host. Startup must hydrate local plus each
+        // connected runtime host explicitly; the active-host route alone makes
+        // other hosts invisible until a host picker happens to focus them.
+        await hydrateStartupProjectModelHosts(useAppStore)
         await actions.fetchAllWorktrees()
         await actions.fetchWorktreeLineage()
         const persistedUI = await window.api.ui.get()

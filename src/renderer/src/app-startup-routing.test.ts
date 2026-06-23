@@ -11,14 +11,14 @@ describe('renderer startup runtime routing', () => {
 
     expect(startupBlock.indexOf('await actions.fetchSettings()')).toBeGreaterThanOrEqual(0)
     expect(startupBlock.indexOf('await actions.fetchSettings()')).toBeLessThan(
-      startupBlock.indexOf('await actions.fetchRepos()')
+      startupBlock.indexOf('await hydrateStartupProjectModelHosts')
     )
     expect(startupBlock.indexOf('await actions.fetchSettings()')).toBeLessThan(
       startupBlock.indexOf('await actions.fetchAllWorktrees()')
     )
   })
 
-  it('hydrates pending project-group deletions before the first repo/group/workspace fetch', () => {
+  it('hydrates pending project-group deletions before startup project model hydration', () => {
     // Why (B1): tombstones must be in state before any fetch whose filter depends
     // on them, or a force-removed group/repo resurfaces on app restart.
     const source = readFileSync(join(process.cwd(), 'src/renderer/src/App.tsx'), 'utf8')
@@ -27,35 +27,32 @@ describe('renderer startup runtime routing', () => {
     const startupBlock = source.slice(startupBlockStart, startupBlockEnd)
 
     const hydrateIndex = startupBlock.indexOf('await actions.hydratePendingProjectGroupDeletions()')
-    const reposIndex = startupBlock.indexOf('await actions.fetchRepos()')
-    const groupsIndex = startupBlock.indexOf('await actions.fetchProjectGroups()')
-    const workspacesIndex = startupBlock.indexOf('await actions.fetchFolderWorkspaces()')
+    const projectModelIndex = startupBlock.indexOf('await hydrateStartupProjectModelHosts')
 
     expect(hydrateIndex).toBeGreaterThanOrEqual(0)
-    expect(hydrateIndex).toBeLessThan(reposIndex)
-    expect(hydrateIndex).toBeLessThan(groupsIndex)
-    expect(hydrateIndex).toBeLessThan(workspacesIndex)
+    expect(projectModelIndex).toBeGreaterThanOrEqual(0)
+    expect(hydrateIndex).toBeLessThan(projectModelIndex)
   })
 
-  it('fetches project groups before repos on startup so the repo tombstone filter sees fresh groups', () => {
+  it('uses host-aware startup project model hydration before worktree hydration', () => {
     // Why (B1): fetchRepos applies the project-group tombstone filter against the
     // current get().projectGroups; if repos are fetched before groups, the live
     // subtree recompute runs against a stale/empty group tree and a force-removed
-    // repo can resurface on restart. Order must be groups → repos → workspaces.
+    // repo can resurface on restart. The helper preserves that per-host order
+    // while hydrating local and connected runtime hosts, not only the active host.
     const source = readFileSync(join(process.cwd(), 'src/renderer/src/App.tsx'), 'utf8')
     const startupBlockStart = source.indexOf('void (async () => {')
     const startupBlockEnd = source.indexOf('const persistedUI = await window.api.ui.get()')
     const startupBlock = source.slice(startupBlockStart, startupBlockEnd)
 
-    const groupsIndex = startupBlock.indexOf('await actions.fetchProjectGroups()')
-    const reposIndex = startupBlock.indexOf('await actions.fetchRepos()')
-    const workspacesIndex = startupBlock.indexOf('await actions.fetchFolderWorkspaces()')
+    const projectModelIndex = startupBlock.indexOf(
+      'await hydrateStartupProjectModelHosts(useAppStore)'
+    )
+    const worktreesIndex = startupBlock.indexOf('await actions.fetchAllWorktrees()')
 
-    expect(groupsIndex).toBeGreaterThanOrEqual(0)
-    expect(reposIndex).toBeGreaterThanOrEqual(0)
-    expect(workspacesIndex).toBeGreaterThanOrEqual(0)
-    expect(groupsIndex).toBeLessThan(reposIndex)
-    expect(reposIndex).toBeLessThan(workspacesIndex)
+    expect(projectModelIndex).toBeGreaterThanOrEqual(0)
+    expect(worktreesIndex).toBeGreaterThanOrEqual(0)
+    expect(projectModelIndex).toBeLessThan(worktreesIndex)
   })
 
   it('waits for first-window startup services before terminal reconnect', () => {

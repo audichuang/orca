@@ -62,6 +62,7 @@ import { filterSetupScriptPromptDismissalsToValidRepos } from '@/lib/setup-scrip
 import { notifyInstalledAgentSkillsChanged } from '@/hooks/useInstalledAgentSkills'
 import { translate } from '@/i18n/i18n'
 import {
+  type ExecutionHostId,
   getRepoExecutionHostId,
   LOCAL_EXECUTION_HOST_ID,
   parseExecutionHostId,
@@ -151,6 +152,8 @@ export type DeleteProjectGroupWithContainedProjectsResult =
       failedProjectRemovals: []
       reason: 'unreachable' | 'rejected'
     }
+
+type ProjectHostFetchOptions = { runtimeEnvironmentId?: string | null }
 
 function normalizeNestedRepoScanResult(scan: NestedRepoScanResult): NestedRepoScanResult {
   return {
@@ -638,6 +641,76 @@ function mergeFetchedReposForHost(
   )
 }
 
+function getProjectGroupOwnerHostId(
+  projectGroup: Pick<ProjectGroup, 'connectionId' | 'executionHostId'>
+): ExecutionHostId {
+  const executionHostId = parseExecutionHostId(projectGroup.executionHostId)?.id
+  if (executionHostId) {
+    return executionHostId
+  }
+  return projectGroup.connectionId
+    ? toSshExecutionHostId(projectGroup.connectionId)
+    : LOCAL_EXECUTION_HOST_ID
+}
+
+function isRuntimeExecutionHostId(hostId: ExecutionHostId): boolean {
+  return parseExecutionHostId(hostId)?.kind === 'runtime'
+}
+
+function shouldReplaceProjectModelHost(
+  hostId: ExecutionHostId,
+  target: ReturnType<typeof getActiveRuntimeTarget>
+): boolean {
+  if (target.kind === 'environment') {
+    return hostId === getRuntimeTargetHostId(target)
+  }
+  return !isRuntimeExecutionHostId(hostId)
+}
+
+function mergeFetchedProjectGroupsForTarget(
+  previous: readonly ProjectGroup[],
+  fetched: readonly ProjectGroup[],
+  target: ReturnType<typeof getActiveRuntimeTarget>
+): ProjectGroup[] {
+  const preserved = previous.filter(
+    (group) => !shouldReplaceProjectModelHost(getProjectGroupOwnerHostId(group), target)
+  )
+  return mergeById(preserved, fetched)
+}
+
+function getFolderWorkspaceOwnerHostId(
+  workspace: Pick<FolderWorkspace, 'connectionId' | 'projectGroupId'>,
+  projectGroupsById: ReadonlyMap<string, ProjectGroup>
+): ExecutionHostId | null {
+  const projectGroup = projectGroupsById.get(workspace.projectGroupId)
+  if (!projectGroup) {
+    return null
+  }
+  const explicitProjectGroupHostId = parseExecutionHostId(projectGroup.executionHostId)?.id
+  if (explicitProjectGroupHostId) {
+    return explicitProjectGroupHostId
+  }
+  const projectGroupHostId = getProjectGroupOwnerHostId(projectGroup)
+  if (projectGroupHostId !== LOCAL_EXECUTION_HOST_ID || !workspace.connectionId) {
+    return projectGroupHostId
+  }
+  return toSshExecutionHostId(workspace.connectionId)
+}
+
+function mergeFetchedFolderWorkspacesForTarget(
+  previous: readonly FolderWorkspace[],
+  fetched: readonly FolderWorkspace[],
+  projectGroups: readonly ProjectGroup[],
+  target: ReturnType<typeof getActiveRuntimeTarget>
+): FolderWorkspace[] {
+  const projectGroupsById = new Map(projectGroups.map((group) => [group.id, group]))
+  const preserved = previous.filter((workspace) => {
+    const hostId = getFolderWorkspaceOwnerHostId(workspace, projectGroupsById)
+    return hostId !== null && !shouldReplaceProjectModelHost(hostId, target)
+  })
+  return mergeById(preserved, fetched)
+}
+
 async function fetchReposForTarget(
   target: ReturnType<typeof getActiveRuntimeTarget>,
   currentRepos: readonly Repo[],
@@ -701,6 +774,15 @@ type FolderWorkspacePathStatusRouteOptions = { runtimeEnvironmentId?: string | n
 
 function getFolderWorkspacePathStatusRouteSettings(
   options: FolderWorkspacePathStatusRouteOptions | undefined,
+  fallbackSettings: GlobalSettings | null
+): Pick<GlobalSettings, 'activeRuntimeEnvironmentId'> | null | undefined {
+  return options && 'runtimeEnvironmentId' in options
+    ? { activeRuntimeEnvironmentId: options.runtimeEnvironmentId ?? null }
+    : fallbackSettings
+}
+
+function getProjectModelHostFetchRouteSettings(
+  options: ProjectHostFetchOptions | undefined,
   fallbackSettings: GlobalSettings | null
 ): Pick<GlobalSettings, 'activeRuntimeEnvironmentId'> | null | undefined {
   return options && 'runtimeEnvironmentId' in options
@@ -826,13 +908,13 @@ export type RepoSlice = {
   /** Removes all tombstones for an environment that has been permanently deleted.
    * Called after the main-process remove handler clears its own copy. */
   clearPendingProjectGroupDeletionsForEnvironment: (environmentId: string) => void
-  fetchRepos: () => Promise<void>
+  fetchRepos: (options?: ProjectHostFetchOptions) => Promise<void>
   fetchRuntimeEnvironmentRepos: (
     environmentId: string,
     options?: { background?: boolean }
   ) => Promise<Repo[]>
-  fetchProjectGroups: () => Promise<void>
-  fetchFolderWorkspaces: () => Promise<void>
+  fetchProjectGroups: (options?: ProjectHostFetchOptions) => Promise<void>
+  fetchFolderWorkspaces: (options?: ProjectHostFetchOptions) => Promise<void>
   addRepo: () => Promise<Repo | null>
   addRepoPath: (path: string, kind?: 'git' | 'folder') => Promise<Repo | null>
   setupProjectExistingFolder: (
@@ -1070,9 +1152,11 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
     }))
   },
 
-  fetchRepos: async () => {
+  fetchRepos: async (options) => {
     try {
-      const target = getActiveRuntimeTarget(get().settings)
+      const target = getActiveRuntimeTarget(
+        getProjectModelHostFetchRouteSettings(options, get().settings)
+      )
       const {
         repos: fetchedRepos,
         projectCompatibility,
@@ -1153,9 +1237,11 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
     }
   },
 
-  fetchProjectGroups: async () => {
+  fetchProjectGroups: async (options) => {
     try {
-      const target = getActiveRuntimeTarget(get().settings)
+      const target = getActiveRuntimeTarget(
+        getProjectModelHostFetchRouteSettings(options, get().settings)
+      )
       // Why: a reconnecting/partial daemon can return an envelope without a
       // `groups` array; coerce to [] so the map/filter chain cannot crash.
       const rawGroups =
@@ -1182,18 +1268,22 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
             environmentId
           )
         : ownedGroups
-      set({
-        projectGroups,
+      set((s) => ({
+        // Project groups are fetched per focused host. Preserve the other
+        // hosts so local and runtime project trees can stay visible together.
+        projectGroups: mergeFetchedProjectGroupsForTarget(s.projectGroups, projectGroups, target),
         folderWorkspacePathStatuses: {}
-      })
+      }))
     } catch (err) {
       console.error('Failed to fetch project groups:', err)
     }
   },
 
-  fetchFolderWorkspaces: async () => {
+  fetchFolderWorkspaces: async (options) => {
     try {
-      const target = getActiveRuntimeTarget(get().settings)
+      const target = getActiveRuntimeTarget(
+        getProjectModelHostFetchRouteSettings(options, get().settings)
+      )
       // Why: a reconnecting/partial daemon can return an envelope without a
       // `folderWorkspaces` array; coerce to [] so the tombstone filter cannot crash.
       const rawWorkspaces =
@@ -1217,7 +1307,17 @@ export const createRepoSlice: StateCreator<AppState, [], [], RepoSlice> = (set, 
             environmentId
           )
         : rawWorkspaces
-      set({ folderWorkspaces, folderWorkspacePathStatuses: {} })
+      set((s) => ({
+        // Folder workspace IDs are host-local data; refresh only the owner
+        // host so switching runtime/local focus does not hide the other side.
+        folderWorkspaces: mergeFetchedFolderWorkspacesForTarget(
+          s.folderWorkspaces,
+          folderWorkspaces,
+          s.projectGroups,
+          target
+        ),
+        folderWorkspacePathStatuses: {}
+      }))
     } catch (err) {
       console.error('Failed to fetch folder workspaces:', err)
     }

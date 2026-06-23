@@ -78,7 +78,11 @@ function pinnedItem(id: string, project: Repo, sectionKey: string): Extract<Row,
 }
 
 function folderWorkspaceRow(
-  connectionId: string | null
+  connectionId: string | null,
+  overrides: {
+    projectGroup?: Partial<ProjectGroup>
+    folderWorkspace?: Partial<FolderWorkspace>
+  } = {}
 ): Extract<Row, { type: 'folder-workspace' }> {
   const projectGroup: ProjectGroup = {
     id: 'group-1',
@@ -91,7 +95,8 @@ function folderWorkspaceRow(
     isCollapsed: false,
     color: null,
     createdAt: 1,
-    updatedAt: 1
+    updatedAt: 1,
+    ...overrides.projectGroup
   }
   const folderWorkspace: FolderWorkspace = {
     id: 'folder-1',
@@ -107,7 +112,8 @@ function folderWorkspaceRow(
     sortOrder: 0,
     lastActivityAt: 1,
     createdAt: 1,
-    updatedAt: 1
+    updatedAt: 1,
+    ...overrides.folderWorkspace
   }
   return {
     type: 'folder-workspace',
@@ -639,6 +645,45 @@ describe('addHostSectionRows', () => {
     expect(sectioned.filter((row) => row.type === 'host-header')).toMatchObject([
       { hostId: 'local', collapsed: false },
       { hostId: 'ssh:ssh-1', collapsed: true, count: 1 }
+    ])
+  })
+
+  it('groups runtime-owned folder workspaces under their runtime host section', () => {
+    const local = repo('local')
+    const folder = folderWorkspaceRow(null, {
+      projectGroup: { executionHostId: 'runtime:env-1' }
+    })
+    const rows = [repoHeader(local), item('local-wt', local), folder]
+
+    const sectioned = addHostSectionRows({
+      rows,
+      hostOptions: [
+        {
+          id: 'local',
+          kind: 'local',
+          label: 'Local Mac',
+          detail: 'This computer',
+          health: 'local'
+        },
+        {
+          id: 'runtime:env-1',
+          kind: 'runtime',
+          label: 'Ubuntu VM',
+          detail: 'Orca server',
+          health: 'available'
+        }
+      ],
+      workspaceHostScope: 'all',
+      visibleWorkspaceHostIds: ['local', 'runtime:env-1'],
+      defaultHostId: 'local'
+    })
+
+    expect(sectioned.map(rowKey)).toEqual([
+      'host:local',
+      'repo:local',
+      'local-wt',
+      'host:runtime:env-1',
+      'folder-workspace:folder-1'
     ])
   })
 

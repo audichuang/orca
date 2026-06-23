@@ -162,7 +162,9 @@ describe('project group store routing', () => {
       settings: { activeRuntimeEnvironmentId: 'env-1' } as never,
       // Seed stale groups so a swallowed throw (no `?? []`) would leave them in
       // place; the defensive coercion must replace them with the empty list.
-      projectGroups: [{ ...projectGroup, parentPath: '/workspace/platform' }]
+      projectGroups: [
+        { ...projectGroup, parentPath: '/workspace/platform', executionHostId: 'runtime:env-1' }
+      ]
     })
 
     await expect(store.getState().fetchProjectGroups()).resolves.toBeUndefined()

@@ -13,6 +13,7 @@ import type { SshConnectionStatus } from '../../../../shared/ssh-types'
 import type { FolderWorkspace, ProjectGroup, Repo } from '../../../../shared/types'
 import { PINNED_GROUP_KEY } from './worktree-list-groups'
 import type { Row } from './worktree-list-groups'
+import { getFolderWorkspaceExecutionHostIdForRows } from './worktree-list-host-filtering'
 
 export type HostHeaderRow = {
   type: 'host-header'
@@ -54,17 +55,16 @@ function getRepoHostId(
   return defaultHostId
 }
 
-function getSshHostId(connectionId: string): ExecutionHostId {
-  return `ssh:${encodeURIComponent(connectionId)}` as ExecutionHostId
-}
-
 function getFolderWorkspaceHostId(
   folderWorkspace: Pick<FolderWorkspace, 'connectionId'>,
-  projectGroup: Pick<ProjectGroup, 'connectionId'>,
+  projectGroup: Pick<ProjectGroup, 'connectionId' | 'executionHostId'>,
   defaultHostId: ExecutionHostId
 ): ExecutionHostId {
-  const connectionId = folderWorkspace.connectionId ?? projectGroup.connectionId
-  return connectionId ? getSshHostId(connectionId) : defaultHostId
+  return getFolderWorkspaceExecutionHostIdForRows({
+    folderWorkspace,
+    projectGroup,
+    defaultHostId
+  })
 }
 
 function getRowHostId(row: Row, defaultHostId: ExecutionHostId): ExecutionHostId | null {

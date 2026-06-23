@@ -287,10 +287,22 @@ describe('createSettingsSlice runtime switching', () => {
     expect(store.getState().repos.find((repo) => repo.id === 'repo-env-2')?.executionHostId).toBe(
       'runtime:env-2'
     )
-    // B3: switching to env-2 (now active) does a full refresh, so projectGroups
-    // reflects the newly-active env's list (the mock returns none) — env-1's
-    // group is no longer the active host's data.
-    expect(store.getState().projectGroups).toEqual([])
+    // Why: runtime switching is a focus change, not a host teardown. The
+    // env-2 refresh must not make env-1 project groups disappear from Projects.
+    expect(store.getState().projectGroups).toEqual([
+      {
+        id: 'group-env-1',
+        name: 'Env 1 Group',
+        parentPath: '/env-1',
+        parentGroupId: null,
+        createdFrom: 'manual',
+        tabOrder: 0,
+        isCollapsed: false,
+        color: null,
+        createdAt: 1,
+        updatedAt: 1
+      }
+    ])
     expect(store.getState().worktreesByRepo['repo-env-1']?.map((worktree) => worktree.id)).toEqual([
       'repo-env-1::/env-1/repo'
     ])
