@@ -922,6 +922,12 @@ export function useIpcEvents(): void {
       minIntervalMs: 0,
       refresh: async (key) => {
         const [environmentId = '', repoId = ''] = key.split('\u0000')
+        // Why: the active env can change during the debounce/in-flight window, so
+        // re-gate at execution time — never run a heavy refresh for an env the
+        // user already switched away from.
+        if (environmentId !== getActiveRuntimeEnvironmentId()) {
+          return
+        }
         await ensureRuntimeEventRepoKnown(environmentId, repoId)
         await handleWorktreesChangedRuntime(environmentId, repoId)
       },
@@ -934,6 +940,12 @@ export function useIpcEvents(): void {
       debounceMs: 200,
       minIntervalMs: 0,
       refresh: async (environmentId) => {
+        // Why: the active env can change during the debounce/in-flight window, so
+        // re-gate at execution time — never run a heavy refresh for an env the
+        // user already switched away from.
+        if (environmentId !== getActiveRuntimeEnvironmentId()) {
+          return
+        }
         // Why: the shared primitive enforces replay → groups → repos →
         // workspaces → worktrees/lineage so force-removed items cannot resurface
         // and the repo/workspace tombstone filters see freshly-fetched groups.

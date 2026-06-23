@@ -4128,6 +4128,9 @@ describe('runtime event coalescing', () => {
     activeEnvironmentId: string | null
     repoId: string
   }) {
+    // Mutable so a test can switch the active env mid-debounce to exercise the
+    // execution-time re-gate; defaults to opts so existing tests are unchanged.
+    let activeEnvironmentId = opts.activeEnvironmentId
     const fetchWorktrees = vi.fn().mockResolvedValue(true)
     const fetchWorktreeLineage = vi.fn()
     const refreshWorktreeLineageForRuntimeEnvironment = vi.fn().mockResolvedValue(undefined)
@@ -4216,7 +4219,7 @@ describe('runtime event coalescing', () => {
           removeSshCredentialRequest: vi.fn(),
           clearTabPtyId: vi.fn(),
           settings: {
-            activeRuntimeEnvironmentId: opts.activeEnvironmentId,
+            activeRuntimeEnvironmentId: activeEnvironmentId,
             terminalFontSize: 13
           }
         })
@@ -4380,6 +4383,9 @@ describe('runtime event coalescing', () => {
 
     return {
       emit,
+      setActiveEnv: (id: string | null) => {
+        activeEnvironmentId = id
+      },
       emitLocalWorktreesChanged,
       flush,
       fetchWorktrees,
@@ -4414,6 +4420,22 @@ describe('runtime event coalescing', () => {
     })
     // Never the bare cross-host lineage fetch.
     expect(harness.fetchWorktreeLineage).not.toHaveBeenCalled()
+  })
+
+  it('skips a scheduled worktree refresh when the env became non-active during debounce', async () => {
+    const harness = await useRuntimeEventHarness({ activeEnvironmentId: 'envA', repoId: 'repo1' })
+
+    harness.emit('envA', { type: 'worktreesChanged', repoId: 'repo1' })
+    // User switches to another server before the 200ms debounce fires.
+    harness.setActiveEnv('envB')
+
+    await vi.advanceTimersByTimeAsync(200)
+    await harness.flush()
+
+    // The scheduled refresh must re-gate on the now-active env and skip envA's
+    // heavy fan-out — otherwise it storms an env the user just left.
+    expect(harness.fetchWorktrees).not.toHaveBeenCalled()
+    expect(harness.refreshWorktreeLineageForRuntimeEnvironment).not.toHaveBeenCalled()
   })
 
   it('runs distinct repos under one env as independent refreshes', async () => {
@@ -4469,6 +4491,22 @@ describe('runtime event coalescing', () => {
     expect(harness.fetchRuntimeEnvironmentRepos).toHaveBeenCalledTimes(1)
     expect(harness.refreshWorktreeLineageForRuntimeEnvironment).toHaveBeenCalledTimes(1)
     expect(harness.fetchWorktreeLineage).not.toHaveBeenCalled()
+  })
+
+  it('skips a scheduled repos refresh when the env became non-active during debounce', async () => {
+    const harness = await useRuntimeEventHarness({ activeEnvironmentId: 'envA', repoId: 'repo1' })
+
+    harness.emit('envA', { type: 'reposChanged' })
+    // User switches to another server before the 200ms debounce fires.
+    harness.setActiveEnv('envB')
+
+    await vi.advanceTimersByTimeAsync(200)
+    await harness.flush()
+
+    // Re-gate at execution time: the replay/refresh fan-out must not run for the
+    // env the user just left.
+    expect(harness.fetchRuntimeEnvironmentRepos).not.toHaveBeenCalled()
+    expect(harness.refreshWorktreeLineageForRuntimeEnvironment).not.toHaveBeenCalled()
   })
 
   it('reposChanged for active env replays tombstones before fetching groups and workspaces', async () => {
