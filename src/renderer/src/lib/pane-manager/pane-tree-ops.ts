@@ -65,9 +65,9 @@ function captureScrollStateForFit(pane: ManagedPane): ScrollState | null {
     : captureScrollState(pane.terminal)
 }
 
-export function safeFit(pane: ManagedPane): void {
+export function safeFit(pane: ManagedPane): boolean {
   if (!canMeasurePaneForFit(pane)) {
-    return
+    return false
   }
   let scrollState: ScrollState | null = null
   let shouldRestoreScroll = false
@@ -85,7 +85,7 @@ export function safeFit(pane: ManagedPane): void {
         shouldRestoreScroll = true
         pane.terminal.resize(override.cols, override.rows)
       }
-      return
+      return true
     }
 
     const dims = getProposedDimensions(pane)
@@ -93,13 +93,16 @@ export function safeFit(pane: ManagedPane): void {
       // Why: divider drags fire refits every frame, but most frames do not
       // cross a cell boundary. Skipping those avoids FitAddon.clear()+refresh()
       // churn, which was causing visible terminal blinking while resizing.
-      return
+      return true
     }
     scrollState = captureScrollStateForFit(pane)
     shouldRestoreScroll = true
     pane.fitAddon.fit()
+    return true
   } catch {
-    // Container may not have dimensions yet
+    // Why: a thrown fit means the container had no usable dimensions, so
+    // pane.terminal.cols/rows are NOT a trustworthy measurement.
+    return false
   } finally {
     if (shouldRestoreScroll && scrollState) {
       try {
@@ -110,6 +113,17 @@ export function safeFit(pane: ManagedPane): void {
       }
     }
   }
+}
+
+export function measuredPaneViewport(
+  pane: ManagedPane
+): { cols: number; rows: number } | undefined {
+  // Why: safeFit also fits the terminal as a side effect, but only trust the
+  // resulting cols/rows when it reports a real measurement — a hidden/
+  // unmeasured pane is still at xterm's default 80×24, which must not be sent
+  // as a viewport (it narrows + destructively re-serializes the shared remote
+  // emulator). See docs/superpowers/specs/2026-06-23-remote-reattach-narrow-scrollback-design.md.
+  return safeFit(pane) ? { cols: pane.terminal.cols, rows: pane.terminal.rows } : undefined
 }
 
 export function fitAllPanesInternal(panes: Map<number, ManagedPaneInternal>): void {

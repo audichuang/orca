@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { equalizePaneSplitSizes, safeFit } from './pane-tree-ops'
+import { equalizePaneSplitSizes, measuredPaneViewport, safeFit } from './pane-tree-ops'
 import type { ManagedPaneInternal, ScrollState } from './pane-manager-types'
 import { setFitOverride, hydrateOverrides } from './mobile-fit-overrides'
 
@@ -246,7 +246,7 @@ describe('safeFit', () => {
     pane.container.dataset.ptyId = 'pty-phone'
     setFitOverride('pty-phone', 'mobile-fit', 49, 20)
 
-    safeFit(pane)
+    expect(safeFit(pane)).toBe(true)
 
     expect(pane.fitAddon.fit).not.toHaveBeenCalled()
     expect(pane.terminal.resize).toHaveBeenCalledWith(49, 20)
@@ -262,10 +262,67 @@ describe('safeFit', () => {
     pane.container.dataset.ptyId = 'pty-phone'
     setFitOverride('pty-phone', 'mobile-fit', 49, 20)
 
-    safeFit(pane)
+    expect(safeFit(pane)).toBe(true)
 
     expect(pane.fitAddon.fit).not.toHaveBeenCalled()
     expect(pane.terminal.resize).not.toHaveBeenCalled()
+  })
+
+  it('returns false when the pane container is too small to measure', () => {
+    const pane = createPane({
+      proposedCols: 100,
+      proposedRows: 40,
+      terminalCols: 80,
+      terminalRows: 24,
+      containerWidth: 10,
+      containerHeight: 10
+    })
+    expect(safeFit(pane)).toBe(false)
+  })
+
+  it('returns false when proposed dimensions are below the fit minimum', () => {
+    const pane = createPane({
+      proposedCols: 2,
+      proposedRows: 2,
+      terminalCols: 80,
+      terminalRows: 24
+    })
+    expect(safeFit(pane)).toBe(false)
+  })
+
+  it('returns true after a real fit', () => {
+    const pane = createPane({
+      proposedCols: 100,
+      proposedRows: 40,
+      terminalCols: 80,
+      terminalRows: 24
+    })
+    expect(safeFit(pane)).toBe(true)
+    expect(pane.fitAddon.fit).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns true when the terminal already matches the proposed dimensions', () => {
+    const pane = createPane({
+      proposedCols: 100,
+      proposedRows: 40,
+      terminalCols: 100,
+      terminalRows: 40
+    })
+    expect(safeFit(pane)).toBe(true)
+    expect(pane.fitAddon.fit).not.toHaveBeenCalled()
+  })
+
+  it('returns false when fitAddon.fit throws', () => {
+    const pane = createPane({
+      proposedCols: 100,
+      proposedRows: 40,
+      terminalCols: 80,
+      terminalRows: 24
+    })
+    vi.mocked(pane.fitAddon.fit).mockImplementation(() => {
+      throw new Error('no dimensions')
+    })
+    expect(safeFit(pane)).toBe(false)
   })
 
   it('does not apply override when pane has no data-pty-id', () => {
@@ -327,6 +384,30 @@ describe('safeFit', () => {
     expect(paneA.fitAddon.fit).not.toHaveBeenCalled()
     expect(paneB.fitAddon.fit).toHaveBeenCalledTimes(1)
     expect(paneB.terminal.resize).not.toHaveBeenCalled()
+  })
+})
+
+describe('measuredPaneViewport', () => {
+  it('returns the terminal dimensions when the pane can be measured', () => {
+    const pane = createPane({
+      proposedCols: 100,
+      proposedRows: 40,
+      terminalCols: 80,
+      terminalRows: 24
+    })
+    expect(measuredPaneViewport(pane)).toEqual({ cols: 80, rows: 24 })
+  })
+
+  it('returns undefined when the pane cannot be measured', () => {
+    const pane = createPane({
+      proposedCols: 100,
+      proposedRows: 40,
+      terminalCols: 80,
+      terminalRows: 24,
+      containerWidth: 10,
+      containerHeight: 10
+    })
+    expect(measuredPaneViewport(pane)).toBeUndefined()
   })
 })
 

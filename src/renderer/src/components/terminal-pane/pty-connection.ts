@@ -21,7 +21,7 @@ import {
 } from '@/lib/windows-terminal-capabilities'
 import { shouldSeedCacheTimerOnInitialTitle } from './cache-timer-seeding'
 import type { PtyConnectionDeps } from './pty-connection-types'
-import { safeFit } from '@/lib/pane-manager/pane-tree-ops'
+import { measuredPaneViewport, safeFit } from '@/lib/pane-manager/pane-tree-ops'
 import { getFitOverrideForPty, bindPanePtyId } from '@/lib/pane-manager/mobile-fit-overrides'
 import { isPtyLocked } from '@/lib/pane-manager/mobile-driver-state'
 import { isPaneReplaying, replayIntoTerminal, replayIntoTerminalAsync } from './replay-guard'
@@ -1971,6 +1971,10 @@ export function connectPanePty(
   }
   pane.container.addEventListener(PANE_PTY_RESIZE_HOLD_FLUSH_EVENT, onHeldPtyResizeFlush)
 
+  let remoteRestoreWidthCorrectionArmed = false
+  // Why: onResize lives outside the rAF; this callback is wired inside the rAF
+  // once hidden-output-restore state exists, so the one-shot can reference it.
+  let fireRemoteRestoreWidthCorrection = (): void => {}
   const onResizeDisposable = pane.terminal.onResize(({ cols, rows }) => {
     if (shouldSuppressDesktopPtyResize()) {
       return
@@ -1979,6 +1983,12 @@ export function connectPanePty(
       return
     }
     transport.resize(cols, rows)
+    if (remoteRestoreWidthCorrectionArmed) {
+      // Why: host serialized restored scrollback at the stale reattach width (hard newlines).
+      // Desktop has no host-side resize re-stream; force one fresh re-snapshot at the real width.
+      remoteRestoreWidthCorrectionArmed = false
+      fireRemoteRestoreWidthCorrection()
+    }
   })
 
   // Why: while a mobile-fit override is active, the onResize listener above
@@ -2042,14 +2052,20 @@ export function connectPanePty(
     if (disposed) {
       return
     }
-    safeFit(pane)
-    const cols = pane.terminal.cols
-    const rows = pane.terminal.rows
+    // Why: a bailed safeFit (hidden/background restored pane) leaves xterm at
+    // its default 80×24. Sending that as a measured viewport makes the remote
+    // server narrow + destructively re-serialize the shared emulator. Pass
+    // undefined so the server snapshots at its own correct width; the show-time
+    // fit lands the real width and reflows the scrollback.
+    const measuredViewport = measuredPaneViewport(pane)
+    const cols = measuredViewport?.cols
+    const rows = measuredViewport?.rows
 
     // Why: if fitAddon resolved to 0×0, the container likely has no layout
     // dimensions (display:none, unmounted, or zero-size parent). Surface a
-    // diagnostic so the user sees something instead of a blank pane.
-    if (cols === 0 || rows === 0) {
+    // diagnostic so the user sees something instead of a blank pane. Only
+    // meaningful when we actually measured.
+    if (measuredViewport && (cols === 0 || rows === 0)) {
       deps.onPtyErrorRef?.current?.(
         pane.id,
         `Terminal has zero dimensions (${cols}×${rows}). The pane container may not be visible.`
@@ -2751,6 +2767,14 @@ export function connectPanePty(
       if (shouldWritePtyOutputForeground(deps.isVisibleRef.current)) {
         requestHiddenOutputRestoreIfNeeded()
       }
+    }
+
+    // Wire the one-shot corrector now that hidden-output-restore state exists.
+    // Why: markHiddenOutputRestoreNeeded already fetches a fresh host snapshot at
+    // the now-correct width; forcing freshSnapshotNeeded would only add a
+    // redundant second replay.
+    fireRemoteRestoreWidthCorrection = (): void => {
+      markHiddenOutputRestoreNeeded()
     }
 
     function shouldSkipHiddenRendererOutput(foreground: boolean, data: string): boolean {
@@ -3468,7 +3492,11 @@ export function connectPanePty(
       // Why: when a mobile-fit override is active, skip sending desktop dims
       // to the PTY — the PTY is already at phone dimensions and must stay there.
       const reattachPtyId = transport.getPtyId()
-      if (!reattachPtyId || !getFitOverrideForPty(reattachPtyId)) {
+      if (
+        cols != null &&
+        rows != null &&
+        (!reattachPtyId || !getFitOverrideForPty(reattachPtyId))
+      ) {
         transport.resize(cols, rows)
       }
       // Why: POSIX only delivers SIGWINCH when terminal dimensions actually
@@ -3938,6 +3966,12 @@ export function connectPanePty(
         agentCompletionCoordinator.startProcessTracking()
         if (attachPtyId === eagerLivePtyId) {
           registerPaneSerializerFor(attachPtyId)
+        }
+        // Why: an unmeasured reattach made the host serialize scrollback at a stale
+        // width (hard-newlined, non-reflowable). Once the pane is measured we force a
+        // one-shot re-snapshot at the real width. Desktop has no host-side re-stream.
+        if (!measuredViewport && isRemoteRuntimePtyId(attachPtyId)) {
+          remoteRestoreWidthCorrectionArmed = true
         }
       } catch (err) {
         reportError(err instanceof Error ? err.message : String(err))

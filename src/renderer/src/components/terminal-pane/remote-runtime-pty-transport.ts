@@ -45,6 +45,19 @@ function isRemoteTerminalGoneMessage(message: string): boolean {
   )
 }
 
+// Why: a pane that was not laid out at reattach leaves xterm at its default
+// 80×24. Sending that as a viewport makes the server narrow + destructively
+// re-serialize the shared emulator. Build a viewport only from a real
+// measurement; an absent viewport tells the server to keep its own width.
+function viewportFromConnectOptions(options: {
+  cols?: number
+  rows?: number
+}): { cols: number; rows: number } | null {
+  return options.cols != null && options.rows != null
+    ? { cols: options.cols, rows: options.rows }
+    : null
+}
+
 export function createRemoteRuntimePtyTransport(
   runtimeEnvironmentId: string,
   opts: IpcPtyTransportOptions = {}
@@ -176,10 +189,7 @@ export function createRemoteRuntimePtyTransport(
     handle = hostHandle
     remotePtyId = toRemoteRuntimePtyId(hostHandle, currentRuntimeEnvironmentId)
     connected = true
-    desiredViewport = {
-      cols: options.cols ?? 80,
-      rows: options.rows ?? 24
-    }
+    desiredViewport = viewportFromConnectOptions(options)
     onPtySpawn?.(remotePtyId)
 
     await subscribeToHandle()
@@ -427,10 +437,7 @@ export function createRemoteRuntimePtyTransport(
 
         remotePtyId = toRemoteRuntimePtyId(handle, currentRuntimeEnvironmentId)
         connected = true
-        desiredViewport = {
-          cols: options.cols ?? 80,
-          rows: options.rows ?? 24
-        }
+        desiredViewport = viewportFromConnectOptions(options)
         onPtySpawn?.(remotePtyId)
 
         await subscribeToHandle()
@@ -461,10 +468,7 @@ export function createRemoteRuntimePtyTransport(
       }
       remotePtyId = options.existingPtyId
       connected = true
-      desiredViewport = {
-        cols: options.cols ?? 80,
-        rows: options.rows ?? 24
-      }
+      desiredViewport = viewportFromConnectOptions(options)
       void subscribeToHandle().catch((error) => {
         handleRemoteTerminalError(error)
       })
@@ -542,6 +546,9 @@ export function createRemoteRuntimePtyTransport(
       if (!connected || !multiplexedStream) {
         return null
       }
+      // Why: a queued viewport resize must reach the host before this snapshot
+      // request so the host re-serializes at the correct width, not the stale one.
+      viewportBatcher.flush()
       return multiplexedStream.serializeBuffer(opts)
     },
 

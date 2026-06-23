@@ -33,6 +33,68 @@ describe('createRemoteRuntimePtyTransport', () => {
     })
   }
 
+  async function primeHostSessionMirror() {
+    runtimeCall.mockImplementation((args) => {
+      if (args.method === 'session.tabs.activate') {
+        return Promise.resolve({
+          ok: true,
+          result: {
+            worktree: 'id:wt-1',
+            publicationEpoch: 'epoch-1',
+            snapshotVersion: 1,
+            activeGroupId: 'group-1',
+            activeTabId: 'host-tab-1::leaf-1',
+            activeTabType: 'terminal',
+            tabs: [
+              {
+                type: 'terminal',
+                id: 'host-tab-1::leaf-1',
+                parentTabId: 'host-tab-1',
+                leafId: 'leaf-1',
+                title: 'Terminal 1',
+                isActive: true,
+                status: 'pending-handle',
+                terminal: null
+              }
+            ]
+          }
+        })
+      }
+      if (args.method === 'session.tabs.list') {
+        return Promise.resolve({
+          ok: true,
+          result: {
+            worktree: 'id:wt-1',
+            publicationEpoch: 'epoch-1',
+            snapshotVersion: 2,
+            activeGroupId: 'group-1',
+            activeTabId: 'host-tab-1::leaf-1',
+            activeTabType: 'terminal',
+            tabs: [
+              {
+                type: 'terminal',
+                id: 'host-tab-1::leaf-1',
+                parentTabId: 'host-tab-1',
+                leafId: 'leaf-1',
+                title: 'Terminal 1',
+                isActive: true,
+                status: 'ready',
+                terminal: 'terminal-1'
+              }
+            ]
+          }
+        })
+      }
+      return Promise.resolve({ ok: true, result: { terminal: { handle: 'duplicate-terminal' } } })
+    })
+    const { createRemoteRuntimePtyTransport } = await import('./remote-runtime-pty-transport')
+    return createRemoteRuntimePtyTransport('env-1', {
+      worktreeId: 'wt-1',
+      tabId: 'web-terminal-host-tab-1',
+      leafId: 'leaf-1'
+    })
+  }
+
   function latestSubscribePayload(): {
     streamId: number
     terminal: string
@@ -415,66 +477,7 @@ describe('createRemoteRuntimePtyTransport', () => {
   })
 
   it('activates pending host session mirrors instead of creating duplicate terminals', async () => {
-    runtimeCall.mockImplementation((args) => {
-      if (args.method === 'session.tabs.activate') {
-        return Promise.resolve({
-          ok: true,
-          result: {
-            worktree: 'id:wt-1',
-            publicationEpoch: 'epoch-1',
-            snapshotVersion: 1,
-            activeGroupId: 'group-1',
-            activeTabId: 'host-tab-1::leaf-1',
-            activeTabType: 'terminal',
-            tabs: [
-              {
-                type: 'terminal',
-                id: 'host-tab-1::leaf-1',
-                parentTabId: 'host-tab-1',
-                leafId: 'leaf-1',
-                title: 'Terminal 1',
-                isActive: true,
-                status: 'pending-handle',
-                terminal: null
-              }
-            ]
-          }
-        })
-      }
-      if (args.method === 'session.tabs.list') {
-        return Promise.resolve({
-          ok: true,
-          result: {
-            worktree: 'id:wt-1',
-            publicationEpoch: 'epoch-1',
-            snapshotVersion: 2,
-            activeGroupId: 'group-1',
-            activeTabId: 'host-tab-1::leaf-1',
-            activeTabType: 'terminal',
-            tabs: [
-              {
-                type: 'terminal',
-                id: 'host-tab-1::leaf-1',
-                parentTabId: 'host-tab-1',
-                leafId: 'leaf-1',
-                title: 'Terminal 1',
-                isActive: true,
-                status: 'ready',
-                terminal: 'terminal-1'
-              }
-            ]
-          }
-        })
-      }
-      return Promise.resolve({ ok: true, result: { terminal: { handle: 'duplicate-terminal' } } })
-    })
-    const { createRemoteRuntimePtyTransport } = await import('./remote-runtime-pty-transport')
-    const transport = createRemoteRuntimePtyTransport('env-1', {
-      worktreeId: 'wt-1',
-      tabId: 'web-terminal-host-tab-1',
-      leafId: 'leaf-1'
-    })
-
+    const transport = await primeHostSessionMirror()
     const result = await transport.connect({ url: '', callbacks: {} })
 
     expect(result).toEqual({ id: 'remote:env-1@@terminal-1', replay: '' })
@@ -485,15 +488,42 @@ describe('createRemoteRuntimePtyTransport', () => {
       })
     )
     expect(runtimeCall).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: 'terminal.create'
-      })
+      expect.objectContaining({ method: 'terminal.create' })
     )
     await vi.waitFor(() => expect(subscriptionSendBinary).toHaveBeenCalled())
-    expect(latestSubscribePayload()).toMatchObject({
-      terminal: 'terminal-1',
-      viewport: { cols: 80, rows: 24 }
+    expect(latestSubscribePayload()).toMatchObject({ terminal: 'terminal-1' })
+    expect(latestSubscribePayload().viewport).toBeUndefined()
+  })
+
+  it('forwards measured dimensions on the host-mirror path', async () => {
+    const transport = await primeHostSessionMirror()
+    await transport.connect({ url: '', cols: 100, rows: 30, callbacks: {} })
+    await vi.waitFor(() => expect(subscriptionSendBinary).toHaveBeenCalled())
+    expect(latestSubscribePayload().viewport).toEqual({ cols: 100, rows: 30 })
+  })
+
+  it('attaches with no viewport when dimensions were not measured', async () => {
+    const { createRemoteRuntimePtyTransport } = await import('./remote-runtime-pty-transport')
+    const transport = createRemoteRuntimePtyTransport('env-1', {
+      worktreeId: 'wt-1',
+      tabId: 'tab-1',
+      leafId: 'pane:1'
     })
+    transport.attach({ existingPtyId: 'remote:terminal-1', callbacks: {} })
+    await vi.waitFor(() => expect(subscriptionSendBinary).toHaveBeenCalled())
+    expect(latestSubscribePayload().viewport).toBeUndefined()
+  })
+
+  it('connects with no viewport when dimensions were not measured', async () => {
+    const { createRemoteRuntimePtyTransport } = await import('./remote-runtime-pty-transport')
+    const transport = createRemoteRuntimePtyTransport('env-1', {
+      worktreeId: 'wt-1',
+      tabId: 'tab-1',
+      leafId: 'pane:1'
+    })
+    await transport.connect({ url: '', callbacks: {} })
+    await vi.waitFor(() => expect(subscriptionSendBinary).toHaveBeenCalled())
+    expect(latestSubscribePayload().viewport).toBeUndefined()
   })
 
   it('activates the requested split leaf for pending host session mirrors', async () => {
@@ -1557,6 +1587,59 @@ describe('createRemoteRuntimePtyTransport', () => {
       source: undefined
     })
     expect(onReplayData).toHaveBeenCalledTimes(1)
+  })
+
+  it('serializeBuffer flushes a queued viewport before the SnapshotRequest frame', async () => {
+    vi.useFakeTimers()
+    try {
+      const { createRemoteRuntimePtyTransport } = await import('./remote-runtime-pty-transport')
+      const transport = createRemoteRuntimePtyTransport('env-1', {
+        worktreeId: 'wt-1',
+        tabId: 'tab-1',
+        leafId: 'pane:1'
+      })
+
+      transport.attach({
+        existingPtyId: 'remote:terminal-1',
+        cols: 80,
+        rows: 24,
+        callbacks: {}
+      })
+      // Advance timers so the multiplex subscription completes.
+      await vi.runAllTimersAsync()
+      await vi.waitFor(() => expect(subscriptionSendBinary).toHaveBeenCalled())
+      subscriptionSendBinary.mockClear()
+
+      // Queue a viewport resize (viewportBatcher.queue sets a timer, not immediate).
+      transport.resize(120, 40)
+      // At this point the Resize frame is still pending (timer not yet fired).
+      expect(
+        subscriptionSendBinary.mock.calls
+          .map((c) => decodeTerminalStreamFrame(c[0]))
+          .some((f) => f?.opcode === TerminalStreamOpcode.Resize)
+      ).toBe(false)
+
+      // serializeBuffer should flush the queued viewport BEFORE sending SnapshotRequest.
+      const snapshotPromise = transport.serializeBuffer?.({ scrollbackRows: 100 })
+
+      // Collect all frames sent up to now (serializeBuffer is sync up to the await).
+      const allFrames = subscriptionSendBinary.mock.calls.map((c) =>
+        decodeTerminalStreamFrame(c[0])
+      )
+      const resizeIdx = allFrames.findIndex((f) => f?.opcode === TerminalStreamOpcode.Resize)
+      const snapshotRequestIdx = allFrames.findIndex(
+        (f) => f?.opcode === TerminalStreamOpcode.SnapshotRequest
+      )
+
+      // Both frames must have been sent, with Resize strictly before SnapshotRequest.
+      expect(resizeIdx).toBeGreaterThanOrEqual(0)
+      expect(snapshotRequestIdx).toBeGreaterThan(resizeIdx)
+
+      // Clean up the in-flight promise.
+      snapshotPromise?.catch(() => {})
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('bounds oversized binary snapshots without closing the live stream', async () => {
