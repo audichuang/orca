@@ -2285,6 +2285,11 @@
             "stop_agent_confirm": "Stop Agent",
             "stop_command_confirm": "Stop and Close"
           },
+          "clipboardImagePaste": {
+            "worktreeNotReady": "Worktree not ready — try again in a moment.",
+            "uploading": "Uploading pasted image to runtime…",
+            "runtimeTooOld": "Update the remote runtime to paste images into it."
+          },
           "MobileDriverOverlay": {
             "c6460cf584": "Take back",
             "c8f2e1a4b9": "Take back this terminal",
@@ -2311,6 +2316,7 @@
           },
           "TerminalContextMenu": {
             "b4cdd9314e": "Clear Screen",
+            "refreshDisplay": "Refresh Display",
             "8c17d6786d": "Close Pane",
             "copyTerminalId": "Copy Terminal ID",
             "2cf85a6a55": "Copy Pane ID",

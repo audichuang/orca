@@ -12,6 +12,7 @@ import {
   Pencil,
   Play,
   Plus,
+  RefreshCw,
   X
 } from 'lucide-react'
 import {
@@ -51,6 +52,7 @@ type TerminalContextMenuProps = {
   onEqualizePaneSizes: () => void
   onClosePane: () => void
   onClearScreen: () => void
+  onRefreshDisplay: () => void
   onForkAgentSession: () => void
   repoQuickCommands: TerminalQuickCommand[]
   globalQuickCommands: TerminalQuickCommand[]
@@ -80,6 +82,7 @@ export default function TerminalContextMenu({
   onEqualizePaneSizes,
   onClosePane,
   onClearScreen,
+  onRefreshDisplay,
   onForkAgentSession,
   repoQuickCommands,
   globalQuickCommands,
@@ -331,6 +334,13 @@ export default function TerminalContextMenu({
           </>
         )}
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onRefreshDisplay}>
+          <RefreshCw />
+          {translate(
+            'auto.components.terminal.pane.TerminalContextMenu.refreshDisplay',
+            'Refresh Display'
+          )}
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={onClearScreen}>
           <Eraser />
           {translate(

@@ -2285,6 +2285,11 @@
             "stop_agent_confirm": "Agent を停止",
             "stop_command_confirm": "停止して閉じる"
           },
+          "clipboardImagePaste": {
+            "worktreeNotReady": "ワークツリーの準備ができていません。しばらくしてからもう一度お試しください。",
+            "uploading": "貼り付けた画像をランタイムにアップロードしています…",
+            "runtimeTooOld": "画像を貼り付けるにはリモートランタイムを更新してください。"
+          },
           "MobileDriverOverlay": {
             "c6460cf584": "操作を取り戻す",
             "c8f2e1a4b9": "このターミナルを取り戻す",
@@ -2311,6 +2316,7 @@
           },
           "TerminalContextMenu": {
             "b4cdd9314e": "クリアスクリーン",
+            "refreshDisplay": "表示を更新",
             "8c17d6786d": "ペインを閉じる",
             "copyTerminalId": "Copy Terminal ID",
             "2cf85a6a55": "ペインIDのコピー",

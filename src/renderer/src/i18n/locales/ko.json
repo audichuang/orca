@@ -2285,6 +2285,11 @@
             "stop_agent_confirm": "Agent 중지",
             "stop_command_confirm": "중지하고 닫기"
           },
+          "clipboardImagePaste": {
+            "worktreeNotReady": "워크트리가 아직 준비되지 않았습니다. 잠시 후 다시 시도하세요.",
+            "uploading": "붙여넣은 이미지를 런타임에 업로드하는 중…",
+            "runtimeTooOld": "이미지를 붙여넣으려면 원격 런타임을 업데이트하세요."
+          },
           "MobileDriverOverlay": {
             "c6460cf584": "제어권 가져오기",
             "c8f2e1a4b9": "이 terminal 다시 가져오기",
@@ -2311,6 +2316,7 @@
           },
           "TerminalContextMenu": {
             "b4cdd9314e": "화면 지우기",
+            "refreshDisplay": "화면 새로 고침",
             "8c17d6786d": "창 닫기",
             "copyTerminalId": "Copy Terminal ID",
             "2cf85a6a55": "창 ID 복사",

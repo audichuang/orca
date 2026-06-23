@@ -2285,6 +2285,11 @@
             "stop_agent_confirm": "Detener agente",
             "stop_command_confirm": "Detener y cerrar"
           },
+          "clipboardImagePaste": {
+            "worktreeNotReady": "El árbol de trabajo no está listo; inténtalo de nuevo en un momento.",
+            "uploading": "Subiendo la imagen pegada al runtime…",
+            "runtimeTooOld": "Actualiza el runtime remoto para pegar imágenes en él."
+          },
           "MobileDriverOverlay": {
             "c6460cf584": "Devolver",
             "c8f2e1a4b9": "Recuperar este terminal",
@@ -2311,6 +2316,7 @@
           },
           "TerminalContextMenu": {
             "b4cdd9314e": "Borrar pantalla",
+            "refreshDisplay": "Actualizar pantalla",
             "8c17d6786d": "Cerrar panel",
             "copyTerminalId": "Copy Terminal ID",
             "2cf85a6a55": "Copiar ID del panel",

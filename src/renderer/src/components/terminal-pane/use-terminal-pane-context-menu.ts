@@ -40,6 +40,10 @@ import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { recordTerminalUserInputForLeaf } from './terminal-input-activity'
 import { copyTerminalHandleForPane } from './terminal-handle-copy'
+import {
+  refreshAllTerminalPanes,
+  resetAllTerminalWebglAtlases
+} from '@/lib/pane-manager/pane-manager-registry'
 
 const CLOSE_ALL_CONTEXT_MENUS_EVENT = 'orca-close-all-context-menus'
 
@@ -90,6 +94,7 @@ type TerminalMenuState = {
   onEqualizePaneSizes: () => void
   onClosePane: () => void
   onClearScreen: () => void
+  onRefreshDisplay: () => void
   onForkAgentSession: () => Promise<void>
   onQuickCommand: (command: TerminalQuickCommand) => void
   onToggleExpand: () => void
@@ -378,6 +383,16 @@ export function useTerminalPaneContextMenu({
     }
   }
 
+  const onRefreshDisplay = (): void => {
+    const pane = resolveMenuPane()
+    // Why: rebuild the shared WebGL glyph atlas (recovers garbled glyphs), then
+    // repaint. Never refit — a resize reflows scrollback and leaves wrapped
+    // history at the old width (narrow/garbled top above normal new output).
+    resetAllTerminalWebglAtlases()
+    refreshAllTerminalPanes()
+    pane?.terminal.focus()
+  }
+
   const onForkAgentSession = async (): Promise<void> => {
     const pane = resolveMenuPane()
     if (!pane) {
@@ -514,6 +529,7 @@ export function useTerminalPaneContextMenu({
     onEqualizePaneSizes,
     onClosePane,
     onClearScreen,
+    onRefreshDisplay,
     onForkAgentSession,
     onQuickCommand,
     onToggleExpand,

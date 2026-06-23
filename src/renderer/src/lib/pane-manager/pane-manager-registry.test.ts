@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
 import {
   refitAndRefreshAllTerminalPanes,
+  refreshAllTerminalPanes,
   registerLivePaneManager,
   resetAllTerminalWebglAtlases,
   unregisterLivePaneManager
@@ -106,6 +107,54 @@ describe('pane manager registry', () => {
     expect(broken.fitAllPanes).toHaveBeenCalledTimes(1)
     expect(broken.refreshAllPanes).not.toHaveBeenCalled()
     expect(healthy.fitAllPanes).toHaveBeenCalledTimes(1)
+    expect(healthy.refreshAllPanes).toHaveBeenCalledTimes(1)
+  })
+
+  it('repaints every registered manager without ever fitting', () => {
+    const first = {
+      resetWebglTextureAtlases: vi.fn<() => void>(),
+      fitAllPanes: vi.fn<() => void>(),
+      refreshAllPanes: vi.fn<() => void>()
+    }
+    const second = {
+      resetWebglTextureAtlases: vi.fn<() => void>(),
+      fitAllPanes: vi.fn<() => void>(),
+      refreshAllPanes: vi.fn<() => void>()
+    }
+    registerLivePaneManager(first)
+    registeredManagers.push(first)
+    registerLivePaneManager(second)
+    registeredManagers.push(second)
+
+    refreshAllTerminalPanes()
+
+    // Why: Refresh Display must repaint only — a fit would resize cols and
+    // reflow scrollback (the narrow/garbled-top regression this guards against).
+    expect(first.refreshAllPanes).toHaveBeenCalledTimes(1)
+    expect(second.refreshAllPanes).toHaveBeenCalledTimes(1)
+    expect(first.fitAllPanes).not.toHaveBeenCalled()
+    expect(second.fitAllPanes).not.toHaveBeenCalled()
+  })
+
+  it('continues repainting later managers when one manager throws', () => {
+    const broken = {
+      resetWebglTextureAtlases: vi.fn<() => void>(),
+      refreshAllPanes: vi.fn<() => void>(() => {
+        throw new Error('pane disposed')
+      })
+    }
+    registerLivePaneManager(broken)
+    registeredManagers.push(broken)
+    const healthy = {
+      resetWebglTextureAtlases: vi.fn<() => void>(),
+      refreshAllPanes: vi.fn<() => void>()
+    }
+    registerLivePaneManager(healthy)
+    registeredManagers.push(healthy)
+
+    expect(() => refreshAllTerminalPanes()).not.toThrow()
+
+    expect(broken.refreshAllPanes).toHaveBeenCalledTimes(1)
     expect(healthy.refreshAllPanes).toHaveBeenCalledTimes(1)
   })
 })

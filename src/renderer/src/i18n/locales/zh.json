@@ -2285,6 +2285,11 @@
             "stop_agent_confirm": "停止 Agent",
             "stop_command_confirm": "停止并关闭"
           },
+          "clipboardImagePaste": {
+            "worktreeNotReady": "工作树尚未就绪，请稍后再试。",
+            "uploading": "正在将粘贴的图像上传到运行时…",
+            "runtimeTooOld": "请更新远程运行时以粘贴图像。"
+          },
           "MobileDriverOverlay": {
             "c6460cf584": "收回",
             "c8f2e1a4b9": "收回此终端",
@@ -2311,6 +2316,7 @@
           },
           "TerminalContextMenu": {
             "b4cdd9314e": "清晰的屏幕",
+            "refreshDisplay": "刷新显示",
             "8c17d6786d": "关闭窗格",
             "copyTerminalId": "复制 Terminal ID",
             "2cf85a6a55": "复制窗格 ID",

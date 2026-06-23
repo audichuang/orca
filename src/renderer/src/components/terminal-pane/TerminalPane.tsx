@@ -2481,6 +2481,7 @@ export default function TerminalPane({
         onEqualizePaneSizes={contextMenu.onEqualizePaneSizes}
         onClosePane={contextMenu.onClosePane}
         onClearScreen={contextMenu.onClearScreen}
+        onRefreshDisplay={contextMenu.onRefreshDisplay}
         onForkAgentSession={() => void contextMenu.onForkAgentSession()}
         repoQuickCommands={repoQuickCommands}
         globalQuickCommands={globalQuickCommands}

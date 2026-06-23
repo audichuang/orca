@@ -46,3 +46,21 @@ export function refitAndRefreshAllTerminalPanes(): void {
     }
   }
 }
+
+/**
+ * Repaints every live pane's renderer WITHOUT refitting (no resize).
+ *
+ * Why: a manual "Refresh Display" must not change geometry. A refit can resize
+ * cols and reflow the buffer, which leaves already-wrapped scrollback at the
+ * old width (a narrow/garbled top above normal-width new output). Repaint-only
+ * recovers a stale/garbled renderer while preserving the current dimensions.
+ */
+export function refreshAllTerminalPanes(): void {
+  for (const manager of liveManagers) {
+    try {
+      manager.refreshAllPanes?.()
+    } catch {
+      // Why: best-effort across live managers during mount/teardown.
+    }
+  }
+}
