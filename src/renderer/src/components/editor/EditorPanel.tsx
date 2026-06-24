@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { getConnectionId } from '@/lib/connection-context'
+import { useDiffToolbarNavigation } from './useDiffToolbarNavigation'
 import { detectLanguage } from '@/lib/language-detect'
 import { openFilePreviewToSide } from '@/lib/file-preview'
 import { getEditorHeaderCopyState } from './editor-header'
@@ -217,6 +218,11 @@ function EditorPanelInner({
     }
   }, [activeFile, clearCopiedPathToastResetTimer])
 
+  const { onRegisterDiffNavigation, onDiffPrevChange, onDiffNextChange } = useDiffToolbarNavigation(
+    activeFile,
+    activeViewStateId
+  )
+
   if (!activeFile) {
     return null
   }
@@ -377,6 +383,9 @@ function EditorPanelInner({
       onCloseRenameDialog={closeRenameDialog}
       onRenameConfirm={handleRenameConfirm}
       markdownAnnotationsEnabled={markdownAnnotationsEnabled}
+      onRegisterDiffNavigation={onRegisterDiffNavigation}
+      onDiffPrevChange={onDiffPrevChange}
+      onDiffNextChange={onDiffNextChange}
     />
   )
 }

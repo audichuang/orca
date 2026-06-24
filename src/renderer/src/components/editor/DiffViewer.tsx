@@ -23,6 +23,7 @@ import { getLargeDiffRenderLimit } from './large-diff-render-limit'
 import { useDiffViewerLargeDiffLifecycle } from './useDiffViewerLargeDiffLifecycle'
 import { getDiffViewerLargeDiffSaveAction } from './diff-viewer-large-diff-save-action'
 import type { DiffViewerProps } from './diff-viewer-props'
+import { goToAdjacentChange } from './diff-change-navigation'
 
 export default function DiffViewer({
   modelKey,
@@ -43,7 +44,8 @@ export default function DiffViewer({
   onContentChange,
   onSave,
   largeDiffRenderLimit,
-  largeDiffSaveContentAvailable
+  largeDiffSaveContentAvailable,
+  onRegisterDiffNavigation
 }: DiffViewerProps): React.JSX.Element {
   const settings = useAppStore((s) => s.settings)
   const editorFontZoomLevel = useAppStore((s) => s.editorFontZoomLevel)
@@ -184,7 +186,18 @@ export default function DiffViewer({
     if (didAutoScrollFirstDiffRef.current) {
       return
     }
-    if (diffViewStateCache.get(modelKey)) {
+    // Why: a cross-file change-nav jump sets this edge scoped to a target file;
+    // only the matching viewer honors it (over cached scroll state) and lands on
+    // the matching hunk (next→first, prev→last). Consume once so it can't leak.
+    const scopedEdge = useAppStore.getState().pendingDiffChangeEdge
+    const pendingEdge =
+      scopedEdge && scopedEdge.worktreeId === worktreeId && scopedEdge.relativePath === relativePath
+        ? scopedEdge.edge
+        : null
+    if (pendingEdge) {
+      useAppStore.getState().setPendingDiffChangeEdge(null)
+    }
+    if (!pendingEdge && diffViewStateCache.get(modelKey)) {
       return
     }
     if (pendingScrollForThisViewer) {
@@ -205,7 +218,8 @@ export default function DiffViewer({
       if (!changes || changes.length === 0) {
         return
       }
-      const line = Math.max(1, changes[0].modifiedStartLineNumber)
+      const change = pendingEdge === 'last' ? (changes.at(-1) ?? changes[0]) : changes[0]
+      const line = Math.max(1, change.modifiedStartLineNumber)
       // Defer one frame so any view zones added in this render pass are part
       // of the layout before we measure. Cancel any earlier pending rAF so
       // a late onDidUpdateDiff can't enqueue a redundant scroll.
@@ -236,7 +250,9 @@ export default function DiffViewer({
         cancelAnimationFrame(rafId)
       }
     }
-  }, [modifiedEditor, modelKey, pendingScrollForThisViewer])
+    // worktreeId/relativePath are stable per mounted viewer; included so the
+    // scoped pending-edge match reads current values.
+  }, [modifiedEditor, modelKey, pendingScrollForThisViewer, worktreeId, relativePath])
 
   const handleEnterLargeDiffFallback = useCallback(() => {
     // Why: when a tab transitions to the safety fallback, stale Monaco refs
@@ -392,6 +408,15 @@ export default function DiffViewer({
       lineNumberOptionsSubRef.current = null
     }
   }, [sideBySide])
+
+  // Why: expose change navigation to the toolbar (a sibling above this viewer).
+  // The closure reads the ref at click time so it always targets the live editor;
+  // it returns false at a file boundary so the toolbar can switch files. Unregister
+  // on unmount so the toolbar can't drive a disposed editor.
+  useEffect(() => {
+    onRegisterDiffNavigation?.((direction) => goToAdjacentChange(diffEditorRef.current, direction))
+    return () => onRegisterDiffNavigation?.(null)
+  }, [onRegisterDiffNavigation])
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
