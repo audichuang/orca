@@ -303,6 +303,14 @@ export type PendingEditorReveal = {
   matchLength: number
 }
 
+// Why: scopes a cross-file diff-nav landing to its target so only the matching
+// DiffViewer (same worktree + path) consumes it. See pendingDiffChangeEdge.
+export type PendingDiffChangeEdge = {
+  edge: 'first' | 'last'
+  worktreeId: string
+  relativePath: string
+}
+
 const pendingEditorLineRevealFrameIds = new Set<number>()
 
 function cancelPendingEditorLineRevealFrames(): void {
@@ -685,6 +693,13 @@ export type EditorSlice = {
   // Editor navigation (for search result → go-to-line)
   pendingEditorReveal: PendingEditorReveal | null
   setPendingEditorReveal: (reveal: PendingEditorReveal | null) => void
+
+  // Why: when diff change-navigation crosses into an adjacent file, the freshly
+  // opened DiffViewer lands on this edge (next→'first' hunk, prev→'last') instead
+  // of its cached scroll position. Scoped to the target file so only the matching
+  // DiffViewer consumes it — an unrelated mount can't pick up a stale edge.
+  pendingDiffChangeEdge: PendingDiffChangeEdge | null
+  setPendingDiffChangeEdge: (edge: PendingDiffChangeEdge | null) => void
 
   // Session hydration — restore editor files from persisted workspace session
   hydrateEditorSession: (session: WorkspaceSessionState) => void
@@ -3911,6 +3926,8 @@ export const createEditorSlice: StateCreator<AppState, [], [], EditorSlice> = (s
   // Editor navigation
   pendingEditorReveal: null,
   setPendingEditorReveal: (reveal) => set({ pendingEditorReveal: reveal }),
+  pendingDiffChangeEdge: null,
+  setPendingDiffChangeEdge: (edge) => set({ pendingDiffChangeEdge: edge }),
 
   activateMarkdownLink: async (rawHref, ctx) => {
     const initialState = get()

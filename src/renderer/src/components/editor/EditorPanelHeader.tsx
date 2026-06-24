@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Columns2, Eye, FileText, ListTree, Rows2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Columns2, Eye, FileText, ListTree, Rows2 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import type { OpenFile } from '@/store/slices/editor'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -36,6 +36,8 @@ type EditorPanelHeaderProps = {
   markdownFrontmatterVisible: boolean
   sideBySide: boolean
   openFileState: EditorHeaderOpenFileState
+  onDiffPrevChange: () => void
+  onDiffNextChange: () => void
   onCopyPath: () => void
   onOpenDiffTargetFile: (preferredMarkdownViewMode?: 'rich') => void
   onOpenPreviewToSide: () => void
@@ -70,6 +72,8 @@ export function EditorPanelHeader({
   markdownFrontmatterVisible,
   sideBySide,
   openFileState,
+  onDiffPrevChange,
+  onDiffNextChange,
   onCopyPath,
   onOpenDiffTargetFile,
   onOpenPreviewToSide,
@@ -98,6 +102,46 @@ export function EditorPanelHeader({
         onOpenMarkdownPreview={onOpenMarkdownPreview}
         onOpenContainingFolder={onOpenContainingFolder}
       />
+      {isSingleDiff && (
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                onClick={onDiffPrevChange}
+                aria-label={translate(
+                  'auto.components.editor.EditorPanelHeader.2076ecfc9c',
+                  'Previous change'
+                )}
+              >
+                <ChevronUp size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={4}>
+              {translate('auto.components.editor.EditorPanelHeader.2076ecfc9c', 'Previous change')}
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                onClick={onDiffNextChange}
+                aria-label={translate(
+                  'auto.components.editor.EditorPanelHeader.631dab0df3',
+                  'Next change'
+                )}
+              >
+                <ChevronDown size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={4}>
+              {translate('auto.components.editor.EditorPanelHeader.631dab0df3', 'Next change')}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
       {isSingleDiff && (
         <TooltipProvider delayDuration={300}>
           <Tooltip>
