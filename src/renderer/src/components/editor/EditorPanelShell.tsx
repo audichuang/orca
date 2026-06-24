@@ -51,6 +51,11 @@ type EditorPanelShellProps = {
   onCloseRenameDialog: () => void
   onRenameConfirm: (newRelPath: string) => Promise<void>
   markdownAnnotationsEnabled: boolean
+  onRegisterDiffNavigation: (
+    goToChange: ((direction: 'next' | 'previous') => boolean) | null
+  ) => void
+  onDiffPrevChange: () => void
+  onDiffNextChange: () => void
 }
 
 export function EditorPanelShell({
@@ -90,7 +95,10 @@ export function EditorPanelShell({
   onCloseMarkdownTableOfContents,
   onCloseRenameDialog,
   onRenameConfirm,
-  markdownAnnotationsEnabled
+  markdownAnnotationsEnabled,
+  onRegisterDiffNavigation,
+  onDiffPrevChange,
+  onDiffNextChange
 }: EditorPanelShellProps): JSX.Element {
   return (
     <div ref={panelRef} className="flex flex-col flex-1 min-w-0 min-h-0">
@@ -117,6 +125,8 @@ export function EditorPanelShell({
           markdownFrontmatterVisible={markdownFrontmatterVisible}
           sideBySide={sideBySide}
           openFileState={model.openFileState}
+          onDiffPrevChange={onDiffPrevChange}
+          onDiffNextChange={onDiffNextChange}
           onCopyPath={onCopyPath}
           onOpenDiffTargetFile={onOpenDiffTargetFile}
           onOpenPreviewToSide={onOpenPreviewToSide}
@@ -153,6 +163,7 @@ export function EditorPanelShell({
           handleSave={onSave}
           handleSaveForFile={onSaveForFile}
           reloadFileContent={onReloadFileContent}
+          onRegisterDiffNavigation={onRegisterDiffNavigation}
           showMarkdownTableOfContents={showMarkdownTableOfContents}
           showMarkdownFrontmatter={markdownFrontmatterVisible}
           onCloseMarkdownTableOfContents={onCloseMarkdownTableOfContents}

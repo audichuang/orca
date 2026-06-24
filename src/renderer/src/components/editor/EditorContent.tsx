@@ -139,7 +139,8 @@ export function EditorContent({
   handleDirtyStateHint,
   handleSave,
   handleSaveForFile,
-  reloadFileContent
+  reloadFileContent,
+  onRegisterDiffNavigation
 }: {
   activeFile: OpenFile
   viewStateScopeId: string
@@ -167,6 +168,9 @@ export function EditorContent({
   handleSave: (content: string) => Promise<void>
   handleSaveForFile: (file: OpenFile, content: string) => Promise<void>
   reloadFileContent: (file: OpenFile) => void
+  onRegisterDiffNavigation?: (
+    goToChange: ((direction: 'next' | 'previous') => boolean) | null
+  ) => void
 }): React.JSX.Element {
   const editorViewStateKey =
     viewStateScopeId === activeFile.id
@@ -945,6 +949,7 @@ export function EditorContent({
       worktreeId={activeFile.worktreeId}
       onContentChange={isEditable ? handleContentChange : undefined}
       onSave={isEditable ? (isMarkdown ? md.mdSave : handleSave) : undefined}
+      onRegisterDiffNavigation={onRegisterDiffNavigation}
     />
   )
 }

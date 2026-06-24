@@ -28,4 +28,10 @@ export type DiffViewerProps = {
   // Why: main-process limited diffs intentionally blank text bodies before IPC;
   // the fallback must not treat that placeholder as a saveable draft.
   largeDiffSaveContentAvailable?: boolean
+  // Why: lets the editor toolbar (a sibling of this viewer) drive change-to-change
+  // navigation. The registered fn returns false at a file boundary so the toolbar
+  // can switch files; registers null on unmount so it never calls a dead editor.
+  onRegisterDiffNavigation?: (
+    goToChange: ((direction: 'next' | 'previous') => boolean) | null
+  ) => void
 }
