@@ -13,6 +13,7 @@ import type {
 import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
 import { getCombinedDiffSectionConnectionId } from './combined-diff-section-connection'
 import { withDiffSectionLoadTimeout } from './combined-diff-section-load-timeout'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 export function fetchCombinedDiffSection({
   branchCompare,
@@ -31,11 +32,8 @@ export function fetchCombinedDiffSection({
   isBranchMode: boolean
   isCommitMode: boolean
 }): Promise<GitDiffResult> {
-  const connectionId = getCombinedDiffSectionConnectionId(
-    file.worktreeId,
-    file.filePath,
-    entry.path
-  )
+  const gitWorktreeId = getOpenFileGitWorktreeId(file)
+  const connectionId = getCombinedDiffSectionConnectionId(gitWorktreeId, file.filePath, entry.path)
   const state = useAppStore.getState()
   const fileSettings = settingsForRuntimeOwner(state.settings, file.runtimeEnvironmentId)
   if ((isBranchMode || (isAllMode && !('area' in entry))) && branchCompare) {
@@ -43,7 +41,7 @@ export function fetchCombinedDiffSection({
       getRuntimeGitBranchDiff(
         {
           settings: fileSettings,
-          worktreeId: file.worktreeId,
+          worktreeId: gitWorktreeId,
           worktreePath: file.filePath,
           connectionId
         },
@@ -65,7 +63,7 @@ export function fetchCombinedDiffSection({
       getRuntimeGitCommitDiff(
         {
           settings: fileSettings,
-          worktreeId: file.worktreeId,
+          worktreeId: gitWorktreeId,
           worktreePath: file.filePath,
           connectionId
         },
@@ -82,7 +80,7 @@ export function fetchCombinedDiffSection({
     getRuntimeGitDiff(
       {
         settings: fileSettings,
-        worktreeId: file.worktreeId,
+        worktreeId: gitWorktreeId,
         worktreePath: file.filePath,
         connectionId
       },

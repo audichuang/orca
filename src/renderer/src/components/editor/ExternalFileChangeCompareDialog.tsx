@@ -61,7 +61,7 @@ export function ExternalFileChangeCompareDialog({
       settings: settingsForRuntimeOwner(useAppStore.getState().settings, file.runtimeEnvironmentId),
       filePath: file.filePath,
       relativePath: file.relativePath,
-      worktreeId: file.worktreeId,
+      worktreeId: file.gitWorktreeId ?? file.worktreeId,
       connectionId: getConnectionIdForFile(file.worktreeId, file.filePath) ?? undefined,
       expectedExternalSshTargetId: file.externalSshTargetId,
       access
@@ -91,6 +91,7 @@ export function ExternalFileChangeCompareDialog({
     file.filePath,
     file.relativePath,
     file.worktreeId,
+    file.gitWorktreeId,
     file.runtimeEnvironmentId,
     file.externalSshTargetId,
     access

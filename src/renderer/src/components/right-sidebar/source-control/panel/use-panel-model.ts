@@ -29,6 +29,7 @@ export function useSourceControlPanelModel() {
     activeRepoSettings,
     activeWorktree,
     activeWorktreeId,
+    editorWorktreeId,
     branchEntries,
     branchName,
     branchSummary,
@@ -145,12 +146,14 @@ export function useSourceControlPanelModel() {
   })
   const gitHistoryCommitActions = useGitHistoryCommitActions({
     activeWorktreeId,
+    editorWorktreeId,
     worktreePath,
     activeRepoSettings,
     resolveSplitTargetGroupId
   })
   const noteOpening = useSourceControlNoteOpening({
     activeWorktreeId,
+    editorWorktreeId,
     worktreePath,
     entries,
     branchEntries,

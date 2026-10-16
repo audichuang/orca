@@ -28,11 +28,14 @@ export function createHydrateEditorSession(
         const persistedActiveFileIdByWorktree = session.activeFileIdByWorktree ?? {}
         const persistedActiveTabTypeByWorktree = session.activeTabTypeByWorktree ?? {}
         const persistedMarkdownFrontmatterVisible = session.markdownFrontmatterVisible ?? {}
-
-        const validWorktreeIds = buildValidWorktreeIdsForSessionHydration(
-          s,
-          Object.keys(openFilesByWorktree)
-        )
+        // Why: git owners of scoped tabs get the same degraded-repo validity as session keys when their repo is not loaded yet.
+        const gitOwnerIds = Object.values(openFilesByWorktree)
+          .flat()
+          .flatMap((file) => (file.gitWorktreeId ? [file.gitWorktreeId] : []))
+        const validWorktreeIds = buildValidWorktreeIdsForSessionHydration(s, [
+          ...Object.keys(openFilesByWorktree),
+          ...gitOwnerIds
+        ])
         validWorktreeIds.add(FLOATING_TERMINAL_WORKTREE_ID)
         for (const workspace of s.folderWorkspaces) {
           validWorktreeIds.add(folderWorkspaceKey(workspace.id))
@@ -90,6 +93,11 @@ export function createHydrateEditorSession(
               isPreview: pf.isPreview,
               runtimeEnvironmentId: pf.runtimeEnvironmentId,
               externalSshTargetId: pf.externalSshTargetId,
+              ...(pf.gitWorktreeId &&
+              pf.gitWorktreeId !== worktreeId &&
+              validWorktreeIds.has(pf.gitWorktreeId)
+                ? { gitWorktreeId: pf.gitWorktreeId }
+                : {}),
               ...(isReadOnly ? { readOnly: true } : {}),
               ...(isReadOnly && pf.liveTail === true ? { liveTail: true } : {}),
               lastKnownDiskSignature: isReadOnly ? undefined : pf.lastKnownDiskSignature,
