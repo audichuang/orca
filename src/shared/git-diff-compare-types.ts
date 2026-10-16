@@ -51,6 +51,8 @@ export type GitDiffTextResult = {
   originalIsBinary: false
   modifiedIsBinary: false
   largeDiffRenderLimit?: LargeDiffRenderLimit
+  /** Sides whose '' content means absent or unreadable rather than an empty blob. Older hosts omit it. */
+  missingSides?: ('original' | 'modified')[]
 }
 
 export type GitDiffBinaryResult = {
@@ -63,6 +65,8 @@ export type GitDiffBinaryResult = {
   mimeType?: string
   /** True only for a proven deletion — distinct from an empty modified side caused by a read failure or size cap. */
   modifiedDeleted?: boolean
+  /** Sides whose '' content means absent or unreadable rather than an empty blob. Older hosts omit it. */
+  missingSides?: ('original' | 'modified')[]
 } & (
   | { originalIsBinary: true; modifiedIsBinary: boolean }
   | { originalIsBinary: boolean; modifiedIsBinary: true }

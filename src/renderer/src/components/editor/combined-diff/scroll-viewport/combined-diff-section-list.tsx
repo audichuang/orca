@@ -10,6 +10,7 @@ import { DiffNotesSendMenu } from '../../DiffNotesSendMenu'
 import { canOpenDiffSectionPreviewToSide } from '../../diff-section-preview'
 import type { DiffSection } from '../../diff-section-types'
 import type { CombinedDiffScrollThumb } from './use-combined-diff-scrollbar'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 export function CombinedDiffSectionList({
   activeGroupId,
@@ -113,7 +114,7 @@ export function CombinedDiffSectionList({
                   isDark={isDark}
                   settings={settings}
                   sectionHeight={sectionHeights[virtualItem.index]}
-                  worktreeId={file.worktreeId}
+                  worktreeId={getOpenFileGitWorktreeId(file)}
                   loadSection={loadSection}
                   loadDeferredSection={loadDeferredSection}
                   retrySection={retrySection}
