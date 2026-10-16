@@ -185,7 +185,8 @@ export type EditorFilesSlice = {
     worktreePath: string,
     alternate?: CombinedDiffAlternate,
     areaFilter?: string,
-    entriesSnapshot?: GitStatusEntry[]
+    entriesSnapshot?: GitStatusEntry[],
+    gitWorktreeId?: string
   ) => void
   openConflictFile: (
     worktreeId: string,
@@ -199,13 +200,15 @@ export type EditorFilesSlice = {
     worktreeId: string,
     worktreePath: string,
     entry: GitStatusEntry,
-    language: string
+    language: string,
+    gitWorktreeId?: string
   ) => void
   openConflictReview: (
     worktreeId: string,
     worktreePath: string,
     entries: ConflictReviewEntry[],
-    source: ConflictReviewState['source']
+    source: ConflictReviewState['source'],
+    gitWorktreeId?: string
   ) => void
   openCheckRunDetails: (
     worktreeId: string,
@@ -224,7 +227,8 @@ export type EditorFilesSlice = {
     worktreeId: string,
     worktreePath: string,
     compare: GitBranchCompareSummary,
-    alternate?: CombinedDiffAlternate
+    alternate?: CombinedDiffAlternate,
+    gitWorktreeId?: string
   ) => void
   openCommitAllDiffs: (
     worktreeId: string,
@@ -232,6 +236,7 @@ export type EditorFilesSlice = {
     compare: GitCommitCompareSummary,
     entries: GitBranchChangeEntry[],
     subject?: string,
-    message?: string
+    message?: string,
+    gitWorktreeId?: string
   ) => void
 }

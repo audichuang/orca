@@ -138,11 +138,17 @@ class IndexedOpenFileLookup {
       }
       if (file.mode === 'diff') {
         if (file.diffSource === 'unstaged' || file.diffSource === 'staged') {
-          addToListMap(this.diffsByRelativePath, file.relativePath, {
-            file,
-            index,
-            identity: null
-          })
+          // Why: a folder-scoped diff's relativePath is repo-relative while watch events are folder-relative.
+          const scoped = file.gitWorktreeId && file.gitWorktreeId !== file.worktreeId
+          addToListMap(
+            this.diffsByRelativePath,
+            scoped ? this.directKey(file.filePath) : file.relativePath,
+            {
+              file,
+              index,
+              identity: null
+            }
+          )
         }
         continue
       }
@@ -172,7 +178,10 @@ class IndexedOpenFileLookup {
     return collectMatchingFiles(
       this.directEditors.get(this.directKey(change.absolutePath)) ?? [],
       aliases,
-      this.diffsByRelativePath.get(change.relativePath) ?? []
+      [
+        ...(this.diffsByRelativePath.get(change.relativePath) ?? []),
+        ...(this.diffsByRelativePath.get(this.directKey(change.absolutePath)) ?? [])
+      ]
     )
   }
 }
