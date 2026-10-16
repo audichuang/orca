@@ -10,11 +10,14 @@ import { SourceControlCommitSurface } from './commit-surface'
 import { SourceControlForkPushNotice } from './fork-push-notice'
 import type { SourceControlPanelReadyProps } from './panel-props'
 import { useSourceControlScope } from './worktree-scope'
+import { sourceControlHistorySlots } from './source-control-history-slots'
+import { toastBottomClearanceRef } from '@/lib/toast-bottom-clearance'
 
 export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
   const { activeWorktree, currentWorktreeId, model, worktreePath } = props
   // Folder sections sit in cards, so the dock matches the card instead of the sidebar.
-  const dockBackground = useSourceControlScope() ? 'bg-card/95' : 'bg-sidebar/95'
+  const scope = useSourceControlScope()
+  const dockBackground = scope ? 'bg-card/95' : 'bg-sidebar/95'
   const {
     activeConnectionId,
     activeOpenRowKeys,
@@ -234,6 +237,8 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
       {isGitHistoryVisible && (
         // Dock history as reference context while the rest of the pane scrolls.
         <div
+          ref={toastBottomClearanceRef}
+          data-git-history-dock
           className={`sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border ${dockBackground} backdrop-blur-sm`}
         >
           <GitHistoryPanel
@@ -246,6 +251,14 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
             onLoadCommitFiles={loadCommitFiles}
             onOpenCommitFile={openCommitFile}
             onCommitAction={handleCommitAction}
+            {...(currentWorktreeId
+              ? sourceControlHistorySlots({
+                  model,
+                  tabOwnerId: scope?.placementWorkspaceId ?? currentWorktreeId,
+                  repoWorktreeId: currentWorktreeId,
+                  worktreePath
+                })
+              : {})}
           />
         </div>
       )}
