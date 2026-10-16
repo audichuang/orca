@@ -15,6 +15,7 @@ import type { EditorPanelContentLoadOptions } from './useEditorPanelExternalCont
 import { stampCleanTabDiskBaseline } from './editor-clean-tab-disk-baseline'
 import { translate } from '@/i18n/i18n'
 import { isWslDistroNotRunningRefusal } from '../../../../shared/wsl-distro-not-running-refusal'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 const inFlightDiffReads = new Map<string, InFlightContentRead<DiffContent>>()
 
@@ -71,7 +72,8 @@ export function useEditorPanelDiffContentLoader({
             ? file.branchCompare
             : null
         const commitCompare = file.commitCompare?.commitOid ? file.commitCompare : null
-        const connectionId = getConnectionIdForFile(file.worktreeId, file.filePath) ?? undefined
+        const gitWorktreeId = getOpenFileGitWorktreeId(file)
+        const connectionId = getConnectionIdForFile(gitWorktreeId, file.filePath) ?? undefined
         const fileTarget = requireRuntimeTargetForFileOwner(
           useAppStore.getState(),
           file.worktreeId,
@@ -105,7 +107,7 @@ export function useEditorPanelDiffContentLoader({
                 ? getRuntimeGitCommitDiff(
                     {
                       target: fileTarget,
-                      worktreeId: file.worktreeId,
+                      worktreeId: gitWorktreeId,
                       worktreePath,
                       connectionId
                     },
@@ -122,7 +124,7 @@ export function useEditorPanelDiffContentLoader({
                 ? getRuntimeGitBranchDiff(
                     {
                       target: fileTarget,
-                      worktreeId: file.worktreeId,
+                      worktreeId: gitWorktreeId,
                       worktreePath,
                       connectionId
                     },
@@ -141,7 +143,7 @@ export function useEditorPanelDiffContentLoader({
                 : getRuntimeGitDiff(
                     {
                       target: fileTarget,
-                      worktreeId: file.worktreeId,
+                      worktreeId: gitWorktreeId,
                       worktreePath,
                       connectionId
                     },

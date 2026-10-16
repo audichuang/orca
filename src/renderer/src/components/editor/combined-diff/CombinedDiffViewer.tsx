@@ -40,6 +40,7 @@ import { useCombinedDiffNotesActions } from './review-controls/use-combined-diff
 import { useCombinedDiffSectionActions } from './review-controls/use-combined-diff-section-actions'
 import { useCombinedDiffViewPreferences } from './review-controls/use-combined-diff-view-preferences'
 import { useDocumentDarkTheme } from '@/hooks/use-document-dark-theme'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 export default function CombinedDiffViewer({
   file,
@@ -56,20 +57,21 @@ export default function CombinedDiffViewer({
   const diffDefaultView = useAppStore((s) => s.settings?.diffDefaultView)
   const diffShowWhitespace = useAppStore((s) => s.settings?.diffShowWhitespace)
   const diffWordWrap = useAppStore((s) => s.settings?.diffWordWrap)
+  const gitWorktreeId = getOpenFileGitWorktreeId(file)
   const gitStatusEntries = useAppStore(
-    (s) => s.gitStatusByWorktree[file.worktreeId] ?? EMPTY_GIT_STATUS_ENTRIES
+    (s) => s.gitStatusByWorktree[gitWorktreeId] ?? EMPTY_GIT_STATUS_ENTRIES
   )
   const liveBranchEntries = useAppStore(
-    (s) => s.gitBranchChangesByWorktree[file.worktreeId] ?? EMPTY_GIT_BRANCH_ENTRIES
+    (s) => s.gitBranchChangesByWorktree[gitWorktreeId] ?? EMPTY_GIT_BRANCH_ENTRIES
   )
-  const branchSummary = useAppStore((s) => s.gitBranchCompareSummaryByWorktree[file.worktreeId])
+  const branchSummary = useAppStore((s) => s.gitBranchCompareSummaryByWorktree[gitWorktreeId])
   const openAllDiffs = useAppStore((s) => s.openAllDiffs)
   const openConflictReview = useAppStore((s) => s.openConflictReview)
   const openBranchAllDiffs = useAppStore((s) => s.openBranchAllDiffs)
   const updateSettings = useAppStore((s) => s.updateSettings)
   const clearDiffComments = useAppStore((s) => s.clearDiffComments)
   // The notes of the copy this diff was read from (the file's server when it names one).
-  const notesView = useVisibleWorktreeDiffComments(file.worktreeId, file)
+  const notesView = useVisibleWorktreeDiffComments(gitWorktreeId, file)
   const activeGroupId = useAppStore((s) => s.activeGroupIdByWorktree[file.worktreeId])
   const canOpenWorkspaceFileBrowserForPath = useWorkspaceFileBrowserActionPredicate(file.worktreeId)
   const isDark = useDocumentDarkTheme()
@@ -263,14 +265,25 @@ export default function CombinedDiffViewer({
     }
 
     if (file.combinedAlternate.source === 'combined-all') {
-      openAllDiffs(file.worktreeId, file.filePath)
+      openAllDiffs(
+        file.worktreeId,
+        file.filePath,
+        undefined,
+        undefined,
+        undefined,
+        file.gitWorktreeId
+      )
       return
     }
 
     if (branchSummary && branchSummary.status === 'ready') {
-      openBranchAllDiffs(file.worktreeId, file.filePath, branchSummary, {
-        source: 'combined-all'
-      })
+      openBranchAllDiffs(
+        file.worktreeId,
+        file.filePath,
+        branchSummary,
+        { source: 'combined-all' },
+        file.gitWorktreeId
+      )
     }
   }, [branchSummary, file, openAllDiffs, openBranchAllDiffs])
 
@@ -297,9 +310,10 @@ export default function CombinedDiffViewer({
         path: entry.path,
         conflictKind: entry.conflictKind
       })),
-      'combined-diff-exclusion'
+      'combined-diff-exclusion',
+      file.gitWorktreeId
     )
-  }, [file.filePath, file.worktreeId, openConflictReview, skippedConflicts])
+  }, [file.filePath, file.gitWorktreeId, file.worktreeId, openConflictReview, skippedConflicts])
 
   const commitHeader =
     entrySet.isCommitMode && entrySet.commitCompare ? (

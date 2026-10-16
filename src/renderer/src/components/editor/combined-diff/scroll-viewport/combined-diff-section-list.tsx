@@ -16,6 +16,7 @@ import { canOpenDiffSectionPreviewToSide } from '../../diff-section-preview'
 import type { DiffSection } from '../../diff-section-types'
 import type { CombinedDiffScrollThumb } from './use-combined-diff-scrollbar'
 import { translate } from '@/i18n/i18n'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 export function CombinedDiffSectionList({
   activeGroupId,
@@ -119,7 +120,7 @@ export function CombinedDiffSectionList({
                   sideBySide={sideBySide}
                   isDark={isDark}
                   sectionHeight={sectionHeights[virtualItem.index]}
-                  worktreeId={file.worktreeId}
+                  worktreeId={getOpenFileGitWorktreeId(file)}
                   noteSource={file}
                   loadSection={loadSection}
                   loadDeferredSection={loadDeferredSection}

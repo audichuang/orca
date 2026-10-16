@@ -9,7 +9,11 @@ import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-com
 import { DiffLineCounts } from './diff-line-counts'
 import { reviewNoteCountTitle } from './review-note-count-title'
 import { SourceControlEntryContextMenu } from './entry-context-menu'
-import { toPermanentSourceControlRowOpenEvent, type SourceControlRowOpenEvent } from './split-open'
+import {
+  SOURCE_CONTROL_OPEN_TO_SIDE_EVENT,
+  toPermanentSourceControlRowOpenEvent,
+  type SourceControlRowOpenEvent
+} from './split-open'
 import {
   getSourceControlRowHighlightClass,
   SOURCE_CONTROL_TREE_FILE_PADDING_PX,
@@ -52,6 +56,7 @@ export function BranchEntryRow({
       hasWorkingTreeFile={entry.status !== 'deleted'}
       connectionId={connectionId}
       onView={() => onOpen()}
+      onOpenToSide={() => onOpen(SOURCE_CONTROL_OPEN_TO_SIDE_EVENT)}
       onRevealInExplorer={onRevealInExplorer}
     >
       <div
