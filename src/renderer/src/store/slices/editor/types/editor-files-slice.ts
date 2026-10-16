@@ -34,6 +34,7 @@ import type {
   RestoredEditorOwnerMigration,
   RestoredEditorOwnerResult
 } from './restored-editor-owner'
+import type { GitGraphTabSlice } from './git-graph-tab-slice'
 
 export type OpenFileOptions = {
   placementWorkspaceId?: string
@@ -50,7 +51,7 @@ export type OpenFileOptions = {
   groupIndex?: number
 }
 
-export type EditorFilesSlice = {
+export type EditorFilesSlice = GitGraphTabSlice & {
   openFiles: OpenFile[]
   /** Buffer state per record (file identity, or tab id for views that never share); views mirror it. */
   editorBuffers: EditorBufferRecords
