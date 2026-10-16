@@ -134,7 +134,9 @@ class IndexedOpenFileLookup {
       }
       if (file.mode === 'diff') {
         if (file.diffSource === 'unstaged' || file.diffSource === 'staged') {
-          addToListMap(this.diffsByRelativePath, file.relativePath, {
+          // Why: a folder-scoped diff's relativePath is repo-relative while watch events are folder-relative.
+          const scoped = file.gitWorktreeId && file.gitWorktreeId !== file.worktreeId
+          addToListMap(this.diffsByRelativePath, scoped ? file.filePath : file.relativePath, {
             file,
             index,
             identity: null
@@ -165,11 +167,10 @@ class IndexedOpenFileLookup {
       : change.identity.isWslUnc
         ? (this.aliasEditors.get(change.identity.aliasComparisonPath) ?? [])
         : (this.wslAliasEditors.get(change.identity.aliasComparisonPath) ?? [])
-    return collectMatchingFiles(
-      this.directEditors.get(change.absolutePath) ?? [],
-      aliases,
-      this.diffsByRelativePath.get(change.relativePath) ?? []
-    )
+    return collectMatchingFiles(this.directEditors.get(change.absolutePath) ?? [], aliases, [
+      ...(this.diffsByRelativePath.get(change.relativePath) ?? []),
+      ...(this.diffsByRelativePath.get(change.absolutePath) ?? [])
+    ])
   }
 }
 

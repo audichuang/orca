@@ -11,7 +11,8 @@ export function SectionHeader({
   conflictCount = 0,
   isCollapsed,
   onToggle,
-  actions
+  actions,
+  preserveCase = false
 }: {
   label: string
   count: number
@@ -21,6 +22,8 @@ export function SectionHeader({
   isCollapsed: boolean
   onToggle: () => void
   actions?: React.ReactNode
+  /** Keeps the label's own casing for user-authored names (repos, branches) instead of the section-title style. */
+  preserveCase?: boolean
 }): React.JSX.Element {
   // Why: shared rounded container so the hover background spans the whole row instead of clipping around the label.
   return (
@@ -37,7 +40,7 @@ export function SectionHeader({
           <ChevronDown
             className={cn('size-3.5 shrink-0 transition-transform', isCollapsed && '-rotate-90')}
           />
-          <span className="min-w-0 flex-1">
+          <span className={cn('min-w-0 flex-1', preserveCase && 'normal-case tracking-normal')}>
             <span className="flex min-w-0 items-center gap-1">
               <span className="min-w-0 truncate" title={label}>
                 {label}
