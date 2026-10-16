@@ -1,6 +1,7 @@
 import { useEffect, type MutableRefObject } from 'react'
 import type { OpenFile } from '@/store/slices/editor'
 import { joinPath } from '@/lib/path'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 import type { useAppStore } from '@/store'
 import type { DiffContent, FileContent } from './editor-panel-content-types'
 import { isReloadableSingleFileDiffTab } from './editor-panel-diff-reload'
@@ -97,7 +98,9 @@ export function useEditorPanelActiveTabContentLoad({
 
         const absolutePath = joinPath(activeFile.filePath, entry.path)
         if (needsFileRead(absolutePath)) {
-          void loadFileContent(absolutePath, absolutePath, activeFile.worktreeId, entry.path)
+          void loadFileContent(absolutePath, absolutePath, activeFile.worktreeId, entry.path, {
+            gitWorktreeId: getOpenFileGitWorktreeId(activeFile)
+          })
         }
       }
       return

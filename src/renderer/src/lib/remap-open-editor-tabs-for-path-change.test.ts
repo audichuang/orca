@@ -527,4 +527,89 @@ describe('remapOpenEditorTabsForPathChange', () => {
       useAppStore.getState().openFiles.some((f) => f.filePath === '/repo/docs/readme.md')
     ).toBe(false)
   })
+
+  it('keeps the repo scope in a retargeted scoped diff tab id', () => {
+    useAppStore
+      .getState()
+      .openDiff('folder:f1', '/f/a/docs/readme.md', 'docs/readme.md', 'markdown', false, {
+        gitWorktreeId: 'repo-a'
+      })
+
+    remapOpenEditorTabsForPathChange({
+      fromPath: '/f/a/docs',
+      toPath: '/f/a/notes',
+      worktreePath: '/f/a',
+      worktreeId: 'repo-a'
+    })
+
+    const moved = useAppStore.getState().openFiles.find((f) => f.mode === 'diff')
+    expect(moved?.filePath).toBe('/f/a/notes/readme.md')
+    expect(moved?.id.startsWith('folder:f1@repo-a::diff::unstaged::')).toBe(true)
+  })
+
+  it('keeps a scoped diff tab relative to its repo when the folder explorer renames it', () => {
+    useAppStore
+      .getState()
+      .openDiff('folder:f1', '/f/a/docs/x.ts', 'docs/x.ts', 'typescript', false, {
+        gitWorktreeId: 'repo-a'
+      })
+
+    remapOpenEditorTabsForPathChange({
+      fromPath: '/f/a/docs/x.ts',
+      toPath: '/f/a/docs/y.ts',
+      worktreePath: '/f',
+      worktreeId: 'folder:f1'
+    })
+
+    const moved = useAppStore.getState().openFiles.find((f) => f.mode === 'diff')
+    expect(moved?.filePath).toBe('/f/a/docs/y.ts')
+    expect(moved?.relativePath).toBe('docs/y.ts')
+    expect(moved?.gitWorktreeId).toBe('repo-a')
+  })
+
+  it('re-homes a scoped edit tab moved out of its git owner to the folder', () => {
+    useAppStore.getState().openFile(
+      {
+        filePath: '/f/a/docs/x.ts',
+        relativePath: 'docs/x.ts',
+        worktreeId: 'folder:f1',
+        gitWorktreeId: 'repo-a',
+        runtimeEnvironmentId: null,
+        language: 'typescript',
+        mode: 'edit'
+      },
+      { suppressActiveRuntimeFallback: true }
+    )
+
+    remapOpenEditorTabsForPathChange({
+      fromPath: '/f/a/docs/x.ts',
+      toPath: '/f/b/x.ts',
+      worktreePath: '/f',
+      worktreeId: 'folder:f1'
+    })
+
+    const moved = useAppStore.getState().openFiles.find((f) => f.mode === 'edit')
+    expect(moved?.filePath).toBe('/f/b/x.ts')
+    expect(moved?.relativePath).toBe('b/x.ts')
+    expect(moved?.gitWorktreeId).toBeUndefined()
+  })
+
+  it('leaves a scoped diff tab alone when its file moves out of the git owner', () => {
+    useAppStore
+      .getState()
+      .openDiff('folder:f1', '/f/a/docs/x.ts', 'docs/x.ts', 'typescript', false, {
+        gitWorktreeId: 'repo-a'
+      })
+
+    remapOpenEditorTabsForPathChange({
+      fromPath: '/f/a/docs/x.ts',
+      toPath: '/f/b/x.ts',
+      worktreePath: '/f',
+      worktreeId: 'folder:f1'
+    })
+
+    const diff = useAppStore.getState().openFiles.find((f) => f.mode === 'diff')
+    expect(diff?.relativePath).toBe('docs/x.ts')
+    expect(diff?.gitWorktreeId).toBe('repo-a')
+  })
 })

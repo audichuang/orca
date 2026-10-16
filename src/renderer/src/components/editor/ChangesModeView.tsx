@@ -6,6 +6,7 @@ import type { GitStatusEntry } from '../../../../shared/git-status-types'
 import { ConflictBanner } from './ConflictComponents'
 import { getDiffContentSignature } from './diff-content-signature'
 import { translate } from '@/i18n/i18n'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 const DiffViewer = lazy(() => import('./DiffViewer'))
 
@@ -97,7 +98,7 @@ export function ChangesModeView({
           relativePath={activeFile.relativePath}
           sideBySide={sideBySide}
           editable={true}
-          worktreeId={activeFile.worktreeId}
+          worktreeId={getOpenFileGitWorktreeId(activeFile)}
           onContentChange={onContentChange}
           onSave={onSave}
         />

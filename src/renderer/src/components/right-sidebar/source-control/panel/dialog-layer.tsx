@@ -43,6 +43,7 @@ export function SourceControlDialogLayer({
   resolveConflictsPrompt,
   worktreeId,
   groupId,
+  initialCwd,
   connectionId,
   repoId,
   launchPlatform,
@@ -85,6 +86,7 @@ export function SourceControlDialogLayer({
   resolveConflictsPrompt: string
   worktreeId: AgentDialogProps['worktreeId']
   groupId: AgentDialogProps['groupId']
+  initialCwd: AgentDialogProps['initialCwd']
   connectionId: AgentDialogProps['connectionId']
   repoId: AgentDialogProps['repoId']
   launchPlatform: AgentDialogProps['launchPlatform']
@@ -193,6 +195,7 @@ export function SourceControlDialogLayer({
         baseCommandInput={resolveConflictsPrompt}
         worktreeId={worktreeId}
         groupId={groupId}
+        initialCwd={initialCwd}
         connectionId={connectionId}
         repoId={repoId}
         promptDelivery="submit-after-ready"

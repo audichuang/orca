@@ -197,6 +197,7 @@ const FILE = {
   isPreview: tab('isPreview'),
   runtimeEnvironmentId: own('file', 'runtimeEnvironmentId'),
   externalSshTargetId: own('file', 'externalSshTargetId'),
+  gitWorktreeId: own('file', 'gitWorktreeId'),
   dirtyDraftContent: own('editorDraft', 'dirtyDraftContent'),
   lastKnownDiskSignature: own('editorDraft', 'lastKnownDiskSignature'),
   readOnly: own('file', 'readOnly'),
