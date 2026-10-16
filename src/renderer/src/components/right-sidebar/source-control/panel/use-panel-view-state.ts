@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { resolveSourceControlGroupOrder } from '../listing/section-order'
 import { getNextSourceControlViewMode } from './header-toolbar'
 import { normalizeSourceControlViewMode } from '../commit/commit-drafts'
@@ -28,7 +28,6 @@ export function useSourceControlPanelViewState({
   const sourceControlRef = useRef<HTMLDivElement | null>(null)
   // Why: virtualize against the panel's shared scroller; use state (not a ref) so lists re-render and start observing once the element attaches.
   const [fileListScrollElement, setFileListScrollElement] = useState<HTMLDivElement | null>(null)
-  const isMac = useMemo(() => navigator.userAgent.includes('Mac'), [])
   const [filterExpanded, setFilterExpanded] = useState(false)
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     createDefaultCollapsedSections
@@ -98,7 +97,6 @@ export function useSourceControlPanelViewState({
     filterQuery,
     handleToggleSourceControlViewMode,
     isGitHistoryExpanded,
-    isMac,
     setBaseRefDialogOpen,
     setFileListScrollElement,
     setFilterExpanded,

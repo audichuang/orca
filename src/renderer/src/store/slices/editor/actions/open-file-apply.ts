@@ -136,6 +136,7 @@ export function applyOpenFileToState(
       existing.language !== file.language ||
       existing.relativePath !== file.relativePath ||
       existing.worktreeId !== file.worktreeId ||
+      (file.gitWorktreeId !== undefined && existing.gitWorktreeId !== file.gitWorktreeId) ||
       existing.runtimeEnvironmentId !== runtimeEnvironmentId ||
       existing.externalSshTargetId !== nextExternalSshTargetId ||
       existing.terminalArtifactGrantId !== nextGrantId ||
@@ -153,6 +154,10 @@ export function applyOpenFileToState(
               ...f,
               relativePath: file.relativePath,
               worktreeId: file.worktreeId,
+              // Why: a kept git owner is only valid for the repo-relative path it was opened with.
+              gitWorktreeId:
+                file.gitWorktreeId ??
+                (file.relativePath === f.relativePath ? f.gitWorktreeId : undefined),
               language: file.language,
               runtimeEnvironmentId,
               externalSshTargetId: nextExternalSshTargetId,

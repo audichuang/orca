@@ -97,6 +97,19 @@ describe('real Git missing paths and failed blob reads', () => {
     })
   })
 
+  it('reports missing sides only for absent blobs, not for empty ones', async () => {
+    await writeFile(path.join(repo, 'file.txt'), '')
+    gitCommit(repo, 'initial')
+    await writeFile(path.join(repo, 'file.txt'), 'dirty\n')
+    expect(await diff()).toMatchObject({ originalContent: '', modifiedContent: 'dirty\n' })
+    expect(await diff()).not.toHaveProperty('missingSides')
+    await git(['rm', '-f', 'file.txt'])
+    expect(await diff(true)).toMatchObject({ missingSides: ['modified'] })
+    await writeFile(path.join(repo, 'new.txt'), '')
+    await git(['add', 'new.txt'])
+    expect(await getDiff(repo, 'new.txt', true)).toMatchObject({ missingSides: ['original'] })
+  })
+
   it('recognizes actual index and tree absence without accepting corrupt objects', async () => {
     await writeFile(path.join(repo, 'seed.txt'), 'seed\n')
     gitCommit(repo, 'initial')

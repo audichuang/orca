@@ -14,7 +14,11 @@ import { DiffLineCounts } from './diff-line-counts'
 import { SourceControlEntryContextMenu } from './entry-context-menu'
 import { canDiscardStatusEntry, canStageStatusEntry, canUnstageStatusEntry } from './entry-actions'
 import { isSubmoduleWorktreeOnlyChange } from '../commit/discard-all-sequence'
-import { toPermanentSourceControlRowOpenEvent, type SourceControlRowOpenEvent } from './split-open'
+import {
+  SOURCE_CONTROL_OPEN_TO_SIDE_EVENT,
+  toPermanentSourceControlRowOpenEvent,
+  type SourceControlRowOpenEvent
+} from './split-open'
 import {
   SOURCE_CONTROL_ROW_ACTION_OVERLAY_CLASS,
   SOURCE_CONTROL_TREE_FILE_PADDING_PX,
@@ -47,6 +51,7 @@ export const UncommittedEntryRow = React.memo(function UncommittedEntryRow({
   onStage,
   onUnstage,
   onDiscard,
+  onCopyFullSource,
   commentCount,
   showPathHint = true,
   submoduleExpansion
@@ -66,6 +71,7 @@ export const UncommittedEntryRow = React.memo(function UncommittedEntryRow({
   onStage: (filePath: string) => Promise<void>
   onUnstage: (filePath: string, oldPath?: string) => Promise<void>
   onDiscard: (entry: GitStatusEntry) => void
+  onCopyFullSource?: (entryKey: string) => void
   commentCount: number
   showPathHint?: boolean
   // When set, the row is a dirty submodule: clicking toggles lazy expansion instead of opening an uninformative gitlink diff.
@@ -94,6 +100,8 @@ export const UncommittedEntryRow = React.memo(function UncommittedEntryRow({
       hasWorkingTreeFile={entry.status !== 'deleted'}
       connectionId={connectionId}
       onView={() => onOpen(entry)}
+      onOpenToSide={() => onOpen(entry, SOURCE_CONTROL_OPEN_TO_SIDE_EVENT)}
+      onCopyFullSource={onCopyFullSource ? () => onCopyFullSource(entryKey) : undefined}
       onRevealInExplorer={onRevealInExplorer}
       onOpenChange={(open) => {
         if (open && onContextMenu) {
