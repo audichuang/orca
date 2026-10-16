@@ -52,10 +52,17 @@ export function EditorConflictReviewSurface({
         activeFile.worktreeId,
         activeFile.filePath,
         entry,
-        detectLanguage(entry.path)
+        detectLanguage(entry.path),
+        activeFile.gitWorktreeId
       )
     },
-    [activeFile.filePath, activeFile.id, activeFile.worktreeId, openConflictReviewFile]
+    [
+      activeFile.filePath,
+      activeFile.gitWorktreeId,
+      activeFile.id,
+      activeFile.worktreeId,
+      openConflictReviewFile
+    ]
   )
 
   const createContentFile = (entry: GitStatusEntry): OpenFile => {
@@ -87,6 +94,7 @@ export function EditorConflictReviewSurface({
       filePath: absolutePath,
       relativePath: entry.path,
       worktreeId: activeFile.worktreeId,
+      gitWorktreeId: activeFile.gitWorktreeId,
       language: detectLanguage(entry.path),
       isDirty: false,
       mode: 'edit',
@@ -269,7 +277,8 @@ export function EditorConflictReviewSurface({
           worktreeEntries
             .filter((entry) => entry.conflictStatus === 'unresolved' && entry.conflictKind)
             .map((entry) => ({ path: entry.path, conflictKind: entry.conflictKind! })),
-          'live-summary'
+          'live-summary',
+          activeFile.gitWorktreeId
         )
       }
       onReturnToSourceControl={() => setRightSidebarTab('source-control')}

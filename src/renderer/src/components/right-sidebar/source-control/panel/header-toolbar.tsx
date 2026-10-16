@@ -15,6 +15,7 @@ import { HostedReviewHeaderLink, HostedReviewIcon } from '../review/hosted-revie
 import { SourceControlBranchContextRow } from './branch-context-row'
 import { shouldShowSourceControlBranchContextChrome } from './branch-context-stats'
 import { SourceControlHeaderOverflowMenu } from './header-overflow-menu'
+import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 
 type SourceControlHeaderToolbarProps = {
   filterQuery: string
@@ -165,6 +166,7 @@ export function SourceControlHeaderToolbar({
   manualReviewUrl,
   branchLineTotal
 }: SourceControlHeaderToolbarProps): React.JSX.Element {
+  const scopeLabel = useSourceControlWorktreeScope()?.label
   const filterInputRef = useRef<HTMLInputElement>(null)
   const normalizedFilter = filterQuery.trim()
   const showCollapsedToolbar = !filterExpanded
@@ -231,6 +233,10 @@ export function SourceControlHeaderToolbar({
                 isCreatingPr={isCreatingPr}
                 onClick={onCreatePrHeaderClick}
               />
+            ) : scopeLabel ? (
+              <span className="min-w-0 flex-1 truncate text-xs font-medium" title={scopeLabel}>
+                {scopeLabel}
+              </span>
             ) : (
               <span className="min-w-0 flex-1" aria-hidden="true" />
             )}

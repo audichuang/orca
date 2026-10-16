@@ -6,6 +6,7 @@ import { getWorktreeGitIdentityDisplay } from '../../../../../../shared/worktree
 import { useAppStore } from '@/store'
 import { useActiveWorktree, useRepoById, useWorktreeMap } from '@/store/selectors'
 import { getGitHubPRCacheKey } from '../../../../../../shared/github/github-cache-key'
+import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 import { getHostedReviewCacheKey } from '@/store/slices/hosted-review-cache-identity'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
@@ -22,11 +23,19 @@ const EMPTY_BRANCH_CHANGE_ENTRIES: GitBranchChangeEntry[] = []
  * the repo-owner-routed settings that every git call must be pinned to.
  */
 export function useSourceControlWorktreeContext() {
-  const activeWorktree = useActiveWorktree()
-  const activeWorktreeId = useAppStore((s) => s.activeWorktreeId)
+  const scope = useSourceControlWorktreeScope()
+  const storeActiveWorktree = useActiveWorktree()
+  const scopedWorktree = useAppStore((s) =>
+    scope ? (s.getKnownWorktreeById(scope.gitWorktreeId) ?? null) : null
+  )
+  const storeActiveWorktreeId = useAppStore((s) => s.activeWorktreeId)
+  // Why: inside a folder workspace each repo section pins the panel to that repo's worktree.
+  const activeWorktree = scope ? scopedWorktree : storeActiveWorktree
+  const activeWorktreeId = scope ? scope.gitWorktreeId : storeActiveWorktreeId
   const activeWorktreeInstanceId = activeWorktree?.instanceId
+  const editorWorktreeId = scope?.editorWorktreeId ?? activeWorktreeId
   const activeGroupId = useAppStore((s) =>
-    activeWorktreeId ? s.activeGroupIdByWorktree[activeWorktreeId] : undefined
+    editorWorktreeId ? s.activeGroupIdByWorktree[editorWorktreeId] : undefined
   )
   const worktreeMap = useWorktreeMap()
   const rightSidebarTab = useAppStore((s) => s.rightSidebarTab)
@@ -160,6 +169,7 @@ export function useSourceControlWorktreeContext() {
     branchSummary,
     conflictOperation,
     conflictOperationsByWorktree,
+    editorWorktreeId,
     entries,
     gitIdentityDisplay,
     hasUncommittedEntries,
