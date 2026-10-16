@@ -51,6 +51,8 @@ export type GitDiffTextResult = {
   originalIsBinary: false
   modifiedIsBinary: false
   largeDiffRenderLimit?: LargeDiffRenderLimit
+  /** Sides whose '' content means absent or unreadable rather than an empty blob. Older hosts omit it. */
+  missingSides?: ('original' | 'modified')[]
 }
 
 export type GitDiffBinaryResult = {
@@ -65,6 +67,8 @@ export type GitDiffBinaryResult = {
   modifiedDeleted?: boolean
   /** A side passed the 10 MiB read cap: too large to diff, not necessarily binary. Older clients show it as binary. */
   tooLarge?: boolean
+  /** Sides whose '' content means absent or unreadable rather than an empty blob. Older hosts omit it. */
+  missingSides?: ('original' | 'modified')[]
 } & (
   | { originalIsBinary: true; modifiedIsBinary: boolean }
   | { originalIsBinary: boolean; modifiedIsBinary: true }

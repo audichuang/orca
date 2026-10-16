@@ -1,7 +1,8 @@
 import { memo } from 'react'
 import { useTranslate } from '@/i18n/use-translate'
 import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
-import { SourceControlPanelReady } from './panel-ready'
+// Fork: wraps the ready panel in ClipCode's actions provider.
+import { ClipcodeSourceControlPanelReady as SourceControlPanelReady } from '../clipcode/clipcode-panel-ready'
 import { useSourceControlPanelModel } from './use-panel-model'
 
 export const SourceControlPanel = memo(function SourceControlPanel() {

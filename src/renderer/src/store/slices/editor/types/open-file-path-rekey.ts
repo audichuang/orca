@@ -9,6 +9,8 @@ export type OpenFilePathRekey = {
   newMarkdownPreviewSourceFileId?: string
   /** Explicit rename of an untitled file consumes its untitled status. */
   consumeUntitled?: boolean
+  /** The file moved out of its git owner's root, so the tab falls back to its tab owner. */
+  clearGitOwner?: boolean
 }
 
 export type RekeyOpenFilesResult = { ok: true } | { ok: false; reason: 'collision' | 'stale' }
