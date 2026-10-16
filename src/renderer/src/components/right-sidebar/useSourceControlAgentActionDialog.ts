@@ -24,8 +24,6 @@ import {
 } from './source-control-agent-action-dialog-support'
 import { useSourceControlAgentActionStart } from './useSourceControlAgentActionStart'
 
-const DEFAULT_SAVE_TARGET_VALUE = 'global'
-
 export function useSourceControlAgentActionDialog({
   open,
   onOpenChange,
@@ -35,6 +33,7 @@ export function useSourceControlAgentActionDialog({
   savedAgentArgs,
   worktreeId,
   groupId,
+  initialCwd,
   connectionId,
   repoId,
   promptDelivery = 'submit-after-ready',
@@ -56,8 +55,7 @@ export function useSourceControlAgentActionDialog({
   // Why: when this repo already overrides the global default, default the save
   // scope to the repo so saving the corrected agent updates that override in
   // place instead of writing a global default the override would still shadow.
-  const defaultSaveTargetValue =
-    launchAgentScope.overridesGlobalAgent && repoId ? 'repo' : DEFAULT_SAVE_TARGET_VALUE
+  const defaultSaveTargetValue = launchAgentScope.overridesGlobalAgent && repoId ? 'repo' : 'global'
   const [commandTemplate, setCommandTemplate] = useState(
     savedCommandInputTemplate ?? '{basePrompt}'
   )
@@ -201,6 +199,7 @@ export function useSourceControlAgentActionDialog({
       repo,
       worktreeId,
       groupId,
+      initialCwd,
       promptDelivery,
       launchPlatform,
       // Why: an SSH host runs the plain `orca` shim; keep the previewed command

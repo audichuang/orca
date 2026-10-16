@@ -29,6 +29,7 @@ import {
 } from './editor-artifact-upload'
 import { useEditorPanelSave } from './useEditorPanelSave'
 import { isMarkdownReviewNotesEnabled } from '@/lib/markdown-review-notes-setting'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 function EditorPanelInner({
   activeFileId: activeFileIdProp,
@@ -49,6 +50,7 @@ function EditorPanelInner({
   const activeViewStateId = activeViewStateIdProp ?? activeFileId
   const activeFile = openFiles.find((f) => f.id === activeFileId) ?? null
   const activeWorktreeId = activeFile?.worktreeId
+  const activeGitWorktreeId = activeFile ? getOpenFileGitWorktreeId(activeFile) : undefined
   const canOpenWorkspaceFileBrowser = useAppStore((s) =>
     activeWorktreeId && activeFile
       ? canShowWorkspaceFileBrowserAction(s, activeWorktreeId, activeFile.filePath)
@@ -59,10 +61,10 @@ function EditorPanelInner({
   // Why: background Git refreshes for other worktrees must not wake every
   // mounted Monaco/rich editor pane.
   const gitStatusEntries = useAppStore((s) =>
-    selectEditorPanelGitStatusEntries(s, activeWorktreeId)
+    selectEditorPanelGitStatusEntries(s, activeGitWorktreeId)
   )
   const gitBranchEntries = useAppStore((s) =>
-    selectEditorPanelGitBranchEntries(s, activeWorktreeId)
+    selectEditorPanelGitBranchEntries(s, activeGitWorktreeId)
   )
   const markdownViewMode = useAppStore((s) => s.markdownViewMode)
   const setMarkdownViewMode = useAppStore((s) => s.setMarkdownViewMode)

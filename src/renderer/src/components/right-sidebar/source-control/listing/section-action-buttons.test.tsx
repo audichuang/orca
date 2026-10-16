@@ -21,7 +21,8 @@ const UNSTAGED_ENTRY: GitStatusEntry = {
 function renderUncommittedSections({
   sections = [{ id: 'unstaged', area: 'unstaged', items: [UNSTAGED_ENTRY] }],
   isStatusTruncated = false,
-  handleStageSectionPaths = vi.fn()
+  handleStageSectionPaths = vi.fn(),
+  onCopySectionFullSource
 }: {
   sections?: SourceControlDisplaySection[]
   isStatusTruncated?: boolean
@@ -29,6 +30,10 @@ function renderUncommittedSections({
     sectionId: SourceControlDisplaySectionId,
     paths: readonly string[]
   ) => Promise<void>
+  onCopySectionFullSource?: (
+    entries: readonly GitStatusEntry[],
+    area: GitStatusEntry['area']
+  ) => void
 } = {}): void {
   const unfilteredById = new Map<SourceControlDisplaySectionId, SourceControlDisplaySection>(
     sections.map((section) => [section.id, section])
@@ -70,6 +75,7 @@ function renderUncommittedSections({
         handleUnstage={vi.fn()}
         requestDiscardEntry={vi.fn()}
         diffCommentCountByPath={new Map()}
+        onCopySectionFullSource={onCopySectionFullSource}
       />
     </TooltipProvider>
   )
@@ -97,5 +103,28 @@ describe('source control section header actions', () => {
     cleanup()
     renderUncommittedSections({ sections: [untracked], isStatusTruncated: false })
     expect(screen.getByRole('button', { name: 'Stage all' })).toBeInTheDocument()
+  })
+
+  it('copies the whole section through Copy Full Source, flagging the staged area', () => {
+    const onCopySectionFullSource = vi.fn()
+    const staged: SourceControlDisplaySection = {
+      id: 'staged',
+      area: 'staged',
+      items: [{ path: 'a.ts', status: 'modified', area: 'staged' }]
+    }
+    renderUncommittedSections({ sections: [staged], onCopySectionFullSource })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Full Source' }))
+
+    expect(onCopySectionFullSource).toHaveBeenCalledWith(staged.items, 'staged')
+  })
+
+  it('hides Copy Full Source when the section copy handler is absent or the listing is capped', () => {
+    renderUncommittedSections()
+    expect(screen.queryByRole('button', { name: 'Copy Full Source' })).toBeNull()
+
+    cleanup()
+    renderUncommittedSections({ onCopySectionFullSource: vi.fn(), isStatusTruncated: true })
+    expect(screen.queryByRole('button', { name: 'Copy Full Source' })).toBeNull()
   })
 })
