@@ -1,5 +1,6 @@
-import { Plus, Minus, X, Loader2 } from 'lucide-react'
+import { Copy, Plus, Minus, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
 
 export function BulkActionBar({
@@ -8,6 +9,7 @@ export function BulkActionBar({
   unstageableCount,
   onStage,
   onUnstage,
+  onCopyFullSource,
   onClear,
   isExecuting
 }: {
@@ -16,13 +18,19 @@ export function BulkActionBar({
   unstageableCount: number
   onStage: () => void
   onUnstage: () => void
+  onCopyFullSource?: () => void
   onClear: () => void
   isExecuting: boolean
 }) {
+  const copyLabel = translate(
+    'auto.components.right.sidebar.source.control.commit.bulk.action.bar.8a434c829f',
+    'Copy Full Source'
+  )
   return (
-    <div className="absolute bottom-0 left-0 right-0 p-2 bg-background/95 backdrop-blur-sm border-t border-border shadow-lg animate-in slide-in-from-bottom-2 z-10">
+    // Why: pr-12 keeps the floating workspace button (default bottom-right spot) off the actions.
+    <div className="absolute bottom-0 left-0 right-0 p-2 pr-12 bg-background border-t border-border shadow-lg animate-in slide-in-from-bottom-2 z-10">
       <div className="flex items-center gap-2 justify-between bg-accent/30 p-1.5 pr-2 rounded-md border border-border/50">
-        <div className="flex items-center gap-2 text-xs font-medium text-foreground ml-1">
+        <div className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs font-medium text-foreground ml-1">
           {isExecuting ? (
             <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
           ) : (
@@ -32,7 +40,7 @@ export function BulkActionBar({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 items-center justify-end gap-1.5">
           {stageableCount > 0 && (
             <Button
               type="button"
@@ -61,12 +69,36 @@ export function BulkActionBar({
               {unstageableCount})
             </Button>
           )}
+          {onCopyFullSource && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon-xs"
+                  className="size-7 shrink-0"
+                  aria-label={copyLabel}
+                  onClick={onCopyFullSource}
+                  disabled={isExecuting}
+                >
+                  <Copy className="size-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={6}>
+                {copyLabel}
+              </TooltipContent>
+            </Tooltip>
+          )}
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="h-7 w-7 ml-0.5 text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="size-7 shrink-0"
             onClick={onClear}
+            aria-label={translate(
+              'auto.components.right.sidebar.source.control.commit.bulk.action.bar.4139bc5679',
+              'Clear selection'
+            )}
             disabled={isExecuting}
           >
             <X className="size-3.5" />

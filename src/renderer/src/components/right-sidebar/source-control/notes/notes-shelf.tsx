@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import type { DiffComment } from '../../../../../../shared/diff-comment-types'
 import type { PendingDiffCommentsClear } from './diff-comments-clear-dialog-state'
 import { DiffCommentsInlineList } from './diff-comments-list'
+import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 
 export function SourceControlNotesShelf({
   activeWorktreeId,
@@ -39,6 +40,8 @@ export function SourceControlNotesShelf({
   deleteDiffComment: (worktreeId: string, id: string) => Promise<void> | void
   handleOpenComment: (comment: DiffComment) => void
 }): React.JSX.Element {
+  // Why: agent terminals for a folder repo section live in the folder workspace, not the repo's own.
+  const sendWorktreeId = useSourceControlWorktreeScope()?.editorWorktreeId ?? activeWorktreeId
   return (
     <div className="border-b border-border">
       <div className="flex items-center gap-1 pl-3 pr-2 py-1.5">
@@ -74,8 +77,8 @@ export function SourceControlNotesShelf({
         </button>
         <div className="ml-1 flex shrink-0 items-center gap-1.5">
           <DiffNotesSendMenu
-            worktreeId={activeWorktreeId}
-            groupId={activeGroupId ?? activeWorktreeId}
+            worktreeId={sendWorktreeId}
+            groupId={activeGroupId ?? sendWorktreeId}
             comments={diffCommentsForActive}
             triggerClassName="size-6"
             respondToOpenRequest

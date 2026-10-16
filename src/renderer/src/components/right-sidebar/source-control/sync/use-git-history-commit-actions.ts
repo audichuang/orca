@@ -39,15 +39,21 @@ type GitHistoryCommitActions = {
 
 export function useGitHistoryCommitActions({
   activeWorktreeId,
+  editorWorktreeId,
   worktreePath,
   activeRepoTarget,
   resolveSplitTargetGroupId
 }: {
   activeWorktreeId: string | null | undefined
+  /** Workspace that owns opened tabs and agent terminals; differs from the repo inside a folder workspace. */
+  editorWorktreeId: string | null | undefined
   worktreePath: string | null
   activeRepoTarget: RuntimeClientTarget | null
   resolveSplitTargetGroupId: (event?: SourceControlRowOpenEvent) => string | undefined
 }): GitHistoryCommitActions {
+  const tabOwnerId = editorWorktreeId ?? activeWorktreeId ?? ''
+  const gitOwnerId =
+    activeWorktreeId && tabOwnerId !== activeWorktreeId ? activeWorktreeId : undefined
   const openCommitAllDiffs = useAppStore((s) => s.openCommitAllDiffs)
   const openCommitDiff = useAppStore((s) => s.openCommitDiff)
 
@@ -106,12 +112,13 @@ export function useGitHistoryCommitActions({
           return
         }
         openCommitAllDiffs(
-          activeWorktreeId,
+          tabOwnerId,
           worktreePath,
           cached.summary,
           cached.entries,
           item.subject,
-          item.message
+          item.message,
+          gitOwnerId
         )
       } catch (error) {
         toast.error(
@@ -124,7 +131,7 @@ export function useGitHistoryCommitActions({
         )
       }
     },
-    [activeWorktreeId, loadCommitFiles, openCommitAllDiffs, worktreePath]
+    [activeWorktreeId, gitOwnerId, loadCommitFiles, openCommitAllDiffs, tabOwnerId, worktreePath]
   )
 
   const openCommitFile = useCallback(
@@ -142,7 +149,7 @@ export function useGitHistoryCommitActions({
       }
       const targetGroupId = resolveSplitTargetGroupId(event)
       openCommitDiff(
-        activeWorktreeId,
+        tabOwnerId,
         worktreePath,
         entry,
         {
@@ -154,10 +161,21 @@ export function useGitHistoryCommitActions({
           message: item.message
         },
         detectLanguage(entry.path),
-        { targetGroupId, preview: shouldOpenSourceControlRowAsPreview(event, targetGroupId) }
+        {
+          targetGroupId,
+          preview: shouldOpenSourceControlRowAsPreview(event, targetGroupId),
+          gitWorktreeId: gitOwnerId
+        }
       )
     },
-    [activeWorktreeId, openCommitDiff, resolveSplitTargetGroupId, worktreePath]
+    [
+      activeWorktreeId,
+      gitOwnerId,
+      openCommitDiff,
+      resolveSplitTargetGroupId,
+      tabOwnerId,
+      worktreePath
+    ]
   )
 
   const copyCommitText = useCallback(async (text: string, label: string): Promise<void> => {
@@ -206,7 +224,7 @@ export function useGitHistoryCommitActions({
               return
             }
             return openWorkspaceBrowserTab({
-              workspaceId: activeWorktreeId,
+              workspaceId: tabOwnerId,
               url,
               intent: { kind: 'url' }
             })
@@ -241,9 +259,12 @@ export function useGitHistoryCommitActions({
       if (!activeWorktreeId) {
         return
       }
-      void explainCommitWithDefaultAgent(activeWorktreeId, item)
+      void explainCommitWithDefaultAgent(activeWorktreeId, item, {
+        tabOwnerId,
+        initialCwd: gitOwnerId ? (worktreePath ?? undefined) : undefined
+      })
     },
-    [activeRepoTarget, activeWorktreeId, copyCommitText, worktreePath]
+    [activeRepoTarget, activeWorktreeId, copyCommitText, gitOwnerId, tabOwnerId, worktreePath]
   )
 
   return { loadCommitFiles, openHistoryCommitDiff, openCommitFile, handleCommitAction }
@@ -251,7 +272,8 @@ export function useGitHistoryCommitActions({
 
 async function explainCommitWithDefaultAgent(
   worktreeId: string,
-  item: GitHistoryItem
+  item: GitHistoryItem,
+  launch: { tabOwnerId: string; initialCwd: string | undefined }
 ): Promise<void> {
   const detectionTarget = getDetectionTargetIdentityForWorktree(useAppStore.getState(), worktreeId)
   const agent = await resolveDefaultAgentForWorktreeNewTab(useAppStore.getState, worktreeId)
@@ -280,7 +302,8 @@ async function explainCommitWithDefaultAgent(
   launchAgentInNewTab({
     requestId: newAgentLaunchRequestId(),
     agent,
-    worktreeId,
+    worktreeId: launch.tabOwnerId,
+    initialCwd: launch.initialCwd,
     prompt: explainPrompt,
     promptDelivery: 'submit-after-ready'
   })

@@ -30,6 +30,7 @@ export type SourceControlAgentActionDialogProps = {
   savedAgentArgs?: string | null
   worktreeId?: string | null
   groupId?: string | null
+  initialCwd?: string | null
   connectionId?: string | null
   repoId?: string | null
   promptDelivery?: 'auto-submit' | 'draft' | 'submit-after-ready'

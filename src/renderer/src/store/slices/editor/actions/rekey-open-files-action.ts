@@ -63,6 +63,7 @@ export function rekeyOpenFilesPatch(
       relativePath: rekey.newRelativePath,
       // After move, host snapshot IDs no longer match: detach host ownership to protect draft, and coordinator closes old-path host tab. In-place host rehome remains follow-up.
       mirroredFromRuntimeSession: undefined,
+      ...(rekey.clearGitOwner ? { gitWorktreeId: undefined } : {}),
       ...(rekey.newLanguage !== undefined ? { language: rekey.newLanguage } : {}),
       ...(rekey.newMarkdownPreviewSourceFileId !== undefined
         ? { markdownPreviewSourceFileId: rekey.newMarkdownPreviewSourceFileId }
