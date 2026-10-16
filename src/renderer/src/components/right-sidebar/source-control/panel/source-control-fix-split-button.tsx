@@ -32,6 +32,7 @@ export type SourceControlFixSplitButtonProps = {
   chevronAriaLabel: string
   worktreeId: string | null
   groupId: string | null
+  initialCwd?: string | null
   connectionId?: string | null
   repoId?: string | null
   launchPlatform?: NodeJS.Platform
@@ -69,6 +70,7 @@ export function SourceControlFixSplitButton({
   chevronAriaLabel,
   worktreeId,
   groupId,
+  initialCwd,
   connectionId,
   repoId,
   launchPlatform,
@@ -156,6 +158,7 @@ export function SourceControlFixSplitButton({
           initialCwd={scope ? owner?.worktree.path : undefined}
           worktreeId={worktreeId}
           groupId={groupId}
+          initialCwd={initialCwd}
           connectionId={connectionId}
           repoId={repoId}
           promptDelivery="submit-after-ready"
