@@ -24,6 +24,8 @@ export type EditorPanelContentLoadOptions = {
   externalEventGeneration?: number
   /** The active tab's load or its Retry: a user act that may start a stopped WSL distro. */
   wakeWslDistro?: boolean
+  // Repo whose files a folder-owned tab reads; selects the runtime worktree.
+  gitWorktreeId?: string
 }
 
 type UseEditorPanelExternalContentEventsParams = {
