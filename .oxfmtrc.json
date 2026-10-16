@@ -9,6 +9,7 @@
     "resources/licenses/**",
     ".github/actions/cloud-sql-rollout-lease/**",
     ".anti-slop-plugin/**",
-    "src/main/runtime/__fixtures__/*.timing.json"
+    "src/main/runtime/__fixtures__/*.timing.json",
+    "src/renderer/src/components/right-sidebar/source-control/clipcode/__fixtures__/clipcode-clipboard-contract.json"
   ]
 }

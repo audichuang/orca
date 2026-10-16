@@ -29,6 +29,7 @@ type UseSourceControlAgentActionStartArgs = {
   repo: Pick<Repo, 'id' | 'sourceControlAi'> | null
   worktreeId?: string | null
   groupId?: string | null
+  initialCwd?: string | null
   promptDelivery: 'auto-submit' | 'draft' | 'submit-after-ready'
   launchPlatform?: NodeJS.Platform
   /** Why: SSH hosts launch the plain `orca` shim, so the previewed command must
@@ -84,6 +85,7 @@ export function useSourceControlAgentActionStart({
   repo,
   worktreeId,
   groupId,
+  initialCwd,
   promptDelivery,
   launchPlatform,
   isRemote,
@@ -164,6 +166,7 @@ export function useSourceControlAgentActionStart({
           repo,
           worktreeId,
           groupId,
+          initialCwd,
           promptDelivery,
           launchPlatform,
           launchSource,
@@ -190,6 +193,7 @@ export function useSourceControlAgentActionStart({
       commandTemplate,
       connectionUnavailable,
       groupId,
+      initialCwd,
       launchSource,
       launchPlatform,
       onClose,

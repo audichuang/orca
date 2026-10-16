@@ -66,6 +66,7 @@ function isAbsolutePathLike(value: string): boolean {
   return value.startsWith('/') || isWindowsAbsolutePathLike(value)
 }
 
+// Note: saving a file outside the folder for a containing repo on a paired server errors (path outside worktree) without corrupting.
 export function getRemoteFileArgs(
   context: RuntimeFileOperationArgs,
   absolutePath: string

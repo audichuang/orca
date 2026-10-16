@@ -20,6 +20,7 @@ import {
 } from './source-control-entry-failure-toast'
 import type { PendingDiscardConfirmation } from './discard-dialog'
 import type { SourceControlEntryGroups } from '../listing/section-order'
+import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 
 export function useSourceControlDiscardConfirmation({
   activeRepoTarget,
@@ -52,6 +53,7 @@ export function useSourceControlDiscardConfirmation({
     setPendingDiscard(null)
   }
 
+  const scope = useSourceControlWorktreeScope()
   const handleDiscard = useCallback(
     async (entry: GitStatusEntry): Promise<void> => {
       // Why: only the discard itself is caught here — a refresh rejection would otherwise be
@@ -67,14 +69,21 @@ export function useSourceControlDiscardConfirmation({
           deletesFile: discardDeletesEntryFile(entry),
           error,
           worktreeId: activeWorktreeId,
-          worktreeName: worktreePath ? basename(worktreePath) : null
+          worktreeName: worktreePath ? basename(worktreePath) : null,
+          foregroundWorkspaceId: scope?.editorWorktreeId
         })
         return
       }
       dismissSourceControlEntryFailureToast(activeWorktreeId)
       await refreshActiveGitStatusAfterMutation()
     },
-    [activeWorktreeId, discardSingle, refreshActiveGitStatusAfterMutation, worktreePath]
+    [
+      activeWorktreeId,
+      scope?.editorWorktreeId,
+      discardSingle,
+      refreshActiveGitStatusAfterMutation,
+      worktreePath
+    ]
   )
 
   // Why: "Discard all" skips unresolved/resolved_locally rows (discarding can re-create the conflict or lose the resolution; no v1 UX for it).
