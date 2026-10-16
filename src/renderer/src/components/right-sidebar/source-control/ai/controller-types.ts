@@ -17,6 +17,7 @@ export type SourceControlAiControllerParams = {
   target: RuntimeClientTarget | null
   activeRepo: Repo | null
   activeWorktreeId: string | null | undefined
+  editorWorktreeId?: string | null
   activeConnectionId: string | null | undefined
   activeGroupId: string | null | undefined
   activeSourceControlLaunchPlatform: NodeJS.Platform | undefined
