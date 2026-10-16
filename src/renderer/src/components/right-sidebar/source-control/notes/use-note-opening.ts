@@ -21,6 +21,7 @@ export type SourceControlNoteOpening = {
 
 export function useSourceControlNoteOpening({
   activeWorktreeId,
+  editorWorktreeId,
   worktreePath,
   entries,
   branchEntries,
@@ -30,6 +31,8 @@ export function useSourceControlNoteOpening({
   sourceControlRef
 }: {
   activeWorktreeId: string | null
+  /** Folder editor that owns tabs opened from a scoped repo section. */
+  editorWorktreeId?: string | null
   worktreePath: string | null
   entries: GitStatusEntry[]
   branchEntries: GitBranchChangeEntry[]
@@ -74,7 +77,11 @@ export function useSourceControlNoteOpening({
         openFile({
           filePath: absPath,
           relativePath: filePath,
-          worktreeId: activeWorktreeId,
+          worktreeId: editorWorktreeId ?? activeWorktreeId,
+          gitWorktreeId:
+            editorWorktreeId && editorWorktreeId !== activeWorktreeId
+              ? activeWorktreeId
+              : undefined,
           language,
           mode: 'edit'
         })
@@ -118,7 +125,9 @@ export function useSourceControlNoteOpening({
       openFile({
         filePath: absPath,
         relativePath: filePath,
-        worktreeId: activeWorktreeId,
+        worktreeId: editorWorktreeId ?? activeWorktreeId,
+        gitWorktreeId:
+          editorWorktreeId && editorWorktreeId !== activeWorktreeId ? activeWorktreeId : undefined,
         language,
         mode: 'edit'
       })
@@ -129,6 +138,7 @@ export function useSourceControlNoteOpening({
     },
     [
       activeWorktreeId,
+      editorWorktreeId,
       branchEntries,
       branchSummary,
       entries,

@@ -22,6 +22,8 @@ export type PersistedOpenFile = {
   mirroredFromRuntimeSession?: true
   /** SSH target that owns an absolute path outside the worktree. */
   externalSshTargetId?: string
+  /** Repo worktree backing a folder-workspace edit tab; absent means the tab owner. */
+  gitWorktreeId?: string
   /** Unsaved editor buffer captured for hot exit; presence restores the tab dirty. */
   dirtyDraftContent?: string
   /** Base disk signature for re-detecting changed-on-disk conflicts after draft restore. */

@@ -48,6 +48,7 @@ export function useSourceControlAi({
   target,
   activeRepo,
   activeWorktreeId,
+  editorWorktreeId,
   activeConnectionId,
   activeGroupId,
   activeSourceControlLaunchPlatform,
@@ -227,6 +228,7 @@ export function useSourceControlAi({
     handleFixPushFailureWithAI
   } = useSourceControlRecoveryAi({
     activeWorktreeId,
+    editorWorktreeId,
     activeGroupId,
     activeSourceControlLaunchPlatform,
     sourceRepoConnectionId: activeRepo?.connectionId,

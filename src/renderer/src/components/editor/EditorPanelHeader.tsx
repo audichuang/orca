@@ -24,6 +24,7 @@ import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import type { ArtifactWriteRequest } from '../../../../shared/artifacts'
 import { ArtifactPublishButton } from '@/components/artifacts/ArtifactPublishButton'
 import { editorArtifactSourceKey } from './editor-artifact-upload'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 const NO_CUSTOM_EDITOR_TITLES: Readonly<Record<CustomEditorToggleValue, string>> = {}
 
@@ -100,7 +101,7 @@ export function EditorPanelHeader({
   createArtifactRequest
 }: EditorPanelHeaderProps): React.JSX.Element {
   const { owner: commentOwner, comments: diffComments } = useVisibleWorktreeDiffComments(
-    activeFile.worktreeId,
+    getOpenFileGitWorktreeId(activeFile),
     activeFile
   )
   const activeGroupId = useAppStore((s) => s.activeGroupIdByWorktree[activeFile.worktreeId])
