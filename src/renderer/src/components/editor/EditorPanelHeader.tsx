@@ -21,6 +21,7 @@ import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import type { ArtifactWriteRequest } from '../../../../shared/artifacts'
 import { ArtifactPublishButton } from '@/components/artifacts/ArtifactPublishButton'
 import { editorArtifactSourceKey } from './editor-artifact-upload'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 type EditorPanelHeaderProps = {
   activeFile: OpenFile
@@ -89,7 +90,9 @@ export function EditorPanelHeader({
   onExportMarkdownToPdf,
   createArtifactRequest
 }: EditorPanelHeaderProps): React.JSX.Element {
-  const { comments: diffComments } = useVisibleWorktreeDiffComments(activeFile.worktreeId)
+  const { comments: diffComments } = useVisibleWorktreeDiffComments(
+    getOpenFileGitWorktreeId(activeFile)
+  )
   const activeGroupId = useAppStore((s) => s.activeGroupIdByWorktree[activeFile.worktreeId])
   const diffWordWrap = useAppStore((s) => s.settings?.diffWordWrap === true)
   const diffShowWhitespace = useAppStore((s) => s.settings?.diffShowWhitespace === true)

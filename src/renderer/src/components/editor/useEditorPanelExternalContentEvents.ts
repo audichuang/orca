@@ -26,6 +26,8 @@ type EditorViewModeByFile = ReturnType<typeof useAppStore.getState>['editorViewM
 export type EditorPanelContentLoadOptions = {
   force?: boolean
   externalEventGeneration?: number
+  // Repo whose files a folder-owned tab reads; selects the runtime worktree.
+  gitWorktreeId?: string
 }
 
 type UseEditorPanelExternalContentEventsParams = {

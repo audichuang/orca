@@ -71,6 +71,7 @@ export function showSourceControlEntryFailureToast({
   error,
   worktreeId,
   worktreeName,
+  foregroundWorkspaceId,
   onRetry
 }: {
   operation: SourceControlEntryOperation
@@ -82,9 +83,12 @@ export function showSourceControlEntryFailureToast({
   worktreeId: string | null
   /** Shown only when the toast no longer belongs to the active worktree. */
   worktreeName: string | null
+  /** Workspace that shows this worktree when it is not itself the active one (a folder workspace's repo section). */
+  foregroundWorkspaceId?: string | null
   onRetry?: () => void
 }): void {
-  const isActiveWorktree = useAppStore.getState().activeWorktreeId === worktreeId
+  const shownIn = foregroundWorkspaceId ?? worktreeId
+  const isActiveWorktree = useAppStore.getState().activeWorktreeId === shownIn
   const title = entryFailureTitle(operation, filePath, deletesFile)
   const offerRetry = Boolean(onRetry) && isActiveWorktree
   entryFailureSlotOwner = { worktreeId }
@@ -110,7 +114,7 @@ export function showSourceControlEntryFailureToast({
                 // retry that re-fails inside that window would take the re-raised toast with it. The
                 // caller owns this slot instead: it dismisses on success and re-raises on failure.
                 event.preventDefault()
-                if (useAppStore.getState().activeWorktreeId !== worktreeId) {
+                if (useAppStore.getState().activeWorktreeId !== shownIn) {
                   dismissSourceControlEntryFailureToast(worktreeId)
                   return
                 }

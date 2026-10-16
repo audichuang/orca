@@ -4,6 +4,7 @@ import type { OpenFile } from '../types/open-file'
 import type { DiffSource } from '../../../../../../shared/editor-tab-view-types'
 import { buildDiffEditorFileId, withDiffContentReloadRequest } from '../file-ids/editor-file-ids'
 import { resolveDiffRuntimeEnvironmentId } from '../git/diff-runtime-owner'
+import { getScopedTabIdOwner } from '../git/open-file-git-owner'
 import {
   buildEditorActiveResult,
   resolveEditorOpenTargetGroupId
@@ -23,16 +24,23 @@ export function createOpenUnstagedDiff(
     openDiff: (worktreeId, filePath, relativePath, language, staged, options) => {
       const isPreview = resolveEditorPreviewIntent(get(), options?.preview)
       const selection = options?.selection
+      const gitWorktreeId =
+        options?.gitWorktreeId !== worktreeId ? options?.gitWorktreeId : undefined
       let editorItemTargetGroupId = options?.targetGroupId
       let editorItemFileId = ''
       set((s) => {
         const runtimeEnvironmentId = resolveDiffRuntimeEnvironmentId(
           s,
-          worktreeId,
+          gitWorktreeId ?? worktreeId,
           options?.runtimeEnvironmentId
         )
         const diffSource: DiffSource = staged ? 'staged' : 'unstaged'
-        const id = buildDiffEditorFileId(worktreeId, diffSource, relativePath, runtimeEnvironmentId)
+        const id = buildDiffEditorFileId(
+          getScopedTabIdOwner(worktreeId, gitWorktreeId),
+          diffSource,
+          relativePath,
+          runtimeEnvironmentId
+        )
         editorItemFileId = id
         const targetGroupId =
           resolveEditorOpenTargetGroupId(s, worktreeId, options?.targetGroupId) ?? undefined
@@ -61,6 +69,7 @@ export function createOpenUnstagedDiff(
           filePath,
           relativePath,
           worktreeId,
+          gitWorktreeId,
           language,
           isDirty: false,
           mode: 'diff',

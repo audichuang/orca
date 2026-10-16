@@ -4,6 +4,8 @@ import { joinPath } from '@/lib/path'
 import type { OpenFile } from '../types/open-file'
 import type { ConflictReviewState } from '../../../../../../shared/editor-tab-view-types'
 import { toOpenConflictMetadata } from '../git/git-status-reconciliation'
+import { getScopedTabIdOwner } from '../git/open-file-git-owner'
+import { resolveEditorFileIdForOwner } from '../file-ids/editor-file-ids'
 import { openWorkspaceEditorItem } from '../tabs/workspace-editor-item'
 
 export function createOpenConflictReview(
@@ -11,22 +13,34 @@ export function createOpenConflictReview(
   get: EditorGet
 ): Pick<EditorSlice, 'openConflictReviewFile' | 'openConflictReview'> {
   return {
-    openConflictReviewFile: (reviewFileId, worktreeId, worktreePath, entry, language) => {
+    openConflictReviewFile: (
+      reviewFileId,
+      worktreeId,
+      worktreePath,
+      entry,
+      language,
+      gitWorktreeIdArg
+    ) => {
+      const gitWorktreeId = gitWorktreeIdArg !== worktreeId ? gitWorktreeIdArg : undefined
+      const trackedKey = gitWorktreeId ?? worktreeId
       const absolutePath = joinPath(worktreePath, entry.path)
       const reviewTab = (get().unifiedTabsByWorktree?.[worktreeId] ?? []).find(
         (tab) => tab.entityId === reviewFileId && tab.contentType === 'conflict-review'
       )
       let openedConflictFile = true
+      let editorFileId = absolutePath
       set((s) => {
         const conflict = toOpenConflictMetadata(entry)
-        const existing = s.openFiles.find((f) => f.id === absolutePath)
+        const fileId = resolveEditorFileIdForOwner(s, absolutePath, worktreeId, undefined, ['edit'])
+        editorFileId = fileId
+        const existing = s.openFiles.find((f) => f.id === fileId)
         const nextTracked =
           entry.conflictStatus === 'unresolved' && entry.conflictKind
             ? {
-                ...s.trackedConflictPathsByWorktree[worktreeId],
+                ...s.trackedConflictPathsByWorktree[trackedKey],
                 [entry.path]: entry.conflictKind
               }
-            : s.trackedConflictPathsByWorktree[worktreeId]
+            : s.trackedConflictPathsByWorktree[trackedKey]
 
         if (!conflict) {
           openedConflictFile = false
@@ -35,7 +49,7 @@ export function createOpenConflictReview(
 
         const nextOpenFiles = existing
           ? s.openFiles.map((f) =>
-              f.id === absolutePath
+              f.id === fileId
                 ? {
                     ...f,
                     mode: 'edit' as const,
@@ -52,7 +66,7 @@ export function createOpenConflictReview(
                       ...f,
                       conflictReview: {
                         ...f.conflictReview,
-                        selectedFileId: absolutePath
+                        selectedFileId: fileId
                       }
                     }
                   : f
@@ -64,16 +78,17 @@ export function createOpenConflictReview(
                       ...f,
                       conflictReview: {
                         ...f.conflictReview,
-                        selectedFileId: absolutePath
+                        selectedFileId: fileId
                       }
                     }
                   : f
               ),
               {
-                id: absolutePath,
+                id: fileId,
                 filePath: absolutePath,
                 relativePath: entry.path,
                 worktreeId,
+                gitWorktreeId,
                 language,
                 isDirty: false,
                 mode: 'edit' as const,
@@ -88,9 +103,9 @@ export function createOpenConflictReview(
           activeFileIdByWorktree: { ...s.activeFileIdByWorktree, [worktreeId]: reviewFileId },
           activeTabTypeByWorktree: { ...s.activeTabTypeByWorktree, [worktreeId]: 'editor' },
           trackedConflictPathsByWorktree:
-            nextTracked === s.trackedConflictPathsByWorktree[worktreeId]
+            nextTracked === s.trackedConflictPathsByWorktree[trackedKey]
               ? s.trackedConflictPathsByWorktree
-              : { ...s.trackedConflictPathsByWorktree, [worktreeId]: nextTracked }
+              : { ...s.trackedConflictPathsByWorktree, [trackedKey]: nextTracked }
         }
       })
 
@@ -101,7 +116,7 @@ export function createOpenConflictReview(
       // Why: the conflict file needs a normal editor backing tab for save/close, but selecting from Conflict Review must keep the review tab visible; restore focus after.
       void openWorkspaceEditorItem(
         get(),
-        absolutePath,
+        editorFileId,
         worktreeId,
         entry.path,
         'editor',
@@ -114,8 +129,9 @@ export function createOpenConflictReview(
     },
 
     // Why: renders from a stored snapshot (entries + timestamp), not live status, so the list stays stable across polls while reviewing.
-    openConflictReview: (worktreeId, worktreePath, entries, source) => {
-      const id = `${worktreeId}::conflict-review`
+    openConflictReview: (worktreeId, worktreePath, entries, source, gitWorktreeIdArg) => {
+      const gitWorktreeId = gitWorktreeIdArg !== worktreeId ? gitWorktreeIdArg : undefined
+      const id = `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::conflict-review`
       set((s) => {
         const conflictReview: ConflictReviewState = {
           source,
@@ -152,6 +168,7 @@ export function createOpenConflictReview(
           filePath: worktreePath,
           relativePath: 'Conflict Review',
           worktreeId,
+          gitWorktreeId,
           language: 'plaintext',
           isDirty: false,
           mode: 'conflict-review',

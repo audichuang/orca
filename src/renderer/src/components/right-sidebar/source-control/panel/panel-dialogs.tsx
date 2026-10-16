@@ -13,6 +13,7 @@ export function SourceControlPanelDialogs({
     activeGroupId,
     activeSourceControlLaunchPlatform,
     activeWorktreeId,
+    editorWorktreeId,
     baseRefDialogOpen,
     baseRefOwnedByWorktree,
     cancelPendingDiscard,
@@ -85,8 +86,9 @@ export function SourceControlPanelDialogs({
       resolveConflictsComposerOpen={resolveConflictsComposerOpen}
       onResolveConflictsComposerOpenChange={setResolveConflictsComposerOpen}
       resolveConflictsPrompt={resolveConflictsPrompt}
-      worktreeId={activeWorktreeId}
-      groupId={activeGroupId ?? activeWorktreeId}
+      worktreeId={editorWorktreeId ?? activeWorktreeId}
+      groupId={activeGroupId ?? editorWorktreeId ?? activeWorktreeId}
+      initialCwd={editorWorktreeId !== activeWorktreeId ? activeWorktree.path : undefined}
       connectionId={activeConnectionId}
       repoId={activeRepo.id}
       launchPlatform={activeSourceControlLaunchPlatform}

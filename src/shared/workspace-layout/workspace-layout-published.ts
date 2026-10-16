@@ -72,6 +72,7 @@ export type PublishedEditorFile = Pick<
   | 'liveTail'
   | 'runtimeEnvironmentId'
   | 'externalSshTargetId'
+  | 'gitWorktreeId'
 >
 
 /** `createdAt` is optional on the wire: a host from before it was published omits it. */
@@ -153,7 +154,8 @@ export function publishWorkspaceLayout(
         'readOnly',
         'liveTail',
         'runtimeEnvironmentId',
-        'externalSshTargetId'
+        'externalSshTargetId',
+        'gitWorktreeId'
       ])
     })),
     browserTabs: (workspace.browserTabs ?? []).map((tab) => ({

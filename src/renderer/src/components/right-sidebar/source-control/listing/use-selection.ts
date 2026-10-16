@@ -201,6 +201,10 @@ export function useSourceControlSelection({
       if (!container || !(target instanceof Node) || container.contains(target)) {
         return
       }
+      // Why: portaled Radix menus live outside the list; clearing here would drop the selection before the action runs.
+      if (target instanceof Element && target.closest('[role="menu"]')) {
+        return
+      }
 
       clearSelection()
     }
