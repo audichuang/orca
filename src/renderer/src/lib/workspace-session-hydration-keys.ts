@@ -151,6 +151,12 @@ export function collectWorktreeHydrationRepoIdsFromSession(
   )) {
     addWorktreeRepoId(key)
   }
+  // Why: a scoped tab's git owner repo needs its worktrees loaded before the owner id is validated.
+  for (const files of Object.values(session.openFilesByWorktree ?? {})) {
+    for (const file of files) {
+      addWorktreeRepoId(file.gitWorktreeId)
+    }
+  }
   // activeRepoId alone still needs enumeration so hydration can restore its main worktree.
   addWorktreeRepoId(session.activeRepoId)
   for (const record of readStructuredAgentLaunchRecords()) {

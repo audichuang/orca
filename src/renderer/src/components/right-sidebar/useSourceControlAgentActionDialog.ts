@@ -34,6 +34,7 @@ export function useSourceControlAgentActionDialog({
   savedAgentArgs,
   worktreeId,
   groupId,
+  initialCwd,
   connectionId,
   repoId,
   promptDelivery = 'submit-after-ready',
@@ -188,6 +189,7 @@ export function useSourceControlAgentActionDialog({
     repo,
     worktreeId,
     groupId,
+    initialCwd,
     promptDelivery,
     launchPlatform,
     // SSH uses plain orca; preview must match instead of applying the local Linux orca-ide rename.
