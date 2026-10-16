@@ -8,6 +8,7 @@ export const EditorFileRecord = z.object({
   language: z.string(),
   runtimeEnvironmentId: z.string().nullable().optional(),
   externalSshTargetId: z.string().min(1).optional(),
+  gitWorktreeId: z.string().min(1).optional(),
   readOnly: z.literal(true).optional(),
   liveTail: z.literal(true).optional()
 })
