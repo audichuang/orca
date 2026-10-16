@@ -1,4 +1,5 @@
 import { translate } from '@/i18n/i18n'
+import { getOpenFileGitWorktreeId } from './open-file-git-owner'
 import type {
   GitConflictKind,
   GitStatusEntry,
@@ -136,7 +137,7 @@ export function reconcileOpenFilesForStatus(
 
   const nextOpenFiles = openFiles.flatMap((originalFile) => {
     let file = originalFile
-    if (file.worktreeId !== worktreeId) {
+    if (getOpenFileGitWorktreeId(file) !== worktreeId) {
       return [file]
     }
 

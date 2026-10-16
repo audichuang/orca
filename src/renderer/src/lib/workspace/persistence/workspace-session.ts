@@ -144,6 +144,7 @@ export function buildEditorSessionData(
       runtimeEnvironmentId: f.runtimeEnvironmentId,
       ...(f.mirroredFromRuntimeSession === true ? { mirroredFromRuntimeSession: true } : {}),
       externalSshTargetId: f.externalSshTargetId,
+      gitWorktreeId: f.gitWorktreeId === f.worktreeId ? undefined : f.gitWorktreeId,
       // Why: persist readOnly only when true; absence is the writable default on restore.
       ...(f.readOnly === true ? { readOnly: true } : {}),
       ...(f.readOnly === true && f.liveTail === true ? { liveTail: true } : {}),
