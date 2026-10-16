@@ -18,6 +18,7 @@ export function SourceControlCommitSurface({
     activeGroupId,
     activeSourceControlLaunchPlatform,
     activeWorktreeId,
+    editorWorktreeId,
     branchName,
     commitError,
     commitFailureRecoveryPrompt,
@@ -127,7 +128,8 @@ export function SourceControlCommitSurface({
 
   return (
     <CommitArea
-      worktreeId={activeWorktreeId}
+      worktreeId={editorWorktreeId ?? activeWorktreeId}
+      initialCwd={editorWorktreeId !== activeWorktreeId ? worktreePath : undefined}
       connectionId={activeConnectionId}
       repoId={activeRepo.id}
       launchPlatform={activeSourceControlLaunchPlatform}
@@ -142,7 +144,7 @@ export function SourceControlCommitSurface({
       isFixingPushFailureWithAI={isLaunchingPushFailureAgent}
       isCreatingPr={isCreatingPr || isCreatePrIntentInFlight}
       isCreatePrIntentInFlight={isCreatePrIntentInFlight}
-      groupId={activeGroupId ?? activeWorktreeId}
+      groupId={activeGroupId ?? editorWorktreeId ?? activeWorktreeId}
       showComposer={!showGenericEmptyState}
       sourceControlAiActionsVisible={sourceControlAiActionsVisible}
       aiAgentConfigured={resolvedCommitMessageAi?.ok === true}

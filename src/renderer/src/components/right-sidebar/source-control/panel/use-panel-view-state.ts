@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { BoundedMap } from '../../../../../../shared/bounded-map'
 import { resolveSourceControlGroupOrder } from '../../../../../../shared/source-control-section-order'
 import { getNextSourceControlViewMode } from './header-toolbar'
@@ -34,7 +34,6 @@ export function useSourceControlPanelViewState({
   const sourceControlRef = useRef<HTMLDivElement | null>(null)
   // Use state so virtual lists start observing the shared scroller when its element attaches.
   const [fileListScrollElement, setFileListScrollElement] = useState<HTMLDivElement | null>(null)
-  const isMac = useMemo(() => navigator.userAgent.includes('Mac'), [])
   const [filterExpanded, setFilterExpanded] = useState(false)
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() =>
     readCollapsedSections(activeWorktreeId)
@@ -108,7 +107,6 @@ export function useSourceControlPanelViewState({
     filterQuery,
     handleToggleSourceControlViewMode,
     isGitHistoryExpanded,
-    isMac,
     setBaseRefDialogOpen,
     setFileListScrollElement,
     setFilterExpanded,

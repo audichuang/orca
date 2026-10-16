@@ -142,6 +142,63 @@ describe('read-only editor tabs (AI Vault View Log)', () => {
     expect(store.getState().editorDrafts[LOG_PATH]).toBeUndefined()
   })
 
+  it('restores the git owner of a scoped tab and ignores an unknown one', () => {
+    const store = createEditorStore()
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the test seeds only the worktree catalog hydration reads.
+    store.setState({
+      worktreesByRepo: { 'repo-1': [{ id: 'wt-1' }, { id: 'repo-a' }] },
+      folderWorkspaces: []
+    } as never)
+    const saved = (filePath: string, gitWorktreeId?: string) => ({
+      filePath,
+      relativePath: 'x.ts',
+      worktreeId: 'wt-1',
+      language: 'typescript',
+      ...(gitWorktreeId ? { gitWorktreeId } : {})
+    })
+
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: a minimal persisted session with only openFilesByWorktree.
+    store.getState().hydrateEditorSession({
+      openFilesByWorktree: {
+        'wt-1': [saved('/f/a/x.ts', 'repo-a'), saved('/f/b/x.ts', 'gone'), saved('/f/c/x.ts')]
+      }
+    } as never)
+
+    const owners = Object.fromEntries(
+      store.getState().openFiles.map((f) => [f.filePath, f.gitWorktreeId])
+    )
+    expect(owners).toEqual({
+      '/f/a/x.ts': 'repo-a',
+      '/f/b/x.ts': undefined,
+      '/f/c/x.ts': undefined
+    })
+  })
+
+  it('keeps the git owner when its repo is known but its worktrees are not loaded yet', () => {
+    const store = createEditorStore()
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the test seeds only the catalog hydration reads.
+    store.setState({
+      repos: [{ id: 'repo-a' }],
+      worktreesByRepo: { 'repo-1': [{ id: 'wt-1' }] },
+      folderWorkspaces: []
+    } as never)
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: a minimal persisted session with only openFilesByWorktree.
+    store.getState().hydrateEditorSession({
+      openFilesByWorktree: {
+        'wt-1': [
+          {
+            filePath: '/f/a/x.ts',
+            relativePath: 'x.ts',
+            worktreeId: 'wt-1',
+            language: 'typescript',
+            gitWorktreeId: 'repo-a::/f/a'
+          }
+        ]
+      }
+    } as never)
+    expect(store.getState().openFiles[0]?.gitWorktreeId).toBe('repo-a::/f/a')
+  })
+
   it('restores the SSH target that owns an external host file', () => {
     const store = createEditorStore()
     store.setState({

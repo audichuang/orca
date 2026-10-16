@@ -85,6 +85,8 @@ export function getDefaultSourceControlRecoveryLaunchCopy(
 
 export async function launchSourceControlRecoveryAgentWithDefault({
   activeWorktreeId,
+  editorWorktreeId,
+  worktreePath,
   activeGroupId,
   activeSourceControlLaunchPlatform,
   sourceRepoConnectionId,
@@ -96,6 +98,9 @@ export async function launchSourceControlRecoveryAgentWithDefault({
   copy
 }: {
   activeWorktreeId: string
+  /** Workspace that owns the agent terminal when it differs from the repo (folder workspace section). */
+  editorWorktreeId?: string | null
+  worktreePath?: string | null
   activeGroupId: string | null | undefined
   activeSourceControlLaunchPlatform: NodeJS.Platform | undefined
   sourceRepoConnectionId?: string | null
@@ -184,11 +189,14 @@ export async function launchSourceControlRecoveryAgentWithDefault({
       settings: store.settings
     }
   )
+  const launchWorktreeId = editorWorktreeId ?? activeWorktreeId
   const result = launchAgentInNewTab({
     requestId: newAgentLaunchRequestId(),
     agent,
-    worktreeId: activeWorktreeId,
-    groupId: activeGroupId ?? activeWorktreeId,
+    worktreeId: launchWorktreeId,
+    groupId: activeGroupId ?? launchWorktreeId,
+    // Why: the folder root is not the repo, so the agent must start inside it.
+    initialCwd: launchWorktreeId !== activeWorktreeId ? worktreePath : undefined,
     prompt: commandInput,
     ...projection,
     promptDelivery: 'submit-after-ready',

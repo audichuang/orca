@@ -17,22 +17,18 @@ function event(overrides: Partial<SourceControlRowOpenEvent> = {}): SourceContro
 }
 
 describe('isSourceControlSplitOpenModifier', () => {
-  it('uses Cmd on macOS and Ctrl elsewhere as the platform primary modifier', () => {
-    expect(isSourceControlSplitOpenModifier(event({ metaKey: true }), true)).toBe(true)
-    expect(isSourceControlSplitOpenModifier(event({ ctrlKey: true }), true)).toBe(false)
-
-    expect(isSourceControlSplitOpenModifier(event({ ctrlKey: true }), false)).toBe(true)
-    expect(isSourceControlSplitOpenModifier(event({ metaKey: true }), false)).toBe(false)
+  it('only Alt/Option opens a split', () => {
+    expect(isSourceControlSplitOpenModifier(event({ altKey: true }))).toBe(true)
   })
 
-  it('treats Shift and Alt/Option as split-open modifiers', () => {
-    expect(isSourceControlSplitOpenModifier(event({ shiftKey: true }), true)).toBe(true)
-    expect(isSourceControlSplitOpenModifier(event({ altKey: true }), false)).toBe(true)
+  it('leaves Ctrl, Cmd and Shift for multi-selection', () => {
+    expect(isSourceControlSplitOpenModifier(event({ ctrlKey: true }))).toBe(false)
+    expect(isSourceControlSplitOpenModifier(event({ metaKey: true }))).toBe(false)
+    expect(isSourceControlSplitOpenModifier(event({ shiftKey: true }))).toBe(false)
   })
 
   it('ignores a plain click', () => {
-    expect(isSourceControlSplitOpenModifier(event(), true)).toBe(false)
-    expect(isSourceControlSplitOpenModifier(event(), false)).toBe(false)
+    expect(isSourceControlSplitOpenModifier(event())).toBe(false)
   })
 })
 

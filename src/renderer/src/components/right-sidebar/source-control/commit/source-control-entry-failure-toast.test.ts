@@ -142,4 +142,13 @@ describe('showSourceControlEntryFailureToast', () => {
     show({ error: 'not an Error' })
     expect(lastToast().options.description).toBeUndefined()
   })
+
+  it('treats a repo shown inside the active folder workspace as the active worktree', () => {
+    storeState.activeWorktreeId = 'folder:f1'
+    const onRetry = vi.fn()
+    show({ worktreeId: 'repo-wt', foregroundWorkspaceId: 'folder:f1', onRetry })
+    expect(lastToast().title).toBe('Failed to stage “src/app.ts”')
+    clickRetry()
+    expect(onRetry).toHaveBeenCalledTimes(1)
+  })
 })

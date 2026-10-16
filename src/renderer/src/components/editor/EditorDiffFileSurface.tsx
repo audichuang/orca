@@ -7,6 +7,7 @@ import { DiffViewer, ImageDiffViewer, MarkdownPreview } from './editor-lazy-view
 import { ExternalFileChangeBanner } from './ExternalFileChangeBanner'
 import { MarkdownPreviewSizeGate } from './MarkdownPreviewSizeGate'
 import type { useMarkdownDocuments } from './useMarkdownDocuments'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 type MarkdownDocumentsController = ReturnType<typeof useMarkdownDocuments>
 
@@ -161,7 +162,7 @@ export function EditorDiffFileSurface({
       relativePath={activeFile.relativePath}
       sideBySide={sideBySide}
       editable={isEditable}
-      worktreeId={activeFile.worktreeId}
+      worktreeId={getOpenFileGitWorktreeId(activeFile)}
       onContentChange={isEditable ? onContentChange : undefined}
       onSave={isEditable ? (isMarkdown ? markdownDocuments.mdSave : onSave) : undefined}
     />
