@@ -1,3 +1,4 @@
+import { getScopedTabIdOwner } from '@/store/slices/editor/git/open-file-git-owner'
 import { useAppStore } from '@/store'
 import { detectLanguage } from '@/lib/language-detect'
 import { basename } from '@/lib/path'
@@ -144,7 +145,8 @@ function getUpdatedRelativePath({
   worktreeId,
   updatedPath,
   initiatingWorktreeId,
-  initiatingWorktreePath
+  initiatingWorktreePath,
+  gitScoped
 }: {
   filePath: string
   relativePath: string
@@ -152,6 +154,8 @@ function getUpdatedRelativePath({
   updatedPath: string
   initiatingWorktreeId: string | undefined
   initiatingWorktreePath: string
+  /** The tab's paths are relative to its git owner's root, not the initiating (folder) root. */
+  gitScoped: boolean
 }): string {
   // Why: a tab stored by its full path is user-named (editorTabFileAccess); keep it that way.
   if (relativePath === filePath) {
@@ -161,11 +165,12 @@ function getUpdatedRelativePath({
   // Compare both paths in the file’s absolute flavor so POSIX backslashes stay data.
   const normalizedRelativePath = foldSeparatorsForFlavor(relativePath, filePath).replace(/^\/+/, '')
   const usesInitiatingWorktreeRoot =
-    initiatingWorktreeId !== undefined
+    !gitScoped &&
+    (initiatingWorktreeId !== undefined
       ? worktreeId === initiatingWorktreeId
       : worktreeId !== FLOATING_TERMINAL_WORKTREE_ID &&
         worktreeRelative !== null &&
-        foldSeparatorsForFlavor(worktreeRelative, filePath) === normalizedRelativePath
+        foldSeparatorsForFlavor(worktreeRelative, filePath) === normalizedRelativePath)
   const relativeRoot = usesInitiatingWorktreeRoot
     ? initiatingWorktreePath
     : deriveRelativeRootFromOpenFile(filePath, relativePath)
@@ -204,19 +209,34 @@ export function remapOpenEditorTabsForPathChange({
   // Atomically rekey the edit session to preserve OpenFile/id-keyed state and close the close/reopen watcher race.
   const updatedPathOf = (file: { filePath: string }): string =>
     computeMovedPath(fromPath, toPath, file.filePath)
-  const relativeOf = (file: {
+  type MovedFile = {
     filePath: string
     relativePath: string
     worktreeId: string
-  }): string =>
-    getUpdatedRelativePath({
-      filePath: file.filePath,
-      relativePath: file.relativePath,
-      worktreeId: file.worktreeId,
-      updatedPath: updatedPathOf(file),
-      initiatingWorktreeId: worktreeId,
-      initiatingWorktreePath: worktreePath
-    })
+    gitWorktreeId?: string
+  }
+  const isGitScoped = (file: MovedFile): boolean =>
+    file.gitWorktreeId !== undefined && file.gitWorktreeId !== file.worktreeId
+  // A scoped tab moved out of its git owner's root can no longer be addressed relative to that owner.
+  const leavesGitOwner = (file: MovedFile): boolean =>
+    isGitScoped(file) &&
+    file.relativePath !== file.filePath &&
+    relativePathInsideRoot(
+      deriveRelativeRootFromOpenFile(file.filePath, file.relativePath),
+      updatedPathOf(file)
+    ) === null
+  const relativeOf = (file: MovedFile): string =>
+    leavesGitOwner(file)
+      ? getRelativePathFromRoot(worktreePath, updatedPathOf(file))
+      : getUpdatedRelativePath({
+          filePath: file.filePath,
+          relativePath: file.relativePath,
+          worktreeId: file.worktreeId,
+          updatedPath: updatedPathOf(file),
+          initiatingWorktreeId: worktreeId,
+          initiatingWorktreePath: worktreePath,
+          gitScoped: isGitScoped(file)
+        })
 
   // First owner gets the plain-path ID; others use owner-qualified IDs, honoring existing destinations. Same-owner collisions are rejected by rekey.
   const ownerKeyOf = (file: { worktreeId: string; runtimeEnvironmentId?: string | null }): string =>
@@ -266,7 +286,8 @@ export function remapOpenEditorTabsForPathChange({
       newRelativePath: relativeOf(file),
       newLanguage: detectLanguage(basename(updatedPathOf(file))),
       // Only direct file renames consume untitled status; parent-directory moves preserve it.
-      consumeUntitled: file.isUntitled === true && file.filePath === fromPath
+      consumeUntitled: file.isUntitled === true && file.filePath === fromPath,
+      ...(leavesGitOwner(file) ? { clearGitOwner: true } : {})
     })
   }
   for (const file of filesToMove) {
@@ -283,7 +304,8 @@ export function remapOpenEditorTabsForPathChange({
       oldFilePath: file.filePath,
       newFilePath: updatedPathOf(file),
       newRelativePath: relativeOf(file),
-      newMarkdownPreviewSourceFileId: newSourceFileId
+      newMarkdownPreviewSourceFileId: newSourceFileId,
+      ...(leavesGitOwner(file) ? { clearGitOwner: true } : {})
     })
   }
   // Only single-file staged/unstaged diffs have path-only IDs; branch/commit metadata and worktree-rooted Changes cannot be reconstructed from path.
@@ -291,11 +313,15 @@ export function remapOpenEditorTabsForPathChange({
     if (file.mode !== 'diff' || (file.diffSource !== 'staged' && file.diffSource !== 'unstaged')) {
       continue
     }
+    // Why: a diff is git-owner state; one that left its repo has no valid owner to retarget to.
+    if (leavesGitOwner(file)) {
+      continue
+    }
     const newRelativePath = relativeOf(file)
     rekeys.push({
       oldFileId: file.id,
       newFileId: buildDiffEditorFileId(
-        file.worktreeId,
+        getScopedTabIdOwner(file.worktreeId, file.gitWorktreeId),
         file.diffSource,
         newRelativePath,
         file.runtimeEnvironmentId

@@ -1,6 +1,7 @@
 import type { EditorGet, EditorSet } from '../types/editor-set-get'
 import type { EditorSlice } from '../types/editor-slice'
 import { joinPath } from '@/lib/path'
+import { resolveEditorFileIdForOwner } from '../file-ids/editor-file-ids'
 import type { OpenFile } from '../types/open-file'
 import { toOpenConflictMetadata } from '../git/git-status-reconciliation'
 import { resolveEditorOpenTargetGroupId } from '../tabs/editor-open-target-group'
@@ -20,9 +21,14 @@ export function createOpenConflictFile(
       const absolutePath = joinPath(worktreePath, entry.path)
       const isPreview = resolveEditorPreviewIntent(get(), options?.preview)
       let editorItemTargetGroupId = options?.targetGroupId
+      const gitWorktreeId =
+        options?.gitWorktreeId !== worktreeId ? options?.gitWorktreeId : undefined
+      const trackedKey = gitWorktreeId ?? worktreeId
       let openedConflictFile = true
+      let editorFileId = absolutePath
       set((s) => {
-        const id = absolutePath
+        const id = resolveEditorFileIdForOwner(s, absolutePath, worktreeId, undefined, ['edit'])
+        editorFileId = id
         const conflict = toOpenConflictMetadata(entry)
         const targetGroupId =
           resolveEditorOpenTargetGroupId(s, worktreeId, options?.targetGroupId) ?? undefined
@@ -31,10 +37,10 @@ export function createOpenConflictFile(
         const nextTracked =
           entry.conflictStatus === 'unresolved' && entry.conflictKind
             ? {
-                ...s.trackedConflictPathsByWorktree[worktreeId],
+                ...s.trackedConflictPathsByWorktree[trackedKey],
                 [entry.path]: entry.conflictKind
               }
-            : s.trackedConflictPathsByWorktree[worktreeId]
+            : s.trackedConflictPathsByWorktree[trackedKey]
 
         if (!conflict) {
           openedConflictFile = false
@@ -56,6 +62,7 @@ export function createOpenConflictFile(
                     diffSource: undefined,
                     skippedConflicts: undefined,
                     conflictReview: undefined,
+                    gitWorktreeId: gitWorktreeId ?? f.gitWorktreeId,
                     isPreview: updatedPreview
                   }
                 : f
@@ -65,9 +72,9 @@ export function createOpenConflictFile(
             activeFileIdByWorktree: { ...s.activeFileIdByWorktree, [worktreeId]: id },
             activeTabTypeByWorktree: { ...s.activeTabTypeByWorktree, [worktreeId]: 'editor' },
             trackedConflictPathsByWorktree:
-              nextTracked === s.trackedConflictPathsByWorktree[worktreeId]
+              nextTracked === s.trackedConflictPathsByWorktree[trackedKey]
                 ? s.trackedConflictPathsByWorktree
-                : { ...s.trackedConflictPathsByWorktree, [worktreeId]: nextTracked }
+                : { ...s.trackedConflictPathsByWorktree, [trackedKey]: nextTracked }
           }
         }
 
@@ -76,6 +83,7 @@ export function createOpenConflictFile(
           filePath: absolutePath,
           relativePath: entry.path,
           worktreeId,
+          gitWorktreeId,
           language,
           isDirty: false,
           mode: 'edit',
@@ -99,9 +107,9 @@ export function createOpenConflictFile(
               activeFileIdByWorktree: { ...s.activeFileIdByWorktree, [worktreeId]: id },
               activeTabTypeByWorktree: { ...s.activeTabTypeByWorktree, [worktreeId]: 'editor' },
               trackedConflictPathsByWorktree:
-                nextTracked === s.trackedConflictPathsByWorktree[worktreeId]
+                nextTracked === s.trackedConflictPathsByWorktree[trackedKey]
                   ? s.trackedConflictPathsByWorktree
-                  : { ...s.trackedConflictPathsByWorktree, [worktreeId]: nextTracked }
+                  : { ...s.trackedConflictPathsByWorktree, [trackedKey]: nextTracked }
             }
           }
         }
@@ -113,9 +121,9 @@ export function createOpenConflictFile(
           activeFileIdByWorktree: { ...s.activeFileIdByWorktree, [worktreeId]: id },
           activeTabTypeByWorktree: { ...s.activeTabTypeByWorktree, [worktreeId]: 'editor' },
           trackedConflictPathsByWorktree:
-            nextTracked === s.trackedConflictPathsByWorktree[worktreeId]
+            nextTracked === s.trackedConflictPathsByWorktree[trackedKey]
               ? s.trackedConflictPathsByWorktree
-              : { ...s.trackedConflictPathsByWorktree, [worktreeId]: nextTracked }
+              : { ...s.trackedConflictPathsByWorktree, [trackedKey]: nextTracked }
         }
       })
       // Why: no conflict metadata means no OpenFile was added, so a workspace tab would point at nothing.
@@ -124,7 +132,7 @@ export function createOpenConflictFile(
       }
       openWorkspaceEditorItem(
         get(),
-        absolutePath,
+        editorFileId,
         worktreeId,
         entry.path,
         'editor',
