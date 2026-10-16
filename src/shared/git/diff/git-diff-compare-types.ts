@@ -51,6 +51,8 @@ export type GitDiffTextResult = {
   originalIsBinary: false
   modifiedIsBinary: false
   largeDiffRenderLimit?: LargeDiffRenderLimit
+  /** Sides whose '' content means absent or unreadable rather than an empty blob. Older hosts omit it. */
+  missingSides?: ('original' | 'modified')[]
 }
 
 export type GitDiffBinaryResult = {
@@ -67,6 +69,8 @@ export type GitDiffBinaryResult = {
   tooLarge?: boolean
   /** Set by a remote client, never the host: the host refused the diff as too large to send over the connection. */
   tooLargeForConnection?: boolean
+  /** Sides whose '' content means absent or unreadable rather than an empty blob. Older hosts omit it. */
+  missingSides?: ('original' | 'modified')[]
 } & (
   | { originalIsBinary: true; modifiedIsBinary: boolean }
   | { originalIsBinary: boolean; modifiedIsBinary: true }

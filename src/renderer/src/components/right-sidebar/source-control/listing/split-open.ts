@@ -1,3 +1,5 @@
+import { getShortcutPlatform } from '@/lib/shortcut-platform'
+
 export type SourceControlRowOpenEvent = {
   altKey: boolean
   ctrlKey: boolean
@@ -11,12 +13,9 @@ type SourceControlOpenModifierKeys = Pick<
   'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey'
 >
 
-export function isSourceControlSplitOpenModifier(
-  event: SourceControlRowOpenEvent,
-  isMac: boolean
-): boolean {
-  const platformPrimary = isMac ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey
-  return platformPrimary || event.shiftKey || event.altKey
+// Why: Ctrl/Cmd and Shift build the multi-selection (bulk actions); only Alt/Option opens a split.
+export function isSourceControlSplitOpenModifier(event: SourceControlRowOpenEvent): boolean {
+  return event.altKey
 }
 
 export function shouldOpenSourceControlRowAsPreview(
@@ -41,4 +40,17 @@ export function toPermanentSourceControlRowOpenEvent(
   event: SourceControlOpenModifierKeys
 ): SourceControlRowOpenEvent {
   return { ...toSourceControlRowOpenEvent(event), openAsPermanent: true }
+}
+
+/** The Alt-click event, for menu items that open the row in a split to the right. */
+export const SOURCE_CONTROL_OPEN_TO_SIDE_EVENT: SourceControlRowOpenEvent = {
+  altKey: true,
+  ctrlKey: false,
+  metaKey: false,
+  shiftKey: false,
+  openAsPermanent: true
+}
+
+export function getSourceControlSplitOpenShortcutLabel(): string {
+  return getShortcutPlatform() === 'darwin' ? '⌥Click' : 'Alt+Click'
 }
