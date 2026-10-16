@@ -11,6 +11,7 @@ export const persistedOpenFileSchema = z.object({
   isPreview: z.boolean().optional(),
   runtimeEnvironmentId: z.string().nullable().optional(),
   externalSshTargetId: z.string().trim().min(1).optional(),
+  gitWorktreeId: z.string().min(1).optional(),
   dirtyDraftContent: z.string().optional(),
   lastKnownDiskSignature: z.string().optional(),
   readOnly: z.boolean().optional(),

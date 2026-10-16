@@ -14348,6 +14348,97 @@
                   "e7876a2bde": "Stage at least one file to generate a message.",
                   "0904be2505": "Clear the message to regenerate.",
                   "1ea9ba37aa": "Pick an agent in Settings -> Git -> Source Control AI."
+                },
+                "bulk": {
+                  "action": {
+                    "bar": {
+                      "8a434c829f": "Copy Full Source",
+                      "4139bc5679": "Clear selection"
+                    }
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "multi": {
+                    "repo": {
+                      "panel": {
+                        "4c62351467": "No imported Git repositories under this folder. Add the repositories inside it to Orca to see their changes here.",
+                        "a044a830f1": "Refresh all repositories",
+                        "c023ba6838": "This folder sits inside an imported repository, so changes outside the folder are listed too.",
+                        "efd34a4169": "Changes list for {{value0}} is truncated; copy is incomplete.",
+                        "d98e7b731c": "Copy all changes",
+                        "da953a696f": "Paste & Restore",
+                        "5de321918e": "Hidden worktrees under this folder are not included ({{value0}}).",
+                        "ab32287003": "Repositories"
+                      }
+                    }
+                  }
+                }
+              },
+              "clipcode": {
+                "clipcode": {
+                  "copy": {
+                    "action": {
+                      "2749202819": "({{value0}} unreadable)",
+                      "e6cdc3a753": "Over {{value0}} tokens.",
+                      "21758e255e": "No Git changes found to copy.",
+                      "7828c565da": "({{value0}} skipped: size exceeded)",
+                      "65b422bbd1": "{{value0}} Git file(s) copied",
+                      "7c6daaf4fa": "Copy Full Source failed",
+                      "9c3f952874": "{{value0}} Git file(s) could not be read."
+                    }
+                  },
+                  "restore": {
+                    "preview": {
+                      "dialog": {
+                        "2c06a4e179": "Paste & Restore",
+                        "87832cd30d": "Files from the clipboard will be written into this folder.",
+                        "813199296f": "Adjust paths ({{value0}})",
+                        "9a421f14d8": "Create",
+                        "d469ff3b81": "Overwrite",
+                        "9cf3526c1f": "Delete",
+                        "0d87b3b39d": "Skip",
+                        "80224f9095": "Overwrite existing files",
+                        "677bf0ade9": "Cancel",
+                        "c0b1b53e49": "Restore",
+                        "9bd78385ce": "unsafe path",
+                        "85d6d805ca": "outside the folder",
+                        "67e63b0749": "already absent",
+                        "becf17b643": "is a folder",
+                        "4acb11ed21": "content was skipped when copied",
+                        "ef509f9991": ".git is protected",
+                        "1f409f3dd6": "path goes through a symlink"
+                      }
+                    }
+                  }
+                },
+                "use": {
+                  "clipcode": {
+                    "restore": {
+                      "b124e9c64e": "Clipboard is empty or does not contain text.",
+                      "1847420a23": "No Snipcode file headers found in clipboard.",
+                      "af5c90f593": "Paste & Restore failed",
+                      "ae1ec38ef1": "Created {{value0}}, overwritten {{value1}}, deleted {{value2}}, skipped {{value3}}.",
+                      "19a6f378aa": "...and {{value0}} more",
+                      "c9af35dc2d": "Failed {{value0}}."
+                    }
+                  }
+                }
+              },
+              "listing": {
+                "entry": {
+                  "context": {
+                    "menu": {
+                      "9137d88b9f": "Copy Full Source",
+                      "ce8235a6a4": "Open to the Side"
+                    }
+                  }
+                },
+                "uncommitted": {
+                  "sections": {
+                    "1a59d5a05b": "Copy Full Source"
+                  }
                 }
               }
             }
