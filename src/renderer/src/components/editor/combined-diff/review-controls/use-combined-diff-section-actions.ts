@@ -82,12 +82,16 @@ export function useCombinedDiffSectionActions({
       const isBranchEntry = section.area === undefined
 
       if ((isBranchMode || (isAllMode && isBranchEntry)) && branchCompare) {
-        openBranchDiff(file.worktreeId, file.filePath, entry, branchCompare, language)
+        openBranchDiff(file.worktreeId, file.filePath, entry, branchCompare, language, {
+          gitWorktreeId: file.gitWorktreeId
+        })
         return
       }
 
       if (isCommitMode && commitCompare) {
-        openCommitDiff(file.worktreeId, file.filePath, entry, commitCompare, language)
+        openCommitDiff(file.worktreeId, file.filePath, entry, commitCompare, language, {
+          gitWorktreeId: file.gitWorktreeId
+        })
         return
       }
 
@@ -95,6 +99,7 @@ export function useCombinedDiffSectionActions({
         filePath: joinPath(file.filePath, section.path),
         relativePath: section.path,
         worktreeId: file.worktreeId,
+        gitWorktreeId: file.gitWorktreeId,
         runtimeEnvironmentId: file.runtimeEnvironmentId,
         language,
         mode: 'edit'
@@ -104,6 +109,7 @@ export function useCombinedDiffSectionActions({
       branchCompare,
       commitCompare,
       file.filePath,
+      file.gitWorktreeId,
       file.runtimeEnvironmentId,
       file.worktreeId,
       isAllMode,

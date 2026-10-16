@@ -36,7 +36,9 @@ export type HydratedEditorSessionState = Pick<
 export function buildHydratedEditorSessionState(
   session: WorkspaceSessionState,
   validWorktreeIds: ReadonlySet<string>,
-  activeWorktreeId: string | null
+  activeWorktreeId: string | null,
+  /** Repos a folder tab's git owner may name; omitted where repos are unknown, so the owner is kept. */
+  validGitOwnerIds?: ReadonlySet<string>
 ): {
   state: HydratedEditorSessionState
   editorFileIdMigrationsByWorktree: Record<string, Map<string, string>>
@@ -108,6 +110,11 @@ export function buildHydratedEditorSessionState(
         isPreview: pf.isPreview,
         runtimeEnvironmentId: pf.runtimeEnvironmentId,
         externalSshTargetId: pf.externalSshTargetId,
+        ...(pf.gitWorktreeId &&
+        pf.gitWorktreeId !== worktreeId &&
+        (validGitOwnerIds?.has(pf.gitWorktreeId) ?? true)
+          ? { gitWorktreeId: pf.gitWorktreeId }
+          : {}),
         ...(isReadOnly ? { readOnly: true } : {}),
         ...(isReadOnly && pf.liveTail === true ? { liveTail: true } : {}),
         lastKnownDiskSignature: isReadOnly ? undefined : pf.lastKnownDiskSignature,

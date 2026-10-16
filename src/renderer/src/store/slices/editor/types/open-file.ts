@@ -38,6 +38,8 @@ export type OpenFile = {
   filePath: string // absolute path
   relativePath: string // relative to worktree root
   worktreeId: string
+  /** Worktree that owns this tab's git state when it differs from `worktreeId` (folder-workspace repo sections). Not persisted. */
+  gitWorktreeId?: string
   language: string
   isDirty: boolean
   // Why: remote untitled cleanup must target the creating environment even if the user later switches runtime.
@@ -124,4 +126,6 @@ export type EditorOpenTargetOptions = {
   preview?: boolean
   runtimeEnvironmentId?: string | null
   forceContentReload?: boolean
+  /** Repo worktree backing the tab's git reads when `worktreeId` is a folder workspace. */
+  gitWorktreeId?: string
 }

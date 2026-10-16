@@ -2,6 +2,7 @@ import { joinPath } from '@/lib/path'
 import { openFileOwnerWorktreeId } from '@/lib/open-file-owner-scope'
 import type { OpenFile } from '@/store/slices/editor'
 import type { AppState } from '@/store/types'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 import { areLocalWindowsWslPathAliases } from '../../../../shared/cross-platform-path'
 import { isLocalWindowsDesktopClient } from '@/lib/desktop-window-chrome'
 import {
@@ -154,7 +155,10 @@ export function getOpenFilesForExternalFileChange(
   const hasRuntimeOwnerFilter = Object.hasOwn(target, 'runtimeEnvironmentId')
   const targetRuntimeOwner = target.runtimeEnvironmentId?.trim() || null
   return openFiles.filter((file) => {
-    if (openFileOwnerWorktreeId(file, catalog) !== target.worktreeId) {
+    if (
+      openFileOwnerWorktreeId(file, catalog) !== target.worktreeId &&
+      file.gitWorktreeId !== target.worktreeId
+    ) {
       return false
     }
     if (
@@ -174,7 +178,9 @@ export function getOpenFilesForExternalFileChange(
     if (file.mode === 'diff') {
       return (
         (file.diffSource === 'unstaged' || file.diffSource === 'staged') &&
-        file.relativePath === target.relativePath
+        file.relativePath === target.relativePath &&
+        // Why: repos sharing a folder editor reuse relative paths; only the owning repo's diff is affected.
+        getOpenFileGitWorktreeId(file) === target.worktreeId
       )
     }
     return false
