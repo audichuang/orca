@@ -11,6 +11,7 @@ import type {
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import { acquireCombinedDiffSectionOperation } from './combined-diff-section-connection'
 import { withDiffSectionLoadTimeout } from './combined-diff-section-load-timeout'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 export function fetchCombinedDiffSection({
   branchCompare,
@@ -39,10 +40,12 @@ export function fetchCombinedDiffSection({
     operation.assertCurrent()
     return { result: value, operation }
   }
+  // Fork-only: a folder tab's git reads go to its repo, not the folder workspace.
+  const context = { ...operation.context, worktreeId: getOpenFileGitWorktreeId(file) }
   if ((isBranchMode || (isAllMode && !('area' in entry))) && branchCompare) {
     return retainResult(
       withDiffSectionLoadTimeout(
-        getRuntimeGitBranchDiff(operation.context, {
+        getRuntimeGitBranchDiff(context, {
           compare: {
             baseRef: branchCompare.baseRef,
             baseOid: branchCompare.baseOid!,
@@ -58,7 +61,7 @@ export function fetchCombinedDiffSection({
   if (isCommitMode && commitCompare) {
     return retainResult(
       withDiffSectionLoadTimeout(
-        getRuntimeGitCommitDiff(operation.context, {
+        getRuntimeGitCommitDiff(context, {
           commitOid: commitCompare.commitOid,
           parentOid: commitCompare.parentOid,
           filePath: entry.path,
@@ -69,7 +72,7 @@ export function fetchCombinedDiffSection({
   }
   return retainResult(
     withDiffSectionLoadTimeout(
-      getRuntimeGitDiff(operation.context, {
+      getRuntimeGitDiff(context, {
         filePath: entry.path,
         staged: 'area' in entry && entry.area === 'staged',
         ...('area' in entry && entry.area === 'staged' && entry.status === 'renamed'

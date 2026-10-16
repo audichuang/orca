@@ -41,6 +41,7 @@ const PRIMARY_ICONS: Partial<
 export function CommitArea({
   worktreeId,
   groupId,
+  initialCwd,
   connectionId,
   repoId,
   launchPlatform,
@@ -243,6 +244,7 @@ export function CommitArea({
       <CommitNotices
         worktreeId={worktreeId}
         groupId={groupId}
+        initialCwd={initialCwd}
         connectionId={connectionId}
         repoId={repoId}
         launchPlatform={launchPlatform}
