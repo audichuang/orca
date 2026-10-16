@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { detectLanguage } from '@/lib/language-detect'
 import { openUncommittedEntry } from './open-uncommitted-entry'
 import { useAppStore } from '@/store'
+import { isPathInsideOrEqual } from '../../../../../../shared/cross-platform-path'
 import type {
   GitBranchChangeEntry,
   GitBranchCompareSummary
@@ -9,6 +10,7 @@ import type {
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import { buildActiveOpenFileSignature, buildActiveOpenRowKeys } from './active-open-file-keys'
 import type { FlatEntry } from './use-selection'
+import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 import {
   isSourceControlSplitOpenModifier,
   shouldOpenSourceControlRowAsPreview,
@@ -16,20 +18,23 @@ import {
 } from './split-open'
 
 export function useSourceControlRowOpening({
-  isMac,
   activeWorktreeId,
   worktreePath,
   visibleSelectionEntries,
   visibleBranchRowKeys,
   branchSummary
 }: {
-  isMac: boolean
   activeWorktreeId: string | null
   worktreePath: string | null
   visibleSelectionEntries: FlatEntry[]
   visibleBranchRowKeys: readonly string[]
   branchSummary: GitBranchCompareSummary | null
 }) {
+  // Why: a folder workspace's repo section reads git from the repo but opens tabs in the folder's editor.
+  const scope = useSourceControlWorktreeScope()
+  const tabWorktreeId = scope?.editorWorktreeId ?? activeWorktreeId
+  // Why: tabs keep reading git from the repo even though the folder workspace owns them.
+  const gitWorktreeId = scope ? (activeWorktreeId ?? undefined) : undefined
   const activeGroupIdByWorktree = useAppStore((s) => s.activeGroupIdByWorktree)
   const groupsByWorktree = useAppStore((s) => s.groupsByWorktree)
   const createEmptySplitGroup = useAppStore((s) => s.createEmptySplitGroup)
@@ -42,32 +47,36 @@ export function useSourceControlRowOpening({
   // Modifier-click opens a right split to preserve the current pane.
   const resolveSplitTargetGroupId = useCallback(
     (event?: SourceControlRowOpenEvent): string | undefined => {
-      if (!event || !activeWorktreeId || !isSourceControlSplitOpenModifier(event, isMac)) {
+      if (!event || !tabWorktreeId || !isSourceControlSplitOpenModifier(event)) {
         return undefined
       }
       const sourceGroupId =
-        activeGroupIdByWorktree[activeWorktreeId] ?? groupsByWorktree[activeWorktreeId]?.[0]?.id
+        activeGroupIdByWorktree[tabWorktreeId] ?? groupsByWorktree[tabWorktreeId]?.[0]?.id
       if (!sourceGroupId) {
         return undefined
       }
-      return createEmptySplitGroup(activeWorktreeId, sourceGroupId, 'right') ?? undefined
+      return createEmptySplitGroup(tabWorktreeId, sourceGroupId, 'right') ?? undefined
     },
-    [activeGroupIdByWorktree, activeWorktreeId, createEmptySplitGroup, groupsByWorktree, isMac]
+    [activeGroupIdByWorktree, tabWorktreeId, createEmptySplitGroup, groupsByWorktree]
   )
 
   // Use a primitive signature so unrelated store writes do not rerender; return null for non-editor tabs.
   const activeOpenFileSignature = useAppStore((s) => {
-    if (!activeWorktreeId || s.activeTabTypeByWorktree?.[activeWorktreeId] !== 'editor') {
+    if (!tabWorktreeId || s.activeTabTypeByWorktree?.[tabWorktreeId] !== 'editor') {
       return null
     }
-    const activeFileId = s.activeFileIdByWorktree?.[activeWorktreeId]
+    const activeFileId = s.activeFileIdByWorktree?.[tabWorktreeId]
     if (!activeFileId) {
       return null
     }
     const activeFile = s.openFiles?.find(
-      (file) => file.id === activeFileId && file.worktreeId === activeWorktreeId
+      (file) => file.id === activeFileId && file.worktreeId === tabWorktreeId
     )
-    return activeFile
+    // Why: in a folder workspace every repo section shares one editor; match only this repo's files.
+    const ownsActiveFile =
+      tabWorktreeId === activeWorktreeId ||
+      (!!worktreePath && !!activeFile && isPathInsideOrEqual(worktreePath, activeFile.filePath))
+    return activeFile && ownsActiveFile
       ? buildActiveOpenFileSignature(
           activeFile.diffSource,
           activeFile.relativePath,
@@ -90,7 +99,7 @@ export function useSourceControlRowOpening({
 
   const handleOpenDiff = useCallback(
     (entry: GitStatusEntry, event?: SourceControlRowOpenEvent) => {
-      if (!activeWorktreeId || !worktreePath) {
+      if (!activeWorktreeId || !tabWorktreeId || !worktreePath) {
         return
       }
       const targetGroupId = resolveSplitTargetGroupId(event)
@@ -100,11 +109,14 @@ export function useSourceControlRowOpening({
         activeWorktreeId,
         worktreePath,
         entry,
-        { targetGroupId, preview: openAsPreview }
+        { targetGroupId, preview: openAsPreview, gitWorktreeId },
+        tabWorktreeId
       )
     },
     [
       activeWorktreeId,
+      tabWorktreeId,
+      gitWorktreeId,
       worktreePath,
       resolveSplitTargetGroupId,
       trackConflictPath,
@@ -116,25 +128,31 @@ export function useSourceControlRowOpening({
 
   const openCommittedDiff = useCallback(
     (entry: GitBranchChangeEntry, event?: SourceControlRowOpenEvent) => {
-      if (
-        !activeWorktreeId ||
-        !worktreePath ||
-        !branchSummary ||
-        branchSummary.status !== 'ready'
-      ) {
+      if (!tabWorktreeId || !worktreePath || !branchSummary || branchSummary.status !== 'ready') {
         return
       }
       const targetGroupId = resolveSplitTargetGroupId(event)
       openBranchDiff(
-        activeWorktreeId,
+        tabWorktreeId,
         worktreePath,
         entry,
         branchSummary,
         detectLanguage(entry.path),
-        { targetGroupId, preview: shouldOpenSourceControlRowAsPreview(event, targetGroupId) }
+        {
+          targetGroupId,
+          preview: shouldOpenSourceControlRowAsPreview(event, targetGroupId),
+          gitWorktreeId
+        }
       )
     },
-    [activeWorktreeId, branchSummary, openBranchDiff, resolveSplitTargetGroupId, worktreePath]
+    [
+      tabWorktreeId,
+      gitWorktreeId,
+      branchSummary,
+      openBranchDiff,
+      resolveSplitTargetGroupId,
+      worktreePath
+    ]
   )
 
   return { resolveSplitTargetGroupId, activeOpenRowKeys, handleOpenDiff, openCommittedDiff }

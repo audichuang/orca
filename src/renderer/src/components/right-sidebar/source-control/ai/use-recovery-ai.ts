@@ -15,6 +15,7 @@ import type { SourceControlAiStoreSnapshot } from './controller-types'
 
 type SourceControlRecoveryAiParams = {
   activeWorktreeId: string | null | undefined
+  editorWorktreeId?: string | null
   activeGroupId: string | null | undefined
   activeSourceControlLaunchPlatform: NodeJS.Platform | undefined
   sourceRepoConnectionId?: string | null
@@ -31,6 +32,7 @@ type SourceControlRecoveryAiParams = {
 
 export function useSourceControlRecoveryAi({
   activeWorktreeId,
+  editorWorktreeId,
   activeGroupId,
   activeSourceControlLaunchPlatform,
   sourceRepoConnectionId,
@@ -68,6 +70,8 @@ export function useSourceControlRecoveryAi({
       try {
         return await launchSourceControlRecoveryAgentWithDefault({
           activeWorktreeId,
+          editorWorktreeId,
+          worktreePath,
           activeGroupId,
           activeSourceControlLaunchPlatform,
           sourceRepoConnectionId,
@@ -85,6 +89,8 @@ export function useSourceControlRecoveryAi({
     [
       activeGroupId,
       activeWorktreeId,
+      editorWorktreeId,
+      worktreePath,
       activeSourceControlLaunchPlatform,
       commitError,
       commitFailureRecoveryPrompt,
@@ -105,6 +111,8 @@ export function useSourceControlRecoveryAi({
       try {
         return await launchSourceControlRecoveryAgentWithDefault({
           activeWorktreeId,
+          editorWorktreeId,
+          worktreePath,
           activeGroupId,
           activeSourceControlLaunchPlatform,
           sourceRepoConnectionId,
@@ -122,6 +130,8 @@ export function useSourceControlRecoveryAi({
     [
       activeGroupId,
       activeWorktreeId,
+      editorWorktreeId,
+      worktreePath,
       activeSourceControlLaunchPlatform,
       getLaunchActionRecipe,
       getStoreState,

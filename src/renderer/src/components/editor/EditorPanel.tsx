@@ -34,6 +34,7 @@ import { isMarkdownReviewNotesEnabled } from '@/lib/markdown-review-notes-settin
 import { useFileCustomEditors } from '@/store/plugin-custom-editors'
 import { applyCustomEditorToggle } from './view-mode/custom-editor-toggle'
 import { runAfterEditorFramesFlush } from './save/flush/editor-pending-flush'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 function EditorPanelInner({
   activeFileId: activeFileIdProp,
@@ -54,6 +55,7 @@ function EditorPanelInner({
   const activeViewStateId = activeViewStateIdProp ?? activeFileId
   const activeFile = openFiles.find((f) => f.id === activeFileId) ?? null
   const activeWorktreeId = activeFile?.worktreeId
+  const activeGitWorktreeId = activeFile ? getOpenFileGitWorktreeId(activeFile) : undefined
   const canOpenWorkspaceFileBrowser = useAppStore((s) =>
     activeWorktreeId && activeFile
       ? canShowWorkspaceFileBrowserAction(s, activeWorktreeId, activeFile.filePath)
@@ -63,10 +65,10 @@ function EditorPanelInner({
   const pendingEditorReveal = useAppStore((s) => s.pendingEditorReveal)
   // Git refreshes for other worktrees must not wake every mounted editor pane.
   const gitStatusEntries = useAppStore((s) =>
-    selectEditorPanelGitStatusEntries(s, activeWorktreeId)
+    selectEditorPanelGitStatusEntries(s, activeGitWorktreeId)
   )
   const gitBranchEntries = useAppStore((s) =>
-    selectEditorPanelGitBranchEntries(s, activeWorktreeId)
+    selectEditorPanelGitBranchEntries(s, activeGitWorktreeId)
   )
   const markdownViewMode = useAppStore((s) => s.markdownViewMode)
   const markdownDefaultViewMode = useAppStore((s) => s.settings?.markdownDefaultViewMode)

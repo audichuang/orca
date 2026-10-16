@@ -26,7 +26,11 @@ import {
   type ConflictResolution
 } from '../../../../../../shared/source-control/listing/source-control-entry-actions'
 import { isSubmoduleWorktreeOnlyChange } from '../../../../../../shared/source-control/listing/source-control-discard-all-sequence'
-import { toPermanentSourceControlRowOpenEvent, type SourceControlRowOpenEvent } from './split-open'
+import {
+  SOURCE_CONTROL_OPEN_TO_SIDE_EVENT,
+  toPermanentSourceControlRowOpenEvent,
+  type SourceControlRowOpenEvent
+} from './split-open'
 import {
   getSourceControlRowHighlightClass,
   SOURCE_CONTROL_ROW_ACTION_OVERLAY_CLASS,
@@ -55,6 +59,7 @@ export const UncommittedEntryRow = React.memo(function UncommittedEntryRow({
   onResolveConflict,
   onUnstage,
   onDiscard,
+  onCopyFullSource,
   commentCount,
   showPathHint = true,
   submoduleExpansion
@@ -75,6 +80,7 @@ export const UncommittedEntryRow = React.memo(function UncommittedEntryRow({
   onResolveConflict: (entry: GitStatusEntry, resolution: ConflictResolution) => Promise<void>
   onUnstage: (filePath: string, oldPath?: string) => Promise<void>
   onDiscard: (entry: GitStatusEntry) => void
+  onCopyFullSource?: (entryKey: string) => void
   commentCount: number
   showPathHint?: boolean
   // When set, the row is a dirty submodule: clicking toggles lazy expansion instead of opening an uninformative gitlink diff.
@@ -106,6 +112,8 @@ export const UncommittedEntryRow = React.memo(function UncommittedEntryRow({
       onView={() => onOpen(entry)}
       conflictResolutions={conflictResolutions}
       onResolveConflict={(resolution) => void onResolveConflict(entry, resolution)}
+      onOpenToSide={() => onOpen(entry, SOURCE_CONTROL_OPEN_TO_SIDE_EVENT)}
+      onCopyFullSource={onCopyFullSource ? () => onCopyFullSource(entryKey) : undefined}
       onRevealInExplorer={onRevealInExplorer}
       onOpenChange={(open) => {
         if (open && onContextMenu) {

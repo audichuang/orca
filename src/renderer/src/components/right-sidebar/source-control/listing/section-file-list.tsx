@@ -43,7 +43,8 @@ export function SourceControlSectionFileList({
   handleResolveConflict,
   handleUnstage,
   requestDiscardEntry,
-  diffCommentCountByPath
+  diffCommentCountByPath,
+  onCopyRowFullSource
 }: {
   sourceControlViewMode: SourceControlViewMode
   treeRows: RenderableSourceControlNode[]
@@ -72,6 +73,7 @@ export function SourceControlSectionFileList({
   handleUnstage: (path: string, oldPath?: string) => Promise<void>
   requestDiscardEntry: (entry: GitStatusEntry) => void
   diffCommentCountByPath: Map<string, number>
+  onCopyRowFullSource?: (rowKey: string) => void
 }): React.JSX.Element {
   return sourceControlViewMode === 'tree' ? (
     <VirtualizedList
@@ -130,6 +132,7 @@ export function SourceControlSectionFileList({
             onResolveConflict={handleResolveConflict}
             onUnstage={handleUnstage}
             onDiscard={requestDiscardEntry}
+            onCopyFullSource={onCopyRowFullSource}
             commentCount={diffCommentCountByPath.get(node.entry.path) ?? 0}
             showPathHint={false}
             submoduleExpansion={submoduleExpansion}
@@ -182,6 +185,7 @@ export function SourceControlSectionFileList({
             onResolveConflict={handleResolveConflict}
             onUnstage={handleUnstage}
             onDiscard={requestDiscardEntry}
+            onCopyFullSource={onCopyRowFullSource}
             commentCount={diffCommentCountByPath.get(entry.path) ?? 0}
             submoduleExpansion={submoduleExpansion}
           />
