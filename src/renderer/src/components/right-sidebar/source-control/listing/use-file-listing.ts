@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { deriveSourceControlPushRecovery } from '../sync/push-recovery'
-import { isSourceControlSplitOpenModifier, type SourceControlRowOpenEvent } from './split-open'
+import { isSourceControlSplitOpenModifier } from './split-open'
 import { useSourceControlSelection } from './use-selection'
 import { useSourceControlSubmoduleStatus } from './use-submodule-status'
 import type { SourceControlActionError } from '../sync/action-error'
@@ -10,6 +10,7 @@ import { useSourceControlGitHistory } from '../sync/use-git-history'
 import type { SourceControlStatusRefresh } from '../sync/use-status-refresh'
 import { useSourceControlFileProjection } from './use-file-projection'
 import { useSourceControlRowOpening } from './use-row-opening'
+import { useClipcodeFullSourceCopy } from '../clipcode/use-clipcode-full-source-copy'
 import type { SourceControlWorktreeContext } from './use-worktree-context'
 
 /**
@@ -32,7 +33,6 @@ export function useSourceControlFileListing({
   isBranchVisible,
   isFolder,
   isGitHistoryExpanded,
-  isMac,
   refreshActiveGitStatusAfterMutation,
   remoteActionError,
   repositoryHuge,
@@ -57,7 +57,6 @@ export function useSourceControlFileListing({
   isBranchVisible: boolean
   isFolder: boolean
   isGitHistoryExpanded: boolean
-  isMac: boolean
   refreshActiveGitStatusAfterMutation: SourceControlStatusRefresh['refreshActiveGitStatusAfterMutation']
   remoteActionError: SourceControlActionError | null
   repositoryHuge: SourceControlWorktreeContext['repositoryHuge']
@@ -116,22 +115,17 @@ export function useSourceControlFileListing({
   // Why: modifier-click keeps the current pane intact by opening the file in a fresh split to the right.
   const { resolveSplitTargetGroupId, activeOpenRowKeys, handleOpenDiff, openCommittedDiff } =
     useSourceControlRowOpening({
-      isMac,
       activeWorktreeId,
       worktreePath,
       visibleSelectionEntries,
       branchSummary
     })
 
-  const shouldOpenAsSplit = useCallback(
-    (event: SourceControlRowOpenEvent) => isSourceControlSplitOpenModifier(event, isMac),
-    [isMac]
-  )
   const { selectedKeys, handleSelect, handleContextMenu, clearSelection } =
     useSourceControlSelection({
       flatEntries: visibleSelectionEntries,
       onOpenDiff: handleOpenDiff,
-      shouldOpenAsSplit,
+      shouldOpenAsSplit: isSourceControlSplitOpenModifier,
       containerRef: sourceControlRef
     })
 
@@ -173,6 +167,13 @@ export function useSourceControlFileListing({
     clearSelection,
     refreshActiveGitStatusAfterMutation
   })
+  const { copyRowFullSource, copySelectionFullSource, copySectionFullSource } =
+    useClipcodeFullSourceCopy({
+      worktreeId: activeWorktreeId,
+      worktreePath,
+      selectedKeys,
+      flatEntriesByKey
+    })
   const unresolvedConflicts = useMemo(
     () => entries.filter((entry) => entry.conflictStatus === 'unresolved' && entry.conflictKind),
     [entries]
@@ -200,6 +201,9 @@ export function useSourceControlFileListing({
     bulkStagePaths,
     bulkUnstagePaths,
     clearSelection,
+    copyRowFullSource,
+    copySectionFullSource,
+    copySelectionFullSource,
     displaySections,
     expandedSubmoduleKeys,
     fileFilterState,

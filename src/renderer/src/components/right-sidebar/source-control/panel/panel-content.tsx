@@ -7,11 +7,16 @@ import { SourceControlUncommittedSections } from '../listing/uncommitted-section
 import { CompareUnavailable } from '../sync/compare-summary'
 import { SourceControlCommitSurface } from './commit-surface'
 import { SourceControlForkPushNotice } from './fork-push-notice'
+import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 import type { SourceControlPanelReadyProps } from './panel-props'
 
 /** The scrolling surface: status, commit affordances, the file sections and the history dock. */
 export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
   const { activeWorktree, currentWorktreeId, model, worktreePath } = props
+  // Why: in a folder repo section, combined diffs open in the folder's editor but read this repo's git state.
+  const scope = useSourceControlWorktreeScope()
+  const tabOwnerId = scope?.editorWorktreeId ?? currentWorktreeId
+  const gitOwnerId = scope ? currentWorktreeId : undefined
   const {
     activeConnectionId,
     activeOpenRowKeys,
@@ -20,6 +25,8 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
     collapsedSections,
     collapsedTreeDirs,
     conflictOperation,
+    copyRowFullSource,
+    copySectionFullSource,
     diffCommentCountByPath,
     displaySections,
     expandedSubmoduleKeys,
@@ -93,10 +100,11 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
         onResolveWithAi={() => void handleResolveConflictsWithAI()}
         onReviewConflicts={() => {
           openConflictReview(
-            currentWorktreeId,
+            tabOwnerId,
             worktreePath,
             unresolvedConflictReviewEntries,
-            'live-summary'
+            'live-summary',
+            gitOwnerId
           )
         }}
         repositoryHuge={repositoryHuge}
@@ -130,18 +138,20 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
           onViewSection={(sectionViewAction) => {
             if (sectionViewAction.kind === 'conflict-review') {
               openConflictReview(
-                currentWorktreeId,
+                tabOwnerId,
                 worktreePath,
                 sectionViewAction.entries,
-                'live-summary'
+                'live-summary',
+                gitOwnerId
               )
             } else {
               openAllDiffs(
-                currentWorktreeId,
+                tabOwnerId,
                 worktreePath,
                 undefined,
                 sectionViewAction.area,
-                sectionViewAction.entries
+                sectionViewAction.entries,
+                gitOwnerId
               )
             }
           }}
@@ -149,6 +159,9 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
           requestDiscardAllInArea={requestDiscardAllInArea}
           handleStageAllPaths={handleStageAllPaths}
           handleStageSectionPaths={handleStageSectionPaths}
+          onCopyRowFullSource={copyRowFullSource}
+          onCopySectionFullSource={copySectionFullSource}
+          isStatusTruncated={repositoryHuge !== undefined}
           handleUnstagePaths={handleUnstagePaths}
           sourceControlViewMode={sourceControlViewMode}
           visibleTreeRowsBySection={visibleTreeRowsBySection}
@@ -205,7 +218,9 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
           revealInExplorer={revealInExplorer}
           activeConnectionId={activeConnectionId}
           openCommittedDiff={openCommittedDiff}
-          openBranchAllDiffs={openBranchAllDiffs}
+          openBranchAllDiffs={(_worktreeId, path, summary) =>
+            openBranchAllDiffs(tabOwnerId, path, summary, undefined, gitOwnerId)
+          }
           diffCommentCountByPath={diffCommentCountByPath}
         />
       )}

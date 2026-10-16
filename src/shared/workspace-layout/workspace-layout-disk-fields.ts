@@ -202,6 +202,7 @@ const FILE = {
   runtimeEnvironmentId: own('file', 'runtimeEnvironmentId'),
   mirroredFromRuntimeSession: own('file', 'mirroredFromRuntimeSession'),
   externalSshTargetId: own('file', 'externalSshTargetId'),
+  gitWorktreeId: own('file', 'gitWorktreeId'),
   dirtyDraftContent: own('editorDraft', 'dirtyDraftContent'),
   lastKnownDiskSignature: own('editorDraft', 'lastKnownDiskSignature'),
   readOnly: own('file', 'readOnly'),

@@ -127,6 +127,7 @@ function populate(loaded: LoadedWorkspaceLayout): LoadedWorkspaceLayout {
   fill(loaded, 'file.externalSshTargetId', 'box')
   fill(loaded, 'file.runtimeEnvironmentId', 'env')
   fill(loaded, 'file.mirroredFromRuntimeSession', true)
+  fill(loaded, 'file.gitWorktreeId', 'repo::wt')
   fill(loaded, 'file.readOnly', true)
   fill(loaded, 'file.liveTail', true)
   // A focused and an expanded pane that is not the first, so a fallback is visible.

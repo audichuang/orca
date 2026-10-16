@@ -64,6 +64,7 @@ export function rekeyOpenFilesPatch(
       relativePath: rekey.newRelativePath,
       // A moved tab's id no longer matches the host snapshot, so leaving it host-owned would cull it (losing the draft); the coordinator close-notifies the host's old-path tab. (Re-homing the host tab in place is a follow-up.)
       mirroredFromRuntimeSession: undefined,
+      ...(rekey.clearGitOwner ? { gitWorktreeId: undefined } : {}),
       ...(rekey.newLanguage !== undefined ? { language: rekey.newLanguage } : {}),
       ...(rekey.newMarkdownPreviewSourceFileId !== undefined
         ? { markdownPreviewSourceFileId: rekey.newMarkdownPreviewSourceFileId }

@@ -34,6 +34,10 @@ export function restorableEditorFile(file: OpenFile): LayoutEditorFile {
       ? { runtimeEnvironmentId: file.runtimeEnvironmentId }
       : {}),
     ...(file.externalSshTargetId ? { externalSshTargetId: file.externalSshTargetId } : {}),
+    // Why: a folder workspace's tab is owned by the folder while git runs against the repo inside it.
+    ...(file.gitWorktreeId && file.gitWorktreeId !== file.worktreeId
+      ? { gitWorktreeId: file.gitWorktreeId }
+      : {}),
     ...(file.readOnly === true ? { readOnly: true } : {}),
     ...(file.readOnly === true && file.liveTail === true ? { liveTail: true } : {})
   }

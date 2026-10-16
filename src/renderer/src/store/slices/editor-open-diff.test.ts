@@ -47,6 +47,23 @@ describe('createEditorSlice openDiff', () => {
     ])
   })
 
+  it('records the git owner of a folder-scoped diff and keeps repos apart', () => {
+    const store = createEditorStore()
+
+    store.getState().openDiff('folder:f1', '/work/a/README.md', 'README.md', 'markdown', false, {
+      gitWorktreeId: 'repo-a'
+    })
+    store.getState().openDiff('folder:f1', '/work/b/README.md', 'README.md', 'markdown', false, {
+      gitWorktreeId: 'repo-b'
+    })
+
+    expect(store.getState().openFiles).toEqual([
+      expect.objectContaining({ worktreeId: 'folder:f1', gitWorktreeId: 'repo-a' }),
+      expect.objectContaining({ worktreeId: 'folder:f1', gitWorktreeId: 'repo-b' })
+    ])
+    expect(new Set(store.getState().openFiles.map((file) => file.id)).size).toBe(2)
+  })
+
   it('keeps local and runtime-owned diffs in separate tabs for the same path', () => {
     const store = createEditorStore()
 
