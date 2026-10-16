@@ -73,7 +73,10 @@ export function useCombinedDiffSectionRevalidation({
     }
     const handler = (event: Event): void => {
       const detail = (event as CustomEvent<EditorPathMutationTarget>).detail
-      if (!detail || detail.worktreeId !== file.worktreeId) {
+      if (
+        !detail ||
+        (detail.worktreeId !== file.worktreeId && detail.worktreeId !== file.gitWorktreeId)
+      ) {
         return
       }
       const hasRuntimeOwnerFilter = Object.hasOwn(detail, 'runtimeEnvironmentId')
@@ -98,6 +101,7 @@ export function useCombinedDiffSectionRevalidation({
     return () =>
       window.removeEventListener(ORCA_EDITOR_EXTERNAL_FILE_CHANGE_EVENT, handler as EventListener)
   }, [
+    file.gitWorktreeId,
     file.runtimeEnvironmentId,
     file.worktreeId,
     requestSectionReload,

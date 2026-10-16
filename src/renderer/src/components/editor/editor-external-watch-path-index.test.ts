@@ -212,4 +212,30 @@ describe('editor external watch path batch index', () => {
     expect(index.createOrUpdatePaths.size).toBe(1)
     expect(index.hasCombinedDiffConsumer).toBe(true)
   })
+
+  it('matches a folder-scoped diff tab by absolute path, not its repo-relative path', () => {
+    const scope = { worktreeId: 'folder:f', worktreePath: '/f', runtimeEnvironmentId: null }
+    const repoDiff = file({
+      id: 'repo-a-diff',
+      worktreeId: scope.worktreeId,
+      gitWorktreeId: 'repo-a',
+      mode: 'diff',
+      diffSource: 'unstaged',
+      filePath: '/f/a/src/x.ts',
+      relativePath: 'src/x.ts'
+    })
+    const index = indexEditorExternalWatchBatchPaths(
+      {
+        worktreePath: scope.worktreePath,
+        events: [
+          { kind: 'update', absolutePath: '/f/a/src/x.ts' },
+          { kind: 'update', absolutePath: '/f/src/x.ts' }
+        ]
+      },
+      [repoDiff],
+      scope
+    )
+    expect(index.matchingOpenFiles(index.changes[0])).toEqual([repoDiff])
+    expect(index.matchingOpenFiles(index.changes[1])).toEqual([])
+  })
 })

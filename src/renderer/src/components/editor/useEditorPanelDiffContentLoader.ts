@@ -12,6 +12,7 @@ import {
 import type { DiffContent, InFlightContentRead } from './editor-panel-content-types'
 import { canUseChangesModeForFile } from './editor-panel-file-mode'
 import type { EditorPanelContentLoadOptions } from './useEditorPanelExternalContentEvents'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 const inFlightDiffReads = new Map<string, InFlightContentRead<DiffContent>>()
 
@@ -68,7 +69,8 @@ export function useEditorPanelDiffContentLoader({
             ? file.branchCompare
             : null
         const commitCompare = file.commitCompare?.commitOid ? file.commitCompare : null
-        const connectionId = getConnectionIdForFile(file.worktreeId, file.filePath) ?? undefined
+        const gitWorktreeId = getOpenFileGitWorktreeId(file)
+        const connectionId = getConnectionIdForFile(gitWorktreeId, file.filePath) ?? undefined
         const activeSettings = useAppStore.getState().settings
         const fileSettings = settingsForRuntimeOwner(activeSettings, file.runtimeEnvironmentId)
         const gitScope = getRuntimeGitScope(fileSettings, connectionId)
@@ -92,13 +94,14 @@ export function useEditorPanelDiffContentLoader({
         }
         let pending = inFlightDiffReads.get(key)
         if (!pending) {
+          // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: every branch resolves a git diff result, which DiffContent mirrors.
           const promise = (
             effectiveDiffSource === 'commit'
               ? commitCompare
                 ? getRuntimeGitCommitDiff(
                     {
                       settings: fileSettings,
-                      worktreeId: file.worktreeId,
+                      worktreeId: gitWorktreeId,
                       worktreePath,
                       connectionId
                     },
@@ -114,7 +117,7 @@ export function useEditorPanelDiffContentLoader({
                 ? getRuntimeGitBranchDiff(
                     {
                       settings: fileSettings,
-                      worktreeId: file.worktreeId,
+                      worktreeId: gitWorktreeId,
                       worktreePath,
                       connectionId
                     },
@@ -132,7 +135,7 @@ export function useEditorPanelDiffContentLoader({
                 : getRuntimeGitDiff(
                     {
                       settings: fileSettings,
-                      worktreeId: file.worktreeId,
+                      worktreeId: gitWorktreeId,
                       worktreePath,
                       connectionId
                     },

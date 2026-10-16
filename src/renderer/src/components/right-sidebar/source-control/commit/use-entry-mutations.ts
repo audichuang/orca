@@ -5,6 +5,7 @@ import {
 } from '@/components/editor/editor-autosave'
 import { getConnectionId } from '@/lib/connection-context'
 import { basename } from '@/lib/path'
+import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 import {
   bulkDiscardRuntimeGitPaths,
   bulkUnstageRuntimeGitPaths,
@@ -18,6 +19,13 @@ import {
   showSourceControlEntryFailureToast
 } from './source-control-entry-failure-toast'
 
+// Why: a folder workspace's open tabs are owned by the folder key while git runs against the repo.
+function editorOwnerIds(gitWorktreeId: string, editorWorktreeId: string | undefined): string[] {
+  return editorWorktreeId && editorWorktreeId !== gitWorktreeId
+    ? [gitWorktreeId, editorWorktreeId]
+    : [gitWorktreeId]
+}
+
 export function useSourceControlEntryMutations({
   activeRepoSettings,
   activeWorktreeId,
@@ -29,6 +37,7 @@ export function useSourceControlEntryMutations({
   worktreePath: string | null
   refreshActiveGitStatusAfterMutation: () => Promise<void>
 }) {
+  const editorWorktreeId = useSourceControlWorktreeScope()?.editorWorktreeId
   // Why: named function expression so the failure toast's Retry can re-enter the same attempt.
   const runEntryMutation = useCallback(
     async function runEntryMutation(
@@ -59,6 +68,7 @@ export function useSourceControlEntryMutations({
           error,
           worktreeId: activeWorktreeId,
           worktreeName: worktreePath ? basename(worktreePath) : null,
+          foregroundWorkspaceId: editorWorktreeId,
           onRetry: () => {
             void runEntryMutation(operation, filePath, mutate)
           }
@@ -71,7 +81,13 @@ export function useSourceControlEntryMutations({
       // Why: refreshing outside the try keeps a refresh failure from being reported as "Failed to stage"; the refresher reports its own.
       await refreshActiveGitStatusAfterMutation()
     },
-    [activeRepoSettings, worktreePath, activeWorktreeId, refreshActiveGitStatusAfterMutation]
+    [
+      activeRepoSettings,
+      worktreePath,
+      activeWorktreeId,
+      editorWorktreeId,
+      refreshActiveGitStatusAfterMutation
+    ]
   )
 
   const handleStage = useCallback(
@@ -99,12 +115,16 @@ export function useSourceControlEntryMutations({
       }
       const runtimeEnvironmentId = activeRepoSettings?.activeRuntimeEnvironmentId?.trim() || null
       // Why: quiesce pending editor autosaves first so a delayed save can't recreate the discarded edits after git restores the file.
-      await requestEditorSaveQuiesce({
-        worktreeId: activeWorktreeId,
-        worktreePath,
-        relativePath: filePath,
-        runtimeEnvironmentId
-      })
+      await Promise.all(
+        editorOwnerIds(activeWorktreeId, editorWorktreeId).map((worktreeId) =>
+          requestEditorSaveQuiesce({
+            worktreeId,
+            worktreePath,
+            relativePath: filePath,
+            runtimeEnvironmentId
+          })
+        )
+      )
       const connectionId = getConnectionId(activeWorktreeId) ?? undefined
       await discardRuntimeGitPath(
         {
@@ -116,14 +136,16 @@ export function useSourceControlEntryMutations({
         },
         filePath
       )
-      notifyEditorExternalFileChange({
-        worktreeId: activeWorktreeId,
-        worktreePath,
-        relativePath: filePath,
-        runtimeEnvironmentId
-      })
+      for (const worktreeId of editorOwnerIds(activeWorktreeId, editorWorktreeId)) {
+        notifyEditorExternalFileChange({
+          worktreeId,
+          worktreePath,
+          relativePath: filePath,
+          runtimeEnvironmentId
+        })
+      }
     },
-    [activeRepoSettings, activeWorktreeId, worktreePath]
+    [activeRepoSettings, activeWorktreeId, editorWorktreeId, worktreePath]
   )
 
   const discardMany = useCallback(
@@ -134,13 +156,15 @@ export function useSourceControlEntryMutations({
       const runtimeEnvironmentId = activeRepoSettings?.activeRuntimeEnvironmentId?.trim() || null
       // Why: quiesce matching editor autosaves first so a delayed save can't recreate edits after git mutates the files.
       await Promise.all(
-        filePaths.map((relativePath) =>
-          requestEditorSaveQuiesce({
-            worktreeId: activeWorktreeId,
-            worktreePath,
-            relativePath,
-            runtimeEnvironmentId
-          })
+        editorOwnerIds(activeWorktreeId, editorWorktreeId).flatMap((worktreeId) =>
+          filePaths.map((relativePath) =>
+            requestEditorSaveQuiesce({
+              worktreeId,
+              worktreePath,
+              relativePath,
+              runtimeEnvironmentId
+            })
+          )
         )
       )
       const connectionId = getConnectionId(activeWorktreeId) ?? undefined
@@ -154,16 +178,18 @@ export function useSourceControlEntryMutations({
         },
         filePaths
       )
-      for (const relativePath of filePaths) {
-        notifyEditorExternalFileChange({
-          worktreeId: activeWorktreeId,
-          worktreePath,
-          relativePath,
-          runtimeEnvironmentId
-        })
+      for (const worktreeId of editorOwnerIds(activeWorktreeId, editorWorktreeId)) {
+        for (const relativePath of filePaths) {
+          notifyEditorExternalFileChange({
+            worktreeId,
+            worktreePath,
+            relativePath,
+            runtimeEnvironmentId
+          })
+        }
       }
     },
-    [activeRepoSettings, activeWorktreeId, worktreePath]
+    [activeRepoSettings, activeWorktreeId, editorWorktreeId, worktreePath]
   )
 
   return { handleStage, handleUnstage, discardSingle, discardMany }
