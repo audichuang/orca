@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 export function CommitNotices({
   worktreeId,
   groupId,
+  initialCwd,
   connectionId,
   repoId,
   launchPlatform,
@@ -52,6 +53,7 @@ export function CommitNotices({
           prompt={commitFailureRecoveryPrompt}
           worktreeId={worktreeId}
           groupId={groupId}
+          initialCwd={initialCwd}
           connectionId={connectionId}
           repoId={repoId}
           launchPlatform={launchPlatform}
@@ -82,6 +84,7 @@ export function CommitNotices({
           prompt={pushRecovery.prompt}
           worktreeId={worktreeId}
           groupId={groupId}
+          initialCwd={initialCwd}
           connectionId={connectionId}
           repoId={repoId}
           launchPlatform={launchPlatform}
