@@ -1,10 +1,11 @@
 import React, { useCallback, useMemo } from 'react'
-import { Copy, ExternalLink, Eye, FolderOpen } from 'lucide-react'
+import { Copy, ExternalLink, Eye, FolderOpen, PanelRight } from 'lucide-react'
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
+  ContextMenuShortcut,
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
@@ -15,6 +16,7 @@ import { useAppStore } from '@/store'
 import { getWorkspaceEditorSshHost } from '@/lib/workspace-editor-ssh-target'
 import { OpenInApplicationIcon } from '@/lib/open-in-app-catalog'
 import { translate } from '@/i18n/i18n'
+import { getSourceControlSplitOpenShortcutLabel } from './split-open'
 import { LocalOnlyMenuHint } from '@/components/local-only-menu-hint'
 import {
   getRevealInFileManagerLabel,
@@ -41,6 +43,8 @@ type SourceControlEntryContextMenuProps = {
   hasWorkingTreeFile: boolean
   connectionId?: string | null
   onView?: () => void
+  onOpenToSide?: () => void
+  onCopyFullSource?: () => void
   onRevealInExplorer: (worktreeId: string, absolutePath: string) => void
   onOpenChange?: (open: boolean) => void
   children: React.ReactNode
@@ -53,6 +57,8 @@ export function SourceControlEntryContextMenu({
   hasWorkingTreeFile,
   connectionId,
   onView,
+  onOpenToSide,
+  onCopyFullSource,
   onRevealInExplorer,
   onOpenChange,
   children
@@ -127,6 +133,15 @@ export function SourceControlEntryContextMenu({
             'View'
           )}
         </ContextMenuItem>
+        <ContextMenuItem onSelect={onOpenToSide} disabled={!onOpenToSide}>
+          <PanelRight className="size-3.5" />
+          {translate(
+            'auto.components.right.sidebar.source.control.listing.entry.context.menu.ce8235a6a4',
+            'Open to the Side'
+          )}
+          {/* Why: Alt-click is the pointer shortcut; Ctrl/Cmd/Shift-click only multi-selects. */}
+          <ContextMenuShortcut>{getSourceControlSplitOpenShortcutLabel()}</ContextMenuShortcut>
+        </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={handleCopyPath} disabled={!absolutePath}>
           <Copy className="size-3.5" />
@@ -139,6 +154,15 @@ export function SourceControlEntryContextMenu({
             'Copy Relative Path'
           )}
         </ContextMenuItem>
+        {onCopyFullSource ? (
+          <ContextMenuItem onSelect={onCopyFullSource}>
+            <Copy className="size-3.5" />
+            {translate(
+              'auto.components.right.sidebar.source.control.listing.entry.context.menu.9137d88b9f',
+              'Copy Full Source'
+            )}
+          </ContextMenuItem>
+        ) : null}
         <ContextMenuSeparator />
         <ContextMenuSub>
           <ContextMenuSubTrigger disabled={!absolutePath}>

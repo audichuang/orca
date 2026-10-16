@@ -141,6 +141,8 @@ async function loadDiff(
   let modifiedIsBinary = false
   let modifiedDeleted = false
   let readFailed = false
+  let originalMissing = false
+  let modifiedMissing = false
 
   try {
     if (staged) {
@@ -154,6 +156,8 @@ async function loadDiff(
       modifiedContent = rightBlob.content
       modifiedIsBinary = rightBlob.isBinary
       modifiedDeleted = !rightBlob.exists && !rightBlob.failed
+      originalMissing = !leftBlob.exists || leftBlob.failed === true
+      modifiedMissing = !rightBlob.exists || rightBlob.failed === true
       readFailed = leftBlob.failed === true || rightBlob.failed === true
     } else {
       // The index-to-HEAD fallback is sequential internally, but independent of the working-tree read.
@@ -172,6 +176,8 @@ async function loadDiff(
       modifiedContent = workingTreeBlob.content
       modifiedIsBinary = workingTreeBlob.isBinary
       modifiedDeleted = !workingTreeBlob.exists
+      originalMissing = !leftBlob.exists || leftBlob.failed === true
+      modifiedMissing = !workingTreeBlob.exists || workingTreeBlob.failed === true
       readFailed = leftBlob.failed === true || workingTreeBlob.failed === true
     }
   } catch {
@@ -185,6 +191,13 @@ async function loadDiff(
     modifiedIsBinary,
     filePath
   )
+  // Why: lets callers tell an empty blob from a side that is absent or failed to read (both come back as '').
+  if (originalMissing || modifiedMissing) {
+    result.missingSides = [
+      ...(originalMissing ? ['original' as const] : []),
+      ...(modifiedMissing ? ['modified' as const] : [])
+    ]
+  }
   // Mark proven deletions so previewers can distinguish them from failed empty reads.
   if (result.kind === 'binary' && modifiedDeleted) {
     return { result: { ...result, modifiedDeleted: true }, reusable: !readFailed }

@@ -16,6 +16,7 @@ export type CreatePrIntentNotice = {
 export type CommitAreaProps = {
   worktreeId: string | null
   groupId: string | null
+  initialCwd?: string | null
   connectionId?: string | null
   repoId?: string | null
   launchPlatform?: NodeJS.Platform
@@ -64,6 +65,7 @@ export type CommitNoticesProps = Pick<
   CommitAreaProps,
   | 'worktreeId'
   | 'groupId'
+  | 'initialCwd'
   | 'connectionId'
   | 'repoId'
   | 'launchPlatform'

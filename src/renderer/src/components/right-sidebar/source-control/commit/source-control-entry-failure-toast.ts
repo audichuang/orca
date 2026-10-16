@@ -60,6 +60,7 @@ export function showSourceControlEntryFailureToast({
   error,
   worktreeId,
   worktreeName,
+  foregroundWorkspaceId,
   onRetry
 }: {
   operation: SourceControlEntryOperation
@@ -71,9 +72,12 @@ export function showSourceControlEntryFailureToast({
   worktreeId: string | null
   /** Shown only when the toast no longer belongs to the active worktree. */
   worktreeName: string | null
+  /** Workspace that shows this worktree when it is not itself the active one (a folder workspace's repo section). */
+  foregroundWorkspaceId?: string | null
   onRetry?: () => void
 }): void {
-  const isActiveWorktree = useAppStore.getState().activeWorktreeId === worktreeId
+  const shownIn = foregroundWorkspaceId ?? worktreeId
+  const isActiveWorktree = useAppStore.getState().activeWorktreeId === shownIn
   const title = entryFailureTitle(operation, filePath, deletesFile)
   const offerRetry = Boolean(onRetry) && isActiveWorktree
   entryFailureSlotOwner = { worktreeId }
@@ -97,7 +101,7 @@ export function showSourceControlEntryFailureToast({
               onClick: (event) => {
                 // Own dismissal instead of Sonner's delayed ID removal, which could erase a fast retry failure in the same slot.
                 event.preventDefault()
-                if (useAppStore.getState().activeWorktreeId !== worktreeId) {
+                if (useAppStore.getState().activeWorktreeId !== shownIn) {
                   dismissSourceControlEntryFailureToast(worktreeId)
                   return
                 }

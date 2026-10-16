@@ -8,7 +8,11 @@ import { translate } from '@/i18n/i18n'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import { DiffLineCounts } from './diff-line-counts'
 import { SourceControlEntryContextMenu } from './entry-context-menu'
-import { toPermanentSourceControlRowOpenEvent, type SourceControlRowOpenEvent } from './split-open'
+import {
+  SOURCE_CONTROL_OPEN_TO_SIDE_EVENT,
+  toPermanentSourceControlRowOpenEvent,
+  type SourceControlRowOpenEvent
+} from './split-open'
 import { SOURCE_CONTROL_TREE_FILE_PADDING_PX, SOURCE_CONTROL_TREE_INDENT_PX } from './row-layout'
 import { STATUS_COLORS, STATUS_LABELS } from '../../status-display'
 
@@ -45,6 +49,7 @@ export function BranchEntryRow({
       hasWorkingTreeFile={entry.status !== 'deleted'}
       connectionId={connectionId}
       onView={() => onOpen()}
+      onOpenToSide={() => onOpen(SOURCE_CONTROL_OPEN_TO_SIDE_EVENT)}
       onRevealInExplorer={onRevealInExplorer}
     >
       <div
