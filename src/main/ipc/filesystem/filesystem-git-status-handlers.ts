@@ -202,7 +202,8 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         limit: args.limit,
         baseRef: args.baseRef,
         branchOnly: args.branchOnly,
-        skip: args.skip
+        skip: args.skip,
+        graph: args.graph
       }
       requireReachableGitRoute(getConnectionExecutionHostId(args.connectionId))
       return readWorktreeGitUnlessWslStopped(
