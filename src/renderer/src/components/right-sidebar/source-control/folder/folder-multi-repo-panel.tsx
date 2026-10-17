@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ClipboardPaste, Copy, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useAllWorktrees, useRepoMap } from '@/store/selectors'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
@@ -12,11 +11,18 @@ import { copyClipcodeGitChanges } from '../clipcode/clipcode-copy-action'
 import { useClipcodeRestore } from '../clipcode/use-clipcode-restore'
 import { ActionButton } from '../listing/action-button'
 import { SourceControlSingleRepoPanel } from '../panel/single-repo-panel'
-import { countHiddenFolderWorktrees, getFolderGitWorktrees } from './folder-git-worktrees'
+import {
+  countHiddenFolderWorktrees,
+  getFolderGitWorktrees,
+  type FolderGitWorktree
+} from './folder-git-worktrees'
+import { FolderRepoRow } from './folder-repo-row'
 import {
   getRememberedFolderRepo,
+  isFolderRepoListCollapsed,
   moveRepoSelection,
   rememberFolderRepo,
+  rememberFolderRepoListCollapsed,
   resolveFolderDefaultRepo,
   resolveSelectedRepoId,
   isFolderRepoSelectionKey
@@ -26,7 +32,7 @@ import { useFolderRepoStatusRefresh } from './use-folder-repo-status-refresh'
 import { SourceControlWorktreeScopeContext } from './worktree-scope'
 
 /**
- * Source Control for a folder workspace: a repo list on top and, below it, the selected repo's
+ * Source Control for a folder workspace: an accordion of repo headers where the open repo shows its
  * regular single-repo panel pinned to that repo, so staging,
  * commit, sync and diffs behave exactly as in a repo workspace.
  */
@@ -80,6 +86,16 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     ids: memberIds,
     firstDirtyId: landingId ?? undefined
   })
+  const [collapsed, setCollapsedState] = useState(() =>
+    isFolderRepoListCollapsed(folderWorkspaceKey)
+  )
+  const setCollapsed = useCallback(
+    (next: boolean) => {
+      setCollapsedState(next)
+      rememberFolderRepoListCollapsed(folderWorkspaceKey, next)
+    },
+    [folderWorkspaceKey]
+  )
   const selectRepo = useCallback(
     (id: string) => {
       setChosenId(id)
@@ -87,11 +103,41 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     },
     [folderWorkspaceKey]
   )
+  const listRef = useRef<HTMLDivElement>(null)
+  const [focusId, setFocusId] = useState<string | null>(null)
+  const rovingId = focusId !== null && memberIds.includes(focusId) ? focusId : selectedId
+  const pendingFocusRef = useRef<string | null>(null)
+  const focusRow = useCallback(
+    (id: string) => {
+      listRef.current
+        ?.querySelectorAll<HTMLElement>('[data-repo-row]')
+        [memberIds.indexOf(id)]?.focus()
+    },
+    [memberIds]
+  )
+  // Why: opening a repo moves headers between the above/below-panel lists, which remounts them and drops focus.
+  useLayoutEffect(() => {
+    if (pendingFocusRef.current !== null) {
+      focusRow(pendingFocusRef.current)
+      pendingFocusRef.current = null
+    }
+  })
+  const toggleRepo = (id: string) => {
+    pendingFocusRef.current = id
+    setFocusId(id)
+    if (id === selectedId && !collapsed) {
+      setCollapsed(true)
+      return
+    }
+    selectRepo(id)
+    setCollapsed(false)
+  }
+  const expandedIndex = collapsed ? -1 : memberIds.indexOf(selectedId)
   const selectedMember = members.find((member) => member.worktree.id === selectedId)
   const selectedLabel = selectedMember ? folderRepoSectionLabel(selectedMember, members) : undefined
-  const listRef = useRef<HTMLDivElement>(null)
+  // Accordion keys: arrows/Home/End move focus between headers; Enter/Space opens or closes one.
   const onListKeyDown = (event: React.KeyboardEvent) => {
-    // Why: only the repo rows navigate; arrow keys on a row's Copy button must not switch repos.
+    // Why: only the repo rows navigate; arrow keys on a row's Copy button must not move focus.
     if (
       !isFolderRepoSelectionKey(event.key) ||
       !(event.target instanceof HTMLElement) ||
@@ -99,15 +145,13 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     ) {
       return
     }
-    const nextId = moveRepoSelection(memberIds, selectedId, event.key)
+    const nextId = moveRepoSelection(memberIds, rovingId, event.key)
     if (nextId === undefined) {
       return
     }
     event.preventDefault()
-    selectRepo(nextId)
-    listRef.current
-      ?.querySelectorAll<HTMLElement>('[data-repo-row]')
-      [memberIds.indexOf(nextId)]?.focus()
+    setFocusId(nextId)
+    focusRow(nextId)
   }
 
   const folderPath = folderWorkspace?.folderPath ?? ''
@@ -146,6 +190,29 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
       }))
     })
   }, [folderPath, hiddenNotice, members])
+  const renderRow = (member: FolderGitWorktree, index: number) => (
+    <FolderRepoRow
+      key={member.worktree.id}
+      worktreeId={member.worktree.id}
+      label={folderRepoSectionLabel(member, members)}
+      changeCount={changeCounts[index] ?? 0}
+      focusable={member.worktree.id === rovingId}
+      expanded={index === expandedIndex}
+      onToggle={() => toggleRepo(member.worktree.id)}
+      onCopy={() =>
+        void copyClipcodeGitChanges({
+          rootPath: folderPath,
+          requests: [
+            {
+              worktree: member.worktree,
+              entries: useAppStore.getState().gitStatusByWorktree[member.worktree.id] ?? [],
+              forceIndexForStaged: false
+            }
+          ]
+        })
+      }
+    />
+  )
 
   if (!folderWorkspace) {
     return null
@@ -216,6 +283,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
           )}
         </div>
       )}
+      {/* Why: one repo open at a time; its regular full panel fills the height between the headers, so its commit dock sits at the bottom like a repo workspace. */}
       <div
         ref={listRef}
         role="group"
@@ -224,89 +292,37 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
           'Repositories'
         )}
         onKeyDown={onListKeyDown}
-        className="max-h-[40%] shrink-0 overflow-y-auto border-b border-border py-1 scrollbar-sleek"
+        className="flex min-h-0 flex-1 flex-col"
       >
-        {members.map((member, index) => {
-          const selected = member.worktree.id === selectedId
-          const label = folderRepoSectionLabel(member, members)
-          return (
-            <div
-              key={member.worktree.id}
-              className={cn(
-                'relative mx-1 flex items-center gap-1 rounded-md pr-1 hover:bg-accent/50 has-[[data-repo-row]:focus-visible]:ring-[3px] has-[[data-repo-row]:focus-visible]:ring-ring/50',
-                selected && 'bg-accent text-accent-foreground hover:bg-accent'
-              )}
-            >
-              {selected && (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-primary"
-                />
-              )}
-              <button
-                type="button"
-                data-repo-row
-                aria-current={selected ? 'true' : undefined}
-                tabIndex={selected ? 0 : -1}
-                onClick={() => selectRepo(member.worktree.id)}
-                className="flex min-h-7 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs focus-visible:outline-none"
-              >
-                <span className="min-w-0 truncate font-medium" title={label}>
-                  {label}
-                </span>
-                <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-                  {changeCounts[index] ?? 0}
-                </span>
-              </button>
-              <RepoSyncCounts worktreeId={member.worktree.id} />
-              <ActionButton
-                icon={Copy}
-                title={translate(
-                  'auto.components.right.sidebar.source.control.folder.folder.multi.repo.panel.d98e7b731c',
-                  'Copy all changes'
-                )}
-                onClick={() =>
-                  void copyClipcodeGitChanges({
-                    rootPath: folderPath,
-                    requests: [
-                      {
-                        worktree: member.worktree,
-                        entries:
-                          useAppStore.getState().gitStatusByWorktree[member.worktree.id] ?? [],
-                        forceIndexForStaged: false
-                      }
-                    ]
-                  })
-                }
+        {expandedIndex === -1 ? (
+          <div className="min-h-0 flex-1 overflow-y-auto py-1 scrollbar-sleek">
+            {members.map(renderRow)}
+          </div>
+        ) : (
+          <>
+            <div className="max-h-[40%] shrink-0 overflow-y-auto pt-1 scrollbar-sleek">
+              {members.slice(0, expandedIndex + 1).map(renderRow)}
+            </div>
+            <div className="relative mt-1 min-h-0 flex-1 border-y border-border">
+              <ScopedRepoPanel
+                key={selectedId}
+                gitWorktreeId={selectedId}
+                editorWorktreeId={folderWorkspaceKey}
+                label={selectedLabel}
               />
             </div>
-          )
-        })}
-      </div>
-      {/* Why: the selected repo is the regular full panel, so its commit dock sits at the bottom like a repo workspace. */}
-      <div className="relative min-h-0 flex-1">
-        <ScopedRepoPanel
-          key={selectedId}
-          gitWorktreeId={selectedId}
-          editorWorktreeId={folderWorkspaceKey}
-          label={selectedLabel}
-        />
+            {expandedIndex < members.length - 1 && (
+              <div className="max-h-[30%] shrink-0 overflow-y-auto py-1 scrollbar-sleek">
+                {members
+                  .slice(expandedIndex + 1)
+                  .map((member, offset) => renderRow(member, expandedIndex + 1 + offset))}
+              </div>
+            )}
+          </>
+        )}
       </div>
       {restoreDialog}
     </div>
-  )
-}
-
-function RepoSyncCounts({ worktreeId }: { worktreeId: string }) {
-  const status = useAppStore((s) => s.remoteStatusesByWorktree[worktreeId])
-  if (!status?.hasUpstream || (status.ahead === 0 && status.behind === 0)) {
-    return null
-  }
-  return (
-    <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-      {status.behind > 0 ? `↓${status.behind}` : ''}
-      {status.ahead > 0 ? ` ↑${status.ahead}` : ''}
-    </span>
   )
 }
 
