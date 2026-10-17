@@ -112,7 +112,12 @@ export function useSourceControlSelection({
     setAnchorKey(reconciledSelection.anchorKey)
   }
 
+  // Why: only the row of the most recent plain click joins a following Cmd+click; the anchor alone is not consent.
+  const plainClickedKeyRef = useRef<string | null>(null)
+
   const handleSelect = useCallback((e: React.MouseEvent, key: string, entry: GitStatusEntry) => {
+    const plainClickedKey = plainClickedKeyRef.current
+    plainClickedKeyRef.current = null
     if (shouldOpenAsSplitRef.current?.(e)) {
       setSelectedKeys((prev) => (prev.size > 0 ? new Set() : prev))
       setAnchorKey(null)
@@ -142,8 +147,13 @@ export function useSourceControlSelection({
           return next
         })
       } else {
+        // Why: a plain click marks the anchor without selecting; fold that row in so click A, Cmd+click B selects both.
+        const foldedKey = selectedKeysRef.current.size === 0 ? plainClickedKey : null
         setSelectedKeys((prev) => {
           const next = new Set(prev)
+          if (foldedKey && flatEntriesRef.current.some((e) => e.key === foldedKey)) {
+            next.add(foldedKey)
+          }
           next.add(key)
           return next
         })
@@ -157,11 +167,13 @@ export function useSourceControlSelection({
         return prev
       })
       setAnchorKey(key)
+      plainClickedKeyRef.current = key
       onOpenDiffRef.current(entry)
     }
   }, [])
 
   const handleContextMenu = useCallback((key: string) => {
+    plainClickedKeyRef.current = null
     if (!selectedKeysRef.current.has(key)) {
       setSelectedKeys(new Set([key]))
       setAnchorKey(key)
@@ -169,12 +181,17 @@ export function useSourceControlSelection({
   }, [])
 
   const clearSelection = useCallback(() => {
+    plainClickedKeyRef.current = null
     setSelectedKeys(new Set())
     setAnchorKey(null)
   }, [])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Why: Escape inside an open menu only dismisses the menu, not the selection it acts on.
+      if (e.target instanceof Element && e.target.closest('[role="menu"]')) {
+        return
+      }
       if (e.key === 'Escape' && selectedKeys.size > 0) {
         e.preventDefault()
         clearSelection()

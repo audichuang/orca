@@ -26,4 +26,6 @@ export type DiffViewerProps = {
   largeDiffRenderLimit?: LargeDiffRenderLimit
   // Render-limited IPC bodies are blank placeholders, never saveable drafts.
   largeDiffSaveContentAvailable?: boolean
+  // Why: Changes mode shares the tab buffer with Source/Rich modes, so its kept modified model can be older than `modifiedContent` on remount.
+  syncKeptModifiedModelOnMount?: boolean
 }

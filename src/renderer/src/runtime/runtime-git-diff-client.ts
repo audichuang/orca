@@ -9,7 +9,12 @@ import { toRuntimeWorktreeSelector } from './runtime-worktree-selector'
 
 export async function getRuntimeGitDiff(
   context: RuntimeGitContext,
-  args: { filePath: string; staged: boolean; compareAgainstHead?: boolean }
+  args: {
+    filePath: string
+    staged: boolean
+    compareAgainstHead?: boolean
+    skipRenderLimit?: boolean
+  }
 ): Promise<GitDiffResult> {
   const target = context.target
   if (target.kind === 'local' || !context.worktreeId) {
@@ -18,13 +23,21 @@ export async function getRuntimeGitDiff(
       filePath: args.filePath,
       staged: args.staged,
       compareAgainstHead: args.compareAgainstHead,
+      skipRenderLimit: args.skipRenderLimit,
       connectionId: context.connectionId
     })
   }
   return callRuntimeRpc<GitDiffResult>(
     target,
     'git.diff',
-    { worktree: toRuntimeWorktreeSelector(context.worktreeId), ...args },
+    {
+      worktree: toRuntimeWorktreeSelector(context.worktreeId),
+      filePath: args.filePath,
+      staged: args.staged,
+      compareAgainstHead: args.compareAgainstHead,
+      // Why: send the optional flag only when set so older runtimes see the request they already accept.
+      ...(args.skipRenderLimit ? { skipRenderLimit: true } : {})
+    },
     { timeoutMs: 15_000 }
   )
 }

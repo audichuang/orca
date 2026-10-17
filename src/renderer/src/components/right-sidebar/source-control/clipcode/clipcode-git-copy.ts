@@ -23,7 +23,12 @@ export type ClipcodeCopyRepo = {
 export type ClipcodeContentReaders = {
   readDiff: (
     context: RuntimeGitContext,
-    args: { filePath: string; staged: boolean; compareAgainstHead?: boolean }
+    args: {
+      filePath: string
+      staged: boolean
+      compareAgainstHead?: boolean
+      skipRenderLimit?: boolean
+    }
   ) => Promise<GitDiffResult>
   readWorkingFile: (
     context: RuntimeGitContext,
@@ -38,6 +43,8 @@ export type ClipcodeGitCopyResult = {
   skippedFileSizeCount: number
   /** Files dropped because a read failed (not binary, not too large). */
   unreadableFileCount: number
+  /** Binary files left out of the payload (Snipcode never copies their bytes). */
+  skippedBinaryFileCount: number
   /** Number of payload entries, skip lines included. */
   entryCount: number
 }
@@ -62,6 +69,8 @@ function changeTypeFor(entry: GitStatusEntry): ChangeTypeLabel {
 
 type Content = { text: string } | { skippedReason: string } | null
 type WorkingContent = Content | 'unreadable'
+
+const STAGED_TOO_LARGE_REASON = 'size exceeds limit (staged version too large to read)'
 
 async function readHeadContent(
   readers: ClipcodeContentReaders,
@@ -99,30 +108,36 @@ async function readIndexContent(
   readers: ClipcodeContentReaders,
   context: RuntimeGitContext,
   entry: GitStatusEntry
-): Promise<Content | undefined> {
+): Promise<WorkingContent> {
+  // Why: the working tree is a different version; copying it for a staged row would paste unstaged edits.
   try {
-    const diff = await readers.readDiff(context, { filePath: entry.path, staged: true })
+    // Why: the viewer's render limit blanks big blobs; ask for the full index text (old hosts ignore the flag).
+    const diff = await readers.readDiff(context, {
+      filePath: entry.path,
+      staged: true,
+      skipRenderLimit: true
+    })
     // Why: only the index side decides; a binary HEAD blob replaced by text still has valid staged text.
     if (diff.kind === 'binary') {
       if (diff.modifiedIsBinary) {
         return null
       }
-      // Why: an empty staged text blob over a binary HEAD is valid; only a missing or unreadable side falls back.
+      // Why: an empty staged text blob over a binary HEAD is valid; only a missing or unreadable side is not.
       return diff.modifiedContent === '' && diff.missingSides?.includes('modified')
-        ? undefined
+        ? 'unreadable'
         : { text: diff.modifiedContent }
     }
-    // Why: the render limit counts the HEAD side too, and a failed read is reported via missingSides;
-    // an empty index blob is valid content (Snipcode copies '').
-    if (
-      diff.largeDiffRenderLimit?.limited ||
-      (diff.modifiedContent === '' && diff.missingSides?.includes('modified'))
-    ) {
-      return undefined
+    // Why: a host that predates skipRenderLimit still blanks both sides, so the index text is unreadable here.
+    if (diff.largeDiffRenderLimit?.limited) {
+      return { skippedReason: STAGED_TOO_LARGE_REASON }
+    }
+    // Why: a failed read is reported via missingSides; an empty index blob is valid content (Snipcode copies '').
+    if (diff.modifiedContent === '' && diff.missingSides?.includes('modified')) {
+      return 'unreadable'
     }
     return { text: diff.modifiedContent }
   } catch {
-    return undefined
+    return 'unreadable'
   }
 }
 
@@ -160,6 +175,7 @@ export async function buildClipcodeGitCopy(args: {
   let hasDeleted = false
   let skippedFileSizeCount = 0
   let unreadableFileCount = 0
+  const binaryPaths = new Set<string>()
 
   for (const repo of repos) {
     const ordered = repo.entries
@@ -188,11 +204,9 @@ export async function buildClipcodeGitCopy(args: {
         const head = await readHeadContent(readers, repo.context, entry)
         content = head === null ? null : { text: head }
       } else if (entry.area === 'staged' && repo.forceIndexForStaged) {
-        const index = await readIndexContent(readers, repo.context, entry)
-        // Why: Snipcode picks the git spacing from the request, even when the index read fell back.
+        // Why: Snipcode picks the git spacing from the request, even when the index read is skipped.
         fromIndex = true
-        content =
-          index === undefined ? await readWorkingContent(readers, repo.context, entry) : index
+        content = await readIndexContent(readers, repo.context, entry)
       } else {
         content = await readWorkingContent(readers, repo.context, entry)
       }
@@ -201,6 +215,12 @@ export async function buildClipcodeGitCopy(args: {
         continue
       }
       if (content === null || ('text' in content && content.text.includes('\0'))) {
+        binaryPaths.add(clipboardPath)
+        continue
+      }
+      // Why: U+FFFD is what a lenient decode leaves of non-UTF-8 bytes; restoring it would corrupt the file (ClipCode does the same).
+      if (changeType !== 'DELETED' && 'text' in content && content.text.includes('\uFFFD')) {
+        unreadableFileCount++
         continue
       }
       seen.add(clipboardPath)
@@ -235,6 +255,8 @@ export async function buildClipcodeGitCopy(args: {
     copiedFileCount: files.length - skippedFileSizeCount,
     skippedFileSizeCount,
     unreadableFileCount,
+    // A path skipped as binary in one area can still be copied from another.
+    skippedBinaryFileCount: [...binaryPaths].filter((path) => !seen.has(path)).length,
     entryCount: files.length
   }
 }
