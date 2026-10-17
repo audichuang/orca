@@ -1,6 +1,7 @@
 import { app, powerMonitor } from 'electron'
 import type { BrowserWindow } from 'electron'
 import type { ReleaseBuild, ReleaseChannel } from '../../../shared/updater/release-channel'
+import { isForkDistribution } from '../fork-distribution'
 import type { ReleaseBuildListOptions } from '../releases/updater-release-build-cache'
 import type {
   LinuxPackageInstallInstructions,
@@ -140,7 +141,7 @@ export class UpdaterSetup extends UpdaterDownloadInstall {
       this.sendErrorStatus(`The server update did not complete: ${serveHandoffFailure}`, true)
     }
 
-    if (!app.isPackaged) {
+    if (!app.isPackaged || isForkDistribution()) {
       return
     }
 
