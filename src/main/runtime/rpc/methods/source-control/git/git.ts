@@ -83,7 +83,8 @@ export const GIT_METHODS = [
         limit: params.limit,
         baseRef: params.baseRef,
         branchOnly: params.branchOnly,
-        skip: params.skip
+        skip: params.skip,
+        graph: params.graph
       })
   }),
   defineMethod({
