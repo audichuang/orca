@@ -164,7 +164,9 @@ FORK_BASE ?= $(shell git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude 
 # Upstream areas the fork edits; their whole suites run because upstream tests there import fork-changed modules.
 FORK_TEST_DIRS := src/renderer/src/components/right-sidebar src/renderer/src/components/editor \
   src/renderer/src/store/slices/editor src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts \
-  src/shared/workspace-layout src/main/git/source-control src/main/providers src/renderer/src/components/tab-bar
+  src/shared/workspace-layout src/main/git/source-control src/main/providers src/renderer/src/components/tab-bar \
+  src/shared/git-history src/main/runtime/rpc/methods/git.test.ts src/main/runtime/runtime-git-api-contract.test.ts \
+  src/main/git/history
 
 fork-check:
 	@echo ">> fork base: $(FORK_BASE)"

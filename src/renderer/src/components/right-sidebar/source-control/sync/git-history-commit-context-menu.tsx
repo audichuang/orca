@@ -1,5 +1,5 @@
 import type React from 'react'
-import { Copy, Globe, Hash, Sparkles } from 'lucide-react'
+import { ClipboardCopy, Copy, Globe, Hash, Sparkles } from 'lucide-react'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -10,14 +10,22 @@ import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import { useAppStore } from '@/store'
 import { getClientCreationActionPolicy } from '@/lib/client-creation-action-policy'
 
-export type GitHistoryCommitAction = 'open-remote' | 'copy-hash' | 'copy-message' | 'explain'
+export type GitHistoryCommitAction =
+  | 'open-remote'
+  | 'copy-hash'
+  | 'copy-message'
+  | 'explain'
+  | 'copy-full-source'
 
 export function GitHistoryCommitContextMenu({
   item,
-  onAction
+  onAction,
+  selectedCount = 1
 }: {
   item: GitHistoryItem
   onAction: (action: GitHistoryCommitAction, item: GitHistoryItem) => void
+  /** Commits a multi-commit action covers; >1 only when the right-clicked row is in the selection. */
+  selectedCount?: number
 }): React.JSX.Element {
   const managedBrowserCreationEnabled = useAppStore(
     (state) =>
@@ -48,6 +56,19 @@ export function GitHistoryCommitContextMenu({
           'auto.components.right.sidebar.GitHistoryCommitContextMenu.9d3e60bc24',
           'Copy commit message'
         )}
+      </ContextMenuItem>
+      <ContextMenuItem onSelect={() => onAction('copy-full-source', item)}>
+        <ClipboardCopy className="size-3.5" />
+        {selectedCount > 1
+          ? translate(
+              'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyFullSourceMany',
+              'Copy Full Source ({{value0}} commits)',
+              { value0: selectedCount }
+            )
+          : translate(
+              'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyFullSource',
+              'Copy Full Source'
+            )}
       </ContextMenuItem>
       <ContextMenuSeparator />
       <ContextMenuItem onSelect={() => onAction('explain', item)}>
