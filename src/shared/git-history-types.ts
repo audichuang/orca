@@ -1,3 +1,8 @@
+import type {
+  GitHistoryGraphApplied,
+  GitHistoryGraphRequest
+} from './git-history-graph-query-types'
+
 export type GitHistoryGraphColorId =
   | 'git-graph-ref'
   | 'git-graph-remote-ref'
@@ -57,6 +62,7 @@ export type GitHistoryItem = {
 export type GitHistoryOptions = {
   limit?: number
   baseRef?: string | null
+  graph?: GitHistoryGraphRequest
 }
 
 export type GitHistoryResult = {
@@ -69,6 +75,7 @@ export type GitHistoryResult = {
   hasOutgoingChanges: boolean
   hasMore: boolean
   limit: number
+  graph?: GitHistoryGraphApplied
 }
 
 export type GitHistoryExecutor = (
