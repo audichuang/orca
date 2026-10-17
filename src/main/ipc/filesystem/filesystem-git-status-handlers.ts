@@ -279,6 +279,7 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         filePath: string
         staged: boolean
         compareAgainstHead?: boolean
+        skipRenderLimit?: boolean
         connectionId?: string
       }
     ): Promise<GitDiffResult> => {
@@ -290,10 +291,10 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         args.worktreePath,
         worktreePath
       )
-      return getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, {
-        ...gitOptions,
-        admissionTier: 'interactive'
-      })
+      const diffOptions = { ...gitOptions, admissionTier: 'interactive' as const }
+      return args.skipRenderLimit
+        ? getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, diffOptions, true)
+        : getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, diffOptions)
     }
   )
 }

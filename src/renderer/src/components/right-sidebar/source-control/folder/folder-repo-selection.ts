@@ -51,3 +51,23 @@ export function moveRepoSelection(
   const next = key === 'ArrowDown' ? index + 1 : index - 1
   return ids[Math.min(ids.length - 1, Math.max(0, next))]
 }
+
+/**
+ * The landing repo: the first repo in list order with changes, or the first repo once all are clean.
+ * Null while an earlier repo's status is still unknown, so whichever repo happened to load first can't win.
+ */
+export function resolveFolderDefaultRepo(
+  ids: readonly string[],
+  changeCounts: readonly (number | undefined)[]
+): string | null {
+  for (let i = 0; i < ids.length; i++) {
+    const count = changeCounts[i]
+    if (count === undefined) {
+      return null
+    }
+    if (count > 0) {
+      return ids[i]
+    }
+  }
+  return ids[0] ?? null
+}

@@ -14882,7 +14882,9 @@
                       "7828c565da": "({{value0}} skipped: size exceeded)",
                       "65b422bbd1": "{{value0}} Git file(s) copied",
                       "7c6daaf4fa": "Copy Full Source failed",
-                      "9c3f952874": "{{value0}} Git file(s) could not be read."
+                      "9c3f952874": "{{value0}} Git file(s) could not be read.",
+                      "binarySkipped": "({{value0}} skipped: binary)",
+                      "onlyBinarySkipped": "Nothing to copy: {{value0}} binary file(s) skipped."
                     }
                   },
                   "restore": {
@@ -14904,7 +14906,10 @@
                         "becf17b643": "is a folder",
                         "4acb11ed21": "content was skipped when copied",
                         "ef509f9991": ".git is protected",
-                        "1f409f3dd6": "path goes through a symlink"
+                        "1f409f3dd6": "path goes through a symlink",
+                        "parentIsFile": "a parent folder is a file",
+                        "targetUnreadable": "could not check the existing file",
+                        "caseConflict": "same path with different letter case"
                       }
                     }
                   }

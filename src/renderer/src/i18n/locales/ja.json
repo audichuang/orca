@@ -14344,8 +14344,8 @@
                 "bulk": {
                   "action": {
                     "bar": {
-                      "8a434c829f": "Copy Full Source",
-                      "4139bc5679": "Clear selection"
+                      "8a434c829f": "ソース全体をコピー",
+                      "4139bc5679": "選択を解除"
                     }
                   }
                 }
@@ -14355,14 +14355,14 @@
                   "multi": {
                     "repo": {
                       "panel": {
-                        "4c62351467": "No imported Git repositories under this folder. Add the repositories inside it to Orca to see their changes here.",
-                        "a044a830f1": "Refresh all repositories",
-                        "c023ba6838": "This folder sits inside an imported repository, so changes outside the folder are listed too.",
-                        "efd34a4169": "Changes list for {{value0}} is truncated; copy is incomplete.",
-                        "d98e7b731c": "Copy all changes",
-                        "da953a696f": "Paste & Restore",
-                        "5de321918e": "Hidden worktrees under this folder are not included ({{value0}}).",
-                        "ab32287003": "Repositories"
+                        "4c62351467": "このフォルダーにはインポート済みの Git リポジトリがありません。中のリポジトリを Orca に追加すると、ここに変更が表示されます。",
+                        "a044a830f1": "すべてのリポジトリを更新",
+                        "c023ba6838": "このフォルダーはインポート済みリポジトリの中にあるため、フォルダー外の変更も表示されます。",
+                        "efd34a4169": "{{value0}} の変更一覧は切り詰められているため、コピーは不完全です。",
+                        "d98e7b731c": "すべての変更をコピー",
+                        "da953a696f": "貼り付けて復元",
+                        "5de321918e": "このフォルダー内の非表示のワークツリーは含まれていません（{{value0}}）。",
+                        "ab32287003": "リポジトリ"
                       }
                     }
                   }
@@ -14372,35 +14372,40 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}} unreadable)",
-                      "e6cdc3a753": "Over {{value0}} tokens.",
-                      "21758e255e": "No Git changes found to copy.",
-                      "7828c565da": "({{value0}} skipped: size exceeded)",
-                      "65b422bbd1": "{{value0}} Git file(s) copied",
-                      "7c6daaf4fa": "Copy Full Source failed",
-                      "9c3f952874": "{{value0}} Git file(s) could not be read."
+                      "2749202819": "（{{value0}} 件読み取り不可）",
+                      "e6cdc3a753": "{{value0}} トークンを超えています。",
+                      "21758e255e": "コピーする Git の変更がありません。",
+                      "7828c565da": "（{{value0}} 件をスキップ: サイズ超過）",
+                      "65b422bbd1": "{{value0}} 件の Git ファイルをコピーしました",
+                      "7c6daaf4fa": "ソース全体のコピーに失敗しました",
+                      "9c3f952874": "{{value0}} 件の Git ファイルを読み取れませんでした。",
+                      "binarySkipped": "（{{value0}} 件をスキップ: バイナリ）",
+                      "onlyBinarySkipped": "コピーするものがありません: バイナリファイル {{value0}} 件をスキップしました。"
                     }
                   },
                   "restore": {
                     "preview": {
                       "dialog": {
-                        "2c06a4e179": "Paste & Restore",
-                        "87832cd30d": "Files from the clipboard will be written into this folder.",
-                        "813199296f": "Adjust paths ({{value0}})",
-                        "9a421f14d8": "Create",
-                        "d469ff3b81": "Overwrite",
-                        "9cf3526c1f": "Delete",
-                        "0d87b3b39d": "Skip",
-                        "80224f9095": "Overwrite existing files",
-                        "677bf0ade9": "Cancel",
-                        "c0b1b53e49": "Restore",
-                        "9bd78385ce": "unsafe path",
-                        "85d6d805ca": "outside the folder",
-                        "67e63b0749": "already absent",
-                        "becf17b643": "is a folder",
-                        "4acb11ed21": "content was skipped when copied",
-                        "ef509f9991": ".git is protected",
-                        "1f409f3dd6": "path goes through a symlink"
+                        "2c06a4e179": "貼り付けて復元",
+                        "87832cd30d": "クリップボードのファイルがこのフォルダーに書き込まれます。",
+                        "813199296f": "パスを調整（{{value0}}）",
+                        "9a421f14d8": "作成",
+                        "d469ff3b81": "上書き",
+                        "9cf3526c1f": "削除",
+                        "0d87b3b39d": "スキップ",
+                        "80224f9095": "既存のファイルを上書き",
+                        "677bf0ade9": "キャンセル",
+                        "c0b1b53e49": "復元",
+                        "9bd78385ce": "安全でないパス",
+                        "85d6d805ca": "フォルダーの外",
+                        "67e63b0749": "すでに存在しません",
+                        "becf17b643": "フォルダーです",
+                        "4acb11ed21": "コピー時に内容がスキップされました",
+                        "ef509f9991": ".git は保護されています",
+                        "1f409f3dd6": "パスがシンボリックリンクを経由しています",
+                        "parentIsFile": "親フォルダーがファイルです",
+                        "targetUnreadable": "既存のファイルを確認できませんでした",
+                        "caseConflict": "大文字小文字だけが異なる同じパス"
                       }
                     }
                   }
@@ -14408,12 +14413,12 @@
                 "use": {
                   "clipcode": {
                     "restore": {
-                      "b124e9c64e": "Clipboard is empty or does not contain text.",
-                      "1847420a23": "No Snipcode file headers found in clipboard.",
-                      "af5c90f593": "Paste & Restore failed",
-                      "ae1ec38ef1": "Created {{value0}}, overwritten {{value1}}, deleted {{value2}}, skipped {{value3}}.",
-                      "19a6f378aa": "...and {{value0}} more",
-                      "c9af35dc2d": "Failed {{value0}}."
+                      "b124e9c64e": "クリップボードが空か、テキストが含まれていません。",
+                      "1847420a23": "クリップボードに Snipcode のファイルヘッダーが見つかりません。",
+                      "af5c90f593": "貼り付けと復元に失敗しました",
+                      "ae1ec38ef1": "作成 {{value0}}、上書き {{value1}}、削除 {{value2}}、スキップ {{value3}}。",
+                      "19a6f378aa": "…ほか {{value0}} 件",
+                      "c9af35dc2d": "失敗 {{value0}} 件。"
                     }
                   }
                 }
@@ -14422,14 +14427,14 @@
                 "entry": {
                   "context": {
                     "menu": {
-                      "9137d88b9f": "Copy Full Source",
-                      "ce8235a6a4": "Open to the Side"
+                      "9137d88b9f": "ソース全体をコピー",
+                      "ce8235a6a4": "横に開く"
                     }
                   }
                 },
                 "uncommitted": {
                   "sections": {
-                    "1a59d5a05b": "Copy Full Source"
+                    "1a59d5a05b": "ソース全体をコピー"
                   }
                 }
               }

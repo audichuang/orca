@@ -73,8 +73,10 @@ export function createLocalGitProvider(options: LocalGitProviderOptions = {}): L
       getHistory(worktreePath, { ...historyOptions, ...interactive }),
     commit: (worktreePath, message) => commitChanges(worktreePath, message, interactive),
     getStagedCommitContext: (worktreePath) => getStagedCommitContext(worktreePath, interactive),
-    getDiff: (worktreePath, filePath, staged, compareAgainstHead) =>
-      getDiff(worktreePath, filePath, staged, compareAgainstHead, interactive),
+    getDiff: (worktreePath, filePath, staged, compareAgainstHead, skipRenderLimit) =>
+      skipRenderLimit
+        ? getDiff(worktreePath, filePath, staged, compareAgainstHead, interactive, true)
+        : getDiff(worktreePath, filePath, staged, compareAgainstHead, interactive),
     stageFile: (worktreePath, filePath) => stageFile(worktreePath, filePath, interactive),
     unstageFile: (worktreePath, filePath) => unstageFile(worktreePath, filePath, interactive),
     bulkStageFiles: async (worktreePath, filePaths, scope) => {
