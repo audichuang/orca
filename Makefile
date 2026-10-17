@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all
+.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all fork-dmg
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -144,3 +144,10 @@ clean:
 
 # First-time full path: deps + native helper + dmg + open.
 all: setup dmg
+
+# Fork release dmg (arm64, ad-hoc signed, auto-update off). Usage: make fork-dmg FORK_VERSION=1.4.227-fork.1
+fork-dmg: computer-use
+	@test -n "$(FORK_VERSION)" || (echo "FORK_VERSION is required, e.g. 1.4.227-fork.1" && exit 1)
+	eval "$$(node -p "require('./package.json').scripts['build:desktop'].replace('pnpm run typecheck && ', '')")"
+	pnpm run ensure:electron-runtime
+	ORCA_FORK_VERSION=$(FORK_VERSION) pnpm exec electron-builder --config config/electron-builder.fork.config.cjs --mac --arm64
