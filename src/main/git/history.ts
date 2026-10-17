@@ -6,6 +6,7 @@ import type {
   GitHistoryResult
 } from '../../shared/git/history/git-history-types'
 import { loadGitHistoryFromExecutor } from '../../shared/git/history/git-history-execution'
+import { loadGitHistoryGraphFromExecutor } from '../../shared/git-history-graph-query'
 import type { GitRuntimeOptions } from './git-runtime-options'
 import { gitOptionsForWorktree } from './git-runtime-options'
 import { gitExecFileAsync } from './runner'
@@ -14,15 +15,16 @@ export async function getHistory(
   worktreePath: string,
   options: GitHistoryOptions & GitRuntimeOptions = {}
 ): Promise<GitHistoryResult> {
-  return loadGitHistoryFromExecutor(
-    (args, cwd, stdin) =>
-      gitExecFileAsync(args, {
-        ...gitOptionsForWorktree(cwd, options),
-        ...(stdin !== undefined ? { stdin } : {})
-      }),
-    worktreePath,
-    options
-  )
+  const git = (args: string[], cwd: string, stdin?: string) =>
+    gitExecFileAsync(args, {
+      ...gitOptionsForWorktree(cwd, options),
+      ...(stdin !== undefined ? { stdin } : {})
+    })
+  // Fork: the Git Graph tab's query (branch picks, search, paging) goes through its own loader.
+  const { graph } = options
+  return graph
+    ? loadGitHistoryGraphFromExecutor(git, worktreePath, { ...options, graph })
+    : loadGitHistoryFromExecutor(git, worktreePath, options)
 }
 
 export async function getHistoryRefs(
