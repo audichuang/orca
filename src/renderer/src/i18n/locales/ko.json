@@ -13883,7 +13883,8 @@
                         "1f409f3dd6": "경로가 심볼릭 링크를 거침",
                         "parentIsFile": "상위 폴더가 파일임",
                         "targetUnreadable": "기존 파일을 확인할 수 없음",
-                        "caseConflict": "대소문자만 다른 같은 경로"
+                        "caseConflict": "대소문자만 다른 같은 경로",
+                        "nonUtf8Target": "기존 파일이 UTF-8이 아닙니다"
                       }
                     }
                   }
