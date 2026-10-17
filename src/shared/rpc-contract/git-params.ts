@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { OptionalGitAdmissionTier } from './git-admission-tier-params'
 import { OptionalTuiAgent } from './worktree-params'
 import { CONFLICT_RESOLUTIONS } from '../source-control/listing/source-control-entry-actions'
+import { GitHistoryGraphParams } from './git-history-graph-params'
 
 export const WorktreeSelector = z.object({
   worktree: z
@@ -96,7 +97,8 @@ export const GitHistory = WorktreeSelector.extend({
     .union([z.literal('head'), z.literal('all'), z.array(GitHistoryRefName).max(1000)])
     .optional(),
   historyToken: z.string().max(100).optional(),
-  skip: z.number().int().min(0).optional()
+  skip: z.number().int().min(0).optional(),
+  graph: GitHistoryGraphParams.optional()
 })
 
 export const GitBranchDiff = GitFilePath.extend({
