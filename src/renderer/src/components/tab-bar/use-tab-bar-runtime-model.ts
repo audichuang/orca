@@ -1,7 +1,10 @@
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '../../store/index'
-import { buildStatusMap } from '../../lib/source-control/paths/git-path-decoration'
+import {
+  buildEditorTabGitStatusMap,
+  selectEditorTabGitStatusByOwner
+} from './editor-tab-git-status'
 import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
 import '@/lib/workspace/ownership/connection-context'
 import { getConnectionIdFromState } from '@/lib/workspace/ownership/connection-owner-resolution'
@@ -210,7 +213,13 @@ export function useTabBarRuntimeModel({
   ])
   const projectRuntimeShellMenuMode = getProjectRuntimeShellMenuMode(localProjectRuntime)
   const resolvedGroupId = groupId ?? activeGroupIdForWorktree ?? worktreeId
-  const statusByRelativePath = useMemo(() => buildStatusMap(gitStatusEntries), [gitStatusEntries])
+  const gitStatusByOwner = useAppStore(
+    useShallow((s) => selectEditorTabGitStatusByOwner(s, worktreeId))
+  )
+  const statusByRelativePath = useMemo(
+    () => buildEditorTabGitStatusMap(gitStatusEntries, gitStatusByOwner),
+    [gitStatusEntries, gitStatusByOwner]
+  )
   const unifiedTabByVisibleId = useMemo(
     () => createUnifiedTabLookup(unifiedTabs, resolvedGroupId),
     [resolvedGroupId, unifiedTabs]

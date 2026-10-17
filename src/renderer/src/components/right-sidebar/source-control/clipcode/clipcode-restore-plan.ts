@@ -1,5 +1,6 @@
 // Behavioral port of ClipCodeVSCode pathResolver/restoreBase, reduced to the single-root case.
-import type { ParsedEntry } from './clipcode-clipboard-format'
+import { asciiTrim, type ParsedEntry } from './clipcode-clipboard-format'
+import { isClipcodePlaceholderBody } from './clipcode-placeholder-bodies'
 
 export type ClipcodeRestoreBase =
   | { kind: 'strip'; segment: string }
@@ -13,6 +14,7 @@ export type ClipcodeRestoreSkipReason =
   | 'SYMLINK_IN_PATH'
   | 'OUTSIDE_ROOT'
   | 'CONTENT_SKIPPED'
+  | 'CASE_CONFLICT'
 
 export type ClipcodeRestorePlan = {
   writes: { relativePath: string; content: string }[]
@@ -21,7 +23,7 @@ export type ClipcodeRestorePlan = {
 }
 
 function normalizeSystemPath(value: string): string {
-  const normalized = value.trim().replaceAll('\\', '/').replace(/\/+/g, '/')
+  const normalized = asciiTrim(value).replaceAll('\\', '/').replace(/\/+/g, '/')
   if (normalized === '/' || /^[A-Za-z]:\/$/.test(normalized)) {
     return normalized
   }
@@ -41,9 +43,15 @@ function pathKey(value: string): string {
   return isWindowsStylePath(normalized) ? normalized.toLowerCase() : normalized
 }
 
+// Why: Windows and macOS resolve `.git.`, `.git ` and the 8.3 alias `GIT~1` to `.git`, so all of them are blocked.
+function isGitSegment(segment: string): boolean {
+  const folded = segment.toLowerCase()
+  return folded.replace(/[. ]+$/, '') === '.git' || /^git~\d+$/.test(folded)
+}
+
 /** Returns a clean '/'-joined relative path, or undefined when it is empty, absolute or can escape the root. */
 export function sanitizeRelativePath(value: string): string | undefined {
-  const normalized = value.trim().replaceAll('\\', '/').replace(/\/+/g, '/').replace(/^\/+/, '')
+  const normalized = asciiTrim(value).replaceAll('\\', '/').replace(/\/+/g, '/').replace(/^\/+/, '')
   if (!normalized || isAbsolutePath(normalized)) {
     return undefined
   }
@@ -54,7 +62,7 @@ export function sanitizeRelativePath(value: string): string | undefined {
   // Why: a restored `.git/...` entry could plant hooks or rewrite repo config, so it is never a valid target.
   if (
     segments.some(
-      (segment) => segment === '..' || segment.toLowerCase() === '.git' || /[<>:"|?*]/.test(segment)
+      (segment) => segment === '..' || isGitSegment(segment) || /[<>:"|?*]/.test(segment)
     )
   ) {
     return undefined
@@ -146,9 +154,6 @@ export function suggestRestoreBase(args: {
   return undefined
 }
 
-// Copy writes this placeholder body for files it could not include; it is not file content.
-const SKIP_PLACEHOLDER = /^\/\/ File skipped: [^\r\n]*$/
-
 export function planClipcodeRestore(args: {
   rootPath: string
   entries: readonly ParsedEntry[]
@@ -157,6 +162,9 @@ export function planClipcodeRestore(args: {
   const plan: ClipcodeRestorePlan = { writes: [], deletes: [], skipped: [] }
   // Why: two entries (or a strip-base collision) can resolve to one path; the last one wins so the preview and the write agree.
   const finalPaths = new Map<string, { relativePath: string; entry: ParsedEntry }>()
+  // Why: on case-insensitive disks `A.txt` and `a.txt` are one file, so a second spelling must not silently replace the first.
+  const spellingByFoldedPath = new Map<string, string>()
+  const conflictedFoldedPaths = new Set<string>()
   for (const entry of args.entries) {
     const rawPath = entry.path
     const normalized = normalizeSystemPath(rawPath)
@@ -176,18 +184,31 @@ export function planClipcodeRestore(args: {
           ? sanitizeRelativePath(applyRestoreBase(args.base, sanitized))
           : sanitized
       if (!relativePath) {
-        const touchesGit = normalized.split('/').some((segment) => segment.toLowerCase() === '.git')
+        const touchesGit = normalized.split('/').some(isGitSegment)
         plan.skipped.push({ rawPath, reason: touchesGit ? 'PROTECTED_GIT' : 'UNSAFE_PATH' })
         continue
       }
     }
+    const folded = relativePath.normalize('NFC').toLowerCase()
+    const spelling = spellingByFoldedPath.get(folded)
+    if (spelling !== undefined && spelling !== relativePath) {
+      conflictedFoldedPaths.add(folded)
+      plan.skipped.push({ rawPath, reason: 'CASE_CONFLICT' })
+      continue
+    }
+    spellingByFoldedPath.set(folded, relativePath)
     finalPaths.delete(relativePath)
     finalPaths.set(relativePath, { relativePath, entry })
   }
   for (const { relativePath, entry } of finalPaths.values()) {
+    // Why: case-only aliases may be one file or two depending on the host; skip the whole group so a delete never lands without its replacement.
+    if (conflictedFoldedPaths.has(relativePath.normalize('NFC').toLowerCase())) {
+      plan.skipped.push({ rawPath: relativePath, reason: 'CASE_CONFLICT' })
+      continue
+    }
     if (entry.changeTypes.has('DELETED')) {
       plan.deletes.push({ relativePath })
-    } else if (SKIP_PLACEHOLDER.test(entry.content.trim())) {
+    } else if (isClipcodePlaceholderBody(entry.content)) {
       plan.skipped.push({ rawPath: relativePath, reason: 'CONTENT_SKIPPED' })
     } else {
       // MOVED only carries the new path; the old location is never touched.
@@ -197,14 +218,37 @@ export function planClipcodeRestore(args: {
   return plan
 }
 
-/** 'blocked': the path crosses a symlink or could not be verified on the host, so it is never touched. */
-export type ClipcodeTargetState = 'file' | 'directory' | 'missing' | 'blocked'
+/**
+ * 'blocked': the path crosses a symlink or could not be verified on the host; 'parentIsFile': a parent
+ * segment is a file; 'unreadable': the target could not be stat'ed. None of them is ever touched.
+ */
+export type ClipcodeTargetState =
+  | 'file'
+  | 'directory'
+  | 'missing'
+  | 'blocked'
+  | 'parentIsFile'
+  | 'unreadable'
+
+type ClipcodePreviewSkipReason =
+  | ClipcodeRestoreSkipReason
+  | 'ALREADY_ABSENT'
+  | 'IS_DIRECTORY'
+  | 'PARENT_IS_FILE'
+  | 'TARGET_UNREADABLE'
+
+const UNTOUCHABLE_STATE_REASON = {
+  blocked: 'SYMLINK_IN_PATH',
+  directory: 'IS_DIRECTORY',
+  parentIsFile: 'PARENT_IS_FILE',
+  unreadable: 'TARGET_UNREADABLE'
+} as const satisfies Partial<Record<ClipcodeTargetState, ClipcodePreviewSkipReason>>
 
 export type ClipcodeRestorePreview = {
   create: { relativePath: string; content: string }[]
   overwrite: { relativePath: string; content: string }[]
   delete: { relativePath: string }[]
-  skipped: { path: string; reason: ClipcodeRestoreSkipReason | 'ALREADY_ABSENT' | 'IS_DIRECTORY' }[]
+  skipped: { path: string; reason: ClipcodePreviewSkipReason }[]
 }
 
 /** Classifies a plan against what already exists; a delete only runs when the target is a file. */
@@ -218,12 +262,10 @@ export function previewClipcodeRestore(
   }
   for (const write of plan.writes) {
     const state = stateOf(write.relativePath)
-    if (state === 'blocked') {
-      preview.skipped.push({ path: write.relativePath, reason: 'SYMLINK_IN_PATH' })
-    } else if (state === 'directory') {
-      preview.skipped.push({ path: write.relativePath, reason: 'IS_DIRECTORY' })
-    } else {
+    if (state === 'file' || state === 'missing') {
       preview[state === 'file' ? 'overwrite' : 'create'].push(write)
+    } else {
+      preview.skipped.push({ path: write.relativePath, reason: UNTOUCHABLE_STATE_REASON[state] })
     }
   }
   for (const del of plan.deletes) {
@@ -233,12 +275,7 @@ export function previewClipcodeRestore(
     } else {
       preview.skipped.push({
         path: del.relativePath,
-        reason:
-          state === 'blocked'
-            ? 'SYMLINK_IN_PATH'
-            : state === 'directory'
-              ? 'IS_DIRECTORY'
-              : 'ALREADY_ABSENT'
+        reason: state === 'missing' ? 'ALREADY_ABSENT' : UNTOUCHABLE_STATE_REASON[state]
       })
     }
   }
