@@ -1,3 +1,8 @@
+import type {
+  GitHistoryGraphApplied,
+  GitHistoryGraphRequest
+} from './git-history-graph-query-types'
+
 export type GitHistoryGraphColorId =
   | 'git-graph-ref'
   | 'git-graph-remote-ref'
@@ -62,6 +67,7 @@ export type GitHistoryOptions = {
   /** List only commits on HEAD that baseRef lacks, with statistics and pushed state. */
   branchOnly?: boolean
   skip?: number
+  graph?: GitHistoryGraphRequest
 }
 
 export type GitHistoryBranchRange = {
@@ -88,6 +94,7 @@ export type GitHistoryResult = {
   branch?: GitHistoryBranchRange
   /** Echoes a requested skip so clients can tell paging hosts from older ones. */
   skip?: number
+  graph?: GitHistoryGraphApplied
 }
 
 export type GitHistoryExecutor = (
