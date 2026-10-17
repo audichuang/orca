@@ -28,7 +28,8 @@ export function useFolderRepoStatusRefresh(
   useEffect(() => {
     worktreesRef.current = worktrees
   }, [worktrees])
-  const runningRef = useRef(false)
+  const sweepRef = useRef<Promise<void> | null>(null)
+  const rerunRef = useRef(false)
 
   const refreshOne = useCallback(async (worktree: Worktree, periodic = false): Promise<void> => {
     const state = useAppStore.getState()
@@ -66,18 +67,36 @@ export function useFolderRepoStatusRefresh(
 
   const refreshAll = useCallback(
     async (periodic = false): Promise<void> => {
-      if (runningRef.current || !isWindowVisible()) {
+      if (!isWindowVisible()) {
         return
       }
-      runningRef.current = true
-      try {
-        // ponytail: one repo at a time on the background tier; add a concurrency cap if folders hold dozens of repos.
-        for (const worktree of worktreesRef.current) {
-          await refreshOne(worktree, periodic)
+      if (sweepRef.current) {
+        // Why: a manual refresh during a sweep must not be dropped; queue one more pass after it.
+        if (!periodic) {
+          rerunRef.current = true
         }
-      } finally {
-        runningRef.current = false
+        return sweepRef.current
       }
+      const sweep = async (): Promise<void> => {
+        let sweepIsPeriodic = periodic
+        try {
+          for (;;) {
+            // ponytail: one repo at a time on the background tier; add a concurrency cap if folders hold dozens of repos.
+            for (const worktree of worktreesRef.current) {
+              await refreshOne(worktree, sweepIsPeriodic)
+            }
+            if (!rerunRef.current) {
+              break
+            }
+            rerunRef.current = false
+            sweepIsPeriodic = false
+          }
+        } finally {
+          sweepRef.current = null
+        }
+      }
+      sweepRef.current = sweep()
+      return sweepRef.current
     },
     [refreshOne]
   )

@@ -3,6 +3,7 @@ import {
   getRememberedFolderRepo,
   moveRepoSelection,
   rememberFolderRepo,
+  resolveFolderDefaultRepo,
   resolveSelectedRepoId
 } from './folder-repo-selection'
 
@@ -46,5 +47,18 @@ describe('remembered selection', () => {
     rememberFolderRepo('folder:1', 'b')
     expect(getRememberedFolderRepo('folder:1')).toBe('b')
     expect(getRememberedFolderRepo('folder:2')).toBeNull()
+  })
+})
+
+describe('resolveFolderDefaultRepo', () => {
+  it('waits for earlier repos before picking a later dirty one', () => {
+    expect(resolveFolderDefaultRepo(ids, [undefined, undefined, 3])).toBeNull()
+    expect(resolveFolderDefaultRepo(ids, [2, undefined, 3])).toBe('a')
+    expect(resolveFolderDefaultRepo(ids, [0, 0, 3])).toBe('c')
+  })
+
+  it('falls back to the first repo once every repo is clean', () => {
+    expect(resolveFolderDefaultRepo(ids, [0, 0, 0])).toBe('a')
+    expect(resolveFolderDefaultRepo([], [])).toBeNull()
   })
 })

@@ -283,6 +283,7 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         filePath: string
         staged: boolean
         compareAgainstHead?: boolean
+        skipRenderLimit?: boolean
         connectionId?: string
         /** Showing the diff tab or its Retry: a user act that may start a stopped WSL distro. */
         wakeWslDistro?: boolean
@@ -293,14 +294,13 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         store,
         args.worktreePath,
         args.wakeWslDistro,
-        (worktreePath, gitOptions) =>
-          getDiff(
-            worktreePath,
-            validateGitRelativeFilePath(worktreePath, args.filePath),
-            args.staged,
-            args.compareAgainstHead,
-            { ...gitOptions, admissionTier: 'interactive' }
-          )
+        (worktreePath, gitOptions) => {
+          const filePath = validateGitRelativeFilePath(worktreePath, args.filePath)
+          const diffOptions = { ...gitOptions, admissionTier: 'interactive' as const }
+          return args.skipRenderLimit
+            ? getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, diffOptions, true)
+            : getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, diffOptions)
+        }
       )
     }
   )

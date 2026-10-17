@@ -2,13 +2,13 @@ import { useCallback, useMemo } from 'react'
 import { detectLanguage } from '@/lib/language-detect'
 import { openUncommittedEntry } from './open-uncommitted-entry'
 import { useAppStore } from '@/store'
-import { isPathInsideOrEqual } from '../../../../../../shared/cross-platform-path'
 import type {
   GitBranchChangeEntry,
   GitBranchCompareSummary
 } from '../../../../../../shared/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
 import { buildActiveOpenFileSignature, buildActiveOpenRowKeys } from './active-open-file-keys'
+import { resolveActiveFileRepoRelativePath } from './active-open-file-repo-path'
 import type { FlatEntry } from './use-selection'
 import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 import {
@@ -70,13 +70,18 @@ export function useSourceControlRowOpening({
     const activeFile = s.openFiles?.find(
       (file) => file.id === activeFileId && file.worktreeId === tabWorktreeId
     )
-    // Why: in a folder workspace every repo section shares one editor; match only this repo's files.
-    const ownsActiveFile =
-      tabWorktreeId === activeWorktreeId ||
-      (!!worktreePath && !!activeFile && isPathInsideOrEqual(worktreePath, activeFile.filePath))
-    return activeFile && ownsActiveFile
-      ? buildActiveOpenFileSignature(activeFile.diffSource, activeFile.relativePath)
-      : null
+    if (!activeFile) {
+      return null
+    }
+    const repoRelativePath = resolveActiveFileRepoRelativePath({
+      file: activeFile,
+      tabWorktreeId,
+      repoWorktreeId: activeWorktreeId,
+      repoPath: worktreePath
+    })
+    return repoRelativePath === null
+      ? null
+      : buildActiveOpenFileSignature(activeFile.diffSource, repoRelativePath)
   })
   const activeOpenAvailableRowKeys = useMemo(() => {
     const keys = new Set<string>()

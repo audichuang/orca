@@ -62,6 +62,7 @@ export const gitApi = {
     filePath: string
     staged: boolean
     compareAgainstHead?: boolean
+    skipRenderLimit?: boolean
     connectionId?: string
     wakeWslDistro?: boolean
   }) => ipcRenderer.invoke('git:diff', args),

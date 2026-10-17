@@ -16,13 +16,22 @@ export const GIT_DIFF_METHODS = [
     permission: 'workspace',
     params: GitDiff,
     handler: async (params, { runtime, clientKind, requestId }) =>
-      runtime.getRuntimeGitDiff(
-        params.worktree,
-        params.filePath,
-        params.staged,
-        params.compareAgainstHead,
-        remoteDiffContentBudget(clientKind, requestId)
-      )
+      params.skipRenderLimit
+        ? runtime.getRuntimeGitDiff(
+            params.worktree,
+            params.filePath,
+            params.staged,
+            params.compareAgainstHead,
+            remoteDiffContentBudget(clientKind, requestId),
+            true
+          )
+        : runtime.getRuntimeGitDiff(
+            params.worktree,
+            params.filePath,
+            params.staged,
+            params.compareAgainstHead,
+            remoteDiffContentBudget(clientKind, requestId)
+          )
   }),
   defineMethod({
     name: 'git.branchDiff',

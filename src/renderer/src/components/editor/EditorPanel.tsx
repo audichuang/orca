@@ -262,6 +262,7 @@ function EditorPanelInner({
       filePath: activeFile.filePath,
       relativePath: activeFile.relativePath,
       worktreeId: activeFile.worktreeId,
+      gitWorktreeId: activeFile.gitWorktreeId,
       runtimeEnvironmentId: activeFile.runtimeEnvironmentId,
       language: detectLanguage(activeFile.relativePath),
       mode: 'edit'

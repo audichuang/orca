@@ -19,7 +19,12 @@ function localWakeArgs(
 
 export async function getRuntimeGitDiff(
   context: RuntimeGitContext,
-  args: { filePath: string; staged: boolean; compareAgainstHead?: boolean },
+  args: {
+    filePath: string
+    staged: boolean
+    compareAgainstHead?: boolean
+    skipRenderLimit?: boolean
+  },
   options?: GitDiffWakeOptions
 ): Promise<GitDiffResult> {
   const target = context.target
@@ -29,6 +34,7 @@ export async function getRuntimeGitDiff(
       filePath: args.filePath,
       staged: args.staged,
       compareAgainstHead: args.compareAgainstHead,
+      skipRenderLimit: args.skipRenderLimit,
       connectionId: context.connectionId,
       ...localWakeArgs(context, options)
     })
@@ -36,7 +42,14 @@ export async function getRuntimeGitDiff(
   return callRuntimeRpc<GitDiffResult>(
     target,
     'git.diff',
-    { worktree: toRuntimeWorktreeSelector(context.worktreeId), ...args },
+    {
+      worktree: toRuntimeWorktreeSelector(context.worktreeId),
+      filePath: args.filePath,
+      staged: args.staged,
+      compareAgainstHead: args.compareAgainstHead,
+      // Why: send the optional flag only when set so older runtimes see the request they already accept.
+      ...(args.skipRenderLimit ? { skipRenderLimit: true } : {})
+    },
     { timeoutMs: 15_000 }
   )
 }
