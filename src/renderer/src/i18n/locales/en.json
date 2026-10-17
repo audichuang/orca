@@ -14721,7 +14721,9 @@
             "7b1c4e9a02": "Open commit in browser",
             "8c2d5fab13": "Copy commit hash",
             "9d3e60bc24": "Copy commit message",
-            "ae4f71cd35": "Explain changes"
+            "ae4f71cd35": "Explain changes",
+            "copyFullSource": "Copy Full Source",
+            "copyFullSourceMany": "Copy Full Source ({{value0}} commits)"
           },
           "pull": {
             "policy": {
@@ -14871,6 +14873,24 @@
             "scanning": "Scanning {{value0}}",
             "reading": "Reading {{value0}} files",
             "scanned": "Scanned {{value0}}"
+          },
+          "GitHistoryGraph": {
+            "allBranches": "All branches",
+            "branchCount": "{{value0}} branches",
+            "currentBranch": "Current branch",
+            "branchFilter": "Branch filter",
+            "searchBranches": "Search branches...",
+            "scope": "Show",
+            "sources": "Sources",
+            "localBranches": "Local branches",
+            "branches": "Branches",
+            "loadingBranches": "Loading branches...",
+            "hostTooOld": "This repository host runs an older Orca that only shows the current branch.",
+            "branchesFailed": "Failed to load branches",
+            "remote": "remote",
+            "searchCommits": "Search commits (author: path:)",
+            "searchCommitsLabel": "Search commits",
+            "loadMore": "Load more commits"
           }
         }
       },
