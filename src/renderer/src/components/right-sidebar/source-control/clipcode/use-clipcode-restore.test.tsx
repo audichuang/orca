@@ -102,6 +102,22 @@ describe('useClipcodeRestore', () => {
     ])
   })
 
+  it('skips an entry whose parent is a file and still restores the others', async () => {
+    readRuntimeDirectory.mockImplementation(async (_c: unknown, dir: string) =>
+      dir === '/f' ? [{ name: 'README.md', isDirectory: false, isSymlink: false }] : []
+    )
+    await runRestore('// file: [NEW] README.md/child.ts\nx\n// file: [NEW] ok.txt\nok\n')
+    expect(calls).toEqual(['quiesce folder-1:ok.txt', 'write /f/ok.txt', 'notify folder-1:ok.txt'])
+  })
+
+  it('skips an entry whose target cannot be stat-ed instead of failing the whole restore', async () => {
+    statRuntimePath.mockImplementation(async (_c: unknown, path: string) => {
+      throw new Error(path === '/f/locked.ts' ? 'EACCES: permission denied' : 'ENOENT')
+    })
+    await runRestore('// file: [NEW] locked.ts\nx\n// file: [NEW] ok.txt\nok\n')
+    expect(calls).toEqual(['quiesce folder-1:ok.txt', 'write /f/ok.txt', 'notify folder-1:ok.txt'])
+  })
+
   it('blocks a symlink whose name differs only by Unicode normalization', async () => {
     readRuntimeDirectory.mockImplementation(async (_c: unknown, dir: string) =>
       dir === '/f' ? [{ name: 'cafe\u0301', isDirectory: true, isSymlink: true }] : []

@@ -134,7 +134,7 @@ describe('buildClipcodeGitCopy', () => {
     expect(result.payload).toBe('// clipcode-root: f\n// file: [MODIFIED] a/x.ts\nINDEX\n')
   })
 
-  it('falls back to the working tree when the index cannot be read', async () => {
+  it('reports a staged row as unreadable instead of copying the working tree when the index read fails', async () => {
     const result = await buildClipcodeGitCopy({
       rootPath: '/f',
       repos: [repo('/f/a', [modified('x.ts', 'staged')], true)],
@@ -144,9 +144,8 @@ describe('buildClipcodeGitCopy', () => {
         })
       })
     })
-    expect(result.payload).toContain('WORK x.ts')
-    // Git spacing follows the request, not the read outcome.
-    expect(result.payload).toBe('// clipcode-root: f\n// file: [MODIFIED] a/x.ts\nWORK x.ts\n')
+    expect(result.payload).toBe('')
+    expect(result.unreadableFileCount).toBe(1)
   })
 
   it('copies an empty index blob instead of the working tree', async () => {
@@ -189,14 +188,65 @@ describe('buildClipcodeGitCopy', () => {
       }
     ],
     ['failed (empty) blob read', textDiff('HEAD', '', ['modified'])]
-  ])('does not trust an index read that is %s', async (_name, diff) => {
+  ])(
+    'never copies the working tree for a staged row whose index read is %s',
+    async (_name, diff) => {
+      const result = await buildClipcodeGitCopy({
+        rootPath: '/f',
+        repos: [repo('/f/a', [modified('x.ts', 'staged')], true)],
+        readers: makeReaders({ readDiff: vi.fn(async () => diff) })
+      })
+      expect(result.payload).not.toContain('WORK x.ts')
+    }
+  )
+
+  it('writes a size skip line for a staged file over the diff render limit', async () => {
+    const limited: GitDiffResult = {
+      kind: 'text',
+      originalContent: '',
+      modifiedContent: '',
+      originalIsBinary: false,
+      modifiedIsBinary: false,
+      largeDiffRenderLimit: {
+        limited: true,
+        reason: 'character-count',
+        lineCounts: null,
+        characterCount: 7_000_000,
+        limits: { maxLinesPerSide: 120_000, maxCombinedCharacters: 6_000_000 }
+      }
+    }
     const result = await buildClipcodeGitCopy({
       rootPath: '/f',
-      repos: [repo('/f/a', [modified('x.ts', 'staged')], true)],
-      readers: makeReaders({ readDiff: vi.fn(async () => diff) })
+      repos: [repo('/f/a', [modified('big.txt', 'staged')], true)],
+      readers: makeReaders({ readDiff: vi.fn(async () => limited) })
     })
-    expect(result.payload).toContain('WORK x.ts')
-    expect(result.payload).not.toContain('skipped')
+    expect(result.payload).toContain(
+      '// file: [MODIFIED] a/big.txt\n// File skipped: size exceeds limit (staged version too large to read)'
+    )
+    expect(result.skippedFileSizeCount).toBe(1)
+  })
+
+  it('asks for the full index text so a staged file past the render limit still copies', async () => {
+    const indexText = 'i\n'.repeat(130_000)
+    const readDiff = vi.fn(async (): Promise<GitDiffResult> => ({
+      kind: 'text',
+      originalContent: '',
+      modifiedContent: indexText,
+      originalIsBinary: false,
+      modifiedIsBinary: false
+    }))
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f/a', [modified('big.txt', 'staged')], true)],
+      readers: makeReaders({ readDiff })
+    })
+    expect(readDiff).toHaveBeenCalledWith(expect.anything(), {
+      filePath: 'big.txt',
+      staged: true,
+      skipRenderLimit: true
+    })
+    expect(result.payload).toContain(`// file: [MODIFIED] a/big.txt\n${indexText}`)
+    expect(result.skippedFileSizeCount).toBe(0)
   })
 
   it('keeps regular spacing (empty wrapper lines) when all rows are working-tree copies', async () => {
@@ -279,6 +329,22 @@ describe('buildClipcodeGitCopy', () => {
     expect(result.payload).not.toMatch(/bin\.png|bad\.ts|a\/sub/)
   })
 
+  it('skips text a lenient decode turned into U+FFFD instead of copying mojibake', async () => {
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f/a', [modified('latin1.txt'), modified('ok.ts')])],
+      readers: makeReaders({
+        readWorkingFile: vi.fn(async (_c, path) => ({
+          content: path === 'latin1.txt' ? 'caf\uFFFD' : 'ok',
+          isBinary: false
+        }))
+      })
+    })
+    expect(result.copiedFileCount).toBe(1)
+    expect(result.unreadableFileCount).toBe(1)
+    expect(result.payload).not.toContain('latin1.txt')
+  })
+
   it('writes a skip line for files over the size limit', async () => {
     const big = 'a'.repeat(900 * 1024)
     const result = await buildClipcodeGitCopy({
@@ -342,7 +408,30 @@ describe('buildClipcodeGitCopy', () => {
       copiedFileCount: 0,
       skippedFileSizeCount: 0,
       unreadableFileCount: 0,
+      skippedBinaryFileCount: 0,
       entryCount: 0
     })
+  })
+
+  it('counts binary rows it leaves out, unless another area of the same path was copied', async () => {
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [
+        repo(
+          '/f/a',
+          [modified('logo.png'), modified('doc.pdf'), modified('doc.pdf', 'staged')],
+          true
+        )
+      ],
+      readers: makeReaders({
+        readWorkingFile: vi.fn(async () => ({ content: '', isBinary: true })),
+        readDiff: vi.fn(async (_c: RuntimeGitContext, args: { filePath: string }) =>
+          args.filePath === 'doc.pdf' ? textDiff('', 'staged text') : textDiff('', '')
+        )
+      })
+    })
+    expect(result.skippedBinaryFileCount).toBe(1)
+    expect(result.payload).toContain('a/doc.pdf')
+    expect(result.payload).not.toContain('a/logo.png')
   })
 })
