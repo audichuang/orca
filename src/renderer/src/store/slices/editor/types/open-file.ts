@@ -38,7 +38,7 @@ export type OpenFile = {
   filePath: string
   relativePath: string
   worktreeId: string
-  /** Worktree that owns this tab's git state when it differs from `worktreeId` (folder-workspace repo sections). Not persisted. */
+  /** Worktree that owns this tab's git state when it differs from `worktreeId` (folder-workspace repo sections); persisted with the session. */
   gitWorktreeId?: string
   language: string
   isDirty: boolean
