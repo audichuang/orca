@@ -9,13 +9,15 @@ import {
 import { applyOpenFileToState } from './open-file-apply'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../../../shared/layout-owner-switch'
 import { recordReopenedEditorFileInLayoutOwner } from '../tabs/editor-tab-layout-owner'
+import { withFolderFileGitOwner } from '../git/folder-file-git-owner'
 
 export function createOpenFileAction(
   set: EditorSet,
   get: EditorGet
 ): Pick<EditorSlice, 'openFile'> {
   return {
-    openFile: (file, options) => {
+    openFile: (requestedFile, options) => {
+      const file = withFolderFileGitOwner(get(), requestedFile)
       const editorItemWorktreeId = file.worktreeId
       const editorItemLabel = file.relativePath
       const editorItemContentType: EditorTabContentType =
