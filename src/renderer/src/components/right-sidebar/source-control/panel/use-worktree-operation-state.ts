@@ -12,6 +12,12 @@ import {
 import type { CreatePrIntentNotice } from '../commit/commit-area-types'
 import { readCommitDraftForWorktree, type CommitDraftsByWorktree } from '../commit/commit-drafts'
 import { clearRemoteActionErrorsForCompletedConflictOperations } from '../sync/remote-refresh'
+import {
+  loadSessionCommitErrors,
+  loadSessionRemoteActionErrors,
+  saveSessionCommitErrors,
+  saveSessionRemoteActionErrors
+} from './operation-error-session'
 
 /**
  * Owns every per-worktree record the panel keeps outside the store — commit drafts and errors,
@@ -34,11 +40,13 @@ export function useSourceControlWorktreeOperationState({
     loadSessionCommitDrafts()
   )
   const commitDraftsRef = useRef<CommitDraftsByWorktree>(commitDrafts)
-  const commitErrorsRef = useRef<Record<string, string | null>>({})
-  const [commitErrors, setCommitErrors] = useState<Record<string, string | null>>({})
+  const commitErrorsRef = useRef<Record<string, string | null>>(loadSessionCommitErrors())
+  const [commitErrors, setCommitErrors] = useState<Record<string, string | null>>(() =>
+    loadSessionCommitErrors()
+  )
   const [remoteActionErrors, setRemoteActionErrors] = useState<
     Record<string, SourceControlActionError | null>
-  >({})
+  >(() => loadSessionRemoteActionErrors())
   const remoteActionErrorSequenceByWorktreeRef = useRef<Record<string, number>>({})
   const previousConflictOperationsRef = useRef<Record<string, GitConflictOperation>>({})
   // Why: keep commit-in-flight per-worktree; a single boolean would clear on worktree switch, allowing a double-commit on the original.
@@ -174,6 +182,14 @@ export function useSourceControlWorktreeOperationState({
   useEffect(() => {
     saveSessionCommitDrafts(commitDrafts)
   }, [commitDrafts])
+
+  useEffect(() => {
+    saveSessionCommitErrors(commitErrors)
+  }, [commitErrors])
+
+  useEffect(() => {
+    saveSessionRemoteActionErrors(remoteActionErrors)
+  }, [remoteActionErrors])
 
   useEffect(() => {
     // Why: conflicts are often resolved in a terminal; clear the stale failure banner once git status sees the operation end.

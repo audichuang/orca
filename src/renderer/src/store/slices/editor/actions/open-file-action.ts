@@ -7,13 +7,15 @@ import {
   takeNextEditorFocusRequestToken
 } from '../focus/editor-focus-reveal'
 import { applyOpenFileToState } from './open-file-apply'
+import { withFolderFileGitOwner } from '../git/folder-file-git-owner'
 
 export function createOpenFileAction(
   set: EditorSet,
   get: EditorGet
 ): Pick<EditorSlice, 'openFile'> {
   return {
-    openFile: (file, options) => {
+    openFile: (requestedFile, options) => {
+      const file = withFolderFileGitOwner(get(), requestedFile)
       const editorItemWorktreeId = file.worktreeId
       const editorItemLabel = file.relativePath
       const editorItemContentType: EditorTabContentType =
