@@ -23,6 +23,11 @@ describe('sanitizeRelativePath', () => {
     'a/b?.ts',
     '.git/hooks/pre-commit',
     'a/.GIT/config',
+    '.git./config',
+    '.git /config',
+    'a/.Git../hooks/x',
+    'GIT~1/config',
+    'a/git~2/config',
     ''
   ])('rejects %s', (value) => {
     expect(sanitizeRelativePath(value)).toBeUndefined()
@@ -44,6 +49,58 @@ describe('planClipcodeRestore', () => {
     })
     expect(plan.writes.map((w) => w.relativePath)).toEqual(['real.ts'])
     expect(plan.skipped).toEqual([{ rawPath: 'big.ts', reason: 'CONTENT_SKIPPED' }])
+  })
+
+  it('skips any entry whose first line is an unreadable/read-error placeholder, like ClipCode 1.2.15', () => {
+    const plan = planClipcodeRestore({
+      rootPath: '/f',
+      entries: [
+        entry('a.ts', new Set(['MODIFIED']), '// Unable to read file content\n'),
+        entry('b.ts', new Set(), '  // Error reading file content  \n'),
+        entry('d.txt', new Set(['NEW']), '// Unable to read file content\nsecond line'),
+        entry('e.txt', new Set(), '// File skipped: size exceeds limit (1 bytes)\nsecond line'),
+        entry('f.ts', new Set(), '// Error reading file content: EACCES'),
+        entry('g.ts', new Set(), '// This file has been deleted in this change')
+      ]
+    })
+    expect(plan.writes.map((w) => w.relativePath)).toEqual(['f.ts', 'g.ts'])
+    expect(plan.skipped.map((s) => [s.rawPath, s.reason])).toEqual([
+      ['a.ts', 'CONTENT_SKIPPED'],
+      ['b.ts', 'CONTENT_SKIPPED'],
+      ['d.txt', 'CONTENT_SKIPPED'],
+      ['e.txt', 'CONTENT_SKIPPED']
+    ])
+  })
+
+  it('protects .git variants as .git, not as a generic unsafe path', () => {
+    const plan = planClipcodeRestore({ rootPath: '/f', entries: [entry('a/GIT~1/config')] })
+    expect(plan.skipped).toEqual([{ rawPath: 'a/GIT~1/config', reason: 'PROTECTED_GIT' }])
+  })
+
+  it('skips every spelling of a path that differs only by letter case', () => {
+    const plan = planClipcodeRestore({
+      rootPath: '/f',
+      entries: [
+        entry('A.txt', new Set(), 'upper'),
+        entry('a.txt', new Set(), 'lower'),
+        entry('A.txt', new Set(), 'again'),
+        entry('b.txt', new Set(), 'kept')
+      ]
+    })
+    expect(plan.writes).toEqual([{ relativePath: 'b.txt', content: 'kept' }])
+    expect(plan.skipped).toEqual([
+      { rawPath: 'a.txt', reason: 'CASE_CONFLICT' },
+      { rawPath: 'A.txt', reason: 'CASE_CONFLICT' }
+    ])
+  })
+
+  it('never keeps a delete whose case-only replacement was skipped', () => {
+    const plan = planClipcodeRestore({
+      rootPath: '/f',
+      entries: [entry('A.txt', new Set(['DELETED'])), entry('a.txt', new Set(), 'new')]
+    })
+    expect(plan.deletes).toEqual([])
+    expect(plan.writes).toEqual([])
   })
 
   it('rejects traversal, and absolute paths outside the root', () => {
@@ -174,6 +231,30 @@ describe('previewClipcodeRestore', () => {
     expect(preview.skipped).toEqual([
       { path: 'dir', reason: 'IS_DIRECTORY' },
       { path: 'absent.ts', reason: 'ALREADY_ABSENT' }
+    ])
+  })
+
+  it('skips targets under a file parent or that could not be checked', () => {
+    const plan = planClipcodeRestore({
+      rootPath: '/f',
+      entries: [
+        entry('README.md/child.ts'),
+        entry('locked.ts'),
+        entry('ok.txt'),
+        entry('x.ts', new Set(['DELETED']))
+      ]
+    })
+    const states: Record<string, ClipcodeTargetState> = {
+      'README.md/child.ts': 'parentIsFile',
+      'locked.ts': 'unreadable',
+      'x.ts': 'parentIsFile'
+    }
+    const preview = previewClipcodeRestore(plan, (path) => states[path] ?? 'missing')
+    expect(preview.create.map((w) => w.relativePath)).toEqual(['ok.txt'])
+    expect(preview.skipped).toEqual([
+      { path: 'README.md/child.ts', reason: 'PARENT_IS_FILE' },
+      { path: 'locked.ts', reason: 'TARGET_UNREADABLE' },
+      { path: 'x.ts', reason: 'PARENT_IS_FILE' }
     ])
   })
 
