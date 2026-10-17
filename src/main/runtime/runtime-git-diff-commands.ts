@@ -31,22 +31,40 @@ export class RuntimeGitDiffCommands {
     filePath: string,
     staged: boolean,
     compareAgainstHead?: boolean,
-    maxContentBytes?: number
+    maxContentBytes?: number,
+    skipRenderLimit?: boolean
   ): Promise<GitDiffResult> {
     const target = await this.host.resolveRuntimeGitTarget(worktreeSelector)
     const relativePath = normalizeRuntimeGitRelativePath(filePath)
     const provider = requireRuntimeGitProvider(target)
     if (provider) {
       return assertGitDiffWithinTransportBudget(
-        await provider.getDiff(target.worktree.path, relativePath, staged, compareAgainstHead),
+        skipRenderLimit
+          ? await provider.getDiff(
+              target.worktree.path,
+              relativePath,
+              staged,
+              compareAgainstHead,
+              true
+            )
+          : await provider.getDiff(target.worktree.path, relativePath, staged, compareAgainstHead),
         maxContentBytes
       )
     }
     return assertGitDiffWithinTransportBudget(
-      await getDiff(target.worktree.path, relativePath, staged, compareAgainstHead, {
-        ...localGitOptionsForTarget(target),
-        admissionTier: 'interactive'
-      }),
+      skipRenderLimit
+        ? await getDiff(
+            target.worktree.path,
+            relativePath,
+            staged,
+            compareAgainstHead,
+            { ...localGitOptionsForTarget(target), admissionTier: 'interactive' },
+            true
+          )
+        : await getDiff(target.worktree.path, relativePath, staged, compareAgainstHead, {
+            ...localGitOptionsForTarget(target),
+            admissionTier: 'interactive'
+          }),
       maxContentBytes
     )
   }

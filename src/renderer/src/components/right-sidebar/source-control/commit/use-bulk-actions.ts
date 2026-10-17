@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { getConnectionId } from '@/lib/connection-context'
 import { translate } from '@/i18n/i18n'
-import { readIpcErrorMessage } from '@/lib/ipc-error'
+import { readGitCommandFailureMessage } from './git-command-failure-message'
 import {
   bulkStageRuntimeGitPaths,
   bulkUnstageRuntimeGitPaths,
@@ -29,7 +29,7 @@ function reportBulkMutationFailure(error: unknown): void {
       'auto.components.right.sidebar.use.source.control.bulk.actions.2f67630884',
       'Bulk stage/unstage failed'
     ),
-    { description: readIpcErrorMessage(error) }
+    { description: readGitCommandFailureMessage(error) }
   )
 }
 

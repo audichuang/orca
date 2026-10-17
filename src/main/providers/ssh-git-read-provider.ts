@@ -111,16 +111,28 @@ export class SshGitReadProvider {
     worktreePath: string,
     filePath: string,
     staged: boolean,
-    compareAgainstHead?: boolean
+    compareAgainstHead?: boolean,
+    skipRenderLimit?: boolean
   ): Promise<GitDiffResult> {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the dedupe only replays the GitDiffResult produced below.
     return this.gitDiffReadDedupe.run(
-      stableInFlightKey(['diff', worktreePath, filePath, staged, compareAgainstHead]),
+      stableInFlightKey([
+        'diff',
+        worktreePath,
+        filePath,
+        staged,
+        compareAgainstHead,
+        skipRenderLimit
+      ]),
       async () =>
+        // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the relay git.diff handler answers with a GitDiffResult.
         (await requestGitStreamable(this.mux, 'git.diff', {
           worktreePath,
           filePath,
           staged,
-          compareAgainstHead
+          compareAgainstHead,
+          // Why: older relays ignore unknown params and return the limited result; callers keep that fallback.
+          ...(skipRenderLimit ? { skipRenderLimit: true } : {})
         })) as GitDiffResult
     ) as Promise<GitDiffResult>
   }

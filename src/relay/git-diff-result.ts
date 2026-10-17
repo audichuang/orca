@@ -7,7 +7,8 @@ export function buildDiffResult(
   modifiedContent: string,
   originalIsBinary: boolean,
   modifiedIsBinary: boolean,
-  filePath?: string
+  filePath?: string,
+  skipRenderLimit = false
 ) {
   if (originalIsBinary || modifiedIsBinary) {
     const ext = filePath ? path.extname(filePath).toLowerCase() : ''
@@ -22,8 +23,11 @@ export function buildDiffResult(
     }
   }
 
-  const largeDiffRenderLimit = getLargeDiffRenderLimit({ originalContent, modifiedContent })
-  if (largeDiffRenderLimit.limited) {
+  // Why: copy-to-clipboard callers need full text; the render limit only spares the diff viewer.
+  const largeDiffRenderLimit = skipRenderLimit
+    ? null
+    : getLargeDiffRenderLimit({ originalContent, modifiedContent })
+  if (largeDiffRenderLimit?.limited) {
     return {
       kind: 'text' as const,
       originalContent: '',

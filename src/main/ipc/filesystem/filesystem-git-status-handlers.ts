@@ -281,6 +281,7 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         filePath: string
         staged: boolean
         compareAgainstHead?: boolean
+        skipRenderLimit?: boolean
         connectionId?: string
       }
     ): Promise<GitDiffResult> => {
@@ -289,12 +290,15 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         if (!provider) {
           throw new Error(SSH_GIT_PROVIDER_UNAVAILABLE_MESSAGE)
         }
-        return provider.getDiff(
-          args.worktreePath,
-          args.filePath,
-          args.staged,
-          args.compareAgainstHead
-        )
+        return args.skipRenderLimit
+          ? provider.getDiff(
+              args.worktreePath,
+              args.filePath,
+              args.staged,
+              args.compareAgainstHead,
+              true
+            )
+          : provider.getDiff(args.worktreePath, args.filePath, args.staged, args.compareAgainstHead)
       }
       const worktreePath = await resolveRegisteredWorktreePath(args.worktreePath, store)
       const filePath = validateGitRelativeFilePath(worktreePath, args.filePath)
@@ -303,10 +307,10 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         args.worktreePath,
         worktreePath
       )
-      return getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, {
-        ...gitOptions,
-        admissionTier: 'interactive'
-      })
+      const diffOptions = { ...gitOptions, admissionTier: 'interactive' as const }
+      return args.skipRenderLimit
+        ? getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, diffOptions, true)
+        : getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, diffOptions)
     }
   )
 }

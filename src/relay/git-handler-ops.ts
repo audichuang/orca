@@ -93,7 +93,8 @@ export async function computeDiff(
   worktreePath: string,
   filePath: string,
   staged: boolean,
-  compareAgainstHead = false
+  compareAgainstHead = false,
+  skipRenderLimit = false
 ) {
   let originalContent = ''
   let modifiedContent = ''
@@ -136,7 +137,8 @@ export async function computeDiff(
     modifiedContent,
     originalIsBinary,
     modifiedIsBinary,
-    filePath
+    filePath,
+    skipRenderLimit
   )
   // Why: mark a proven deletion so previewers can fall back to the original bytes
   // without mistaking a read failure's empty modified side for a deletion.

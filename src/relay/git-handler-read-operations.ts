@@ -117,9 +117,18 @@ export class GitHandlerReadOperations extends GitHandlerOperationContext {
     }
     const staged = params.staged as boolean
     const compareAgainstHead = params.compareAgainstHead as boolean | undefined
+    // Why: optional and newer than some clients; anything but `true` keeps the render limit.
+    const skipRenderLimit = params.skipRenderLimit === true
     // Why: register dedupe before awaiting so identical reads coalesce.
     const result = await this.gitDiffReadDedupe.lease(
-      stableInFlightKey(['diff', worktreePath, filePath, staged, compareAgainstHead]),
+      stableInFlightKey([
+        'diff',
+        worktreePath,
+        filePath,
+        staged,
+        compareAgainstHead,
+        skipRenderLimit
+      ]),
       context?.signal,
       async (signal) => {
         // Why: route gitlink roots to pointer diffs and inner files to their submodule worktree.
@@ -167,7 +176,8 @@ export class GitHandlerReadOperations extends GitHandlerOperationContext {
               submoduleWorktreePath,
               innerPath,
               staged,
-              compareAgainstHead
+              compareAgainstHead,
+              skipRenderLimit
             )
           }
         }
@@ -176,7 +186,8 @@ export class GitHandlerReadOperations extends GitHandlerOperationContext {
           worktreePath,
           filePath,
           staged,
-          compareAgainstHead
+          compareAgainstHead,
+          skipRenderLimit
         )
       }
     )
