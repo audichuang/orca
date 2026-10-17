@@ -14191,7 +14191,9 @@
             "7b1c4e9a02": "在浏览器中打开提交",
             "8c2d5fab13": "复制提交哈希",
             "9d3e60bc24": "复制提交信息",
-            "ae4f71cd35": "解释更改"
+            "ae4f71cd35": "解释更改",
+            "copyFullSource": "复制完整源码",
+            "copyFullSourceMany": "复制完整源码（{{value0}} 个提交）"
           },
           "pull": {
             "policy": {
@@ -14341,6 +14343,24 @@
             "scanning": "正在扫描 {{value0}}",
             "reading": "正在读取 {{value0}} 个文件",
             "scanned": "已扫描 {{value0}}"
+          },
+          "GitHistoryGraph": {
+            "allBranches": "所有分支",
+            "branchCount": "{{value0}} 个分支",
+            "currentBranch": "当前分支",
+            "branchFilter": "分支筛选",
+            "searchBranches": "搜索分支...",
+            "scope": "显示",
+            "sources": "来源",
+            "localBranches": "本地分支",
+            "branches": "分支",
+            "loadingBranches": "正在加载分支...",
+            "hostTooOld": "此仓库所在主机的 Orca 版本较旧，只能显示当前分支。",
+            "branchesFailed": "无法加载分支",
+            "remote": "远程",
+            "searchCommits": "搜索提交（author: path:）",
+            "searchCommitsLabel": "搜索提交",
+            "loadMore": "加载更多提交"
           }
         }
       },
