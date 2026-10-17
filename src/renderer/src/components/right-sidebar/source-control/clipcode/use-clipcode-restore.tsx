@@ -21,8 +21,10 @@ import {
   getFileExplorerOperationOwner
 } from '../../file-explorer-operation-owner'
 import {
+  findRestorePathObstacle,
   restorePathCrossesSymlink,
-  type RestoreDirectoryCache
+  type RestoreDirectoryCache,
+  type RestorePathObstacle
 } from './clipcode-restore-path-guard'
 import { CLIPCODE_DEFAULTS, extractSourceRoot, parseClipboard } from './clipcode-clipboard-format'
 import {
@@ -69,6 +71,34 @@ async function isRestorePathBlocked(
     return await restorePathCrossesSymlink(context, root, relativePath, cache)
   } catch {
     return true
+  }
+}
+
+// Why: one bad target (ENOTDIR, EACCES, a host that cannot list) must skip only that entry, not abort the whole restore.
+async function readCandidateState(
+  context: RuntimeFileOperationArgs,
+  root: string,
+  relativePath: string,
+  cache: RestoreDirectoryCache
+): Promise<ClipcodeTargetState> {
+  let obstacle: RestorePathObstacle | null
+  try {
+    obstacle = await findRestorePathObstacle(context, root, relativePath, cache)
+  } catch {
+    return 'blocked'
+  }
+  if (obstacle === 'symlink') {
+    return 'blocked'
+  }
+  if (obstacle === 'parentIsFile') {
+    return 'parentIsFile'
+  }
+  try {
+    return await readTargetState(context, joinPath(root, relativePath))
+  } catch (error) {
+    return /\bENOTDIR\b/.test(String(readIpcErrorMessage(error) ?? error))
+      ? 'parentIsFile'
+      : 'unreadable'
   }
 }
 
@@ -123,7 +153,9 @@ export function useClipcodeRestore({
         const safeSourceRoot = sourceRoot ? sanitizeRelativePath(sourceRoot) : undefined
         const sourceRootIsDirectory =
           safeSourceRoot !== undefined && !safeSourceRoot.includes('/')
-            ? (await readTargetState(context, joinPath(folderPath, safeSourceRoot))) === 'directory'
+            ? (await readTargetState(context, joinPath(folderPath, safeSourceRoot)).catch(
+                () => 'unreadable'
+              )) === 'directory'
             : false
         const suggestion = suggestRestoreBase({
           rootPath: folderPath,
@@ -144,9 +176,7 @@ export function useClipcodeRestore({
         for (const relativePath of candidatePaths) {
           states.set(
             relativePath,
-            (await isRestorePathBlocked(context, folderPath, relativePath, directoryCache))
-              ? 'blocked'
-              : await readTargetState(context, joinPath(folderPath, relativePath))
+            await readCandidateState(context, folderPath, relativePath, directoryCache)
           )
         }
         setSession({

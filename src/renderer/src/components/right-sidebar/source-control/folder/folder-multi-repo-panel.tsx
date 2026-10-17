@@ -17,6 +17,7 @@ import {
   getRememberedFolderRepo,
   moveRepoSelection,
   rememberFolderRepo,
+  resolveFolderDefaultRepo,
   resolveSelectedRepoId,
   isFolderRepoSelectionKey
 } from './folder-repo-selection'
@@ -59,27 +60,26 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   const isVisible = useAppStore((s) => s.rightSidebarOpen && s.rightSidebarTab === 'source-control')
   const refreshAll = useFolderRepoStatusRefresh(memberWorktrees, isVisible)
   const changeCounts = useAppStore(
-    useShallow((s) =>
-      members.map((member) => s.gitStatusByWorktree[member.worktree.id]?.length ?? 0)
-    )
+    useShallow((s) => members.map((member) => s.gitStatusByWorktree[member.worktree.id]?.length))
   )
   const [chosenId, setChosenId] = useState<string | null>(() =>
     getRememberedFolderRepo(folderWorkspaceKey)
   )
   const [defaultId, setDefaultId] = useState<string | null>(null)
   const memberIds = members.map((member) => member.worktree.id)
-  const firstMemberId = memberIds[0]
-  const firstDirtyId = memberIds[changeCounts.findIndex((count) => count > 0)]
-  const statusLoaded = useAppStore((s) =>
-    members.every((member) => s.gitStatusByWorktree[member.worktree.id] !== undefined)
-  )
+  const landingId = resolveFolderDefaultRepo(memberIds, changeCounts)
   // Why: freeze the landing repo once known, so later count changes (a commit, a poll) never move the selection.
   useEffect(() => {
-    if (defaultId === null && (firstDirtyId || (statusLoaded && firstMemberId))) {
-      setDefaultId(firstDirtyId ?? firstMemberId)
+    if (defaultId === null && landingId !== null) {
+      setDefaultId(landingId)
     }
-  }, [defaultId, firstDirtyId, firstMemberId, statusLoaded])
-  const selectedId = resolveSelectedRepoId({ chosenId, defaultId, ids: memberIds, firstDirtyId })
+  }, [defaultId, landingId])
+  const selectedId = resolveSelectedRepoId({
+    chosenId,
+    defaultId,
+    ids: memberIds,
+    firstDirtyId: landingId ?? undefined
+  })
   const selectRepo = useCallback(
     (id: string) => {
       setChosenId(id)
@@ -91,7 +91,12 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   const selectedLabel = selectedMember ? folderRepoSectionLabel(selectedMember, members) : undefined
   const listRef = useRef<HTMLDivElement>(null)
   const onListKeyDown = (event: React.KeyboardEvent) => {
-    if (!isFolderRepoSelectionKey(event.key)) {
+    // Why: only the repo rows navigate; arrow keys on a row's Copy button must not switch repos.
+    if (
+      !isFolderRepoSelectionKey(event.key) ||
+      !(event.target instanceof HTMLElement) ||
+      !event.target.hasAttribute('data-repo-row')
+    ) {
       return
     }
     const nextId = moveRepoSelection(memberIds, selectedId, event.key)

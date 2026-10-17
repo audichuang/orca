@@ -209,6 +209,48 @@ describe('createExternalWatchEventHandler tombstone coalescing', () => {
     dispose()
   })
 
+  it('reloads tabs in every workspace that watches the same root', () => {
+    const tab = (worktreeId: string) => ({
+      id: `file-${worktreeId}`,
+      worktreeId,
+      filePath: '/shared/notes.md',
+      relativePath: 'notes.md',
+      mode: 'edit' as const,
+      isDirty: false
+    })
+    const files = [tab('folder:a'), tab('folder:b')]
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the handler reads only openFiles and setExternalMutation.
+    vi.mocked(useAppStore.getState).mockReturnValue({
+      openFiles: files,
+      setExternalMutation
+    } as never)
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the reload path reads only the tab fields built above.
+    vi.mocked(getOpenFilesForExternalFileChange).mockReturnValue(files as never)
+    const target = (worktreeId: string) => ({
+      worktreeId,
+      worktreePath: '/shared',
+      connectionId: undefined,
+      runtimeEnvironmentId: null
+    })
+    const { handleFsChanged, dispose } = createExternalWatchEventHandler(() => [
+      target('folder:a'),
+      target('folder:b')
+    ])
+
+    handleFsChanged({
+      worktreePath: '/shared',
+      events: [{ kind: 'update', absolutePath: '/shared/notes.md', isDirectory: false }]
+    })
+    vi.advanceTimersByTime(100)
+
+    for (const worktreeId of ['folder:a', 'folder:b']) {
+      expect(notifyEditorExternalFileChange).toHaveBeenCalledWith(
+        expect.objectContaining({ worktreeId, relativePath: 'notes.md' })
+      )
+    }
+    dispose()
+  })
+
   it('reloads UNC editor tabs without collapsing the share root', () => {
     const file = {
       id: 'file-unc',
