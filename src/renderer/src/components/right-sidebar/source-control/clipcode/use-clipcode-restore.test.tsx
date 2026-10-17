@@ -8,6 +8,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 const calls: string[] = []
 const readRuntimeDirectory = vi.fn()
 const statRuntimePath = vi.fn()
+const readRuntimeFileContent = vi.fn()
 
 vi.mock('sonner', () => ({ toast: { warning: vi.fn(), error: vi.fn(), success: vi.fn() } }))
 vi.mock('@/runtime/runtime-file-mutation-client', () => ({
@@ -19,6 +20,9 @@ vi.mock('@/runtime/runtime-file-mutation-client', () => ({
 vi.mock('@/runtime/runtime-file-metadata-client', () => ({
   statRuntimePath: (...args: unknown[]) => statRuntimePath(...args),
   isMissingRuntimePathError: (error: unknown) => String(error).includes('ENOENT')
+}))
+vi.mock('@/runtime/runtime-file-read-client', () => ({
+  readRuntimeFileContent: (...args: unknown[]) => readRuntimeFileContent(...args)
 }))
 vi.mock('@/components/tab-bar/tab-create-entry-action', () => ({
   createParentDirectoriesForNewFile: async () => undefined
@@ -54,12 +58,15 @@ function Harness(): React.JSX.Element {
   )
 }
 
-async function runRestore(clipboard: string): Promise<void> {
+async function runRestore(clipboard: string, { overwrite = false } = {}): Promise<void> {
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the hook only reads window.api.ui.readClipboardText.
   window.api = { ui: { readClipboardText: async () => clipboard } } as never
   render(<Harness />)
   fireEvent.click(screen.getByText('go'))
   await waitFor(() => expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument())
+  if (overwrite) {
+    fireEvent.click(screen.getByRole('checkbox'))
+  }
   const button = screen.getByRole('button', { name: 'Restore' })
   if (!button.hasAttribute('disabled')) {
     await act(async () => fireEvent.click(button))
@@ -69,6 +76,7 @@ async function runRestore(clipboard: string): Promise<void> {
 beforeEach(() => {
   calls.length = 0
   statRuntimePath.mockRejectedValue(new Error('ENOENT'))
+  readRuntimeFileContent.mockResolvedValue({ content: 'old', isBinary: false })
   readRuntimeDirectory.mockImplementation(async (_c: unknown, dir: string) =>
     dir === '/f' ? [{ name: 'git-alias', isDirectory: true, isSymlink: true }] : []
   )
@@ -107,6 +115,16 @@ describe('useClipcodeRestore', () => {
       dir === '/f' ? [{ name: 'README.md', isDirectory: false, isSymlink: false }] : []
     )
     await runRestore('// file: [NEW] README.md/child.ts\nx\n// file: [NEW] ok.txt\nok\n')
+    expect(calls).toEqual(['quiesce folder-1:ok.txt', 'write /f/ok.txt', 'notify folder-1:ok.txt'])
+  })
+
+  it('overwrites an existing UTF-8 file but never a non-UTF-8 one', async () => {
+    statRuntimePath.mockResolvedValue({ isDirectory: false, size: 4, mtime: 0 })
+    readRuntimeFileContent.mockImplementation(async ({ filePath }: { filePath: string }) => ({
+      content: filePath === '/f/latin1.txt' ? 'caf\uFFFD' : 'old',
+      isBinary: false
+    }))
+    await runRestore('// file: latin1.txt\ncafé\n// file: ok.txt\nnew\n', { overwrite: true })
     expect(calls).toEqual(['quiesce folder-1:ok.txt', 'write /f/ok.txt', 'notify folder-1:ok.txt'])
   })
 

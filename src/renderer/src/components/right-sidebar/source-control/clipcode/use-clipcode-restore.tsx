@@ -9,7 +9,7 @@ import {
   createRuntimePath,
   writeRuntimeFile
 } from '@/runtime/runtime-file-mutation-client'
-import { isMissingRuntimePathError, statRuntimePath } from '@/runtime/runtime-file-metadata-client'
+import { statRuntimePath } from '@/runtime/runtime-file-metadata-client'
 import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
 import {
   notifyEditorExternalFileChange,
@@ -20,12 +20,12 @@ import {
   captureFileExplorerOperationGuard,
   getFileExplorerOperationOwner
 } from '../../file-explorer-operation-owner'
+import type { RestoreDirectoryCache } from './clipcode-restore-path-guard'
 import {
-  findRestorePathObstacle,
-  restorePathCrossesSymlink,
-  type RestoreDirectoryCache,
-  type RestorePathObstacle
-} from './clipcode-restore-path-guard'
+  isRestorePathBlocked,
+  readCandidateState,
+  readTargetState
+} from './clipcode-restore-target-state'
 import { CLIPCODE_DEFAULTS, extractSourceRoot, parseClipboard } from './clipcode-clipboard-format'
 import {
   ClipcodeRestorePreviewDialog,
@@ -44,62 +44,6 @@ type RestoreSession = {
   context: RuntimeFileOperationArgs
   assertCurrent: () => unknown
   folderPath: string
-}
-
-async function readTargetState(
-  context: RuntimeFileOperationArgs,
-  absolutePath: string
-): Promise<ClipcodeTargetState> {
-  try {
-    return (await statRuntimePath(context, absolutePath)).isDirectory ? 'directory' : 'file'
-  } catch (error) {
-    if (isMissingRuntimePathError(error)) {
-      return 'missing'
-    }
-    throw error
-  }
-}
-
-// Fail closed: a path that crosses a symlink, or cannot be listed on the host, is never written.
-async function isRestorePathBlocked(
-  context: RuntimeFileOperationArgs,
-  root: string,
-  relativePath: string,
-  cache: RestoreDirectoryCache
-): Promise<boolean> {
-  try {
-    return await restorePathCrossesSymlink(context, root, relativePath, cache)
-  } catch {
-    return true
-  }
-}
-
-// Why: one bad target (ENOTDIR, EACCES, a host that cannot list) must skip only that entry, not abort the whole restore.
-async function readCandidateState(
-  context: RuntimeFileOperationArgs,
-  root: string,
-  relativePath: string,
-  cache: RestoreDirectoryCache
-): Promise<ClipcodeTargetState> {
-  let obstacle: RestorePathObstacle | null
-  try {
-    obstacle = await findRestorePathObstacle(context, root, relativePath, cache)
-  } catch {
-    return 'blocked'
-  }
-  if (obstacle === 'symlink') {
-    return 'blocked'
-  }
-  if (obstacle === 'parentIsFile') {
-    return 'parentIsFile'
-  }
-  try {
-    return await readTargetState(context, joinPath(root, relativePath))
-  } catch (error) {
-    return /\bENOTDIR\b/.test(String(readIpcErrorMessage(error) ?? error))
-      ? 'parentIsFile'
-      : 'unreadable'
-  }
 }
 
 /** Paste & Restore for a folder workspace: reads the clipboard, previews the plan, then writes through the file explorer's owner route. */
