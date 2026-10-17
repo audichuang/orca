@@ -14781,7 +14781,9 @@
             "7b1c4e9a02": "Ouvrir le commit dans le navigateur",
             "8c2d5fab13": "Copier le hash du commit",
             "9d3e60bc24": "Copier le message de commit",
-            "ae4f71cd35": "Expliquer les modifications"
+            "ae4f71cd35": "Expliquer les modifications",
+            "copyFullSource": "Copier la source complète",
+            "copyFullSourceMany": "Copier la source complète ({{value0}} commits)"
           },
           "pull": {
             "policy": {
@@ -14943,6 +14945,24 @@
                 }
               }
             }
+          },
+          "GitHistoryGraph": {
+            "allBranches": "Toutes les branches",
+            "branchCount": "{{value0}} branches",
+            "currentBranch": "Branche actuelle",
+            "branchFilter": "Filtre de branches",
+            "searchBranches": "Rechercher des branches...",
+            "scope": "Afficher",
+            "sources": "Sources",
+            "localBranches": "Branches locales",
+            "branches": "Branches",
+            "loadingBranches": "Chargement des branches...",
+            "hostTooOld": "L'hôte de ce dépôt utilise une ancienne version d'Orca qui n'affiche que la branche actuelle.",
+            "branchesFailed": "Impossible de charger les branches",
+            "remote": "distante",
+            "searchCommits": "Rechercher des commits (author: path:)",
+            "searchCommitsLabel": "Rechercher des commits",
+            "loadMore": "Charger plus de commits"
           }
         }
       },
