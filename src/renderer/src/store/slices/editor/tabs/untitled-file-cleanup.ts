@@ -3,6 +3,8 @@ import type { OpenFile } from '../types/open-file'
 import { mayShareEditorBackingFile } from '../file-ids/editor-file-ids'
 import { findWorktreeById } from '../../worktree-helpers'
 import { getEditorFileOperationContext } from '@/lib/editor-file-operation-owner'
+import { relativePathInsideRoot } from '../../../../../../shared/cross-platform-path'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { getDiskBaselineSignature } from '../../../../../../shared/disk-baseline-signature'
 import {
   deleteRuntimePath,
@@ -31,12 +33,31 @@ export function deleteUntouchedUntitledFile(getState: () => AppState, file: Open
       if (stat.size !== 0 || hasRetainedView()) {
         return
       }
-      const deletedRemotely = await deleteRuntimeRelativePath(context, file.relativePath)
+      const ownerRelativePath = resolveTabOwnerRelativePath(state, file, worktree?.path ?? null)
+      const deletedRemotely =
+        ownerRelativePath !== null && (await deleteRuntimeRelativePath(context, ownerRelativePath))
       if (!deletedRemotely && !owningRuntimeEnvironmentId && !hasRetainedView()) {
         await deleteRuntimePath(context, file.filePath)
       }
     })
     .catch(() => {})
+}
+
+/** Path relative to the tab owner's root; a git-owned tab's relativePath is repo-relative instead. */
+export function resolveTabOwnerRelativePath(
+  state: Pick<AppState, 'folderWorkspaces'>,
+  file: Pick<OpenFile, 'gitWorktreeId' | 'worktreeId' | 'relativePath' | 'filePath'>,
+  worktreePath: string | null
+): string | null {
+  if (!file.gitWorktreeId || file.gitWorktreeId === file.worktreeId) {
+    return file.relativePath
+  }
+  const scope = parseWorkspaceKey(file.worktreeId)
+  const ownerRoot =
+    scope?.type === 'folder'
+      ? (state.folderWorkspaces?.find((w) => w.id === scope.folderWorkspaceId)?.folderPath ?? null)
+      : worktreePath
+  return ownerRoot ? relativePathInsideRoot(ownerRoot, file.filePath) : null
 }
 
 const EMPTY_DISK_SIGNATURE = getDiskBaselineSignature('')

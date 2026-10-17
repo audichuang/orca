@@ -14067,7 +14067,7 @@
                   "action": {
                     "bar": {
                       "8a434c829f": "复制完整源码",
-                      "4139bc5679": "清除選取"
+                      "4139bc5679": "清除选择"
                     }
                   }
                 }
@@ -14083,7 +14083,7 @@
                         "efd34a4169": "{{value0}} 的变更列表已截断，复制内容不完整。",
                         "d98e7b731c": "复制所有变更",
                         "da953a696f": "粘贴并还原",
-                        "5de321918e": "Hidden worktrees under this folder are not included ({{value0}}).",
+                        "5de321918e": "此文件夹下的隐藏工作树未包含在内（{{value0}}）。",
                         "ab32287003": "代码仓库"
                       }
                     }
@@ -14100,7 +14100,9 @@
                       "7828c565da": "（{{value0}} 个因超出大小限制被跳过）",
                       "65b422bbd1": "已复制 {{value0}} 个 Git 文件",
                       "7c6daaf4fa": "复制完整源码失败",
-                      "9c3f952874": "{{value0}} 个 Git 文件无法读取。"
+                      "9c3f952874": "{{value0}} 个 Git 文件无法读取。",
+                      "binarySkipped": "（{{value0}} 个二进制文件已跳过）",
+                      "onlyBinarySkipped": "没有可复制的内容：已跳过 {{value0}} 个二进制文件。"
                     }
                   },
                   "restore": {
@@ -14116,13 +14118,16 @@
                         "80224f9095": "覆盖已有文件",
                         "677bf0ade9": "取消",
                         "c0b1b53e49": "还原",
-                        "9bd78385ce": "unsafe path",
-                        "85d6d805ca": "outside the folder",
-                        "67e63b0749": "already absent",
-                        "becf17b643": "is a folder",
+                        "9bd78385ce": "路径不安全",
+                        "85d6d805ca": "位于文件夹之外",
+                        "67e63b0749": "已不存在",
+                        "becf17b643": "是文件夹",
                         "4acb11ed21": "复制时已跳过内容",
                         "ef509f9991": ".git 受保护",
-                        "1f409f3dd6": "路径经过符号链接"
+                        "1f409f3dd6": "路径经过符号链接",
+                        "parentIsFile": "上层路径是文件",
+                        "targetUnreadable": "无法检查现有文件",
+                        "caseConflict": "路径相同但大小写不同"
                       }
                     }
                   }
