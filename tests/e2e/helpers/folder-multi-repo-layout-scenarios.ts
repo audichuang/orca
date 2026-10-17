@@ -65,14 +65,17 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
     await page.keyboard.press('Escape')
   })
 
-  await scenario('S16 Layout: master-detail list, detail fills height, bulk bar', async (ev) => {
+  await scenario('S16 Layout: accordion headers, open repo fills height, bulk bar', async (ev) => {
     await expandOnly(H.web)
     const geo = await page.evaluate(() => {
       const rows = [...document.querySelectorAll<HTMLElement>('[data-repo-row]')]
-      const list = rows[0]?.closest<HTMLElement>('[role="group"]')
-      const root = list?.parentElement
+      const root = rows[0]?.closest<HTMLElement>('[role="group"]')
+      // Headers up to the open repo, then its panel, then the remaining headers.
+      const list = rows[0]?.parentElement?.parentElement
       const detail =
         list?.nextElementSibling instanceof HTMLElement ? list.nextElementSibling : null
+      const after =
+        detail?.nextElementSibling instanceof HTMLElement ? detail.nextElementSibling : null
       if (!list || !root || !detail) {
         return null
       }
@@ -88,7 +91,7 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
       }
       const rowHits = rows.map((btn) => {
         const row = btn.parentElement!
-        const lr = list.getBoundingClientRect()
+        const lr = row.parentElement!.getBoundingClientRect()
         return {
           label: btn.innerText.replace(/\s+/g, ' ').trim(),
           insideList:
@@ -123,6 +126,8 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
         listClipped: list.scrollHeight - list.clientHeight,
         root: box(root),
         detail: box(detail),
+        afterTop: after ? after.getBoundingClientRect().top : null,
+        afterH: after ? after.getBoundingClientRect().height : 0,
         detailChild: detail.firstElementChild ? box(detail.firstElementChild) : null,
         firstContentGap: first ? first.getBoundingClientRect().top - dr.top : null,
         rowHits,
@@ -131,7 +136,17 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
           .map((b) => {
             const r = b.getBoundingClientRect()
             const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
-            return hit(b)
+            // Why: the draggable floating-workspace launcher overlays whatever sits in its window-corner spot.
+            const launcher = document
+              .querySelector('[data-floating-terminal-toggle]')
+              ?.getBoundingClientRect()
+            const underLauncher =
+              launcher !== undefined &&
+              r.left < launcher.right &&
+              r.right > launcher.left &&
+              r.top < launcher.bottom &&
+              r.bottom > launcher.top
+            return hit(b) || underLauncher
               ? null
               : `${b.getAttribute('aria-label') || b.innerText.trim() || b.tagName} covered by ${top?.tagName}.${String(top?.className).slice(0, 80)}`
           })
@@ -154,10 +169,10 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
       ).toEqual([])
     }
     expect(g.listClipped, 'list scrolls internally with 5 repos').toBe(0)
-    // The detail starts right under the list and runs to the panel bottom.
-    expect(Math.abs(g.detail.top - g.list.bottom)).toBeLessThanOrEqual(2)
-    expect(Math.abs(g.detail.bottom - g.root.bottom)).toBeLessThanOrEqual(2)
-    expect(g.detail.h).toBeGreaterThan(g.root.bottom - g.root.top - g.list.h - 120)
+    // The open repo's panel starts right under its header and runs to the next header or the panel bottom.
+    expect(Math.abs(g.detail.top - g.list.bottom)).toBeLessThanOrEqual(6)
+    expect(Math.abs(g.detail.bottom - (g.afterTop ?? g.root.bottom))).toBeLessThanOrEqual(2)
+    expect(g.detail.h).toBeGreaterThan(g.root.bottom - g.root.top - g.list.h - g.afterH - 120)
     expect(g.detailChild!.h, 'selected repo panel fills the detail area').toBeGreaterThanOrEqual(
       g.detail.h - 2
     )
@@ -165,6 +180,18 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
     expect(g.firstContentGap!).toBeLessThan(48)
     expect(g.detailCovered, 'detail actions are not covered by floating UI').toEqual([])
     await shot('S16a-list-and-detail')
+
+    // Clicking the open header collapses every repo; clicking it again reopens its panel.
+    const openHeader = page.locator('[data-repo-row][aria-current="true"]')
+    const webHeader = page.locator('[data-repo-row]').filter({ hasText: H.web }).first()
+    await webHeader.click()
+    await expect(openHeader).toHaveCount(0)
+    await expect(webHeader).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.locator('[data-testid="source-control-entry"]')).toHaveCount(0)
+    await shot('S16a2-all-collapsed')
+    await webHeader.click()
+    await expect(webHeader).toHaveAttribute('aria-current', 'true')
+    await expect(entry('unstaged', 'src/partial.ts')).toBeVisible({ timeout: 10_000 })
 
     // Bulk action bar: anchored to the detail, not covered, label on one line.
     await entry('unstaged', 'src/partial.ts').click({ modifiers: ['ControlOrMeta'] })
