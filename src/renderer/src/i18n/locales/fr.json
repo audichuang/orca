@@ -14235,7 +14235,8 @@
                         "1f409f3dd6": "le chemin passe par un lien symbolique",
                         "parentIsFile": "un dossier parent est un fichier",
                         "targetUnreadable": "impossible de vérifier le fichier existant",
-                        "caseConflict": "même chemin avec une casse différente"
+                        "caseConflict": "même chemin avec une casse différente",
+                        "nonUtf8Target": "le fichier existant n'est pas en UTF-8"
                       }
                     }
                   }
