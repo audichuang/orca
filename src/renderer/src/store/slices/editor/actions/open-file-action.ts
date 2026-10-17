@@ -12,18 +12,20 @@ import {
 } from '../focus/editor-focus-reveal'
 import { applyOpenFileToState, type OpenFileApplyScratch } from './open-file-apply'
 import { afterPendingTab, pendingTabGroupId } from '@/runtime/layout-owner-pending-tabs'
+import { withFolderFileGitOwner } from '../git/folder-file-git-owner'
 
 export function createOpenFileAction(
   set: EditorSet,
   get: EditorGet
 ): Pick<EditorSlice, 'openFile' | 'openFileForLink'> {
   const open = (
-    file: Omit<OpenFile, 'id' | 'isDirty'>,
+    requestedFile: Omit<OpenFile, 'id' | 'isDirty'>,
     options: OpenFileOptions | undefined,
     linkIntent: EditorOpenLinkIntent | null,
     /** The view once it is drawn; null when none was. */
     onShown?: (result: EditorOpenResult | null) => void
   ): { fileId: string; result: EditorOpenResult | null } => {
+    const file = withFolderFileGitOwner(get(), requestedFile)
     const editorItemWorktreeId = file.worktreeId
     const scratch: OpenFileApplyScratch = {
       editorItemFileId: file.filePath,

@@ -38,7 +38,8 @@ export type IGitProvider = {
     filePath: string,
     staged: boolean,
     compareAgainstHead?: boolean,
-    oldPath?: string
+    oldPath?: string,
+    skipRenderLimit?: boolean
   ): Promise<GitDiffResult>
   stageFile(worktreePath: string, filePath: string): Promise<void>
   resolveConflict(
