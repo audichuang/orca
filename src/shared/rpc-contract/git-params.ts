@@ -54,7 +54,8 @@ export const GitResolveConflict = GitFilePath.extend({
 export const GitDiff = GitFilePath.extend({
   staged: z.boolean(),
   compareAgainstHead: z.boolean().optional(),
-  oldPath: z.string().optional()
+  oldPath: z.string().optional(),
+  skipRenderLimit: z.boolean().optional()
 })
 
 export const GitBranchCompare = WorktreeSelector.extend({

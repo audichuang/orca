@@ -70,6 +70,7 @@ export const gitApi = {
     staged: boolean
     compareAgainstHead?: boolean
     oldPath?: string
+    skipRenderLimit?: boolean
     connectionId?: string
     wakeWslDistro?: boolean
   }) => ipcRenderer.invoke('git:diff', args),

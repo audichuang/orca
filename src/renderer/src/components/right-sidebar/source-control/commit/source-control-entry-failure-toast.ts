@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { readIpcErrorMessage } from '@/lib/ipc-error'
 import { useAppStore } from '@/store'
+import { readGitCommandFailureMessage } from './git-command-failure-message'
 
 export type SourceControlEntryOperation = 'stage' | 'unstage' | 'discard'
 
@@ -80,9 +80,11 @@ export function showSourceControlEntryFailureToast({
   const isActiveWorktree = useAppStore.getState().activeWorktreeId === shownIn
   const title = entryFailureTitle(operation, filePath, deletesFile)
   const offerRetry = Boolean(onRetry) && isActiveWorktree
+  // Why: a folder workspace lists several repos with the same file names, so always say which repo failed.
+  const namesRepo = !isActiveWorktree || Boolean(foregroundWorkspaceId)
   entryFailureSlotOwner = { worktreeId }
   toast.error(
-    isActiveWorktree || !worktreeName
+    !namesRepo || !worktreeName
       ? title
       : translate(
           'auto.components.right.sidebar.SourceControl.entryFailedInWorkspace',
@@ -91,7 +93,7 @@ export function showSourceControlEntryFailureToast({
         ),
     {
       id: ENTRY_FAILURE_TOAST_ID,
-      description: readIpcErrorMessage(error),
+      description: readGitCommandFailureMessage(error),
       // Allow time to read the path and reach Retry before Sonner dismisses the toast.
       duration: offerRetry ? 10000 : undefined,
       action:
