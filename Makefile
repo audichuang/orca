@@ -147,12 +147,17 @@ clean:
 # First-time full path: deps + native helper + dmg + open.
 all: setup dmg
 
-# Fork release dmg (arm64, ad-hoc signed, auto-update off). Usage: make fork-dmg FORK_VERSION=1.4.227-fork.1
+# Fork release dmg (arm64, self-signed, auto-update off). Usage: make fork-dmg FORK_VERSION=1.4.227-fork.1
+# The identity's p12 is in 1Password (Agent vault, "Orca Fork Code Signing"); FORK_SIGN_IDENTITY=- builds ad-hoc.
+FORK_SIGN_IDENTITY ?= Orca Fork Code Signing
 fork-dmg: computer-use
 	@test -n "$(FORK_VERSION)" || (echo "FORK_VERSION is required, e.g. 1.4.227-fork.1" && exit 1)
+	@test "$(FORK_SIGN_IDENTITY)" = "-" || security find-identity -v -p codesigning | grep -q "\"$(FORK_SIGN_IDENTITY)\"" || \
+		(echo "Signing identity '$(FORK_SIGN_IDENTITY)' not in keychain; import it from 1Password or pass FORK_SIGN_IDENTITY=-" && exit 1)
 	eval "$$(node -p "require('./package.json').scripts['build:desktop'].replace('pnpm run typecheck && ', '')")"
 	pnpm run ensure:electron-runtime
-	ORCA_FORK_VERSION=$(FORK_VERSION) pnpm exec electron-builder --config config/electron-builder.fork.config.cjs --mac --arm64
+	ORCA_FORK_VERSION=$(FORK_VERSION) ORCA_FORK_SIGN_IDENTITY="$(FORK_SIGN_IDENTITY)" \
+		$(if $(filter -,$(FORK_SIGN_IDENTITY)),,CSC_NAME="$(FORK_SIGN_IDENTITY)") pnpm exec electron-builder --config config/electron-builder.fork.config.cjs --mac --arm64
 
 # Upstream release the fork sits on (fork tags excluded). Override: make fork-check FORK_BASE=v1.4.229
 FORK_BASE ?= $(shell git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' HEAD)
