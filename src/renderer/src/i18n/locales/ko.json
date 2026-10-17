@@ -14072,8 +14072,8 @@
                 "bulk": {
                   "action": {
                     "bar": {
-                      "8a434c829f": "Copy Full Source",
-                      "4139bc5679": "Clear selection"
+                      "8a434c829f": "전체 소스 복사",
+                      "4139bc5679": "선택 해제"
                     }
                   }
                 }
@@ -14083,14 +14083,14 @@
                   "multi": {
                     "repo": {
                       "panel": {
-                        "4c62351467": "No imported Git repositories under this folder. Add the repositories inside it to Orca to see their changes here.",
-                        "a044a830f1": "Refresh all repositories",
-                        "c023ba6838": "This folder sits inside an imported repository, so changes outside the folder are listed too.",
-                        "efd34a4169": "Changes list for {{value0}} is truncated; copy is incomplete.",
-                        "d98e7b731c": "Copy all changes",
-                        "da953a696f": "Paste & Restore",
-                        "5de321918e": "Hidden worktrees under this folder are not included ({{value0}}).",
-                        "ab32287003": "Repositories"
+                        "4c62351467": "이 폴더에 가져온 Git 저장소가 없습니다. 폴더 안의 저장소를 Orca에 추가하면 여기에서 변경 사항을 볼 수 있습니다.",
+                        "a044a830f1": "모든 저장소 새로 고침",
+                        "c023ba6838": "이 폴더는 가져온 저장소 안에 있으므로 폴더 밖의 변경 사항도 함께 표시됩니다.",
+                        "efd34a4169": "{{value0}}의 변경 목록이 잘려 복사가 완전하지 않습니다.",
+                        "d98e7b731c": "모든 변경 사항 복사",
+                        "da953a696f": "붙여넣기 및 복원",
+                        "5de321918e": "이 폴더의 숨겨진 워크트리는 포함되지 않습니다({{value0}}).",
+                        "ab32287003": "저장소"
                       }
                     }
                   }
@@ -14100,35 +14100,40 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}} unreadable)",
-                      "e6cdc3a753": "Over {{value0}} tokens.",
-                      "21758e255e": "No Git changes found to copy.",
-                      "7828c565da": "({{value0}} skipped: size exceeded)",
-                      "65b422bbd1": "{{value0}} Git file(s) copied",
-                      "7c6daaf4fa": "Copy Full Source failed",
-                      "9c3f952874": "{{value0}} Git file(s) could not be read."
+                      "2749202819": "({{value0}}개 읽을 수 없음)",
+                      "e6cdc3a753": "{{value0}} 토큰을 초과합니다.",
+                      "21758e255e": "복사할 Git 변경 사항이 없습니다.",
+                      "7828c565da": "({{value0}}개 건너뜀: 크기 초과)",
+                      "65b422bbd1": "Git 파일 {{value0}}개를 복사했습니다",
+                      "7c6daaf4fa": "전체 소스 복사 실패",
+                      "9c3f952874": "Git 파일 {{value0}}개를 읽을 수 없습니다.",
+                      "binarySkipped": "({{value0}}개 건너뜀: 바이너리)",
+                      "onlyBinarySkipped": "복사할 내용이 없습니다: 바이너리 파일 {{value0}}개를 건너뛰었습니다."
                     }
                   },
                   "restore": {
                     "preview": {
                       "dialog": {
-                        "2c06a4e179": "Paste & Restore",
-                        "87832cd30d": "Files from the clipboard will be written into this folder.",
-                        "813199296f": "Adjust paths ({{value0}})",
-                        "9a421f14d8": "Create",
-                        "d469ff3b81": "Overwrite",
-                        "9cf3526c1f": "Delete",
-                        "0d87b3b39d": "Skip",
-                        "80224f9095": "Overwrite existing files",
-                        "677bf0ade9": "Cancel",
-                        "c0b1b53e49": "Restore",
-                        "9bd78385ce": "unsafe path",
-                        "85d6d805ca": "outside the folder",
-                        "67e63b0749": "already absent",
-                        "becf17b643": "is a folder",
-                        "4acb11ed21": "content was skipped when copied",
-                        "ef509f9991": ".git is protected",
-                        "1f409f3dd6": "path goes through a symlink"
+                        "2c06a4e179": "붙여넣기 및 복원",
+                        "87832cd30d": "클립보드의 파일이 이 폴더에 기록됩니다.",
+                        "813199296f": "경로 조정({{value0}})",
+                        "9a421f14d8": "생성",
+                        "d469ff3b81": "덮어쓰기",
+                        "9cf3526c1f": "삭제",
+                        "0d87b3b39d": "건너뛰기",
+                        "80224f9095": "기존 파일 덮어쓰기",
+                        "677bf0ade9": "취소",
+                        "c0b1b53e49": "복원",
+                        "9bd78385ce": "안전하지 않은 경로",
+                        "85d6d805ca": "폴더 밖",
+                        "67e63b0749": "이미 없음",
+                        "becf17b643": "폴더임",
+                        "4acb11ed21": "복사할 때 내용이 생략됨",
+                        "ef509f9991": ".git은 보호됨",
+                        "1f409f3dd6": "경로가 심볼릭 링크를 거침",
+                        "parentIsFile": "상위 폴더가 파일임",
+                        "targetUnreadable": "기존 파일을 확인할 수 없음",
+                        "caseConflict": "대소문자만 다른 같은 경로"
                       }
                     }
                   }
@@ -14136,12 +14141,12 @@
                 "use": {
                   "clipcode": {
                     "restore": {
-                      "b124e9c64e": "Clipboard is empty or does not contain text.",
-                      "1847420a23": "No Snipcode file headers found in clipboard.",
-                      "af5c90f593": "Paste & Restore failed",
-                      "ae1ec38ef1": "Created {{value0}}, overwritten {{value1}}, deleted {{value2}}, skipped {{value3}}.",
-                      "19a6f378aa": "...and {{value0}} more",
-                      "c9af35dc2d": "Failed {{value0}}."
+                      "b124e9c64e": "클립보드가 비어 있거나 텍스트가 없습니다.",
+                      "1847420a23": "클립보드에서 Snipcode 파일 헤더를 찾을 수 없습니다.",
+                      "af5c90f593": "붙여넣기 및 복원 실패",
+                      "ae1ec38ef1": "생성 {{value0}}, 덮어쓰기 {{value1}}, 삭제 {{value2}}, 건너뜀 {{value3}}.",
+                      "19a6f378aa": "…외 {{value0}}개",
+                      "c9af35dc2d": "실패 {{value0}}개."
                     }
                   }
                 }
@@ -14150,14 +14155,14 @@
                 "entry": {
                   "context": {
                     "menu": {
-                      "9137d88b9f": "Copy Full Source",
-                      "ce8235a6a4": "Open to the Side"
+                      "9137d88b9f": "전체 소스 복사",
+                      "ce8235a6a4": "옆에 열기"
                     }
                   }
                 },
                 "uncommitted": {
                   "sections": {
-                    "1a59d5a05b": "Copy Full Source"
+                    "1a59d5a05b": "전체 소스 복사"
                   }
                 }
               }
