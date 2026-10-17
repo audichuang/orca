@@ -41,10 +41,10 @@ type PendingDeleteTimer = {
 }
 
 export function buildEditorExternalWatchEventHandler(
-  findTarget: (
+  findTargets: (
     worktreePath: string,
     runtimeEnvironmentId: string | null
-  ) => EditorExternalWatchTarget | undefined
+  ) => EditorExternalWatchTarget | readonly EditorExternalWatchTarget[] | undefined
 ): {
   handleFsChanged: (payload: FsChangedPayload, runtimeEnvironmentId?: string | null) => void
   dispose: () => void
@@ -60,19 +60,29 @@ export function buildEditorExternalWatchEventHandler(
     payload: FsChangedPayload,
     runtimeEnvironmentId: string | null = null
   ): void => {
-    const target = findTarget(payload.worktreePath, runtimeEnvironmentId)
-    if (!target) {
+    const found = findTargets(payload.worktreePath, runtimeEnvironmentId)
+    // Why: several workspaces can watch one root (two folder workspaces on a folder); each owns its own tabs.
+    const targets = found === undefined ? [] : Array.isArray(found) ? found : [found]
+    if (targets.length === 0) {
       return
     }
     // Why: this app-level hook owns watcher subscriptions; other consumers listen here so they don't fight over watch/unwatch ownership.
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
       window.dispatchEvent(
         new CustomEvent<WorktreeFileChangeEventDetail>(ORCA_WORKTREE_FILE_CHANGE_EVENT, {
-          detail: { payload, runtimeEnvironmentId: target.runtimeEnvironmentId }
+          detail: { payload, runtimeEnvironmentId: targets[0].runtimeEnvironmentId }
         })
       )
     }
+    for (const target of targets) {
+      handleTargetFsChanged(payload, target)
+    }
+  }
 
+  const handleTargetFsChanged = (
+    payload: FsChangedPayload,
+    target: EditorExternalWatchTarget
+  ): void => {
     // Why: one batch index keeps local WSL alias normalization out of event×tab loops.
     const openFilesAtStart = useAppStore.getState().openFiles
     const batchPaths = indexEditorExternalWatchBatchPaths(payload, openFilesAtStart, {

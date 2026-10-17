@@ -10,6 +10,7 @@ import {
 } from './editor-external-watch-targets'
 import { buildEditorExternalWatchEventHandler } from './editor-external-watch-event-reconciliation'
 import { verifyLatchedEditorMoveDestinations } from './editor-external-watch-disk-verification'
+import { selectSameHostWatchTargets } from './editor-external-watch-same-root-targets'
 
 function warnExternalWatchFailure(target: EditorExternalWatchTarget, err: unknown): void {
   console.warn('[filesystem-watch] failed to watch worktree', {
@@ -81,11 +82,13 @@ export function useEditorExternalWatch(): void {
     const remoteWatchUnsubs = remoteWatchUnsubsRef.current
     const { handleFsChanged, dispose } = buildEditorExternalWatchEventHandler(
       (worktreePath, runtimeEnvironmentId) =>
-        targetsRef.current.find(
-          (target) =>
-            normalizeRuntimePathForComparison(target.worktreePath) ===
-              normalizeRuntimePathForComparison(worktreePath) &&
-            target.runtimeEnvironmentId === runtimeEnvironmentId
+        selectSameHostWatchTargets(
+          targetsRef.current.filter(
+            (target) =>
+              normalizeRuntimePathForComparison(target.worktreePath) ===
+                normalizeRuntimePathForComparison(worktreePath) &&
+              target.runtimeEnvironmentId === runtimeEnvironmentId
+          )
         )
     )
     const unsubscribe = window.api.fs.onFsChanged((payload) => handleFsChanged(payload, null))

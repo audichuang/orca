@@ -115,4 +115,32 @@ describe('useFolderRepoStatusRefresh', () => {
     await mountAndRefresh()
     expect(refreshGitStatusForWorktree).not.toHaveBeenCalled()
   })
+
+  it('runs one more pass when a manual refresh lands mid-sweep', async () => {
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true
+    let release: () => void = () => undefined
+    refreshGitStatusForWorktree.mockImplementationOnce(
+      () => new Promise<undefined>((resolve) => (release = () => resolve(undefined)))
+    )
+    let trigger: () => Promise<void> = async () => undefined
+    function Harness(): null {
+      trigger = useFolderRepoStatusRefresh([wt], false)
+      return null
+    }
+    const root = createRoot(document.createElement('div'))
+    await act(async () => root.render(React.createElement(Harness)))
+    let first: Promise<void> = Promise.resolve()
+    let second: Promise<void> = Promise.resolve()
+    await act(async () => {
+      first = trigger()
+      second = trigger()
+    })
+    expect(refreshGitStatusForWorktree).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      release()
+      await Promise.all([first, second])
+    })
+    expect(refreshGitStatusForWorktree).toHaveBeenCalledTimes(2)
+    await act(async () => root.unmount())
+  })
 })

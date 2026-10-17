@@ -5,7 +5,7 @@ import type { TerminalTab } from '../../../../shared/terminal-tab-types'
 import { resolveTerminalTabTitle } from '../../../../shared/tab-title-resolution'
 import type { OpenFile } from '../../store/slices/editor'
 import { getEditorDisplayLabel } from '@/components/editor/editor-labels'
-import { normalizeRelativePath } from '@/lib/path'
+import { getEditorTabGitStatusKey } from './editor-tab-git-status'
 import { isVirtualEditorFile } from '@/store/slices/editor/tabs/editor-tab-content-type'
 import { getBrowserTabLabel } from './BrowserTab'
 import type { DropIndicator } from './drop-indicator'
@@ -59,14 +59,15 @@ export function resolveTerminalItemTab(
 }
 
 export function resolveEditorTabGitStatus(
-  file: Pick<OpenFile, 'mode' | 'relativePath'>,
+  file: Pick<OpenFile, 'mode' | 'relativePath'> &
+    Partial<Pick<OpenFile, 'worktreeId' | 'gitWorktreeId'>>,
   statusByRelativePath: Map<string, GitFileStatus>
 ): GitFileStatus | null {
   // Why: a virtual tab's relativePath is its title, which can collide with a real file's path.
   if (file.relativePath === 'All Changes' || isVirtualEditorFile(file)) {
     return null
   }
-  return statusByRelativePath.get(normalizeRelativePath(file.relativePath)) ?? null
+  return statusByRelativePath.get(getEditorTabGitStatusKey(file)) ?? null
 }
 
 export function getTabDragLabel(item: TabBarItem, generatedTitlesEnabled: boolean): string {
@@ -281,7 +282,7 @@ export function buildTabStripLayoutKey(
         isExpanded: expandedPaneByTabId[item.id] === true,
         status:
           item.type === 'editor'
-            ? (statusByRelativePath.get(normalizeRelativePath(item.data.relativePath)) ?? null)
+            ? (statusByRelativePath.get(getEditorTabGitStatusKey(item.data)) ?? null)
             : null
       })
     )

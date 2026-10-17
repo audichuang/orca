@@ -151,8 +151,20 @@ describe('showSourceControlEntryFailureToast', () => {
     storeState.activeWorktreeId = 'folder:f1'
     const onRetry = vi.fn()
     show({ worktreeId: 'repo-wt', foregroundWorkspaceId: 'folder:f1', onRetry })
-    expect(lastToast().title).toBe('Failed to stage “src/app.ts”')
+    // Why: several repos in one folder share file names, so the repo is always named.
+    expect(lastToast().title).toBe('Failed to stage “src/app.ts” in feature-a')
     clickRetry()
     expect(onRetry).toHaveBeenCalledTimes(1)
+  })
+
+  it('surfaces the git reason instead of the command line', () => {
+    show({
+      error: new Error(
+        "Error invoking remote method 'git:stage': Error: Command failed: git add -- :(literal)src/app.ts\nfatal: Unable to create '/r/.git/index.lock': File exists.\n\nAnother git process seems to be running"
+      )
+    })
+    expect(lastToast().options.description).toBe(
+      "fatal: Unable to create '/r/.git/index.lock': File exists."
+    )
   })
 })
