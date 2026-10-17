@@ -1,0 +1,381 @@
+// Fork-only: scope / branch filter and git-side search for the Commits graph.
+import React, { useEffect, useMemo, useState } from 'react'
+import { Check, ChevronsUpDown, GitBranch, Search } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ImeInput } from '@/lib/ime-text-field'
+import { cn } from '@/lib/utils'
+import { translate } from '@/i18n/i18n'
+import type { GitHistoryResult } from '../../../../../../shared/git-history'
+import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
+import { getConnectionId } from '@/lib/connection-context'
+import { getRuntimeGitHistory } from '@/runtime/runtime-git-status-client'
+import { requireGitOwnerTarget } from '../../worktree-git-owner-target'
+import {
+  GIT_HISTORY_GRAPH_MAX_LIMIT,
+  type GitHistoryGraphApplied
+} from '../../../../../../shared/git-history-graph-query-types'
+import {
+  toGitHistoryGraphRequest,
+  updateGitHistoryGraphFilter,
+  useGitHistoryGraphFilter,
+  type GitHistoryGraphFilter
+} from './git-history-graph-filter'
+
+const SEARCH_DEBOUNCE_MS = 350
+
+type RefOptions =
+  | { status: 'idle' | 'loading' }
+  | { status: 'ready'; applied: GitHistoryGraphApplied }
+  | { status: 'unsupported' | 'error' }
+
+function scopeLabel(filter: GitHistoryGraphFilter, applied: GitHistoryGraphApplied | null): string {
+  if (filter.scope === 'all') {
+    return translate('auto.components.right.sidebar.GitHistoryGraph.allBranches', 'All branches')
+  }
+  if (filter.scope === 'refs') {
+    if (filter.refs.length === 1) {
+      const ref = applied?.refs.find((option) => option.fullName === filter.refs[0])
+      return ref?.name ?? filter.refs[0].replace(/^refs\/(heads|remotes)\//, '')
+    }
+    return translate(
+      'auto.components.right.sidebar.GitHistoryGraph.branchCount',
+      '{{value0}} branches',
+      {
+        value0: filter.refs.length
+      }
+    )
+  }
+  return translate('auto.components.right.sidebar.GitHistoryGraph.currentBranch', 'Current branch')
+}
+
+function hasRemote(filter: GitHistoryGraphFilter, remote: string): boolean {
+  return filter.remotes === 'all' || filter.remotes.includes(remote)
+}
+
+/** Lists branches and remotes on the repo's own host; null when that host predates the graph. */
+async function loadRefOptions(args: {
+  worktreeId: string
+  worktreePath: string
+  activeRepoTarget: RuntimeClientTarget | null
+}): Promise<GitHistoryGraphApplied | null> {
+  const result = await getRuntimeGitHistory(
+    {
+      // Why: route the read by the repo OWNER host, not the focused runtime.
+      target: requireGitOwnerTarget(args.activeRepoTarget),
+      worktreeId: args.worktreeId,
+      worktreePath: args.worktreePath,
+      connectionId: getConnectionId(args.worktreeId) ?? undefined
+    },
+    { limit: 1, graph: { mode: 'head', limit: 1 } }
+  )
+  return result.graph ?? null
+}
+
+export function GitHistoryGraphToolbar({
+  worktreeId,
+  worktreePath,
+  activeRepoTarget,
+  result
+}: {
+  worktreeId: string
+  worktreePath: string
+  activeRepoTarget: RuntimeClientTarget | null
+  result: GitHistoryResult | undefined
+}): React.JSX.Element {
+  const filter = useGitHistoryGraphFilter(worktreeId)
+  const [open, setOpen] = useState(false)
+  const [branchQuery, setBranchQuery] = useState('')
+  const [draftQuery, setDraftQuery] = useState(filter.query)
+  const [fetched, setFetched] = useState<RefOptions>({ status: 'idle' })
+  const refOptions: RefOptions = result?.graph
+    ? { status: 'ready', applied: result.graph }
+    : fetched
+  const applied = refOptions.status === 'ready' ? refOptions.applied : null
+
+  // Why: re-sync when another worktree's filter is shown in this same panel instance.
+  const [shownWorktreeId, setShownWorktreeId] = useState(worktreeId)
+  if (shownWorktreeId !== worktreeId) {
+    setShownWorktreeId(worktreeId)
+    setDraftQuery(filter.query)
+    setFetched({ status: 'idle' })
+  }
+
+  useEffect(() => {
+    if (draftQuery === filter.query) {
+      return
+    }
+    const timer = window.setTimeout(
+      () => updateGitHistoryGraphFilter(worktreeId, { query: draftQuery }),
+      SEARCH_DEBOUNCE_MS
+    )
+    return () => window.clearTimeout(timer)
+  }, [draftQuery, filter.query, worktreeId])
+
+  const handleOpenChange = (nextOpen: boolean): void => {
+    setOpen(nextOpen)
+    if (!nextOpen) {
+      setBranchQuery('')
+      return
+    }
+    if (refOptions.status === 'idle' || refOptions.status === 'error') {
+      setFetched({ status: 'loading' })
+      loadRefOptions({ worktreeId, worktreePath, activeRepoTarget })
+        .then((graph) =>
+          setFetched(graph ? { status: 'ready', applied: graph } : { status: 'unsupported' })
+        )
+        .catch(() => setFetched({ status: 'error' }))
+    }
+  }
+
+  const visibleRefs = useMemo(() => {
+    const needle = branchQuery.trim().toLowerCase()
+    const refs = applied?.refs ?? []
+    return needle ? refs.filter((ref) => ref.name.toLowerCase().includes(needle)) : refs
+  }, [applied, branchQuery])
+
+  const toggleRef = (fullName: string): void => {
+    const current = filter.scope === 'refs' ? filter.refs : []
+    const refs = current.includes(fullName)
+      ? current.filter((ref) => ref !== fullName)
+      : [...current, fullName]
+    updateGitHistoryGraphFilter(
+      worktreeId,
+      refs.length ? { scope: 'refs', refs } : { scope: 'head', refs: [] }
+    )
+  }
+
+  const toggleRemote = (remote: string): void => {
+    const remotes = applied?.remotes ?? []
+    const current = filter.remotes === 'all' ? remotes : filter.remotes
+    const next = current.includes(remote)
+      ? current.filter((name) => name !== remote)
+      : [...current, remote]
+    updateGitHistoryGraphFilter(worktreeId, { scope: 'all', remotes: next })
+  }
+
+  // Why: an older host drops `graph` and answers with plain history; say so instead of a silent current-branch list.
+  const hostIsTooOld =
+    Boolean(toGitHistoryGraphRequest(filter)) && Boolean(result) && !result?.graph
+  const check = (on: boolean): React.JSX.Element => (
+    <Check className={cn('size-3 text-muted-foreground', on ? 'opacity-70' : 'opacity-0')} />
+  )
+
+  return (
+    <div className="flex flex-col gap-1 px-3 pb-1.5">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <Popover open={open} onOpenChange={handleOpenChange}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              role="combobox"
+              aria-expanded={open}
+              aria-label={translate(
+                'auto.components.right.sidebar.GitHistoryGraph.branchFilter',
+                'Branch filter'
+              )}
+              className="max-w-[45%] shrink-0 justify-between"
+            >
+              <GitBranch className="size-3 shrink-0" />
+              <span className="truncate">{scopeLabel(filter, applied)}</span>
+              <ChevronsUpDown className="size-3 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-[min(300px,calc(100vw-1rem))]">
+            <Command shouldFilter={false}>
+              <CommandInput
+                placeholder={translate(
+                  'auto.components.right.sidebar.GitHistoryGraph.searchBranches',
+                  'Search branches...'
+                )}
+                value={branchQuery}
+                onValueChange={setBranchQuery}
+              />
+              <CommandList>
+                <CommandGroup
+                  heading={translate('auto.components.right.sidebar.GitHistoryGraph.scope', 'Show')}
+                >
+                  <CommandItem
+                    value="scope-head"
+                    onSelect={() =>
+                      updateGitHistoryGraphFilter(worktreeId, { scope: 'head', refs: [] })
+                    }
+                  >
+                    {check(filter.scope === 'head')}
+                    {translate(
+                      'auto.components.right.sidebar.GitHistoryGraph.currentBranch',
+                      'Current branch'
+                    )}
+                  </CommandItem>
+                  <CommandItem
+                    value="scope-all"
+                    disabled={refOptions.status === 'unsupported'}
+                    onSelect={() =>
+                      updateGitHistoryGraphFilter(worktreeId, { scope: 'all', refs: [] })
+                    }
+                  >
+                    {check(filter.scope === 'all')}
+                    {translate(
+                      'auto.components.right.sidebar.GitHistoryGraph.allBranches',
+                      'All branches'
+                    )}
+                  </CommandItem>
+                </CommandGroup>
+                {filter.scope === 'all' && applied && (
+                  <CommandGroup
+                    heading={translate(
+                      'auto.components.right.sidebar.GitHistoryGraph.sources',
+                      'Sources'
+                    )}
+                  >
+                    <CommandItem
+                      value="source-local"
+                      onSelect={() =>
+                        updateGitHistoryGraphFilter(worktreeId, { local: !filter.local })
+                      }
+                    >
+                      {check(filter.local)}
+                      {translate(
+                        'auto.components.right.sidebar.GitHistoryGraph.localBranches',
+                        'Local branches'
+                      )}
+                    </CommandItem>
+                    {applied.remotes.map((remote) => (
+                      <CommandItem
+                        key={remote}
+                        value={`source-remote-${remote}`}
+                        onSelect={() => toggleRemote(remote)}
+                      >
+                        {check(hasRemote(filter, remote))}
+                        <span className="truncate">{remote}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+                <CommandGroup
+                  heading={translate(
+                    'auto.components.right.sidebar.GitHistoryGraph.branches',
+                    'Branches'
+                  )}
+                >
+                  {refOptions.status === 'loading' && (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                      {translate(
+                        'auto.components.right.sidebar.GitHistoryGraph.loadingBranches',
+                        'Loading branches...'
+                      )}
+                    </div>
+                  )}
+                  {(refOptions.status === 'unsupported' || refOptions.status === 'error') && (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                      {refOptions.status === 'unsupported'
+                        ? translate(
+                            'auto.components.right.sidebar.GitHistoryGraph.hostTooOld',
+                            'This repository host runs an older Orca that only shows the current branch.'
+                          )
+                        : translate(
+                            'auto.components.right.sidebar.GitHistoryGraph.branchesFailed',
+                            'Failed to load branches'
+                          )}
+                    </div>
+                  )}
+                  {visibleRefs.map((ref) => (
+                    <CommandItem
+                      key={ref.fullName}
+                      value={ref.fullName}
+                      onSelect={() => toggleRef(ref.fullName)}
+                    >
+                      {check(filter.scope === 'refs' && filter.refs.includes(ref.fullName))}
+                      <span className="min-w-0 flex-1 truncate">{ref.name}</span>
+                      {ref.category === 'remote branches' && (
+                        <span className="shrink-0 text-[10px] text-muted-foreground">
+                          {translate(
+                            'auto.components.right.sidebar.GitHistoryGraph.remote',
+                            'remote'
+                          )}
+                        </span>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        <div className="flex min-w-0 flex-1 items-center gap-1 rounded-md border border-input px-1.5">
+          <Search className="size-3 shrink-0 text-muted-foreground" />
+          <ImeInput
+            type="text"
+            value={draftQuery}
+            onChange={(event) => setDraftQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                setDraftQuery('')
+              }
+            }}
+            placeholder={translate(
+              'auto.components.right.sidebar.GitHistoryGraph.searchCommits',
+              'Search commits (author: path:)'
+            )}
+            aria-label={translate(
+              'auto.components.right.sidebar.GitHistoryGraph.searchCommitsLabel',
+              'Search commits'
+            )}
+            className="h-6 min-w-0 flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground/60"
+          />
+        </div>
+      </div>
+      {hostIsTooOld && (
+        <p className="text-[11px] text-muted-foreground">
+          {translate(
+            'auto.components.right.sidebar.GitHistoryGraph.hostTooOld',
+            'This repository host runs an older Orca that only shows the current branch.'
+          )}
+        </p>
+      )}
+    </div>
+  )
+}
+
+const LOAD_MORE_STEP = 100
+
+/** Grows the page without --skip, so lanes stay continuous across the whole list. */
+export function GitHistoryGraphLoadMore({
+  worktreeId,
+  result
+}: {
+  worktreeId: string
+  result: GitHistoryResult | undefined
+}): React.JSX.Element | null {
+  const filter = useGitHistoryGraphFilter(worktreeId)
+  if (!result?.hasMore || filter.limit >= GIT_HISTORY_GRAPH_MAX_LIMIT) {
+    return null
+  }
+  return (
+    <div className="px-3 py-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="xs"
+        className="w-full"
+        onClick={() =>
+          updateGitHistoryGraphFilter(worktreeId, {
+            limit: Math.min(GIT_HISTORY_GRAPH_MAX_LIMIT, result.items.length + LOAD_MORE_STEP)
+          })
+        }
+      >
+        {translate('auto.components.right.sidebar.GitHistoryGraph.loadMore', 'Load more commits')}
+      </Button>
+    </div>
+  )
+}
