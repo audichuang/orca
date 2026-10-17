@@ -17,13 +17,16 @@ import {
 } from '../../../../../../shared/git/history/git-history-graph'
 import { GitHistoryRow } from './git-history-row'
 import { GitHistoryCommitFiles, type GitHistoryCommitFilesState } from './git-history-commit-files'
-import {
-  GitHistoryCommitContextMenu,
-  type GitHistoryCommitAction
-} from './git-history-commit-context-menu'
-import type { SourceControlRowOpenEvent } from '../listing/split-open'
+import { commitFileTargets, type OpenCommitFileHandler } from './commit-file-sequence'
+import { GitHistoryCommitForkMenu } from './git-history-commit-fork-menu'
 import { translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
+import type { GitHistoryPanelSlots } from './git-history-panel-slots'
+import {
+  useGitHistoryCommitSelection,
+  type GitHistoryCommitActionHandler
+} from './use-git-history-commit-selection'
+import { GitHistorySelectableRow } from './git-history-selectable-row'
 
 export type GitHistoryPanelState =
   | { status: 'idle' | 'loading'; result?: GitHistoryResult; error?: string }
@@ -55,7 +58,8 @@ export function GitHistoryPanel({
   onOpenCommit,
   onLoadCommitFiles,
   onOpenCommitFile,
-  onCommitAction
+  onCommitAction,
+  ...slots
 }: {
   worktreeId?: string
   state: GitHistoryPanelState
@@ -64,13 +68,9 @@ export function GitHistoryPanel({
   onRefresh: () => void
   onOpenCommit?: (item: GitHistoryItem) => void
   onLoadCommitFiles?: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
-  onOpenCommitFile?: (
-    item: GitHistoryItem,
-    entry: GitBranchChangeEntry,
-    event?: SourceControlRowOpenEvent
-  ) => void
-  onCommitAction?: (action: GitHistoryCommitAction, item: GitHistoryItem) => void
-}): React.JSX.Element | null {
+  onOpenCommitFile?: OpenCommitFileHandler
+  onCommitAction?: GitHistoryCommitActionHandler
+} & GitHistoryPanelSlots): React.JSX.Element | null {
   const t = useTranslate()
   const result = state.result
   const viewModels = useMemo(() => {
@@ -90,6 +90,7 @@ export function GitHistoryPanel({
   }, [result])
 
   const loading = state.status === 'loading' || state.status === 'refreshing'
+  const selection = useGitHistoryCommitSelection(result)
   const count = result?.items.length ?? 0
   const [panelHeight, setPanelHeight] = useState(DEFAULT_GIT_HISTORY_PANEL_HEIGHT)
   const resizeSessionRef = useRef<GitHistoryResizeSession | null>(null)
@@ -267,7 +268,7 @@ export function GitHistoryPanel({
             {result && <span className="text-[10px] font-medium tabular-nums">{count}</span>}
             {result?.hasMore && <span className="text-[10px] font-medium">+</span>}
           </button>
-          {worktreeId && <GitGraphOpenButton worktreeId={worktreeId} />}
+          {slots.headerActions ?? (worktreeId && <GitGraphOpenButton worktreeId={worktreeId} />)}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -322,6 +323,7 @@ export function GitHistoryPanel({
           </Tooltip>
         </div>
       </div>
+      {!collapsed && slots.toolbar}
       {!collapsed && state.status === 'error' && !result && (
         <div
           className={cn(expandedBodyClassName, 'px-6 py-2 text-[11px] text-destructive')}
@@ -338,7 +340,8 @@ export function GitHistoryPanel({
           className={cn(expandedBodyClassName, 'px-6 py-2 text-[11px] text-muted-foreground')}
           style={expandedBodyStyle}
         >
-          {t('auto.components.right.sidebar.GitHistoryPanel.cf7cad58d2', 'No commits yet')}
+          {slots.emptyMessage ??
+            t('auto.components.right.sidebar.GitHistoryPanel.cf7cad58d2', 'No commits yet')}
         </div>
       )}
       {!collapsed && viewModels.length > 0 && (
@@ -353,13 +356,15 @@ export function GitHistoryPanel({
                 !isBoundaryNode && Boolean(onLoadCommitFiles) && Boolean(onOpenCommitFile)
               const isExpanded = canExpand && expanded.has(item.id)
               const row = (
-                <GitHistoryRow
-                  viewModel={viewModel}
-                  expanded={isExpanded}
-                  preserveRefIds={result?.baseRef ? [result.baseRef.id] : undefined}
-                  onOpenCommit={onOpenCommit}
-                  onToggleExpand={canExpand ? handleToggleExpand : undefined}
-                />
+                <GitHistorySelectableRow selection={selection} item={isBoundaryNode ? null : item}>
+                  <GitHistoryRow
+                    viewModel={viewModel}
+                    expanded={isExpanded}
+                    preserveRefIds={result?.baseRef ? [result.baseRef.id] : undefined}
+                    onOpenCommit={onOpenCommit}
+                    onToggleExpand={canExpand ? handleToggleExpand : undefined}
+                  />
+                </GitHistorySelectableRow>
               )
               return (
                 <div
@@ -372,7 +377,14 @@ export function GitHistoryPanel({
                   {onCommitAction && !isBoundaryNode ? (
                     <ContextMenu>
                       <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
-                      <GitHistoryCommitContextMenu item={item} onAction={onCommitAction} />
+                      <GitHistoryCommitForkMenu
+                        item={item}
+                        selectedCount={selection.itemsFor(item).length}
+                        onShowInGraph={slots.onShowCommitInGraph}
+                        onAction={(action, target) =>
+                          onCommitAction(action, target, selection.itemsFor(target))
+                        }
+                      />
                     </ContextMenu>
                   ) : (
                     row
@@ -382,14 +394,20 @@ export function GitHistoryPanel({
                       state={filesByCommit[item.id] ?? { status: 'loading' }}
                       author={item.author}
                       timestamp={item.timestamp}
-                      onOpenFile={(entry, event) => onOpenCommitFile?.(item, entry, event)}
+                      onOpenFile={(entry, event, shown) =>
+                        onOpenCommitFile?.(item, entry, event, {
+                          sequence: commitFileTargets(item, shown.entries)
+                        })
+                      }
                       onOpenAll={onOpenCommit ? () => onOpenCommit(item) : undefined}
+                      renderFilesMenu={slots.renderCommitFilesMenu?.bind(null, [item])}
                     />
                   )}
                 </div>
               )
             })}
           </div>
+          {slots.footer}
         </div>
       )}
     </div>
