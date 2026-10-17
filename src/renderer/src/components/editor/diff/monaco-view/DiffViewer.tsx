@@ -47,6 +47,7 @@ import {
 import { useMonacoTheme } from '@/lib/editor/appearance/use-monaco-theme'
 import { cn } from '@/lib/class-names'
 import { wholeFileDiffTintClass } from './whole-file-diff-tint'
+import { syncKeptModelValue } from '../../diff-kept-model-sync'
 
 export default function DiffViewer({
   modelKey,
@@ -69,7 +70,8 @@ export default function DiffViewer({
   onContentChange,
   onSave,
   largeDiffRenderLimit,
-  largeDiffSaveContentAvailable
+  largeDiffSaveContentAvailable,
+  syncKeptModifiedModelOnMount
 }: DiffViewerProps): React.JSX.Element {
   const t = useTranslate()
   const diffWordWrap = useAppStore((s) => s.settings?.diffWordWrap)
@@ -237,6 +239,9 @@ export default function DiffViewer({
 
   const { setupCopy, toastNode } = useContextualCopySetup()
 
+  const modifiedContentRef = useRef(modifiedContent)
+  modifiedContentRef.current = modifiedContent
+
   const propsRef = useRef({ relativePath, language, onSave })
   propsRef.current = { relativePath, language, onSave }
   const currentDiffModelPaths = useDiffViewerLargeDiffLifecycle({
@@ -285,6 +290,10 @@ export default function DiffViewer({
       })
       diffEditor.onDidDispose(preserveDiffViewStateAcrossModelSwaps(diffEditor).dispose)
 
+      if (syncKeptModifiedModelOnMount) {
+        syncKeptModelValue(modifiedEditor.getModel(), modifiedContentRef.current)
+      }
+
       setupCopy(originalEditor, monaco, filePath, propsRef)
       setupCopy(modifiedEditor, monaco, filePath, propsRef)
       setModifiedEditor(modifiedEditor)
@@ -322,7 +331,16 @@ export default function DiffViewer({
         diffEditor.focus()
       }
     },
-    [editable, setupCopy, modelKey, filePath, sideBySide, registerDiffEditor, unregisterDiffEditor]
+    [
+      editable,
+      setupCopy,
+      modelKey,
+      filePath,
+      sideBySide,
+      registerDiffEditor,
+      unregisterDiffEditor,
+      syncKeptModifiedModelOnMount
+    ]
   )
 
   // Snapshot on layout cleanup before unmount, avoiding scroll-time writes.

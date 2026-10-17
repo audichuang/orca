@@ -24,19 +24,23 @@ function listDirectory(
   return listing
 }
 
+export type RestorePathObstacle = 'symlink' | 'parentIsFile'
+
 /**
- * True when any existing segment of `relativePath` below `root` is a symlink. Restore refuses those
- * instead of canonicalizing: the write layer would follow `alias -> .git` and still treat it as inside the root.
- * Listing failures other than "missing" throw, so the caller fails closed (also on hosts that cannot list).
+ * Walks the existing segments of `relativePath` below `root`. A symlink is refused instead of canonicalized:
+ * the write layer would follow `alias -> .git` and still treat it as inside the root. A file in a parent
+ * position would make the write fail with ENOTDIR. Listing failures other than "missing" throw, so the
+ * caller fails closed (also on hosts that cannot list).
  */
-export async function restorePathCrossesSymlink(
+export async function findRestorePathObstacle(
   context: RuntimeFileOperationArgs,
   root: string,
   relativePath: string,
   cache: RestoreDirectoryCache = new Map()
-): Promise<boolean> {
+): Promise<RestorePathObstacle | null> {
+  const segments = relativePath.split('/')
   let current = root
-  for (const segment of relativePath.split('/')) {
+  for (const [index, segment] of segments.entries()) {
     const entries = await listDirectory(context, current, cache)
     // Why: macOS resolves names across case and Unicode normalization, so compare folded forms.
     const fold = (name: string) => name.normalize('NFC').toLowerCase()
@@ -44,15 +48,25 @@ export async function restorePathCrossesSymlink(
       entries?.find((candidate) => candidate.name === segment) ??
       entries?.find((candidate) => fold(candidate.name) === fold(segment))
     if (!entry) {
-      return false
+      return null
     }
     if (entry.isSymlink) {
-      return true
+      return 'symlink'
     }
     if (!entry.isDirectory) {
-      return false
+      return index < segments.length - 1 ? 'parentIsFile' : null
     }
     current = joinPath(current, entry.name)
   }
-  return false
+  return null
+}
+
+/** True when any existing segment of `relativePath` below `root` is a symlink. */
+export async function restorePathCrossesSymlink(
+  context: RuntimeFileOperationArgs,
+  root: string,
+  relativePath: string,
+  cache: RestoreDirectoryCache = new Map()
+): Promise<boolean> {
+  return (await findRestorePathObstacle(context, root, relativePath, cache)) === 'symlink'
 }

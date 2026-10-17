@@ -12,6 +12,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { translate } from '@/i18n/i18n'
 import type { ParsedEntry } from './clipcode-clipboard-format'
+import { defaultAdjustRestorePaths } from './clipcode-restore-base-default'
 import {
   planClipcodeRestore,
   previewClipcodeRestore,
@@ -67,6 +68,21 @@ function skipReasonLabel(reason: ClipcodeRestorePreview['skipped'][number]['reas
         'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.becf17b643',
         'is a folder'
       )
+    case 'PARENT_IS_FILE':
+      return translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.parentIsFile',
+        'a parent folder is a file'
+      )
+    case 'TARGET_UNREADABLE':
+      return translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.targetUnreadable',
+        'could not check the existing file'
+      )
+    case 'CASE_CONFLICT':
+      return translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.caseConflict',
+        'same path with different letter case'
+      )
   }
 }
 
@@ -111,7 +127,7 @@ export function ClipcodeRestorePreviewDialog({
   onCancel: () => void
   onConfirm: (confirmed: ConfirmedClipcodeRestore) => void
 }): React.JSX.Element {
-  const [adjustPaths, setAdjustPaths] = useState(true)
+  const [adjustPaths, setAdjustPaths] = useState(() => defaultAdjustRestorePaths(pending))
   const [overwrite, setOverwrite] = useState(false)
   const base = adjustPaths ? pending.suggestion?.base : undefined
   const preview = useMemo(() => {
