@@ -14410,7 +14410,8 @@
                         "1f409f3dd6": "path goes through a symlink",
                         "parentIsFile": "a parent folder is a file",
                         "targetUnreadable": "could not check the existing file",
-                        "caseConflict": "same path with different letter case"
+                        "caseConflict": "same path with different letter case",
+                        "nonUtf8Target": "existing file is not UTF-8"
                       }
                     }
                   }

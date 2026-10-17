@@ -14120,7 +14120,8 @@
                         "1f409f3dd6": "la ruta pasa por un enlace simbólico",
                         "parentIsFile": "una carpeta superior es un archivo",
                         "targetUnreadable": "no se pudo comprobar el archivo existente",
-                        "caseConflict": "misma ruta con distinto uso de mayúsculas"
+                        "caseConflict": "misma ruta con distinto uso de mayúsculas",
+                        "nonUtf8Target": "el archivo existente no es UTF-8"
                       }
                     }
                   }
