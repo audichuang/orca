@@ -12,7 +12,7 @@ import { payloadStats } from './clipcode-payload-stats'
 
 // Frozen cross-tool contract shared byte-identically with ClipCodeVSCode and the IntelliJ plugin.
 // Regenerate with ClipCodeVSCode scripts/gen-contract-fixtures.cjs, then update every copy and SHA together.
-const EXPECTED_FIXTURES_SHA = 'fb6749cbfae24975a4eb3a8e59d180ef53239dc70dfe3afe00423530c1bb51d0'
+const EXPECTED_FIXTURES_SHA = 'df317eb7b412d4bd71222d71d4cd64a1652fbcac2d82468ec417e4ce95ec2468'
 const FIXTURES_PATH = path.join(__dirname, '__fixtures__', 'clipcode-clipboard-contract.json')
 
 type Fixtures = {

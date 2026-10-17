@@ -83,6 +83,7 @@ export type GitInspectionApi = {
     staged: boolean
     compareAgainstHead?: boolean
     oldPath?: string
+    skipRenderLimit?: boolean
     connectionId?: string
     wakeWslDistro?: boolean
   }) => Promise<GitDiffResult>
