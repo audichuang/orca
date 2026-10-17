@@ -13,7 +13,7 @@ import {
   type DiscardAllArea
 } from './discard-all-sequence'
 import { discardDeletesEntryFile } from './discard-confirmation'
-import { readIpcErrorMessage } from '@/lib/ipc-error'
+import { readGitCommandFailureMessage } from './git-command-failure-message'
 import {
   dismissSourceControlEntryFailureToast,
   showSourceControlEntryFailureToast
@@ -125,11 +125,11 @@ export function useSourceControlDiscardConfirmation({
               'auto.components.right.sidebar.SourceControl.a5e5a11090',
               'Discard all failed — unable to unstage files before discard'
             ),
-            { description: readIpcErrorMessage(errors[0]) }
+            { description: readGitCommandFailureMessage(errors[0]) }
           )
         } else if (result.failed.length > 0) {
           // Limit bulk failures to the first error and sample paths so the toast stays readable.
-          const firstMsg = readIpcErrorMessage(errors[0])
+          const firstMsg = readGitCommandFailureMessage(errors[0])
           const sample = result.failed.slice(0, 3).join(', ')
           const more = result.failed.length > 3 ? `, +${result.failed.length - 3} more` : ''
           toast.error(

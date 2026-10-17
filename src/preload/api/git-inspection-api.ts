@@ -67,6 +67,7 @@ export type GitInspectionApi = {
     filePath: string
     staged: boolean
     compareAgainstHead?: boolean
+    skipRenderLimit?: boolean
     connectionId?: string
   }) => Promise<GitDiffResult>
   branchCompare: (args: {
