@@ -11,6 +11,10 @@ import {
 import { buildEditorExternalWatchEventHandler } from './editor-external-watch-event-reconciliation'
 import { verifyLatchedEditorMoveDestinations } from './editor-external-watch-disk-verification'
 import { selectSameHostWatchTargets } from './editor-external-watch-same-root-targets'
+import {
+  dedupeSharedRootTargets,
+  planSharedRootWatchIpc
+} from './editor-external-watch-shared-roots'
 
 function warnExternalWatchFailure(target: EditorExternalWatchTarget, err: unknown): void {
   console.warn('[filesystem-watch] failed to watch worktree', {
@@ -38,11 +42,11 @@ export function useEditorExternalWatch(): void {
     const previousTargets = targetsRef.current
     const previousKeys = new Set(previousTargets.map(getEditorExternalWatchTargetKey))
     const nextKeys = new Set(nextTargets.map(getEditorExternalWatchTargetKey))
-    const removed = previousTargets.filter(
-      (target) => !nextKeys.has(getEditorExternalWatchTargetKey(target))
-    )
-    const added = nextTargets.filter(
-      (target) => !previousKeys.has(getEditorExternalWatchTargetKey(target))
+    const { unwatch: removed, watch: added } = planSharedRootWatchIpc(
+      previousTargets,
+      nextTargets,
+      previousTargets.filter((target) => !nextKeys.has(getEditorExternalWatchTargetKey(target))),
+      nextTargets.filter((target) => !previousKeys.has(getEditorExternalWatchTargetKey(target)))
     )
 
     for (const target of removed) {
@@ -98,7 +102,7 @@ export function useEditorExternalWatch(): void {
       unsubscribe()
       dispose()
       fsChangedHandlerRef.current = null
-      for (const target of targetsRef.current) {
+      for (const target of dedupeSharedRootTargets(targetsRef.current)) {
         const key = getEditorExternalWatchTargetKey(target)
         const remoteUnsubscribe = remoteWatchUnsubs.get(key)
         if (remoteUnsubscribe) {
