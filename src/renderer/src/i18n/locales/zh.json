@@ -14252,7 +14252,8 @@
                         "1f409f3dd6": "路径经过符号链接",
                         "parentIsFile": "上层路径是文件",
                         "targetUnreadable": "无法检查现有文件",
-                        "caseConflict": "路径相同但大小写不同"
+                        "caseConflict": "路径相同但大小写不同",
+                        "nonUtf8Target": "现有文件不是 UTF-8"
                       }
                     }
                   }
