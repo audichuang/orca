@@ -8,7 +8,8 @@ export function buildDiffResult(
   modifiedContent: string,
   originalIsBinary: boolean,
   modifiedIsBinary: boolean,
-  filePath?: string
+  filePath?: string,
+  skipRenderLimit = false
 ): GitDiffResult {
   if (originalIsBinary || modifiedIsBinary) {
     const mimeType = filePath
@@ -26,8 +27,10 @@ export function buildDiffResult(
   }
 
   // Why: over the render limit, return metadata instead of huge text so the renderer can show fallback UI.
-  const largeDiffRenderLimit = getLargeDiffRenderLimit({ originalContent, modifiedContent })
-  if (largeDiffRenderLimit.limited) {
+  const largeDiffRenderLimit = skipRenderLimit
+    ? null
+    : getLargeDiffRenderLimit({ originalContent, modifiedContent })
+  if (largeDiffRenderLimit?.limited) {
     return {
       kind: 'text',
       originalContent: '',
