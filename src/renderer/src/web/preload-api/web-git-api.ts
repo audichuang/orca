@@ -123,14 +123,15 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
         worktree: toRuntimeWorktreeSelector(worktree.id)
       })
     },
-    diff: async ({ worktreePath, filePath, staged, compareAgainstHead, oldPath }) => {
+    diff: async ({ worktreePath, filePath, staged, compareAgainstHead, oldPath, skipRenderLimit }) => {
       const file = await resolveRuntimeFilePath(filePath, worktreePath)
       return callRuntimeResult('git.diff', {
         worktree: toRuntimeWorktreeSelector(file.worktree.id),
         filePath: file.relativePath,
         staged,
         compareAgainstHead,
-        ...(oldPath ? { oldPath } : {})
+        ...(oldPath ? { oldPath } : {}),
+        ...(skipRenderLimit ? { skipRenderLimit: true } : {})
       })
     },
     branchCompare: async ({ worktreePath, baseRef, admissionTier }) => {
