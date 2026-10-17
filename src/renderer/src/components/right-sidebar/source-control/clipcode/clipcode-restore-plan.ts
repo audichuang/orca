@@ -35,7 +35,7 @@ function isAbsolutePath(value: string): boolean {
 }
 
 function isWindowsStylePath(value: string): boolean {
-  return /^[A-Za-z]:(\/.*)?$/.test(value)
+  return /^[A-Za-z]:(\/[\s\S]*)?$/.test(value)
 }
 
 function pathKey(value: string): string {
@@ -49,6 +49,15 @@ function isGitSegment(segment: string): boolean {
   return folded.replace(/[. ]+$/, '') === '.git' || /^git~\d+$/.test(folded)
 }
 
+function hasControlCharacter(segment: string): boolean {
+  for (let index = 0; index < segment.length; index++) {
+    if (segment.charCodeAt(index) < 0x20) {
+      return true
+    }
+  }
+  return false
+}
+
 /** Returns a clean '/'-joined relative path, or undefined when it is empty, absolute or can escape the root. */
 export function sanitizeRelativePath(value: string): string | undefined {
   const normalized = asciiTrim(value).replaceAll('\\', '/').replace(/\/+/g, '/').replace(/^\/+/, '')
@@ -60,9 +69,14 @@ export function sanitizeRelativePath(value: string): string | undefined {
     return undefined
   }
   // Why: a restored `.git/...` entry could plant hooks or rewrite repo config, so it is never a valid target.
+  // Control characters are refused everywhere (Windows cannot create them), like the plugins.
   if (
     segments.some(
-      (segment) => segment === '..' || isGitSegment(segment) || /[<>:"|?*]/.test(segment)
+      (segment) =>
+        segment === '..' ||
+        isGitSegment(segment) ||
+        /[<>:"|?*]/.test(segment) ||
+        hasControlCharacter(segment)
     )
   ) {
     return undefined
@@ -221,9 +235,13 @@ export function planClipcodeRestore(args: {
 /**
  * 'blocked': the path crosses a symlink or could not be verified on the host; 'parentIsFile': a parent
  * segment is a file; 'unreadable': the target could not be stat'ed. None of them is ever touched.
+ * 'nonUtf8File' / 'unverifiedFile': an existing file that is not UTF-8 or could not be read; it may be
+ * deleted but never overwritten.
  */
 export type ClipcodeTargetState =
   | 'file'
+  | 'nonUtf8File'
+  | 'unverifiedFile'
   | 'directory'
   | 'missing'
   | 'blocked'
@@ -236,12 +254,15 @@ type ClipcodePreviewSkipReason =
   | 'IS_DIRECTORY'
   | 'PARENT_IS_FILE'
   | 'TARGET_UNREADABLE'
+  | 'NON_UTF8_TARGET'
 
 const UNTOUCHABLE_STATE_REASON = {
   blocked: 'SYMLINK_IN_PATH',
   directory: 'IS_DIRECTORY',
   parentIsFile: 'PARENT_IS_FILE',
-  unreadable: 'TARGET_UNREADABLE'
+  unreadable: 'TARGET_UNREADABLE',
+  nonUtf8File: 'NON_UTF8_TARGET',
+  unverifiedFile: 'TARGET_UNREADABLE'
 } as const satisfies Partial<Record<ClipcodeTargetState, ClipcodePreviewSkipReason>>
 
 export type ClipcodeRestorePreview = {
@@ -270,7 +291,7 @@ export function previewClipcodeRestore(
   }
   for (const del of plan.deletes) {
     const state = stateOf(del.relativePath)
-    if (state === 'file') {
+    if (state === 'file' || state === 'nonUtf8File' || state === 'unverifiedFile') {
       preview.delete.push(del)
     } else {
       preview.skipped.push({
