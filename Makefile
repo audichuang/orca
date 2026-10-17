@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all fork-dmg
+.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all fork-dmg fork-check fork-check-full
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -31,6 +31,8 @@ help:
 	@echo "  make setup      install + build the macOS computer-use helper (one-time, slow)"
 	@echo "  make typecheck  full type check (optional safety gate)"
 	@echo "  make clean      remove dist/ and out/"
+	@echo "  make fork-check       after a rebase: typecheck + fork-area tests + quality gate (minutes)"
+	@echo "  make fork-check-full  before a release: every test the fork's changes reach + headless e2e"
 
 install:
 	pnpm install
@@ -151,3 +153,23 @@ fork-dmg: computer-use
 	eval "$$(node -p "require('./package.json').scripts['build:desktop'].replace('pnpm run typecheck && ', '')")"
 	pnpm run ensure:electron-runtime
 	ORCA_FORK_VERSION=$(FORK_VERSION) pnpm exec electron-builder --config config/electron-builder.fork.config.cjs --mac --arm64
+
+# Upstream release the fork sits on (fork tags excluded). Override: make fork-check FORK_BASE=v1.4.229
+FORK_BASE ?= $(shell git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' HEAD)
+# Upstream areas the fork edits; their whole suites run because upstream tests there import fork-changed modules.
+FORK_TEST_DIRS := src/renderer/src/components/right-sidebar src/renderer/src/components/editor \
+  src/renderer/src/store/slices/editor src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts \
+  src/shared/workspace-layout src/main/git/source-control src/main/providers src/renderer/src/components/tab-bar
+
+fork-check:
+	@echo ">> fork base: $(FORK_BASE)"
+	pnpm tc
+	pnpm exec vitest run --config config/vitest.config.ts $(FORK_TEST_DIRS) \
+	  $$(git diff --name-only --diff-filter=AM $(FORK_BASE) HEAD | grep -E '\.test\.tsx?$$' | grep -v '^tests/e2e/')
+	pnpm run check:code-quality:changed $(FORK_BASE)
+
+fork-check-full: fork-check
+	pnpm exec vitest run --config config/vitest.config.ts --changed $(FORK_BASE)
+	ORCA_BACKGROUND_LAUNCH=1 pnpm run ensure:electron-runtime
+	ORCA_BACKGROUND_LAUNCH=1 npx playwright test tests/e2e/folder-multi-repo-source-control.spec.ts \
+	  --config tests/playwright.config.ts --project=electron-headless --workers=1
