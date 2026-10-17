@@ -10,7 +10,7 @@ import { getRuntimeTargetForFileOwner } from '@/lib/file-owner-runtime-target'
 import { exportActiveMarkdownToPdf } from './export-active-markdown'
 import type { EditorToggleValue } from './view-mode/EditorViewToggle'
 import { EditorPanelShell } from './EditorPanelShell'
-import { DiffNavigationProvider } from './diff/review/diff-navigation-context'
+import { DiffFileNavigationProvider } from './editor-panel-diff-files'
 import { EditorCommandOwnerContext } from './editor-command-owner-context'
 import { canUseChangesModeForFile } from './view-mode/editor-panel-file-mode'
 import { getEditorPanelRenderModel } from './editor-panel-render-model'
@@ -35,7 +35,6 @@ import { useFileCustomEditors } from '@/store/plugins/file-editors/plugin-custom
 import { applyCustomEditorToggle } from './view-mode/custom-editor-toggle'
 import { editorPanelFileActions } from './editor-panel-file-actions'
 import { runAfterEditorFramesFlush } from './save/flush/editor-pending-flush'
-import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 function EditorPanelInner({
   activeFileId: activeFileIdProp,
@@ -56,7 +55,6 @@ function EditorPanelInner({
   const activeViewStateId = activeViewStateIdProp ?? activeFileId
   const activeFile = openFiles.find((f) => f.id === activeFileId) ?? null
   const activeWorktreeId = activeFile?.worktreeId
-  const activeGitWorktreeId = activeFile ? getOpenFileGitWorktreeId(activeFile) : undefined
   const canOpenWorkspaceFileBrowser = useAppStore((s) =>
     activeWorktreeId && activeFile
       ? canShowWorkspaceFileBrowserAction(s, activeWorktreeId, activeFile.filePath)
@@ -66,10 +64,10 @@ function EditorPanelInner({
   const pendingEditorReveal = useAppStore((s) => s.pendingEditorReveal)
   // Git refreshes for other worktrees must not wake every mounted editor pane.
   const gitStatusEntries = useAppStore((s) =>
-    selectEditorPanelGitStatusEntries(s, activeGitWorktreeId)
+    selectEditorPanelGitStatusEntries(s, activeWorktreeId)
   )
   const gitBranchEntries = useAppStore((s) =>
-    selectEditorPanelGitBranchEntries(s, activeGitWorktreeId)
+    selectEditorPanelGitBranchEntries(s, activeWorktreeId)
   )
   const markdownViewMode = useAppStore((s) => s.markdownViewMode)
   const markdownDefaultViewMode = useAppStore((s) => s.settings?.markdownDefaultViewMode)
@@ -317,7 +315,7 @@ function EditorPanelInner({
   return (
     <EditorCommandOwnerContext value={isCmdSaveOwner}>
       {/* Split panes need independent bridges between diff editors and header controls. */}
-      <DiffNavigationProvider>
+      <DiffFileNavigationProvider file={activeFile} viewStateId={activeViewStateId}>
         <EditorPanelShell
           panelRef={setPanelRef}
           activeFile={viewedFile}
@@ -373,7 +371,7 @@ function EditorPanelInner({
           onRenameConfirm={handleRenameConfirm}
           markdownAnnotationsEnabled={markdownAnnotationsEnabled && markdownReviewNotesEnabled}
         />
-      </DiffNavigationProvider>
+      </DiffFileNavigationProvider>
     </EditorCommandOwnerContext>
   )
 }
