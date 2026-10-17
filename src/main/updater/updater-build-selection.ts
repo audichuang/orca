@@ -1,4 +1,5 @@
 import { app } from 'electron'
+import { isForkDistribution } from './fork-distribution'
 import {
   getVersionChannel,
   hasDedicatedReleaseRepo,
@@ -89,7 +90,7 @@ export abstract class UpdaterBuildSelection extends UpdaterMenuChecks {
 
   /** Pin any published channel/tag, including deliberate downgrades. */
   protected async checkForPinnedBuild(channel: ReleaseChannel, tag: string): Promise<void> {
-    if (!app.isPackaged) {
+    if (!app.isPackaged || isForkDistribution()) {
       this.sendStatus({ state: 'not-available', userInitiated: true })
       return
     }
