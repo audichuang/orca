@@ -17,9 +17,9 @@ module.exports = {
   publish: null,
   mac: {
     ...base.mac,
-    // Why: without a Developer ID the base config leaves the bundle unsigned, and the stock Electron
-    // signature breaks once Info.plist is rewritten; sign every nested framework ad-hoc instead.
-    identity: '-',
+    // Why a stable self-signed identity: ad-hoc signatures change every build, so keychain "Always
+    // Allow" and TCC grants reset on each update. '-' (ad-hoc) remains for machines without the cert.
+    identity: process.env.ORCA_FORK_SIGN_IDENTITY || '-',
     target: [{ target: 'dmg', arch: ['arm64'] }]
   },
   dmg: { ...base.dmg, artifactName: 'orca-fork-macos-${arch}.${ext}' }
