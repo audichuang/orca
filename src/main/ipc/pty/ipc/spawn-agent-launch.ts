@@ -30,7 +30,8 @@ function closedInSession(store: Store | undefined, paneKey: string): boolean {
 /** The planned launch replaces whatever the pane would have run; the pane's own spawn facts stay. */
 function withPlannedLaunch(
   args: PtySpawnIpcArgs,
-  planned: Awaited<ReturnType<OrcaRuntimeService['planAgentPaneLaunch']>>
+  planned: Awaited<ReturnType<OrcaRuntimeService['planAgentPaneLaunch']>>,
+  launchCwd: string | undefined
 ): PtySpawnIpcArgs {
   const {
     agentLaunch: _launch,
@@ -50,6 +51,8 @@ function withPlannedLaunch(
   )
   return {
     ...pane,
+    // Why: a launch that names its cwd (a folder workspace's repo) runs there, not at the pane's workspace root.
+    ...(launchCwd ? { cwd: launchCwd } : {}),
     command: planned.command,
     ...(planned.env || launchToken
       ? {
@@ -122,5 +125,5 @@ export async function planPaneAgentLaunch(ctx: PtyIpcSpawnState): Promise<void> 
     ...(intent.cwd ? { cwd: intent.cwd } : {})
   })
   ctx.paneAgentLaunch.launchRuntime = planned.launchRuntime
-  ctx.args = withPlannedLaunch(args, planned)
+  ctx.args = withPlannedLaunch(args, planned, intent.cwd)
 }
