@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { requireGitOwnerTarget } from '../../worktree-git-owner-target'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 import { getConnectionId } from '@/lib/connection-context'
 import { getRuntimeGitHistory } from '@/runtime/runtime-git-status-client'
 import type { GitHistoryPanelState } from './git-history-panel'
+import { toGitHistoryGraphRequest, useGitHistoryGraphFilter } from './git-history-graph-filter'
 
 const EMPTY_GIT_HISTORY_STATE: GitHistoryPanelState = { status: 'idle' }
 
@@ -53,6 +54,9 @@ export function useSourceControlGitHistory({
   // Why: the read is routed by owner host, so track it as a stable string — a new settings object alone must not refetch.
   const ownerHostKey =
     activeRepoTarget?.kind === 'environment' ? activeRepoTarget.environmentId : ''
+  // Fork: branch filter / search; undefined keeps upstream's HEAD-only request byte for byte.
+  const graphFilter = useGitHistoryGraphFilter(activeWorktreeId)
+  const graphRequest = useMemo(() => toGitHistoryGraphRequest(graphFilter), [graphFilter])
 
   useEffect(() => {
     setGitHistoryByWorktree((prev) => {
@@ -108,7 +112,7 @@ export function useSourceControlGitHistory({
           worktreePath,
           connectionId
         },
-        { limit: 50, baseRef: compareBaseRef }
+        { limit: 50, baseRef: compareBaseRef, ...(graphRequest ? { graph: graphRequest } : {}) }
       )
       if (gitHistoryRequestByWorktreeRef.current[worktreeId] !== requestId) {
         return
@@ -136,6 +140,7 @@ export function useSourceControlGitHistory({
     activeRepoTarget,
     activeWorktreeId,
     compareBaseRef,
+    graphRequest,
     isBranchVisible,
     isFolder,
     isGitHistoryExpanded,
@@ -158,6 +163,7 @@ export function useSourceControlGitHistory({
     // Why: history is fetched with compareBaseRef, so re-run when it changes (effectiveBaseRef can stay put while it moves).
     activeWorktreeId,
     compareBaseRef,
+    graphRequest,
     isBranchVisible,
     isFolder,
     isGitHistoryExpanded,
