@@ -1,4 +1,5 @@
 import { app } from 'electron'
+import { isForkDistribution } from '../fork-distribution'
 import { isMacInstallRequested } from '../mac-install/updater-mac-install'
 import { withUpdaterSpan } from '../../observability/instrumentation'
 import {
@@ -69,7 +70,7 @@ export abstract class UpdaterScheduling extends UpdaterCheckFailure {
     ) {
       return false
     }
-    if (!app.isPackaged) {
+    if (!app.isPackaged || isForkDistribution()) {
       this.sendStatus({ state: 'not-available' })
       return false
     }
