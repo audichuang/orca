@@ -13,16 +13,18 @@ import {
 import { applyOpenFileToState, type OpenFileApplyScratch } from './open-file-apply'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../../../shared/layout-owner-switch'
 import { recordReopenedEditorFileInLayoutOwner } from '../tabs/editor-tab-layout-owner'
+import { withFolderFileGitOwner } from '../git/folder-file-git-owner'
 
 export function createOpenFileAction(
   set: EditorSet,
   get: EditorGet
 ): Pick<EditorSlice, 'openFile' | 'openFileForLink'> {
   const open = (
-    file: Omit<OpenFile, 'id' | 'isDirty'>,
+    requestedFile: Omit<OpenFile, 'id' | 'isDirty'>,
     options: OpenFileOptions | undefined,
     linkIntent: EditorOpenLinkIntent | null
   ): { fileId: string; result: EditorOpenResult | null } => {
+    const file = withFolderFileGitOwner(get(), requestedFile)
     const editorItemWorktreeId = file.worktreeId
     const scratch: OpenFileApplyScratch = {
       editorItemFileId: file.filePath,

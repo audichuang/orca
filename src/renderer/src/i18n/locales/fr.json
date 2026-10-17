@@ -14172,8 +14172,8 @@
                 "bulk": {
                   "action": {
                     "bar": {
-                      "8a434c829f": "Copy Full Source",
-                      "4139bc5679": "Clear selection"
+                      "8a434c829f": "Copier la source complète",
+                      "4139bc5679": "Effacer la sélection"
                     }
                   }
                 }
@@ -14183,14 +14183,14 @@
                   "multi": {
                     "repo": {
                       "panel": {
-                        "4c62351467": "No imported Git repositories under this folder. Add the repositories inside it to Orca to see their changes here.",
-                        "a044a830f1": "Refresh all repositories",
-                        "c023ba6838": "This folder sits inside an imported repository, so changes outside the folder are listed too.",
-                        "efd34a4169": "Changes list for {{value0}} is truncated; copy is incomplete.",
-                        "d98e7b731c": "Copy all changes",
-                        "da953a696f": "Paste & Restore",
-                        "5de321918e": "Hidden worktrees under this folder are not included ({{value0}}).",
-                        "ab32287003": "Repositories"
+                        "4c62351467": "Aucun dépôt Git importé dans ce dossier. Ajoutez à Orca les dépôts qu'il contient pour voir leurs modifications ici.",
+                        "a044a830f1": "Actualiser tous les dépôts",
+                        "c023ba6838": "Ce dossier se trouve dans un dépôt importé : les modifications hors du dossier sont aussi listées.",
+                        "efd34a4169": "La liste des modifications de {{value0}} est tronquée ; la copie est incomplète.",
+                        "d98e7b731c": "Copier toutes les modifications",
+                        "da953a696f": "Coller et restaurer",
+                        "5de321918e": "Les worktrees masqués de ce dossier ne sont pas inclus ({{value0}}).",
+                        "ab32287003": "Dépôts"
                       }
                     }
                   }
@@ -14200,35 +14200,40 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}} unreadable)",
-                      "e6cdc3a753": "Over {{value0}} tokens.",
-                      "21758e255e": "No Git changes found to copy.",
-                      "7828c565da": "({{value0}} skipped: size exceeded)",
-                      "65b422bbd1": "{{value0}} Git file(s) copied",
-                      "7c6daaf4fa": "Copy Full Source failed",
-                      "9c3f952874": "{{value0}} Git file(s) could not be read."
+                      "2749202819": "({{value0}} illisibles)",
+                      "e6cdc3a753": "Plus de {{value0}} tokens.",
+                      "21758e255e": "Aucune modification Git à copier.",
+                      "7828c565da": "({{value0}} ignorés : taille dépassée)",
+                      "65b422bbd1": "{{value0}} fichier(s) Git copié(s)",
+                      "7c6daaf4fa": "Échec de la copie de la source complète",
+                      "9c3f952874": "{{value0}} fichier(s) Git illisible(s).",
+                      "binarySkipped": "({{value0}} ignorés : binaires)",
+                      "onlyBinarySkipped": "Rien à copier : {{value0}} fichier(s) binaire(s) ignoré(s)."
                     }
                   },
                   "restore": {
                     "preview": {
                       "dialog": {
-                        "2c06a4e179": "Paste & Restore",
-                        "87832cd30d": "Files from the clipboard will be written into this folder.",
-                        "813199296f": "Adjust paths ({{value0}})",
-                        "9a421f14d8": "Create",
-                        "d469ff3b81": "Overwrite",
-                        "9cf3526c1f": "Delete",
-                        "0d87b3b39d": "Skip",
-                        "80224f9095": "Overwrite existing files",
-                        "677bf0ade9": "Cancel",
-                        "c0b1b53e49": "Restore",
-                        "9bd78385ce": "unsafe path",
-                        "85d6d805ca": "outside the folder",
-                        "67e63b0749": "already absent",
-                        "becf17b643": "is a folder",
-                        "4acb11ed21": "content was skipped when copied",
-                        "ef509f9991": ".git is protected",
-                        "1f409f3dd6": "path goes through a symlink"
+                        "2c06a4e179": "Coller et restaurer",
+                        "87832cd30d": "Les fichiers du presse-papiers seront écrits dans ce dossier.",
+                        "813199296f": "Ajuster les chemins ({{value0}})",
+                        "9a421f14d8": "Créer",
+                        "d469ff3b81": "Écraser",
+                        "9cf3526c1f": "Supprimer",
+                        "0d87b3b39d": "Ignorer",
+                        "80224f9095": "Écraser les fichiers existants",
+                        "677bf0ade9": "Annuler",
+                        "c0b1b53e49": "Restaurer",
+                        "9bd78385ce": "chemin non sûr",
+                        "85d6d805ca": "hors du dossier",
+                        "67e63b0749": "déjà absent",
+                        "becf17b643": "est un dossier",
+                        "4acb11ed21": "contenu ignoré lors de la copie",
+                        "ef509f9991": ".git est protégé",
+                        "1f409f3dd6": "le chemin passe par un lien symbolique",
+                        "parentIsFile": "un dossier parent est un fichier",
+                        "targetUnreadable": "impossible de vérifier le fichier existant",
+                        "caseConflict": "même chemin avec une casse différente"
                       }
                     }
                   }
@@ -14236,12 +14241,12 @@
                 "use": {
                   "clipcode": {
                     "restore": {
-                      "b124e9c64e": "Clipboard is empty or does not contain text.",
-                      "1847420a23": "No Snipcode file headers found in clipboard.",
-                      "af5c90f593": "Paste & Restore failed",
-                      "ae1ec38ef1": "Created {{value0}}, overwritten {{value1}}, deleted {{value2}}, skipped {{value3}}.",
-                      "19a6f378aa": "...and {{value0}} more",
-                      "c9af35dc2d": "Failed {{value0}}."
+                      "b124e9c64e": "Le presse-papiers est vide ou ne contient pas de texte.",
+                      "1847420a23": "Aucun en-tête de fichier Snipcode trouvé dans le presse-papiers.",
+                      "af5c90f593": "Échec du collage et de la restauration",
+                      "ae1ec38ef1": "Créés : {{value0}}, écrasés : {{value1}}, supprimés : {{value2}}, ignorés : {{value3}}.",
+                      "19a6f378aa": "…et {{value0}} de plus",
+                      "c9af35dc2d": "Échecs : {{value0}}."
                     }
                   }
                 }
@@ -14250,14 +14255,14 @@
                 "entry": {
                   "context": {
                     "menu": {
-                      "9137d88b9f": "Copy Full Source",
-                      "ce8235a6a4": "Open to the Side"
+                      "9137d88b9f": "Copier la source complète",
+                      "ce8235a6a4": "Ouvrir sur le côté"
                     }
                   }
                 },
                 "uncommitted": {
                   "sections": {
-                    "1a59d5a05b": "Copy Full Source"
+                    "1a59d5a05b": "Copier la source complète"
                   }
                 }
               }
