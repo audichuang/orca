@@ -1,4 +1,7 @@
 // Behavioral port of ClipCodeVSCode src/clipboardFormat.ts; cross-tool wire contract, regenerate fixtures before changing.
+import { CLIPCODE_SKIPPED_BODY_PREFIX } from './clipcode-placeholder-bodies'
+
+export { DELETED_FILE_MARKER } from './clipcode-placeholder-bodies'
 export type ChangeTypeLabel = 'NEW' | 'MODIFIED' | 'DELETED' | 'MOVED'
 
 export type ParsedEntry = {
@@ -54,6 +57,17 @@ const ESCAPE_MARKER = '//clipcode-esc: '
 // pre-header text; only extractSourceRoot() reads it (from line 1).
 const SOURCE_ROOT_MARKER = '// clipcode-root: '
 
+// Ends the last file's body so a footer can't be read into it. Byte-identical to
+// the VS Code / Kotlin mirrors (POST_TEXT_MARKER).
+const POST_TEXT_MARKER = '// clipcode-end'
+
+// ASCII-only trim, never String.trim(): JS and Kotlin trim disagree on U+001C-U+001F
+// and U+FEFF, which changed restored filenames and blank-line detection between tools.
+const ASCII_WS_TRIM = /^[ \t\n\v\f\r]+|[ \t\n\v\f\r]+$/g
+export function asciiTrim(value: string): string {
+  return value.replace(ASCII_WS_TRIM, '')
+}
+
 /** Read the source-root metadata from the first line, if present. */
 export function extractSourceRoot(clipboardText: string): string | undefined {
   const firstLine = clipboardText.slice(
@@ -63,7 +77,7 @@ export function extractSourceRoot(clipboardText: string): string | undefined {
   if (!firstLine.startsWith(SOURCE_ROOT_MARKER)) {
     return undefined
   }
-  const value = firstLine.slice(SOURCE_ROOT_MARKER.length).trim()
+  const value = asciiTrim(firstLine.slice(SOURCE_ROOT_MARKER.length))
   return value || undefined
 }
 
@@ -109,7 +123,7 @@ function buildPayloadInternal(options: BuildPayloadOptions, includeEmptyWrappers
   for (const file of options.files) {
     lines.push(formatHeader(options.headerFormat, file.path, file.changeType))
     const body = file.skippedReason
-      ? `// File skipped: ${file.skippedReason}`
+      ? `${CLIPCODE_SKIPPED_BODY_PREFIX}${file.skippedReason}`
       : (file.content ?? '')
     lines.push(escapeContent(body, customRegex))
     if (options.addExtraLineBetweenFiles) {
@@ -118,6 +132,10 @@ function buildPayloadInternal(options: BuildPayloadOptions, includeEmptyWrappers
   }
 
   if (includeEmptyWrappers || options.postText) {
+    // Suppressed when the header format would parse the marker as a file header.
+    if (options.postText && findHeaderPath(POST_TEXT_MARKER, customRegex) === undefined) {
+      lines.push(POST_TEXT_MARKER)
+    }
     lines.push(escapeContent(options.postText, customRegex))
   }
   return lines.join('\n')
@@ -143,10 +161,16 @@ function needsEscape(line: string, customRegex?: RegExp): boolean {
   if (line.startsWith(ESCAPE_MARKER)) {
     return true
   }
-  if (findHeaderPath(line, customRegex) === undefined) {
+  // A content line that IS the end marker must not terminate its own file.
+  if (line === POST_TEXT_MARKER || line === `${POST_TEXT_MARKER}\r`) {
+    return true
+  }
+  // The parser splits on \r?\n, so test the line as it will be parsed.
+  const asParsed = line.endsWith('\r') ? line.slice(0, -1) : line
+  if (findHeaderPath(asParsed, customRegex) === undefined) {
     return false
   }
-  return findHeaderPath(ESCAPE_MARKER + line, customRegex) === undefined
+  return findHeaderPath(ESCAPE_MARKER + asParsed, customRegex) === undefined
 }
 
 // Inverse of escapeContent: strip exactly one leading marker per line.
@@ -171,16 +195,30 @@ export function parseClipboard(content: string, headerFormat: string): ParsedEnt
     lines.shift()
   }
 
+  const flush = (): void => {
+    if (currentPath === undefined) {
+      return
+    }
+    entries.push({
+      path: currentPath,
+      content: unescapeContent(joinContent(currentContent)),
+      changeTypes: currentLabels
+    })
+    currentPath = undefined
+    currentLabels = new Set()
+    currentContent.length = 0
+  }
+
   for (const line of lines) {
     const rawPath = findHeaderPath(line, customRegex)
+    // A header wins over the end marker; the marker ends only the current file, so a
+    // second payload pasted after it still parses.
+    if (rawPath === undefined && line === POST_TEXT_MARKER) {
+      flush()
+      continue
+    }
     if (rawPath !== undefined) {
-      if (currentPath !== undefined) {
-        entries.push({
-          path: currentPath,
-          content: unescapeContent(joinContent(currentContent)),
-          changeTypes: currentLabels
-        })
-      }
+      flush()
       currentLabels = extractLeadingLabels(rawPath)
       currentPath = stripLeadingLabels(rawPath)
       currentContent.length = 0
@@ -189,14 +227,7 @@ export function parseClipboard(content: string, headerFormat: string): ParsedEnt
     }
   }
 
-  if (currentPath !== undefined) {
-    entries.push({
-      path: currentPath,
-      content: unescapeContent(joinContent(currentContent)),
-      changeTypes: currentLabels
-    })
-  }
-
+  flush()
   return entries
 }
 
@@ -210,10 +241,10 @@ export function parseClipboard(content: string, headerFormat: string): ParsedEnt
 function joinContent(lines: string[]): string {
   let start = 0
   let end = lines.length
-  while (start < end && /^\s*$/.test(lines[start])) {
+  while (start < end && asciiTrim(lines[start]) === '') {
     start++
   }
-  while (end > start && /^\s*$/.test(lines[end - 1])) {
+  while (end > start && asciiTrim(lines[end - 1]) === '') {
     end--
   }
   return lines.slice(start, end).join('\n')
@@ -230,7 +261,7 @@ export function extractLeadingLabels(path: string): Set<ChangeTypeLabel> {
 }
 
 export function stripLeadingLabels(path: string): string {
-  return path.replace(LEADING_LABEL_PATTERN, '').trim()
+  return asciiTrim(path.replace(LEADING_LABEL_PATTERN, ''))
 }
 
 function findHeaderPath(line: string, customRegex?: RegExp): string | undefined {
@@ -253,7 +284,7 @@ function findHeaderPath(line: string, customRegex?: RegExp): string | undefined 
 }
 
 function isLikelyBareFileHeaderPath(rawPath: string): boolean {
-  const path = stripLeadingLabels(rawPath).trim()
+  const path = asciiTrim(stripLeadingLabels(rawPath))
   if (!path) {
     return false
   }
@@ -267,21 +298,23 @@ function isLikelyBareFileHeaderPath(rawPath: string): boolean {
 }
 
 function toHeaderPattern(headerFormat: string): RegExp | undefined {
-  const placeholder = '$FILE_PATH'
-  const index = headerFormat.indexOf(placeholder)
-  if (index === -1) {
+  const segments = headerFormat.split('$FILE_PATH')
+  if (segments.length < 2) {
     return undefined
   }
-  const prefix = escapeRegex(headerFormat.slice(0, index))
-  const suffix = escapeRegex(headerFormat.slice(index + placeholder.length))
-  return new RegExp(`^${prefix}(.+?)${suffix}$`)
+  // Every later placeholder must repeat the first path (formatHeader fills them all).
+  const repeated = segments
+    .slice(1, -1)
+    .map((segment) => `${escapeRegex(segment)}(?:\\1)`)
+    .join('')
+  return new RegExp(
+    `^${escapeRegex(segments[0])}(.+?)${repeated}${escapeRegex(segments.at(-1) ?? '')}$`
+  )
 }
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
-
-export const DELETED_FILE_MARKER = '// This file has been deleted in this change'
 
 // Snipcode defaults; there is no settings UI, so the wire format stays fixed.
 export const CLIPCODE_DEFAULTS = {
