@@ -262,10 +262,10 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         staged: boolean
         compareAgainstHead?: boolean
         oldPath?: string
-        skipRenderLimit?: boolean
         connectionId?: string
         /** Showing the diff tab or its Retry: a user act that may start a stopped WSL distro. */
         wakeWslDistro?: boolean
+        skipRenderLimit?: boolean
       }
     ): Promise<GitDiffResult> => {
       requireReachableGitRoute(getConnectionExecutionHostId(args.connectionId))
@@ -273,19 +273,21 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         store,
         args.worktreePath,
         args.wakeWslDistro,
-        (worktreePath, gitOptions) => {
-          const filePath = validateGitRelativeFilePath(worktreePath, args.filePath)
-          const diffOptions = {
-            ...gitOptions,
-            admissionTier: 'interactive' as const,
-            ...(args.oldPath
-              ? { oldPath: validateGitRelativeFilePath(worktreePath, args.oldPath) }
-              : {})
-          }
-          return args.skipRenderLimit
-            ? getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, diffOptions, true)
-            : getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, diffOptions)
-        }
+        (worktreePath, gitOptions) =>
+          getDiff(
+            worktreePath,
+            validateGitRelativeFilePath(worktreePath, args.filePath),
+            args.staged,
+            args.compareAgainstHead,
+            {
+              ...gitOptions,
+              admissionTier: 'interactive',
+              ...(args.oldPath
+                ? { oldPath: validateGitRelativeFilePath(worktreePath, args.oldPath) }
+                : {}),
+              skipRenderLimit: args.skipRenderLimit
+            }
+          )
       )
     }
   )
