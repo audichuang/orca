@@ -23,6 +23,7 @@ import {
   formatClipcodeStatsLine,
   payloadStats
 } from './clipcode-payload-stats'
+import { svgPreviewText } from './clipcode-svg-text'
 
 export type ClipcodeCopyRequest = {
   worktree: Pick<Worktree, 'id' | 'path'>
@@ -61,7 +62,10 @@ export const clipcodeRuntimeReaders: ClipcodeContentReaders = {
       worktreeId: context.worktreeId ?? undefined,
       connectionId: context.connectionId
     })
-    return { content: file.content, isBinary: file.isBinary }
+    const svgText = svgPreviewText(file)
+    return svgText === null
+      ? { content: file.content, isBinary: file.isBinary }
+      : { content: svgText, isBinary: false }
   }
 }
 
@@ -121,10 +125,16 @@ export async function copyClipcodeGitChanges(args: {
     }
     if (result.entryCount === 0) {
       toast.warning(
-        translate(
-          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
-          'No Git changes found to copy.'
-        )
+        result.skippedBinaryFileCount > 0
+          ? translate(
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyBinarySkipped',
+              'Nothing to copy: {{value0}} binary file(s) skipped.',
+              { value0: result.skippedBinaryFileCount }
+            )
+          : translate(
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
+              'No Git changes found to copy.'
+            )
       )
       return
     }
@@ -145,12 +155,20 @@ export async function copyClipcodeGitChanges(args: {
             { value0: result.unreadableFileCount }
           )}`
         : ''
+    const binary =
+      result.skippedBinaryFileCount > 0
+        ? ` ${translate(
+            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.binarySkipped',
+            '({{value0}} skipped: binary)',
+            { value0: result.skippedBinaryFileCount }
+          )}`
+        : ''
     notifyCopied(
       `${translate(
         'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.65b422bbd1',
         '{{value0}} Git file(s) copied',
         { value0: result.copiedFileCount }
-      )}${skipped}${unreadable}.`,
+      )}${skipped}${binary}${unreadable}.`,
       result.payload
     )
   } catch (error) {
