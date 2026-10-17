@@ -1,4 +1,5 @@
 import { GitHistoryPanel } from '../sync/git-history-panel'
+import { GitHistoryGraphLoadMore, GitHistoryGraphToolbar } from '../sync/git-history-graph-toolbar'
 import { shouldShowSourceControlCompareUnavailableCard } from './header-toolbar'
 import { shouldRenderCommitArea } from '../commit/component-gates'
 import { SourceControlBranchSection } from '../listing/branch-section'
@@ -19,6 +20,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
   const gitOwnerId = scope ? currentWorktreeId : undefined
   const {
     activeConnectionId,
+    activeRepoTarget,
     activeOpenRowKeys,
     branchEntries,
     branchSummary,
@@ -237,6 +239,20 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
             onLoadCommitFiles={loadCommitFiles}
             onOpenCommitFile={openCommitFile}
             onCommitAction={handleCommitAction}
+            toolbar={
+              <GitHistoryGraphToolbar
+                worktreeId={currentWorktreeId}
+                worktreePath={worktreePath}
+                activeRepoTarget={activeRepoTarget}
+                result={gitHistoryState.result}
+              />
+            }
+            footer={
+              <GitHistoryGraphLoadMore
+                worktreeId={currentWorktreeId}
+                result={gitHistoryState.result}
+              />
+            }
           />
         </div>
       )}
