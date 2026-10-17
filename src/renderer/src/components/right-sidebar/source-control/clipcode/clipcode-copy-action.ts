@@ -3,7 +3,7 @@ import { translate } from '@/i18n/i18n'
 import { getConnectionId } from '@/lib/connection-context'
 import { readIpcErrorMessage } from '@/lib/ipc-error'
 import { joinPath } from '@/lib/path'
-import { getRuntimeGitDiff } from '@/runtime/runtime-git-diff-client'
+import { getRuntimeGitCommitDiff, getRuntimeGitDiff } from '@/runtime/runtime-git-diff-client'
 import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
 import { readRuntimeFileContent } from '@/runtime/runtime-file-read-client'
 import { useAppStore } from '@/store'
@@ -14,8 +14,10 @@ import { getWorktreeGitOwnerTarget, requireGitOwnerTarget } from '../../worktree
 import {
   buildClipcodeGitCopy,
   type ClipcodeContentReaders,
-  type ClipcodeCopyRepo
+  type ClipcodeCopyRepo,
+  type ClipcodeGitCopyResult
 } from './clipcode-git-copy'
+import { buildClipcodeCommitCopy, type ClipcodeCommitCopyCommit } from './clipcode-commit-copy'
 import {
   CLIPCODE_TOKEN_DANGER_THRESHOLD,
   CLIPCODE_TOKEN_WARN_THRESHOLD,
@@ -111,75 +113,101 @@ export async function copyClipcodeGitChanges(args: {
       repos,
       readers: clipcodeRuntimeReaders
     })
-    if (result.entryCount === 0 && result.unreadableFileCount > 0) {
-      toast.error(
-        translate(
-          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.9c3f952874',
-          '{{value0}} Git file(s) could not be read.',
-          {
-            value0: result.unreadableFileCount
-          }
-        )
-      )
-      return
-    }
-    if (result.entryCount === 0) {
-      toast.warning(
-        result.skippedBinaryFileCount > 0
-          ? translate(
-              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyBinarySkipped',
-              'Nothing to copy: {{value0}} binary file(s) skipped.',
-              { value0: result.skippedBinaryFileCount }
-            )
-          : translate(
-              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
-              'No Git changes found to copy.'
-            )
-      )
-      return
-    }
-    await window.api.ui.writeClipboardText(result.payload)
-    const skipped =
-      result.skippedFileSizeCount > 0
-        ? ` ${translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.7828c565da',
-            '({{value0}} skipped: size exceeded)',
-            { value0: result.skippedFileSizeCount }
-          )}`
-        : ''
-    const unreadable =
-      result.unreadableFileCount > 0
-        ? ` ${translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.2749202819',
-            '({{value0}} unreadable)',
-            { value0: result.unreadableFileCount }
-          )}`
-        : ''
-    const binary =
-      result.skippedBinaryFileCount > 0
-        ? ` ${translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.binarySkipped',
-            '({{value0}} skipped: binary)',
-            { value0: result.skippedBinaryFileCount }
-          )}`
-        : ''
-    notifyCopied(
-      `${translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.65b422bbd1',
-        '{{value0}} Git file(s) copied',
-        { value0: result.copiedFileCount }
-      )}${skipped}${binary}${unreadable}.`,
-      result.payload
-    )
+    await reportClipcodeCopyResult(result)
   } catch (error) {
+    notifyCopyFailed(error)
+  }
+}
+
+/** Clipboard write plus the shared toast wording, so every Copy Full Source source reports alike. */
+async function reportClipcodeCopyResult(result: ClipcodeGitCopyResult): Promise<void> {
+  if (result.entryCount === 0 && result.unreadableFileCount > 0) {
     toast.error(
       translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.7c6daaf4fa',
-        'Copy Full Source failed'
-      ),
-      {
-        description: readIpcErrorMessage(error)
-      }
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.9c3f952874',
+        '{{value0}} Git file(s) could not be read.',
+        {
+          value0: result.unreadableFileCount
+        }
+      )
     )
+    return
+  }
+  if (result.entryCount === 0) {
+    toast.warning(
+      result.skippedBinaryFileCount > 0
+        ? translate(
+            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyBinarySkipped',
+            'Nothing to copy: {{value0}} binary file(s) skipped.',
+            { value0: result.skippedBinaryFileCount }
+          )
+        : translate(
+            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
+            'No Git changes found to copy.'
+          )
+    )
+    return
+  }
+  await window.api.ui.writeClipboardText(result.payload)
+  const skipped =
+    result.skippedFileSizeCount > 0
+      ? ` ${translate(
+          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.7828c565da',
+          '({{value0}} skipped: size exceeded)',
+          { value0: result.skippedFileSizeCount }
+        )}`
+      : ''
+  const unreadable =
+    result.unreadableFileCount > 0
+      ? ` ${translate(
+          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.2749202819',
+          '({{value0}} unreadable)',
+          { value0: result.unreadableFileCount }
+        )}`
+      : ''
+  const binary =
+    result.skippedBinaryFileCount > 0
+      ? ` ${translate(
+          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.binarySkipped',
+          '({{value0}} skipped: binary)',
+          { value0: result.skippedBinaryFileCount }
+        )}`
+      : ''
+  notifyCopied(
+    `${translate(
+      'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.65b422bbd1',
+      '{{value0}} Git file(s) copied',
+      { value0: result.copiedFileCount }
+    )}${skipped}${binary}${unreadable}.`,
+    result.payload
+  )
+}
+
+function notifyCopyFailed(error: unknown): void {
+  toast.error(
+    translate(
+      'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.7c6daaf4fa',
+      'Copy Full Source failed'
+    ),
+    {
+      description: readIpcErrorMessage(error)
+    }
+  )
+}
+
+/** Copy Full Source for one or more commits of one repo (newest commit wins per path). */
+export async function copyClipcodeCommitChanges(args: {
+  rootPath: string
+  context: RuntimeGitContext
+  commits: readonly ClipcodeCommitCopyCommit[]
+}): Promise<void> {
+  try {
+    const result = await buildClipcodeCommitCopy({
+      ...args,
+      readers: { readCommitDiff: getRuntimeGitCommitDiff }
+    })
+    await reportClipcodeCopyResult(result)
+  } catch (error) {
+    notifyCopyFailed(error)
   }
 }
