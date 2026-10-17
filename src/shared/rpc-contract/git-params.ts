@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { OptionalGitAdmissionTier } from './git-admission-tier-params'
 import { OptionalTuiAgent } from './worktree-params'
+import { GitHistoryGraphParams } from './git-history-graph-params'
 
 export const WorktreeSelector = z.object({
   worktree: z
@@ -77,7 +78,8 @@ export const GitCommitCompare = WorktreeSelector.extend({
 
 export const GitHistory = WorktreeSelector.extend({
   limit: z.number().int().min(1).max(200).optional(),
-  baseRef: z.string().nullable().optional()
+  baseRef: z.string().nullable().optional(),
+  graph: GitHistoryGraphParams.optional()
 })
 
 export const GitBranchDiff = GitFilePath.extend({
