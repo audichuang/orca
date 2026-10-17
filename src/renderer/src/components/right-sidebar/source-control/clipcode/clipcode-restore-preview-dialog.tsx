@@ -78,6 +78,11 @@ function skipReasonLabel(reason: ClipcodeRestorePreview['skipped'][number]['reas
         'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.targetUnreadable',
         'could not check the existing file'
       )
+    case 'NON_UTF8_TARGET':
+      return translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.nonUtf8Target',
+        'existing file is not UTF-8'
+      )
     case 'CASE_CONFLICT':
       return translate(
         'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.caseConflict',
