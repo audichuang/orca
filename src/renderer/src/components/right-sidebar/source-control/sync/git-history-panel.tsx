@@ -12,12 +12,14 @@ import {
 } from '../../../../../../shared/git-history-graph'
 import { GitHistoryRow } from './git-history-row'
 import { GitHistoryCommitFiles, type GitHistoryCommitFilesState } from './git-history-commit-files'
-import {
-  GitHistoryCommitContextMenu,
-  type GitHistoryCommitAction
-} from './git-history-commit-context-menu'
+import { GitHistoryCommitContextMenu } from './git-history-commit-context-menu'
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import { translate } from '@/i18n/i18n'
+import {
+  useGitHistoryCommitSelection,
+  type GitHistoryCommitActionHandler
+} from './use-git-history-commit-selection'
+import { GitHistorySelectableRow } from './git-history-selectable-row'
 
 export type GitHistoryPanelState =
   | { status: 'idle' | 'loading'; result?: GitHistoryResult; error?: string }
@@ -48,7 +50,9 @@ export function GitHistoryPanel({
   onOpenCommit,
   onLoadCommitFiles,
   onOpenCommitFile,
-  onCommitAction
+  onCommitAction,
+  toolbar,
+  footer
 }: {
   state: GitHistoryPanelState
   collapsed: boolean
@@ -61,7 +65,11 @@ export function GitHistoryPanel({
     entry: GitBranchChangeEntry,
     event?: SourceControlRowOpenEvent
   ) => void
-  onCommitAction?: (action: GitHistoryCommitAction, item: GitHistoryItem) => void
+  onCommitAction?: GitHistoryCommitActionHandler
+  /** Fork: branch filter / search row under the header. */
+  toolbar?: React.ReactNode
+  /** Fork: rendered after the last commit (load more). */
+  footer?: React.ReactNode
 }): React.JSX.Element | null {
   const result = state.result
   const viewModels = useMemo(() => {
@@ -81,6 +89,7 @@ export function GitHistoryPanel({
   }, [result])
 
   const loading = state.status === 'loading' || state.status === 'refreshing'
+  const selection = useGitHistoryCommitSelection(result)
   const count = result?.items.length ?? 0
   const [panelHeight, setPanelHeight] = useState(DEFAULT_GIT_HISTORY_PANEL_HEIGHT)
   const resizeSessionRef = useRef<GitHistoryResizeSession | null>(null)
@@ -315,6 +324,7 @@ export function GitHistoryPanel({
           </Tooltip>
         </div>
       </div>
+      {!collapsed && toolbar}
       {!collapsed && state.status === 'error' && !result && (
         <div
           className={cn(expandedBodyClassName, 'px-6 py-2 text-[11px] text-destructive')}
@@ -358,20 +368,33 @@ export function GitHistoryPanel({
               !isBoundaryNode && Boolean(onLoadCommitFiles) && Boolean(onOpenCommitFile)
             const isExpanded = canExpand && expanded.has(item.id)
             const row = (
-              <GitHistoryRow
-                viewModel={viewModel}
-                expanded={isExpanded}
-                preserveRefIds={result?.baseRef ? [result.baseRef.id] : undefined}
-                onOpenCommit={onOpenCommit}
-                onToggleExpand={canExpand ? handleToggleExpand : undefined}
-              />
+              <GitHistorySelectableRow
+                selected={!isBoundaryNode && selection.isSelected(item.id)}
+                onSelectionClick={(event) =>
+                  !isBoundaryNode && selection.handleRowClick(item, event)
+                }
+              >
+                <GitHistoryRow
+                  viewModel={viewModel}
+                  expanded={isExpanded}
+                  preserveRefIds={result?.baseRef ? [result.baseRef.id] : undefined}
+                  onOpenCommit={onOpenCommit}
+                  onToggleExpand={canExpand ? handleToggleExpand : undefined}
+                />
+              </GitHistorySelectableRow>
             )
             return (
               <React.Fragment key={`${viewModel.kind}:${item.id}`}>
                 {onCommitAction && !isBoundaryNode ? (
                   <ContextMenu>
                     <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
-                    <GitHistoryCommitContextMenu item={item} onAction={onCommitAction} />
+                    <GitHistoryCommitContextMenu
+                      item={item}
+                      selectedCount={selection.itemsFor(item).length}
+                      onAction={(action, target) =>
+                        onCommitAction(action, target, selection.itemsFor(target))
+                      }
+                    />
                   </ContextMenu>
                 ) : (
                   row
@@ -388,6 +411,7 @@ export function GitHistoryPanel({
               </React.Fragment>
             )
           })}
+          {footer}
         </div>
       )}
     </div>
