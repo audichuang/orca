@@ -1,5 +1,6 @@
 import { app } from 'electron'
 import { is } from '@electron-toolkit/utils'
+import { isForkDistribution } from './fork-distribution'
 import { isMacInstallRequested } from '../updater-mac-install'
 import type { UpdateCheckOptions } from '../../shared/update-status-types'
 import type { ReleaseChannel } from '../../shared/release-channel'
@@ -15,7 +16,7 @@ export abstract class UpdaterMenuChecks extends UpdaterScheduling {
     ) {
       return
     }
-    if (!app.isPackaged || is.dev) {
+    if (!app.isPackaged || is.dev || isForkDistribution()) {
       this.sendStatus({ state: 'not-available', userInitiated: true })
       return
     }

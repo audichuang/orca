@@ -28,11 +28,16 @@ chmodSync(binaryPath, 0o755)
 createHelperApp()
 
 function buildUniversalBinary() {
-  const builtBinaries = universalTriples.map((triple) => {
-    run('swift', ['build', '-c', 'release', '--package-path', packagePath, '--triple', triple])
-    return path.join(packagePath, '.build', triple, 'release', 'orca-computer-use-macos')
-  })
   mkdirSync(path.dirname(binaryPath), { recursive: true })
+  const builtBinaries = universalTriples.map((triple) => {
+    const args = ['build', '-c', 'release', '--package-path', packagePath, '--triple', triple]
+    run('swift', args)
+    // Why: newer SwiftPM (swiftbuild) writes every triple to one .build/out path, so ask for it and copy each slice out before the next build overwrites it.
+    const binPath = capture('swift', [...args, '--show-bin-path'])
+    const slicePath = path.join(path.dirname(binaryPath), `orca-computer-use-macos-${triple}`)
+    copyFileSync(path.join(binPath, 'orca-computer-use-macos'), slicePath)
+    return slicePath
+  })
   run('lipo', ['-create', ...builtBinaries, '-output', binaryPath])
 }
 
@@ -81,6 +86,17 @@ function resolveSigningIdentity() {
     identities.stdout.match(/"([^"]*Developer ID Application:[^"]+)"/) ??
     identities.stdout.match(/"([^"]*Apple Distribution:[^"]+)"/)
   return releaseMatch?.[1] ?? developmentMatch?.[1] ?? '-'
+}
+
+function capture(command, args) {
+  const result = spawnSync(command, args, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'inherit']
+  })
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1)
+  }
+  return result.stdout.trim().split('\n').at(-1)
 }
 
 function run(command, args) {
