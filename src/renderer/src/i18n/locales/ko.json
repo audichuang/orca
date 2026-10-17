@@ -14654,7 +14654,9 @@
             "7b1c4e9a02": "브라우저에서 commit 열기",
             "8c2d5fab13": "commit 해시 복사",
             "9d3e60bc24": "commit 메시지 복사",
-            "ae4f71cd35": "변경 사항 설명"
+            "ae4f71cd35": "변경 사항 설명",
+            "copyFullSource": "전체 소스 복사",
+            "copyFullSourceMany": "전체 소스 복사 (커밋 {{value0}}개)"
           },
           "pull": {
             "policy": {
@@ -14833,6 +14835,24 @@
                 }
               }
             }
+          },
+          "GitHistoryGraph": {
+            "allBranches": "모든 브랜치",
+            "branchCount": "브랜치 {{value0}}개",
+            "currentBranch": "현재 브랜치",
+            "branchFilter": "브랜치 필터",
+            "searchBranches": "브랜치 검색...",
+            "scope": "표시",
+            "sources": "소스",
+            "localBranches": "로컬 브랜치",
+            "branches": "브랜치",
+            "loadingBranches": "브랜치 불러오는 중...",
+            "hostTooOld": "이 저장소 호스트의 Orca가 오래되어 현재 브랜치만 표시됩니다.",
+            "branchesFailed": "브랜치를 불러오지 못했습니다",
+            "remote": "원격",
+            "searchCommits": "커밋 검색 (author: path:)",
+            "searchCommitsLabel": "커밋 검색",
+            "loadMore": "커밋 더 불러오기"
           }
         }
       },

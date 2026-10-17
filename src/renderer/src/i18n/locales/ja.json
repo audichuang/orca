@@ -14716,7 +14716,9 @@
             "7b1c4e9a02": "コミットをブラウザで開く",
             "8c2d5fab13": "コミットハッシュをコピー",
             "9d3e60bc24": "コミットメッセージをコピー",
-            "ae4f71cd35": "変更を説明"
+            "ae4f71cd35": "変更を説明",
+            "copyFullSource": "完全なソースをコピー",
+            "copyFullSourceMany": "完全なソースをコピー（{{value0}} 件のコミット）"
           },
           "pull": {
             "policy": {
@@ -14895,6 +14897,24 @@
                 }
               }
             }
+          },
+          "GitHistoryGraph": {
+            "allBranches": "すべてのブランチ",
+            "branchCount": "{{value0}} 個のブランチ",
+            "currentBranch": "現在のブランチ",
+            "branchFilter": "ブランチフィルター",
+            "searchBranches": "ブランチを検索...",
+            "scope": "表示",
+            "sources": "ソース",
+            "localBranches": "ローカルブランチ",
+            "branches": "ブランチ",
+            "loadingBranches": "ブランチを読み込み中...",
+            "hostTooOld": "このリポジトリのホストは古い Orca のため、現在のブランチのみ表示されます。",
+            "branchesFailed": "ブランチを読み込めませんでした",
+            "remote": "リモート",
+            "searchCommits": "コミットを検索（author: path:）",
+            "searchCommitsLabel": "コミットを検索",
+            "loadMore": "さらにコミットを読み込む"
           }
         }
       },

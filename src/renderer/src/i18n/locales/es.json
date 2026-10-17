@@ -14687,7 +14687,9 @@
             "7b1c4e9a02": "Abrir commit en el navegador",
             "8c2d5fab13": "Copiar hash del commit",
             "9d3e60bc24": "Copiar mensaje del commit",
-            "ae4f71cd35": "Explicar los cambios"
+            "ae4f71cd35": "Explicar los cambios",
+            "copyFullSource": "Copiar código fuente completo",
+            "copyFullSourceMany": "Copiar código fuente completo ({{value0}} commits)"
           },
           "pull": {
             "policy": {
@@ -14849,6 +14851,24 @@
                 }
               }
             }
+          },
+          "GitHistoryGraph": {
+            "allBranches": "Todas las ramas",
+            "branchCount": "{{value0}} ramas",
+            "currentBranch": "Rama actual",
+            "branchFilter": "Filtro de ramas",
+            "searchBranches": "Buscar ramas...",
+            "scope": "Mostrar",
+            "sources": "Orígenes",
+            "localBranches": "Ramas locales",
+            "branches": "Ramas",
+            "loadingBranches": "Cargando ramas...",
+            "hostTooOld": "El host de este repositorio usa una versión antigua de Orca que solo muestra la rama actual.",
+            "branchesFailed": "No se pudieron cargar las ramas",
+            "remote": "remota",
+            "searchCommits": "Buscar commits (author: path:)",
+            "searchCommitsLabel": "Buscar commits",
+            "loadMore": "Cargar más commits"
           }
         }
       },
