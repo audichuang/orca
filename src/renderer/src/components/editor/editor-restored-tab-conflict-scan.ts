@@ -2,7 +2,10 @@
 import type { StoreApi } from 'zustand'
 import type { AppState } from '@/store'
 import type { OpenFile } from '@/store/slices/editor'
-import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
+import {
+  getOpenFileGitRelativePath,
+  getOpenFileGitWorktreeId
+} from '@/store/slices/editor/git/open-file-git-owner'
 import { getConnectionIdForFile } from '@/lib/connection-context'
 import { editorTabFileAccess } from '@/lib/local-file-access'
 import { readRuntimeFileContent } from '@/runtime/runtime-file-read-client'
@@ -146,7 +149,7 @@ export function attachRestoredTabConflictScan(store: AppStoreApi): () => void {
       const result = await readRuntimeFileContent({
         target: requireRuntimeTargetForFileOwner(state, file.worktreeId, file.runtimeEnvironmentId),
         filePath: file.filePath,
-        relativePath: file.relativePath,
+        relativePath: getOpenFileGitRelativePath(state, file),
         worktreeId: getOpenFileGitWorktreeId(file),
         connectionId: getFileConnectionId(file),
         expectedExternalSshTargetId: file.externalSshTargetId,
