@@ -1,5 +1,6 @@
 import { GitHistoryPanel } from '../sync/git-history-panel'
-import { GitHistoryGraphLoadMore, GitHistoryGraphToolbar } from '../sync/git-history-graph-toolbar'
+import { GitHistoryGraphToolbar } from '../sync/git-history-graph-toolbar'
+import { GitHistoryGraphLoadMore } from '../sync/git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from '../sync/git-history-graph-empty-message'
 import { shouldShowSourceControlCompareUnavailableCard } from './header-toolbar'
 import { shouldRenderCommitArea } from '../commit/component-gates'
@@ -245,14 +246,11 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
                 worktreeId={currentWorktreeId}
                 worktreePath={worktreePath}
                 activeRepoTarget={activeRepoTarget}
-                result={gitHistoryState.result}
+                state={gitHistoryState}
               />
             }
             footer={
-              <GitHistoryGraphLoadMore
-                worktreeId={currentWorktreeId}
-                result={gitHistoryState.result}
-              />
+              <GitHistoryGraphLoadMore worktreeId={currentWorktreeId} state={gitHistoryState} />
             }
             emptyMessage={<GitHistoryGraphEmptyMessage worktreeId={currentWorktreeId} />}
           />
