@@ -15442,6 +15442,15 @@
             "searchCommitsLabel": "Search commits",
             "loadMore": "Load more commits",
             "noMatchingCommits": "No commits match this filter"
+          },
+          "GitGraphFullView": {
+            "open": "Open Git Graph",
+            "description": "Commit graph for the current repository.",
+            "message": "Message",
+            "author": "Author",
+            "date": "Date",
+            "commit": "Commit",
+            "selectCommit": "Select a commit to see its details and changed files."
           }
         }
       },
