@@ -2,6 +2,7 @@ import { GitHistoryPanel } from '../sync/git-history-panel'
 import { GitHistoryGraphToolbar } from '../sync/git-history-graph-toolbar'
 import { GitHistoryGraphLoadMore } from '../sync/git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from '../sync/git-history-graph-empty-message'
+import { GitGraphFullViewLauncher } from '../sync/git-graph-full-view-dialog'
 import { shouldShowSourceControlCompareUnavailableCard } from './header-toolbar'
 import { shouldRenderCommitArea } from '../commit/component-gates'
 import { SourceControlBranchSection } from '../listing/branch-section'
@@ -246,6 +247,18 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
                 worktreePath={worktreePath}
                 activeRepoTarget={activeRepoTarget}
                 state={gitHistoryState}
+                trailing={
+                  <GitGraphFullViewLauncher
+                    worktreeId={currentWorktreeId}
+                    worktreePath={worktreePath}
+                    activeRepoTarget={activeRepoTarget}
+                    state={gitHistoryState}
+                    onRefresh={() => void refreshGitHistory()}
+                    onOpenCommit={(item) => void openHistoryCommitDiff(item)}
+                    onLoadCommitFiles={loadCommitFiles}
+                    onOpenCommitFile={openCommitFile}
+                  />
+                }
               />
             }
             footer={
