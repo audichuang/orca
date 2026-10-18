@@ -3,6 +3,11 @@ import type { OpenFile } from '../types/open-file'
 import { getIndexedWorktreesById } from '../../../worktree-repo-index'
 import { relativePathInsideRoot } from '../../../../../../shared/cross-platform-path'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import {
+  getRepoExecutionHostId,
+  parseExecutionHostId,
+  toRuntimeExecutionHostId
+} from '../../../../../../shared/execution-host'
 
 /** Worktree whose git state backs a tab; differs from the tab owner for folder-workspace repo sections. */
 export function getOpenFileGitWorktreeId(
@@ -32,7 +37,10 @@ export function getOpenFileGitRelativePath(
 /** Path relative to the tab owner's root; a git-owned tab's relativePath is repo-relative instead. */
 export function resolveTabOwnerRelativePath(
   state: Pick<AppState, 'folderWorkspaces'>,
-  file: Pick<OpenFile, 'gitWorktreeId' | 'worktreeId' | 'relativePath' | 'filePath'>,
+  file: Pick<
+    OpenFile,
+    'gitWorktreeId' | 'worktreeId' | 'relativePath' | 'filePath' | 'runtimeEnvironmentId'
+  >,
   worktreePath: string | null
 ): string | null {
   if (!file.gitWorktreeId || file.gitWorktreeId === file.worktreeId) {
@@ -42,10 +50,19 @@ export function resolveTabOwnerRelativePath(
   if (scope?.type !== 'folder') {
     return worktreePath ? relativePathInsideRoot(worktreePath, file.filePath) : null
   }
-  // Why: hosts can share a folder id with different roots; only a root holding filePath is the tab's.
+  // Why: hosts can share a folder id with different (even nested) roots; only the tab's host's root holding filePath is its owner.
+  const runtimeHostId = file.runtimeEnvironmentId
+    ? toRuntimeExecutionHostId(file.runtimeEnvironmentId)
+    : null
   const candidates = new Set<string>()
   for (const workspace of state.folderWorkspaces ?? []) {
     if (workspace.id !== scope.folderWorkspaceId) {
+      continue
+    }
+    const hostId = getRepoExecutionHostId(workspace)
+    if (
+      runtimeHostId ? hostId !== runtimeHostId : parseExecutionHostId(hostId)?.kind === 'runtime'
+    ) {
       continue
     }
     const relativePath = relativePathInsideRoot(workspace.folderPath, file.filePath)
