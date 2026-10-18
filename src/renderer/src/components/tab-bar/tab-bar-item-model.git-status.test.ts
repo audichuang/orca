@@ -22,13 +22,18 @@ describe('resolveEditorTabGitStatus', () => {
   )
 
   it('decorates folder-workspace tabs from their own repo, not a same-named file elsewhere', () => {
-    const map = buildEditorTabGitStatusMap([], {
-      web: [{ path: 'README.md', status: 'modified', area: 'unstaged' }],
-      api: [{ path: 'README.md', status: 'deleted', area: 'unstaged' }]
-    })
+    const map = buildEditorTabGitStatusMap(
+      [],
+      {
+        web: [{ path: 'README.md', status: 'modified', area: 'unstaged' }],
+        api: [{ path: 'README.md', status: 'deleted', area: 'unstaged' }]
+      },
+      { web: '/f/web', api: '/f/api' }
+    )
     const tab = (gitWorktreeId: string) => ({
       mode: 'edit' as const,
       relativePath: 'README.md',
+      filePath: `/f/${gitWorktreeId}/README.md`,
       worktreeId: 'folder:f1',
       gitWorktreeId
     })
