@@ -21,6 +21,7 @@ import type { SidebarWorktreeFilters } from './use-filters'
 import { useReusedArrayIdentity } from './use-reused-array-identity'
 import { useSleepingSweepRetention } from './use-sleeping-sweep-retention'
 import { selectWorktreesByRepo } from '@/store/workspace-record-selectors'
+import { useFolderSidebarHiddenReposVersion } from '../../../right-sidebar/source-control/folder/folder-sidebar-hidden-repos'
 
 const EMPTY_WORKTREE_ID_SET: ReadonlySet<string> = new Set()
 
@@ -105,7 +106,9 @@ export function useVisibleSidebarWorktrees(args: {
     worktreeIdsWithStructuredChat
   })
 
+  const folderHiddenReposVersion = useFolderSidebarHiddenReposVersion()
   const recomputedVisibleWorktrees = useMemo(() => {
+    void folderHiddenReposVersion
     return computeVisibleWorktrees(worktreesByRepo, sortedIds, {
       filterRepoIds,
       showSleepingWorkspaces,
@@ -135,6 +138,7 @@ export function useVisibleSidebarWorktrees(args: {
         : undefined
     })
   }, [
+    folderHiddenReposVersion,
     args.agentSendTargetWorktreeId,
     worktreeIdsWithLiveAgent,
     sleepingSweepExemptWorktreeIds,
