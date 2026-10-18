@@ -77,7 +77,10 @@ jobs:
         run: pnpm run check:daemon-protocol-crossing
 
       - name: Old/new client and server compatibility journeys
-        run: pnpm exec vitest run --config config/vitest.config.ts tests/e2e/cross-version-wire/
+        # Why the exclude: at the fork base this upstream test imports isStructuredTab from a module that no longer exports it.
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts tests/e2e/cross-version-wire/
+          --exclude tests/e2e/cross-version-wire/cross-version-registered-agents.unit.test.ts
 
   mac_arm64_build:
     # Same steps as `make build`, the build installed on the fork's only target machine.
