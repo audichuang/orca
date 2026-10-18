@@ -57,8 +57,27 @@ export function updateGitHistoryGraphFilter(
   }
 }
 
+// Why shared: the sidebar and full-view search boxes are one draft, so neither debounce can commit a stale copy.
+const draftQueries = new Map<string, string>()
+
+export function getGitHistoryGraphDraftQuery(worktreeId: string): string {
+  return draftQueries.get(worktreeId) ?? getGitHistoryGraphFilter(worktreeId).query
+}
+
+export function setGitHistoryGraphDraftQuery(worktreeId: string, query: string): void {
+  draftQueries.set(worktreeId, query)
+  for (const listener of listeners) {
+    listener()
+  }
+}
+
+export function useGitHistoryGraphDraftQuery(worktreeId: string): string {
+  return useSyncExternalStore(subscribe, () => getGitHistoryGraphDraftQuery(worktreeId))
+}
+
 export function resetGitHistoryGraphFiltersForTest(): void {
   filters.clear()
+  draftQueries.clear()
 }
 
 function subscribe(listener: () => void): () => void {
