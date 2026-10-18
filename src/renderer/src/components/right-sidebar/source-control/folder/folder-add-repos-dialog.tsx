@@ -12,6 +12,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
+import { getAllWorktreesFromState } from '@/store/selectors'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspace-types'
 import type { NestedRepoCandidate } from '../../../../../../shared/project-group-types'
 import {
@@ -52,11 +53,18 @@ export function FolderAddReposDialog({
       .then((result) => {
         if (!cancelled) {
           // Why: the repo list is read once, so repos added while the dialog is open never vanish from it.
+          const state = useAppStore.getState()
           const candidates = getNewNestedRepoCandidates({
             folderPath,
             folderOwner: folderWorkspace,
             scanned: result.repos,
-            repos: useAppStore.getState().repos
+            repos: state.repos,
+            worktrees: [
+              ...getAllWorktreesFromState(state),
+              ...Object.entries(state.detectedWorktreesByRepo).flatMap(([repoId, detected]) =>
+                (detected?.worktrees ?? []).map((worktree) => ({ repoId, path: worktree.path }))
+              )
+            ]
           })
           setScan({ phase: 'ready', candidates, truncated: result.truncated || result.timedOut })
         }
