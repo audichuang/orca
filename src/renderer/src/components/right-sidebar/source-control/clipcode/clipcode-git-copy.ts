@@ -10,7 +10,7 @@ import {
   type ChangeTypeLabel,
   type PayloadFile
 } from './clipcode-clipboard-format'
-import { classifyClipcodeEntryContent } from './clipcode-entry-content'
+import { classifyClipcodeEntryContent, isUnreadableModifiedSide } from './clipcode-entry-content'
 
 export type ClipcodeCopyRepo = {
   /** Git owner transport of this repo; reads never touch the local fs directly. */
@@ -123,7 +123,7 @@ async function readIndexContent(
         return null
       }
       // Why: an empty staged text blob over a binary HEAD is valid; only a missing or unreadable side is not.
-      return diff.modifiedContent === '' && diff.missingSides?.includes('modified')
+      return isUnreadableModifiedSide(diff)
         ? 'unreadable'
         : { text: diff.modifiedContent }
     }
@@ -132,7 +132,7 @@ async function readIndexContent(
       return { skippedReason: STAGED_TOO_LARGE_REASON }
     }
     // Why: a failed read is reported via missingSides; an empty index blob is valid content (Snipcode copies '').
-    if (diff.modifiedContent === '' && diff.missingSides?.includes('modified')) {
+    if (isUnreadableModifiedSide(diff)) {
       return 'unreadable'
     }
     return { text: diff.modifiedContent }
