@@ -7,6 +7,8 @@ import { GIT_KEY } from '../../../shared/workspace-layout/workspace-layout-sessi
 import type { OpenFile } from './slices/editor/types/open-file'
 import { restorableEditorFile } from './slices/editor/tabs/editor-tab-layout-owner'
 import { buildLayoutFrameSlices } from './workspace-layout-frame-slices'
+import { useAppStore } from '.'
+import type { AppState } from './types'
 
 // A repo inside the tab owner's folder that has no layout frame of its own.
 const INNER_REPO = 'repo-2::/Users/dev/orca/inner'
@@ -58,5 +60,34 @@ describe('a folder tab keeps its git owner across a restart', () => {
     expect(
       restorableEditorFile({ ...base, gitWorktreeId: 'folder:abc' }).gitWorktreeId
     ).toBeUndefined()
+  })
+})
+
+describe('a folder tab whose git owner is gone by the next launch', () => {
+  it('re-anchors the repo-relative path to the folder when the owner is dropped', () => {
+    useAppStore.setState(useAppStore.getInitialState(), true)
+    useAppStore.setState(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: hydration reads only the folder catalog and the (empty) repo catalog.
+      {
+        folderWorkspaces: [{ id: 'f1', folderPath: '/f', projectGroupId: 'g1' }]
+      } as unknown as Partial<AppState>
+    )
+    const session = localDesktopSession()
+    // The shape a session saved while repo /f/gone backed the tab: relativePath relative to that repo.
+    session.openFilesByWorktree = {
+      'folder:f1': [
+        {
+          filePath: '/f/gone/src/x.ts',
+          relativePath: 'src/x.ts',
+          worktreeId: 'folder:f1',
+          language: 'typescript',
+          gitWorktreeId: 'gone::/f/gone'
+        }
+      ]
+    }
+    useAppStore.getState().hydrateEditorSession(session)
+    const file = useAppStore.getState().openFiles.find((f) => f.filePath === '/f/gone/src/x.ts')
+    expect(file).toMatchObject({ worktreeId: 'folder:f1', relativePath: 'gone/src/x.ts' })
+    expect(file?.gitWorktreeId).toBeUndefined()
   })
 })
