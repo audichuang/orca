@@ -14384,6 +14384,15 @@
             "searchCommitsLabel": "搜索提交",
             "loadMore": "加载更多提交",
             "noMatchingCommits": "没有符合此筛选条件的提交"
+          },
+          "GitGraphFullView": {
+            "open": "打开 Git Graph",
+            "description": "当前仓库的提交图。",
+            "message": "提交信息",
+            "author": "作者",
+            "date": "日期",
+            "commit": "提交",
+            "selectCommit": "选择一个提交以查看详情和变更的文件。"
           }
         }
       },
