@@ -90,4 +90,40 @@ describe('a folder tab whose git owner is gone by the next launch', () => {
     expect(file).toMatchObject({ worktreeId: 'folder:f1', relativePath: 'gone/src/x.ts' })
     expect(file?.gitWorktreeId).toBeUndefined()
   })
+
+  it('re-anchors against the root holding the file when hosts share the folder id', () => {
+    useAppStore.setState(useAppStore.getInitialState(), true)
+    useAppStore.setState(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: hydration reads only the folder catalog and the (empty) repo catalog.
+      {
+        folderWorkspaces: [
+          { id: 'f1', folderPath: '/local/folder', projectGroupId: 'g1', executionHostId: 'local' },
+          {
+            id: 'f1',
+            folderPath: '/remote/folder',
+            projectGroupId: 'g1',
+            executionHostId: 'runtime:builder'
+          }
+        ]
+      } as unknown as Partial<AppState>
+    )
+    const session = localDesktopSession()
+    session.openFilesByWorktree = {
+      'folder:f1': [
+        {
+          filePath: '/remote/folder/repo/src/x.ts',
+          relativePath: 'src/x.ts',
+          worktreeId: 'folder:f1',
+          language: 'typescript',
+          runtimeEnvironmentId: 'builder',
+          gitWorktreeId: 'gone::/remote/folder/repo'
+        }
+      ]
+    }
+    useAppStore.getState().hydrateEditorSession(session)
+    const file = useAppStore
+      .getState()
+      .openFiles.find((f) => f.filePath === '/remote/folder/repo/src/x.ts')
+    expect(file).toMatchObject({ relativePath: 'repo/src/x.ts' })
+  })
 })
