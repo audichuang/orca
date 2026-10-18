@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-base-guard
+.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-coverage fork-check-tests fork-base-guard
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -181,10 +181,10 @@ FORK_MAX_COMMITS ?= 200
 FORK_TEST_SHARD ?=
 
 fork-check: export LC_ALL = C
-fork-check: fork-check-static-types fork-check-tests fork-check-quality
+fork-check: fork-check-coverage fork-check-static-types fork-check-tests fork-check-quality
 
 fork-check-static: export LC_ALL = C
-fork-check-static: fork-check-static-types fork-check-quality
+fork-check-static: fork-check-coverage fork-check-static-types fork-check-quality
 
 fork-base-guard:
 	@echo ">> fork base: $(FORK_BASE)"
@@ -194,11 +194,14 @@ fork-base-guard:
 fork-check-static-types: fork-base-guard
 	pnpm tc
 
-fork-check-quality: fork-base-guard
+# Runs first so a missing FORK_TEST_DIRS entry fails before the long test run, not after it.
+fork-check-coverage: fork-base-guard
 	@# Why: vitest filters by path substring, so an upstream file the fork edits is covered when an entry prefixes its path.
 	@missing=$$(for f in $$(git diff --name-only --diff-filter=M $(FORK_BASE) HEAD -- src | grep -vE '\.test\.tsx?$$|/locales/'); do \
 	  s=$${f%.*}; for d in $(FORK_TEST_DIRS); do case "$$s" in "$${d%.test.ts}"*) continue 2;; esac; done; echo "  $$f"; done); \
 	  if [ -n "$$missing" ]; then echo "fork-check: add these upstream files' paths to FORK_TEST_DIRS:"; echo "$$missing"; exit 1; fi
+
+fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
 
 fork-check-tests: export LC_ALL = C
@@ -209,7 +212,7 @@ fork-check-tests: fork-base-guard
 FORK_REPO ?= audichuang/orca
 # Fork CI is fork-pr.yml only (macOS arm64 is the only target); rerun after a rebase brings new upstream workflows.
 fork-ci-disable-upstream:
-	gh workflow list -R $(FORK_REPO) --all --json path,state \
+	gh workflow list -R $(FORK_REPO) --all --limit 500 --json path,state \
 	  --jq '.[] | select(.state == "active" and .path != ".github/workflows/fork-pr.yml") | .path' | \
 	  while read -r wf; do gh workflow disable "$${wf##*/}" -R $(FORK_REPO); done
 
