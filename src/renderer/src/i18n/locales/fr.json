@@ -14735,6 +14735,15 @@
             "searchCommitsLabel": "Rechercher des commits",
             "loadMore": "Charger plus de commits",
             "noMatchingCommits": "Aucun commit ne correspond à ce filtre"
+          },
+          "GitGraphFullView": {
+            "open": "Ouvrir Git Graph",
+            "description": "Graphe des commits du dépôt actuel.",
+            "message": "Message",
+            "author": "Auteur",
+            "date": "Date",
+            "commit": "Commit",
+            "selectCommit": "Sélectionnez un commit pour voir ses détails et les fichiers modifiés."
           }
         }
       },
