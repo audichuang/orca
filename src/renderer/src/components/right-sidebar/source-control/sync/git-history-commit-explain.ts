@@ -1,3 +1,4 @@
+// Fork: upstream's explainCommitWithDefaultAgent, moved out of use-git-history-commit-actions.ts to keep it under max-lines; port upstream edits here on rebase.
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
