@@ -4,7 +4,10 @@ import { readEditorPanelFileContent } from './editor-panel-file-reads'
 import type { OpenFile } from '@/store/slices/editor'
 import { getConnectionIdForFile, isWorktreeConnectionResolved } from '@/lib/connection-context'
 import { useAppStore } from '@/store'
-import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
+import {
+  getOpenFileGitRelativePath,
+  getOpenFileGitWorktreeId
+} from '@/store/slices/editor/git/open-file-git-owner'
 import { getRuntimeFileReadScope } from '@/runtime/runtime-file-routing'
 import { readEditorCsvFileContent } from './csv/csv-file-content'
 import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
@@ -222,7 +225,9 @@ export function useEditorPanelFileContentLoader({
         const readArgs: RuntimeFileReadArgs = {
           target: readTarget,
           filePath,
-          relativePath: restoredOpenFile?.relativePath ?? relativePath,
+          relativePath: restoredOpenFile
+            ? getOpenFileGitRelativePath(useAppStore.getState(), restoredOpenFile)
+            : relativePath,
           worktreeId: readWorktreeId,
           connectionId: readConnectionId,
           expectedExternalSshTargetId: restoredOpenFile?.externalSshTargetId,
