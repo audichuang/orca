@@ -68,3 +68,7 @@ For a failed GitHub Actions run, inspect the failed jobs and retry with `gh run 
 # Tests
 
 Avoid adding low-value tests. These might be fine for development but offer low value when checked in. [Anti-patterns](./docs/reference/test-antipatterns.md)
+
+# Fork Maintenance
+
+This checkout is a personal fork. Before rebasing onto an upstream release, merging into `develop`, or adding tests for fork features, read `FORK.md`.
