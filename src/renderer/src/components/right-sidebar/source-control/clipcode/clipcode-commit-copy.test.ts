@@ -53,7 +53,7 @@ function commit(
   entries: GitBranchChangeEntry[],
   extra: Partial<ClipcodeCommitCopyCommit> = {}
 ): ClipcodeCommitCopyCommit {
-  return { commitOid, parentOids: [PARENT_1], timestamp: 1000, entries, ...extra }
+  return { commitOid, parentOids: [PARENT_1], entries, ...extra }
 }
 
 function readers(
@@ -186,7 +186,7 @@ describe('buildClipcodeCommitCopy', () => {
     ])
   })
 
-  it('keeps the newest commit when several selected commits touch one path', async () => {
+  it('keeps the newest commit in graph order, even when rebase left it an older author date', async () => {
     const r = readers({
       [`${OID_A}:${PARENT_1}:shared.ts`]: text('', 'older'),
       [`${OID_A}:${PARENT_1}:only-a.ts`]: text('', 'a only'),
@@ -195,16 +195,13 @@ describe('buildClipcodeCommitCopy', () => {
     const result = await buildClipcodeCommitCopy({
       rootPath: context.worktreePath,
       context,
+      // Graph order: B is the newer commit and comes first.
       commits: [
-        commit(
-          OID_A,
-          [
-            { path: 'shared.ts', status: 'added' },
-            { path: 'only-a.ts', status: 'added' }
-          ],
-          { timestamp: 1000 }
-        ),
-        commit(OID_B, [{ path: 'shared.ts', status: 'modified' }], { timestamp: 2000 })
+        commit(OID_B, [{ path: 'shared.ts', status: 'modified' }]),
+        commit(OID_A, [
+          { path: 'shared.ts', status: 'added' },
+          { path: 'only-a.ts', status: 'added' }
+        ])
       ],
       readers: r
     })
@@ -216,5 +213,24 @@ describe('buildClipcodeCommitCopy', () => {
       context,
       expect.objectContaining({ commitOid: OID_A, filePath: 'shared.ts' })
     )
+  })
+
+  it('does not bring back a path a newer commit renamed away', async () => {
+    const r = readers({
+      [`${OID_B}:${PARENT_1}:new-name.ts`]: text('', 'moved'),
+      [`${OID_A}:${PARENT_1}:old-name.ts`]: text('', 'before the move')
+    })
+    const result = await buildClipcodeCommitCopy({
+      rootPath: context.worktreePath,
+      context,
+      commits: [
+        commit(OID_B, [{ path: 'new-name.ts', oldPath: 'old-name.ts', status: 'renamed' }]),
+        commit(OID_A, [{ path: 'old-name.ts', status: 'modified' }])
+      ],
+      readers: r
+    })
+    expect(parsePayload(result.payload).map((file) => [file.path, file.changeType])).toEqual([
+      ['new-name.ts', 'MOVED']
+    ])
   })
 })

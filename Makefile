@@ -166,7 +166,7 @@ FORK_TEST_DIRS := src/renderer/src/components/right-sidebar src/renderer/src/com
   src/renderer/src/store/slices/editor src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts \
   src/shared/workspace-layout src/main/git/source-control src/main/providers src/renderer/src/components/tab-bar \
   src/shared/git-history src/main/runtime/rpc/methods/git.test.ts src/main/runtime/runtime-git-api-contract.test.ts \
-  src/main/git/history
+  src/main/git/history src/renderer/src/components/terminal-pane
 
 fork-check:
 	@echo ">> fork base: $(FORK_BASE)"
