@@ -84,7 +84,8 @@ export async function scanNestedRepos(args: {
     args.onProgress?.(buildResult('non_git_folder'))
   }
 
-  if (await filesystem.isSelectedPathGitRepo(args.path)) {
+  const selectedIsGitRepo = await filesystem.isSelectedPathGitRepo(args.path)
+  if (selectedIsGitRepo && !options.descendIntoRepos) {
     return buildResult('git_repo')
   }
   if (noteAbort()) {
@@ -174,7 +175,9 @@ export async function scanNestedRepos(args: {
         emitProgress()
         // Project Groups organize sibling repos; nested repos stay hidden until a
         // later UI can explain and select submodule-style layouts explicitly.
-        continue
+        if (!options.descendIntoRepos) {
+          continue
+        }
       }
       // Why: group import should prefer nearby sibling repos over spending the
       // bounded scan inside an alphabetically early, deeply nested folder.
@@ -189,5 +192,5 @@ export async function scanNestedRepos(args: {
     }
   }
 
-  return buildResult('non_git_folder')
+  return buildResult(selectedIsGitRepo ? 'git_repo' : 'non_git_folder')
 }
