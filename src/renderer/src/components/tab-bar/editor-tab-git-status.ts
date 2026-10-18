@@ -1,11 +1,13 @@
 import type { AppState } from '@/store'
 import type { OpenFile } from '@/store/slices/editor'
-import { normalizeRelativePath } from '@/lib/path'
+import { joinPath, normalizeRelativePath } from '@/lib/path'
+import { getIndexedWorktreeById } from '@/store/worktree-repo-index'
+import { normalizeRuntimePathForComparison } from '../../../../shared/cross-platform-path'
 import type { GitFileStatus, GitStatusEntry } from '../../../../shared/git-status-types'
 import { buildStatusMap } from '../right-sidebar/status-display'
 
 type EditorTabStatusSource = Pick<OpenFile, 'relativePath'> &
-  Partial<Pick<OpenFile, 'worktreeId' | 'gitWorktreeId'>>
+  Partial<Pick<OpenFile, 'worktreeId' | 'gitWorktreeId' | 'filePath'>>
 
 function scopedKey(gitWorktreeId: string, normalizedPath: string): string {
   return `${gitWorktreeId}\u0000${normalizedPath}`
@@ -13,20 +15,29 @@ function scopedKey(gitWorktreeId: string, normalizedPath: string): string {
 
 /** Folder-workspace tabs read status from their repo, keyed apart so two repos' `README.md` never collide. */
 export function getEditorTabGitStatusKey(file: EditorTabStatusSource): string {
-  const path = normalizeRelativePath(file.relativePath)
-  return file.gitWorktreeId && file.gitWorktreeId !== file.worktreeId
-    ? scopedKey(file.gitWorktreeId, path)
-    : path
+  if (file.gitWorktreeId && file.gitWorktreeId !== file.worktreeId) {
+    // Why: keyed by absolute path, since relativePath may not be relative to the repo.
+    return scopedKey(file.gitWorktreeId, normalizeRuntimePathForComparison(file.filePath ?? ''))
+  }
+  return normalizeRelativePath(file.relativePath)
 }
 
 export function buildEditorTabGitStatusMap(
   ownEntries: readonly GitStatusEntry[],
-  entriesByGitOwner: Readonly<Record<string, readonly GitStatusEntry[]>>
+  entriesByGitOwner: Readonly<Record<string, readonly GitStatusEntry[]>>,
+  rootByGitOwner: Readonly<Record<string, string>>
 ): Map<string, GitFileStatus> {
   const map = buildStatusMap(ownEntries)
   for (const [gitWorktreeId, entries] of Object.entries(entriesByGitOwner)) {
+    const root = rootByGitOwner[gitWorktreeId]
+    if (!root) {
+      continue
+    }
     for (const [path, status] of buildStatusMap(entries)) {
-      map.set(scopedKey(gitWorktreeId, path), status)
+      map.set(
+        scopedKey(gitWorktreeId, normalizeRuntimePathForComparison(joinPath(root, path))),
+        status
+      )
     }
   }
   return map
@@ -71,6 +82,24 @@ export function selectEditorTabGitStatusByOwner(
     const entries = state.gitStatusByWorktree?.[id]
     if (entries) {
       result[id] = entries
+    }
+  }
+  return result
+}
+
+/** Root of each repo backing a workspace's tabs; pair with `useShallow` so the strip ignores unrelated worktree writes. */
+export function selectEditorTabGitOwnerRoots(
+  state: Pick<AppState, 'openFiles' | 'worktreesByRepo'>,
+  worktreeId: string
+): Record<string, string> {
+  const result: Record<string, string> = {}
+  if (!state.openFiles || !state.worktreesByRepo) {
+    return result
+  }
+  for (const id of getGitOwnerIds(state.openFiles, worktreeId)) {
+    const root = getIndexedWorktreeById(state.worktreesByRepo, id)?.path
+    if (root) {
+      result[id] = root
     }
   }
   return result
