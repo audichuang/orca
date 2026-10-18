@@ -186,6 +186,28 @@ describe('buildClipcodeCommitCopy', () => {
     ])
   })
 
+  it('copies an emptied file and a new empty file, but not an empty read from a host without missingSides', async () => {
+    const r = readers({
+      [`${OID_A}:${PARENT_1}:emptied.ts`]: text('was text', ''),
+      [`${OID_A}:${PARENT_1}:new-empty.ts`]: text('', '', { missingSides: ['original'] }),
+      [`${OID_A}:${PARENT_1}:old-host.ts`]: text('', '')
+    })
+    const result = await buildClipcodeCommitCopy({
+      rootPath: context.worktreePath,
+      context,
+      commits: [
+        commit(OID_A, [
+          { path: 'emptied.ts', status: 'modified' },
+          { path: 'new-empty.ts', status: 'added' },
+          { path: 'old-host.ts', status: 'modified' }
+        ])
+      ],
+      readers: r
+    })
+    expect(result.unreadableFileCount).toBe(1)
+    expect(parsePayload(result.payload).map((f) => f.path)).toEqual(['emptied.ts', 'new-empty.ts'])
+  })
+
   it('keeps the newest commit in graph order, even when rebase left it an older author date', async () => {
     const r = readers({
       [`${OID_A}:${PARENT_1}:shared.ts`]: text('', 'older'),
