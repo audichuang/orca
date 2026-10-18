@@ -14,7 +14,7 @@ function candidate(path: string) {
 }
 
 describe('getNewNestedRepoCandidates', () => {
-  it('skips the folder itself and repos already added on the same host', () => {
+  it('skips the folder itself, added repos and their linked worktrees on the same host', () => {
     const result = getNewNestedRepoCandidates({
       folderPath: '/work/cat/',
       folderOwner: { connectionId: null },
@@ -23,12 +23,15 @@ describe('getNewNestedRepoCandidates', () => {
         candidate('/work/cat/docs/overseas'),
         candidate('/work/cat/docs'),
         candidate('/work/cat/docs/etf'),
-        candidate('/work/cat/bfs')
+        candidate('/work/cat/bfs'),
+        candidate('/work/cat/web-feature')
       ],
       repos: [
         repo('bfs', '/work/cat/bfs'),
-        repo('remote-etf', '/work/cat/docs/etf', { connectionId: 'ssh-1' })
-      ]
+        repo('remote-etf', '/work/cat/docs/etf', { connectionId: 'ssh-1' }),
+        repo('web', '/work/web')
+      ],
+      worktrees: [{ repoId: 'web', path: '/work/cat/web-feature' }]
     })
 
     expect(result.map((entry) => entry.path)).toEqual([
