@@ -3,7 +3,7 @@ import type { FileLinkTarget } from './terminal-file-link-target'
 import { HostFileRefusal, resolveHostWorkspaceFile } from './terminal-host-workspace-file'
 import {
   readTerminalPathExistsCache,
-  writeTerminalPathExistsCache
+  writeTerminalPathExistsAnswer
 } from './terminal-path-exists-cache'
 
 /** A paired-server path outside the terminal's workspace: only its host can say whether it opens. */
@@ -39,6 +39,6 @@ export async function hostFileLinkTargetExists(
     }
     exists = false
   }
-  writeTerminalPathExistsCache(cache, target.cacheKey, exists)
+  writeTerminalPathExistsAnswer(cache, target.cacheKey, exists)
   return exists
 }
