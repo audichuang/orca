@@ -12,6 +12,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 - Keep `git config rerere.enabled true` so a conflict resolved once replays on the next rebase.
 - Locale files (`src/renderer/src/i18n/locales/*`) that conflict: keep both sides, since fork keys are pure additions. Don't take upstream's side and regenerate: `sync:localization-catalog` re-adds only English, so the fork's translations in the other five locales would be lost. Then run `pnpm run verify:localization-catalogs`.
 - Typecheck (`pnpm tc:web` / `tc:node`) before committing; tests alone pass with type errors.
+- `typecheck:e2e` is not in the gate: upstream's own `tests/tools` fixtures fail it at the release tag.
 
 ## What non-UI tests must cover
 
