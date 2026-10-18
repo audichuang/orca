@@ -14198,8 +14198,30 @@
                         "d98e7b731c": "Copier toutes les modifications",
                         "da953a696f": "Coller et restaurer",
                         "5de321918e": "Les worktrees masqués de ce dossier ne sont pas inclus ({{value0}}).",
-                        "ab32287003": "Dépôts"
+                        "ab32287003": "Dépôts",
+                        "addRepos": "Ajouter les dépôts de ce dossier"
                       }
+                    }
+                  },
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "title": "Ajouter les dépôts de ce dossier",
+                        "description": "Dépôts Git sous {{value0}}, y compris ceux imbriqués dans d’autres dépôts.",
+                        "scanning": "Recherche des dépôts...",
+                        "failed": "Impossible d’analyser ce dossier.",
+                        "none": "Tous les dépôts de ce dossier sont déjà ajoutés.",
+                        "truncated": "L’analyse s’est arrêtée tôt ; certains dépôts peuvent manquer.",
+                        "hide": "Afficher uniquement dans ce dossier, pas comme projets de la barre latérale",
+                        "cancel": "Annuler",
+                        "add": "Ajouter ({{value0}})"
+                      }
+                    }
+                  },
+                  "repo": {
+                    "row": {
+                      "showInSidebar": "Masqué dans la barre latérale. L’afficher comme projet de la barre latérale",
+                      "hideFromSidebar": "Affiché dans la barre latérale. Le garder uniquement dans ce dossier"
                     }
                   }
                 }
