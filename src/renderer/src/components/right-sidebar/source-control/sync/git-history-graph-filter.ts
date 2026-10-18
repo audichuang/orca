@@ -106,3 +106,8 @@ export function toGitHistoryGraphRequest(
     limit: filter.limit
   }
 }
+
+/** True when the user narrowed the graph, so an empty result means "no match", not "empty repo". */
+export function isGitHistoryGraphFiltered(filter: GitHistoryGraphFilter): boolean {
+  return filter.scope !== 'head' || Object.keys(parseGitHistoryGraphQuery(filter.query)).length > 0
+}
