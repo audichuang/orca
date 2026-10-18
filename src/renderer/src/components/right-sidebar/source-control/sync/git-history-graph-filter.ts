@@ -1,16 +1,14 @@
 // Fork-only: per-worktree branch filter and search for the Commits graph (in memory, like the repo accordion).
 import { useSyncExternalStore } from 'react'
 import type {
+  GitHistoryGraphMode,
   GitHistoryGraphRequest,
-  GitHistoryGraphSearch
+  GitHistoryGraphSearch,
+  GitHistoryGraphSource
 } from '../../../../../../shared/git-history-graph-query-types'
 
-export type GitHistoryGraphScope = 'head' | 'all' | 'refs'
-
-export type GitHistoryGraphFilter = {
-  scope: GitHistoryGraphScope
-  local: boolean
-  remotes: 'all' | string[]
+export type GitHistoryGraphFilter = GitHistoryGraphSource & {
+  scope: GitHistoryGraphMode
   refs: string[]
   /** Raw search box text; `author:` and `path:` tokens narrow it. */
   query: string
@@ -94,7 +92,7 @@ export function toGitHistoryGraphRequest(
   filter: GitHistoryGraphFilter
 ): GitHistoryGraphRequest | undefined {
   const search = parseGitHistoryGraphQuery(filter.query)
-  const hasSearch = Object.keys(search).length > 0
+  const hasSearch = hasGraphSearch(search)
   if (filter.scope === 'head' && !hasSearch && filter.limit <= GIT_HISTORY_GRAPH_PAGE_SIZE) {
     return undefined
   }
@@ -109,5 +107,9 @@ export function toGitHistoryGraphRequest(
 
 /** True when the user narrowed the graph, so an empty result means "no match", not "empty repo". */
 export function isGitHistoryGraphFiltered(filter: GitHistoryGraphFilter): boolean {
-  return filter.scope !== 'head' || Object.keys(parseGitHistoryGraphQuery(filter.query)).length > 0
+  return filter.scope !== 'head' || hasGraphSearch(parseGitHistoryGraphQuery(filter.query))
+}
+
+function hasGraphSearch(search: GitHistoryGraphSearch): boolean {
+  return Object.keys(search).length > 0
 }

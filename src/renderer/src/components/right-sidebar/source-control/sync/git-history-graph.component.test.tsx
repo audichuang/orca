@@ -15,14 +15,15 @@ vi.mock('@/runtime/runtime-git-status-client', () => ({
 vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => undefined }))
 
 const { GitHistoryPanel } = await import('./git-history-panel')
-const { GitHistoryGraphLoadMore, GitHistoryGraphToolbar } =
-  await import('./git-history-graph-toolbar')
+const { GitHistoryGraphToolbar } = await import('./git-history-graph-toolbar')
+const { GitHistoryGraphLoadMore } = await import('./git-history-graph-host-status')
 const { GitHistoryGraphEmptyMessage } = await import('./git-history-graph-empty-message')
 const { useSourceControlGitHistory } = await import('./use-git-history')
 const { resetGitHistoryGraphFiltersForTest, updateGitHistoryGraphFilter } =
   await import('./git-history-graph-filter')
 
 const WORKTREE = 'wt-1'
+const OLD_HOST_TEXT = 'This repository host runs an older Orca that only shows the current branch.'
 const WORKTREES = new Map<string, unknown>([[WORKTREE, {}]])
 
 function commit(id: string, subject: string): GitHistoryItem {
@@ -43,7 +44,6 @@ const APPLIED: GitHistoryGraphApplied = {
       remote: 'origin'
     }
   ],
-  refsTruncated: false,
   remotes: ['origin'],
   limit: 50
 }
@@ -89,10 +89,10 @@ function Harness({
             worktreeId={WORKTREE}
             worktreePath="/repo"
             activeRepoTarget={{ kind: 'local' }}
-            result={gitHistoryState.result}
+            state={gitHistoryState}
           />
         }
-        footer={<GitHistoryGraphLoadMore worktreeId={WORKTREE} result={gitHistoryState.result} />}
+        footer={<GitHistoryGraphLoadMore worktreeId={WORKTREE} state={gitHistoryState} />}
         emptyMessage={<GitHistoryGraphEmptyMessage worktreeId={WORKTREE} />}
       />
     </TooltipProvider>
@@ -222,6 +222,71 @@ describe('Commits graph filter, end to end through the history hook', () => {
     render(<Harness />)
     expect(await screen.findByText('No commits match this filter')).toBeInTheDocument()
     expect(screen.queryByText('No commits yet')).not.toBeInTheDocument()
+  })
+
+  it('does not flash the old-host notice while a new host answers a filter change', async () => {
+    let release: () => void = () => {}
+    mocks.getRuntimeGitHistory.mockImplementation(async (_context, options) => {
+      if (options.graph?.mode === 'all') {
+        await new Promise<void>((resolve) => (release = resolve))
+        return result({ graph: { ...APPLIED, mode: 'all' } })
+      }
+      return options.graph ? result({ graph: { ...APPLIED, mode: options.graph.mode } }) : result()
+    })
+    render(<Harness />)
+    await screen.findByText('Alpha')
+    fireEvent.click(screen.getByRole('combobox', { name: 'Branch filter' }))
+    fireEvent.click(await screen.findByText('All branches', { selector: '[cmdk-item]' }))
+    await waitFor(() => expect(lastRequest()).toMatchObject({ graph: { mode: 'all' } }))
+    expect(screen.queryByText(OLD_HOST_TEXT)).not.toBeInTheDocument()
+    await act(async () => release())
+    expect(screen.queryByText(OLD_HOST_TEXT)).not.toBeInTheDocument()
+  })
+
+  it('re-reads branches on open in all-branches mode too', async () => {
+    let refs = APPLIED.refs
+    mocks.getRuntimeGitHistory.mockImplementation(async (_context, options) =>
+      options.graph ? result({ graph: { ...APPLIED, refs, mode: options.graph.mode } }) : result()
+    )
+    updateGitHistoryGraphFilter(WORKTREE, { scope: 'all' })
+    render(<Harness />)
+    await screen.findByText('Alpha')
+    refs = [...APPLIED.refs, { fullName: 'refs/heads/new', name: 'new', category: 'branches' }]
+    fireEvent.click(screen.getByRole('combobox', { name: 'Branch filter' }))
+    expect(await screen.findByText('new')).toBeInTheDocument()
+  })
+
+  it('keeps the branch list after unticking the last picked branch', async () => {
+    render(<Harness />)
+    await screen.findByText('Alpha')
+    fireEvent.click(screen.getByRole('combobox', { name: 'Branch filter' }))
+    const item = { selector: '[cmdk-item] *' }
+    fireEvent.click(await screen.findByText('feature/x', item))
+    await waitFor(() => expect(lastRequest()).toMatchObject({ graph: { mode: 'refs' } }))
+    fireEvent.click(screen.getByText('feature/x', item))
+    await waitFor(() => expect(lastRequest()).not.toHaveProperty('graph'))
+    expect(screen.getByText('feature/x', item)).toBeInTheDocument()
+  })
+
+  it('hides load more and says so when an old host ignores the filter', async () => {
+    mocks.getRuntimeGitHistory.mockImplementation(async () => result({ hasMore: true }))
+    updateGitHistoryGraphFilter(WORKTREE, { scope: 'all' })
+    render(<Harness />)
+    expect(await screen.findByText(OLD_HOST_TEXT)).toBeInTheDocument()
+    expect(screen.queryByText('Load more commits')).not.toBeInTheDocument()
+  })
+
+  it('shows the error when a filtered request fails', async () => {
+    mocks.getRuntimeGitHistory.mockImplementation(async (_context, options) => {
+      if (options.graph) {
+        throw new Error('path is outside repository')
+      }
+      return result()
+    })
+    render(<Harness />)
+    await screen.findByText('Alpha')
+    updateGitHistoryGraphFilter(WORKTREE, { query: 'path:../x' })
+    expect(await screen.findByText(/path is outside repository/)).toBeInTheDocument()
   })
 
   it('copies the Ctrl/Cmd-selected commits from the context menu', async () => {

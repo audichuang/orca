@@ -195,15 +195,17 @@ function notifyCopyFailed(error: unknown): void {
   )
 }
 
-/** Copy Full Source for one or more commits of one repo (newest commit wins per path). */
+/** Copy Full Source for one or more commits of one repo, newest first (newest commit wins per path). */
 export async function copyClipcodeCommitChanges(args: {
   rootPath: string
   context: RuntimeGitContext
-  commits: readonly ClipcodeCommitCopyCommit[]
+  loadCommits: () => Promise<ClipcodeCommitCopyCommit[]>
 }): Promise<void> {
   try {
     const result = await buildClipcodeCommitCopy({
-      ...args,
+      rootPath: args.rootPath,
+      context: args.context,
+      commits: await args.loadCommits(),
       readers: { readCommitDiff: getRuntimeGitCommitDiff }
     })
     await reportClipcodeCopyResult(result)
