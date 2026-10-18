@@ -83,7 +83,8 @@ export async function scanNestedRepos(args: {
     args.onProgress?.(buildResult('non_git_folder'))
   }
 
-  if (await filesystem.isSelectedPathGitRepo(args.path)) {
+  const selectedIsGitRepo = await filesystem.isSelectedPathGitRepo(args.path)
+  if (selectedIsGitRepo && !options.descendIntoRepos) {
     return buildResult('git_repo')
   }
   if (noteAbort()) {
@@ -171,7 +172,9 @@ export async function scanNestedRepos(args: {
         })
         emitProgress()
         // Hide submodule-style descendants until the group UI supports selecting them.
-        continue
+        if (!options.descendIntoRepos) {
+          continue
+        }
       }
       // Breadth-first traversal spends the bounded scan on nearby siblings before deep branches.
       if (currentFolder.depth < options.maxDepth) {
@@ -185,5 +188,5 @@ export async function scanNestedRepos(args: {
     }
   }
 
-  return buildResult('non_git_folder')
+  return buildResult(selectedIsGitRepo ? 'git_repo' : 'non_git_folder')
 }
