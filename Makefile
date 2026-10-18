@@ -169,7 +169,7 @@ FORK_TEST_DIRS := src/renderer/src/components/right-sidebar src/renderer/src/com
   src/main/git/history src/renderer/src/components/terminal-pane src/main/ipc/filesystem \
   src/main/runtime/rpc/methods src/main/runtime/runtime-git-status-admission.test.ts src/renderer/src/runtime \
   src/renderer/src/web/preload-api src/shared/workspace-session-schema src/renderer/src/components/sidebar \
-  src/main/project-groups src/main/ipc/pty src/main/runtime/runtime-git src/main/updater src/preload/api/git \
+  src/main/project-groups src/main/git/status src/main/ipc/pty src/main/runtime/runtime-git src/main/updater src/preload/api/git \
   src/renderer/src/hooks/editor-external-watch src/renderer/src/hooks/useEditorExternalWatch \
   src/renderer/src/lib/remap-open-editor-tabs src/renderer/src/lib/workspace-session src/shared/git-diff \
   src/shared/project-group src/shared/rpc-contract src/shared/workspace-session
