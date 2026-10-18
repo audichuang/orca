@@ -73,7 +73,8 @@ it('uses trusted inline code and only enters cancellation on an unmerged close',
 it('looks up exact PR groups without branch or head-SHA inference', async () => {
   const { result, request, cancel } = execute()
   await result
-  expect(request.mock.calls[0][1].concurrency_group_name).toBe('pr-checks-123')
+  expect(request.mock.calls[0][1].concurrency_group_name).toBe('fork-pr-checks-123')
+  expect(request.mock.calls[1][1].concurrency_group_name).toBe('pr-checks-123')
   expect(
     request.mock.calls.every(
       ([route, args]) =>

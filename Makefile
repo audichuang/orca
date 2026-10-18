@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all fork-dmg fork-check fork-check-full
+.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -183,6 +183,13 @@ fork-check:
 	pnpm exec vitest run --config config/vitest.config.ts $(FORK_TEST_DIRS) \
 	  $$(git diff --name-only --diff-filter=AM $(FORK_BASE) HEAD | grep -E '\.test\.tsx?$$' | grep -v '^tests/e2e/')
 	pnpm run check:code-quality:changed $(FORK_BASE)
+
+FORK_REPO ?= audichuang/orca
+# Fork CI is fork-pr.yml only (macOS arm64 is the only target); rerun after a rebase brings new upstream workflows.
+fork-ci-disable-upstream:
+	gh workflow list -R $(FORK_REPO) --all --json path,state \
+	  --jq '.[] | select(.state == "active" and .path != ".github/workflows/fork-pr.yml") | .path' | \
+	  while read -r wf; do gh workflow disable "$${wf##*/}" -R $(FORK_REPO); done
 
 fork-check-full: export LC_ALL = C
 fork-check-full: fork-check
