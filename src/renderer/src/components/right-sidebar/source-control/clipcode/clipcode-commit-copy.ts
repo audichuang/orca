@@ -164,9 +164,11 @@ export async function buildClipcodeCommitCopy(args: {
   planned.forEach((item, index) => {
     const content = contents[index]
     const verdict =
-      content === 'binary' || content === 'unreadable'
-        ? { kind: content }
-        : classifyClipcodeEntryContent(item.clipboardPath, item.changeType, content, maxBytes)
+      content === 'binary'
+        ? ({ kind: 'binary' } as const)
+        : content === 'unreadable'
+          ? ({ kind: 'unreadable' } as const)
+          : classifyClipcodeEntryContent(item.clipboardPath, item.changeType, content, maxBytes)
     if (verdict.kind === 'binary') {
       skippedBinaryFileCount++
     } else if (verdict.kind === 'unreadable') {
