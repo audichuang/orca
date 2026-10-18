@@ -74,6 +74,7 @@ it('looks up exact PR groups without branch or head-SHA inference', async () => 
   const { result, request, cancel } = execute()
   await result
   expect(request.mock.calls.map(([, args]) => args.concurrency_group_name)).toEqual([
+    'fork-pr-checks-123',
     'pr-checks-123',
     'dependency-security-123',
     'node-server-123',
