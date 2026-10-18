@@ -14628,6 +14628,15 @@
             "searchCommitsLabel": "コミットを検索",
             "loadMore": "さらにコミットを読み込む",
             "noMatchingCommits": "このフィルターに一致するコミットはありません"
+          },
+          "GitGraphFullView": {
+            "open": "Git Graph を開く",
+            "description": "現在のリポジトリのコミットグラフ。",
+            "message": "メッセージ",
+            "author": "作成者",
+            "date": "日付",
+            "commit": "コミット",
+            "selectCommit": "コミットを選択すると詳細と変更されたファイルが表示されます。"
           }
         }
       },
