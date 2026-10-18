@@ -1,11 +1,14 @@
 // Fork-only: wire schema for the optional `graph` field of git.history.
 import { z } from 'zod'
-import { GIT_HISTORY_GRAPH_MAX_LIMIT } from '../git-history-graph-query-types'
+import {
+  GIT_HISTORY_GRAPH_MAX_LIMIT,
+  GIT_HISTORY_GRAPH_MODES
+} from '../git-history-graph-query-types'
 
 const shortText = z.string().max(500).optional()
 
 export const GitHistoryGraphParams = z.object({
-  mode: z.enum(['head', 'all', 'refs']),
+  mode: z.enum(GIT_HISTORY_GRAPH_MODES),
   source: z
     .object({
       local: z.boolean(),

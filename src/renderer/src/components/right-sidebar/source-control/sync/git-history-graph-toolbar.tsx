@@ -13,17 +13,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ImeInput } from '@/lib/ime-text-field'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
-import type { GitHistoryResult } from '../../../../../../shared/git-history'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 import { getConnectionId } from '@/lib/connection-context'
 import { getRuntimeGitHistory } from '@/runtime/runtime-git-status-client'
 import { requireGitOwnerTarget } from '../../worktree-git-owner-target'
+import type { GitHistoryGraphApplied } from '../../../../../../shared/git-history-graph-query-types'
+import type { GitHistoryPanelState } from './git-history-panel'
+import { GitHistoryGraphHostNotice, hostTooOldText } from './git-history-graph-host-status'
 import {
-  GIT_HISTORY_GRAPH_MAX_LIMIT,
-  type GitHistoryGraphApplied
-} from '../../../../../../shared/git-history-graph-query-types'
-import {
-  toGitHistoryGraphRequest,
   updateGitHistoryGraphFilter,
   useGitHistoryGraphFilter,
   type GitHistoryGraphFilter
@@ -83,21 +80,24 @@ export function GitHistoryGraphToolbar({
   worktreeId,
   worktreePath,
   activeRepoTarget,
-  result
+  state
 }: {
   worktreeId: string
   worktreePath: string
   activeRepoTarget: RuntimeClientTarget | null
-  result: GitHistoryResult | undefined
+  state: GitHistoryPanelState
 }): React.JSX.Element {
+  const result = state.result
   const filter = useGitHistoryGraphFilter(worktreeId)
   const [open, setOpen] = useState(false)
   const [branchQuery, setBranchQuery] = useState('')
   const [draftQuery, setDraftQuery] = useState(filter.query)
   const [fetched, setFetched] = useState<RefOptions>({ status: 'idle' })
-  const refOptions: RefOptions = result?.graph
-    ? { status: 'ready', applied: result.graph }
-    : fetched
+  // Why: the open-time read is the single source; the last graph result only fills the list until it lands.
+  const refOptions: RefOptions =
+    fetched.status === 'ready' || !result?.graph
+      ? fetched
+      : { status: 'ready', applied: result.graph }
   const applied = refOptions.status === 'ready' ? refOptions.applied : null
 
   // Why: re-sync when another worktree's filter is shown in this same panel instance.
@@ -132,9 +132,6 @@ export function GitHistoryGraphToolbar({
     setOpen(nextOpen)
     if (!nextOpen) {
       setBranchQuery('')
-      return
-    }
-    if (result?.graph) {
       return
     }
     // Why: re-read on every open so branches created since the last open show up; keep the old list meanwhile.
@@ -180,9 +177,6 @@ export function GitHistoryGraphToolbar({
     updateGitHistoryGraphFilter(worktreeId, { scope: 'all', remotes: next })
   }
 
-  // Why: an older host drops `graph` and answers with plain history; say so instead of a silent current-branch list.
-  const hostIsTooOld =
-    Boolean(toGitHistoryGraphRequest(filter)) && Boolean(result) && !result?.graph
   const check = (on: boolean): React.JSX.Element => (
     <Check className={cn('size-3 text-muted-foreground', on ? 'opacity-70' : 'opacity-0')} />
   )
@@ -297,10 +291,7 @@ export function GitHistoryGraphToolbar({
                   {(refOptions.status === 'unsupported' || refOptions.status === 'error') && (
                     <div className="px-2 py-1.5 text-xs text-muted-foreground">
                       {refOptions.status === 'unsupported'
-                        ? translate(
-                            'auto.components.right.sidebar.GitHistoryGraph.hostTooOld',
-                            'This repository host runs an older Orca that only shows the current branch.'
-                          )
+                        ? hostTooOldText()
                         : translate(
                             'auto.components.right.sidebar.GitHistoryGraph.branchesFailed',
                             'Failed to load branches'
@@ -316,7 +307,7 @@ export function GitHistoryGraphToolbar({
                       {check(filter.scope === 'refs' && filter.refs.includes(ref.fullName))}
                       <span className="min-w-0 flex-1 truncate">{ref.name}</span>
                       {ref.category === 'remote branches' && (
-                        <span className="shrink-0 text-[10px] text-muted-foreground">
+                        <span className="shrink-0 text-3xs text-muted-foreground">
                           {translate(
                             'auto.components.right.sidebar.GitHistoryGraph.remote',
                             'remote'
@@ -350,51 +341,11 @@ export function GitHistoryGraphToolbar({
               'auto.components.right.sidebar.GitHistoryGraph.searchCommitsLabel',
               'Search commits'
             )}
-            className="h-6 min-w-0 flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground/60"
+            className="h-6 min-w-0 flex-1 bg-transparent text-2xs text-foreground outline-none placeholder:text-muted-foreground/60"
           />
         </div>
       </div>
-      {hostIsTooOld && (
-        <p className="text-[11px] text-muted-foreground">
-          {translate(
-            'auto.components.right.sidebar.GitHistoryGraph.hostTooOld',
-            'This repository host runs an older Orca that only shows the current branch.'
-          )}
-        </p>
-      )}
-    </div>
-  )
-}
-
-const LOAD_MORE_STEP = 100
-
-/** Grows the page without --skip, so lanes stay continuous across the whole list. */
-export function GitHistoryGraphLoadMore({
-  worktreeId,
-  result
-}: {
-  worktreeId: string
-  result: GitHistoryResult | undefined
-}): React.JSX.Element | null {
-  const filter = useGitHistoryGraphFilter(worktreeId)
-  if (!result?.hasMore || filter.limit >= GIT_HISTORY_GRAPH_MAX_LIMIT) {
-    return null
-  }
-  return (
-    <div className="px-3 py-1">
-      <Button
-        type="button"
-        variant="ghost"
-        size="xs"
-        className="w-full"
-        onClick={() =>
-          updateGitHistoryGraphFilter(worktreeId, {
-            limit: Math.min(GIT_HISTORY_GRAPH_MAX_LIMIT, result.items.length + LOAD_MORE_STEP)
-          })
-        }
-      >
-        {translate('auto.components.right.sidebar.GitHistoryGraph.loadMore', 'Load more commits')}
-      </Button>
+      <GitHistoryGraphHostNotice worktreeId={worktreeId} state={state} />
     </div>
   )
 }
