@@ -1,8 +1,5 @@
 // Fork-only: Copy Full Source for commits in the history graph.
-import { toast } from 'sonner'
 import { getConnectionId } from '@/lib/connection-context'
-import { readIpcErrorMessage } from '@/lib/ipc-error'
-import { translate } from '@/i18n/i18n'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
@@ -10,6 +7,7 @@ import { requireGitOwnerTarget } from '../../worktree-git-owner-target'
 import { copyClipcodeCommitChanges, getClipcodeRootPath } from '../clipcode/clipcode-copy-action'
 
 export async function copyHistoryCommitsFullSource(args: {
+  /** Newest first, as the graph lists them. */
   items: readonly GitHistoryItem[]
   worktreeId: string
   worktreePath: string
@@ -18,19 +16,6 @@ export async function copyHistoryCommitsFullSource(args: {
   activeRepoTarget: RuntimeClientTarget | null
   loadCommitFiles: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
 }): Promise<void> {
-  let entriesByCommit: GitBranchChangeEntry[][]
-  try {
-    entriesByCommit = await Promise.all(args.items.map((item) => args.loadCommitFiles(item)))
-  } catch (error) {
-    toast.error(
-      translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.7c6daaf4fa',
-        'Copy Full Source failed'
-      ),
-      { description: readIpcErrorMessage(error) }
-    )
-    return
-  }
   await copyClipcodeCommitChanges({
     rootPath: getClipcodeRootPath(args.editorWorktreeId, args.worktreePath),
     context: {
@@ -40,11 +25,13 @@ export async function copyHistoryCommitsFullSource(args: {
       worktreePath: args.worktreePath,
       connectionId: getConnectionId(args.worktreeId) ?? undefined
     },
-    commits: args.items.map((item, index) => ({
-      commitOid: item.id,
-      parentOids: item.parentIds,
-      timestamp: item.timestamp,
-      entries: entriesByCommit[index] ?? []
-    }))
+    loadCommits: () =>
+      Promise.all(
+        args.items.map(async (item) => ({
+          commitOid: item.id,
+          parentOids: item.parentIds,
+          entries: await args.loadCommitFiles(item)
+        }))
+      )
   })
 }
