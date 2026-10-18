@@ -61,7 +61,7 @@ function Harness({
   onOpenCommitFile: () => void
   onLoadCommitFiles: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
 }): React.JSX.Element {
-  const { gitHistoryState } = useSourceControlGitHistory({
+  const { gitHistoryState, refreshGitHistory } = useSourceControlGitHistory({
     activeRepoTarget: { kind: 'local' },
     activeWorktreeId: WORKTREE,
     worktreePath: '/repo',
@@ -85,7 +85,7 @@ function Harness({
             worktreePath="/repo"
             activeRepoTarget={{ kind: 'local' }}
             state={gitHistoryState}
-            onRefresh={vi.fn()}
+            onRefresh={() => void refreshGitHistory()}
             onOpenCommit={vi.fn()}
             onLoadCommitFiles={onLoadCommitFiles}
             onOpenCommitFile={onOpenCommitFile}
@@ -97,7 +97,8 @@ function Harness({
 }
 
 beforeEach(() => {
-  mocks.getRuntimeGitHistory.mockResolvedValue(RESULT)
+  // A fresh object per read, like the real RPC, so a refresh replaces the result.
+  mocks.getRuntimeGitHistory.mockImplementation(async () => ({ ...RESULT }))
 })
 
 afterEach(() => {
@@ -129,6 +130,43 @@ describe('full-width Git Graph', () => {
 
     expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything())
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
+  it('reloads the selected commit files after a refresh replaces the result', async () => {
+    const onLoadCommitFiles = vi.fn(async () => [FILE])
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={onLoadCommitFiles} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.click((await within(dialog).findAllByTestId('git-graph-full-row'))[0]!)
+    await within(dialog).findByTestId('git-history-commit-file')
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Refresh commits' }))
+    await waitFor(() => expect(onLoadCommitFiles).toHaveBeenCalledTimes(2))
+    expect(await within(dialog).findByTestId('git-history-commit-file')).toBeInTheDocument()
+  })
+
+  it('keeps a query typed in the dialog when an older sidebar draft is still debouncing', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.change(screen.getByRole('textbox', { name: 'Search commits' }), {
+      target: { value: 'fi' }
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Search commits' }), {
+      target: { value: 'fix' }
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 600))
+    expect(within(dialog).getByRole('textbox', { name: 'Search commits' })).toHaveValue('fix')
+    expect(mocks.getRuntimeGitHistory.mock.calls.at(-1)?.[1]).toMatchObject({
+      graph: { search: { text: 'fix' } }
+    })
+    expect(mocks.getRuntimeGitHistory).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ graph: expect.objectContaining({ search: { text: 'fi' } }) })
+    )
   })
 
   it('keeps the sidebar search in step with a query typed in the full view', async () => {
