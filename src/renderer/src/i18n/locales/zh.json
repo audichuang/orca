@@ -14802,7 +14802,8 @@
             "remote": "远程",
             "searchCommits": "搜索提交（author: path:）",
             "searchCommitsLabel": "搜索提交",
-            "loadMore": "加载更多提交"
+            "loadMore": "加载更多提交",
+            "noMatchingCommits": "没有符合此筛选条件的提交"
           }
         }
       },
