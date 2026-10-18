@@ -152,9 +152,29 @@ describe('buildClipcodeGitCopy', () => {
     const result = await buildClipcodeGitCopy({
       rootPath: '/f',
       repos: [repo('/f/a', [modified('x.ts', 'staged')], true)],
-      readers: makeReaders({ readDiff: vi.fn(async () => textDiff('', '')) })
+      readers: makeReaders({ readDiff: vi.fn(async () => textDiff('was text', '')) })
     })
     expect(result.payload).toBe('// clipcode-root: f\n// file: [MODIFIED] a/x.ts\n\n')
+  })
+
+  it('copies a new empty staged file when the host reports only the original side missing', async () => {
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f/a', [{ path: 'e.ts', status: 'added', area: 'staged' }], true)],
+      readers: makeReaders({ readDiff: vi.fn(async () => textDiff('', '', ['original'])) })
+    })
+    expect(result.unreadableFileCount).toBe(0)
+    expect(result.payload).toContain('[NEW] a/e.ts')
+  })
+
+  it('treats an empty index side from a host without missingSides as unreadable', async () => {
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f/a', [modified('x.ts', 'staged')], true)],
+      readers: makeReaders({ readDiff: vi.fn(async () => textDiff('', '')) })
+    })
+    expect(result.payload).toBe('')
+    expect(result.unreadableFileCount).toBe(1)
   })
 
   it('copies an empty deleted file as empty, but a missing HEAD blob as the marker', async () => {
