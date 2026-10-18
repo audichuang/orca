@@ -14597,7 +14597,8 @@
             "remote": "remota",
             "searchCommits": "Buscar commits (author: path:)",
             "searchCommitsLabel": "Buscar commits",
-            "loadMore": "Cargar más commits"
+            "loadMore": "Cargar más commits",
+            "noMatchingCommits": "Ningún commit coincide con este filtro"
           }
         }
       },
