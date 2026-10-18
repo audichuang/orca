@@ -14594,8 +14594,30 @@
                         "d98e7b731c": "Copy all changes",
                         "da953a696f": "Paste & Restore",
                         "5de321918e": "Hidden worktrees under this folder are not included ({{value0}}).",
-                        "ab32287003": "Repositories"
+                        "ab32287003": "Repositories",
+                        "addRepos": "Add repositories in this folder"
                       }
+                    }
+                  },
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "title": "Add repositories in this folder",
+                        "description": "Git repositories under {{value0}}, including ones nested inside other repositories.",
+                        "scanning": "Scanning for repositories...",
+                        "failed": "Could not scan this folder.",
+                        "none": "Every repository in this folder is already added.",
+                        "truncated": "The scan stopped early, so some repositories may be missing.",
+                        "hide": "Show only in this folder, not as sidebar projects",
+                        "cancel": "Cancel",
+                        "add": "Add ({{value0}})"
+                      }
+                    }
+                  },
+                  "repo": {
+                    "row": {
+                      "showInSidebar": "Hidden from the sidebar. Show it as a sidebar project",
+                      "hideFromSidebar": "Shown in the sidebar. Keep it in this folder only"
                     }
                   }
                 }
