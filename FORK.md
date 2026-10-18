@@ -14,6 +14,20 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 - Typecheck (`pnpm tc:web` / `tc:node`) before committing; tests alone pass with type errors.
 - `typecheck:e2e` is not in the gate: upstream's own `tests/tools` fixtures fail it at the release tag.
 
+## Release
+
+- `main` is a pointer, never a merge target: develop is rebased on every upstream release, so main only follows by force-push. Move it yourself when a develop commit is worth installing.
+- The commit: the merge commit of a feat → `develop` PR whose "Fork PR checks passed" ran with `develop` at its current head, merged with the merge-commit method (squash and rebase create a sha no run tested). After a rebase of `develop` that skipped a PR, it must pass `make fork-check-full` first.
+- From the dev clone (remote `fork`): move, tag (N counts up per upstream X.Y.Z), then check out that commit and build the dmg with `make fork-dmg FORK_VERSION=X.Y.Z-fork.N`:
+
+  ```sh
+  old=$(git ls-remote fork refs/heads/main | cut -f1)
+  git tag vX.Y.Z-fork.N <sha> && git push --atomic --force-with-lease=main:$old fork <sha>:main vX.Y.Z-fork.N
+  ```
+
+- Pushed tags and `backup/*` branches keep released commits reachable; don't protect `main`, or allow force pushes if you do.
+- Install side: `make sync && make update`, never `git pull`, which merges the old and new histories. `sync` refuses on tracked changes, on local `main` commits the fork never had, and on ignored files the new commit would overwrite (`make clean` clears `dist/` and `out/`).
+
 ## What non-UI tests must cover
 
 Upstream changes break fork features silently when they are type-compatible: a refactor that rebuilds an options object, a non-strict zod schema dropping an unknown field, a component that stops rendering a slot. Each fork seam needs a test that turns red then:
