@@ -210,25 +210,28 @@ export function GitGraphFullView({
       </div>
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <div
-            className={cn(
-              'grid shrink-0 items-center gap-x-3 border-b border-border px-3 py-1 text-2xs text-muted-foreground',
-              GIT_GRAPH_FULL_ROW_COLUMNS
-            )}
-          >
-            <span style={{ width: graphWidth }} />
-            <span>
-              {translate('auto.components.right.sidebar.GitGraphFullView.message', 'Message')}
-            </span>
-            <span>
-              {translate('auto.components.right.sidebar.GitGraphFullView.author', 'Author')}
-            </span>
-            <span>{translate('auto.components.right.sidebar.GitGraphFullView.date', 'Date')}</span>
-            <span>
-              {translate('auto.components.right.sidebar.GitGraphFullView.commit', 'Commit')}
-            </span>
-          </div>
           <div className="scrollbar-sleek min-h-0 flex-1 overflow-auto">
+            {/* Why inside the scroller: the header must lose the same scrollbar width as the rows. */}
+            <div
+              className={cn(
+                'sticky top-0 z-10 grid items-center gap-x-3 border-b border-border bg-background px-3 py-1 text-2xs text-muted-foreground',
+                GIT_GRAPH_FULL_ROW_COLUMNS
+              )}
+            >
+              <span style={{ width: graphWidth }} />
+              <span>
+                {translate('auto.components.right.sidebar.GitGraphFullView.message', 'Message')}
+              </span>
+              <span>
+                {translate('auto.components.right.sidebar.GitGraphFullView.author', 'Author')}
+              </span>
+              <span>
+                {translate('auto.components.right.sidebar.GitGraphFullView.date', 'Date')}
+              </span>
+              <span>
+                {translate('auto.components.right.sidebar.GitGraphFullView.commit', 'Commit')}
+              </span>
+            </div>
             {state.status === 'error' && !result && (
               <p className="px-3 py-2 text-xs text-destructive">{state.error}</p>
             )}
@@ -257,7 +260,7 @@ export function GitGraphFullView({
             {result && <GitHistoryGraphLoadMore worktreeId={worktreeId} state={state} />}
           </div>
         </div>
-        <div className="scrollbar-sleek w-[26rem] shrink-0 overflow-y-auto border-l border-border">
+        <div className="scrollbar-sleek w-[clamp(16rem,28vw,26rem)] shrink-0 overflow-y-auto border-l border-border">
           {selected ? (
             <CommitDetails
               item={selected}
