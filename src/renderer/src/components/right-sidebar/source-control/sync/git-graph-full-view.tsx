@@ -210,28 +210,26 @@ export function GitGraphFullView({
       </div>
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="scrollbar-sleek min-h-0 flex-1 overflow-auto">
-            {/* Why inside the scroller: the header must lose the same scrollbar width as the rows. */}
-            <div
-              className={cn(
-                'sticky top-0 z-10 grid items-center gap-x-3 border-b border-border bg-background px-3 py-1 text-2xs text-muted-foreground',
-                GIT_GRAPH_FULL_ROW_COLUMNS
-              )}
-            >
-              <span style={{ width: graphWidth }} />
-              <span>
-                {translate('auto.components.right.sidebar.GitGraphFullView.message', 'Message')}
-              </span>
-              <span>
-                {translate('auto.components.right.sidebar.GitGraphFullView.author', 'Author')}
-              </span>
-              <span>
-                {translate('auto.components.right.sidebar.GitGraphFullView.date', 'Date')}
-              </span>
-              <span>
-                {translate('auto.components.right.sidebar.GitGraphFullView.commit', 'Commit')}
-              </span>
-            </div>
+          {/* Why both reserve the gutter: the header must lose the same scrollbar width as the rows. */}
+          <div
+            className={cn(
+              'scrollbar-sleek grid shrink-0 items-center gap-x-3 overflow-y-hidden border-b border-border px-3 py-1 text-2xs text-muted-foreground [scrollbar-gutter:stable]',
+              GIT_GRAPH_FULL_ROW_COLUMNS
+            )}
+          >
+            <span style={{ width: graphWidth }} />
+            <span>
+              {translate('auto.components.right.sidebar.GitGraphFullView.message', 'Message')}
+            </span>
+            <span>
+              {translate('auto.components.right.sidebar.GitGraphFullView.author', 'Author')}
+            </span>
+            <span>{translate('auto.components.right.sidebar.GitGraphFullView.date', 'Date')}</span>
+            <span>
+              {translate('auto.components.right.sidebar.GitGraphFullView.commit', 'Commit')}
+            </span>
+          </div>
+          <div className="scrollbar-sleek min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
             {state.status === 'error' && !result && (
               <p className="px-3 py-2 text-xs text-destructive">{state.error}</p>
             )}
