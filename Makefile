@@ -13,12 +13,13 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-coverage fork-check-tests fork-base-guard
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-coverage fork-check-tests fork-base-guard
 
 help:
 	@echo "Orca local build (arm64 only):"
 	@echo "  make all        first time: install + native helper + dmg + open it"
-	@echo "  make update     after 'git pull': pnpm install + build + reinstall to /Applications"
+	@echo "  make sync       move local main to the fork's main (never 'git pull'; refuses on local work)"
+	@echo "  make update     after 'make sync': pnpm install + build + reinstall to /Applications"
 	@echo "  make app        FAST: build .app and install straight to /Applications (no dmg)"
 	@echo "  make dmg        build the arm64 .dmg and open it (drag-to-Applications flow)"
 	@echo "  make build      FAST: build dist/mac-arm64/Orca.app only (no install, no dmg)"
@@ -94,7 +95,7 @@ run:
 logs:
 	tail -f "$(LOG)"
 
-# After `git pull`: sync deps, rebuild (arm64, fast), reinstall to /Applications.
+# After `make sync`: sync deps, rebuild (arm64, fast), reinstall to /Applications.
 # Then run it with: make run
 update: install app
 	@echo ">> updated to $$(git rev-parse --short HEAD). launch with: make run"
@@ -210,6 +211,24 @@ fork-check-tests: fork-base-guard
 	  $$(git diff --name-only --diff-filter=AM $(FORK_BASE) HEAD | grep -E '\.test\.tsx?$$' | grep -v '^tests/e2e/')
 
 FORK_REPO ?= audichuang/orca
+# The fork's remote in this clone, whatever it is named (origin on a plain clone of the fork).
+FORK_REMOTE ?= $(shell git remote -v | awk -v r="$(FORK_REPO)" '$$3 == "(fetch)" && $$2 ~ ("[:/]" r "(\\.git)?$$") {print $$1; exit}')
+
+# main is force-moved on release, so git pull would merge two histories; local main must be a value the fork's main once had (clone writes no reflog, so the pre-fetch value counts too).
+sync:
+	@r="$(FORK_REMOTE)"; \
+	test -n "$$r" || { echo "sync: no remote points at $(FORK_REPO); pass FORK_REMOTE=<name>"; exit 1; }; \
+	test -z "$$(git status --porcelain -uno)" || { echo "sync: commit or discard these tracked changes first:"; git status -s -uno; exit 1; }; \
+	seen=$$(git rev-parse -q --verify "refs/remotes/$$r/main"); \
+	git fetch "$$r" "+refs/heads/main:refs/remotes/$$r/main" || exit 1; \
+	if git rev-parse -q --verify refs/heads/main >/dev/null; then \
+	  cands=$$(git rev-list -g "refs/remotes/$$r/main") || exit 1; \
+	  extra=$$(git rev-list -1 main --not $$seen $$cands --) || exit 1; \
+	  test -z "$$extra" || { echo "sync: local main has commits $$r/main never had; push or branch them first"; exit 1; }; \
+	fi; \
+	echo ">> main was $$(git rev-parse --short main 2>/dev/null) (git reflog keeps it)"; \
+	git checkout --no-overwrite-ignore -B main "refs/remotes/$$r/main" && \
+	echo ">> main is now $$(git rev-parse --short HEAD). next: make update"
 # Fork CI is fork-pr.yml only (macOS arm64 is the only target); rerun after a rebase brings new upstream workflows.
 fork-ci-disable-upstream:
 	gh workflow list -R $(FORK_REPO) --all --limit 500 --json path,state \
