@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ClipboardPaste, Copy, RefreshCw } from 'lucide-react'
+import { ClipboardPaste, Copy, FolderPlus, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,10 @@ import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { useAllWorktrees, useRepoMap } from '@/store/selectors'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../../../../shared/execution-host'
 import { copyClipcodeGitChanges } from '../clipcode/clipcode-copy-action'
 import { useClipcodeRestore } from '../clipcode/use-clipcode-restore'
 import { ActionButton } from '../listing/action-button'
@@ -16,7 +20,13 @@ import {
   getFolderGitWorktrees,
   type FolderGitWorktree
 } from './folder-git-worktrees'
+import { FolderAddReposDialog } from './folder-add-repos-dialog'
 import { FolderRepoRow } from './folder-repo-row'
+import {
+  isRepoHiddenFromSidebar,
+  setReposHiddenFromSidebar,
+  useFolderSidebarHiddenReposVersion
+} from './folder-sidebar-hidden-repos'
 import {
   getRememberedFolderRepo,
   isFolderRepoListCollapsed,
@@ -63,6 +73,18 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
         )
       : null
   const memberWorktrees = useMemo(() => members.map((member) => member.worktree), [members])
+  useFolderSidebarHiddenReposVersion()
+  const [addReposOpen, setAddReposOpen] = useState(false)
+  // Why local only: adding a project from here goes through the local add path; SSH and server folders keep the hint.
+  const canAddRepos =
+    folderWorkspace !== null && getRepoExecutionHostId(folderWorkspace) === LOCAL_EXECUTION_HOST_ID
+  const addReposDialog =
+    addReposOpen && folderWorkspace ? (
+      <FolderAddReposDialog
+        folderWorkspace={folderWorkspace}
+        onClose={() => setAddReposOpen(false)}
+      />
+    ) : null
   const isVisible = useAppStore((s) => s.rightSidebarOpen && s.rightSidebarTab === 'source-control')
   const refreshAll = useFolderRepoStatusRefresh(memberWorktrees, isVisible)
   const changeCounts = useAppStore(
@@ -199,6 +221,15 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
       focusable={member.worktree.id === rovingId}
       expanded={index === expandedIndex}
       onToggle={() => toggleRepo(member.worktree.id)}
+      // Why main worktree only: the choice covers the whole repo, so a linked worktree's row would hide its siblings too.
+      sidebarHidden={
+        member.containsFolder || !member.worktree.isMainWorktree
+          ? undefined
+          : isRepoHiddenFromSidebar(member.repo)
+      }
+      onToggleSidebarHidden={() =>
+        setReposHiddenFromSidebar([member.repo], !isRepoHiddenFromSidebar(member.repo))
+      }
       onCopy={() =>
         void copyClipcodeGitChanges({
           rootPath: folderPath,
@@ -219,11 +250,21 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   }
   if (members.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-xs text-muted-foreground px-4 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center text-xs text-muted-foreground">
         {translate(
           'auto.components.right.sidebar.source.control.folder.folder.multi.repo.panel.4c62351467',
           'No imported Git repositories under this folder. Add the repositories inside it to Orca to see their changes here.'
         )}
+        {canAddRepos && (
+          <Button type="button" variant="outline" size="sm" onClick={() => setAddReposOpen(true)}>
+            <FolderPlus />
+            {translate(
+              'auto.components.right.sidebar.source.control.folder.folder.multi.repo.panel.addRepos',
+              'Add repositories in this folder'
+            )}
+          </Button>
+        )}
+        {addReposDialog}
       </div>
     )
   }
@@ -245,6 +286,16 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
           )}
           onClick={copyAllChanges}
         />
+        {canAddRepos && (
+          <ActionButton
+            icon={FolderPlus}
+            title={translate(
+              'auto.components.right.sidebar.source.control.folder.folder.multi.repo.panel.addRepos',
+              'Add repositories in this folder'
+            )}
+            onClick={() => setAddReposOpen(true)}
+          />
+        )}
         <ActionButton
           icon={ClipboardPaste}
           title={translate(
@@ -322,6 +373,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
         )}
       </div>
       {restoreDialog}
+      {addReposDialog}
     </div>
   )
 }
