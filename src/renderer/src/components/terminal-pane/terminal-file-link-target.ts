@@ -18,7 +18,7 @@ import type { createTerminalPathExistenceBatch } from './terminal-path-existence
 import {
   getTerminalPathExistsCacheKey,
   readTerminalPathExistsCache,
-  writeTerminalPathExistsCache
+  writeTerminalPathExistsAnswer
 } from './terminal-path-exists-cache'
 import { resolveKnownWorktreeRootPathLink } from './terminal-worktree-path-link'
 import {
@@ -141,6 +141,6 @@ export async function fileLinkTargetExists(
   const exists =
     readTerminalPathExistsCache(cache, target.cacheKey) ??
     (await pathExists(target.fileContext, target.absolutePath, target.isRemoteRuntimePath))
-  writeTerminalPathExistsCache(cache, target.cacheKey, exists)
+  writeTerminalPathExistsAnswer(cache, target.cacheKey, exists)
   return exists
 }
