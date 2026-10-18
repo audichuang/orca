@@ -64,3 +64,7 @@ Every change must consider these areas:
 ## Git / GitHub
 
 If changing code around `git`, `gh`, source-control, or review behavior read [`docs/agents-md-refs/git-workflow.md`](./docs/agents-md-refs/git-workflow.md).
+
+# Fork Maintenance
+
+This checkout is a personal fork. Before rebasing onto an upstream release, merging into `develop`, or adding tests for fork features, read `FORK.md`.
