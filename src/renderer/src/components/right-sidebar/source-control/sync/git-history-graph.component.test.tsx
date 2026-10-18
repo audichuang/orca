@@ -17,6 +17,7 @@ vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => undefined })
 const { GitHistoryPanel } = await import('./git-history-panel')
 const { GitHistoryGraphLoadMore, GitHistoryGraphToolbar } =
   await import('./git-history-graph-toolbar')
+const { GitHistoryGraphEmptyMessage } = await import('./git-history-graph-empty-message')
 const { useSourceControlGitHistory } = await import('./use-git-history')
 const { resetGitHistoryGraphFiltersForTest, updateGitHistoryGraphFilter } =
   await import('./git-history-graph-filter')
@@ -92,6 +93,7 @@ function Harness({
           />
         }
         footer={<GitHistoryGraphLoadMore worktreeId={WORKTREE} result={gitHistoryState.result} />}
+        emptyMessage={<GitHistoryGraphEmptyMessage worktreeId={WORKTREE} />}
       />
     </TooltipProvider>
   )
@@ -191,6 +193,35 @@ describe('Commits graph filter, end to end through the history hook', () => {
     await waitFor(() =>
       expect(lastRequest()).toMatchObject({ graph: { mode: 'head', limit: 103 } })
     )
+  })
+
+  it('re-reads the branch list each time the picker opens, so new branches appear', async () => {
+    let refs = APPLIED.refs
+    mocks.getRuntimeGitHistory.mockImplementation(async (_context, options) =>
+      options.graph ? result({ graph: { ...APPLIED, refs, mode: options.graph.mode } }) : result()
+    )
+    render(<Harness />)
+    await screen.findByText('Alpha')
+    const picker = screen.getByRole('combobox', { name: 'Branch filter' })
+
+    fireEvent.click(picker)
+    await screen.findByText('feature/x')
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByText('feature/x')).not.toBeInTheDocument())
+
+    refs = [...APPLIED.refs, { fullName: 'refs/heads/new', name: 'new', category: 'branches' }]
+    fireEvent.click(picker)
+    expect(await screen.findByText('new')).toBeInTheDocument()
+  })
+
+  it('says no commits match when a search finds nothing, not that the repo is empty', async () => {
+    mocks.getRuntimeGitHistory.mockImplementation(async (_context, options) =>
+      options.graph ? result({ items: [], graph: { ...APPLIED, mode: 'head' } }) : result()
+    )
+    updateGitHistoryGraphFilter(WORKTREE, { query: 'nothing-matches' })
+    render(<Harness />)
+    expect(await screen.findByText('No commits match this filter')).toBeInTheDocument()
+    expect(screen.queryByText('No commits yet')).not.toBeInTheDocument()
   })
 
   it('copies the Ctrl/Cmd-selected commits from the context menu', async () => {
