@@ -221,7 +221,12 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
       focusable={member.worktree.id === rovingId}
       expanded={index === expandedIndex}
       onToggle={() => toggleRepo(member.worktree.id)}
-      sidebarHidden={member.containsFolder ? undefined : isRepoHiddenFromSidebar(member.repo)}
+      // Why main worktree only: the choice covers the whole repo, so a linked worktree's row would hide its siblings too.
+      sidebarHidden={
+        member.containsFolder || !member.worktree.isMainWorktree
+          ? undefined
+          : isRepoHiddenFromSidebar(member.repo)
+      }
       onToggleSidebarHidden={() =>
         setReposHiddenFromSidebar([member.repo], !isRepoHiddenFromSidebar(member.repo))
       }
