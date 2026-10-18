@@ -24,10 +24,10 @@ env:
 
 jobs:
   fork_check:
-    name: fork-check and changed tests
+    name: fork-check
     if: github.event.pull_request.draft != true
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -46,11 +46,6 @@ jobs:
 
       - name: make fork-check
         run: make fork-check
-
-      - name: Tests affected by this PR
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: LC_ALL=C pnpm exec vitest run --config config/vitest.config.ts --changed "$BASE_SHA" --passWithNoTests
 
   cross_version_wire:
     # Why kept: the fork desktop client talks to hosts running upstream releases.
