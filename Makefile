@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-coverage fork-check-tests fork-base-guard
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-coverage fork-check-tests fork-check-lint fork-base-guard
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -182,10 +182,10 @@ FORK_MAX_COMMITS ?= 200
 FORK_TEST_SHARD ?=
 
 fork-check: export LC_ALL = C
-fork-check: fork-check-coverage fork-check-static-types fork-check-tests fork-check-quality
+fork-check: fork-check-coverage fork-check-static-types fork-check-tests fork-check-quality fork-check-lint
 
 fork-check-static: export LC_ALL = C
-fork-check-static: fork-check-coverage fork-check-static-types fork-check-quality
+fork-check-static: fork-check-coverage fork-check-static-types fork-check-quality fork-check-lint
 
 fork-base-guard:
 	@echo ">> fork base: $(FORK_BASE)"
@@ -204,6 +204,16 @@ fork-check-coverage: fork-base-guard
 
 fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
+
+# Whole-repo checks from upstream's `pnpm lint` that fork edits can break (Tailwind classes, the en catalog, rpc catalog) plus fork locale parity; the rest of it is covered on changed lines by fork-check-quality.
+fork-check-lint: fork-base-guard
+	pnpm run check:dead-classes
+	pnpm run verify:localization-catalogs
+	pnpm run verify:localization-extraction
+	pnpm run verify:localization-coverage
+	pnpm run verify:rpc-params-catalog
+	pnpm run check:max-lines-ratchet
+	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
 
 fork-check-tests: export LC_ALL = C
 fork-check-tests: fork-base-guard
