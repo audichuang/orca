@@ -2,7 +2,6 @@ import { getRelativePathInsideRoot, basename, joinPath } from '@/lib/path'
 import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
 import type { GitDiffResult } from '../../../../../../shared/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
-import { getUtf8ByteLength, measureUtf8ByteLength } from '../../../../../../shared/utf8-byte-limits'
 import {
   buildGitPayload,
   buildPayload,
@@ -11,6 +10,7 @@ import {
   type ChangeTypeLabel,
   type PayloadFile
 } from './clipcode-clipboard-format'
+import { classifyClipcodeEntryContent } from './clipcode-entry-content'
 
 export type ClipcodeCopyRepo = {
   /** Git owner transport of this repo; reads never touch the local fs directly. */
@@ -214,34 +214,25 @@ export async function buildClipcodeGitCopy(args: {
         unreadableFileCount++
         continue
       }
-      if (content === null || ('text' in content && content.text.includes('\0'))) {
+      const verdict =
+        content === null
+          ? ({ kind: 'binary' } as const)
+          : classifyClipcodeEntryContent(clipboardPath, changeType, content, maxBytes)
+      if (verdict.kind === 'binary') {
         binaryPaths.add(clipboardPath)
         continue
       }
-      // Why: U+FFFD is what a lenient decode leaves of non-UTF-8 bytes; restoring it would corrupt the file (ClipCode does the same).
-      if (changeType !== 'DELETED' && 'text' in content && content.text.includes('\uFFFD')) {
+      if (verdict.kind === 'unreadable') {
         unreadableFileCount++
         continue
       }
       seen.add(clipboardPath)
       hasDeleted ||= changeType === 'DELETED'
       usedIndexContent ||= fromIndex
-      if ('skippedReason' in content) {
+      if (verdict.sizeSkipped) {
         skippedFileSizeCount++
-        files.push({ path: clipboardPath, changeType, skippedReason: content.skippedReason })
-        continue
       }
-      const size = measureUtf8ByteLength(content.text, { stopAfterBytes: maxBytes })
-      if (size.exceededLimit) {
-        skippedFileSizeCount++
-        files.push({
-          path: clipboardPath,
-          changeType,
-          skippedReason: `size exceeds limit (${getUtf8ByteLength(content.text)} bytes)`
-        })
-        continue
-      }
-      files.push({ path: clipboardPath, changeType, content: content.text })
+      files.push(verdict.file)
     }
   }
 

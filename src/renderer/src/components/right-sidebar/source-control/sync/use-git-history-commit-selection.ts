@@ -59,9 +59,7 @@ export function useGitHistoryCommitSelection(
         setSelection({ result, ids, anchor: item.id })
         return true
       }
-      if (current.ids.length > 0) {
-        setSelection({ result, ids: [], anchor: item.id })
-      } else if (current.anchor !== item.id) {
+      if (current.ids.length > 0 || current.anchor !== item.id) {
         setSelection({ result, ids: [], anchor: item.id })
       }
       return false
@@ -69,18 +67,18 @@ export function useGitHistoryCommitSelection(
     [current, result]
   )
 
-  const itemsFor = useCallback(
-    (item: GitHistoryItem): GitHistoryItem[] => {
-      if (current.ids.length < 2 || !current.ids.includes(item.id)) {
-        return [item]
-      }
-      const selected = new Set(current.ids)
-      return (result?.items ?? []).filter((candidate) => selected.has(candidate.id))
-    },
-    [current, result]
+  // Why precomputed: every row asks on each render, and a Shift range can cover a thousand commits.
+  const selectedIds = useMemo(() => new Set(current.ids), [current])
+  const selectedItems = useMemo(
+    () => (result?.items ?? []).filter((candidate) => selectedIds.has(candidate.id)),
+    [result, selectedIds]
   )
-
-  const isSelected = useCallback((id: string) => current.ids.includes(id), [current])
+  const itemsFor = useCallback(
+    (item: GitHistoryItem): GitHistoryItem[] =>
+      selectedItems.length < 2 || !selectedIds.has(item.id) ? [item] : selectedItems,
+    [selectedIds, selectedItems]
+  )
+  const isSelected = useCallback((id: string) => selectedIds.has(id), [selectedIds])
 
   return { isSelected, handleRowClick, itemsFor }
 }
