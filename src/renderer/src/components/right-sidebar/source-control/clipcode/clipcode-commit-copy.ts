@@ -12,7 +12,11 @@ import {
   type ChangeTypeLabel,
   type PayloadFile
 } from './clipcode-clipboard-format'
-import { classifyClipcodeEntryContent, type ClipcodeReadContent } from './clipcode-entry-content'
+import {
+  classifyClipcodeEntryContent,
+  isUnreadableModifiedSide,
+  type ClipcodeReadContent
+} from './clipcode-entry-content'
 import type { ClipcodeGitCopyResult } from './clipcode-git-copy'
 
 export type ClipcodeCommitCopyCommit = {
@@ -71,7 +75,7 @@ async function readCommittedContent(
     if (diff.largeDiffRenderLimit?.limited) {
       return { skippedReason: COMMIT_TOO_LARGE_REASON }
     }
-    if (diff.modifiedContent === '' && diff.missingSides?.includes('modified')) {
+    if (isUnreadableModifiedSide(diff)) {
       return 'unreadable'
     }
     return { text: diff.modifiedContent }

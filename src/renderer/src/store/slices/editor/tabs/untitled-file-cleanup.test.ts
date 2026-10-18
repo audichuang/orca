@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AppState } from '../../../types'
-import { resolveTabOwnerRelativePath } from './untitled-file-cleanup'
+import { resolveTabOwnerRelativePath } from '../git/open-file-git-owner'
 
 const state: Pick<AppState, 'folderWorkspaces'> = {
   folderWorkspaces: [

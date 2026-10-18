@@ -4,12 +4,15 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 
 ## Merge gate
 
-- `make fork-check` is the gate for every rebase and every merge into `develop`: `pnpm tc`, the upstream suites the fork edits (`FORK_TEST_DIRS`), every test the fork added or changed since `FORK_BASE`, and the changed-code quality gate. `make fork-check-full` adds `--changed` and the folder multi-repo e2e; run it before a release.
+- `make fork-check` is the gate for every rebase and every merge into `develop`: `pnpm tc`, the upstream suites the fork edits (`FORK_TEST_DIRS`), every test the fork added or changed since `FORK_BASE`, and the changed-code quality gate. It fails first when an upstream file the fork edits has no `FORK_TEST_DIRS` entry prefixing its path; add the path rather than deleting the check. `make fork-check-full` adds `--changed` and the folder multi-repo e2e; run it before a release.
 - On GitHub the gate is `.github/workflows/fork-pr.yml`'s "Fork PR checks passed" job: `make fork-check` (split into `fork-check-static` plus four `fork-check-tests` shards that run in parallel), cross-version wire compatibility (the fork client talks to upstream-release hosts), and the macOS arm64 `make build`. Upstream workflows stay unedited but disabled on the fork; run `make fork-ci-disable-upstream` after a rebase that adds new ones.
 - `FORK_BASE` is the newest upstream `vX.Y.Z` tag. A clone without upstream tags resolves an ancient one; the target now refuses to run then. Fix with `git fetch <upstream-remote> --tags`.
 - The target forces `LC_ALL=C`: upstream real-git tests match English git messages and fail under a translated locale.
 - When the fork starts touching a new upstream area, add that directory to `FORK_TEST_DIRS`.
+- Keep `git config rerere.enabled true` so a conflict resolved once replays on the next rebase.
+- Locale files (`src/renderer/src/i18n/locales/*`) that conflict: keep both sides, since fork keys are pure additions. Don't take upstream's side and regenerate: `sync:localization-catalog` re-adds only English, so the fork's translations in the other five locales would be lost. Then run `pnpm run verify:localization-catalogs`.
 - Typecheck (`pnpm tc:web` / `tc:node`) before committing; tests alone pass with type errors.
+- `typecheck:e2e` is not in the gate: upstream's own `tests/tools` fixtures fail it at the release tag.
 
 ## What non-UI tests must cover
 

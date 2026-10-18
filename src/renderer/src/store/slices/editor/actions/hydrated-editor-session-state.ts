@@ -4,6 +4,8 @@ import type { WorkspaceSessionState } from '../../../../../../shared/workspace-s
 import type { AppState } from '../../../types'
 import type { OpenFile } from '../types/open-file'
 import { buildOwnedEditorFileId } from '../file-ids/editor-file-ids'
+import { resolveTabOwnerRelativePath } from '../git/open-file-git-owner'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { resolveHydratedEditorFileSelection } from '../file-ids/hydrated-editor-file-selection'
 import { resolveHydratedEditorFrontmatter } from '../file-ids/hydrated-editor-frontmatter'
 import {
@@ -32,7 +34,9 @@ export function buildHydratedEditorSessionState(
   validWorktreeIds: ReadonlySet<string>,
   activeWorktreeId: string | null,
   /** Repos a folder tab's git owner may name; omitted where repos are unknown, so the owner is kept. */
-  validGitOwnerIds?: ReadonlySet<string>
+  validGitOwnerIds?: ReadonlySet<string>,
+  /** Folder roots, to re-anchor relativePath when a dropped git owner leaves it repo-relative. */
+  ownerRoots?: Pick<AppState, 'folderWorkspaces'>
 ): {
   state: HydratedEditorSessionState
   editorFileIdMigrationsByWorktree: Record<string, Map<string, string>>
@@ -93,10 +97,28 @@ export function buildHydratedEditorSessionState(
       if (!isReadOnly && pf.dirtyDraftContent !== undefined) {
         editorDrafts[id] = pf.dirtyDraftContent
       }
+      const ownerIsValid =
+        pf.gitWorktreeId &&
+        pf.gitWorktreeId !== worktreeId &&
+        (validGitOwnerIds?.has(pf.gitWorktreeId) ?? true)
+      // Why: a read through the folder selector with a repo-relative path names the wrong file.
+      const reanchoredPath =
+        pf.gitWorktreeId && !ownerIsValid && ownerRoots
+          ? resolveTabOwnerRelativePath(ownerRoots, { ...pf, worktreeId }, null)
+          : null
+      // Why: with no single owner root, keep the stale owner so reads fail visibly instead of naming another file.
+      const keepsGitOwner =
+        ownerIsValid ||
+        (pf.gitWorktreeId !== undefined &&
+          pf.gitWorktreeId !== worktreeId &&
+          ownerRoots !== undefined &&
+          parseWorkspaceKey(worktreeId)?.type === 'folder' &&
+          !reanchoredPath)
+      const relativePath = reanchoredPath || pf.relativePath
       openFiles.push({
         id,
         filePath: pf.filePath,
-        relativePath: pf.relativePath,
+        relativePath,
         worktreeId,
         // Why: re-detect language on hydrate — older sessions stored ids from before extensions like .ipynb were supported.
         language: detectLanguage(pf.relativePath || pf.filePath),
@@ -104,11 +126,7 @@ export function buildHydratedEditorSessionState(
         isPreview: pf.isPreview,
         runtimeEnvironmentId: pf.runtimeEnvironmentId,
         externalSshTargetId: pf.externalSshTargetId,
-        ...(pf.gitWorktreeId &&
-        pf.gitWorktreeId !== worktreeId &&
-        (validGitOwnerIds?.has(pf.gitWorktreeId) ?? true)
-          ? { gitWorktreeId: pf.gitWorktreeId }
-          : {}),
+        ...(keepsGitOwner ? { gitWorktreeId: pf.gitWorktreeId } : {}),
         ...(isReadOnly ? { readOnly: true } : {}),
         ...(isReadOnly && pf.liveTail === true ? { liveTail: true } : {}),
         lastKnownDiskSignature: isReadOnly ? undefined : pf.lastKnownDiskSignature,

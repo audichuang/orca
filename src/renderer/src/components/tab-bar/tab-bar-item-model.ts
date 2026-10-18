@@ -60,7 +60,7 @@ export function resolveTerminalItemTab(
 
 export function resolveEditorTabGitStatus(
   file: Pick<OpenFile, 'mode' | 'relativePath'> &
-    Partial<Pick<OpenFile, 'worktreeId' | 'gitWorktreeId'>>,
+    Partial<Pick<OpenFile, 'worktreeId' | 'gitWorktreeId' | 'filePath'>>,
   statusByRelativePath: Map<string, GitFileStatus>
 ): GitFileStatus | null {
   // Why: a virtual tab's relativePath is its title, which can collide with a real file's path.
