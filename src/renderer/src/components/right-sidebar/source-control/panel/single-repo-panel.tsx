@@ -1,3 +1,4 @@
+// Fork: upstream panel.tsx's body, moved here so panel.tsx can route folder workspaces; port upstream edits to panel.tsx here on rebase.
 import { translate } from '@/i18n/i18n'
 import { SourceControlPanelReady } from './panel-ready'
 import { useSourceControlPanelModel } from './use-panel-model'
