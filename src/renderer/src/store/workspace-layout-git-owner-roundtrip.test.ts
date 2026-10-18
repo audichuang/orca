@@ -126,4 +126,54 @@ describe('a folder tab whose git owner is gone by the next launch', () => {
       .openFiles.find((f) => f.filePath === '/remote/folder/repo/src/x.ts')
     expect(file).toMatchObject({ relativePath: 'repo/src/x.ts' })
   })
+
+  function hydrateGoneOwnerTab(
+    folders: { folderPath: string; executionHostId: string }[],
+    file: { filePath: string; runtimeEnvironmentId?: string }
+  ): OpenFile | undefined {
+    useAppStore.setState(useAppStore.getInitialState(), true)
+    useAppStore.setState(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: hydration reads only the folder catalog and the (empty) repo catalog.
+      {
+        folderWorkspaces: folders.map((folder) => ({ id: 'f1', projectGroupId: 'g1', ...folder }))
+      } as unknown as Partial<AppState>
+    )
+    const session = localDesktopSession()
+    session.openFilesByWorktree = {
+      'folder:f1': [
+        {
+          ...file,
+          relativePath: 'src/x.ts',
+          worktreeId: 'folder:f1',
+          language: 'typescript',
+          gitWorktreeId: 'gone::/gone'
+        }
+      ]
+    }
+    useAppStore.getState().hydrateEditorSession(session)
+    return useAppStore.getState().openFiles.find((f) => f.filePath === file.filePath)
+  }
+
+  it('picks the tab host root when hosts share the folder id with nested roots', () => {
+    const file = hydrateGoneOwnerTab(
+      [
+        { folderPath: '/work', executionHostId: 'local' },
+        { folderPath: '/work/folder', executionHostId: 'runtime:builder' }
+      ],
+      { filePath: '/work/folder/repo/src/x.ts', runtimeEnvironmentId: 'builder' }
+    )
+    expect(file).toMatchObject({ relativePath: 'repo/src/x.ts' })
+    expect(file?.gitWorktreeId).toBeUndefined()
+  })
+
+  it('keeps the stale owner rather than a repo-relative path when no single root is the tab host', () => {
+    const file = hydrateGoneOwnerTab(
+      [
+        { folderPath: '/work', executionHostId: 'local' },
+        { folderPath: '/work/folder', executionHostId: 'ssh:box' }
+      ],
+      { filePath: '/work/folder/repo/src/x.ts' }
+    )
+    expect(file).toMatchObject({ relativePath: 'src/x.ts', gitWorktreeId: 'gone::/gone' })
+  })
 })
