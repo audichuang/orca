@@ -7,6 +7,7 @@ import { reconcileEditorBufferMembership } from '../buffers/editor-buffer-record
 import { buildEditorBufferViewIndex } from '../buffers/editor-buffer-views'
 import { buildOwnedEditorFileId } from '../file-ids/editor-file-ids'
 import { resolveTabOwnerRelativePath } from '../git/open-file-git-owner'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { resolveHydratedEditorFileSelection } from '../file-ids/hydrated-editor-file-selection'
 import { resolveHydratedEditorFrontmatter } from '../file-ids/hydrated-editor-frontmatter'
 import {
@@ -102,15 +103,24 @@ export function buildHydratedEditorSessionState(
       if (!isReadOnly && pf.dirtyDraftContent !== undefined) {
         editorDrafts[id] = pf.dirtyDraftContent
       }
-      const keepsGitOwner =
+      const ownerIsValid =
         pf.gitWorktreeId &&
         pf.gitWorktreeId !== worktreeId &&
         (validGitOwnerIds?.has(pf.gitWorktreeId) ?? true)
       // Why: a read through the folder selector with a repo-relative path names the wrong file.
-      const relativePath =
-        pf.gitWorktreeId && !keepsGitOwner && ownerRoots
-          ? resolveTabOwnerRelativePath(ownerRoots, { ...pf, worktreeId }, null) || pf.relativePath
-          : pf.relativePath
+      const reanchoredPath =
+        pf.gitWorktreeId && !ownerIsValid && ownerRoots
+          ? resolveTabOwnerRelativePath(ownerRoots, { ...pf, worktreeId }, null)
+          : null
+      // Why: with no single owner root, keep the stale owner so reads fail visibly instead of naming another file.
+      const keepsGitOwner =
+        ownerIsValid ||
+        (pf.gitWorktreeId !== undefined &&
+          pf.gitWorktreeId !== worktreeId &&
+          ownerRoots !== undefined &&
+          parseWorkspaceKey(worktreeId)?.type === 'folder' &&
+          !reanchoredPath)
+      const relativePath = reanchoredPath || pf.relativePath
       openFiles.push({
         id,
         filePath: pf.filePath,
