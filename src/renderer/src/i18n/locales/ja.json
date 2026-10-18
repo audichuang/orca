@@ -14462,7 +14462,8 @@
             "remote": "リモート",
             "searchCommits": "コミットを検索（author: path:）",
             "searchCommitsLabel": "コミットを検索",
-            "loadMore": "さらにコミットを読み込む"
+            "loadMore": "さらにコミットを読み込む",
+            "noMatchingCommits": "このフィルターに一致するコミットはありません"
           }
         }
       },
