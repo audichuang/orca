@@ -1,4 +1,4 @@
-import { ChevronDown, Copy } from 'lucide-react'
+import { ChevronDown, Copy, Eye, EyeOff } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
@@ -12,7 +12,9 @@ export function FolderRepoRow({
   focusable,
   expanded,
   onToggle,
-  onCopy
+  onCopy,
+  sidebarHidden,
+  onToggleSidebarHidden
 }: {
   worktreeId: string
   label: string
@@ -21,6 +23,9 @@ export function FolderRepoRow({
   expanded: boolean
   onToggle: () => void
   onCopy: () => void
+  /** Undefined when the repo cannot be hidden, e.g. it contains the folder itself. */
+  sidebarHidden?: boolean
+  onToggleSidebarHidden?: () => void
 }) {
   return (
     <div
@@ -58,6 +63,23 @@ export function FolderRepoRow({
         </span>
       </button>
       <RepoSyncCounts worktreeId={worktreeId} />
+      {sidebarHidden !== undefined && onToggleSidebarHidden && (
+        <ActionButton
+          icon={sidebarHidden ? EyeOff : Eye}
+          title={
+            sidebarHidden
+              ? translate(
+                  'auto.components.right.sidebar.source.control.folder.folder.repo.row.showInSidebar',
+                  'Hidden from the sidebar. Show it as a sidebar project'
+                )
+              : translate(
+                  'auto.components.right.sidebar.source.control.folder.folder.repo.row.hideFromSidebar',
+                  'Shown in the sidebar. Keep it in this folder only'
+                )
+          }
+          onClick={onToggleSidebarHidden}
+        />
+      )}
       <ActionButton
         icon={Copy}
         title={translate(
