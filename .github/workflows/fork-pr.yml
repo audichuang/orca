@@ -1,0 +1,118 @@
+# Fork-only PR gate. This fork ships only the macOS arm64 desktop build, so it replaces
+# upstream's pr.yml (disabled on the fork by `make fork-ci-disable-upstream`, not edited,
+# so rebases never conflict here). Merge gate: the "Fork PR checks passed" job.
+name: Fork PR Checks
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - converted_to_draft
+
+concurrency:
+  group: fork-pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  UPSTREAM_REPO: https://github.com/stablyai/orca.git
+
+jobs:
+  fork_check:
+    name: fork-check and changed tests
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      # Why: FORK_BASE is the newest upstream vX.Y.Z tag, and the fork repo has only -fork tags.
+      - name: Fetch upstream release tags
+        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+
+      - name: make fork-check
+        run: make fork-check
+
+      - name: Tests affected by this PR
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: LC_ALL=C pnpm exec vitest run --config config/vitest.config.ts --changed "$BASE_SHA" --passWithNoTests
+
+  cross_version_wire:
+    # Why kept: the fork desktop client talks to hosts running upstream releases.
+    name: fork cross-version wire compatibility
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      - name: Fetch upstream release tags
+        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+
+      - name: Daemon protocol crossing against newest release
+        run: pnpm run check:daemon-protocol-crossing
+
+      - name: Old/new client and server compatibility journeys
+        run: pnpm exec vitest run --config config/vitest.config.ts tests/e2e/cross-version-wire/
+
+  mac_arm64_build:
+    # Same steps as `make build`, the build installed on the fork's only target machine.
+    name: fork macOS arm64 build
+    if: github.event.pull_request.draft != true
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: electron
+
+      - name: make build
+        run: make build
+
+  verify:
+    name: Fork PR checks passed
+    needs: [fork_check, cross_version_wire, mac_arm64_build]
+    if: ${{ !cancelled() && github.event.pull_request.draft != true }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every fork check to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -e 'to_entries | all(.value.result == "success")' > /dev/null || {
+            echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+            echo "::error::A fork PR check did not succeed."
+            exit 1
+          }
