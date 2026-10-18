@@ -170,13 +170,20 @@ FORK_TEST_DIRS := src/renderer/src/components/right-sidebar src/renderer/src/com
   src/main/runtime/rpc/methods src/main/runtime/runtime-git-status-admission.test.ts src/renderer/src/runtime \
   src/renderer/src/web/preload-api src/shared/workspace-session-schema
 
+# Why the guard: a clone without upstream tags resolves an ancient FORK_BASE and silently runs thousands of unrelated tests.
+FORK_MAX_COMMITS ?= 200
+
+fork-check: export LC_ALL = C
 fork-check:
 	@echo ">> fork base: $(FORK_BASE)"
+	@n=$$(git rev-list --count $(FORK_BASE)..HEAD 2>/dev/null || echo 999999); if [ "$$n" -gt "$(FORK_MAX_COMMITS)" ]; then \
+	  echo "fork-check: $(FORK_BASE) is $$n commits behind HEAD; fetch upstream tags (git fetch <upstream-remote> --tags) or pass FORK_BASE=vX.Y.Z"; exit 1; fi
 	pnpm tc
 	pnpm exec vitest run --config config/vitest.config.ts $(FORK_TEST_DIRS) \
 	  $$(git diff --name-only --diff-filter=AM $(FORK_BASE) HEAD | grep -E '\.test\.tsx?$$' | grep -v '^tests/e2e/')
 	pnpm run check:code-quality:changed $(FORK_BASE)
 
+fork-check-full: export LC_ALL = C
 fork-check-full: fork-check
 	pnpm exec vitest run --config config/vitest.config.ts --changed $(FORK_BASE)
 	ORCA_BACKGROUND_LAUNCH=1 pnpm run ensure:electron-runtime
