@@ -21,7 +21,11 @@ import type { GitHistoryGraphApplied } from '../../../../../../shared/git-histor
 import type { GitHistoryPanelState } from './git-history-panel'
 import { GitHistoryGraphHostNotice, hostTooOldText } from './git-history-graph-host-status'
 import {
+  getGitHistoryGraphDraftQuery,
+  getGitHistoryGraphFilter,
+  setGitHistoryGraphDraftQuery,
   updateGitHistoryGraphFilter,
+  useGitHistoryGraphDraftQuery,
   useGitHistoryGraphFilter,
   type GitHistoryGraphFilter
 } from './git-history-graph-filter'
@@ -94,7 +98,8 @@ export function GitHistoryGraphToolbar({
   const filter = useGitHistoryGraphFilter(worktreeId)
   const [open, setOpen] = useState(false)
   const [branchQuery, setBranchQuery] = useState('')
-  const [draftQuery, setDraftQuery] = useState(filter.query)
+  const draftQuery = useGitHistoryGraphDraftQuery(worktreeId)
+  const setDraftQuery = (query: string): void => setGitHistoryGraphDraftQuery(worktreeId, query)
   const [fetched, setFetched] = useState<RefOptions>({ status: 'idle' })
   // Why: the open-time read is the single source; the last graph result only fills the list until it lands.
   const refOptions: RefOptions =
@@ -108,14 +113,7 @@ export function GitHistoryGraphToolbar({
   const refRequestId = useRef(0)
   if (shownWorktreeId !== worktreeId) {
     setShownWorktreeId(worktreeId)
-    setDraftQuery(filter.query)
     setFetched({ status: 'idle' })
-  }
-  // Why: the sidebar and the full-view toolbars share one filter; adopt a query the other one committed, or the debounce writes the stale draft back.
-  const [syncedQuery, setSyncedQuery] = useState(filter.query)
-  if (syncedQuery !== filter.query) {
-    setSyncedQuery(filter.query)
-    setDraftQuery(filter.query)
   }
 
   // Why: drop a branch list still in flight for the worktree this panel just left.
@@ -130,10 +128,13 @@ export function GitHistoryGraphToolbar({
     if (draftQuery === filter.query) {
       return
     }
-    const timer = window.setTimeout(
-      () => updateGitHistoryGraphFilter(worktreeId, { query: draftQuery }),
-      SEARCH_DEBOUNCE_MS
-    )
+    // Why re-read: every mounted toolbar runs this timer; only the first commit of the latest draft should refetch.
+    const timer = window.setTimeout(() => {
+      const latest = getGitHistoryGraphDraftQuery(worktreeId)
+      if (latest !== getGitHistoryGraphFilter(worktreeId).query) {
+        updateGitHistoryGraphFilter(worktreeId, { query: latest })
+      }
+    }, SEARCH_DEBOUNCE_MS)
     return () => window.clearTimeout(timer)
   }, [draftQuery, filter.query, worktreeId])
 
