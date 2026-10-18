@@ -169,7 +169,10 @@ FORK_TEST_DIRS := src/renderer/src/components/right-sidebar src/renderer/src/com
   src/main/git/history src/renderer/src/components/terminal-pane src/main/ipc/filesystem \
   src/main/runtime/rpc/methods src/main/runtime/runtime-git-status-admission.test.ts src/renderer/src/runtime \
   src/renderer/src/web/preload-api src/shared/workspace-session-schema src/renderer/src/components/sidebar \
-  src/main/project-groups
+  src/main/project-groups src/main/ipc/pty src/main/runtime/runtime-git src/main/updater src/preload/api/git \
+  src/renderer/src/hooks/editor-external-watch src/renderer/src/hooks/useEditorExternalWatch \
+  src/renderer/src/lib/remap-open-editor-tabs src/renderer/src/lib/workspace-session src/shared/git-diff \
+  src/shared/project-group src/shared/rpc-contract src/shared/workspace-session
 
 # Why the guard: a clone without upstream tags resolves an ancient FORK_BASE and silently runs thousands of unrelated tests.
 FORK_MAX_COMMITS ?= 200
@@ -192,6 +195,10 @@ fork-check-static-types: fork-base-guard
 	pnpm tc
 
 fork-check-quality: fork-base-guard
+	@# Why: vitest filters by path substring, so an upstream file the fork edits is covered when an entry prefixes its path.
+	@missing=$$(for f in $$(git diff --name-only --diff-filter=M $(FORK_BASE) HEAD -- src | grep -vE '\.test\.tsx?$$|/locales/'); do \
+	  s=$${f%.*}; for d in $(FORK_TEST_DIRS); do case "$$s" in "$${d%.test.ts}"*) continue 2;; esac; done; echo "  $$f"; done); \
+	  if [ -n "$$missing" ]; then echo "fork-check: add these upstream files' paths to FORK_TEST_DIRS:"; echo "$$missing"; exit 1; fi
 	pnpm run check:code-quality:changed $(FORK_BASE)
 
 fork-check-tests: export LC_ALL = C
