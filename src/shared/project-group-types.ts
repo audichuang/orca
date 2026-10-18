@@ -21,6 +21,8 @@ export type NestedRepoScanOptions = {
   maxDepth?: number
   maxRepos?: number
   timeoutMs?: number | null
+  /** Fork: keep scanning inside found repos, for folder workspaces that nest repos in repos. */
+  descendIntoRepos?: boolean
 }
 
 export type NestedRepoCandidate = {

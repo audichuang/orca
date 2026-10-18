@@ -37,6 +37,7 @@ export type NormalizedNestedRepoScanOptions = {
   maxDepth: number
   maxRepos: number
   timeoutMs: number | null
+  descendIntoRepos: boolean
 }
 
 const DEFAULT_MAX_DEPTH = 3
@@ -72,7 +73,8 @@ export function normalizeNestedRepoScanOptions(options: unknown): NormalizedNest
         ? null
         : typeof raw.timeoutMs === 'number' && Number.isFinite(raw.timeoutMs)
           ? Math.max(500, Math.min(30_000, Math.floor(raw.timeoutMs)))
-          : null
+          : null,
+    descendIntoRepos: raw.descendIntoRepos === true
   }
 }
 
