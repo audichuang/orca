@@ -11,15 +11,15 @@ import { GitHistoryGraphSvg, graphColor } from './git-history-graph-svg'
 export function GitGraphRefBadge({ itemRef }: { itemRef: GitHistoryItemRef }): React.JSX.Element {
   return (
     <span
-      className="flex shrink-0 items-center gap-0.5 rounded-full border bg-background px-1.5 py-0.5 text-3xs leading-none"
+      className="flex min-w-0 items-center gap-0.5 rounded-full border bg-background px-1.5 py-0.5 text-3xs leading-none"
       style={{
         borderColor: itemRef.color ? graphColor(itemRef.color) : 'var(--border)',
         color: itemRef.color ? graphColor(itemRef.color) : 'var(--muted-foreground)'
       }}
       title={itemRef.category ? `${itemRef.name} (${itemRef.category})` : itemRef.name}
     >
-      {itemRef.category === 'tags' && <Tag aria-hidden="true" className="size-2.5" />}
-      {itemRef.name}
+      {itemRef.category === 'tags' && <Tag aria-hidden="true" className="size-2.5 shrink-0" />}
+      <span className="truncate">{itemRef.name}</span>
     </span>
   )
 }
@@ -61,10 +61,15 @@ export function GitGraphFullRow({
         <GitHistoryGraphSvg viewModel={viewModel} />
       </div>
       <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-        {refs.map((ref) => (
-          <GitGraphRefBadge key={ref.id} itemRef={ref} />
-        ))}
-        <span className="min-w-0 truncate text-foreground">{item.subject}</span>
+        {refs.length > 0 && (
+          // Why capped: many refs on one commit must not squeeze the message to nothing; the title keeps full names.
+          <div className="flex max-w-[60%] min-w-0 shrink-0 items-center gap-1 overflow-hidden">
+            {refs.map((ref) => (
+              <GitGraphRefBadge key={ref.id} itemRef={ref} />
+            ))}
+          </div>
+        )}
+        <span className="min-w-0 flex-1 truncate text-foreground">{item.subject}</span>
       </div>
       <span className="truncate text-muted-foreground">{item.author}</span>
       <span className="truncate text-muted-foreground tabular-nums">
