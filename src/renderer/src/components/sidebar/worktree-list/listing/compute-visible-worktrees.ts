@@ -10,6 +10,7 @@ import type { SidebarLineageParentIdentities } from '../../../../../../shared/si
 import { buildDesktopWorkspaceRowFactReader } from './desktop-workspace-row-facts'
 import { sidebarWorkspaceRowFilters } from '../controls/sidebar-filter-actions'
 import { getLineageAncestorIndex, getSortedWorktreeRankIndex } from './visible-worktree-indexes'
+import { getSidebarHiddenRepoIds } from '../right-sidebar/source-control/folder/folder-sidebar-hidden-repos'
 
 // Separate store binding avoids attention-slice import cycles; shared builders retain the filter rules.
 
@@ -53,8 +54,11 @@ export function computeVisibleWorktrees(
   const keyOf = opts.sortedByHostIdentity
     ? getWorktreeHostIdentity
     : (worktree: Worktree) => worktree.id
+  // Fork: repos kept in their folder's Source Control only stay out of every sidebar ordering.
+  const hiddenRepoIds = getSidebarHiddenRepoIds(opts.repoMap.values())
+  const rows = getIndexedAllWorktrees(worktreesByRepo)
   return selectVisibleSidebarWorktrees({
-    rows: getIndexedAllWorktrees(worktreesByRepo),
+    rows: hiddenRepoIds.size > 0 ? rows.filter((w) => !hiddenRepoIds.has(w.repoId)) : rows,
     ancestorByIdentity: getLineageAncestorIndex(worktreesByRepo),
     rankOf: (worktree) => rankByKey.get(keyOf(worktree)),
     filters: sidebarWorkspaceRowFilters(opts),
