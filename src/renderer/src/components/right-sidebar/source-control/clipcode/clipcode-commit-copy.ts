@@ -4,7 +4,7 @@ import type {
   GitBranchChangeEntry,
   GitDiffResult
 } from '../../../../../../shared/git-diff-compare-types'
-import { getUtf8ByteLength, measureUtf8ByteLength } from '../../../../../../shared/utf8-byte-limits'
+import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
 import {
   buildGitPayload,
   CLIPCODE_DEFAULTS,
@@ -12,14 +12,13 @@ import {
   type ChangeTypeLabel,
   type PayloadFile
 } from './clipcode-clipboard-format'
+import { classifyClipcodeEntryContent, type ClipcodeReadContent } from './clipcode-entry-content'
 import type { ClipcodeGitCopyResult } from './clipcode-git-copy'
 
 export type ClipcodeCommitCopyCommit = {
   commitOid: string
   /** First parent first; a merge lists every parent. */
   parentOids: readonly string[]
-  /** Epoch ms; decides which commit wins when several touch one path. */
-  timestamp?: number
   entries: readonly GitBranchChangeEntry[]
 }
 
@@ -33,6 +32,8 @@ export type ClipcodeCommitReaders = {
 // Why the parent cap: ClipCodeVSCode's graph copy reads a deleted file from ^1, ^2, then ^3.
 const MAX_DELETED_PARENT_TRIES = 3
 const COMMIT_TOO_LARGE_REASON = 'size exceeds limit (commit version too large to read)'
+// Why bounded: each read is a git round trip, over SSH too; a few in flight hides latency without a burst.
+const READ_CONCURRENCY = 6
 
 function changeTypeFor(entry: GitBranchChangeEntry): ChangeTypeLabel {
   switch (entry.status) {
@@ -48,7 +49,7 @@ function changeTypeFor(entry: GitBranchChangeEntry): ChangeTypeLabel {
   }
 }
 
-type Content = { text: string } | { skippedReason: string } | 'binary' | 'unreadable'
+type Content = ClipcodeReadContent | 'binary' | 'unreadable'
 
 async function readCommittedContent(
   readers: ClipcodeCommitReaders,
@@ -109,10 +110,18 @@ async function readDeletedContent(
   return { text: DELETED_FILE_MARKER }
 }
 
+type PlannedEntry = {
+  clipboardPath: string
+  changeType: ChangeTypeLabel
+  commit: ClipcodeCommitCopyCommit
+  entry: GitBranchChangeEntry
+}
+
 /**
  * Snipcode payload for one or more commits: each changed file as it stood after its commit,
  * a deleted file as it stood before. Paths are relative to `rootPath` so Paste & Restore in
- * the same workspace round-trips; when commits overlap, the newest commit's file wins.
+ * the same workspace round-trips. `commits` is newest first (graph order); when commits
+ * overlap, the newest commit's file wins.
  */
 export async function buildClipcodeCommitCopy(args: {
   rootPath: string
@@ -122,60 +131,51 @@ export async function buildClipcodeCommitCopy(args: {
 }): Promise<ClipcodeGitCopyResult> {
   const { rootPath, context, readers } = args
   const maxBytes = CLIPCODE_DEFAULTS.maxFileSizeKB * 1024
-  const newestFirst = args.commits
-    .map((commit, index) => ({ commit, index }))
-    .sort((a, b) => (b.commit.timestamp ?? 0) - (a.commit.timestamp ?? 0) || a.index - b.index)
+  const toClipboardPath = (path: string): string | undefined =>
+    getRelativePathInsideRoot(joinPath(context.worktreePath, path), rootPath)?.replaceAll('\\', '/')
+  // Why graph order, not author date: rebase and cherry-pick keep old author dates on newer commits.
   const seen = new Set<string>()
-  const files: PayloadFile[] = []
-  let skippedFileSizeCount = 0
-  let unreadableFileCount = 0
-  let skippedBinaryFileCount = 0
-
-  for (const { commit } of newestFirst) {
+  const planned: PlannedEntry[] = []
+  for (const commit of args.commits) {
     for (const entry of commit.entries) {
-      const clipboardPath = getRelativePathInsideRoot(
-        joinPath(context.worktreePath, entry.path),
-        rootPath
-      )?.replaceAll('\\', '/')
+      const clipboardPath = toClipboardPath(entry.path)
       if (!clipboardPath || seen.has(clipboardPath)) {
         continue
       }
       seen.add(clipboardPath)
-      const changeType = changeTypeFor(entry)
-      const content =
-        changeType === 'DELETED'
-          ? await readDeletedContent(readers, context, commit, entry)
-          : await readCommittedContent(readers, context, commit, entry)
-      if (content === 'unreadable') {
-        unreadableFileCount++
-        continue
+      // Why: a newer rename moved the old path away; an older commit must not bring it back.
+      const oldPath = entry.oldPath ? toClipboardPath(entry.oldPath) : undefined
+      if (oldPath) {
+        seen.add(oldPath)
       }
-      if (content === 'binary' || ('text' in content && content.text.includes('\0'))) {
-        skippedBinaryFileCount++
-        continue
-      }
-      // Why: U+FFFD is what a lenient decode leaves of non-UTF-8 bytes; restoring it would corrupt the file.
-      if (changeType !== 'DELETED' && 'text' in content && content.text.includes('�')) {
-        unreadableFileCount++
-        continue
-      }
-      if ('skippedReason' in content) {
-        skippedFileSizeCount++
-        files.push({ path: clipboardPath, changeType, skippedReason: content.skippedReason })
-        continue
-      }
-      if (measureUtf8ByteLength(content.text, { stopAfterBytes: maxBytes }).exceededLimit) {
-        skippedFileSizeCount++
-        files.push({
-          path: clipboardPath,
-          changeType,
-          skippedReason: `size exceeds limit (${getUtf8ByteLength(content.text)} bytes)`
-        })
-        continue
-      }
-      files.push({ path: clipboardPath, changeType, content: content.text })
+      planned.push({ clipboardPath, changeType: changeTypeFor(entry), commit, entry })
     }
   }
+  const contents = await mapWithConcurrency(planned, READ_CONCURRENCY, (item) =>
+    item.changeType === 'DELETED'
+      ? readDeletedContent(readers, context, item.commit, item.entry)
+      : readCommittedContent(readers, context, item.commit, item.entry)
+  )
+
+  const files: PayloadFile[] = []
+  let skippedFileSizeCount = 0
+  let unreadableFileCount = 0
+  let skippedBinaryFileCount = 0
+  planned.forEach((item, index) => {
+    const content = contents[index]
+    const verdict =
+      content === 'binary' || content === 'unreadable'
+        ? { kind: content }
+        : classifyClipcodeEntryContent(item.clipboardPath, item.changeType, content, maxBytes)
+    if (verdict.kind === 'binary') {
+      skippedBinaryFileCount++
+    } else if (verdict.kind === 'unreadable') {
+      unreadableFileCount++
+    } else {
+      skippedFileSizeCount += verdict.sizeSkipped ? 1 : 0
+      files.push(verdict.file)
+    }
+  })
 
   // Why buildGitPayload: ClipCodeVSCode's commit copy always uses the git spacing.
   const payload = files.length
