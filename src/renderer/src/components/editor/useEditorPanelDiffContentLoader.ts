@@ -15,7 +15,10 @@ import type { EditorPanelContentLoadOptions } from './useEditorPanelExternalCont
 import { stampCleanTabDiskBaseline } from './editor-clean-tab-disk-baseline'
 import { translate } from '@/i18n/i18n'
 import { isWslDistroNotRunningRefusal } from '../../../../shared/wsl-distro-not-running-refusal'
-import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
+import {
+  getOpenFileGitRelativePath,
+  getOpenFileGitWorktreeId
+} from '@/store/slices/editor/git/open-file-git-owner'
 
 const inFlightDiffReads = new Map<string, InFlightContentRead<DiffContent>>()
 
@@ -63,9 +66,10 @@ export function useEditorPanelDiffContentLoader({
       diffReadGenerationRef.current[file.id] = generation
       outstandingDiffReadsRef.current[file.id] = generation
       try {
+        const gitRelativePath = getOpenFileGitRelativePath(useAppStore.getState(), file)
         const worktreePath = file.filePath.slice(
           0,
-          file.filePath.length - file.relativePath.length - 1
+          file.filePath.length - gitRelativePath.length - 1
         )
         const branchCompare =
           file.branchCompare?.baseOid && file.branchCompare.headOid && file.branchCompare.mergeBase
@@ -114,7 +118,7 @@ export function useEditorPanelDiffContentLoader({
                     {
                       commitOid: commitCompare.commitOid,
                       parentOid: commitCompare.parentOid,
-                      filePath: file.relativePath,
+                      filePath: gitRelativePath,
                       oldPath: file.branchOldPath
                     },
                     wake
@@ -135,7 +139,7 @@ export function useEditorPanelDiffContentLoader({
                         headOid: branchCompare.headOid!,
                         mergeBase: branchCompare.mergeBase!
                       },
-                      filePath: file.relativePath,
+                      filePath: gitRelativePath,
                       oldPath: file.branchOldPath
                     },
                     wake
@@ -148,7 +152,7 @@ export function useEditorPanelDiffContentLoader({
                       connectionId
                     },
                     {
-                      filePath: file.relativePath,
+                      filePath: gitRelativePath,
                       staged: effectiveDiffSource === 'staged',
                       compareAgainstHead
                     },
