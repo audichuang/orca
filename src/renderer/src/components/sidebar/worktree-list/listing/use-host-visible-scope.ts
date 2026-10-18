@@ -13,6 +13,10 @@ import {
   filterProjectGroupsForVisibleHosts,
   getVisibleSidebarHostIdSet
 } from '../../../../../../shared/sidebar-list/host-filtering'
+import {
+  getSidebarHiddenRepoIds,
+  useFolderSidebarHiddenReposVersion
+} from '../../../right-sidebar/source-control/folder/folder-sidebar-hidden-repos'
 
 // Apply host/device scope consistently to repos, project groups and folder workspaces.
 export function useSidebarHostVisibleScope(args: {
@@ -30,7 +34,7 @@ export function useSidebarHostVisibleScope(args: {
     () => getVisibleSidebarHostIdSet(visibleWorkspaceHostIds, workspaceHostScope),
     [visibleWorkspaceHostIds, workspaceHostScope]
   )
-  const visibleReposForRows = useMemo(() => {
+  const hostVisibleRepos = useMemo(() => {
     if (!visibleHostIdSet) {
       return repos
     }
@@ -40,6 +44,15 @@ export function useSidebarHostVisibleScope(args: {
       return visibleHostIdSet.has(hostId)
     })
   }, [defaultHostId, repos, visibleHostIdSet])
+  // Fork: repos kept in their folder's Source Control only get no project placeholder row.
+  const folderHiddenReposVersion = useFolderSidebarHiddenReposVersion()
+  const visibleReposForRows = useMemo(() => {
+    void folderHiddenReposVersion
+    const hiddenRepoIds = getSidebarHiddenRepoIds(hostVisibleRepos)
+    return hiddenRepoIds.size > 0
+      ? hostVisibleRepos.filter((repo) => !hiddenRepoIds.has(repo.id))
+      : hostVisibleRepos
+  }, [folderHiddenReposVersion, hostVisibleRepos])
   const visibleProjectGroupsForRows = useMemo(
     () => filterProjectGroupsForVisibleHosts(projectGroups, visibleHostIdSet, defaultHostId),
     [defaultHostId, projectGroups, visibleHostIdSet]
