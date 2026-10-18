@@ -1,5 +1,5 @@
 // Fork-only: full-width Git Graph body. Host-agnostic (dialog today, maybe an editor tab later).
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -18,6 +18,7 @@ import { GitHistoryCommitFiles, type GitHistoryCommitFilesState } from './git-hi
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
 import { GitHistoryGraphLoadMore } from './git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from './git-history-graph-empty-message'
+import { formatGitHistoryTimestamp } from './git-history-format'
 import { GIT_GRAPH_FULL_ROW_COLUMNS, GitGraphFullRow, GitGraphRefBadge } from './git-graph-full-row'
 
 // Mirrors SWIMLANE_WIDTH in git-history-graph-svg.tsx; only used to align the subject column.
@@ -111,18 +112,25 @@ function CommitDetails({
         )}
         <p className="font-mono text-2xs break-all text-muted-foreground select-text">{item.id}</p>
         {author && <p className="text-2xs text-muted-foreground select-text">{author}</p>}
+        {item.timestamp != null && (
+          <p className="text-2xs text-muted-foreground">
+            {formatGitHistoryTimestamp(item.timestamp)}
+          </p>
+        )}
         {body && (
           <p className="text-xs break-words whitespace-pre-wrap text-foreground select-text">
             {body}
           </p>
         )}
       </div>
-      <GitHistoryCommitFiles
-        state={files}
-        timestamp={item.timestamp}
-        onOpenFile={(entry, event) => onOpenCommitFile(item, entry, event)}
-        onOpenAll={() => onOpenCommit(item)}
-      />
+      {/* Why the override: the shared list indents for the sidebar tree; align it with the details above. */}
+      <div className="[&_.pl-9]:pl-3">
+        <GitHistoryCommitFiles
+          state={files}
+          onOpenFile={(entry, event) => onOpenCommitFile(item, entry, event)}
+          onOpenAll={() => onOpenCommit(item)}
+        />
+      </div>
     </div>
   )
 }
@@ -169,10 +177,12 @@ export function GitGraphFullView({
   const { filesByCommit, ensureFiles } = useCommitFiles(result, onLoadCommitFiles)
   const loading = state.status === 'loading' || state.status === 'refreshing'
 
-  const select = (item: GitHistoryItem): void => {
-    setSelectedId(item.id)
-    ensureFiles(item)
-  }
+  // Why an effect: a refresh drops the file cache but keeps the selection, so it must refetch too.
+  useEffect(() => {
+    if (selected && !filesByCommit[selected.id]) {
+      ensureFiles(selected)
+    }
+  }, [selected, filesByCommit, ensureFiles])
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -241,7 +251,7 @@ export function GitGraphFullView({
                 viewModel={viewModel}
                 graphWidth={graphWidth}
                 selected={viewModel.historyItem.id === selectedId}
-                onSelect={() => select(viewModel.historyItem)}
+                onSelect={() => setSelectedId(viewModel.historyItem.id)}
               />
             ))}
             {result && <GitHistoryGraphLoadMore worktreeId={worktreeId} state={state} />}
