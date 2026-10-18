@@ -80,12 +80,15 @@ export function GitHistoryGraphToolbar({
   worktreeId,
   worktreePath,
   activeRepoTarget,
-  state
+  state,
+  trailing
 }: {
   worktreeId: string
   worktreePath: string
   activeRepoTarget: RuntimeClientTarget | null
   state: GitHistoryPanelState
+  /** Rendered at the end of the filter row. */
+  trailing?: React.ReactNode
 }): React.JSX.Element {
   const result = state.result
   const filter = useGitHistoryGraphFilter(worktreeId)
@@ -107,6 +110,12 @@ export function GitHistoryGraphToolbar({
     setShownWorktreeId(worktreeId)
     setDraftQuery(filter.query)
     setFetched({ status: 'idle' })
+  }
+  // Why: the sidebar and the full-view toolbars share one filter; adopt a query the other one committed, or the debounce writes the stale draft back.
+  const [syncedQuery, setSyncedQuery] = useState(filter.query)
+  if (syncedQuery !== filter.query) {
+    setSyncedQuery(filter.query)
+    setDraftQuery(filter.query)
   }
 
   // Why: drop a branch list still in flight for the worktree this panel just left.
@@ -344,6 +353,7 @@ export function GitHistoryGraphToolbar({
             className="h-6 min-w-0 flex-1 bg-transparent text-2xs text-foreground outline-none placeholder:text-muted-foreground/60"
           />
         </div>
+        {trailing}
       </div>
       <GitHistoryGraphHostNotice worktreeId={worktreeId} state={state} />
     </div>
