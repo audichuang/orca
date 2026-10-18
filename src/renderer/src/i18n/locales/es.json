@@ -14085,8 +14085,30 @@
                         "d98e7b731c": "Copiar todos los cambios",
                         "da953a696f": "Pegar y restaurar",
                         "5de321918e": "No se incluyen los worktrees ocultos de esta carpeta ({{value0}}).",
-                        "ab32287003": "Repositorios"
+                        "ab32287003": "Repositorios",
+                        "addRepos": "Añadir repositorios de esta carpeta"
                       }
+                    }
+                  },
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "title": "Añadir repositorios de esta carpeta",
+                        "description": "Repositorios Git dentro de {{value0}}, incluidos los anidados en otros repositorios.",
+                        "scanning": "Buscando repositorios...",
+                        "failed": "No se pudo analizar esta carpeta.",
+                        "none": "Todos los repositorios de esta carpeta ya están añadidos.",
+                        "truncated": "El análisis se detuvo antes de tiempo; pueden faltar repositorios.",
+                        "hide": "Mostrar solo en esta carpeta, no como proyectos de la barra lateral",
+                        "cancel": "Cancelar",
+                        "add": "Añadir ({{value0}})"
+                      }
+                    }
+                  },
+                  "repo": {
+                    "row": {
+                      "showInSidebar": "Oculto en la barra lateral. Mostrarlo como proyecto de la barra lateral",
+                      "hideFromSidebar": "Visible en la barra lateral. Mostrarlo solo en esta carpeta"
                     }
                   }
                 }
