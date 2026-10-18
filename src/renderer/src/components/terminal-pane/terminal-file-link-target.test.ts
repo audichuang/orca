@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { extractTerminalFileLinks } from '@/lib/terminal-links'
 import type * as FilePathMappingModule from './terminal-file-path-mapping'
+import { TERMINAL_PATH_MISSING_CACHE_TTL_MS } from './terminal-path-exists-cache'
 import {
+  fileLinkTargetExists,
   mayCheckFileLinkTargetUnprompted,
   resolveFileLinkTarget,
   type FileLinkHost
@@ -18,7 +20,8 @@ vi.mock('./terminal-file-path-mapping', async (importOriginal) => ({
     target: { kind: 'local' },
     worktreeId,
     worktreePath,
-    connectionId: routing.connectionId
+    connectionId: routing.connectionId,
+    sourceHostResolved: true
   })
 }))
 vi.mock('./terminal-worktree-path-link', () => ({
@@ -70,5 +73,33 @@ describe('mayCheckFileLinkTargetUnprompted', () => {
     expect(
       mayCheck(String.raw`\\wsl.localhost\Debian\etc\hosts.txt`, String.raw`C:\Users\me\repo`)
     ).toBe(false)
+  })
+})
+
+describe('fileLinkTargetExists', () => {
+  it('re-asks about a missing path once its miss expires, so a file written later still links', async () => {
+    vi.useFakeTimers()
+    try {
+      const [link] = extractTerminalFileLinks('/tmp/report.html')
+      const target = resolveFileLinkTarget(link!, {
+        cwd: '/home/me/repo',
+        worktreeId: 'wt-1',
+        worktreePath: '/home/me/repo'
+      })!
+      const cache = new Map<string, boolean>()
+      const pathExists = vi.fn().mockResolvedValueOnce(false).mockResolvedValue(true)
+
+      expect(await fileLinkTargetExists(target, cache, pathExists)).toBe(false)
+      expect(await fileLinkTargetExists(target, cache, pathExists)).toBe(false)
+      expect(pathExists).toHaveBeenCalledTimes(1)
+
+      vi.advanceTimersByTime(TERMINAL_PATH_MISSING_CACHE_TTL_MS)
+      expect(await fileLinkTargetExists(target, cache, pathExists)).toBe(true)
+      vi.advanceTimersByTime(TERMINAL_PATH_MISSING_CACHE_TTL_MS)
+      expect(await fileLinkTargetExists(target, cache, pathExists)).toBe(true)
+      expect(pathExists).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
