@@ -47,17 +47,25 @@ async function loadCommitDiff(
     const [leftBlob, rightBlob] = await Promise.all([
       args.parentOid
         ? readGitBlobAtOidPath(worktreePath, args.parentOid, leftPath, options)
-        : Promise.resolve({ content: '', isBinary: false }),
+        : Promise.resolve({ content: '', isBinary: false, exists: false }),
       readGitBlobAtOidPath(worktreePath, args.commitOid, args.filePath, options)
     ])
 
-    return buildDiffResult(
+    const result = buildDiffResult(
       leftBlob.content,
       rightBlob.content,
       leftBlob.isBinary,
       rightBlob.isBinary,
       args.filePath
     )
+    // Why: like file-diff, lets callers tell an empty blob from an absent side (both come back as '').
+    if (!leftBlob.exists || !rightBlob.exists) {
+      result.missingSides = [
+        ...(leftBlob.exists ? [] : ['original' as const]),
+        ...(rightBlob.exists ? [] : ['modified' as const])
+      ]
+    }
+    return result
   } catch {
     return {
       kind: 'text',
