@@ -21,6 +21,7 @@ import type { GitHistoryCommitAction } from './git-history-commit-context-menu'
 import { openWorkspaceBrowserTab } from '@/lib/workspace-browser-tab-open'
 import { copyHistoryCommitsFullSource } from './git-history-commit-copy'
 import { explainCommitWithDefaultAgent } from './git-history-commit-explain'
+import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
 
 const EMPTY_BRANCH_CHANGE_ENTRIES: GitBranchChangeEntry[] = []
 
@@ -32,11 +33,7 @@ type GitHistoryCommitActions = {
     entry: GitBranchChangeEntry,
     event?: SourceControlRowOpenEvent
   ) => void
-  handleCommitAction: (
-    action: GitHistoryCommitAction,
-    item: GitHistoryItem,
-    selectedItems?: readonly GitHistoryItem[]
-  ) => void
+  handleCommitAction: GitHistoryCommitActionHandler
 }
 
 export function useGitHistoryCommitActions({
@@ -200,15 +197,11 @@ export function useGitHistoryCommitActions({
   }, [])
 
   const handleCommitAction = useCallback(
-    (
-      action: GitHistoryCommitAction,
-      item: GitHistoryItem,
-      selectedItems?: readonly GitHistoryItem[]
-    ): void => {
+    (action: GitHistoryCommitAction, item: GitHistoryItem, selectedItems): void => {
       if (action === 'copy-full-source') {
         if (activeWorktreeId && worktreePath) {
           void copyHistoryCommitsFullSource({
-            items: selectedItems?.length ? selectedItems : [item],
+            items: selectedItems ?? [item],
             worktreeId: activeWorktreeId,
             worktreePath,
             editorWorktreeId: editorWorktreeId ?? null,
