@@ -209,7 +209,7 @@ fork-check-tests: fork-base-guard
 FORK_REPO ?= audichuang/orca
 # Fork CI is fork-pr.yml only (macOS arm64 is the only target); rerun after a rebase brings new upstream workflows.
 fork-ci-disable-upstream:
-	gh workflow list -R $(FORK_REPO) --all --json path,state \
+	gh workflow list -R $(FORK_REPO) --all --limit 500 --json path,state \
 	  --jq '.[] | select(.state == "active" and .path != ".github/workflows/fork-pr.yml") | .path' | \
 	  while read -r wf; do gh workflow disable "$${wf##*/}" -R $(FORK_REPO); done
 
