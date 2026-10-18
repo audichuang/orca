@@ -12,8 +12,9 @@ export type ClipcodeEntryVerdict =
 
 /**
  * True when an empty modified side is a failed read, not an empty file.
- * Hosts that predate `missingSides` send '' for a failed read; both sides empty without the
- * field cannot be a real edit, and a real empty new file always carries missingSides on a new host.
+ * Commit diffs always send `missingSides` ([] = both read). Older hosts, and getDiff when both sides
+ * exist, omit it; both sides empty then counts as unreadable, so an empty file's mode-only change is
+ * skipped rather than risk copying a failed read as empty.
  */
 export function isUnreadableModifiedSide(diff: GitDiffResult): boolean {
   if (diff.modifiedContent !== '') {
