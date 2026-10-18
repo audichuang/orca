@@ -61,13 +61,11 @@ async function loadCommitDiff(
       args.filePath,
       leftBlob.tooLarge === true || rightBlob.tooLarge === true
     )
-    // Why: like file-diff, lets callers tell an empty blob from an absent side (both come back as '').
-    if (!leftBlob.exists || !rightBlob.exists) {
-      result.missingSides = [
-        ...(leftBlob.exists ? [] : ['original' as const]),
-        ...(rightBlob.exists ? [] : ['modified' as const])
-      ]
-    }
+    // Why: like file-diff, lets callers tell an empty blob from an absent side; [] proves both reads succeeded.
+    result.missingSides = [
+      ...(leftBlob.exists ? [] : ['original' as const]),
+      ...(rightBlob.exists ? [] : ['modified' as const])
+    ]
     return result
   } catch {
     return {
@@ -75,7 +73,8 @@ async function loadCommitDiff(
       originalContent: '',
       modifiedContent: '',
       originalIsBinary: false,
-      modifiedIsBinary: false
+      modifiedIsBinary: false,
+      missingSides: ['original', 'modified']
     }
   }
 }
