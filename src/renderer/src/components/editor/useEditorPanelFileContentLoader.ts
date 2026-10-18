@@ -2,7 +2,10 @@ import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction 
 import type { OpenFile } from '@/store/slices/editor'
 import { getConnectionIdForFile, isWorktreeConnectionResolved } from '@/lib/connection-context'
 import { useAppStore } from '@/store'
-import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
+import {
+  getOpenFileGitRelativePath,
+  getOpenFileGitWorktreeId
+} from '@/store/slices/editor/git/open-file-git-owner'
 import { getRuntimeFileReadScope } from '@/runtime/runtime-file-routing'
 import { readEditorCsvFileContent } from './csv/csv-file-content'
 import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
@@ -98,7 +101,9 @@ export function useEditorPanelFileContentLoader({
         let readWorktreeId =
           options?.gitWorktreeId ??
           (restoredOpenFile ? getOpenFileGitWorktreeId(restoredOpenFile) : worktreeId)
-        let readRelativePath = restoredOpenFile?.relativePath ?? relativePath
+        let readRelativePath = restoredOpenFile
+          ? getOpenFileGitRelativePath(useAppStore.getState(), restoredOpenFile)
+          : relativePath
         // Re-owning re-keys the tab, which starts a fresh load under the new owner.
         const reownRestoredFile = async (
           route: RuntimeWorkspaceFileRoute,
