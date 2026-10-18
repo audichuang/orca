@@ -78,7 +78,12 @@ function getFolderSidebarHiddenReposVersion(): number {
 
 /** Bumps on every change, so memoized sidebar filters can key on it. */
 export function useFolderSidebarHiddenReposVersion(): number {
-  return useSyncExternalStore(subscribeFolderSidebarHiddenRepos, getFolderSidebarHiddenReposVersion)
+  // Server snapshot too: sidebar tests render WorktreeList with renderToString.
+  return useSyncExternalStore(
+    subscribeFolderSidebarHiddenRepos,
+    getFolderSidebarHiddenReposVersion,
+    getFolderSidebarHiddenReposVersion
+  )
 }
 
 /** Git repos the user chose to keep out of the sidebar; they stay listed in their folder's Source Control. */
