@@ -168,7 +168,8 @@ FORK_TEST_DIRS := src/renderer/src/components/right-sidebar src/renderer/src/com
   src/shared/git-history src/main/runtime/rpc/methods/git.test.ts src/main/runtime/runtime-git-api-contract.test.ts \
   src/main/git/history src/renderer/src/components/terminal-pane src/main/ipc/filesystem \
   src/main/runtime/rpc/methods src/main/runtime/runtime-git-status-admission.test.ts src/renderer/src/runtime \
-  src/renderer/src/web/preload-api src/shared/workspace-session-schema
+  src/renderer/src/web/preload-api src/shared/workspace-session-schema src/renderer/src/components/sidebar \
+  src/main/project-groups
 
 # Why the guard: a clone without upstream tags resolves an ancient FORK_BASE and silently runs thousands of unrelated tests.
 FORK_MAX_COMMITS ?= 200
