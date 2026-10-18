@@ -1,5 +1,5 @@
 // Fork-only: scope / branch filter and git-side search for the Commits graph.
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, ChevronsUpDown, GitBranch, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -102,11 +102,20 @@ export function GitHistoryGraphToolbar({
 
   // Why: re-sync when another worktree's filter is shown in this same panel instance.
   const [shownWorktreeId, setShownWorktreeId] = useState(worktreeId)
+  const refRequestId = useRef(0)
   if (shownWorktreeId !== worktreeId) {
     setShownWorktreeId(worktreeId)
     setDraftQuery(filter.query)
     setFetched({ status: 'idle' })
   }
+
+  // Why: drop a branch list still in flight for the worktree this panel just left.
+  useEffect(
+    () => () => {
+      refRequestId.current += 1
+    },
+    [worktreeId]
+  )
 
   useEffect(() => {
     if (draftQuery === filter.query) {
@@ -125,14 +134,24 @@ export function GitHistoryGraphToolbar({
       setBranchQuery('')
       return
     }
-    if (refOptions.status === 'idle' || refOptions.status === 'error') {
-      setFetched({ status: 'loading' })
-      loadRefOptions({ worktreeId, worktreePath, activeRepoTarget })
-        .then((graph) =>
-          setFetched(graph ? { status: 'ready', applied: graph } : { status: 'unsupported' })
-        )
-        .catch(() => setFetched({ status: 'error' }))
+    if (result?.graph) {
+      return
     }
+    // Why: re-read on every open so branches created since the last open show up; keep the old list meanwhile.
+    const requestId = ++refRequestId.current
+    const isCurrent = (): boolean => requestId === refRequestId.current
+    setFetched((prev) => (prev.status === 'ready' ? prev : { status: 'loading' }))
+    loadRefOptions({ worktreeId, worktreePath, activeRepoTarget })
+      .then((graph) => {
+        if (isCurrent()) {
+          setFetched(graph ? { status: 'ready', applied: graph } : { status: 'unsupported' })
+        }
+      })
+      .catch(() => {
+        if (isCurrent()) {
+          setFetched((prev) => (prev.status === 'ready' ? prev : { status: 'error' }))
+        }
+      })
   }
 
   const visibleRefs = useMemo(() => {
