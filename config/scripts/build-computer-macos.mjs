@@ -28,16 +28,19 @@ chmodSync(binaryPath, 0o755)
 createHelperApp()
 
 function buildUniversalBinary() {
-  mkdirSync(path.dirname(binaryPath), { recursive: true })
+  // Why outside .build/release: older SwiftPM makes it a symlink to the last-built triple, hiding earlier slices.
+  const slicesDir = path.join(packagePath, '.build', 'universal-slices')
+  mkdirSync(slicesDir, { recursive: true })
   const builtBinaries = universalTriples.map((triple) => {
     const args = ['build', '-c', 'release', '--package-path', packagePath, '--triple', triple]
     run('swift', args)
     // Why: newer SwiftPM (swiftbuild) writes every triple to one .build/out path, so ask for it and copy each slice out before the next build overwrites it.
     const binPath = capture('swift', [...args, '--show-bin-path'])
-    const slicePath = path.join(path.dirname(binaryPath), `orca-computer-use-macos-${triple}`)
+    const slicePath = path.join(slicesDir, `orca-computer-use-macos-${triple}`)
     copyFileSync(path.join(binPath, 'orca-computer-use-macos'), slicePath)
     return slicePath
   })
+  mkdirSync(path.dirname(binaryPath), { recursive: true })
   run('lipo', ['-create', ...builtBinaries, '-output', binaryPath])
 }
 
