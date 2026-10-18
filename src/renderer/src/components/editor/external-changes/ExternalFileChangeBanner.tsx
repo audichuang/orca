@@ -10,7 +10,10 @@ import { useAppStore } from '@/store/index'
 import { translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
-import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
+import {
+  getOpenFileGitRelativePath,
+  getOpenFileGitWorktreeId
+} from '@/store/slices/editor/git/open-file-git-owner'
 import { ExternalFileChangeCompareDialog } from './ExternalFileChangeCompareDialog'
 import { getDiskBaselineSignature } from '../../../../../shared/file-write/disk-baseline-signature'
 import { trackExternalChangeConflictAction } from './editor-external-change-telemetry'
@@ -101,7 +104,7 @@ export function keepTabEditsOverExternalChange(file: OpenFile): void {
   const restamp = readRuntimeFileContent({
     target,
     filePath: file.filePath,
-    relativePath: file.relativePath,
+    relativePath: getOpenFileGitRelativePath(state, file),
     worktreeId: getOpenFileGitWorktreeId(file),
     connectionId: getConnectionIdForFile(file.worktreeId, file.filePath) ?? undefined,
     expectedExternalSshTargetId: file.externalSshTargetId,
