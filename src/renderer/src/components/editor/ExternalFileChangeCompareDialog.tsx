@@ -19,6 +19,7 @@ import {
   getRuntimeTargetForFileOwner
 } from '@/lib/file-owner-runtime-target'
 import { useAppStore } from '@/store'
+import { getOpenFileGitRelativePath } from '@/store/slices/editor/git/open-file-git-owner'
 import type { OpenFile } from '@/store/slices/editor'
 import { translate } from '@/i18n/i18n'
 
@@ -69,7 +70,12 @@ export function ExternalFileChangeCompareDialog({
     void readRuntimeFileContent({
       target,
       filePath: file.filePath,
-      relativePath: file.relativePath,
+      relativePath: getOpenFileGitRelativePath(useAppStore.getState(), {
+        filePath: file.filePath,
+        relativePath: file.relativePath,
+        worktreeId: file.worktreeId,
+        gitWorktreeId: file.gitWorktreeId
+      }),
       worktreeId: file.gitWorktreeId ?? file.worktreeId,
       connectionId: getConnectionIdForFile(file.worktreeId, file.filePath) ?? undefined,
       expectedExternalSshTargetId: file.externalSshTargetId,
