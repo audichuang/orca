@@ -10,6 +10,7 @@ import {
   createLoadingBranchCompareSummary,
   getKnownGitHead
 } from '../git/branch-compare-state'
+import { getOpenFileGitRelativePath } from '../git/open-file-git-owner'
 import { recordDroppedEditorFilesInLayoutOwner } from '../tabs/editor-tab-layout-owner'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../../../shared/layout-owner-switch'
 
@@ -116,7 +117,8 @@ export function createGitStatusActions(
           s.openFiles,
           worktreeId,
           nextEntries,
-          statusIsComplete
+          statusIsComplete,
+          (file) => getOpenFileGitRelativePath(s, file)
         )
         const statusUnchanged = hadStatusEntry && areGitStatusEntriesEqual(prevEntries, nextEntries)
         const trackedUnchanged = areTrackedConflictMapsEqual(
