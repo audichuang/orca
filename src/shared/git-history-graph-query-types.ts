@@ -1,7 +1,8 @@
 // Fork-only: the branch-graph extension of git history (all branches, branch filter, git-side search).
 
+export const GIT_HISTORY_GRAPH_MODES = ['head', 'all', 'refs'] as const
 /** Which history the graph walks; `head` keeps upstream's current-branch-only history. */
-export type GitHistoryGraphMode = 'head' | 'all' | 'refs'
+export type GitHistoryGraphMode = (typeof GIT_HISTORY_GRAPH_MODES)[number]
 
 export type GitHistoryGraphSource = {
   local: boolean
@@ -39,7 +40,6 @@ export type GitHistoryGraphRefOption = {
 export type GitHistoryGraphApplied = {
   mode: GitHistoryGraphMode
   refs: GitHistoryGraphRefOption[]
-  refsTruncated: boolean
   remotes: string[]
   limit: number
 }

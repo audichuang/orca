@@ -184,6 +184,24 @@ describe('loadGitHistoryGraphFromExecutor on a real repository', () => {
     expect(subjects(result.items)).toEqual(['main work', 'root'])
   })
 
+  it('skips a picked branch that was deleted since instead of failing', async () => {
+    const { repo, git } = await createRepository()
+    await git(['branch', '--quiet', '-D', 'feature'], repo)
+    const result = await loadGitHistoryGraphFromExecutor(git, repo, {
+      graph: { mode: 'refs', refs: ['refs/heads/feature', 'refs/heads/main'] }
+    })
+    expect(subjects(result.items)).toEqual(['main work', 'root'])
+  })
+
+  it('lists nothing for a search in a repository with no commits yet', async () => {
+    const { repo, git } = await createRepository()
+    await git(['checkout', '--quiet', '--orphan', 'unborn'], repo)
+    const result = await loadGitHistoryGraphFromExecutor(git, repo, {
+      graph: { mode: 'head', search: { text: 'work' } }
+    })
+    expect(result.items).toEqual([])
+  })
+
   it('honours the graph limit and reports more', async () => {
     const { repo, git } = await createRepository()
     const first = await loadGitHistoryGraphFromExecutor(git, repo, {
