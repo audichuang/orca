@@ -190,7 +190,8 @@ describe('buildClipcodeCommitCopy', () => {
     const r = readers({
       [`${OID_A}:${PARENT_1}:emptied.ts`]: text('was text', ''),
       [`${OID_A}:${PARENT_1}:new-empty.ts`]: text('', '', { missingSides: ['original'] }),
-      [`${OID_A}:${PARENT_1}:old-host.ts`]: text('', '')
+      [`${OID_A}:${PARENT_1}:old-host.ts`]: text('', ''),
+      [`${OID_A}:${PARENT_1}:chmod-empty.ts`]: text('', '', { missingSides: [] })
     })
     const result = await buildClipcodeCommitCopy({
       rootPath: context.worktreePath,
@@ -199,13 +200,18 @@ describe('buildClipcodeCommitCopy', () => {
         commit(OID_A, [
           { path: 'emptied.ts', status: 'modified' },
           { path: 'new-empty.ts', status: 'added' },
-          { path: 'old-host.ts', status: 'modified' }
+          { path: 'old-host.ts', status: 'modified' },
+          { path: 'chmod-empty.ts', status: 'modified' }
         ])
       ],
       readers: r
     })
     expect(result.unreadableFileCount).toBe(1)
-    expect(parsePayload(result.payload).map((f) => f.path)).toEqual(['emptied.ts', 'new-empty.ts'])
+    expect(parsePayload(result.payload).map((f) => f.path)).toEqual([
+      'emptied.ts',
+      'new-empty.ts',
+      'chmod-empty.ts'
+    ])
   })
 
   it('keeps the newest commit in graph order, even when rebase left it an older author date', async () => {
