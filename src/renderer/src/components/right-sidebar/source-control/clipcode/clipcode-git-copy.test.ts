@@ -167,6 +167,8 @@ describe('buildClipcodeGitCopy', () => {
     expect(result.payload).toContain('[NEW] a/e.ts')
   })
 
+  // Known price: getDiff omits missingSides when both sides exist (upstream tests pin that shape),
+  // so an empty staged file with a mode-only change is skipped here too.
   it('treats an empty index side from a host without missingSides as unreadable', async () => {
     const result = await buildClipcodeGitCopy({
       rootPath: '/f',
