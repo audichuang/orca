@@ -11,6 +11,7 @@ import {
   getKnownGitHead
 } from '../git/branch-compare-state'
 import { closeDroppedEditorFileTabsThroughLayoutOwner } from '../tabs/editor-tab-close-through-layout-owner'
+import { getOpenFileGitRelativePath } from '../git/open-file-git-owner'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../../../shared/layout-owner-switch'
 
 export function createGitStatusActions(
@@ -116,7 +117,8 @@ export function createGitStatusActions(
           s.openFiles,
           worktreeId,
           nextEntries,
-          statusIsComplete
+          statusIsComplete,
+          (file) => getOpenFileGitRelativePath(s, file)
         )
         const statusUnchanged = hadStatusEntry && areGitStatusEntriesEqual(prevEntries, nextEntries)
         const trackedUnchanged = areTrackedConflictMapsEqual(
