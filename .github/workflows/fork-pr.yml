@@ -23,11 +23,12 @@ env:
   UPSTREAM_REPO: https://github.com/stablyai/orca.git
 
 jobs:
-  fork_check:
-    name: fork-check and changed tests
+  # `make fork-check` split in two so its halves run in parallel; together they cover exactly the same checks.
+  fork_check_static:
+    name: fork-check typecheck and quality
     if: github.event.pull_request.draft != true
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -44,13 +45,36 @@ jobs:
         with:
           native-runtime: node
 
-      - name: make fork-check
-        run: make fork-check
+      - name: make fork-check-static
+        run: make fork-check-static
 
-      - name: Tests affected by this PR
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: LC_ALL=C pnpm exec vitest run --config config/vitest.config.ts --changed "$BASE_SHA" --passWithNoTests
+  fork_check_tests:
+    name: fork-check tests (${{ matrix.shard }})
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/4, 2/4, 3/4, 4/4]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      # Why: FORK_BASE is the newest upstream vX.Y.Z tag, and the fork repo has only -fork tags.
+      - name: Fetch upstream release tags
+        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+
+      - name: make fork-check-tests
+        run: make fork-check-tests FORK_TEST_SHARD=${{ matrix.shard }}
 
   cross_version_wire:
     # Why kept: the fork desktop client talks to hosts running upstream releases.
@@ -109,7 +133,7 @@ jobs:
 
   verify:
     name: Fork PR checks passed
-    needs: [fork_check, cross_version_wire, mac_arm64_build]
+    needs: [fork_check_static, fork_check_tests, cross_version_wire, mac_arm64_build]
     if: ${{ !cancelled() && github.event.pull_request.draft != true }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
