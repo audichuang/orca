@@ -47,8 +47,3 @@ describe('git.diff skipRenderLimit (fork: ClipCode full index text)', () => {
     )
   })
 })
-
-// Companion (src/main/ipc/filesystem/filesystem-git-status-handlers.skip-render-limit.test.ts):
-// register the handlers on a fake ipcMain (pattern: filesystem-markdown-document-listing.test.ts),
-// vi.mock('../../git/source-control/file-diff') to capture getDiff, invoke 'git:diff' with
-// { worktreePath, filePath, staged: true, skipRenderLimit: true } and assert getDiff's 6th arg is true.
