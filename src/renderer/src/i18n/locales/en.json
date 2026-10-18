@@ -14888,7 +14888,8 @@
             "remote": "remote",
             "searchCommits": "Search commits (author: path:)",
             "searchCommitsLabel": "Search commits",
-            "loadMore": "Load more commits"
+            "loadMore": "Load more commits",
+            "noMatchingCommits": "No commits match this filter"
           }
         }
       },
