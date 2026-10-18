@@ -129,7 +129,8 @@ export function reconcileOpenFilesForStatus(
   openFiles: OpenFile[],
   worktreeId: string,
   nextEntries: GitStatusEntry[],
-  statusIsComplete: boolean
+  statusIsComplete: boolean,
+  gitRelativePathOf: (file: OpenFile) => string = (file) => file.relativePath
 ): OpenFile[] {
   let entriesByPath: Map<string, GitStatusEntry> | undefined
   let changed = false
@@ -149,7 +150,7 @@ export function reconcileOpenFilesForStatus(
 
     // Most refreshes have no open conflicts and need no status-path index.
     entriesByPath ??= new Map(nextEntries.map((entry) => [entry.path, entry]))
-    const entry = entriesByPath.get(file.relativePath)
+    const entry = entriesByPath.get(gitRelativePathOf(file))
 
     // Why: a capped snapshot cannot prove that an omitted conflict was resolved.
     if (!entry && !statusIsComplete) {

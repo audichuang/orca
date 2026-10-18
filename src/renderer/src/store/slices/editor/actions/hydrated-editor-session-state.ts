@@ -5,6 +5,7 @@ import type { AppState } from '../../../types'
 import type { OpenFile } from '../types/open-file'
 import { reconcileEditorBufferMembership } from '../buffers/editor-buffer-record'
 import { buildOwnedEditorFileId } from '../file-ids/editor-file-ids'
+import { resolveTabOwnerRelativePath } from '../git/open-file-git-owner'
 import { resolveHydratedEditorFileSelection } from '../file-ids/hydrated-editor-file-selection'
 import { resolveHydratedEditorFrontmatter } from '../file-ids/hydrated-editor-frontmatter'
 import {
@@ -34,7 +35,9 @@ export function buildHydratedEditorSessionState(
   validWorktreeIds: ReadonlySet<string>,
   activeWorktreeId: string | null,
   /** Repos a folder tab's git owner may name; omitted where repos are unknown, so the owner is kept. */
-  validGitOwnerIds?: ReadonlySet<string>
+  validGitOwnerIds?: ReadonlySet<string>,
+  /** Folder roots, to re-anchor relativePath when a dropped git owner leaves it repo-relative. */
+  ownerRoots?: Pick<AppState, 'folderWorkspaces'>
 ): {
   state: HydratedEditorSessionState
   editorFileIdMigrationsByWorktree: Record<string, Map<string, string>>
@@ -95,10 +98,19 @@ export function buildHydratedEditorSessionState(
       if (!isReadOnly && pf.dirtyDraftContent !== undefined) {
         editorDrafts[id] = pf.dirtyDraftContent
       }
+      const keepsGitOwner =
+        pf.gitWorktreeId &&
+        pf.gitWorktreeId !== worktreeId &&
+        (validGitOwnerIds?.has(pf.gitWorktreeId) ?? true)
+      // Why: a read through the folder selector with a repo-relative path names the wrong file.
+      const relativePath =
+        pf.gitWorktreeId && !keepsGitOwner && ownerRoots
+          ? resolveTabOwnerRelativePath(ownerRoots, { ...pf, worktreeId }, null) || pf.relativePath
+          : pf.relativePath
       openFiles.push({
         id,
         filePath: pf.filePath,
-        relativePath: pf.relativePath,
+        relativePath,
         worktreeId,
         // Why: re-detect language on hydrate — older sessions stored ids from before extensions like .ipynb were supported.
         language: detectLanguage(pf.relativePath || pf.filePath),
@@ -106,11 +118,7 @@ export function buildHydratedEditorSessionState(
         isPreview: pf.isPreview,
         runtimeEnvironmentId: pf.runtimeEnvironmentId,
         externalSshTargetId: pf.externalSshTargetId,
-        ...(pf.gitWorktreeId &&
-        pf.gitWorktreeId !== worktreeId &&
-        (validGitOwnerIds?.has(pf.gitWorktreeId) ?? true)
-          ? { gitWorktreeId: pf.gitWorktreeId }
-          : {}),
+        ...(keepsGitOwner ? { gitWorktreeId: pf.gitWorktreeId } : {}),
         ...(isReadOnly ? { readOnly: true } : {}),
         ...(isReadOnly && pf.liveTail === true ? { liveTail: true } : {}),
         lastKnownDiskSignature: isReadOnly ? undefined : pf.lastKnownDiskSignature,
