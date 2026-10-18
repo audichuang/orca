@@ -13,13 +13,12 @@ import {
   type GitHistoryOptions,
   type GitHistoryResult
 } from './git-history-types'
+import { isSafeGitRefName } from './git-status-upstream-ref'
+import { isSafeGitRemoteName } from './git-push-target-validation'
 
-// Why so strict: these become git argv; a glob or rev-syntax character would widen or redirect the walk.
-const SAFE_REMOTE_NAME = /^[A-Za-z0-9_.][A-Za-z0-9_./-]*$/
-const UNSAFE_REF_CHARS = /[\s~^:?*[\\]|\.\.|@\{|\/-/
-
+// Why so strict: these become git argv; a glob, rev syntax or leading dash would widen or redirect the walk.
 function isWalkableBranchRef(ref: string): boolean {
-  return /^refs\/(heads|remotes)\/[^/]/.test(ref) && !UNSAFE_REF_CHARS.test(ref)
+  return /^refs\/(heads|remotes)\//.test(ref) && !ref.includes('/-') && isSafeGitRefName(ref)
 }
 
 function clampGraphLimit(limit: number | undefined): number {
@@ -44,7 +43,7 @@ export function buildGitHistoryGraphLogRevisions(
   const source = request.source ?? { local: true, remotes: [] }
   const wanted = source.remotes === 'all' ? knownRemotes : source.remotes
   const remotes = wanted.filter(
-    (remote) => SAFE_REMOTE_NAME.test(remote) && knownRemotes.includes(remote)
+    (remote) => isSafeGitRemoteName(remote) && knownRemotes.includes(remote)
   )
   return [
     ...(source.local ? ['--branches'] : []),
@@ -72,51 +71,87 @@ async function listRemotes(git: GitHistoryExecutor, cwd: string): Promise<string
     return stdout
       .split(/\r?\n/)
       .map((line) => line.trim())
-      .filter((name) => name && SAFE_REMOTE_NAME.test(name))
+      .filter((name) => name && isSafeGitRemoteName(name))
       .sort()
   } catch {
     return []
   }
 }
 
-async function listBranchRefs(
-  git: GitHistoryExecutor,
-  cwd: string,
-  remotes: readonly string[]
-): Promise<{ refs: GitHistoryGraphRefOption[]; truncated: boolean }> {
+async function listBranchRefLines(git: GitHistoryExecutor, cwd: string): Promise<string[]> {
   try {
     const { stdout } = await git(
       [
         'for-each-ref',
         '--sort=-committerdate',
-        `--count=${GIT_HISTORY_GRAPH_REF_LIST_LIMIT + 1}`,
+        `--count=${GIT_HISTORY_GRAPH_REF_LIST_LIMIT}`,
         '--format=%(refname)%00%(refname:short)%00%(symref)',
         'refs/heads',
         'refs/remotes'
       ],
       cwd
     )
-    const lines = stdout.split(/\r?\n/).filter(Boolean)
-    const refs: GitHistoryGraphRefOption[] = []
-    for (const line of lines.slice(0, GIT_HISTORY_GRAPH_REF_LIST_LIMIT)) {
-      const [fullName, name, symref] = line.split('\0')
-      if (!fullName || !name || symref || !isWalkableBranchRef(fullName)) {
-        continue
-      }
-      if (fullName.startsWith('refs/heads/')) {
-        refs.push({ fullName, name, category: 'branches' })
-        continue
-      }
-      // Why longest match: a remote may itself contain slashes.
-      const remote = [...remotes]
-        .sort((a, b) => b.length - a.length)
-        .find((candidate) => fullName.startsWith(`refs/remotes/${candidate}/`))
-      refs.push({ fullName, name, category: 'remote branches', ...(remote ? { remote } : {}) })
-    }
-    return { refs, truncated: lines.length > GIT_HISTORY_GRAPH_REF_LIST_LIMIT }
+    return stdout.split(/\r?\n/).filter(Boolean)
   } catch {
-    return { refs: [], truncated: false }
+    return []
   }
+}
+
+function toBranchRefOptions(
+  lines: readonly string[],
+  remotes: readonly string[]
+): GitHistoryGraphRefOption[] {
+  // Why longest first: a remote may itself contain slashes.
+  const remotesLongestFirst = [...remotes].sort((a, b) => b.length - a.length)
+  const refs: GitHistoryGraphRefOption[] = []
+  for (const line of lines) {
+    const [fullName, name, symref] = line.split('\0')
+    if (!fullName || !name || symref || !isWalkableBranchRef(fullName)) {
+      continue
+    }
+    if (fullName.startsWith('refs/heads/')) {
+      refs.push({ fullName, name, category: 'branches' })
+      continue
+    }
+    const remote = remotesLongestFirst.find((candidate) =>
+      fullName.startsWith(`refs/remotes/${candidate}/`)
+    )
+    refs.push({ fullName, name, category: 'remote branches', ...(remote ? { remote } : {}) })
+  }
+  return refs
+}
+
+async function walkGraphLog(
+  git: GitHistoryExecutor,
+  cwd: string,
+  request: GitHistoryGraphRequest,
+  revisions: string[],
+  limit: number
+): Promise<{ items: GitHistoryResult['items']; hasMore: boolean }> {
+  if (revisions.length === 0) {
+    return { items: [], hasMore: false }
+  }
+  const search = buildSearchArgs(request)
+  const { stdout } = await git(
+    [
+      'log',
+      '--no-show-signature',
+      '--no-color',
+      `--format=${GIT_HISTORY_COMMIT_FORMAT}`,
+      '-z',
+      '--topo-order',
+      '--decorate=full',
+      // Why: a picked branch deleted since, or an unborn HEAD, should list nothing rather than fail.
+      '--ignore-missing',
+      `-n${limit + 1}`,
+      ...search.options,
+      ...revisions,
+      ...search.paths
+    ],
+    cwd
+  )
+  const parsed = parseGitHistoryLog(stdout)
+  return { items: parsed.slice(0, limit), hasMore: parsed.length > limit }
 }
 
 export async function loadGitHistoryGraphFromExecutor(
@@ -126,51 +161,29 @@ export async function loadGitHistoryGraphFromExecutor(
 ): Promise<GitHistoryResult> {
   const request = options.graph
   const limit = clampGraphLimit(request.limit ?? options.limit)
+  const remotesPromise = listRemotes(git, cwd)
+  // Why: only `all` needs the remote list to build its argv; the other walks start right away.
+  const logPromise =
+    request.mode === 'all'
+      ? remotesPromise.then((remotes) =>
+          walkGraphLog(git, cwd, request, buildGitHistoryGraphLogRevisions(request, remotes), limit)
+        )
+      : walkGraphLog(git, cwd, request, buildGitHistoryGraphLogRevisions(request, []), limit)
   // Why reuse upstream for -n1: it owns the current/upstream/base ref metadata the graph colors by.
-  const [meta, remotes] = await Promise.all([
+  const [meta, remotes, refLines, log] = await Promise.all([
     loadGitHistoryFromExecutor(git, cwd, { limit: 1, baseRef: options.baseRef }),
-    listRemotes(git, cwd)
+    remotesPromise,
+    listBranchRefLines(git, cwd),
+    logPromise
   ])
-  const branchRefs = await listBranchRefs(git, cwd, remotes)
-  const revisions = buildGitHistoryGraphLogRevisions(request, remotes)
-  const search = buildSearchArgs(request)
-  let items: GitHistoryResult['items'] = []
-  let hasMore = false
-  if (revisions.length > 0) {
-    const { stdout } = await git(
-      [
-        'log',
-        '--no-show-signature',
-        '--no-color',
-        `--format=${GIT_HISTORY_COMMIT_FORMAT}`,
-        '-z',
-        '--topo-order',
-        '--decorate=full',
-        `-n${limit + 1}`,
-        ...search.options,
-        ...revisions,
-        ...search.paths
-      ],
-      cwd
-    )
-    const parsed = parseGitHistoryLog(stdout)
-    items = parsed.slice(0, limit)
-    hasMore = parsed.length > limit
-  }
   return {
     ...meta,
-    items,
+    items: log.items,
     // Why: incoming/outgoing boundary rows describe HEAD vs upstream, which the multi-branch walk already draws.
     hasIncomingChanges: false,
     hasOutgoingChanges: false,
-    hasMore,
+    hasMore: log.hasMore,
     limit,
-    graph: {
-      mode: request.mode,
-      refs: branchRefs.refs,
-      refsTruncated: branchRefs.truncated,
-      remotes,
-      limit
-    }
+    graph: { mode: request.mode, refs: toBranchRefOptions(refLines, remotes), remotes, limit }
   }
 }
