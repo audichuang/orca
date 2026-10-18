@@ -15,6 +15,7 @@ import { GitHistoryCommitFiles, type GitHistoryCommitFilesState } from './git-hi
 import { GitHistoryCommitContextMenu } from './git-history-commit-context-menu'
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import { translate } from '@/i18n/i18n'
+import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import {
   useGitHistoryCommitSelection,
   type GitHistoryCommitActionHandler
@@ -52,7 +53,8 @@ export function GitHistoryPanel({
   onOpenCommitFile,
   onCommitAction,
   toolbar,
-  footer
+  footer,
+  emptyMessage
 }: {
   state: GitHistoryPanelState
   collapsed: boolean
@@ -66,11 +68,7 @@ export function GitHistoryPanel({
     event?: SourceControlRowOpenEvent
   ) => void
   onCommitAction?: GitHistoryCommitActionHandler
-  /** Fork: branch filter / search row under the header. */
-  toolbar?: React.ReactNode
-  /** Fork: rendered after the last commit (load more). */
-  footer?: React.ReactNode
-}): React.JSX.Element | null {
+} & GitHistoryPanelSlots): React.JSX.Element | null {
   const result = state.result
   const viewModels = useMemo(() => {
     if (!result) {
@@ -355,7 +353,8 @@ export function GitHistoryPanel({
           className={cn(expandedBodyClassName, 'px-6 py-2 text-[11px] text-muted-foreground')}
           style={expandedBodyStyle}
         >
-          {translate('auto.components.right.sidebar.GitHistoryPanel.cf7cad58d2', 'No commits yet')}
+          {emptyMessage ??
+            translate('auto.components.right.sidebar.GitHistoryPanel.cf7cad58d2', 'No commits yet')}
         </div>
       )}
       {!collapsed && viewModels.length > 0 && (
