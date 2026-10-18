@@ -77,10 +77,11 @@ jobs:
         run: pnpm run check:daemon-protocol-crossing
 
       - name: Old/new client and server compatibility journeys
-        # Why the exclude: at the fork base this upstream test imports isStructuredTab from a module that no longer exports it.
+        # Why skip one file: at the fork base this upstream test reads isStructuredTab from a module that no longer exports it.
+        # Explicit paths, because a directory filter overrides --exclude; find keeps new files in.
         run: >-
-          pnpm exec vitest run --config config/vitest.config.ts tests/e2e/cross-version-wire/
-          --exclude tests/e2e/cross-version-wire/cross-version-registered-agents.unit.test.ts
+          pnpm exec vitest run --config config/vitest.config.ts
+          $(find tests/e2e/cross-version-wire -name '*.test.ts' ! -name 'cross-version-registered-agents.unit.test.ts' | sort)
 
   mac_arm64_build:
     # Same steps as `make build`, the build installed on the fork's only target machine.
@@ -99,6 +100,9 @@ jobs:
       - uses: ./.github/actions/install-node-dependencies
         with:
           native-runtime: electron
+
+      # Why: build:desktop bundles the mobile web app, which resolves from mobile/node_modules.
+      - uses: ./.github/actions/install-mobile-dependencies
 
       - name: make build
         run: make build
