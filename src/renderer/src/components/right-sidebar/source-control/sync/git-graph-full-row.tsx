@@ -1,5 +1,6 @@
 // Fork-only: one row of the full-width Git Graph (graph | subject + every ref | author | date | hash).
 import React from 'react'
+import { Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { GitHistoryItemRef } from '../../../../../../shared/git-history'
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
@@ -10,13 +11,14 @@ import { GitHistoryGraphSvg, graphColor } from './git-history-graph-svg'
 export function GitGraphRefBadge({ itemRef }: { itemRef: GitHistoryItemRef }): React.JSX.Element {
   return (
     <span
-      className="shrink-0 rounded-full border bg-background px-1.5 py-0.5 text-3xs leading-none"
+      className="flex shrink-0 items-center gap-0.5 rounded-full border bg-background px-1.5 py-0.5 text-3xs leading-none"
       style={{
         borderColor: itemRef.color ? graphColor(itemRef.color) : 'var(--border)',
         color: itemRef.color ? graphColor(itemRef.color) : 'var(--muted-foreground)'
       }}
       title={itemRef.category ? `${itemRef.name} (${itemRef.category})` : itemRef.name}
     >
+      {itemRef.category === 'tags' && <Tag aria-hidden="true" className="size-2.5" />}
       {itemRef.name}
     </span>
   )
