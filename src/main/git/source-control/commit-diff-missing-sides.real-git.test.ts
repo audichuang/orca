@@ -78,6 +78,36 @@ describe('getCommitDiff missing sides', () => {
       parentOid: parent,
       filePath: 'empty.txt'
     })
-    expect(diff.missingSides).toBeUndefined()
+    expect(diff.missingSides).toEqual([])
+  })
+
+  it('proves both reads for an empty file whose only change is its mode', async () => {
+    const { repo } = await fixture()
+    const run = (...args: string[]) =>
+      runProcess({
+        program: 'git',
+        args: [
+          '-c',
+          'user.name=T',
+          '-c',
+          'user.email=t@example.test',
+          '-c',
+          'commit.gpgsign=false',
+          ...args
+        ],
+        cwd: repo,
+        env: { ...process.env, LC_ALL: 'C', GIT_CONFIG_NOSYSTEM: '1' },
+        timeoutMs: 10000,
+        maxOutputBytes: 1024 * 1024
+      })
+    await run('update-index', '--chmod=+x', 'empty.txt')
+    await run('commit', '--quiet', '-m', 'chmod')
+    const oid = async (rev: string) => (await run('rev-parse', rev)).stdout.trim()
+    const diff = await getCommitDiff(repo, {
+      commitOid: await oid('HEAD'),
+      parentOid: await oid('HEAD^'),
+      filePath: 'empty.txt'
+    })
+    expect(diff).toMatchObject({ originalContent: '', modifiedContent: '', missingSides: [] })
   })
 })
