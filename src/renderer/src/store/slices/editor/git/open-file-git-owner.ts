@@ -39,11 +39,21 @@ export function resolveTabOwnerRelativePath(
     return file.relativePath
   }
   const scope = parseWorkspaceKey(file.worktreeId)
-  const ownerRoot =
-    scope?.type === 'folder'
-      ? (state.folderWorkspaces?.find((w) => w.id === scope.folderWorkspaceId)?.folderPath ?? null)
-      : worktreePath
-  return ownerRoot ? relativePathInsideRoot(ownerRoot, file.filePath) : null
+  if (scope?.type !== 'folder') {
+    return worktreePath ? relativePathInsideRoot(worktreePath, file.filePath) : null
+  }
+  // Why: hosts can share a folder id with different roots; only a root holding filePath is the tab's.
+  const candidates = new Set<string>()
+  for (const workspace of state.folderWorkspaces ?? []) {
+    if (workspace.id !== scope.folderWorkspaceId) {
+      continue
+    }
+    const relativePath = relativePathInsideRoot(workspace.folderPath, file.filePath)
+    if (relativePath) {
+      candidates.add(relativePath)
+    }
+  }
+  return candidates.size === 1 ? [...candidates][0] : null
 }
 
 /** Tab-id prefix: repos sharing one folder editor must not collide on identical relative paths. */
