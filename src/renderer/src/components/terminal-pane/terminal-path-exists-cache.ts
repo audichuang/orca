@@ -53,3 +53,23 @@ export function writeTerminalPathExistsCache<T>(
   }
   cache.set(key, value)
 }
+
+export const TERMINAL_PATH_MISSING_CACHE_TTL_MS = 3_000
+
+/** Records a terminal link probe; a miss expires so a file written after its path printed still links. */
+export function writeTerminalPathExistsAnswer(
+  cache: Map<string, boolean>,
+  key: string,
+  exists: boolean
+): void {
+  writeTerminalPathExistsCache(cache, key, exists)
+  if (exists) {
+    return
+  }
+  // Why: agents print `Write(/tmp/x.html)` before the file exists; a lasting miss kills the link.
+  setTimeout(() => {
+    if (cache.get(key) === false) {
+      cache.delete(key)
+    }
+  }, TERMINAL_PATH_MISSING_CACHE_TTL_MS)
+}
