@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream
+.PHONY: help install setup computer-use build app dmg run logs doctor update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-base-guard
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -174,15 +174,30 @@ FORK_TEST_DIRS := src/renderer/src/components/right-sidebar src/renderer/src/com
 # Why the guard: a clone without upstream tags resolves an ancient FORK_BASE and silently runs thousands of unrelated tests.
 FORK_MAX_COMMITS ?= 200
 
+# fork-check = fork-check-static + fork-check-tests; CI runs the halves as parallel jobs, tests in FORK_TEST_SHARD slices.
+FORK_TEST_SHARD ?=
+
 fork-check: export LC_ALL = C
-fork-check:
+fork-check: fork-check-static-types fork-check-tests fork-check-quality
+
+fork-check-static: export LC_ALL = C
+fork-check-static: fork-check-static-types fork-check-quality
+
+fork-base-guard:
 	@echo ">> fork base: $(FORK_BASE)"
 	@n=$$(git rev-list --count $(FORK_BASE)..HEAD 2>/dev/null || echo 999999); if [ "$$n" -gt "$(FORK_MAX_COMMITS)" ]; then \
 	  echo "fork-check: $(FORK_BASE) is $$n commits behind HEAD; fetch upstream tags (git fetch <upstream-remote> --tags) or pass FORK_BASE=vX.Y.Z"; exit 1; fi
+
+fork-check-static-types: fork-base-guard
 	pnpm tc
-	pnpm exec vitest run --config config/vitest.config.ts $(FORK_TEST_DIRS) \
-	  $$(git diff --name-only --diff-filter=AM $(FORK_BASE) HEAD | grep -E '\.test\.tsx?$$' | grep -v '^tests/e2e/')
+
+fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
+
+fork-check-tests: export LC_ALL = C
+fork-check-tests: fork-base-guard
+	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) $(FORK_TEST_DIRS) \
+	  $$(git diff --name-only --diff-filter=AM $(FORK_BASE) HEAD | grep -E '\.test\.tsx?$$' | grep -v '^tests/e2e/')
 
 FORK_REPO ?= audichuang/orca
 # Fork CI is fork-pr.yml only (macOS arm64 is the only target); rerun after a rebase brings new upstream workflows.
