@@ -5,6 +5,10 @@ import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import { requireGitOwnerTarget } from '../../worktree-git-owner-target'
 import { copyClipcodeCommitChanges, getClipcodeRootPath } from '../clipcode/clipcode-copy-action'
+import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
+
+// Why: a shift-selected range can hold hundreds of commits; the runtime RPC queue rejects past 256.
+const COMMIT_LOAD_CONCURRENCY = 6
 
 export async function copyHistoryCommitsFullSource(args: {
   /** Newest first, as the graph lists them. */
@@ -26,12 +30,10 @@ export async function copyHistoryCommitsFullSource(args: {
       connectionId: getConnectionId(args.worktreeId) ?? undefined
     },
     loadCommits: () =>
-      Promise.all(
-        args.items.map(async (item) => ({
-          commitOid: item.id,
-          parentOids: item.parentIds,
-          entries: await args.loadCommitFiles(item)
-        }))
-      )
+      mapWithConcurrency(args.items, COMMIT_LOAD_CONCURRENCY, async (item) => ({
+        commitOid: item.id,
+        parentOids: item.parentIds,
+        entries: await args.loadCommitFiles(item)
+      }))
   })
 }
