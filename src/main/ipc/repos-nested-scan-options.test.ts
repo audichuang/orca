@@ -40,6 +40,7 @@ describe('projectGroups:scanNested options (fork descendIntoRepos)', () => {
     captureHandlers(handleMock)
     resetProjectGroupMocks(reposMocks, { isGitRepo, getGitRepoRoot })
     scanNestedRepos.mockReset().mockResolvedValue({ selectedPath: '/srv/platform', repos: [] })
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: same partial Electron/store doubles repos-nested-scan.test.ts registers with; the handler reads only mocked members.
     registerRepoHandlers(mockWindow as never, mockStore as never, {} as never)
   })
 
