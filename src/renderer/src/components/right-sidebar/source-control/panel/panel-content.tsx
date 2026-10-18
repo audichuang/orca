@@ -1,5 +1,6 @@
 import { GitHistoryPanel } from '../sync/git-history-panel'
 import { GitHistoryGraphLoadMore, GitHistoryGraphToolbar } from '../sync/git-history-graph-toolbar'
+import { GitHistoryGraphEmptyMessage } from '../sync/git-history-graph-empty-message'
 import { shouldShowSourceControlCompareUnavailableCard } from './header-toolbar'
 import { shouldRenderCommitArea } from '../commit/component-gates'
 import { SourceControlBranchSection } from '../listing/branch-section'
@@ -253,6 +254,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
                 result={gitHistoryState.result}
               />
             }
+            emptyMessage={<GitHistoryGraphEmptyMessage worktreeId={currentWorktreeId} />}
           />
         </div>
       )}
