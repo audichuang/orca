@@ -13883,7 +13883,9 @@
                       "onlyBinarySkipped": "コピーするものがありません: バイナリファイル {{value0}} 件をスキップしました。",
                       "filesCopied": "{{value0}} 個のファイルをコピーしました",
                       "filesUnreadable": "{{value0}} 個のファイルを読み取れませんでした。",
-                      "noFiles": "コピーするファイルがありません。"
+                      "noFiles": "コピーするファイルがありません。",
+                      "onlyUnsafeNamesSkipped": "コピーする内容がありません：安全に復元できない名前のファイル {{value0}} 個をスキップしました。",
+                      "unsafeNamesSkipped": "（安全でないファイル名のため {{value0}} 個をスキップ）"
                     }
                   },
                   "restore": {
