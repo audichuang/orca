@@ -17387,7 +17387,10 @@
                 "removeWorktree": "retirer le worktree",
                 "trashWorktree": "mettre le worktree à la corbeille",
                 "addQuickCommand": "ajouter une commande rapide",
-                "newQuickCommand": "nouvelle commande rapide"
+                "newQuickCommand": "nouvelle commande rapide",
+                "openGitGraph": "ouvrir git graph",
+                "gitLog": "journal git",
+                "commitHistory": "historique des commits"
               }
             }
           },
@@ -19154,6 +19157,13 @@
         "notAttachedShort": "Pas reconnecté.",
         "dispatchRejectedShort": "L’agent a refusé de continuer.",
         "unsupportedShort": "Orca ne peut pas reprendre ce chat."
+      },
+      "gitGraphTab": {
+        "noRepo": "Aucun dépôt Git n’est disponible pour cet espace de travail.",
+        "repoSwitcher": "Dépôt",
+        "selectRepo": "Sélectionner un dépôt",
+        "searchRepos": "Rechercher des dépôts...",
+        "noRepos": "Aucun dépôt trouvé."
       }
     },
     "i18n": {
