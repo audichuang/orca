@@ -17630,7 +17630,10 @@
                 "chatPaneBelow": "chat pane below",
                 "browserRight": "browser right",
                 "splitBrowser": "split browser",
-                "browserSplit": "browser split"
+                "browserSplit": "browser split",
+                "openGitGraph": "open git graph",
+                "gitLog": "git log",
+                "commitHistory": "commit history"
               },
               "splitChatRight": "Split Chat Right",
               "splitChatRightDescription": "Open a new chat in a split pane to the right.",
@@ -19409,6 +19412,13 @@
           "detail": "From its shortcut, the palette and menus. If the plugin fails, Orca’s own runs.",
           "switch": "Use {{value0}} instead of Orca’s {{value1}}"
         }
+      },
+      "gitGraphTab": {
+        "noRepo": "No Git repository is available for this workspace.",
+        "repoSwitcher": "Repository",
+        "selectRepo": "Select repository",
+        "searchRepos": "Search repositories...",
+        "noRepos": "No repositories found."
       }
     },
     "i18n": {
