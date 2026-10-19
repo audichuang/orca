@@ -151,17 +151,18 @@ export function GitGraphFullView({
   // Why the worktree's execution host, not the runtime target: a direct SSH repo uses the local
   // target, and two hosts can publish the same worktree id and path.
   const executionHostId = useAppStore((state) => getExecutionHostIdForWorktree(state, worktreeId))
-  const ownerIdentity = composeWorktreeHostIdentity(executionHostId, worktreeId)
+  // Why the serving endpoint too: an SSH target id is relative to the endpoint that serves it
+  // (direct vs. behind a paired server), and an unresolved owner becoming resolved must refetch.
+  const ownerKey = `${composeWorktreeHostIdentity(executionHostId, worktreeId)}\0${worktreePath}\0${activeRepoTarget ? getRuntimeTargetHostId(activeRepoTarget) : ''}`
   const selection = useGitGraphSelection({
-    selectionKey: ownerIdentity,
+    selectionKey: ownerKey,
     result,
     viewModels,
     listRef
   })
   const { shownItems, jumpTo } = selection
   const branchContext = useGitGraphBranchContext({
-    // Why the target too: an unresolved owner becoming resolved must refetch the ref list.
-    ownerKey: `${ownerIdentity}\0${worktreePath}\0${activeRepoTarget ? getRuntimeTargetHostId(activeRepoTarget) : ''}`,
+    ownerKey,
     worktreeId,
     worktreePath,
     activeRepoTarget,
