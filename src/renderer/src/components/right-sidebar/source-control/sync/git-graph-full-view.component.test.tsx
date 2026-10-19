@@ -19,6 +19,7 @@ const { GitGraphFullViewLauncher } = await import('./git-graph-full-view-dialog'
 const { GitHistoryGraphToolbar } = await import('./git-history-graph-toolbar')
 const { useSourceControlGitHistory } = await import('./use-git-history')
 const { resetGitHistoryGraphFiltersForTest } = await import('./git-history-graph-filter')
+const { resetGitGraphRememberedSelectionForTest } = await import('./use-git-graph-full-view-state')
 
 const WORKTREE = 'wt-1'
 const WORKTREES = new Map<string, unknown>([[WORKTREE, {}]])
@@ -108,6 +109,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   resetGitHistoryGraphFiltersForTest()
+  resetGitGraphRememberedSelectionForTest()
   vi.clearAllMocks()
 })
 
@@ -122,10 +124,9 @@ describe('full-width Git Graph', () => {
     const dialog = await screen.findByRole('dialog')
     const rows = await within(dialog).findAllByTestId('git-graph-full-row')
     expect(rows).toHaveLength(2)
-    // The sidebar row caps refs at two; the full view shows all of them.
-    for (const name of ['main', 'one', 'two', 'v1']) {
-      expect(within(rows[0]!).getByText(name)).toBeInTheDocument()
-    }
+    // One readable badge plus "+N"; the rest are named in its tooltip and in the details pane.
+    expect(within(rows[0]!).getByText('main')).toBeInTheDocument()
+    expect(within(rows[0]!).getByText('+3')).toHaveAttribute('title', 'one\ntwo\nv1')
 
     fireEvent.click(rows[0]!)
     expect(onLoadCommitFiles).toHaveBeenCalledWith(TIP)
@@ -212,6 +213,40 @@ describe('full-width Git Graph', () => {
     expect(
       await within(dialog).findByText('Select a commit to see its details and changed files.')
     ).toBeInTheDocument()
+  })
+
+  it('reopening after a file diff lands on the same commit', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    let dialog = await screen.findByRole('dialog')
+    fireEvent.click((await within(dialog).findAllByTestId('git-graph-full-row'))[1]!)
+    fireEvent.click(await within(dialog).findByTestId('git-history-commit-file'))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    dialog = await screen.findByRole('dialog')
+    const rows = await within(dialog).findAllByTestId('git-graph-full-row')
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+    expect(await within(dialog).findByText('Bravo', { selector: 'p' })).toBeInTheDocument()
+  })
+
+  it('focuses the commit list on open; arrows move the selection and Shift+Arrow extends it', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    const rows = await within(dialog).findAllByTestId('git-graph-full-row')
+    await waitFor(() => expect(rows[0]).toHaveFocus())
+    expect(rows[0]).toHaveAttribute('tabindex', '0')
+    expect(rows[1]).toHaveAttribute('tabindex', '-1')
+
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' })
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+    expect(rows[1]).toHaveFocus()
+    fireEvent.keyDown(rows[1]!, { key: 'ArrowUp', shiftKey: true })
+    expect(rows[0]).toHaveAttribute('data-selected', 'true')
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
   })
 
   it('reloads the selected commit files after a refresh replaces the result', async () => {
