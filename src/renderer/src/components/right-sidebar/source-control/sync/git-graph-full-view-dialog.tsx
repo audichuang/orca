@@ -36,7 +36,11 @@ export function GitGraphFullViewLauncher(props: GitGraphFullViewProps): React.JS
         </TooltipContent>
       </Tooltip>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="flex h-[calc(100vh-4rem)] w-[calc(100vw-4rem)] max-w-none flex-col overflow-hidden sm:max-w-none">
+        <DialogContent
+          className="flex h-[calc(100vh-4rem)] w-[calc(100vw-4rem)] max-w-none flex-col overflow-hidden sm:max-w-none"
+          // Why: the view focuses the commit list itself; Radix would land on the first toolbar button.
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
           <DialogTitle className="sr-only">{label}</DialogTitle>
           <DialogDescription className="sr-only">
             {translate(
