@@ -19,6 +19,7 @@ import {
 import { useAppStore } from '../store'
 import type { usePluginCommands } from '@/store/plugin-panels'
 import { isGitRepoKind } from '../../../shared/repo-kind'
+import { createGitGraphCommandHandler } from './git-graph-command-handler'
 import type {
   KeybindingActionId,
   KeybindingContext,
@@ -278,6 +279,7 @@ export function createAppCommandHandlers(
         return claim('view.tasks', () => store.openTaskPage())
       }
     ],
+    createGitGraphCommandHandler(activeView, claim),
     [
       'sidebar.right.toggle',
       () =>
