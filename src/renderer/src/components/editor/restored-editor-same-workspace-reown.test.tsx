@@ -196,7 +196,10 @@ describe('a restored tab re-owned inside its own workspace, layout-owner build',
     expect(layoutCommands()).toEqual([])
   })
 
-  it("tells main when a parent workspace's conflict review re-owns a local tab in place", async () => {
+  // Fork: upstream (#30206) re-owns this absolute tab into the folder when the conflict review reads it.
+  // The fork binds a folder tab inside a repo to its git owner at open (withFolderFileGitOwner), so the
+  // tab is already in-workspace and nothing is re-owned. Revisit when ORCA_LAYOUT_OWNER becomes 'main'.
+  it("leaves a folder tab already bound to its repo alone when a parent workspace's conflict review reads it", async () => {
     seedNestedLocalWorkspaces()
     const id = await drawFromMain(openAbsoluteTabInFolder)
     expect(id).toBe(FILE_PATH)
@@ -209,27 +212,17 @@ describe('a restored tab re-owned inside its own workspace, layout-owner build',
     await main!.settle()
 
     const [file] = useAppStore.getState().openFiles
-    expect(file).toMatchObject({ worktreeId: FOLDER, relativePath: 'a.md' })
-    expect(file!.id).not.toBe(id)
+    expect(file).toMatchObject({
+      worktreeId: FOLDER,
+      gitWorktreeId: REPO,
+      relativePath: 'pkg/a.md'
+    })
+    expect(file!.id).toBe(id)
+    expect(fileContents[id]).toMatchObject({ content: '# a' })
     expect(useAppStore.getState().unifiedTabsByWorktree[FOLDER]).toEqual([
-      expect.objectContaining({ entityId: file!.id })
+      expect.objectContaining({ entityId: id })
     ])
-    expect(layoutCommands()).toEqual([
-      {
-        type: 'renameEditorFiles',
-        workspace: FOLDER,
-        renames: [
-          {
-            fileId: id,
-            newFileId: file!.id,
-            record: {
-              fromFilePath: FILE_PATH,
-              file: expect.objectContaining({ filePath: FILE_PATH, relativePath: 'a.md' })
-            }
-          }
-        ]
-      }
-    ])
+    expect(layoutCommands()).toEqual([])
   })
 
   it("tells main of a re-own that reaches a tab before main's frame draws it", async () => {
