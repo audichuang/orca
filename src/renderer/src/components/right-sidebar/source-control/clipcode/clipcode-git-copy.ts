@@ -45,6 +45,8 @@ export type ClipcodeGitCopyResult = {
   unreadableFileCount: number
   /** Binary files left out of the payload (Snipcode never copies their bytes). */
   skippedBinaryFileCount: number
+  /** Files whose name would not restore as itself (see clipcodeHeaderRoundTrips). */
+  skippedUnsafePathCount: number
   /** Number of payload entries, skip lines included. */
   entryCount: number
 }
@@ -123,9 +125,7 @@ async function readIndexContent(
         return null
       }
       // Why: an empty staged text blob over a binary HEAD is valid; only a missing or unreadable side is not.
-      return isUnreadableModifiedSide(diff)
-        ? 'unreadable'
-        : { text: diff.modifiedContent }
+      return isUnreadableModifiedSide(diff) ? 'unreadable' : { text: diff.modifiedContent }
     }
     // Why: a host that predates skipRenderLimit still blanks both sides, so the index text is unreadable here.
     if (diff.largeDiffRenderLimit?.limited) {
@@ -176,6 +176,7 @@ export async function buildClipcodeGitCopy(args: {
   let skippedFileSizeCount = 0
   let unreadableFileCount = 0
   const binaryPaths = new Set<string>()
+  const unsafePaths = new Set<string>()
 
   for (const repo of repos) {
     const ordered = repo.entries
@@ -222,6 +223,10 @@ export async function buildClipcodeGitCopy(args: {
         binaryPaths.add(clipboardPath)
         continue
       }
+      if (verdict.kind === 'unsafePath') {
+        unsafePaths.add(clipboardPath)
+        continue
+      }
       if (verdict.kind === 'unreadable') {
         unreadableFileCount++
         continue
@@ -248,6 +253,7 @@ export async function buildClipcodeGitCopy(args: {
     unreadableFileCount,
     // A path skipped as binary in one area can still be copied from another.
     skippedBinaryFileCount: [...binaryPaths].filter((path) => !seen.has(path)).length,
+    skippedUnsafePathCount: unsafePaths.size,
     entryCount: files.length
   }
 }
