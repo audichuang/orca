@@ -20,6 +20,7 @@ const { GitHistoryGraphToolbar } = await import('./git-history-graph-toolbar')
 const { useSourceControlGitHistory } = await import('./use-git-history')
 const { resetGitHistoryGraphFiltersForTest } = await import('./git-history-graph-filter')
 const { resetGitGraphRememberedSelectionForTest } = await import('./use-git-graph-full-view-state')
+const { resetGitGraphBranchTreePreferenceForTest } = await import('./use-git-graph-branch-tree')
 
 const WORKTREE = 'wt-1'
 const WORKTREES = new Map<string, unknown>([[WORKTREE, {}]])
@@ -111,6 +112,7 @@ afterEach(() => {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
   resetGitHistoryGraphFiltersForTest()
   resetGitGraphRememberedSelectionForTest()
+  resetGitGraphBranchTreePreferenceForTest()
   vi.clearAllMocks()
 })
 
@@ -265,6 +267,23 @@ describe('full-width Git Graph', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(within(dialog).queryByRole('navigation', { name: 'Branches and tags' })).toBeNull()
     expect(toggle).toHaveFocus()
+  })
+
+  it('Escape over an open popover closes only the popover, even with the branch overlay open', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    await within(dialog).findAllByTestId('git-graph-full-row')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Toggle branches' }))
+    fireEvent.click(within(dialog).getByRole('combobox', { name: 'Branch filter' }))
+    await waitFor(() => expect(document.querySelector('[cmdk-item]')).not.toBeNull())
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await waitFor(() => expect(document.querySelector('[cmdk-item]')).toBeNull())
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(within(dialog).getByRole('navigation', { name: 'Branches and tags' })).toBeVisible()
   })
 
   it('keeps the branch tree closed after the user closed it, across reopening', async () => {
