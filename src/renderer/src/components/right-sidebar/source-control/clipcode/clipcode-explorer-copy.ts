@@ -5,7 +5,12 @@ import { sortDirEntries } from '../../../../../../shared/file-name-sort'
 import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
 import { shouldIncludeFileExplorerEntry } from '../../file-explorer-entries'
 import { buildPayload, CLIPCODE_DEFAULTS, type PayloadFile } from './clipcode-clipboard-format'
-import { classifyClipcodeEntryContent, type ClipcodeReadContent } from './clipcode-entry-content'
+import {
+  classifyClipcodeEntryContent,
+  clipcodeHeaderRoundTrips,
+  type ClipcodeEntryVerdict,
+  type ClipcodeReadContent
+} from './clipcode-entry-content'
 import type { ClipcodeGitCopyResult } from './clipcode-git-copy'
 
 export type ClipcodeExplorerTarget = { path: string; isDirectory: boolean }
@@ -16,6 +21,7 @@ export type ClipcodeExplorerReaders = {
 }
 
 // Why: same ceiling as the history copy; the runtime RPC queue rejects past 256 in flight.
+// ponytail: a worker still holds one whole read (local cap 50 MB) before the 500 KB check; a size-capped read API would remove that peak.
 const READ_CONCURRENCY = 6
 
 // Local reads refuse past the editor cap, remote previews past theirs; both are size skips, not failures.
@@ -77,6 +83,30 @@ async function collectFilePaths(
   return { paths, unreadableDirCount }
 }
 
+type ExplorerFileVerdict = ClipcodeEntryVerdict | { kind: 'binary' } | { kind: 'unreadable' }
+
+/** Reads and classifies one file; only an accepted file keeps its text, so a big selection never piles up rejected bodies. */
+async function readAndClassify(
+  readers: ClipcodeExplorerReaders,
+  rootPath: string,
+  absolutePath: string,
+  maxBytes: number
+): Promise<ExplorerFileVerdict> {
+  const clipboardPath = getRelativePathInsideRoot(absolutePath, rootPath)?.replaceAll('\\', '/')
+  if (!clipboardPath) {
+    return { kind: 'unreadable' }
+  }
+  // Why first: an unsafe name is skipped without reading its bytes at all.
+  if (!clipcodeHeaderRoundTrips(clipboardPath, undefined)) {
+    return { kind: 'unsafePath' }
+  }
+  const content = await readContent(readers, absolutePath)
+  if (content === 'binary' || content === 'unreadable') {
+    return { kind: content }
+  }
+  return classifyClipcodeEntryContent(clipboardPath, undefined, content, maxBytes)
+}
+
 /** Builds the Snipcode payload for explorer targets; paths are relative to `rootPath`, like Paste & Restore. */
 export async function buildClipcodeExplorerCopy(args: {
   rootPath: string
@@ -86,38 +116,26 @@ export async function buildClipcodeExplorerCopy(args: {
   const { rootPath, readers } = args
   const maxBytes = CLIPCODE_DEFAULTS.maxFileSizeKB * 1024
   const { paths, unreadableDirCount } = await collectFilePaths(readers, args.targets)
-  const contents = await mapWithConcurrency(paths, READ_CONCURRENCY, (path) =>
-    readContent(readers, path)
+  const verdicts = await mapWithConcurrency(paths, READ_CONCURRENCY, (path) =>
+    readAndClassify(readers, rootPath, path, maxBytes)
   )
   const files: PayloadFile[] = []
   let skippedFileSizeCount = 0
   let skippedBinaryFileCount = 0
+  let skippedUnsafePathCount = 0
   let unreadableFileCount = unreadableDirCount
-  paths.forEach((absolutePath, index) => {
-    const clipboardPath = getRelativePathInsideRoot(absolutePath, rootPath)?.replaceAll('\\', '/')
-    const content = contents[index]
-    if (!clipboardPath || content === 'unreadable') {
-      unreadableFileCount++
-      return
-    }
-    if (content === 'binary') {
-      skippedBinaryFileCount++
-      return
-    }
-    const verdict = classifyClipcodeEntryContent(clipboardPath, undefined, content, maxBytes)
+  for (const verdict of verdicts) {
     if (verdict.kind === 'binary') {
       skippedBinaryFileCount++
-      return
-    }
-    if (verdict.kind === 'unreadable') {
+    } else if (verdict.kind === 'unreadable') {
       unreadableFileCount++
-      return
+    } else if (verdict.kind === 'unsafePath') {
+      skippedUnsafePathCount++
+    } else {
+      skippedFileSizeCount += verdict.sizeSkipped ? 1 : 0
+      files.push(verdict.file)
     }
-    if (verdict.sizeSkipped) {
-      skippedFileSizeCount++
-    }
-    files.push(verdict.file)
-  })
+  }
   return {
     payload: files.length
       ? buildPayload({ ...CLIPCODE_DEFAULTS, files, sourceRoot: basename(rootPath) })
@@ -126,6 +144,7 @@ export async function buildClipcodeExplorerCopy(args: {
     skippedFileSizeCount,
     unreadableFileCount,
     skippedBinaryFileCount,
+    skippedUnsafePathCount,
     entryCount: files.length
   }
 }
