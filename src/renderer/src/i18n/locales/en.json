@@ -14462,7 +14462,10 @@
                       "7c6daaf4fa": "Copy Full Source failed",
                       "9c3f952874": "{{value0}} Git file(s) could not be read.",
                       "binarySkipped": "({{value0}} skipped: binary)",
-                      "onlyBinarySkipped": "Nothing to copy: {{value0}} binary file(s) skipped."
+                      "onlyBinarySkipped": "Nothing to copy: {{value0}} binary file(s) skipped.",
+                      "filesCopied": "{{value0}} file(s) copied",
+                      "filesUnreadable": "{{value0}} file(s) could not be read.",
+                      "noFiles": "No files found to copy."
                     }
                   },
                   "restore": {
