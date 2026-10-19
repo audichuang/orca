@@ -208,6 +208,12 @@ export type EditorFilesSlice = {
     state: CheckRunDetailsTabPatch
   ) => void
   reloadOpenCheckRunDetailsTab: (fileId: string) => Promise<void>
+  /** Fork: opens or focuses the workspace's Git Graph tab; null when no git repo resolves. */
+  openGitGraphTab: (
+    workspaceId: string,
+    opts?: { repoWorktreeId?: string; targetGroupId?: string }
+  ) => string | null
+  setGitGraphTabRepo: (fileId: string, repoWorktreeId: string) => void
   openBranchAllDiffs: (
     worktreeId: string,
     worktreePath: string,

@@ -158,7 +158,8 @@ function projectTab(tab: LayoutTab, scope: Scope): RuntimeMobileSessionSnapshotT
       const row = reviewTabRow({ ...tab, kind: tab.kind }, scope)
       return row ? [row] : []
     }
-    // A simulator needs the desktop to draw it; the window lists none either.
+    // A simulator needs the desktop to draw it; the window lists none either. Fork: so does a Git Graph tab.
+    case 'git-graph':
     case 'simulator':
       return []
   }
