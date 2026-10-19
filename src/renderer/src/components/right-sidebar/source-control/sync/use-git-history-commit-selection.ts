@@ -18,7 +18,12 @@ type CommitClickModifiers = Pick<MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey'>
 export type GitHistoryCommitSelection = {
   isSelected: (id: string) => boolean
   /** Returns true when the click was a selection gesture, so the row must not also expand. */
-  handleRowClick: (item: GitHistoryItem, event: CommitClickModifiers) => boolean
+  /** `fallbackAnchorId` starts a Shift range when no click has set an anchor yet (e.g. a restored selection). */
+  handleRowClick: (
+    item: GitHistoryItem,
+    event: CommitClickModifiers,
+    fallbackAnchorId?: string | null
+  ) => boolean
   /** The selection when it covers the right-clicked commit, else just that commit. */
   itemsFor: (item: GitHistoryItem) => GitHistoryItem[]
   /** Explicitly selected commits in graph order; empty after a plain click. */
@@ -45,18 +50,23 @@ export function useGitHistoryCommitSelection(
   )
 
   const handleRowClick = useCallback(
-    (item: GitHistoryItem, event: CommitClickModifiers): boolean => {
+    (
+      item: GitHistoryItem,
+      event: CommitClickModifiers,
+      fallbackAnchorId?: string | null
+    ): boolean => {
       const items = result?.items ?? []
       const toggle = isMacPlatform() ? event.metaKey : event.ctrlKey
-      if (event.shiftKey && current.anchor) {
-        const from = items.findIndex((candidate) => candidate.id === current.anchor)
+      const anchor = current.anchor ?? fallbackAnchorId ?? null
+      if (event.shiftKey && anchor) {
+        const from = items.findIndex((candidate) => candidate.id === anchor)
         const to = items.findIndex((candidate) => candidate.id === item.id)
         if (from !== -1 && to !== -1) {
           const [start, end] = from < to ? [from, to] : [to, from]
           setSelection({
             result,
             ids: items.slice(start, end + 1).map((candidate) => candidate.id),
-            anchor: current.anchor,
+            anchor,
             plainClicked: null
           })
           return true
