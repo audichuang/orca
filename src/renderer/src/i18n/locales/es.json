@@ -16488,7 +16488,10 @@
                 "chatPaneRight": "panel de chat a la derecha",
                 "splitChatDown": "dividir chat abajo",
                 "moveChatDown": "mover chat abajo",
-                "chatPaneBelow": "panel de chat abajo"
+                "chatPaneBelow": "panel de chat abajo",
+                "openGitGraph": "abrir git graph",
+                "gitLog": "registro de git",
+                "commitHistory": "historial de commits"
               },
               "splitChatRight": "Dividir chat a la derecha",
               "splitChatRightDescription": "Abre el chat activo en un panel dividido a la derecha.",
@@ -18116,6 +18119,13 @@
         "a62f9db53d": "Cancel",
         "c77189bc0c": "Update filter",
         "19af906d12": "Save filter"
+      },
+      "gitGraphTab": {
+        "noRepo": "No hay ningún repositorio Git disponible para este espacio de trabajo.",
+        "repoSwitcher": "Repositorio",
+        "selectRepo": "Seleccionar repositorio",
+        "searchRepos": "Buscar repositorios...",
+        "noRepos": "No se encontraron repositorios."
       }
     },
     "i18n": {

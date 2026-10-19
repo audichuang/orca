@@ -21,7 +21,10 @@ export function createOpenFileAction(
       const editorItemWorktreeId = file.worktreeId
       const editorItemLabel = file.relativePath
       const editorItemContentType: EditorTabContentType =
-        file.mode === 'conflict-review' || file.mode === 'check-details' || file.mode === 'diff'
+        file.mode === 'conflict-review' ||
+        file.mode === 'check-details' ||
+        file.mode === 'git-graph' ||
+        file.mode === 'diff'
           ? file.mode
           : 'editor'
       const scratch = {
