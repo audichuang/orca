@@ -14645,7 +14645,24 @@
             "resizeDetails": "调整提交详情宽度",
             "copyFullSource": "复制所有变更文件的完整源码",
             "filesInCommits": "变更文件 ({{files}}) · {{commits}} 个提交",
-            "filesChanged": "变更文件 ({{files}})"
+            "filesChanged": "变更文件 ({{files}})",
+            "toggleBranches": "切换分支面板"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "本地",
+            "tags": "标签",
+            "label": "分支与标签",
+            "empty": "尚未加载分支。",
+            "showRef": "不在当前列表中 — 点击以只显示此分支"
+          },
+          "GitGraphCommitInfo": {
+            "author": "作者",
+            "date": "日期",
+            "copySha": "复制提交 SHA",
+            "parents": "父提交",
+            "refs": "引用",
+            "containedIn": "所在分支",
+            "moreBranches": "还有 {{count}} 个"
           }
         }
       },
