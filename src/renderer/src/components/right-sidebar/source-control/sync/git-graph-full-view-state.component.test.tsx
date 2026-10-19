@@ -160,6 +160,20 @@ describe('full Git Graph state', () => {
     expect(row('On main')).not.toHaveAttribute('data-selected')
   })
 
+  it('keeps remembered selections apart for the same SSH target served by different endpoints', () => {
+    mocks.executionHostId = 'ssh:conn-1'
+    const direct = render(view(historyResult(), { kind: 'local' }))
+    fireEvent.click(row('Elsewhere'))
+    direct.unmount()
+
+    const paired = render(view(historyResult(), { kind: 'environment', environmentId: 'env-1' }))
+    expect(row('Elsewhere')).not.toHaveAttribute('data-selected')
+    paired.unmount()
+
+    render(view(historyResult(), { kind: 'local' }))
+    expect(row('Elsewhere')).toHaveAttribute('data-selected', 'true')
+  })
+
   it('refetches the branch list when the same local target moves to an SSH host', async () => {
     const { rerender } = render(view(historyResult(), { kind: 'local' }))
     expect(await screen.findByText('local-only')).toBeInTheDocument()
