@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
 import { translate } from '@/i18n/i18n'
-import { useWindowWidth } from '../../use-window-width'
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
@@ -22,11 +21,11 @@ const DETAILS_MIN_WIDTH = 280
 // Smallest width the pane can take (tiny windows); a saved width at or above it stays valid.
 const DETAILS_FLOOR_WIDTH = 200
 const DETAILS_DEFAULT_WIDTH = 480
-// Dialog inset and padding, plus the narrowest commit list that still shows message and date.
+// Margin around the panes, plus the narrowest commit list that still shows message and date.
 const DETAILS_RESERVED_CHROME = 112
 const COMMIT_LIST_MIN_WIDTH = 460
 
-// Why viewport-relative: a flat default left one-file commits in a half-empty pane on laptops.
+// Why view-relative: a flat default left one-file commits in a half-empty pane on laptops.
 function defaultDetailsWidth(): number {
   return Math.max(
     DETAILS_MIN_WIDTH,
@@ -90,6 +89,7 @@ export function GitGraphDetailsPane({
   onCopyFullSource,
   renderCommitFilesMenu,
   commitContext,
+  viewWidth,
   reservedWidth
 }: {
   /** Newest first; empty when nothing is selected. */
@@ -104,22 +104,23 @@ export function GitGraphDetailsPane({
   onCopyFullSource?: (items: readonly GitHistoryItem[]) => void
   renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
   commitContext: GitGraphCommitContext
-  /** Width other side panes (the branch tree) take from the window. */
+  /** Width of the whole Git Graph view; the pane's limits follow it, not the window. */
+  viewWidth: number
+  /** Width other side panes (the branch tree) take from the view. */
   reservedWidth: number
 }): React.JSX.Element {
   const [width, setWidth] = useState(readDetailsWidth)
-  // Why: the cap leaves the commit list its minimum, and follows window resizes (the dialog spans it).
-  const windowWidth = useWindowWidth() ?? 0
-  // Why a smaller floor on tiny windows: a fixed 280px left near-identical subjects unreadable.
+  // Why: the cap leaves the commit list its minimum, and follows resizes of the view.
+  // Why a smaller floor on tiny views: a fixed 280px left near-identical subjects unreadable.
   const minWidth = Math.min(
     DETAILS_MIN_WIDTH,
-    Math.max(DETAILS_FLOOR_WIDTH, Math.round((windowWidth - DETAILS_RESERVED_CHROME) * 0.42))
+    Math.max(DETAILS_FLOOR_WIDTH, Math.round((viewWidth - DETAILS_RESERVED_CHROME) * 0.42))
   )
   const maxWidth = Math.max(
     minWidth,
     Math.min(
-      Math.round(windowWidth * 0.55),
-      windowWidth - DETAILS_RESERVED_CHROME - COMMIT_LIST_MIN_WIDTH - reservedWidth
+      Math.round(viewWidth * 0.55),
+      viewWidth - DETAILS_RESERVED_CHROME - COMMIT_LIST_MIN_WIDTH - reservedWidth
     )
   )
   const shownWidth = Math.max(minWidth, Math.min(width, maxWidth))
