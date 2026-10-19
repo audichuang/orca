@@ -52,9 +52,7 @@ export function GitHistoryPanel({
   onLoadCommitFiles,
   onOpenCommitFile,
   onCommitAction,
-  toolbar,
-  footer,
-  emptyMessage
+  ...slots
 }: {
   state: GitHistoryPanelState
   collapsed: boolean
@@ -325,7 +323,7 @@ export function GitHistoryPanel({
           </Tooltip>
         </div>
       </div>
-      {!collapsed && toolbar}
+      {!collapsed && slots.toolbar}
       {!collapsed && state.status === 'error' && !result && (
         <div
           className={cn(expandedBodyClassName, 'px-6 py-2 text-[11px] text-destructive')}
@@ -356,7 +354,7 @@ export function GitHistoryPanel({
           className={cn(expandedBodyClassName, 'px-6 py-2 text-[11px] text-muted-foreground')}
           style={expandedBodyStyle}
         >
-          {emptyMessage ??
+          {slots.emptyMessage ??
             translate('auto.components.right.sidebar.GitHistoryPanel.cf7cad58d2', 'No commits yet')}
         </div>
       )}
@@ -408,12 +406,13 @@ export function GitHistoryPanel({
                     timestamp={item.timestamp}
                     onOpenFile={(entry, event) => onOpenCommitFile?.(item, entry, event)}
                     onOpenAll={onOpenCommit ? () => onOpenCommit(item) : undefined}
+                    renderFilesMenu={slots.renderCommitFilesMenu?.bind(null, item)}
                   />
                 )}
               </React.Fragment>
             )
           })}
-          {footer}
+          {slots.footer}
         </div>
       )}
     </div>
