@@ -14130,7 +14130,10 @@
                       "7c6daaf4fa": "전체 소스 복사 실패",
                       "9c3f952874": "Git 파일 {{value0}}개를 읽을 수 없습니다.",
                       "binarySkipped": "({{value0}}개 건너뜀: 바이너리)",
-                      "onlyBinarySkipped": "복사할 내용이 없습니다: 바이너리 파일 {{value0}}개를 건너뛰었습니다."
+                      "onlyBinarySkipped": "복사할 내용이 없습니다: 바이너리 파일 {{value0}}개를 건너뛰었습니다.",
+                      "filesCopied": "파일 {{value0}}개 복사됨",
+                      "filesUnreadable": "파일 {{value0}}개를 읽을 수 없습니다.",
+                      "noFiles": "복사할 파일이 없습니다."
                     }
                   },
                   "restore": {
