@@ -18,13 +18,12 @@ import type { GitHistoryCommitFilesState } from './git-history-commit-files'
 import { GitHistoryGraphLoadMore } from './git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from './git-history-graph-empty-message'
 import {
-  GIT_GRAPH_AUTHOR_COLUMN,
-  GIT_GRAPH_DATE_COLUMN,
-  GIT_GRAPH_FULL_ROW_COLUMNS,
-  GIT_GRAPH_HASH_COLUMN,
-  GitGraphFullRow
+  GitGraphFullRow,
+  gitGraphColumnsForWidth,
+  gitGraphGridTemplate
 } from './git-graph-full-row'
 import { GitGraphDetailsPane } from './git-graph-full-view-details'
+import { GitHistoryCommitContextMenu } from './git-history-commit-context-menu'
 import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-graph-branch-sidebar'
 import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
@@ -178,6 +177,9 @@ export function GitGraphFullView({
   const rootRef = useMeasuredWidth(setMeasuredWidth)
   const windowWidth = useWindowWidth() ?? 0
   const viewWidth = measuredWidth || windowWidth
+  const [listWidth, setListWidth] = useState<number | null>(null)
+  const listColumnRef = useMeasuredWidth(setListWidth)
+  const columns = useMemo(() => gitGraphColumnsForWidth(listWidth), [listWidth])
   const tree = useGitGraphBranchTree({
     viewWidth,
     result,
@@ -202,7 +204,10 @@ export function GitGraphFullView({
       event.stopPropagation()
     }
   }
+  // Why like the sidebar: a right-click inside the selection acts on all of it, else on that row.
   const selectedTipIds = useMemo(() => new Set(shownItems.map((item) => item.id)), [shownItems])
+  const contextItemsFor = (item: GitHistoryItem): readonly GitHistoryItem[] =>
+    shownItems.length > 1 && selectedTipIds.has(item.id) ? shownItems : [item]
   const { filesByCommit, ensureFiles } = useCommitFiles(result, onLoadCommitFiles)
   const loading = state.status === 'loading' || state.status === 'refreshing'
 
@@ -280,27 +285,32 @@ export function GitGraphFullView({
             />
           </div>
         )}
-        <div className="@container flex min-w-0 flex-1 flex-col">
+        <div ref={listColumnRef} className="flex min-w-0 flex-1 flex-col">
           {/* Why both reserve the gutter: the header must lose the same scrollbar width as the rows. */}
           <div
-            className={cn(
-              'scrollbar-sleek grid shrink-0 items-center gap-x-3 overflow-hidden border-b border-border px-3 py-1 text-2xs text-muted-foreground [scrollbar-gutter:stable]',
-              GIT_GRAPH_FULL_ROW_COLUMNS
-            )}
+            data-git-graph-header=""
+            className="scrollbar-sleek grid shrink-0 items-center gap-x-3 overflow-hidden border-b border-border px-3 py-1 text-2xs text-muted-foreground [scrollbar-gutter:stable]"
+            style={{ gridTemplateColumns: gitGraphGridTemplate(columns) }}
           >
-            <span style={{ width: graphWidth }} />
-            <span>
+            <span data-col="graph" style={{ width: graphWidth }} />
+            <span data-col="message">
               {translate('auto.components.right.sidebar.GitGraphFullView.message', 'Message')}
             </span>
-            <span className={GIT_GRAPH_AUTHOR_COLUMN}>
-              {translate('auto.components.right.sidebar.GitGraphFullView.author', 'Author')}
-            </span>
-            <span className={GIT_GRAPH_DATE_COLUMN}>
-              {translate('auto.components.right.sidebar.GitGraphFullView.date', 'Date')}
-            </span>
-            <span className={GIT_GRAPH_HASH_COLUMN}>
-              {translate('auto.components.right.sidebar.GitGraphFullView.commit', 'Commit')}
-            </span>
+            {columns.author && (
+              <span data-col="author">
+                {translate('auto.components.right.sidebar.GitGraphFullView.author', 'Author')}
+              </span>
+            )}
+            {columns.date && (
+              <span data-col="date">
+                {translate('auto.components.right.sidebar.GitGraphFullView.date', 'Date')}
+              </span>
+            )}
+            {columns.hash && (
+              <span data-col="hash">
+                {translate('auto.components.right.sidebar.GitGraphFullView.commit', 'Commit')}
+              </span>
+            )}
           </div>
           <div
             ref={listRef}
@@ -330,6 +340,7 @@ export function GitGraphFullView({
                 key={viewModel.historyItem.id}
                 viewModel={viewModel}
                 graphWidth={graphWidth}
+                columns={columns}
                 selected={selection.isRowSelected(viewModel.historyItem.id)}
                 isTabStop={viewModel.historyItem.id === selection.cursorId}
                 headRefId={headRefId}
@@ -337,6 +348,17 @@ export function GitGraphFullView({
                   branchContext.canDim &&
                   headRefId !== undefined &&
                   !(containment.get(viewModel.historyItem.id) ?? []).includes(headRefId)
+                }
+                contextMenu={
+                  onCommitAction && (
+                    <GitHistoryCommitContextMenu
+                      item={viewModel.historyItem}
+                      selectedCount={contextItemsFor(viewModel.historyItem).length}
+                      onAction={(action, target) =>
+                        onCommitAction(action, target, contextItemsFor(target))
+                      }
+                    />
+                  )
                 }
                 onSelect={(event) => selection.handleRowSelect(viewModel.historyItem, event)}
               />
