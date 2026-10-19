@@ -29,7 +29,8 @@ export function isUnreadableModifiedSide(diff: GitDiffResult): boolean {
 
 export function classifyClipcodeEntryContent(
   path: string,
-  changeType: ChangeTypeLabel,
+  /** Undefined for a plain file copy, which carries no change label. */
+  changeType: ChangeTypeLabel | undefined,
   content: ClipcodeReadContent,
   maxBytes: number
 ): ClipcodeEntryVerdict {
