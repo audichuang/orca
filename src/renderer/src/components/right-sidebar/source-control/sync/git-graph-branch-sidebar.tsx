@@ -111,9 +111,28 @@ export function GitGraphBranchSidebar({
       }
       return next
     })
+  // Why one roving tab stop: every branch as its own Tab stop made the dialog dozens of presses deep.
+  const [focusKey, setFocusKey] = useState<string | null>(null)
+  const treeKeys = sections.flatMap((section) => [
+    section.key,
+    ...(collapsed.has(section.key) ? [] : section.entries.map((entry) => entry.id))
+  ])
+  const tabStopKey = focusKey !== null && treeKeys.includes(focusKey) ? focusKey : treeKeys[0]
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>): void => {
+    const step = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
+    if (step === 0) {
+      return
+    }
+    event.preventDefault()
+    const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[data-tree-key]')]
+    const active = document.activeElement
+    const index = active instanceof HTMLButtonElement ? buttons.indexOf(active) : -1
+    buttons[Math.min(buttons.length - 1, Math.max(0, index + step))]?.focus()
+  }
 
   return (
     <nav
+      onKeyDown={handleKeyDown}
       aria-label={translate(
         'auto.components.right.sidebar.GitGraphBranchSidebar.label',
         'Branches and tags'
@@ -137,6 +156,9 @@ export function GitGraphBranchSidebar({
               type="button"
               className="flex h-6 items-center gap-1 px-2 text-left text-2xs font-semibold tracking-wider text-muted-foreground uppercase hover:text-foreground"
               aria-expanded={open}
+              tabIndex={section.key === tabStopKey ? 0 : -1}
+              data-tree-key={section.key}
+              onFocus={() => setFocusKey(section.key)}
               onClick={() => toggle(section.key)}
             >
               <Chevron className="size-3 shrink-0" />
@@ -168,6 +190,10 @@ export function GitGraphBranchSidebar({
                     data-git-graph-row=""
                     data-selected={selected ? 'true' : undefined}
                     data-branch-ref={entry.id}
+                    aria-pressed={selected}
+                    tabIndex={entry.id === tabStopKey ? 0 : -1}
+                    data-tree-key={entry.id}
+                    onFocus={() => setFocusKey(entry.id)}
                     onClick={() =>
                       entry.tipId !== undefined ? onJump(entry.tipId) : onShowRef(entry.id)
                     }
