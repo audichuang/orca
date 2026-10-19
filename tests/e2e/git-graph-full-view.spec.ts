@@ -5,6 +5,7 @@ import path from 'node:path'
 import { expect, test } from './helpers/orca-app'
 import { waitForSessionReady } from './helpers/store'
 import { openSourceControlForWorktree } from './helpers/worktree-registration'
+import { clipboardText, setClipboard } from './helpers/folder-multi-repo-scenario-context'
 
 const SHOTS_DIR = process.env.ORCA_E2E_SHOTS_DIR ?? path.join(os.tmpdir(), 'orca-git-graph-shots')
 
@@ -12,11 +13,18 @@ function git(cwd: string, args: string[]): string {
   return execFileSync('git', args, { cwd, stdio: 'pipe', encoding: 'utf8' })
 }
 
+const AUTHORS = ['Ada Lovelace', 'Linus Torvalds', 'Grace Hopper', 'Ken Thompson']
+let authorTurn = 0
+
 function commitFile(cwd: string, file: string, content: string, message: string): void {
   mkdirSync(path.dirname(path.join(cwd, file)), { recursive: true })
   writeFileSync(path.join(cwd, file), content)
   git(cwd, ['add', file])
-  git(cwd, ['commit', '-m', message])
+  // Distinct authors so the avatars and author column show real variety.
+  const author = AUTHORS[authorTurn++ % AUTHORS.length]!
+  const email = `${author.split(' ')[0]!.toLowerCase()}@example.com`
+  // Why --author: the e2e env pins GIT_AUTHOR_NAME, which beats `-c user.name`.
+  git(cwd, ['commit', `--author=${author} <${email}>`, '-m', message])
 }
 
 test('opens the full-screen Git Graph and opens a commit file diff', async ({
@@ -24,6 +32,8 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   testRepoPath,
   registerPostElectronShutdownCleanup
 }) => {
+  // Why longer than the default: the review screenshot matrix walks five window sizes and both themes.
+  test.setTimeout(300_000)
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`
   const branchName = `e2e-graph-${suffix}`
   const worktreePath = path.join(os.tmpdir(), branchName)
@@ -74,8 +84,16 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
     worktreePath,
     'src/graph/after-merge.ts',
     'export const afterMerge = true\n',
-    'Post-merge cleanup with multiple files'
+    'Post-merge cleanup with multiple files\n\nFollows the feature A merge.\n- drops the temporary shim\n- keeps module B exports stable'
   )
+  // A remote-tracking branch, so the branch tree shows a remote group.
+  const remoteRef = `refs/remotes/origin/graph-review-${suffix}`
+  git(worktreePath, ['update-ref', remoteRef, `${extraBranches[1]}`])
+  registerPostElectronShutdownCleanup(async () => {
+    try {
+      git(testRepoPath, ['update-ref', '-d', remoteRef])
+    } catch {}
+  })
 
   mkdirSync(SHOTS_DIR, { recursive: true })
   await orcaPage.setViewportSize({ width: 1600, height: 1000 })
@@ -108,6 +126,8 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   const rows = dialog.getByTestId('git-graph-full-row')
   await expect(rows.filter({ hasText: 'Feature B: experiment' })).toBeVisible({ timeout: 15_000 })
   await expect(rows.filter({ hasText: 'Merge branch' })).toBeVisible()
+  // Keyboard focus lands on the commit list, not the first toolbar button.
+  await expect(rows.first()).toBeFocused()
   await orcaPage.waitForTimeout(1000)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '01-git-graph-dialog.png') })
 
@@ -115,14 +135,116 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   const files = dialog.getByTestId('git-history-commit-file')
   await expect(files.first()).toBeVisible({ timeout: 15_000 })
   await expect(files.filter({ hasText: 'after-merge.ts' })).toBeVisible()
+  await expect(rows.filter({ hasText: 'Post-merge cleanup' })).toHaveAttribute(
+    'data-selected',
+    'true'
+  )
   await orcaPage.waitForTimeout(300)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '02-git-graph-commit-selected.png') })
+
+  // Cmd/Ctrl-click a second commit: the files of both merge, and one click copies them all.
+  await rows.filter({ hasText: 'Feature A: second step' }).click()
+  await rows.filter({ hasText: 'Feature A: first step' }).click({ modifiers: ['ControlOrMeta'] })
+  await expect(dialog.getByText('Changed files (2) · 2 commits')).toBeVisible()
+  await expect(files.filter({ hasText: 'a1.ts' })).toBeVisible()
+  await expect(files.filter({ hasText: 'a2.ts' })).toBeVisible()
+  await orcaPage.mouse.move(5, 500)
+  await orcaPage.waitForTimeout(300)
+  await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '02a-git-graph-multi-selected.png') })
+  await setClipboard(orcaPage, 'sentinel')
+  await dialog.getByRole('button', { name: 'Copy Full Source of all changed files' }).click()
+  await expect.poll(() => clipboardText(orcaPage), { timeout: 20_000 }).toContain('a1 = 1')
+  const copied = await clipboardText(orcaPage)
+  expect(copied).toContain('a2 = 2')
+  expect(copied).not.toContain('afterMerge')
+
+  // Drag the details divider left; the details column must widen.
+  const divider = dialog.getByRole('separator', { name: 'Resize commit details' })
+  const details = divider.locator('..')
+  const widthBefore = (await details.boundingBox())!.width
+  const handle = (await divider.boundingBox())!
+  await orcaPage.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
+  await orcaPage.mouse.down()
+  await orcaPage.mouse.move(handle.x - 200, handle.y + handle.height / 2, { steps: 5 })
+  await orcaPage.mouse.up()
+  await expect
+    .poll(async () => (await details.boundingBox())!.width)
+    .toBeGreaterThan(widthBefore + 150)
+  await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '02b-git-graph-details-resized.png') })
+
+  // Shrinking the window re-clamps the widened details so the commit list keeps its room.
+  await orcaPage.setViewportSize({ width: 1000, height: 1000 })
+  await expect.poll(async () => (await details.boundingBox())!.width).toBeLessThanOrEqual(600)
+  expect((await rows.first().boundingBox())!.width).toBeGreaterThan(300)
+  await orcaPage.setViewportSize({ width: 1600, height: 1000 })
 
   // Also capture the merge commit's detail (multi-parent).
   await rows.filter({ hasText: 'Merge branch' }).click()
   await expect(files.first()).toBeVisible({ timeout: 15_000 })
   await orcaPage.waitForTimeout(300)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '03-git-graph-merge-selected.png') })
+
+  // The branch tree jumps to a loaded tip and the details name the containing branches.
+  await dialog.locator(`[data-branch-ref="refs/heads/${extraBranches[1]}"]`).click()
+  await expect(rows.filter({ hasText: 'Feature B: experiment' })).toHaveAttribute(
+    'data-selected',
+    'true'
+  )
+  await expect(dialog.getByText('In branches')).toBeVisible()
+
+  // Screenshot matrix for review: window sizes x single / multi selection, then dark theme.
+  // Why: the hidden test window never advances CSS transitions, so a deselected row would keep its tint.
+  await orcaPage.addStyleTag({ content: '*, *::before, *::after { transition: none !important; }' })
+  const shoot = async (name: string): Promise<void> => {
+    await orcaPage.mouse.move(2, 2)
+    await orcaPage.waitForTimeout(400)
+    await orcaPage.screenshot({ path: path.join(SHOTS_DIR, `${name}.png`) })
+  }
+  const sizes = [
+    { width: 1920, height: 1080 },
+    { width: 1440, height: 900 },
+    { width: 1280, height: 800 },
+    { width: 1024, height: 700 }
+  ]
+  for (const size of sizes) {
+    await orcaPage.setViewportSize(size)
+    await rows.filter({ hasText: 'Post-merge cleanup' }).click()
+    await expect(files.filter({ hasText: 'after-merge.ts' })).toBeVisible()
+    await shoot(`size-${size.width}x${size.height}-single`)
+    await rows.filter({ hasText: 'Feature A: second step' }).click()
+    await rows.filter({ hasText: 'Main: add module B' }).click({ modifiers: ['ControlOrMeta'] })
+    await expect(dialog.getByText('Changed files (2) · 2 commits')).toBeVisible()
+    await shoot(`size-${size.width}x${size.height}-multi`)
+  }
+  // Too narrow to dock: the tree starts closed but still opens, as an overlay that closes on a jump.
+  const tree = dialog.getByRole('navigation', { name: 'Branches and tags' })
+  await expect(tree).toBeHidden()
+  await dialog.getByRole('button', { name: 'Toggle branches' }).click()
+  await expect(tree).toBeVisible()
+  await shoot('size-1024x700-tree-overlay')
+  await dialog.locator(`[data-branch-ref="refs/heads/${extraBranches[1]}"]`).click()
+  await expect(tree).toBeHidden()
+  await expect(rows.filter({ hasText: 'Feature B: experiment' })).toHaveAttribute(
+    'data-selected',
+    'true'
+  )
+
+  // The smallest window still shows readable subjects and never scrolls sideways.
+  await orcaPage.setViewportSize({ width: 600, height: 600 })
+  await rows.filter({ hasText: 'Post-merge cleanup' }).click()
+  const subject = rows.filter({ hasText: 'Post-merge cleanup' }).getByText('Post-merge cleanup', {
+    exact: false
+  })
+  await expect(subject).toBeVisible()
+  expect((await subject.boundingBox())!.width).toBeGreaterThan(100)
+  const list = dialog.locator('[data-git-graph-list]')
+  expect(await list.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  await shoot('size-600x600-single')
+  await orcaPage.setViewportSize({ width: 1600, height: 1000 })
+  await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'dark' }))
+  await rows.filter({ hasText: 'Post-merge cleanup' }).click()
+  await shoot('dark-single')
+  await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'light' }))
 
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
   await files.filter({ hasText: 'after-merge.ts' }).click()
@@ -135,4 +257,12 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   ).toBeVisible()
   await orcaPage.waitForTimeout(500)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '04-diff-opened.png') })
+
+  // Back to the graph: it reopens on the commit whose file was inspected.
+  await orcaPage.getByRole('button', { name: 'Open Git Graph' }).click()
+  await expect(rows.filter({ hasText: 'Post-merge cleanup' })).toHaveAttribute(
+    'data-selected',
+    'true'
+  )
+  await expect(files.filter({ hasText: 'after-merge.ts' })).toBeVisible()
 })

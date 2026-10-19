@@ -14392,7 +14392,29 @@
             "author": "Autor",
             "date": "Fecha",
             "commit": "Commit",
-            "selectCommit": "Selecciona un commit para ver sus detalles y los archivos modificados."
+            "selectCommit": "Selecciona un commit para ver sus detalles y los archivos modificados.",
+            "resizeDetails": "Cambiar el ancho de los detalles del commit",
+            "copyFullSource": "Copiar el código completo de todos los archivos modificados",
+            "filesInCommits": "Archivos modificados ({{files}}) · {{commits}} commits",
+            "filesChanged": "Archivos modificados ({{files}})",
+            "toggleBranches": "Mostrar u ocultar ramas"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "Locales",
+            "tags": "Etiquetas",
+            "label": "Ramas y etiquetas",
+            "empty": "Todavía no se han cargado ramas.",
+            "showRef": "No está en la lista actual: haz clic para mostrar solo esta rama"
+          },
+          "GitGraphCommitInfo": {
+            "author": "Autor",
+            "date": "Fecha",
+            "copySha": "Copiar el SHA del commit",
+            "parents": "Padres",
+            "refs": "Referencias",
+            "containedIn": "En las ramas",
+            "containedInHint": "Ramas cuyo último commit está en la lista cargada; no se cuentan las ramas fuera de ella.",
+            "moreBranches": "+{{count}} más"
           }
         }
       },
