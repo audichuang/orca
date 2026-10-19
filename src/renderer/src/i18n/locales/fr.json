@@ -15071,7 +15071,8 @@
             "parents": "Parents",
             "refs": "Références",
             "containedIn": "Dans les branches",
-            "moreBranches": "+{{count}} de plus"
+            "moreBranches": "+{{count}} de plus",
+            "containedInHint": "Branches dont le dernier commit figure dans la liste chargée ; les autres ne sont pas comptées."
           }
         }
       },
