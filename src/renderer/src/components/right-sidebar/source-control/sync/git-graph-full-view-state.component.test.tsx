@@ -178,4 +178,20 @@ describe('full Git Graph state', () => {
     expect(screen.queryByRole('navigation', { name: 'Branches and tags' })).not.toBeInTheDocument()
     expect(row('On main')).toHaveFocus()
   })
+
+  it('picking a branch that is not loaded selects its tip once the narrowed history arrives', async () => {
+    const { rerender } = render(view(historyResult(), { kind: 'local' }))
+    fireEvent.click(await screen.findByText('local-only', { selector: 'nav span' }))
+
+    const LOCAL_ONLY: GitHistoryItem = {
+      id: 'e'.repeat(40),
+      parentIds: [],
+      subject: 'Local only work',
+      message: 'Local only work',
+      references: [{ id: 'refs/heads/local-only', name: 'local-only', category: 'branches' }]
+    }
+    rerender(view({ ...historyResult(), items: [TIP, LOCAL_ONLY, OFF] }, { kind: 'local' }))
+    await waitFor(() => expect(row('Local only work')).toHaveAttribute('data-selected', 'true'))
+    expect(row('Local only work')).toHaveFocus()
+  })
 })
