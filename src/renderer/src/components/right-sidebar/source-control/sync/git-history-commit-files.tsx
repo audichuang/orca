@@ -13,6 +13,7 @@ import { translate } from '@/i18n/i18n'
 import { formatGitHistoryTimestamp } from './git-history-format'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import type { GitFileStatus } from '../../../../../../shared/git-status-types'
+import type { GitHistoryCommitFilesMenuRenderer } from './git-history-panel-slots'
 
 // State for a single commit's lazily-loaded file list. Owned by GitHistoryPanel,
 // populated through the onLoadCommitFiles loader supplied by SourceControl.
@@ -39,6 +40,7 @@ function CommitFileRow({
       className="group flex w-full min-w-0 cursor-pointer items-center gap-1 py-1 pl-9 pr-3 text-left text-xs transition-colors hover:bg-accent/40"
       title={entry.path}
       data-testid="git-history-commit-file"
+      data-commit-file-path={entry.path}
       onClick={(event) => onOpen(entry, toSourceControlRowOpenEvent(event))}
       onDoubleClick={(event) => onOpen(entry, toPermanentSourceControlRowOpenEvent(event))}
     >
@@ -132,20 +134,29 @@ export function GitHistoryCommitFiles({
   author,
   timestamp,
   onOpenFile,
-  onOpenAll
+  onOpenAll,
+  renderFilesMenu
 }: {
   state: GitHistoryCommitFilesState
   author?: string
   timestamp?: number
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   onOpenAll?: () => void
+  renderFilesMenu?: GitHistoryCommitFilesMenuRenderer
 }): React.JSX.Element {
   // Author and date move off the dense commit row and surface here on expand.
+  const body = <CommitFilesBody state={state} onOpenFile={onOpenFile} onOpenAll={onOpenAll} />
   const meta = [author, formatGitHistoryTimestamp(timestamp)].filter(Boolean).join(' · ')
   return (
     <div className="border-l border-border/60 bg-muted/20">
       {meta && <div className="py-1 pl-9 pr-3 text-[11px] text-muted-foreground">{meta}</div>}
-      <CommitFilesBody state={state} onOpenFile={onOpenFile} onOpenAll={onOpenAll} />
+      {renderFilesMenu
+        ? renderFilesMenu(
+            state.status === 'ready' ? state.entries : [],
+            onOpenFile,
+            <div>{body}</div>
+          )
+        : body}
     </div>
   )
 }
