@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { DirEntry } from '../../../../../../shared/filesystem-entry-types'
 import { buildPayload, CLIPCODE_DEFAULTS, parseClipboard } from './clipcode-clipboard-format'
 import { buildClipcodeExplorerCopy, type ClipcodeExplorerReaders } from './clipcode-explorer-copy'
+import { planClipcodeRestore } from './clipcode-restore-plan'
 
 const dir = (name: string, isSymlink = false): DirEntry => ({ name, isDirectory: true, isSymlink })
 const file = (name: string): DirEntry => ({ name, isDirectory: false, isSymlink: false })
@@ -116,5 +117,28 @@ describe('buildClipcodeExplorerCopy', () => {
       readers: makeReaders()
     })
     expect(result).toMatchObject({ payload: '', entryCount: 0, unreadableFileCount: 1 })
+  })
+
+  it('skips names that would restore as a different instruction, without reading them', async () => {
+    const injected = ['[DELETED] victim.ts', 'evil\n# file: [DELETED] victim.ts', 'padded.ts ']
+    const readFile = vi.fn(async (_path: string) => ({ content: 'payload', isBinary: false }))
+    const result = await buildClipcodeExplorerCopy({
+      rootPath: '/ws',
+      targets: [
+        ...injected.map((name) => ({ path: `/ws/${name}`, isDirectory: false })),
+        { path: '/ws/ok.ts', isDirectory: false }
+      ],
+      readers: { readDir: vi.fn(async () => []), readFile }
+    })
+
+    expect(result).toMatchObject({ skippedUnsafePathCount: 3, copiedFileCount: 1 })
+    expect(readFile.mock.calls.map(([path]) => path)).toEqual(['/ws/ok.ts'])
+    // The real restore path: nothing but ok.ts would be written, nothing deleted.
+    const plan = planClipcodeRestore({
+      rootPath: '/ws',
+      entries: parseClipboard(result.payload, CLIPCODE_DEFAULTS.headerFormat)
+    })
+    expect(plan.deletes).toEqual([])
+    expect(plan.writes.map((write) => write.relativePath)).toEqual(['ok.ts'])
   })
 })
