@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
@@ -45,14 +45,17 @@ function historyResult(): GitHistoryResult {
   }
 }
 
-function view(result: GitHistoryResult, target: RuntimeClientTarget): React.JSX.Element {
+function view(
+  result: GitHistoryResult | undefined,
+  target: RuntimeClientTarget
+): React.JSX.Element {
   return (
     <TooltipProvider>
       <GitGraphFullView
         worktreeId={WORKTREE}
         worktreePath="/repo"
         activeRepoTarget={target}
-        state={{ status: 'ready', result }}
+        state={result ? { status: 'ready', result } : { status: 'loading' }}
         onRefresh={vi.fn()}
         onOpenCommit={vi.fn()}
         onLoadCommitFiles={vi.fn(async () => [])}
@@ -62,14 +65,18 @@ function view(result: GitHistoryResult, target: RuntimeClientTarget): React.JSX.
   )
 }
 
-function offRow(): HTMLElement {
-  const row = screen
-    .getByText('Elsewhere')
-    .closest<HTMLElement>('[data-testid="git-graph-full-row"]')
-  if (!row) {
-    throw new Error('off-branch row not rendered')
+function row(subject: string): HTMLElement {
+  const found = screen
+    .getAllByTestId('git-graph-full-row')
+    .find((candidate) => candidate.textContent?.includes(subject))
+  if (!found) {
+    throw new Error(`row ${subject} not rendered`)
   }
-  return row
+  return found
+}
+
+function offRow(): HTMLElement {
+  return row('Elsewhere')
 }
 
 beforeEach(() => {
@@ -122,5 +129,53 @@ describe('full Git Graph state', () => {
 
     rerender(view(historyResult(), { kind: 'local' }))
     expect(offRow()).toHaveAttribute('data-dimmed', 'true')
+  })
+
+  it('remembers the selection per host, not per bare worktree id', async () => {
+    const local: RuntimeClientTarget = { kind: 'local' }
+    const remote: RuntimeClientTarget = { kind: 'environment', environmentId: 'env-1' }
+    const first = render(view(historyResult(), local))
+    fireEvent.click(row('Elsewhere'))
+    first.unmount()
+
+    const onRemote = render(view(historyResult(), remote))
+    expect(row('Elsewhere')).not.toHaveAttribute('data-selected')
+    fireEvent.click(row('On main'))
+    onRemote.unmount()
+
+    render(view(historyResult(), local))
+    expect(row('Elsewhere')).toHaveAttribute('data-selected', 'true')
+    expect(row('On main')).not.toHaveAttribute('data-selected')
+  })
+
+  it('Shift+Arrow after reopening ranges from the restored commit', () => {
+    const first = render(view(historyResult(), { kind: 'local' }))
+    fireEvent.click(row('On main'))
+    first.unmount()
+
+    render(view(historyResult(), { kind: 'local' }))
+    fireEvent.keyDown(row('On main'), { key: 'ArrowDown', shiftKey: true })
+    expect(row('On main')).toHaveAttribute('data-selected', 'true')
+    expect(row('Elsewhere')).toHaveAttribute('data-selected', 'true')
+  })
+
+  it('history arriving late does not pull focus out of the search box', () => {
+    const { rerender } = render(view(undefined, { kind: 'local' }))
+    const search = screen.getByRole('textbox', { name: 'Search commits' })
+    act(() => search.focus())
+    rerender(view(historyResult(), { kind: 'local' }))
+    expect(search).toHaveFocus()
+  })
+
+  it('keyboard-picking a branch in the narrow overlay hands focus to its commit', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
+    render(view(historyResult(), { kind: 'local' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle branches' }))
+    const branch = (await screen.findByText('main', { selector: 'nav span' })).closest('button')!
+    // Keyboard activation: focus sits on the tree button that the closing overlay removes.
+    act(() => branch.focus())
+    fireEvent.click(branch)
+    expect(screen.queryByRole('navigation', { name: 'Branches and tags' })).not.toBeInTheDocument()
+    expect(row('On main')).toHaveFocus()
   })
 })
