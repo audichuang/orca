@@ -16768,7 +16768,10 @@
                 "chatPaneRight": "채팅창 오른쪽",
                 "splitChatDown": "채팅을 분할하다",
                 "moveChatDown": "채팅을 아래로 이동",
-                "chatPaneBelow": "아래 채팅 창"
+                "chatPaneBelow": "아래 채팅 창",
+                "openGitGraph": "git graph 열기",
+                "gitLog": "git 로그",
+                "commitHistory": "커밋 기록"
               },
               "splitChatRight": "채팅을 오른쪽으로 분할",
               "splitChatRightDescription": "오른쪽 분할 창에서 활성 채팅을 엽니다.",
@@ -18404,6 +18407,13 @@
         "copyFailed": "링크를 복사할 수 없습니다.",
         "signingIn": "로그인 중…",
         "cancel": "취소"
+      },
+      "gitGraphTab": {
+        "noRepo": "이 워크스페이스에서 사용할 수 있는 Git 저장소가 없습니다.",
+        "repoSwitcher": "저장소",
+        "selectRepo": "저장소 선택",
+        "searchRepos": "저장소 검색...",
+        "noRepos": "저장소를 찾을 수 없습니다."
       }
     },
     "i18n": {
