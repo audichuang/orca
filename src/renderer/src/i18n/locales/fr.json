@@ -14230,7 +14230,12 @@
                       "7c6daaf4fa": "Échec de la copie de la source complète",
                       "9c3f952874": "{{value0}} fichier(s) Git illisible(s).",
                       "binarySkipped": "({{value0}} ignorés : binaires)",
-                      "onlyBinarySkipped": "Rien à copier : {{value0}} fichier(s) binaire(s) ignoré(s)."
+                      "onlyBinarySkipped": "Rien à copier : {{value0}} fichier(s) binaire(s) ignoré(s).",
+                      "filesCopied": "{{value0}} fichier(s) copié(s)",
+                      "filesUnreadable": "Impossible de lire {{value0}} fichier(s).",
+                      "noFiles": "Aucun fichier à copier.",
+                      "onlyUnsafeNamesSkipped": "Rien à copier : {{value0}} fichier(s) ignoré(s) car leur nom ne peut pas être restauré en toute sécurité.",
+                      "unsafeNamesSkipped": "({{value0}} ignoré(s) : nom de fichier non sûr)"
                     }
                   },
                   "restore": {
