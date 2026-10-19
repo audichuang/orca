@@ -49,7 +49,8 @@ export function GitGraphFullRow({
   /** Widest graph in the list, so every subject starts in the same column. */
   graphWidth: number
   selected: boolean
-  onSelect: () => void
+  /** Gets the click so Cmd/Ctrl- and Shift-click can extend the selection. */
+  onSelect: (event: React.MouseEvent) => void
 }): React.JSX.Element {
   const item = viewModel.historyItem
   const isBoundaryNode =
@@ -94,10 +95,13 @@ export function GitGraphFullRow({
       type="button"
       className={cn(
         rowClassName,
-        'cursor-pointer transition-colors hover:bg-accent/40 focus-visible:bg-accent/40',
-        selected && 'bg-accent/60 hover:bg-accent/60'
+        'cursor-pointer transition-colors',
+        // Why: the selected look (main.css) must not be washed out by the plain hover tint.
+        !selected && 'hover:bg-accent/40 focus-visible:bg-accent/40'
       )}
       aria-pressed={selected}
+      data-git-graph-row=""
+      data-selected={selected ? 'true' : undefined}
       data-testid="git-graph-full-row"
       onClick={onSelect}
     >
