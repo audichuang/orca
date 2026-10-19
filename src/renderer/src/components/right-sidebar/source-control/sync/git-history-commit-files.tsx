@@ -10,6 +10,7 @@ import {
 import { FileTypeIcon } from '@/components/FileTypeIcon'
 import { basename, dirname } from '@/lib/path'
 import { translate } from '@/i18n/i18n'
+import { cn } from '@/lib/utils'
 import { formatGitHistoryTimestamp } from './git-history-format'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import type { GitFileStatus } from '../../../../../../shared/git-status-types'
@@ -37,11 +38,15 @@ function CommitFileRow({
   return (
     <button
       type="button"
-      className="group flex w-full min-w-0 cursor-pointer items-center gap-1 py-1 pl-9 pr-3 text-left text-xs transition-colors hover:bg-accent/40 data-[selected]:bg-accent/60"
+      className={cn(
+        'group flex w-full min-w-0 cursor-pointer items-center gap-1 py-1 pl-9 pr-3 text-left text-xs transition-colors',
+        // Why: the selected look (main.css) must not be washed out by the plain hover tint.
+        !selected && 'hover:bg-accent/40'
+      )}
       title={entry.path}
       data-testid="git-history-commit-file"
       data-commit-file-path={entry.path}
-      data-selected={selected || undefined}
+      data-selected={selected ? 'true' : undefined}
       onClick={(event) => onOpen(entry, toSourceControlRowOpenEvent(event))}
       onDoubleClick={(event) => onOpen(entry, toPermanentSourceControlRowOpenEvent(event))}
     >
