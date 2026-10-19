@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import type React from 'react'
 import { joinPath } from '@/lib/path'
+import { getShortcutPlatform } from '@/lib/shortcut-platform'
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import { SourceControlEntryContextMenu } from '../listing/entry-context-menu'
@@ -12,6 +13,11 @@ import {
 import type { SourceControlPanelModel } from '../panel/use-panel-model'
 import { copyHistoryCommitsFullSource } from './git-history-commit-copy'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
+import {
+  applyCommitFileClick,
+  applyCommitFileContextMenu,
+  EMPTY_COMMIT_FILE_SELECTION
+} from './git-history-commit-file-selection'
 
 const PLAIN_OPEN_EVENT: SourceControlRowOpenEvent = {
   altKey: false,
@@ -28,7 +34,7 @@ export function GitHistoryCommitFilesMenu({
   item,
   entries,
   onOpenFile,
-  children
+  renderList
 }: {
   model: Pick<
     SourceControlPanelModel,
@@ -39,29 +45,61 @@ export function GitHistoryCommitFilesMenu({
   item: GitHistoryItem
   entries: readonly GitBranchChangeEntry[]
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
-  children: React.JSX.Element
+  renderList: (selectedPaths: ReadonlySet<string>) => React.JSX.Element
 }): React.JSX.Element {
   const [entry, setEntry] = useState<GitBranchChangeEntry | null>(null)
-  const handleContextMenuCapture = (event: React.MouseEvent): void => {
+  const [selection, setSelection] = useState(EMPTY_COMMIT_FILE_SELECTION)
+  const entryAt = (event: React.MouseEvent): GitBranchChangeEntry | undefined => {
     const row =
       event.target instanceof Element ? event.target.closest('[data-commit-file-path]') : null
-    const target = entries.find((e) => e.path === row?.getAttribute('data-commit-file-path'))
+    return entries.find((e) => e.path === row?.getAttribute('data-commit-file-path'))
+  }
+  const handleClickCapture = (event: React.MouseEvent): void => {
+    const target = entryAt(event)
+    if (!target) {
+      return
+    }
+    const next = applyCommitFileClick(
+      selection,
+      entries.map((e) => e.path),
+      target.path,
+      event,
+      getShortcutPlatform() === 'darwin'
+    )
+    setSelection(next.state)
+    if (next.handled) {
+      // Why: a modifier click only edits the selection; the row's own onClick would open the diff.
+      event.preventDefault()
+      event.stopPropagation()
+    }
+  }
+  const handleContextMenuCapture = (event: React.MouseEvent): void => {
+    const target = entryAt(event)
     if (!target) {
       // Why: Radix skips opening on a prevented event, so loading/error/"Open all" get no menu.
       event.preventDefault()
+    } else {
+      setSelection((prev) => applyCommitFileContextMenu(prev, target.path))
     }
     setEntry(target ?? null)
   }
-  const copyFullSource = (target: GitBranchChangeEntry): void =>
+  // Why: the right-clicked row acts on the whole selection when it is part of it.
+  const copyTargets = (target: GitBranchChangeEntry): GitBranchChangeEntry[] =>
+    selection.selected.has(target.path)
+      ? entries.filter((e) => selection.selected.has(e.path))
+      : [target]
+  const copyFullSource = (target: GitBranchChangeEntry): void => {
+    const files = copyTargets(target)
     void copyHistoryCommitsFullSource({
       items: [item],
       worktreeId,
       worktreePath,
       editorWorktreeId: model.editorWorktreeId ?? null,
       activeRepoTarget: model.activeRepoTarget,
-      // Why a one-entry loader: the commit's Copy Full Source, narrowed to the right-clicked file.
-      loadCommitFiles: async () => [target]
+      // Why a narrowed loader: the commit's Copy Full Source, limited to the selected files.
+      loadCommitFiles: async () => files
     })
+  }
   return (
     <SourceControlEntryContextMenu
       currentWorktreeId={worktreeId}
@@ -77,7 +115,9 @@ export function GitHistoryCommitFilesMenu({
         model.revealInExplorer(model.editorWorktreeId ?? worktreeId, path)
       }
     >
-      <div onContextMenuCapture={handleContextMenuCapture}>{children}</div>
+      <div onClickCapture={handleClickCapture} onContextMenuCapture={handleContextMenuCapture}>
+        {renderList(selection.selected)}
+      </div>
     </SourceControlEntryContextMenu>
   )
 }
@@ -88,9 +128,9 @@ export function commitFilesMenuSlot(
   worktreeId: string,
   worktreePath: string
 ): NonNullable<GitHistoryPanelSlots['renderCommitFilesMenu']> {
-  return (item, entries, onOpenFile, list) => (
-    <GitHistoryCommitFilesMenu {...{ model, worktreeId, worktreePath, item, entries, onOpenFile }}>
-      {list}
-    </GitHistoryCommitFilesMenu>
+  return (item, entries, onOpenFile, renderList) => (
+    <GitHistoryCommitFilesMenu
+      {...{ model, worktreeId, worktreePath, item, entries, onOpenFile, renderList }}
+    />
   )
 }
