@@ -16672,7 +16672,10 @@
                 "removeWorktree": "ワークツリーを削除する",
                 "trashWorktree": "ワークツリーをゴミ箱へ移動",
                 "addQuickCommand": "クイックコマンドを追加",
-                "newQuickCommand": "新規クイックコマンド"
+                "newQuickCommand": "新規クイックコマンド",
+                "openGitGraph": "git graph を開く",
+                "gitLog": "git ログ",
+                "commitHistory": "コミット履歴"
               }
             }
           },
@@ -18432,6 +18435,13 @@
           "add": "カタログを追加",
           "body": "リンクがこのカタログの {{value0}} の表示を求めています。カタログは信頼できる相手からのものだけを追加してください。"
         }
+      },
+      "gitGraphTab": {
+        "noRepo": "このワークスペースで利用できる Git リポジトリはありません。",
+        "repoSwitcher": "リポジトリ",
+        "selectRepo": "リポジトリを選択",
+        "searchRepos": "リポジトリを検索...",
+        "noRepos": "リポジトリが見つかりません。"
       }
     },
     "i18n": {

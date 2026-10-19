@@ -17304,7 +17304,10 @@
                 "removeWorktree": "retirer le worktree",
                 "trashWorktree": "mettre le worktree à la corbeille",
                 "addQuickCommand": "ajouter une commande rapide",
-                "newQuickCommand": "nouvelle commande rapide"
+                "newQuickCommand": "nouvelle commande rapide",
+                "openGitGraph": "ouvrir git graph",
+                "gitLog": "journal git",
+                "commitHistory": "historique des commits"
               }
             }
           },
@@ -19125,6 +19128,13 @@
           "add": "Ajouter le catalogue",
           "body": "Un lien a demandé d’afficher {{value0}} depuis ce catalogue. N’ajoutez des catalogues que de personnes de confiance."
         }
+      },
+      "gitGraphTab": {
+        "noRepo": "Aucun dépôt Git n’est disponible pour cet espace de travail.",
+        "repoSwitcher": "Dépôt",
+        "selectRepo": "Sélectionner un dépôt",
+        "searchRepos": "Rechercher des dépôts...",
+        "noRepos": "Aucun dépôt trouvé."
       }
     },
     "i18n": {
