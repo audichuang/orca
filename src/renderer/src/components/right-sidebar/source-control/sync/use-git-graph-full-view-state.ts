@@ -41,6 +41,8 @@ export type GitGraphSelectionState = {
   isRowSelected: (id: string) => boolean
   handleRowSelect: (item: GitHistoryItem, event: React.MouseEvent) => void
   handleListKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void
+  /** Bumps on every selection gesture; a stale async jump compares it before acting. */
+  getNavigationGeneration: () => number
   /** `focus` moves keyboard focus to the row, for callers whose own control is going away. */
   jumpTo: (commitId: string, options?: { focus?: boolean }) => void
 }
@@ -102,16 +104,19 @@ export function useGitGraphSelection(args: {
     }
   }, [scrollToRow, selected])
 
+  const navigationGenerationRef = useRef(0)
+  const getNavigationGeneration = useCallback(() => navigationGenerationRef.current, [])
   const select = useCallback(
     (item: GitHistoryItem, modifiers: CommitClickModifiers) => {
       // Why the fallback anchor: a restored or refreshed selection has no click anchor yet, so the
       // first Shift gesture would otherwise drop the selected commit from its own range.
-      const handled = commitSelection.handleRowClick(item, modifiers, selectedId ?? cursorId)
+      navigationGenerationRef.current += 1
+      const handled = commitSelection.handleRowClick(item, modifiers, selectedId)
       // Why clear on a gesture: emptying the multi-selection must not fall back to an old click.
       setSelectedId(handled ? null : item.id)
       setCursorId(item.id)
     },
-    [commitSelection, cursorId, selectedId, setSelectedId]
+    [commitSelection, selectedId, setSelectedId]
   )
 
   const handleListKeyDown = useCallback(
@@ -152,6 +157,7 @@ export function useGitGraphSelection(args: {
       multiSelected.length > 0 ? commitSelection.isSelected(id) : id === selectedId,
     handleRowSelect: select,
     handleListKeyDown,
+    getNavigationGeneration,
     jumpTo
   }
 }
