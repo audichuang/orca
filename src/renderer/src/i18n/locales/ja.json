@@ -14821,6 +14821,7 @@
             "parents": "親コミット",
             "refs": "参照",
             "containedIn": "含まれるブランチ",
+            "containedInHint": "読み込み済みの一覧に先端コミットがあるブランチのみ。一覧外のブランチは含まれません。",
             "moreBranches": "他 {{count}} 件"
           }
         }
