@@ -14119,7 +14119,10 @@
                       "7c6daaf4fa": "No se pudo copiar el código fuente completo",
                       "9c3f952874": "No se pudieron leer {{value0}} archivo(s) de Git.",
                       "binarySkipped": "({{value0}} omitidos: binarios)",
-                      "onlyBinarySkipped": "Nada que copiar: se omitieron {{value0}} archivo(s) binario(s)."
+                      "onlyBinarySkipped": "Nada que copiar: se omitieron {{value0}} archivo(s) binario(s).",
+                      "filesCopied": "{{value0}} archivo(s) copiado(s)",
+                      "filesUnreadable": "No se pudieron leer {{value0}} archivo(s).",
+                      "noFiles": "No hay archivos para copiar."
                     }
                   },
                   "restore": {
