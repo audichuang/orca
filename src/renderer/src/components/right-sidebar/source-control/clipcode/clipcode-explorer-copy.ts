@@ -25,23 +25,24 @@ export type ClipcodeExplorerReaders = {
 const READ_CONCURRENCY = 6
 
 // Local reads refuse past the editor cap, remote previews past theirs; both are size skips, not failures.
-const TOO_LARGE_ERROR_PREFIXES = ['File too large', 'Remote file is too large']
+// Why includes, not startsWith: a main-process error reaches the renderer wrapped as "Error invoking remote method …".
+const TOO_LARGE_ERRORS = ['File too large', 'Remote file is too large']
+// A symlinked folder listed while folder-following is off reads as "not a file"; ClipCode skips it silently.
+const NOT_A_FILE_ERRORS = ['Not a regular file', 'EISDIR']
 
 async function readContent(
   readers: ClipcodeExplorerReaders,
   absolutePath: string
-): Promise<ClipcodeReadContent | 'binary' | 'unreadable'> {
+): Promise<ClipcodeReadContent | 'binary' | 'unreadable' | 'notAFile'> {
   try {
     const file = await readers.readFile(absolutePath)
     return file.isBinary ? 'binary' : { text: file.content }
   } catch (error) {
-    if (
-      error instanceof Error &&
-      TOO_LARGE_ERROR_PREFIXES.some((prefix) => error.message.startsWith(prefix))
-    ) {
+    const message = error instanceof Error ? error.message : ''
+    if (TOO_LARGE_ERRORS.some((text) => message.includes(text))) {
       return { skippedReason: 'size exceeds limit' }
     }
-    return 'unreadable'
+    return NOT_A_FILE_ERRORS.some((text) => message.includes(text)) ? 'notAFile' : 'unreadable'
   }
 }
 
@@ -83,7 +84,11 @@ async function collectFilePaths(
   return { paths, unreadableDirCount }
 }
 
-type ExplorerFileVerdict = ClipcodeEntryVerdict | { kind: 'binary' } | { kind: 'unreadable' }
+type ExplorerFileVerdict =
+  | ClipcodeEntryVerdict
+  | { kind: 'binary' }
+  | { kind: 'unreadable' }
+  | { kind: 'notAFile' }
 
 /** Reads and classifies one file; only an accepted file keeps its text, so a big selection never piles up rejected bodies. */
 async function readAndClassify(
@@ -101,7 +106,7 @@ async function readAndClassify(
     return { kind: 'unsafePath' }
   }
   const content = await readContent(readers, absolutePath)
-  if (content === 'binary' || content === 'unreadable') {
+  if (content === 'binary' || content === 'unreadable' || content === 'notAFile') {
     return { kind: content }
   }
   return classifyClipcodeEntryContent(clipboardPath, undefined, content, maxBytes)
@@ -125,6 +130,9 @@ export async function buildClipcodeExplorerCopy(args: {
   let skippedUnsafePathCount = 0
   let unreadableFileCount = unreadableDirCount
   for (const verdict of verdicts) {
+    if (verdict.kind === 'notAFile') {
+      continue
+    }
     if (verdict.kind === 'binary') {
       skippedBinaryFileCount++
     } else if (verdict.kind === 'unreadable') {

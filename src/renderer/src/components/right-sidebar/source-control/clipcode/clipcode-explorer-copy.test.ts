@@ -16,6 +16,8 @@ const DIRS: Record<string, DirEntry[]> = {
     file('big.txt'),
     file('huge.log'),
     file('locked.txt'),
+    // A symlinked folder while folder-following is off: listed as a file, read fails as "not a file".
+    { name: 'linked-dir', isDirectory: false, isSymlink: true },
     dir('sub'),
     dir('.git'),
     dir('node_modules'),
@@ -30,7 +32,13 @@ const FILES: Record<string, string | { binary: true } | Error> = {
   '/ws/src/empty.txt': '',
   '/ws/src/img.png': { binary: true },
   '/ws/src/big.txt': 'x'.repeat(CLIPCODE_DEFAULTS.maxFileSizeKB * 1024 + 1),
-  '/ws/src/huge.log': new Error('File too large: 60.0MB exceeds 50MB limit'),
+  // As the renderer sees a main-process rejection.
+  '/ws/src/huge.log': new Error(
+    "Error invoking remote method 'fs:readFile': Error: File too large: 60.0MB exceeds 50MB limit"
+  ),
+  '/ws/src/linked-dir': new Error(
+    "Error invoking remote method 'fs:readFile': Error: Not a regular file"
+  ),
   '/ws/src/locked.txt': new Error('EACCES: permission denied'),
   '/ws/README.md': '# Readme'
 }
