@@ -18,6 +18,7 @@ const { GitGraphFullView } = await import('./git-graph-full-view')
 const { resetGitHistoryGraphFiltersForTest, updateGitHistoryGraphFilter } =
   await import('./git-history-graph-filter')
 const { resetGitGraphRememberedSelectionForTest } = await import('./use-git-graph-full-view-state')
+const { resetGitGraphBranchTreePreferenceForTest } = await import('./use-git-graph-branch-tree')
 
 const WORKTREE = 'wt-state'
 const TIP: GitHistoryItem = {
@@ -102,6 +103,7 @@ afterEach(() => {
   cleanup()
   resetGitHistoryGraphFiltersForTest()
   resetGitGraphRememberedSelectionForTest()
+  resetGitGraphBranchTreePreferenceForTest()
   vi.clearAllMocks()
 })
 
@@ -193,5 +195,35 @@ describe('full Git Graph state', () => {
     rerender(view({ ...historyResult(), items: [TIP, LOCAL_ONLY, OFF] }, { kind: 'local' }))
     await waitFor(() => expect(row('Local only work')).toHaveAttribute('data-selected', 'true'))
     expect(row('Local only work')).toHaveFocus()
+  })
+
+  it('drops a pending branch jump once the user navigates elsewhere', async () => {
+    const { rerender } = render(view(historyResult(), { kind: 'local' }))
+    fireEvent.click(await screen.findByText('local-only', { selector: 'nav span' }))
+    fireEvent.click(row('Elsewhere'))
+
+    const LOCAL_ONLY: GitHistoryItem = {
+      id: 'e'.repeat(40),
+      parentIds: [],
+      subject: 'Local only work',
+      message: 'Local only work',
+      references: [{ id: 'refs/heads/local-only', name: 'local-only', category: 'branches' }]
+    }
+    rerender(view({ ...historyResult(), items: [TIP, LOCAL_ONLY, OFF] }, { kind: 'local' }))
+    expect(row('Elsewhere')).toHaveAttribute('data-selected', 'true')
+    expect(row('Local only work')).not.toHaveAttribute('data-selected')
+  })
+
+  it('Home and End move focus to the first and last branch-tree item', async () => {
+    render(view(historyResult(), { kind: 'local' }))
+    const nav = screen.getByRole('navigation', { name: 'Branches and tags' })
+    await screen.findByText('local-only', { selector: 'nav span' })
+    const items = nav.querySelectorAll<HTMLButtonElement>('[data-tree-key]')
+    act(() => items[0]!.focus())
+    const last = [...items].at(-1)!
+    fireEvent.keyDown(items[0]!, { key: 'End' })
+    expect(last).toHaveFocus()
+    fireEvent.keyDown(last, { key: 'Home' })
+    expect(items[0]).toHaveFocus()
   })
 })
