@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, Cloud, GitBranch, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { GitHistoryResult } from '../../../../../../shared/git-history'
+import type { GitHistoryGraphRefOption } from '../../../../../../shared/git-history-graph-query-types'
 
 /** Matches the tree's `w-56`; the details pane reserves it when capping its width. */
 export const GIT_GRAPH_BRANCH_SIDEBAR_WIDTH = 224
@@ -25,22 +26,32 @@ type BranchTreeSection = {
   entries: BranchTreeEntry[]
 }
 
-function buildSections(result: GitHistoryResult | undefined): BranchTreeSection[] {
+export function buildBranchTreeSections(
+  result: GitHistoryResult | undefined,
+  refOptions: readonly GitHistoryGraphRefOption[] | null
+): BranchTreeSection[] {
   const tipByRef = new Map<string, string>()
   const tags: BranchTreeEntry[] = []
+  // Why decorations too: HEAD-only history and older hosts carry no ref list, yet commits name their branches.
+  const decorated: GitHistoryGraphRefOption[] = []
   for (const item of result?.items ?? []) {
     for (const ref of item.references ?? []) {
       if (!tipByRef.has(ref.id)) {
         tipByRef.set(ref.id, item.id)
         if (ref.category === 'tags') {
           tags.push({ id: ref.id, name: ref.name, tipId: item.id })
+        } else if (ref.category === 'branches' || ref.category === 'remote branches') {
+          decorated.push({ fullName: ref.id, name: ref.name, category: ref.category })
         }
       }
     }
   }
+  const listed = result?.graph?.refs ?? refOptions ?? []
+  const listedNames = new Set(listed.map((ref) => ref.fullName))
+  const branchRefs = [...listed, ...decorated.filter((ref) => !listedNames.has(ref.fullName))]
   const local: BranchTreeEntry[] = []
   const remotes = new Map<string, BranchTreeEntry[]>()
-  for (const ref of result?.graph?.refs ?? []) {
+  for (const ref of branchRefs) {
     const entry = { id: ref.fullName, name: ref.name, tipId: tipByRef.get(ref.fullName) }
     if (ref.category === 'branches') {
       local.push(entry)
@@ -74,12 +85,15 @@ function buildSections(result: GitHistoryResult | undefined): BranchTreeSection[
 
 export function GitGraphBranchSidebar({
   result,
+  refOptions,
   headRefId,
   selectedTipIds,
   onJump,
   onShowRef
 }: {
   result: GitHistoryResult | undefined
+  /** Every branch on the host, fetched once; null until loaded or on hosts without the graph API. */
+  refOptions: readonly GitHistoryGraphRefOption[] | null
   headRefId?: string
   /** Tips of the selected commits, highlighted in the tree. */
   selectedTipIds: ReadonlySet<string>
@@ -87,7 +101,7 @@ export function GitGraphBranchSidebar({
   /** A branch whose tip is not loaded: narrow the graph to it. */
   onShowRef: (fullName: string) => void
 }): React.JSX.Element {
-  const sections = useMemo(() => buildSections(result), [result])
+  const sections = useMemo(() => buildBranchTreeSections(result, refOptions), [result, refOptions])
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
   const toggle = (key: string): void =>
     setCollapsed((prev) => {
