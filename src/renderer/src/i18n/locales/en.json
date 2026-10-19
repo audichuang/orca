@@ -14945,6 +14945,7 @@
             "parents": "Parents",
             "refs": "Refs",
             "containedIn": "In branches",
+            "containedInHint": "Branches whose tips are in the loaded list; branches outside it are not counted.",
             "moreBranches": "+{{count}} more"
           }
         }
