@@ -9,6 +9,7 @@ type MenuProps = {
   relativePath?: string
   absolutePath?: string
   onCopyFullSource?: () => void
+  onView?: () => void
   children: React.ReactNode
 }
 const menu = vi.hoisted((): { props: MenuProps | null } => ({ props: null }))
@@ -29,9 +30,9 @@ const entries: GitBranchChangeEntry[] = [
 
 describe('GitHistoryCommitFilesMenu', () => {
   it('targets the right-clicked file row', () => {
+    const onOpenFile = vi.fn()
     const model = {
       activeConnectionId: null,
-      openCommitFile: vi.fn(),
       copyCommitFileFullSource: vi.fn(),
       revealInExplorer: vi.fn()
     }
@@ -42,6 +43,7 @@ describe('GitHistoryCommitFilesMenu', () => {
         worktreePath="/repo"
         item={item}
         entries={entries}
+        onOpenFile={onOpenFile}
       >
         <div>
           {entries.map((entry) => (
@@ -60,5 +62,8 @@ describe('GitHistoryCommitFilesMenu', () => {
     expect(menu.props?.absolutePath).toBe('/repo/src/two.ts')
     menu.props?.onCopyFullSource?.()
     expect(model.copyCommitFileFullSource).toHaveBeenCalledWith(item, entries[1])
+    // Why: View goes through the list's own open, which the full-view dialog wraps to close first.
+    menu.props?.onView?.()
+    expect(onOpenFile).toHaveBeenCalledWith(entries[1], expect.objectContaining({ altKey: false }))
   })
 })

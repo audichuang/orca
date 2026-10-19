@@ -14,6 +14,7 @@ import {
 import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import type { GitHistoryPanelState } from './git-history-panel'
+import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import { GitHistoryCommitFiles, type GitHistoryCommitFilesState } from './git-history-commit-files'
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
 import { GitHistoryGraphLoadMore } from './git-history-graph-host-status'
@@ -37,6 +38,7 @@ export type GitGraphFullViewProps = {
     entry: GitBranchChangeEntry,
     event?: SourceControlRowOpenEvent
   ) => void
+  renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
 }
 
 function useCommitFiles(
@@ -87,12 +89,14 @@ function CommitDetails({
   item,
   files,
   onOpenCommit,
-  onOpenCommitFile
+  onOpenCommitFile,
+  renderCommitFilesMenu
 }: {
   item: GitHistoryItem
   files: GitHistoryCommitFilesState
   onOpenCommit: GitGraphFullViewProps['onOpenCommit']
   onOpenCommitFile: GitGraphFullViewProps['onOpenCommitFile']
+  renderCommitFilesMenu: GitGraphFullViewProps['renderCommitFilesMenu']
 }): React.JSX.Element {
   const refs = dedupeRemoteTrackingRefs(item.references ?? [])
   const body = item.message.startsWith(item.subject)
@@ -129,6 +133,7 @@ function CommitDetails({
           state={files}
           onOpenFile={(entry, event) => onOpenCommitFile(item, entry, event)}
           onOpenAll={() => onOpenCommit(item)}
+          renderFilesMenu={renderCommitFilesMenu?.bind(null, item)}
         />
       </div>
     </div>
@@ -143,7 +148,8 @@ export function GitGraphFullView({
   onRefresh,
   onOpenCommit,
   onLoadCommitFiles,
-  onOpenCommitFile
+  onOpenCommitFile,
+  renderCommitFilesMenu
 }: GitGraphFullViewProps): React.JSX.Element {
   const result = state.result
   const viewModels = useMemo(
@@ -265,6 +271,7 @@ export function GitGraphFullView({
               files={filesByCommit[selected.id] ?? { status: 'loading' }}
               onOpenCommit={onOpenCommit}
               onOpenCommitFile={onOpenCommitFile}
+              renderCommitFilesMenu={renderCommitFilesMenu}
             />
           ) : (
             <p className="px-3 py-3 text-xs text-muted-foreground">
