@@ -17834,7 +17834,10 @@
                 "newQuickCommand": "new quick command",
                 "browserRight": "browser right",
                 "splitBrowser": "split browser",
-                "browserSplit": "browser split"
+                "browserSplit": "browser split",
+                "openGitGraph": "open git graph",
+                "gitLog": "git log",
+                "commitHistory": "commit history"
               },
               "newBrowserTabSplitRight": "New Browser Tab in Right Split",
               "newBrowserTabSplitRightDescription": "Open a browser tab in a new split to the right."
@@ -19644,6 +19647,13 @@
         "setting-global-off": "Folder trust is turned off in Agents settings, so agents always ask.",
         "keyword-trust": "trust",
         "keyword-hooks": "hooks"
+      },
+      "gitGraphTab": {
+        "noRepo": "No Git repository is available for this workspace.",
+        "repoSwitcher": "Repository",
+        "selectRepo": "Select repository",
+        "searchRepos": "Search repositories...",
+        "noRepos": "No repositories found."
       }
     },
     "i18n": {
