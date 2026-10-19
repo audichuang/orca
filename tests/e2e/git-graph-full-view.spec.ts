@@ -27,7 +27,7 @@ function commitFile(cwd: string, file: string, content: string, message: string)
   git(cwd, ['commit', `--author=${author} <${email}>`, '-m', message])
 }
 
-test('opens the full-screen Git Graph and opens a commit file diff', async ({
+test('opens the Git Graph tab, switches repo and opens a commit file diff', async ({
   orcaPage,
   testRepoPath,
   registerPostElectronShutdownCleanup
@@ -120,19 +120,24 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   await orcaPage.keyboard.press('Escape')
   await expect(orcaPage.locator('[cmdk-item]').first()).toBeHidden()
 
-  await orcaPage.getByRole('button', { name: 'Open Git Graph' }).click()
-  const dialog = orcaPage.getByRole('dialog')
-  await expect(dialog).toBeVisible()
-  const rows = dialog.getByTestId('git-graph-full-row')
+  // Mod+Shift+H opens the graph as an editor tab, not a modal, so the sidebar button is optional.
+  await orcaPage.keyboard.press('ControlOrMeta+Shift+H')
+  const graph = orcaPage.locator('[data-git-graph-root]')
+  await expect(graph).toBeVisible({ timeout: 15_000 })
+  await expect(orcaPage.getByRole('dialog')).toHaveCount(0)
+  const graphTab = orcaPage.locator('[data-tab-id]').filter({ hasText: 'Git Graph' })
+  await expect(graphTab).toHaveCount(1)
+  await expect(graphTab).toContainText('Git Graph')
+  const rows = graph.getByTestId('git-graph-full-row')
   await expect(rows.filter({ hasText: 'Feature B: experiment' })).toBeVisible({ timeout: 15_000 })
   await expect(rows.filter({ hasText: 'Merge branch' })).toBeVisible()
   // Keyboard focus lands on the commit list, not the first toolbar button.
   await expect(rows.first()).toBeFocused()
   await orcaPage.waitForTimeout(1000)
-  await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '01-git-graph-dialog.png') })
+  await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '01-git-graph-tab.png') })
 
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
-  const files = dialog.getByTestId('git-history-commit-file')
+  const files = graph.getByTestId('git-history-commit-file')
   await expect(files.first()).toBeVisible({ timeout: 15_000 })
   await expect(files.filter({ hasText: 'after-merge.ts' })).toBeVisible()
   await expect(rows.filter({ hasText: 'Post-merge cleanup' })).toHaveAttribute(
@@ -145,37 +150,42 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   // Cmd/Ctrl-click a second commit: the files of both merge, and one click copies them all.
   await rows.filter({ hasText: 'Feature A: second step' }).click()
   await rows.filter({ hasText: 'Feature A: first step' }).click({ modifiers: ['ControlOrMeta'] })
-  await expect(dialog.getByText('Changed files (2) · 2 commits')).toBeVisible()
+  await expect(graph.getByText('Changed files (2) · 2 commits')).toBeVisible()
   await expect(files.filter({ hasText: 'a1.ts' })).toBeVisible()
   await expect(files.filter({ hasText: 'a2.ts' })).toBeVisible()
   await orcaPage.mouse.move(5, 500)
   await orcaPage.waitForTimeout(300)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '02a-git-graph-multi-selected.png') })
   await setClipboard(orcaPage, 'sentinel')
-  await dialog.getByRole('button', { name: 'Copy Full Source of all changed files' }).click()
+  await graph.getByRole('button', { name: 'Copy Full Source of all changed files' }).click()
   await expect.poll(() => clipboardText(orcaPage), { timeout: 20_000 }).toContain('a1 = 1')
   const copied = await clipboardText(orcaPage)
   expect(copied).toContain('a2 = 2')
   expect(copied).not.toContain('afterMerge')
 
-  // Drag the details divider left; the details column must widen.
-  const divider = dialog.getByRole('separator', { name: 'Resize commit details' })
+  // Drag the details divider both ways; the details column follows.
+  const divider = graph.getByRole('separator', { name: 'Resize commit details' })
   const details = divider.locator('..')
+  const drag = async (dx: number): Promise<void> => {
+    const handle = (await divider.boundingBox())!
+    await orcaPage.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
+    await orcaPage.mouse.down()
+    await orcaPage.mouse.move(handle.x + handle.width / 2 + dx, handle.y + handle.height / 2, {
+      steps: 5
+    })
+    await orcaPage.mouse.up()
+  }
   const widthBefore = (await details.boundingBox())!.width
-  const handle = (await divider.boundingBox())!
-  await orcaPage.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
-  await orcaPage.mouse.down()
-  await orcaPage.mouse.move(handle.x - 200, handle.y + handle.height / 2, { steps: 5 })
-  await orcaPage.mouse.up()
-  await expect
-    .poll(async () => (await details.boundingBox())!.width)
-    .toBeGreaterThan(widthBefore + 150)
+  await drag(120)
+  await expect.poll(async () => (await details.boundingBox())!.width).toBeLessThan(widthBefore - 60)
+  const narrowed = (await details.boundingBox())!.width
+  await drag(-120)
+  await expect.poll(async () => (await details.boundingBox())!.width).toBeGreaterThan(narrowed + 60)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '02b-git-graph-details-resized.png') })
 
-  // Shrinking the window re-clamps the widened details so the commit list keeps its room.
-  await orcaPage.setViewportSize({ width: 1000, height: 1000 })
-  await expect.poll(async () => (await details.boundingBox())!.width).toBeLessThanOrEqual(600)
-  expect((await rows.first().boundingBox())!.width).toBeGreaterThan(300)
+  // Shrinking the window re-clamps the details so the commit list keeps its room.
+  await orcaPage.setViewportSize({ width: 1280, height: 1000 })
+  await expect.poll(async () => (await rows.first().boundingBox())!.width).toBeGreaterThan(300)
   await orcaPage.setViewportSize({ width: 1600, height: 1000 })
 
   // Also capture the merge commit's detail (multi-parent).
@@ -185,12 +195,17 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '03-git-graph-merge-selected.png') })
 
   // The branch tree jumps to a loaded tip and the details name the containing branches.
-  await dialog.locator(`[data-branch-ref="refs/heads/${extraBranches[1]}"]`).click()
+  // Why toggle: a tab beside both sidebars is narrower than the auto-open width, unlike the old dialog.
+  const branchTree = graph.getByRole('navigation', { name: 'Branches and tags' })
+  if (!(await branchTree.isVisible())) {
+    await graph.getByRole('button', { name: 'Toggle branches' }).click()
+  }
+  await graph.locator(`[data-branch-ref="refs/heads/${extraBranches[1]}"]`).click()
   await expect(rows.filter({ hasText: 'Feature B: experiment' })).toHaveAttribute(
     'data-selected',
     'true'
   )
-  await expect(dialog.getByText('In branches')).toBeVisible()
+  await expect(graph.getByText('In branches')).toBeVisible()
 
   // Screenshot matrix for review: window sizes x single / multi selection, then dark theme.
   // Why: the hidden test window never advances CSS transitions, so a deselected row would keep its tint.
@@ -213,16 +228,16 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
     await shoot(`size-${size.width}x${size.height}-single`)
     await rows.filter({ hasText: 'Feature A: second step' }).click()
     await rows.filter({ hasText: 'Main: add module B' }).click({ modifiers: ['ControlOrMeta'] })
-    await expect(dialog.getByText('Changed files (2) · 2 commits')).toBeVisible()
+    await expect(graph.getByText('Changed files (2) · 2 commits')).toBeVisible()
     await shoot(`size-${size.width}x${size.height}-multi`)
   }
   // Too narrow to dock: the tree starts closed but still opens, as an overlay that closes on a jump.
-  const tree = dialog.getByRole('navigation', { name: 'Branches and tags' })
+  const tree = graph.getByRole('navigation', { name: 'Branches and tags' })
   await expect(tree).toBeHidden()
-  await dialog.getByRole('button', { name: 'Toggle branches' }).click()
+  await graph.getByRole('button', { name: 'Toggle branches' }).click()
   await expect(tree).toBeVisible()
   await shoot('size-1024x700-tree-overlay')
-  await dialog.locator(`[data-branch-ref="refs/heads/${extraBranches[1]}"]`).click()
+  await graph.locator(`[data-branch-ref="refs/heads/${extraBranches[1]}"]`).click()
   await expect(tree).toBeHidden()
   await expect(rows.filter({ hasText: 'Feature B: experiment' })).toHaveAttribute(
     'data-selected',
@@ -230,6 +245,12 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   )
 
   // The smallest window still shows readable subjects and never scrolls sideways.
+  // Why hide both sidebars: at 600px they alone fill the window, leaving the tab no width.
+  await orcaPage.evaluate(() => {
+    const state = window.__store!.getState()
+    state.setSidebarOpen(false)
+    state.setRightSidebarOpen(false)
+  })
   await orcaPage.setViewportSize({ width: 600, height: 600 })
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
   const subject = rows.filter({ hasText: 'Post-merge cleanup' }).getByText('Post-merge cleanup', {
@@ -237,32 +258,71 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   })
   await expect(subject).toBeVisible()
   expect((await subject.boundingBox())!.width).toBeGreaterThan(100)
-  const list = dialog.locator('[data-git-graph-list]')
+  const list = graph.locator('[data-git-graph-list]')
   expect(await list.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   await shoot('size-600x600-single')
+  await orcaPage.evaluate(() => {
+    const state = window.__store!.getState()
+    state.setSidebarOpen(true)
+    state.setRightSidebarOpen(true)
+  })
   await orcaPage.setViewportSize({ width: 1600, height: 1000 })
   await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'dark' }))
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
   await shoot('dark-single')
   await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'light' }))
 
+  // Escape closes the branch tree overlay without leaving the tab.
+  await orcaPage.setViewportSize({ width: 1024, height: 700 })
+  await graph.getByRole('button', { name: 'Toggle branches' }).click()
+  await expect(tree).toBeVisible()
+  await orcaPage.keyboard.press('Escape')
+  await expect(tree).toBeHidden()
+  await expect(graph).toBeVisible()
+  await orcaPage.setViewportSize({ width: 1600, height: 1000 })
+
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
   await files.filter({ hasText: 'after-merge.ts' }).click()
-  await expect(dialog).toBeHidden({ timeout: 10_000 })
   await expect(orcaPage.locator('.monaco-diff-editor')).toBeVisible({ timeout: 20_000 })
   await expect(
     orcaPage.locator('.modified-in-monaco-diff-editor .view-line').filter({
       hasText: 'afterMerge'
     })
   ).toBeVisible()
+  // The graph stays open as a tab beside the diff.
+  await expect(graphTab).toHaveCount(1)
   await orcaPage.waitForTimeout(500)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '04-diff-opened.png') })
 
-  // Back to the graph: it reopens on the commit whose file was inspected.
-  await orcaPage.getByRole('button', { name: 'Open Git Graph' }).click()
+  // The sidebar button focuses the same tab rather than opening a second one.
+  const openButton = orcaPage.getByRole('button', { name: 'Open Git Graph' })
+  if (!(await openButton.isVisible())) {
+    await orcaPage.getByRole('button', { name: /Commits/ }).click()
+  }
+  await openButton.click()
+  await expect(graph).toBeVisible()
+  await expect(graphTab).toHaveCount(1)
   await expect(rows.filter({ hasText: 'Post-merge cleanup' })).toHaveAttribute(
     'data-selected',
     'true'
   )
-  await expect(files.filter({ hasText: 'after-merge.ts' })).toBeVisible()
+
+  // Switch to the main checkout: its HEAD has none of this worktree's commits.
+  const switcher = graph.getByRole('combobox', { name: 'Repository' })
+  await expect(switcher).toContainText(branchName)
+  await switcher.click()
+  const mainChoice = orcaPage.locator('[cmdk-item]').filter({ hasNotText: branchName }).first()
+  await expect(mainChoice).toBeVisible()
+  await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '05-repo-switcher-open.png') })
+  await mainChoice.click()
+  await expect(switcher).not.toContainText(branchName)
+  await expect(rows.first()).toBeVisible({ timeout: 15_000 })
+  await expect(rows.filter({ hasText: 'Post-merge cleanup' })).toHaveCount(0)
+  await orcaPage.waitForTimeout(300)
+  await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '06-switched-repo.png') })
+
+  // And back.
+  await switcher.click()
+  await orcaPage.locator('[cmdk-item]').filter({ hasText: branchName }).first().click()
+  await expect(rows.filter({ hasText: 'Post-merge cleanup' })).toBeVisible({ timeout: 15_000 })
 })
