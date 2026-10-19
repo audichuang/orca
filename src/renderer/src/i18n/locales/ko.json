@@ -14343,7 +14343,9 @@
                       "onlyBinarySkipped": "복사할 내용이 없습니다: 바이너리 파일 {{value0}}개를 건너뛰었습니다.",
                       "filesCopied": "파일 {{value0}}개 복사됨",
                       "filesUnreadable": "파일 {{value0}}개를 읽을 수 없습니다.",
-                      "noFiles": "복사할 파일이 없습니다."
+                      "noFiles": "복사할 파일이 없습니다.",
+                      "onlyUnsafeNamesSkipped": "복사할 내용이 없습니다: 이름을 안전하게 복원할 수 없는 파일 {{value0}}개를 건너뛰었습니다.",
+                      "unsafeNamesSkipped": "(안전하지 않은 파일 이름으로 {{value0}}개 건너뜀)"
                     }
                   },
                   "restore": {
