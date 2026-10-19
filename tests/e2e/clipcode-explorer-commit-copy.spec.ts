@@ -66,8 +66,10 @@ test('explorer Copy Full Source copies a folder recursively and a multi-selectio
     'clip/nested/beta.ts': 'export const beta = 2\n',
     'clip/node_modules/dep/index.js': 'module.exports = 1\n',
     'clip-other/gamma.ts': 'export const gamma = 3\n',
-    // Would read back as a delete instruction for clip-other/victim.ts on Paste & Restore.
-    'clip-other/[DELETED] victim.ts': 'must not be copied\n'
+    // A label mid-path is plain text to the parser, so this one restores as itself and is copied.
+    'clip-other/[DELETED] kept.ts': 'kept\n',
+    // At the root the header would read back as "delete victim.ts" on Paste & Restore.
+    '[DELETED] victim.ts': 'must not be copied\n'
   })
   writeFileSync(path.join(worktreePath, 'clip/blob.bin'), Buffer.from([0, 1, 2, 3]))
 
@@ -108,10 +110,12 @@ test('explorer Copy Full Source copies a folder recursively and a multi-selectio
 
   await row('clip-other').click()
   await row('README.md').click({ modifiers: [MULTI_SELECT] })
+  await row('[DELETED] victim.ts').click({ modifiers: [MULTI_SELECT] })
   const selectionPayload = await copyFromMenu(orcaPage, row('README.md'))
   expect(selectionPayload).toContain('// file: clip-other/gamma.ts\nexport const gamma = 3\n')
   expect(selectionPayload).toContain('// file: README.md\n')
   expect(selectionPayload).not.toContain('clip/alpha.ts')
+  expect(selectionPayload).toContain('// file: clip-other/[DELETED] kept.ts\nkept\n')
   expect(selectionPayload).not.toContain('victim.ts')
   await expect(
     orcaPage.locator('[data-sonner-toast]').filter({ hasText: /1 skipped: unsafe file name/ })
