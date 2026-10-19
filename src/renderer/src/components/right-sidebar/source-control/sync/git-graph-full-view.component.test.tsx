@@ -108,6 +108,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
   resetGitHistoryGraphFiltersForTest()
   resetGitGraphRememberedSelectionForTest()
   vi.clearAllMocks()
@@ -247,6 +248,39 @@ describe('full-width Git Graph', () => {
     fireEvent.keyDown(rows[1]!, { key: 'ArrowUp', shiftKey: true })
     expect(rows[0]).toHaveAttribute('data-selected', 'true')
     expect(rows[1]).toHaveAttribute('data-selected', 'true')
+  })
+
+  it('Escape with the narrow branch overlay open closes the overlay, not the dialog', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    await within(dialog).findAllByTestId('git-graph-full-row')
+    const toggle = within(dialog).getByRole('button', { name: 'Toggle branches' })
+    fireEvent.click(toggle)
+    expect(within(dialog).getByRole('navigation', { name: 'Branches and tags' })).toBeVisible()
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(within(dialog).queryByRole('navigation', { name: 'Branches and tags' })).toBeNull()
+    expect(toggle).toHaveFocus()
+  })
+
+  it('keeps the branch tree closed after the user closed it, across reopening', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1600 })
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    let dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('navigation', { name: 'Branches and tags' })).toBeVisible()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Toggle branches' }))
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    dialog = await screen.findByRole('dialog')
+    expect(within(dialog).queryByRole('navigation', { name: 'Branches and tags' })).toBeNull()
   })
 
   it('reloads the selected commit files after a refresh replaces the result', async () => {
