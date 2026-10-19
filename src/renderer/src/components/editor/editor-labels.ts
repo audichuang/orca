@@ -46,6 +46,10 @@ export function getEditorDisplayLabel(
     return file.checkRunDetails?.check.name ?? getBaseLabel(file, variant)
   }
 
+  if (file.mode === 'git-graph') {
+    return file.relativePath
+  }
+
   if (file.mode === 'markdown-preview') {
     return translate('auto.components.editor.editorLabels.preview', '{{name}} (preview)', {
       name: getBaseLabel(file, variant)

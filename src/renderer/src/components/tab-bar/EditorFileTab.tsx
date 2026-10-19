@@ -2,7 +2,15 @@ import type { EditorFileTabProps } from './editor-file-tab-props'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
-import { GitCompareArrows, Eye, ShieldAlert, Pin, ListChecks, Smartphone } from 'lucide-react'
+import {
+  GitCompareArrows,
+  Eye,
+  ShieldAlert,
+  Pin,
+  ListChecks,
+  Smartphone,
+  GitGraph
+} from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { TabHoverCard } from './TabHoverCard'
 import { basename } from '@/lib/path'
@@ -78,13 +86,15 @@ export default function EditorFileTab({
     ? ShieldAlert
     : isCheckDetails
       ? ListChecks
-      : isDiff
-        ? GitCompareArrows
-        : isMarkdownPreviewTab
-          ? Eye
-          : file.language === 'simulator'
-            ? Smartphone
-            : null
+      : file.mode === 'git-graph'
+        ? GitGraph
+        : isDiff
+          ? GitCompareArrows
+          : isMarkdownPreviewTab
+            ? Eye
+            : file.language === 'simulator'
+              ? Smartphone
+              : null
   const tabIcon = (className: string): React.ReactNode => (
     <PluginContributionIcon
       url={customEditor?.iconUrl}
