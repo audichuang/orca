@@ -3,10 +3,11 @@
 import '@testing-library/jest-dom/vitest'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
+import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 
 const mocks = vi.hoisted(() => ({ getRuntimeGitHistory: vi.fn() }))
 vi.mock('@/runtime/runtime-git-status-client', () => ({
@@ -56,10 +57,12 @@ const FILE: GitBranchChangeEntry = { path: 'src/app.ts', status: 'modified' }
 
 function Harness({
   onOpenCommitFile,
-  onLoadCommitFiles
+  onLoadCommitFiles,
+  renderCommitFilesMenu
 }: {
   onOpenCommitFile: () => void
   onLoadCommitFiles: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
+  renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
 }): React.JSX.Element {
   const { gitHistoryState, refreshGitHistory } = useSourceControlGitHistory({
     activeRepoTarget: { kind: 'local' },
@@ -89,6 +92,7 @@ function Harness({
             onOpenCommit={vi.fn()}
             onLoadCommitFiles={onLoadCommitFiles}
             onOpenCommitFile={onOpenCommitFile}
+            renderCommitFilesMenu={renderCommitFilesMenu}
           />
         }
       />
@@ -128,6 +132,32 @@ describe('full-width Git Graph', () => {
     expect(await within(dialog).findByText('Longer body text')).toBeInTheDocument()
     fireEvent.click(await within(dialog).findByTestId('git-history-commit-file'))
 
+    expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything())
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
+  it('hands the selected commit files to the fork menu with a dialog-closing open', async () => {
+    const onOpenCommitFile = vi.fn()
+    const renderCommitFilesMenu = vi.fn<NonNullable<GitHistoryPanelSlots['renderCommitFilesMenu']>>(
+      (_item, _entries, _open, list) => list
+    )
+    render(
+      <Harness
+        onOpenCommitFile={onOpenCommitFile}
+        onLoadCommitFiles={vi.fn(async () => [FILE])}
+        renderCommitFilesMenu={renderCommitFilesMenu}
+      />
+    )
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.click((await within(dialog).findAllByTestId('git-graph-full-row'))[0]!)
+    await within(dialog).findByTestId('git-history-commit-file')
+
+    const [item, entries, openFile] = renderCommitFilesMenu.mock.lastCall!
+    expect(item).toBe(TIP)
+    expect(entries).toEqual([FILE])
+    act(() => openFile(FILE, { altKey: false, ctrlKey: false, metaKey: false, shiftKey: false }))
     expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything())
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
