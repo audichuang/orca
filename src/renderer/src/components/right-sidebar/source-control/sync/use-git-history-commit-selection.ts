@@ -19,6 +19,8 @@ export type GitHistoryCommitSelection = {
   handleRowClick: (item: GitHistoryItem, event: MouseEvent) => boolean
   /** The selection when it covers the right-clicked commit, else just that commit. */
   itemsFor: (item: GitHistoryItem) => GitHistoryItem[]
+  /** Explicitly selected commits in graph order; empty after a plain click. */
+  selectedItems: readonly GitHistoryItem[]
 }
 
 export function useGitHistoryCommitSelection(
@@ -53,9 +55,14 @@ export function useGitHistoryCommitSelection(
         }
       }
       if (toggle) {
-        const ids = current.ids.includes(item.id)
-          ? current.ids.filter((id) => id !== item.id)
-          : [...current.ids, item.id]
+        // Why fold in the anchor: Cmd/Ctrl-click after a plain click selects both, like IntelliJ's log.
+        const base =
+          current.ids.length === 0 && current.anchor && current.anchor !== item.id
+            ? [current.anchor]
+            : current.ids
+        const ids = base.includes(item.id)
+          ? base.filter((id) => id !== item.id)
+          : [...base, item.id]
         setSelection({ result, ids, anchor: item.id })
         return true
       }
@@ -80,5 +87,5 @@ export function useGitHistoryCommitSelection(
   )
   const isSelected = useCallback((id: string) => selectedIds.has(id), [selectedIds])
 
-  return { isSelected, handleRowClick, itemsFor }
+  return { isSelected, handleRowClick, itemsFor, selectedItems }
 }

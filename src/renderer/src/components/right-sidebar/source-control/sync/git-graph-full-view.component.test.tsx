@@ -139,7 +139,7 @@ describe('full-width Git Graph', () => {
   it('hands the selected commit files to the fork menu with a dialog-closing open', async () => {
     const onOpenCommitFile = vi.fn()
     const renderCommitFilesMenu = vi.fn<NonNullable<GitHistoryPanelSlots['renderCommitFilesMenu']>>(
-      (_item, _entries, _open, renderList) => renderList(new Set())
+      (_items, _entries, _open, renderList) => renderList(new Set())
     )
     render(
       <Harness
@@ -154,12 +154,45 @@ describe('full-width Git Graph', () => {
     fireEvent.click((await within(dialog).findAllByTestId('git-graph-full-row'))[0]!)
     await within(dialog).findByTestId('git-history-commit-file')
 
-    const [item, entries, openFile] = renderCommitFilesMenu.mock.lastCall!
-    expect(item).toBe(TIP)
+    const [items, entries, openFile] = renderCommitFilesMenu.mock.lastCall!
+    expect(items).toEqual([TIP])
     expect(entries).toEqual([FILE])
     act(() => openFile(FILE, { altKey: false, ctrlKey: false, metaKey: false, shiftKey: false }))
     expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything())
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
+  it('Cmd/Ctrl-click merges the files of both commits; each file opens at its newest commit', async () => {
+    const onOpenCommitFile = vi.fn()
+    const OTHER: GitBranchChangeEntry = { path: 'src/other.ts', status: 'added' }
+    const filesOf: Record<string, GitBranchChangeEntry[]> = {
+      [TIP.id]: [FILE],
+      [PARENT.id]: [{ ...FILE, status: 'added' }, OTHER]
+    }
+    render(
+      <Harness
+        onOpenCommitFile={onOpenCommitFile}
+        onLoadCommitFiles={vi.fn(async (item: GitHistoryItem) => filesOf[item.id] ?? [])}
+      />
+    )
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    const rows = await within(dialog).findAllByTestId('git-graph-full-row')
+    fireEvent.click(rows[0]!)
+    // Both modifiers so the test holds on every platform's Cmd-or-Ctrl key.
+    fireEvent.click(rows[1]!, { metaKey: true, ctrlKey: true })
+
+    expect(rows[0]).toHaveAttribute('data-selected', 'true')
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+    expect(await within(dialog).findByText('Changed files (2) · 2 commits')).toBeInTheDocument()
+    const files = within(dialog).getAllByTestId('git-history-commit-file')
+    expect(files.map((row) => row.getAttribute('data-commit-file-path'))).toEqual([
+      'src/app.ts',
+      'src/other.ts'
+    ])
+    fireEvent.click(files[0]!)
+    expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything())
   })
 
   it('reloads the selected commit files after a refresh replaces the result', async () => {
