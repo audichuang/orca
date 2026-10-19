@@ -8,16 +8,21 @@ import { translate } from '@/i18n/i18n'
 import { useWindowWidth } from '../../use-window-width'
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
-import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import { GitHistoryCommitFiles, type GitHistoryCommitFilesState } from './git-history-commit-files'
-import { formatGitHistoryTimestamp } from './git-history-format'
-import { formatGitGraphShortDate, GitGraphRefBadge } from './git-graph-full-row'
+import {
+  GitGraphCommitInfo,
+  GitGraphCommitsSummary,
+  type GitGraphCommitContext
+} from './git-graph-commit-info'
 
 const DETAILS_WIDTH_KEY = 'orca:git-graph-details-width'
 const DETAILS_MIN_WIDTH = 280
 const DETAILS_DEFAULT_WIDTH = 480
+// Dialog inset and padding, plus the narrowest commit list that still shows message and date.
+const DETAILS_RESERVED_CHROME = 112
+const COMMIT_LIST_MIN_WIDTH = 460
 
 function readDetailsWidth(): number {
   try {
@@ -67,62 +72,15 @@ export function mergeCommitFiles(
   return { state: loading ? { status: 'loading' } : { status: 'ready', entries }, ownerByPath }
 }
 
-function CommitInfo({ item }: { item: GitHistoryItem }): React.JSX.Element {
-  const refs = dedupeRemoteTrackingRefs(item.references ?? [])
-  const body = item.message.startsWith(item.subject)
-    ? item.message.slice(item.subject.length).trim()
-    : item.message.trim()
-  const author = item.authorEmail ? `${item.author ?? ''} <${item.authorEmail}>` : item.author
-  return (
-    <div className="flex flex-col gap-1 px-3 py-2">
-      <p className="text-sm font-medium break-words text-foreground select-text">{item.subject}</p>
-      {body && (
-        <p className="text-xs break-words whitespace-pre-wrap text-foreground select-text">
-          {body}
-        </p>
-      )}
-      <p className="font-mono text-2xs break-all text-muted-foreground select-text">{item.id}</p>
-      <p className="text-2xs text-muted-foreground select-text">
-        {[author, formatGitHistoryTimestamp(item.timestamp)].filter(Boolean).join(' · ')}
-      </p>
-      {refs.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {refs.map((ref) => (
-            <GitGraphRefBadge key={ref.id} itemRef={ref} />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function CommitsSummary({ items }: { items: readonly GitHistoryItem[] }): React.JSX.Element {
-  return (
-    <ul className="flex flex-col py-1">
-      {items.map((item) => (
-        <li key={item.id} className="flex min-w-0 items-baseline gap-2 px-3 py-0.5 text-xs">
-          <span className="shrink-0 font-mono text-2xs text-muted-foreground">
-            {item.displayId}
-          </span>
-          <span className="min-w-0 flex-1 truncate text-foreground" title={item.subject}>
-            {item.subject}
-          </span>
-          <span className="shrink-0 text-2xs text-muted-foreground">
-            {item.author} · {formatGitGraphShortDate(item.timestamp)}
-          </span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
 export function GitGraphDetailsPane({
   items,
   filesByCommit,
   onOpenCommit,
   onOpenCommitFile,
   onCopyFullSource,
-  renderCommitFilesMenu
+  renderCommitFilesMenu,
+  commitContext,
+  reservedWidth
 }: {
   /** Newest first; empty when nothing is selected. */
   items: readonly GitHistoryItem[]
@@ -135,11 +93,20 @@ export function GitGraphDetailsPane({
   ) => void
   onCopyFullSource?: (items: readonly GitHistoryItem[]) => void
   renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
+  commitContext: GitGraphCommitContext
+  /** Width other side panes (the branch tree) take from the window. */
+  reservedWidth: number
 }): React.JSX.Element {
   const [width, setWidth] = useState(readDetailsWidth)
-  // Why viewport-relative: the dialog spans the window, so this keeps the commit list usable.
+  // Why: the cap leaves the commit list its minimum, and follows window resizes (the dialog spans it).
   const windowWidth = useWindowWidth() ?? 0
-  const maxWidth = Math.max(DETAILS_MIN_WIDTH, Math.round(windowWidth * 0.6))
+  const maxWidth = Math.max(
+    DETAILS_MIN_WIDTH,
+    Math.min(
+      Math.round(windowWidth * 0.55),
+      windowWidth - DETAILS_RESERVED_CHROME - COMMIT_LIST_MIN_WIDTH - reservedWidth
+    )
+  )
   const shownWidth = Math.min(width, maxWidth)
   const saveWidth = useCallback((next: number): void => {
     setWidth(next)
@@ -248,7 +215,11 @@ export function GitGraphDetailsPane({
             />
           </div>
           <div className="scrollbar-sleek max-h-[45%] shrink-0 overflow-y-auto border-t border-border">
-            {items.length > 1 ? <CommitsSummary items={items} /> : <CommitInfo item={first} />}
+            {items.length > 1 ? (
+              <GitGraphCommitsSummary items={items} onJump={commitContext.onJump} />
+            ) : (
+              <GitGraphCommitInfo item={first} context={commitContext} />
+            )}
           </div>
         </>
       )}
