@@ -32,8 +32,8 @@ help:
 	@echo "  make setup      install + build the macOS computer-use helper (one-time, slow)"
 	@echo "  make typecheck  full type check (optional safety gate)"
 	@echo "  make clean      remove dist/ and out/"
-	@echo "  make fork-check       after a rebase: typecheck + fork-area tests + quality gate (minutes)"
-	@echo "  make fork-check-full  before a release: every test the fork's changes reach + headless e2e"
+	@echo "  make fork-check       after a rebase: typecheck + tests the fork's changes reach + lint + quality gate"
+	@echo "  make fork-check-full  before a release: fork-check + headless e2e"
 
 install:
 	pnpm install
@@ -162,6 +162,8 @@ fork-dmg: computer-use
 
 # Upstream release the fork sits on (fork tags excluded). Override: make fork-check FORK_BASE=v1.4.229
 FORK_BASE ?= $(shell git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' HEAD)
+# Why: resolve once; a recursive ?= reruns git describe on every reference.
+FORK_BASE := $(FORK_BASE)
 # Why the guard: a clone without upstream tags resolves an ancient FORK_BASE and silently runs thousands of unrelated tests.
 FORK_MAX_COMMITS ?= 200
 
@@ -169,7 +171,7 @@ FORK_MAX_COMMITS ?= 200
 FORK_TEST_SHARD ?=
 
 fork-check: export LC_ALL = C
-fork-check: fork-check-static-types fork-check-tests fork-check-quality fork-check-lint
+fork-check: fork-check-static fork-check-tests
 
 fork-check-static: export LC_ALL = C
 fork-check-static: fork-check-static-types fork-check-quality fork-check-lint
@@ -185,7 +187,7 @@ fork-check-static-types: fork-base-guard
 fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
 
-# Whole-repo checks from upstream's `pnpm lint` that fork edits can break (Tailwind classes, the en catalog, rpc catalog) plus fork locale parity; the rest of it is covered on changed lines by fork-check-quality.
+# Whole-repo `pnpm lint` checks fork edits can break, plus fork locale parity; fork-check-quality covers the rest on changed lines.
 fork-check-lint: fork-base-guard
 	pnpm run check:dead-classes
 	pnpm run verify:localization-catalogs
@@ -196,11 +198,11 @@ fork-check-lint: fork-base-guard
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
 
 fork-check-tests: export LC_ALL = C
+# Why: upstream's CI mode; it applies UNIT_EXCLUDE (live-shell, node-pty, electron probes, the wire job's files) and balances shards by timing.
+fork-check-tests: export ORCA_BALANCE_UNIT_SHARDS = 1
 fork-check-tests: fork-base-guard
-	@# Why --changed: it follows imports, so upstream tests that use a fork-changed module run too. A package.json or vitest config change runs the whole suite.
-	@# Why path filters, not --exclude: the config's projects override a CLI --exclude; filters intersect with --changed and leave tests/ (e2e, wire job) out.
-	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) \
-	  --changed $(FORK_BASE) src/ config/
+	@# Why --changed: it follows imports, so upstream tests that use a fork-changed module run too.
+	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) --changed $(FORK_BASE)
 
 FORK_REPO ?= audichuang/orca
 # The fork's remote in this clone, whatever it is named (origin on a plain clone of the fork).
