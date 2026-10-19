@@ -19,7 +19,8 @@ export const EDITOR_KINDS: ReadonlySet<LayoutTab['kind']> = new Set<LayoutTab['k
   'editor',
   'diff',
   'conflict-review',
-  'check-details'
+  'check-details',
+  'git-graph'
 ])
 
 /**

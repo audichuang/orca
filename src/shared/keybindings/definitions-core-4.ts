@@ -33,6 +33,14 @@ export const KEYBINDING_DEFINITION_CORE_4: readonly KeybindingDefinition[] = [
     defaultBindings: platformBindings([])
   },
   {
+    id: 'sourceControl.openGitGraph',
+    title: 'Open Git Graph',
+    group: 'Global',
+    scope: 'global',
+    searchKeywords: ['shortcut', 'git', 'graph', 'history', 'log', 'commits', 'source control'],
+    defaultBindings: platformBindings(['Mod+Shift+H'])
+  },
+  {
     id: 'terminal.clearPaneTitle',
     title: 'Clear Pane Title',
     group: 'Terminal Panes',
