@@ -62,7 +62,7 @@ function hasRemote(filter: GitHistoryGraphFilter, remote: string): boolean {
 }
 
 /** Lists branches and remotes on the repo's own host; null when that host predates the graph. */
-async function loadRefOptions(args: {
+export async function loadRefOptions(args: {
   worktreeId: string
   worktreePath: string
   activeRepoTarget: RuntimeClientTarget | null
