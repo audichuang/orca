@@ -34,7 +34,6 @@ type GitHistoryCommitActions = {
     event?: SourceControlRowOpenEvent
   ) => void
   handleCommitAction: GitHistoryCommitActionHandler
-  copyCommitFileFullSource: (item: GitHistoryItem, entry: GitBranchChangeEntry) => void
 }
 
 export function useGitHistoryCommitActions({
@@ -197,27 +196,19 @@ export function useGitHistoryCommitActions({
     }
   }, [])
 
-  const copyFullSource = useCallback(
-    (items: readonly GitHistoryItem[], loadFiles: typeof loadCommitFiles): void => {
-      if (!activeWorktreeId || !worktreePath) {
-        return
-      }
-      void copyHistoryCommitsFullSource({
-        items,
-        worktreeId: activeWorktreeId,
-        worktreePath,
-        editorWorktreeId: editorWorktreeId ?? null,
-        activeRepoTarget,
-        loadCommitFiles: loadFiles
-      })
-    },
-    [activeRepoTarget, activeWorktreeId, editorWorktreeId, worktreePath]
-  )
-
   const handleCommitAction = useCallback(
     (action: GitHistoryCommitAction, item: GitHistoryItem, selectedItems): void => {
       if (action === 'copy-full-source') {
-        copyFullSource(selectedItems ?? [item], loadCommitFiles)
+        if (activeWorktreeId && worktreePath) {
+          void copyHistoryCommitsFullSource({
+            items: selectedItems ?? [item],
+            worktreeId: activeWorktreeId,
+            worktreePath,
+            editorWorktreeId: editorWorktreeId ?? null,
+            activeRepoTarget,
+            loadCommitFiles
+          })
+        }
         return
       }
       if (action === 'open-remote') {
@@ -289,7 +280,7 @@ export function useGitHistoryCommitActions({
       activeRepoTarget,
       activeWorktreeId,
       copyCommitText,
-      copyFullSource,
+      editorWorktreeId,
       gitOwnerId,
       loadCommitFiles,
       tabOwnerId,
@@ -297,18 +288,5 @@ export function useGitHistoryCommitActions({
     ]
   )
 
-  // Why a one-entry loader: the commit's Copy Full Source, narrowed to the right-clicked file.
-  const copyCommitFileFullSource = useCallback(
-    (item: GitHistoryItem, entry: GitBranchChangeEntry): void =>
-      copyFullSource([item], async () => [entry]),
-    [copyFullSource]
-  )
-
-  return {
-    loadCommitFiles,
-    openHistoryCommitDiff,
-    openCommitFile,
-    handleCommitAction,
-    copyCommitFileFullSource
-  }
+  return { loadCommitFiles, openHistoryCommitDiff, openCommitFile, handleCommitAction }
 }
