@@ -406,7 +406,7 @@ export function GitHistoryPanel({
                     timestamp={item.timestamp}
                     onOpenFile={(entry, event) => onOpenCommitFile?.(item, entry, event)}
                     onOpenAll={onOpenCommit ? () => onOpenCommit(item) : undefined}
-                    renderFilesMenu={slots.renderCommitFilesMenu?.bind(null, item)}
+                    renderFilesMenu={slots.renderCommitFilesMenu?.bind(null, [item])}
                   />
                 )}
               </React.Fragment>
