@@ -30,6 +30,8 @@ import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
 import { useGitGraphBranchContext, useGitGraphSelection } from './use-git-graph-full-view-state'
 import { useWindowWidth } from '../../use-window-width'
+import { composeWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
+import { getRuntimeTargetHostId } from '@/runtime/runtime-client-target'
 import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
 
 // Why: below this the branch tree would squeeze the commit list; it stays one click away.
@@ -145,7 +147,15 @@ export function GitGraphFullView({
     [viewModels]
   )
   const listRef = useRef<HTMLDivElement>(null)
-  const selection = useGitGraphSelection({ worktreeId, result, viewModels, listRef })
+  const selection = useGitGraphSelection({
+    selectionKey: composeWorktreeHostIdentity(
+      activeRepoTarget ? getRuntimeTargetHostId(activeRepoTarget) : undefined,
+      worktreeId
+    ),
+    result,
+    viewModels,
+    listRef
+  })
   const { shownItems, jumpTo } = selection
   const branchContext = useGitGraphBranchContext({
     worktreeId,
@@ -163,14 +173,30 @@ export function GitGraphFullView({
   // Why an overlay when it does not fit: docking it would crush the commit list, but hiding it
   // outright would cut off branch and tag navigation on small windows.
   const sidebarOverlay = sidebarOpen && !sidebarFits
-  // Why once: opening the view lands keyboard focus on the commit list, like IntelliJ's log.
+  // Why once, and only while focus is untouched: opening lands on the commit list (IntelliJ's log),
+  // but history that arrives later must not pull focus out of a control the user already chose.
   const focusedOnOpenRef = useRef(false)
   useEffect(() => {
-    if (!focusedOnOpenRef.current && selection.cursorId) {
+    const list = listRef.current
+    if (focusedOnOpenRef.current || !list) {
+      return
+    }
+    const active = document.activeElement
+    const root = list.closest('[data-git-graph-root]')
+    if (active && active !== list && root?.contains(active)) {
       focusedOnOpenRef.current = true
-      listRef.current?.querySelector<HTMLElement>('[tabindex="0"]')?.focus({ preventScroll: true })
+      return
+    }
+    const row = list.querySelector<HTMLElement>('[tabindex="0"]')
+    if (row) {
+      focusedOnOpenRef.current = true
+      row.focus({ preventScroll: true })
+    } else {
+      // Placeholder while history loads; a later row may take over only from here.
+      list.focus({ preventScroll: true })
     }
   }, [selection.cursorId])
+  const toggleRef = useRef<HTMLButtonElement>(null)
   const selectedTipIds = useMemo(() => new Set(shownItems.map((item) => item.id)), [shownItems])
   const { filesByCommit, ensureFiles } = useCommitFiles(result, onLoadCommitFiles)
   const loading = state.status === 'loading' || state.status === 'refreshing'
@@ -185,12 +211,13 @@ export function GitGraphFullView({
   }, [shownItems, filesByCommit, ensureFiles])
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col" data-git-graph-root="">
       <div className="flex items-start gap-1 border-b border-border pt-1.5 pr-10">
         <Button
           type="button"
           variant="ghost"
           size="icon-xs"
+          ref={toggleRef}
           className="ml-2"
           aria-pressed={sidebarOpen}
           onClick={() => setSidebarPreference(!sidebarOpen)}
@@ -236,7 +263,8 @@ export function GitGraphFullView({
               headRefId={headRefId}
               selectedTipIds={selectedTipIds}
               onJump={(commitId) => {
-                jumpTo(commitId)
+                // Why focus: closing the overlay removes the focused tree button with it.
+                jumpTo(commitId, { focus: sidebarOverlay })
                 if (sidebarOverlay) {
                   setSidebarPreference(false)
                 }
@@ -244,6 +272,7 @@ export function GitGraphFullView({
               onShowRef={(fullName) => {
                 updateGitHistoryGraphFilter(worktreeId, { scope: 'refs', refs: [fullName] })
                 if (sidebarOverlay) {
+                  toggleRef.current?.focus()
                   setSidebarPreference(false)
                 }
               }}
@@ -275,6 +304,7 @@ export function GitGraphFullView({
           <div
             ref={listRef}
             data-git-graph-list=""
+            tabIndex={-1}
             className="scrollbar-sleek min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
             onKeyDown={selection.handleListKeyDown}
           >
