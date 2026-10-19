@@ -27,7 +27,8 @@ vi.mock('../listing/entry-context-menu', () => ({
 }))
 vi.mock('./git-history-commit-copy', () => ({ copyHistoryCommitsFullSource: mocks.copy }))
 
-const { GitHistoryCommitFilesMenu } = await import('./git-history-commit-files-menu')
+const { GitHistoryCommitFilesMenu, commitFilesMenuSlot } =
+  await import('./git-history-commit-files-menu')
 const { GitHistoryPanel } = await import('./git-history-panel')
 
 const item: GitHistoryItem = {
@@ -152,6 +153,38 @@ describe('GitHistoryCommitFilesMenu', () => {
     mocks.menuProps?.onCopyFullSource?.()
     const args = mocks.copy.mock.calls[0]?.[0]
     await expect(args.loadCommitFiles(item)).resolves.toEqual([entries[1]])
+  })
+
+  it('drops the selection when the same pane switches to another commit', async () => {
+    const slot = commitFilesMenuSlot(defaultModel, 'repo-wt', '/repo')
+    const other: GitHistoryItem = { ...item, id: 'b'.repeat(40), displayId: 'bbbbbbb' }
+    const list = (selectedPaths: ReadonlySet<string>): React.JSX.Element => (
+      <div>
+        {entries.map((entry) => (
+          <button
+            key={entry.path}
+            type="button"
+            data-commit-file-path={entry.path}
+            data-selected={selectedPaths.has(entry.path) || undefined}
+          >
+            {entry.path}
+          </button>
+        ))}
+      </div>
+    )
+    // Same position, new commit: what the full graph's single details pane does.
+    const { rerender } = render(<>{slot(item, entries, vi.fn(), list)}</>)
+    fireEvent.click(screen.getByText('src/one.ts'), { metaKey: true, ctrlKey: true })
+    fireEvent.click(screen.getByText('src/two.ts'), { metaKey: true, ctrlKey: true })
+    expect(document.querySelectorAll('[data-selected]')).toHaveLength(2)
+
+    rerender(<>{slot(other, entries, vi.fn(), list)}</>)
+    expect(document.querySelectorAll('[data-selected]')).toHaveLength(0)
+    fireEvent.contextMenu(screen.getByText('src/two.ts'))
+    mocks.menuProps?.onCopyFullSource?.()
+    const args = mocks.copy.mock.calls[0]?.[0]
+    expect(args.items).toEqual([other])
+    await expect(args.loadCommitFiles(other)).resolves.toEqual([entries[1]])
   })
 
   it('is fed by the upstream Commits panel when a commit expands', async () => {
