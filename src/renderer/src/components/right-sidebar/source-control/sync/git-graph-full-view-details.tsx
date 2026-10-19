@@ -19,6 +19,8 @@ import {
 
 const DETAILS_WIDTH_KEY = 'orca:git-graph-details-width'
 const DETAILS_MIN_WIDTH = 280
+// Smallest width the pane can take (tiny windows); a saved width at or above it stays valid.
+const DETAILS_FLOOR_WIDTH = 200
 const DETAILS_DEFAULT_WIDTH = 480
 // Dialog inset and padding, plus the narrowest commit list that still shows message and date.
 const DETAILS_RESERVED_CHROME = 112
@@ -35,7 +37,7 @@ function defaultDetailsWidth(): number {
 function readDetailsWidth(): number {
   try {
     const stored = Number(window.localStorage.getItem(DETAILS_WIDTH_KEY))
-    return stored >= DETAILS_MIN_WIDTH ? stored : defaultDetailsWidth()
+    return stored >= DETAILS_FLOOR_WIDTH ? stored : defaultDetailsWidth()
   } catch {
     return defaultDetailsWidth()
   }
@@ -111,7 +113,7 @@ export function GitGraphDetailsPane({
   // Why a smaller floor on tiny windows: a fixed 280px left near-identical subjects unreadable.
   const minWidth = Math.min(
     DETAILS_MIN_WIDTH,
-    Math.max(200, Math.round((windowWidth - DETAILS_RESERVED_CHROME) * 0.42))
+    Math.max(DETAILS_FLOOR_WIDTH, Math.round((windowWidth - DETAILS_RESERVED_CHROME) * 0.42))
   )
   const maxWidth = Math.max(
     minWidth,
@@ -137,7 +139,11 @@ export function GitGraphDetailsPane({
     const delta = event.key === 'ArrowLeft' ? 16 : event.key === 'ArrowRight' ? -16 : 0
     if (delta !== 0) {
       event.preventDefault()
-      saveWidth(Math.min(maxWidth, Math.max(minWidth, shownWidth + delta)))
+      const next = Math.min(maxWidth, Math.max(minWidth, shownWidth + delta))
+      // Why: at a clamp edge the key changes nothing; saving would pin a narrow-window width.
+      if (next !== shownWidth) {
+        saveWidth(next)
+      }
     }
   }
 
