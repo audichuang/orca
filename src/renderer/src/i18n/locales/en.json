@@ -14465,7 +14465,9 @@
                       "onlyBinarySkipped": "Nothing to copy: {{value0}} binary file(s) skipped.",
                       "filesCopied": "{{value0}} file(s) copied",
                       "filesUnreadable": "{{value0}} file(s) could not be read.",
-                      "noFiles": "No files found to copy."
+                      "noFiles": "No files found to copy.",
+                      "onlyUnsafeNamesSkipped": "Nothing to copy: {{value0}} file(s) skipped because their names cannot be restored safely.",
+                      "unsafeNamesSkipped": "({{value0}} skipped: unsafe file name)"
                     }
                   },
                   "restore": {
