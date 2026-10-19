@@ -210,10 +210,49 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   // Screenshot matrix for review: window sizes x single / multi selection, then dark theme.
   // Why: the hidden test window never advances CSS transitions, so a deselected row would keep its tint.
   await orcaPage.addStyleTag({ content: '*, *::before, *::after { transition: none !important; }' })
+  // Why: dev builds load React Grab's sheet after main.css, re-declaring `.flex`; columns must not
+  // depend on that cascade order.
+  await orcaPage.addStyleTag({ content: '@layer utilities { .flex { display: flex; } }' })
   const shoot = async (name: string): Promise<void> => {
     await orcaPage.mouse.move(2, 2)
     await orcaPage.waitForTimeout(400)
     await orcaPage.screenshot({ path: path.join(SHOTS_DIR, `${name}.png`) })
+  }
+  // Every row shows exactly the header's columns, each under its header, on one line.
+  const expectColumnsAligned = async (label: string): Promise<void> => {
+    const report = await graph.evaluate((root) => {
+      const shown = (el: Element): boolean =>
+        getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0
+      const cols = (parent: Element): { col: string; left: number; right: number }[] =>
+        Array.from(parent.querySelectorAll(':scope > [data-col]'))
+          .filter(shown)
+          .map((el) => {
+            const rect = el.getBoundingClientRect()
+            return { col: el.getAttribute('data-col') ?? '', left: rect.left, right: rect.right }
+          })
+      const header = cols(root.querySelector('[data-git-graph-header]')!)
+      const problems: string[] = []
+      for (const row of Array.from(root.querySelectorAll('[data-testid="git-graph-full-row"]'))) {
+        const cells = cols(row)
+        const name = (row.textContent ?? '').slice(0, 40)
+        if (cells.map((c) => c.col).join() !== header.map((c) => c.col).join()) {
+          problems.push(
+            `${name}: cells ${cells.map((c) => c.col).join()} vs header ${header.map((c) => c.col).join()}`
+          )
+        }
+        if (row.getBoundingClientRect().height > 30) {
+          problems.push(`${name}: wrapped (${row.getBoundingClientRect().height}px)`)
+        }
+        for (const cell of cells) {
+          const head = header.find((c) => c.col === cell.col)
+          if (head && Math.abs(head.left - cell.left) > 2) {
+            problems.push(`${name}: ${cell.col} at ${cell.left}, header at ${head.left}`)
+          }
+        }
+      }
+      return { header: header.map((c) => c.col).join(), problems }
+    })
+    expect(report.problems, `${label} (header ${report.header})`).toEqual([])
   }
   const sizes = [
     { width: 1920, height: 1080 },
@@ -226,6 +265,7 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
     await rows.filter({ hasText: 'Post-merge cleanup' }).click()
     await expect(files.filter({ hasText: 'after-merge.ts' })).toBeVisible()
     await shoot(`size-${size.width}x${size.height}-single`)
+    await expectColumnsAligned(`${size.width}x${size.height}`)
     await rows.filter({ hasText: 'Feature A: second step' }).click()
     await rows.filter({ hasText: 'Main: add module B' }).click({ modifiers: ['ControlOrMeta'] })
     await expect(graph.getByText('Changed files (2) · 2 commits')).toBeVisible()
@@ -261,6 +301,7 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   const list = graph.locator('[data-git-graph-list]')
   expect(await list.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   await shoot('size-600x600-single')
+  await expectColumnsAligned('600x600')
   await orcaPage.evaluate(() => {
     const state = window.__store!.getState()
     state.setSidebarOpen(true)
@@ -282,6 +323,8 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   await orcaPage.setViewportSize({ width: 1600, height: 1000 })
 
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
+  await rows.filter({ hasText: 'Feature A: first step' }).click({ modifiers: ['ControlOrMeta'] })
+  await expect(graph.getByText('Changed files (2) · 2 commits')).toBeVisible()
   await files.filter({ hasText: 'after-merge.ts' }).click()
   await expect(orcaPage.locator('.monaco-diff-editor')).toBeVisible({ timeout: 20_000 })
   await expect(
@@ -294,18 +337,29 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   await orcaPage.waitForTimeout(500)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '04-diff-opened.png') })
 
-  // The sidebar button focuses the same tab rather than opening a second one.
-  const openButton = orcaPage.getByRole('button', { name: 'Open Git Graph' })
-  if (!(await openButton.isVisible())) {
-    await orcaPage.getByRole('button', { name: /Commits/ }).click()
+  // The Commits header button stays reachable with the section collapsed, and focuses the same
+  // tab rather than opening a second one.
+  const commitsHeader = orcaPage.getByRole('button', { name: /^Commits/ })
+  if (await historyRows.first().isVisible()) {
+    await commitsHeader.click()
   }
+  await expect(historyRows.first()).toBeHidden()
+  const openButton = orcaPage.getByRole('button', { name: 'Open Git Graph' })
+  await expect(openButton).toBeVisible()
   await openButton.click()
   await expect(graph).toBeVisible()
   await expect(graphTab).toHaveCount(1)
+  await expect(historyRows.first()).toBeHidden()
+  // Returning keeps the whole multi-commit selection, not just the primary commit.
   await expect(rows.filter({ hasText: 'Post-merge cleanup' })).toHaveAttribute(
     'data-selected',
     'true'
   )
+  await expect(rows.filter({ hasText: 'Feature A: first step' })).toHaveAttribute(
+    'data-selected',
+    'true'
+  )
+  await expect(graph.getByText('Changed files (2) · 2 commits')).toBeVisible()
 
   // Switch to the main checkout: its HEAD has none of this worktree's commits.
   const switcher = graph.getByRole('combobox', { name: 'Repository' })
