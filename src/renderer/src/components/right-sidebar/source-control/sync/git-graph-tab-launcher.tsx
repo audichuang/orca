@@ -1,4 +1,4 @@
-// Fork-only: opens the Git Graph editor tab from the Commits toolbar.
+// Fork-only: opens the Git Graph editor tab from the Commits section header.
 import React from 'react'
 import { Maximize2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,7 @@ export function GitGraphTabLauncher({
           type="button"
           variant="ghost"
           size="icon-xs"
+          className="my-auto"
           aria-label={label}
           onClick={() => openGitGraphTab(workspaceId, { repoWorktreeId })}
         >
