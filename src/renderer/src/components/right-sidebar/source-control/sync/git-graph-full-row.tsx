@@ -11,6 +11,7 @@ import {
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
 import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
 import { GitHistoryGraphSvg, graphColor } from './git-history-graph-svg'
+import { formatGitHistoryTimestamp } from './git-history-format'
 
 function RefIcon({
   category
@@ -105,6 +106,25 @@ const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
   timeStyle: 'short'
 })
 
+const compactThisYearFormatter = new Intl.DateTimeFormat(undefined, {
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit'
+})
+const compactOlderFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'short' })
+
+/** Row date: time only matters this year; the full timestamp lives in the tooltip. */
+export function formatGitGraphCompactDate(timestamp: number | undefined): string {
+  if (timestamp == null || !Number.isFinite(timestamp)) {
+    return ''
+  }
+  const date = new Date(timestamp)
+  return date.getFullYear() === new Date().getFullYear()
+    ? compactThisYearFormatter.format(date)
+    : compactOlderFormatter.format(date)
+}
+
 export function formatGitGraphShortDate(timestamp: number | undefined): string {
   if (timestamp == null || !Number.isFinite(timestamp)) {
     return ''
@@ -112,17 +132,19 @@ export function formatGitGraphShortDate(timestamp: number | undefined): string {
   return shortDateFormatter.format(new Date(timestamp))
 }
 
-// Why container queries: the list narrows with the branch tree and details pane, not just the window;
-// Author goes first, then the hash, so the message keeps its room (IntelliJ drops columns the same way).
+// Why container queries: the list narrows with the branch tree and details pane, not just the window.
+// Author goes first, then the hash, then the date, so the message always keeps its room.
 export const GIT_GRAPH_FULL_ROW_COLUMNS =
-  'grid-cols-[auto_minmax(0,1fr)_minmax(0,9rem)_8.5rem_4.5rem] @max-3xl:grid-cols-[auto_minmax(0,1fr)_8.5rem_4.5rem] @max-xl:grid-cols-[auto_minmax(0,1fr)_8.5rem]'
-export const GIT_GRAPH_AUTHOR_COLUMN = '@max-3xl:hidden'
+  'grid-cols-[auto_minmax(0,1fr)_minmax(0,9rem)_7rem_4.5rem] @max-2xl:grid-cols-[auto_minmax(0,1fr)_7rem_4.5rem] @max-xl:grid-cols-[auto_minmax(0,1fr)_7rem] @max-md:grid-cols-[auto_minmax(0,1fr)]'
+export const GIT_GRAPH_AUTHOR_COLUMN = '@max-2xl:hidden'
 export const GIT_GRAPH_HASH_COLUMN = '@max-xl:hidden'
+export const GIT_GRAPH_DATE_COLUMN = '@max-md:hidden'
 
 export function GitGraphFullRow({
   viewModel,
   graphWidth,
   selected,
+  isTabStop = false,
   headRefId,
   dimmed = false,
   onSelect
@@ -131,6 +153,8 @@ export function GitGraphFullRow({
   /** Widest graph in the list, so every subject starts in the same column. */
   graphWidth: number
   selected: boolean
+  /** The list's single roving tab stop; arrow keys move it. */
+  isTabStop?: boolean
   /** The checked-out branch, whose badge is filled. */
   headRefId?: string
   /** Not on the checked-out branch: muted, like IntelliJ's "Highlight current branch". */
@@ -142,24 +166,37 @@ export function GitGraphFullRow({
   const isBoundaryNode =
     viewModel.kind === 'incoming-changes' || viewModel.kind === 'outgoing-changes'
   const refs = dedupeRemoteTrackingRefs(item.references ?? [])
+  // Why one badge plus "+N": several refs squeezed side by side truncate to unreadable fragments.
+  const primaryRef = refs.find((ref) => ref.id === headRefId) ?? refs[0]
+  const extraRefs = refs.filter((ref) => ref !== primaryRef)
   const cells = (
     <>
       <div className="flex h-6 items-center" style={{ width: graphWidth }}>
         <GitHistoryGraphSvg viewModel={viewModel} />
       </div>
       <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-        {refs.length > 0 && (
-          // Why capped: many refs on one commit must not squeeze the message to nothing; the title keeps full names.
-          <div className="flex max-w-[45%] min-w-0 shrink-0 items-center gap-1 overflow-hidden">
-            {refs.map((ref) => (
-              <GitGraphRefBadge key={ref.id} itemRef={ref} isHead={ref.id === headRefId} />
-            ))}
+        {primaryRef && (
+          // Why capped, and gone on a tiny list: refs must not squeeze the message to nothing;
+          // the details pane lists them all.
+          <div className="flex max-w-[45%] min-w-0 shrink-0 items-center gap-1 overflow-hidden @max-sm:hidden">
+            <span className="flex min-w-16 shrink">
+              <GitGraphRefBadge itemRef={primaryRef} isHead={primaryRef.id === headRefId} />
+            </span>
+            {extraRefs.length > 0 && (
+              <span
+                className="shrink-0 rounded-full border border-border px-1.5 py-0.5 text-3xs leading-none text-muted-foreground"
+                title={extraRefs.map((ref) => ref.name).join('\n')}
+              >
+                +{extraRefs.length}
+              </span>
+            )}
           </div>
         )}
         <span
           className={cn(
             'min-w-0 flex-1 truncate',
-            dimmed ? 'text-muted-foreground' : 'text-foreground'
+            // Why not when selected: the selection must read at full strength, whatever the branch.
+            dimmed && !selected ? 'text-muted-foreground' : 'text-foreground'
           )}
           title={item.subject}
         >
@@ -184,10 +221,15 @@ export function GitGraphFullRow({
         </span>
       </span>
       <span
-        className="truncate text-muted-foreground tabular-nums"
-        title={formatGitGraphRelativeDate(item.timestamp)}
+        className={cn('truncate text-muted-foreground tabular-nums', GIT_GRAPH_DATE_COLUMN)}
+        title={[
+          formatGitHistoryTimestamp(item.timestamp),
+          formatGitGraphRelativeDate(item.timestamp)
+        ]
+          .filter(Boolean)
+          .join(' · ')}
       >
-        {formatGitGraphShortDate(item.timestamp)}
+        {formatGitGraphCompactDate(item.timestamp)}
       </span>
       <span className={cn('truncate font-mono text-muted-foreground', GIT_GRAPH_HASH_COLUMN)}>
         {item.displayId}
@@ -215,6 +257,7 @@ export function GitGraphFullRow({
         !selected && 'hover:bg-accent/40 focus-visible:bg-accent/40'
       )}
       aria-pressed={selected}
+      tabIndex={isTabStop ? 0 : -1}
       data-git-graph-row=""
       data-commit-id={item.id}
       data-dimmed={dimmed ? 'true' : undefined}
