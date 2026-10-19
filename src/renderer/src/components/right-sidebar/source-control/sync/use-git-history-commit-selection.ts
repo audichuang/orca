@@ -18,7 +18,10 @@ export type CommitClickModifiers = Pick<MouseEvent, 'metaKey' | 'ctrlKey' | 'shi
 export type GitHistoryCommitSelection = {
   isSelected: (id: string) => boolean
   /** Returns true when the click was a selection gesture, so the row must not also expand. */
-  /** `fallbackAnchorId` starts a Shift range when no click has set an anchor yet (e.g. a restored selection). */
+  /**
+   * `fallbackAnchorId`: the commit the caller shows as selected when no click in this hook has
+   * (a restored selection); it anchors a Shift range and joins a Cmd/Ctrl-click.
+   */
   handleRowClick: (
     item: GitHistoryItem,
     event: CommitClickModifiers,
@@ -73,11 +76,10 @@ export function useGitHistoryCommitSelection(
         }
       }
       if (toggle) {
-        // Why: Cmd/Ctrl-click right after a plain click selects both, like IntelliJ's log.
-        const base =
-          current.ids.length === 0 && current.plainClicked && current.plainClicked !== item.id
-            ? [current.plainClicked]
-            : current.ids
+        // Why: Cmd/Ctrl-click right after a plain click (or onto a restored selection) selects both,
+        // like IntelliJ's log.
+        const seed = current.plainClicked ?? fallbackAnchorId ?? null
+        const base = current.ids.length === 0 && seed && seed !== item.id ? [seed] : current.ids
         const ids = base.includes(item.id)
           ? base.filter((id) => id !== item.id)
           : [...base, item.id]
