@@ -14876,7 +14876,8 @@
             "parents": "Padres",
             "refs": "Referencias",
             "containedIn": "En las ramas",
-            "moreBranches": "+{{count}} más"
+            "moreBranches": "+{{count}} más",
+            "containedInHint": "Ramas cuyo último commit está en la lista cargada; no se cuentan las ramas fuera de ella."
           }
         }
       },

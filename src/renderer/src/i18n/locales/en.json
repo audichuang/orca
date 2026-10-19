@@ -15283,7 +15283,8 @@
             "parents": "Parents",
             "refs": "Refs",
             "containedIn": "In branches",
-            "moreBranches": "+{{count}} more"
+            "moreBranches": "+{{count}} more",
+            "containedInHint": "Branches whose tips are in the loaded list; branches outside it are not counted."
           }
         }
       },
