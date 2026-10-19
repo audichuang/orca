@@ -108,14 +108,19 @@ export function GitGraphDetailsPane({
   const [width, setWidth] = useState(readDetailsWidth)
   // Why: the cap leaves the commit list its minimum, and follows window resizes (the dialog spans it).
   const windowWidth = useWindowWidth() ?? 0
-  const maxWidth = Math.max(
+  // Why a smaller floor on tiny windows: a fixed 280px left near-identical subjects unreadable.
+  const minWidth = Math.min(
     DETAILS_MIN_WIDTH,
+    Math.max(200, Math.round((windowWidth - DETAILS_RESERVED_CHROME) * 0.42))
+  )
+  const maxWidth = Math.max(
+    minWidth,
     Math.min(
       Math.round(windowWidth * 0.55),
       windowWidth - DETAILS_RESERVED_CHROME - COMMIT_LIST_MIN_WIDTH - reservedWidth
     )
   )
-  const shownWidth = Math.min(width, maxWidth)
+  const shownWidth = Math.max(minWidth, Math.min(width, maxWidth))
   const saveWidth = useCallback((next: number): void => {
     setWidth(next)
     writeDetailsWidth(next)
@@ -123,7 +128,7 @@ export function GitGraphDetailsPane({
   const { containerRef, onResizeStart } = useSidebarResize<HTMLDivElement>({
     isOpen: true,
     width: shownWidth,
-    minWidth: DETAILS_MIN_WIDTH,
+    minWidth,
     maxWidth,
     deltaSign: -1,
     setWidth: saveWidth
@@ -132,7 +137,7 @@ export function GitGraphDetailsPane({
     const delta = event.key === 'ArrowLeft' ? 16 : event.key === 'ArrowRight' ? -16 : 0
     if (delta !== 0) {
       event.preventDefault()
-      saveWidth(Math.min(maxWidth, Math.max(DETAILS_MIN_WIDTH, shownWidth + delta)))
+      saveWidth(Math.min(maxWidth, Math.max(minWidth, shownWidth + delta)))
     }
   }
 
@@ -157,7 +162,7 @@ export function GitGraphDetailsPane({
           'Resize commit details'
         )}
         aria-orientation="vertical"
-        aria-valuemin={DETAILS_MIN_WIDTH}
+        aria-valuemin={minWidth}
         aria-valuemax={maxWidth}
         aria-valuenow={shownWidth}
         tabIndex={0}
