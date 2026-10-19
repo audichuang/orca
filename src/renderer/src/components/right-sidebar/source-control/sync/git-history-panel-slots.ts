@@ -15,6 +15,8 @@ export type GitHistoryCommitFilesMenuRenderer = (
 ) => React.ReactNode
 
 export type GitHistoryPanelSlots = {
+  /** Header icons before help/refresh; stay visible while the section is collapsed. */
+  headerActions?: React.ReactNode
   /** Branch filter / search row under the header. */
   toolbar?: React.ReactNode
   /** Rendered after the last commit (load more). */
