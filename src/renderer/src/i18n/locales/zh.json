@@ -14123,7 +14123,10 @@
                       "7c6daaf4fa": "复制完整源码失败",
                       "9c3f952874": "{{value0}} 个 Git 文件无法读取。",
                       "binarySkipped": "（{{value0}} 个二进制文件已跳过）",
-                      "onlyBinarySkipped": "没有可复制的内容：已跳过 {{value0}} 个二进制文件。"
+                      "onlyBinarySkipped": "没有可复制的内容：已跳过 {{value0}} 个二进制文件。",
+                      "filesCopied": "已复制 {{value0}} 个文件",
+                      "filesUnreadable": "{{value0}} 个文件无法读取。",
+                      "noFiles": "没有可复制的文件。"
                     }
                   },
                   "restore": {
