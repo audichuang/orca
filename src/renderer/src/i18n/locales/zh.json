@@ -16769,7 +16769,10 @@
                 "chatPaneRight": "聊天窗格右侧",
                 "splitChatDown": "拆分聊天",
                 "moveChatDown": "下移聊天",
-                "chatPaneBelow": "下面的聊天窗格"
+                "chatPaneBelow": "下面的聊天窗格",
+                "openGitGraph": "打开 git graph",
+                "gitLog": "git 日志",
+                "commitHistory": "提交历史"
               },
               "splitChatRight": "右侧拆分聊天",
               "splitChatRightDescription": "在右侧的拆分窗格中打开活动聊天。",
@@ -18405,6 +18408,13 @@
         "copyFailed": "无法复制链接。",
         "signingIn": "正在登录…",
         "cancel": "取消"
+      },
+      "gitGraphTab": {
+        "noRepo": "此工作区没有可用的 Git 仓库。",
+        "repoSwitcher": "仓库",
+        "selectRepo": "选择仓库",
+        "searchRepos": "搜索仓库...",
+        "noRepos": "未找到仓库。"
       }
     },
     "i18n": {

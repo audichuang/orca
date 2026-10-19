@@ -17059,7 +17059,10 @@
                 "chatPaneRight": "chat pane right",
                 "splitChatDown": "split chat down",
                 "moveChatDown": "move chat down",
-                "chatPaneBelow": "chat pane below"
+                "chatPaneBelow": "chat pane below",
+                "openGitGraph": "open git graph",
+                "gitLog": "git log",
+                "commitHistory": "commit history"
               },
               "splitChatRight": "Split Chat Right",
               "splitChatRightDescription": "Open the active chat in a split pane to the right.",
@@ -18667,6 +18670,13 @@
         "copyFailed": "Could not copy the link.",
         "signingIn": "Signing in…",
         "cancel": "Cancel"
+      },
+      "gitGraphTab": {
+        "noRepo": "No Git repository is available for this workspace.",
+        "repoSwitcher": "Repository",
+        "selectRepo": "Select repository",
+        "searchRepos": "Search repositories...",
+        "noRepos": "No repositories found."
       }
     },
     "i18n": {

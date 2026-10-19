@@ -16769,7 +16769,10 @@
                 "chatPaneRight": "チャットペイン右",
                 "splitChatDown": "チャットを分割する",
                 "moveChatDown": "チャットを下に移動",
-                "chatPaneBelow": "下のチャットペイン"
+                "chatPaneBelow": "下のチャットペイン",
+                "openGitGraph": "git graph を開く",
+                "gitLog": "git ログ",
+                "commitHistory": "コミット履歴"
               },
               "splitChatRight": "右の分割チャット",
               "splitChatRightDescription": "右側の分割ペインでアクティブなチャットを開きます。",
@@ -18405,6 +18408,13 @@
         "copyFailed": "リンクをコピーできませんでした。",
         "signingIn": "サインイン中…",
         "cancel": "キャンセル"
+      },
+      "gitGraphTab": {
+        "noRepo": "このワークスペースで利用できる Git リポジトリはありません。",
+        "repoSwitcher": "リポジトリ",
+        "selectRepo": "リポジトリを選択",
+        "searchRepos": "リポジトリを検索...",
+        "noRepos": "リポジトリが見つかりません。"
       }
     },
     "i18n": {
