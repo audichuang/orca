@@ -18,16 +18,20 @@ import { useGitHistoryGraphFilter } from './git-history-graph-filter'
 import { loadRefOptions } from './git-history-graph-toolbar'
 import {
   useGitHistoryCommitSelection,
-  type CommitClickModifiers
+  type CommitClickModifiers,
+  type GitHistoryCommitSelectionSnapshot
 } from './use-git-history-commit-selection'
 import { rovingKeyTarget } from './git-graph-roving-keys'
 
 const PLAIN_CLICK: CommitClickModifiers = { metaKey: false, ctrlKey: false, shiftKey: false }
 
-// Why module scope: the dialog unmounts the view on close (opening a diff closes it), and
-// reopening should land on the same commit, like returning to IntelliJ's log.
+// Why module scope: the editor renders only the active tab, so opening a diff unmounts the view, and
+// returning should land on the same commits, like returning to IntelliJ's log.
 // Keyed by host-qualified worktree identity: two hosts can publish the same worktree id.
-const rememberedCommitByWorktree = new Map<string, string>()
+const rememberedSelectionByWorktree = new Map<
+  string,
+  { commitId: string | null; commits: GitHistoryCommitSelectionSnapshot | null }
+>()
 
 function isNavigable(viewModel: GitHistoryItemViewModel): boolean {
   return viewModel.kind !== 'incoming-changes' && viewModel.kind !== 'outgoing-changes'
@@ -55,24 +59,34 @@ export function useGitGraphSelection(args: {
   listRef: React.RefObject<HTMLDivElement | null>
 }): GitGraphSelectionState {
   const { selectionKey, result, viewModels, listRef } = args
-  const [selectedId, setSelectedIdState] = useState<string | null>(
-    () => rememberedCommitByWorktree.get(selectionKey) ?? null
+  const [remembered] = useState(() => rememberedSelectionByWorktree.get(selectionKey))
+  const [selectedId, setSelectedIdState] = useState<string | null>(remembered?.commitId ?? null)
+  // Why the anchor first: it is the latest gesture, a multi-selection's included.
+  const [cursorState, setCursorId] = useState<string | null>(
+    remembered?.commits?.anchor ?? selectedId
   )
-  const [cursorState, setCursorId] = useState<string | null>(selectedId)
   const setSelectedId = useCallback(
     (id: string | null): void => {
       setSelectedIdState(id)
-      if (id) {
-        rememberedCommitByWorktree.set(selectionKey, id)
-      }
+      // Why also on null: a cleared click must not come back as selected after a remount.
+      const entry = rememberedSelectionByWorktree.get(selectionKey)
+      rememberedSelectionByWorktree.set(selectionKey, { commits: null, ...entry, commitId: id })
     },
     [selectionKey]
   )
   const selected = result?.items.find((item) => item.id === selectedId) ?? null
   // Why retain: a refresh or branch filter must not drop a multi-selection the user is reviewing.
   const commitSelection = useGitHistoryCommitSelection(result, {
-    retainAcrossResults: { ownerKey: selectionKey }
+    retainAcrossResults: { ownerKey: selectionKey, initial: remembered?.commits ?? undefined }
   })
+  const { snapshot } = commitSelection
+  useEffect(() => {
+    const entry = rememberedSelectionByWorktree.get(selectionKey)
+    rememberedSelectionByWorktree.set(selectionKey, {
+      commitId: entry?.commitId ?? null,
+      commits: snapshot
+    })
+  }, [selectionKey, snapshot])
   const multiSelected = commitSelection.selectedItems
   const shownItems = useMemo(
     () => (multiSelected.length > 0 ? multiSelected : selected ? [selected] : []),
@@ -98,14 +112,15 @@ export function useGitGraphSelection(args: {
     [listRef]
   )
 
-  // Why once per result: a reopened dialog restores the remembered commit into view.
+  // Why once: a remount restores the remembered commit, or the multi-selection's cursor, into view.
+  const restoreTargetId = selected?.id ?? (multiSelected.length > 0 ? cursorId : null)
   const restoredRef = useRef(false)
   useEffect(() => {
-    if (!restoredRef.current && selected) {
+    if (!restoredRef.current && restoreTargetId) {
       restoredRef.current = true
-      scrollToRow(selected.id, false)
+      scrollToRow(restoreTargetId, false)
     }
-  }, [scrollToRow, selected])
+  }, [scrollToRow, restoreTargetId])
 
   const navigationGenerationRef = useRef(0)
   const getNavigationGeneration = useCallback(() => navigationGenerationRef.current, [])
@@ -124,6 +139,14 @@ export function useGitGraphSelection(args: {
 
   const handleListKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLElement>): void => {
+      // Why: keys from the portaled row context menu bubble here through React; leave them to it.
+      if (
+        event.defaultPrevented ||
+        !(event.target instanceof Node) ||
+        !event.currentTarget.contains(event.target)
+      ) {
+        return
+      }
       const index = navigable.findIndex((item) => item.id === cursorId)
       const nextIndex = rovingKeyTarget(event.key, index, navigable.length)
       if (nextIndex === null) {
@@ -270,5 +293,5 @@ export function useGitGraphBranchContext(args: {
 
 /** Test seam: the remembered selection outlives a dialog, so tests reset it between cases. */
 export function resetGitGraphRememberedSelectionForTest(): void {
-  rememberedCommitByWorktree.clear()
+  rememberedSelectionByWorktree.clear()
 }

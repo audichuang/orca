@@ -31,6 +31,13 @@ export type GitHistoryCommitSelection = {
   itemsFor: (item: GitHistoryItem) => GitHistoryItem[]
   /** Explicitly selected commits in graph order; empty after a plain click. */
   selectedItems: readonly GitHistoryItem[]
+  /** What a remount needs to restore this selection (`retainAcrossResults.initial`). */
+  snapshot: GitHistoryCommitSelectionSnapshot
+}
+
+export type GitHistoryCommitSelectionSnapshot = {
+  ids: readonly string[]
+  anchor: string | null
 }
 
 type SelectionState = {
@@ -72,11 +79,17 @@ export function useGitHistoryCommitSelection(
      * Keep commits a new result still lists (refresh, branch filter) instead of starting over.
      * `ownerKey` names the repo owner; a different owner always starts over.
      */
-    retainAcrossResults?: { ownerKey: string }
+    retainAcrossResults?: { ownerKey: string; initial?: GitHistoryCommitSelectionSnapshot }
   }
 ): GitHistoryCommitSelection {
   const ownerKey = options?.retainAcrossResults?.ownerKey
-  const [selection, setSelection] = useState<SelectionState>(() => emptySelection(result, ownerKey))
+  const [selection, setSelection] = useState<SelectionState>(() => {
+    const initial = options?.retainAcrossResults?.initial
+    // Why not reconciled here: a remount's result is often still loading; the next result prunes it.
+    return initial
+      ? { ...emptySelection(result, ownerKey), ids: [...initial.ids], anchor: initial.anchor }
+      : emptySelection(result, ownerKey)
+  })
   // Why: a new result can reorder or drop commits, so a stale selection must not survive it as is.
   // A retained selection is pruned and stored, so a commit that disappears stays deselected.
   let current = selection
@@ -144,6 +157,10 @@ export function useGitHistoryCommitSelection(
     [selectedIds, selectedItems]
   )
   const isSelected = useCallback((id: string) => selectedIds.has(id), [selectedIds])
+  const snapshot = useMemo(
+    () => ({ ids: current.ids, anchor: current.anchor }),
+    [current.ids, current.anchor]
+  )
 
-  return { isSelected, handleRowClick, itemsFor, selectedItems }
+  return { isSelected, handleRowClick, itemsFor, selectedItems, snapshot }
 }
