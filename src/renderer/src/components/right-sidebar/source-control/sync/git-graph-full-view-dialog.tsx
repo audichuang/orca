@@ -40,6 +40,12 @@ export function GitGraphFullViewLauncher(props: GitGraphFullViewProps): React.JS
           className="flex h-[calc(100vh-4rem)] w-[calc(100vw-4rem)] max-w-none flex-col overflow-hidden sm:max-w-none"
           // Why: the view focuses the commit list itself; Radix would land on the first toolbar button.
           onOpenAutoFocus={(event) => event.preventDefault()}
+          // Why: with the branch-tree overlay open, Escape closes the overlay (the view handles it).
+          onEscapeKeyDown={(event) => {
+            if (document.querySelector('[data-git-graph-tree-overlay]')) {
+              event.preventDefault()
+            }
+          }}
         >
           <DialogTitle className="sr-only">{label}</DialogTitle>
           <DialogDescription className="sr-only">
