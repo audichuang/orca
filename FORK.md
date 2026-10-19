@@ -5,7 +5,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 ## Merge gate
 
 - `make fork-check` is the gate for every rebase and every merge into `develop`: `pnpm tc`, `vitest --changed $(FORK_BASE)` (a fork change to `package.json` or the vitest config runs the whole suite), the changed-code quality gate, and `fork-check-lint` (the whole-repo checks from upstream's `pnpm lint` that fork edits can break). `make fork-check-full` adds the folder multi-repo e2e; run it before a release.
-- On GitHub the gate is `.github/workflows/fork-pr.yml`'s "Fork PR checks passed" job: `make fork-check` (split into `fork-check-static` plus parallel `fork-check-tests` shards that run in parallel), cross-version wire compatibility (the fork client talks to upstream-release hosts), and the macOS arm64 `make build`. Upstream workflows stay unedited but disabled on the fork; run `make fork-ci-disable-upstream` after a rebase that adds new ones.
+- On GitHub the gate is `.github/workflows/fork-pr.yml`'s "Fork PR checks passed" job: `make fork-check` (split into `fork-check-static` plus parallel `fork-check-tests` shards), cross-version wire compatibility (the fork client talks to upstream-release hosts), and the macOS arm64 `make build`. Upstream workflows stay unedited but disabled on the fork; run `make fork-ci-disable-upstream` after a rebase that adds new ones.
 - `FORK_BASE` is the newest upstream `vX.Y.Z` tag. A clone without upstream tags resolves an ancient one; the target now refuses to run then. Fix with `git fetch <upstream-remote> --tags`.
 - The target forces `LC_ALL=C`: upstream real-git tests match English git messages and fail under a translated locale.
 - After a rebase, compare upstream's `lint` script in `package.json` with `fork-check-lint`; a new whole-repo check there is not picked up on its own.
@@ -53,4 +53,4 @@ What only UI rounds catch: main↔renderer event plumbing at runtime, state accu
 
 ## Running tests on another machine
 
-Before handing tests to a remote checkout, sync it in the same command: the commit equals local `HEAD`, upstream tags are fetched, `pnpm install --frozen-lockfile` if the lockfile moved, and no previous run is still going. Under heavy load a few upstream timing tests fail; rerun those files alone before calling it a regression.
+Before handing tests to a remote checkout, sync it in the same command: the commit equals local `HEAD`, upstream tags are fetched, `pnpm install --frozen-lockfile` if the lockfile moved, and no previous run is still going. A test that passes alone but fails in a loaded run is not proven flaky or pre-existing: run the same shard at `FORK_BASE` before excluding it. Files run isolated, so the usual cause is real timers an earlier test in the same file never stopped, not another file's state.
