@@ -6,7 +6,7 @@ import type { PendingEditorReveal } from '@/store/slices/editor/types/pending-ed
 import type { GitDiffResult } from '../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../shared/git/status/git-status-types'
 import { CheckRunDetailsPanel } from './check-details/panel/CheckRunDetailsPanel'
-import { CombinedDiffViewer, MarkdownPreview } from './editor-lazy-views'
+import { CombinedDiffViewer, GitGraphTabView, MarkdownPreview } from './editor-lazy-views'
 import { EditorConflictReviewSurface } from './EditorConflictReviewSurface'
 import { EditorDiffFileSurface } from './EditorDiffFileSurface'
 import { EditorEditFileSurface } from './EditorEditFileSurface'
@@ -165,6 +165,10 @@ export function EditorContent({
         }}
       />
     )
+  }
+
+  if (activeFile.mode === 'git-graph') {
+    return <GitGraphTabView file={activeFile} />
   }
 
   if (activeFile.mode === 'conflict-review') {

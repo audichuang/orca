@@ -16736,7 +16736,10 @@
                 "removeWorktree": "작업 트리 제거",
                 "trashWorktree": "워크트리 휴지통으로 이동",
                 "addQuickCommand": "빠른 명령 추가",
-                "newQuickCommand": "새로운 빠른 명령"
+                "newQuickCommand": "새로운 빠른 명령",
+                "openGitGraph": "git graph 열기",
+                "gitLog": "git 로그",
+                "commitHistory": "커밋 기록"
               }
             }
           },
@@ -18521,6 +18524,13 @@
         "setting-global-off": "에이전트 설정에서 폴더 신뢰가 꺼져 있으므로 에이전트가 항상 확인을 요청합니다.",
         "keyword-trust": "신뢰",
         "keyword-hooks": "훅"
+      },
+      "gitGraphTab": {
+        "noRepo": "이 워크스페이스에서 사용할 수 있는 Git 저장소가 없습니다.",
+        "repoSwitcher": "저장소",
+        "selectRepo": "저장소 선택",
+        "searchRepos": "저장소 검색...",
+        "noRepos": "저장소를 찾을 수 없습니다."
       }
     },
     "i18n": {
