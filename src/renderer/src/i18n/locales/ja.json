@@ -14643,7 +14643,24 @@
             "resizeDetails": "コミット詳細の幅を変更",
             "copyFullSource": "すべての変更ファイルの完全なソースをコピー",
             "filesInCommits": "変更ファイル ({{files}}) · {{commits}} 件のコミット",
-            "filesChanged": "変更ファイル ({{files}})"
+            "filesChanged": "変更ファイル ({{files}})",
+            "toggleBranches": "ブランチパネルの切り替え"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "ローカル",
+            "tags": "タグ",
+            "label": "ブランチとタグ",
+            "empty": "ブランチはまだ読み込まれていません。",
+            "showRef": "現在の一覧にありません — クリックでこのブランチのみ表示"
+          },
+          "GitGraphCommitInfo": {
+            "author": "作成者",
+            "date": "日付",
+            "copySha": "コミット SHA をコピー",
+            "parents": "親コミット",
+            "refs": "参照",
+            "containedIn": "含まれるブランチ",
+            "moreBranches": "他 {{count}} 件"
           }
         }
       },
