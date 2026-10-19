@@ -251,18 +251,15 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
               worktreePath,
               loadCommitFiles
             )}
+            headerActions={
+              <GitGraphTabLauncher workspaceId={tabOwnerId} repoWorktreeId={currentWorktreeId} />
+            }
             toolbar={
               <GitHistoryGraphToolbar
                 worktreeId={currentWorktreeId}
                 worktreePath={worktreePath}
                 activeRepoTarget={activeRepoTarget}
                 state={gitHistoryState}
-                trailing={
-                  <GitGraphTabLauncher
-                    workspaceId={tabOwnerId}
-                    repoWorktreeId={currentWorktreeId}
-                  />
-                }
               />
             }
             footer={
