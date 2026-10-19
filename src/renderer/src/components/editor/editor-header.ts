@@ -49,6 +49,15 @@ export function getEditorHeaderCopyState(file: OpenFile): EditorHeaderCopyState 
     }
   }
 
+  if (file.mode === 'git-graph') {
+    return {
+      copyText: null,
+      copyToastLabel: file.relativePath,
+      pathLabel: file.relativePath,
+      pathTitle: file.relativePath
+    }
+  }
+
   const isCombinedDiff =
     file.mode === 'diff' &&
     (file.diffSource === 'combined-all' ||
