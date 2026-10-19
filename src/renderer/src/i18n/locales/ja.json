@@ -14360,7 +14360,11 @@
             "author": "作成者",
             "date": "日付",
             "commit": "コミット",
-            "selectCommit": "コミットを選択すると詳細と変更されたファイルが表示されます。"
+            "selectCommit": "コミットを選択すると詳細と変更されたファイルが表示されます。",
+            "resizeDetails": "コミット詳細の幅を変更",
+            "copyFullSource": "すべての変更ファイルの完全なソースをコピー",
+            "filesInCommits": "変更ファイル ({{files}}) · {{commits}} 件のコミット",
+            "filesChanged": "変更ファイル ({{files}})"
           }
         }
       },
