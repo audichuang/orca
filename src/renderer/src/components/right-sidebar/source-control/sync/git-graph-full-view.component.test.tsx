@@ -9,6 +9,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
+import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
 
 const mocks = vi.hoisted(() => ({ getRuntimeGitHistory: vi.fn() }))
 vi.mock('@/runtime/runtime-git-status-client', () => ({
@@ -61,8 +62,10 @@ const FILE: GitBranchChangeEntry = { path: 'src/app.ts', status: 'modified' }
 function Harness({
   onOpenCommitFile,
   onLoadCommitFiles,
-  renderCommitFilesMenu
+  renderCommitFilesMenu,
+  onCommitAction
 }: {
+  onCommitAction?: GitHistoryCommitActionHandler
   onOpenCommitFile: () => void
   onLoadCommitFiles: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
   renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
@@ -105,6 +108,7 @@ function Harness({
             onLoadCommitFiles={onLoadCommitFiles}
             onOpenCommitFile={onOpenCommitFile}
             renderCommitFilesMenu={renderCommitFilesMenu}
+            onCommitAction={onCommitAction}
           />
         </section>
       )}
@@ -241,6 +245,108 @@ describe('full-width Git Graph', () => {
     const rows = await within(view).findAllByTestId('git-graph-full-row')
     expect(rows[1]).toHaveAttribute('data-selected', 'true')
     expect(await within(view).findByText('Bravo', { selector: 'p' })).toBeInTheDocument()
+  })
+
+  it('remounting the view keeps a multi-commit selection', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    let view = await screen.findByRole('region', { name: 'Git Graph' })
+    let rows = await within(view).findAllByTestId('git-graph-full-row')
+    fireEvent.click(rows[0]!)
+    fireEvent.click(rows[1]!, { metaKey: true, ctrlKey: true })
+    expect(await within(view).findByText('Changed files (1) · 2 commits')).toBeInTheDocument()
+    // Opening a diff makes the tab inactive, which unmounts the view.
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    expect(screen.queryByRole('region', { name: 'Git Graph' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    view = await screen.findByRole('region', { name: 'Git Graph' })
+    rows = await within(view).findAllByTestId('git-graph-full-row')
+    expect(rows[0]).toHaveAttribute('data-selected', 'true')
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+    expect(await within(view).findByText('Changed files (1) · 2 commits')).toBeInTheDocument()
+    // The range anchor survives too: Shift-click ranges from the last Cmd/Ctrl-clicked commit.
+    fireEvent.click(rows[0]!, { shiftKey: true })
+    expect(rows[0]).toHaveAttribute('data-selected', 'true')
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+  })
+
+  it('a selection the user emptied stays empty after a remount', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    let view = await screen.findByRole('region', { name: 'Git Graph' })
+    let rows = await within(view).findAllByTestId('git-graph-full-row')
+    fireEvent.click(rows[0]!)
+    fireEvent.click(rows[1]!, { metaKey: true, ctrlKey: true })
+    fireEvent.click(rows[0]!, { metaKey: true, ctrlKey: true })
+    fireEvent.click(rows[1]!, { metaKey: true, ctrlKey: true })
+    expect(rows[0]).not.toHaveAttribute('data-selected', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    expect(screen.queryByRole('region', { name: 'Git Graph' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    view = await screen.findByRole('region', { name: 'Git Graph' })
+    rows = await within(view).findAllByTestId('git-graph-full-row')
+    for (const row of rows) {
+      expect(row).not.toHaveAttribute('data-selected', 'true')
+    }
+  })
+
+  it('right-clicking a row inside the selection offers the commit menu for all selected', async () => {
+    const onCommitAction = vi.fn()
+    render(
+      <Harness
+        onOpenCommitFile={vi.fn()}
+        onLoadCommitFiles={vi.fn(async () => [FILE])}
+        onCommitAction={onCommitAction}
+      />
+    )
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const view = await screen.findByRole('region', { name: 'Git Graph' })
+    const rows = await within(view).findAllByTestId('git-graph-full-row')
+    fireEvent.click(rows[0]!)
+    fireEvent.click(rows[1]!, { metaKey: true, ctrlKey: true })
+    fireEvent.contextMenu(rows[1]!)
+    const item = await screen.findByRole('menuitem', { name: 'Copy Full Source (2 commits)' })
+    // Menu keys bubble to the list through React's tree; they must not move the selection.
+    for (const key of ['ArrowDown', 'End', 'Home']) {
+      fireEvent.keyDown(item, { key })
+    }
+    expect(rows[0]).toHaveAttribute('data-selected', 'true')
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+    fireEvent.click(item)
+    const [action, target, selected] = onCommitAction.mock.calls[0] ?? []
+    expect(action).toBe('copy-full-source')
+    expect(target?.id).toBe(PARENT.id)
+    expect(selected?.map((item: GitHistoryItem) => item.id)).toEqual([TIP.id, PARENT.id])
+  })
+
+  it('header and rows show the same columns at a narrow list width', async () => {
+    const rect = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue(new DOMRect(0, 0, 500, 24))
+    try {
+      render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+      await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+      fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+      const view = await screen.findByRole('region', { name: 'Git Graph' })
+      const rows = await within(view).findAllByTestId('git-graph-full-row')
+      const colsOf = (el: Element): string[] =>
+        Array.from(el.querySelectorAll(':scope > [data-col]')).map(
+          (cell) => cell.getAttribute('data-col') ?? ''
+        )
+      const header = view.querySelector<HTMLElement>('[data-git-graph-header]')!
+      expect(colsOf(header)).toEqual(['graph', 'message', 'date'])
+      for (const row of rows) {
+        expect(colsOf(row)).toEqual(colsOf(header))
+        expect(row.style.gridTemplateColumns).toBe(header.style.gridTemplateColumns)
+      }
+    } finally {
+      rect.mockRestore()
+    }
   })
 
   it('focuses the commit list on open; arrows move the selection and Shift+Arrow extends it', async () => {
