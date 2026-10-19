@@ -1,7 +1,13 @@
 // Fork-only: content rules every ClipCode copy shares (binary, non-UTF-8, size cap).
 import { getUtf8ByteLength, measureUtf8ByteLength } from '../../../../../../shared/utf8-byte-limits'
 import type { GitDiffResult } from '../../../../../../shared/git-diff-compare-types'
-import type { ChangeTypeLabel, PayloadFile } from './clipcode-clipboard-format'
+import {
+  CLIPCODE_DEFAULTS,
+  formatHeader,
+  parseClipboard,
+  type ChangeTypeLabel,
+  type PayloadFile
+} from './clipcode-clipboard-format'
 
 export type ClipcodeReadContent = { text: string } | { skippedReason: string }
 
@@ -9,6 +15,8 @@ export type ClipcodeEntryVerdict =
   | { kind: 'file'; file: PayloadFile; sizeSkipped: boolean }
   | { kind: 'binary' }
   | { kind: 'unreadable' }
+  /** The file name would not parse back as itself (e.g. `[DELETED] x`, a newline), so restore could act on another path. */
+  | { kind: 'unsafePath' }
 
 /**
  * True when an empty modified side is a failed read, not an empty file.
@@ -27,12 +35,32 @@ export function isUnreadableModifiedSide(diff: GitDiffResult): boolean {
   return diff.originalContent === '' && !diff.originalIsBinary
 }
 
+/** True when this path's header parses back to exactly this path and change label. */
+export function clipcodeHeaderRoundTrips(
+  path: string,
+  changeType: ChangeTypeLabel | undefined
+): boolean {
+  const { headerFormat } = CLIPCODE_DEFAULTS
+  const parsed = parseClipboard(formatHeader(headerFormat, path, changeType), headerFormat)
+  const labels = parsed[0]?.changeTypes
+  return (
+    parsed.length === 1 &&
+    parsed[0].path === path &&
+    labels?.size === (changeType ? 1 : 0) &&
+    (!changeType || labels.has(changeType))
+  )
+}
+
 export function classifyClipcodeEntryContent(
   path: string,
-  changeType: ChangeTypeLabel,
+  /** Undefined for a plain file copy, which carries no change label. */
+  changeType: ChangeTypeLabel | undefined,
   content: ClipcodeReadContent,
   maxBytes: number
 ): ClipcodeEntryVerdict {
+  if (!clipcodeHeaderRoundTrips(path, changeType)) {
+    return { kind: 'unsafePath' }
+  }
   if ('skippedReason' in content) {
     return {
       kind: 'file',

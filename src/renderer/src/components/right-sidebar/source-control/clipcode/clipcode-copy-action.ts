@@ -2,15 +2,21 @@ import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { getConnectionId } from '@/lib/connection-context'
 import { readIpcErrorMessage } from '@/lib/ipc-error'
-import { joinPath } from '@/lib/path'
+import { getRelativePathInsideRoot, joinPath } from '@/lib/path'
 import { getRuntimeGitCommitDiff, getRuntimeGitDiff } from '@/runtime/runtime-git-diff-client'
 import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
 import { readRuntimeFileContent } from '@/runtime/runtime-file-read-client'
+import { readRuntimeDirectory } from '@/runtime/runtime-file-mutation-client'
 import { useAppStore } from '@/store'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { getWorktreeGitOwnerTarget, requireGitOwnerTarget } from '../../worktree-git-owner-target'
+import {
+  getFileExplorerOperationOwner,
+  getFileExplorerOperationRoute,
+  getFileExplorerOwnerUnresolvedMessage
+} from '../../file-explorer-operation-owner'
 import {
   buildClipcodeGitCopy,
   type ClipcodeContentReaders,
@@ -26,6 +32,7 @@ import {
   payloadStats
 } from './clipcode-payload-stats'
 import { svgPreviewText } from './clipcode-svg-text'
+import { buildClipcodeExplorerCopy, type ClipcodeExplorerTarget } from './clipcode-explorer-copy'
 
 export type ClipcodeCopyRequest = {
   worktree: Pick<Worktree, 'id' | 'path'>
@@ -54,21 +61,26 @@ export function getClipcodeRootPath(editorWorktreeId: string | null, worktreePat
   return folder?.folderPath ?? worktreePath
 }
 
+async function readClipcodeFile(
+  context: RuntimeGitContext,
+  relativePath: string
+): Promise<{ content: string; isBinary: boolean }> {
+  const file = await readRuntimeFileContent({
+    target: context.target,
+    filePath: joinPath(context.worktreePath, relativePath),
+    relativePath,
+    worktreeId: context.worktreeId ?? undefined,
+    connectionId: context.connectionId
+  })
+  const svgText = svgPreviewText(file)
+  return svgText === null
+    ? { content: file.content, isBinary: file.isBinary }
+    : { content: svgText, isBinary: false }
+}
+
 export const clipcodeRuntimeReaders: ClipcodeContentReaders = {
   readDiff: getRuntimeGitDiff,
-  readWorkingFile: async (context, relativePath) => {
-    const file = await readRuntimeFileContent({
-      target: context.target,
-      filePath: joinPath(context.worktreePath, relativePath),
-      relativePath,
-      worktreeId: context.worktreeId ?? undefined,
-      connectionId: context.connectionId
-    })
-    const svgText = svgPreviewText(file)
-    return svgText === null
-      ? { content: file.content, isBinary: file.isBinary }
-      : { content: svgText, isBinary: false }
-  }
+  readWorkingFile: readClipcodeFile
 }
 
 function notifyCopied(message: string, payload: string): void {
@@ -120,31 +132,51 @@ export async function copyClipcodeGitChanges(args: {
 }
 
 /** Clipboard write plus the shared toast wording, so every Copy Full Source source reports alike. */
-async function reportClipcodeCopyResult(result: ClipcodeGitCopyResult): Promise<void> {
+async function reportClipcodeCopyResult(
+  result: ClipcodeGitCopyResult,
+  source: 'git' | 'files' = 'git'
+): Promise<void> {
   if (result.entryCount === 0 && result.unreadableFileCount > 0) {
     toast.error(
-      translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.9c3f952874',
-        '{{value0}} Git file(s) could not be read.',
-        {
-          value0: result.unreadableFileCount
-        }
-      )
+      source === 'git'
+        ? translate(
+            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.9c3f952874',
+            '{{value0}} Git file(s) could not be read.',
+            {
+              value0: result.unreadableFileCount
+            }
+          )
+        : translate(
+            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.filesUnreadable',
+            '{{value0}} file(s) could not be read.',
+            { value0: result.unreadableFileCount }
+          )
     )
     return
   }
   if (result.entryCount === 0) {
     toast.warning(
-      result.skippedBinaryFileCount > 0
+      result.skippedUnsafePathCount > 0
         ? translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyBinarySkipped',
-            'Nothing to copy: {{value0}} binary file(s) skipped.',
-            { value0: result.skippedBinaryFileCount }
+            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyUnsafeNamesSkipped',
+            'Nothing to copy: {{value0}} file(s) skipped because their names cannot be restored safely.',
+            { value0: result.skippedUnsafePathCount }
           )
-        : translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
-            'No Git changes found to copy.'
-          )
+        : result.skippedBinaryFileCount > 0
+          ? translate(
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyBinarySkipped',
+              'Nothing to copy: {{value0}} binary file(s) skipped.',
+              { value0: result.skippedBinaryFileCount }
+            )
+          : source === 'git'
+            ? translate(
+                'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
+                'No Git changes found to copy.'
+              )
+            : translate(
+                'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.noFiles',
+                'No files found to copy.'
+              )
     )
     return
   }
@@ -173,14 +205,27 @@ async function reportClipcodeCopyResult(result: ClipcodeGitCopyResult): Promise<
           { value0: result.skippedBinaryFileCount }
         )}`
       : ''
-  notifyCopied(
-    `${translate(
-      'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.65b422bbd1',
-      '{{value0}} Git file(s) copied',
-      { value0: result.copiedFileCount }
-    )}${skipped}${binary}${unreadable}.`,
-    result.payload
-  )
+  const unsafe =
+    result.skippedUnsafePathCount > 0
+      ? ` ${translate(
+          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.unsafeNamesSkipped',
+          '({{value0}} skipped: unsafe file name)',
+          { value0: result.skippedUnsafePathCount }
+        )}`
+      : ''
+  const copied =
+    source === 'git'
+      ? translate(
+          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.65b422bbd1',
+          '{{value0}} Git file(s) copied',
+          { value0: result.copiedFileCount }
+        )
+      : translate(
+          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.filesCopied',
+          '{{value0}} file(s) copied',
+          { value0: result.copiedFileCount }
+        )
+  notifyCopied(`${copied}${skipped}${binary}${unsafe}${unreadable}.`, result.payload)
 }
 
 function notifyCopyFailed(error: unknown): void {
@@ -209,6 +254,54 @@ export async function copyClipcodeCommitChanges(args: {
       readers: { readCommitDiff: getRuntimeGitCommitDiff }
     })
     await reportClipcodeCopyResult(result)
+  } catch (error) {
+    notifyCopyFailed(error)
+  }
+}
+
+/** ClipCode "Copy to Clipboard" for the active workspace's explorer rows; folders are copied recursively. */
+export async function copyClipcodeExplorerTargets(args: {
+  worktreePath: string
+  targets: readonly ClipcodeExplorerTarget[]
+}): Promise<void> {
+  try {
+    const { worktreePath } = args
+    const worktreeId = useAppStore.getState().activeWorktreeId
+    if (!worktreeId) {
+      throw new Error(getFileExplorerOwnerUnresolvedMessage())
+    }
+    // Why: resolve the owner once so every directory walk and read of this copy lands on one host.
+    const route = getFileExplorerOperationRoute(getFileExplorerOperationOwner(worktreeId))
+    if (!route) {
+      throw new Error(getFileExplorerOwnerUnresolvedMessage())
+    }
+    const context: RuntimeGitContext = {
+      target: route.target,
+      worktreeId,
+      worktreePath,
+      connectionId: route.connectionId
+    }
+    const followSymlinks = useAppStore.getState().settings?.followSymlinkedDirectories === true
+    const result = await buildClipcodeExplorerCopy({
+      rootPath: worktreePath,
+      targets: args.targets,
+      readers: {
+        readDir: (absolutePath) =>
+          readRuntimeDirectory(
+            context,
+            absolutePath,
+            followSymlinks ? { followSymlinks: true } : undefined
+          ),
+        readFile: async (absolutePath) => {
+          const relativePath = getRelativePathInsideRoot(absolutePath, worktreePath)
+          if (relativePath === null) {
+            throw new Error('File is outside the workspace')
+          }
+          return readClipcodeFile(context, relativePath)
+        }
+      }
+    })
+    await reportClipcodeCopyResult(result, 'files')
   } catch (error) {
     notifyCopyFailed(error)
   }

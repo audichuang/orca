@@ -431,6 +431,7 @@ describe('buildClipcodeGitCopy', () => {
       skippedFileSizeCount: 0,
       unreadableFileCount: 0,
       skippedBinaryFileCount: 0,
+      skippedUnsafePathCount: 0,
       entryCount: 0
     })
   })
@@ -455,5 +456,18 @@ describe('buildClipcodeGitCopy', () => {
     expect(result.skippedBinaryFileCount).toBe(1)
     expect(result.payload).toContain('a/doc.pdf')
     expect(result.payload).not.toContain('a/logo.png')
+  })
+})
+
+describe('buildClipcodeGitCopy unsafe file names', () => {
+  it('skips a changed file whose name would parse as a [DELETED] header for another path', async () => {
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f', [modified('[DELETED] victim.ts'), modified('ok.ts')])],
+      readers: makeReaders()
+    })
+    expect(result).toMatchObject({ skippedUnsafePathCount: 1, copiedFileCount: 1 })
+    expect(result.payload).not.toContain('victim.ts')
+    expect(result.payload).toContain('// file: [MODIFIED] ok.ts')
   })
 })

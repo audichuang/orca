@@ -27,7 +27,8 @@ vi.mock('../listing/entry-context-menu', () => ({
 }))
 vi.mock('./git-history-commit-copy', () => ({ copyHistoryCommitsFullSource: mocks.copy }))
 
-const { GitHistoryCommitFilesMenu } = await import('./git-history-commit-files-menu')
+const { GitHistoryCommitFilesMenu, commitFilesMenuSlot } =
+  await import('./git-history-commit-files-menu')
 const { GitHistoryPanel } = await import('./git-history-panel')
 
 const item: GitHistoryItem = {
@@ -39,8 +40,42 @@ const item: GitHistoryItem = {
 }
 const entries: GitBranchChangeEntry[] = [
   { path: 'src/one.ts', status: 'modified' },
-  { path: 'src/two.ts', status: 'added' }
+  { path: 'src/two.ts', status: 'added' },
+  { path: 'src/three.ts', status: 'deleted' }
 ]
+
+const defaultModel = {
+  activeConnectionId: null,
+  activeRepoTarget: { kind: 'local' as const },
+  editorWorktreeId: 'folder-1',
+  revealInExplorer: vi.fn()
+}
+
+function renderMenu(model = defaultModel, onOpenFile = vi.fn()): void {
+  render(
+    <GitHistoryCommitFilesMenu
+      {...{ model, item, entries, onOpenFile }}
+      worktreeId="repo-wt"
+      worktreePath="/repo"
+      renderList={(selectedPaths) => (
+        <div>
+          {entries.map((entry) => (
+            <button
+              key={entry.path}
+              type="button"
+              data-commit-file-path={entry.path}
+              data-selected={selectedPaths.has(entry.path) || undefined}
+              onClick={() => onOpenFile(entry)}
+            >
+              <span>{entry.path}</span>
+            </button>
+          ))}
+          <span>Open all</span>
+        </div>
+      )}
+    />
+  )
+}
 
 afterEach(() => {
   cleanup()
@@ -57,22 +92,7 @@ describe('GitHistoryCommitFilesMenu', () => {
       editorWorktreeId: 'folder-1',
       revealInExplorer: vi.fn()
     }
-    render(
-      <GitHistoryCommitFilesMenu
-        {...{ model, item, entries, onOpenFile }}
-        worktreeId="repo-wt"
-        worktreePath="/repo"
-      >
-        <div>
-          {entries.map((entry) => (
-            <button key={entry.path} type="button" data-commit-file-path={entry.path}>
-              <span>{entry.path}</span>
-            </button>
-          ))}
-          <span>Open all</span>
-        </div>
-      </GitHistoryCommitFilesMenu>
-    )
+    renderMenu(model, onOpenFile)
 
     // A prevented contextmenu is what keeps Radix from opening an all-disabled menu.
     expect(fireEvent.contextMenu(screen.getByText('Open all'))).toBe(false)
@@ -94,6 +114,79 @@ describe('GitHistoryCommitFilesMenu', () => {
     await expect(args.loadCommitFiles(item)).resolves.toEqual([entries[1]])
   })
 
+  it('Cmd/Ctrl-click builds a selection without opening, and Copy Full Source copies all of it', async () => {
+    const onOpenFile = vi.fn()
+    renderMenu(defaultModel, onOpenFile)
+    // Both modifiers so the test holds on every platform's Cmd-or-Ctrl key.
+    fireEvent.click(screen.getByText('src/one.ts'), { metaKey: true, ctrlKey: true })
+    fireEvent.click(screen.getByText('src/three.ts'), { metaKey: true, ctrlKey: true })
+    expect(onOpenFile).not.toHaveBeenCalled()
+    const selected = [...document.querySelectorAll('[data-selected]')].map((el) =>
+      el.getAttribute('data-commit-file-path')
+    )
+    expect(selected).toEqual(['src/one.ts', 'src/three.ts'])
+
+    fireEvent.contextMenu(screen.getByText('src/three.ts'))
+    mocks.menuProps?.onCopyFullSource?.()
+    const args = mocks.copy.mock.calls[0]?.[0]
+    await expect(args.loadCommitFiles(item)).resolves.toEqual([entries[0], entries[2]])
+  })
+
+  it('Shift-click selects the range from the last plain-clicked file', () => {
+    const onOpenFile = vi.fn()
+    renderMenu(defaultModel, onOpenFile)
+    fireEvent.click(screen.getByText('src/one.ts'))
+    fireEvent.click(screen.getByText('src/three.ts'), { shiftKey: true })
+    expect(onOpenFile).toHaveBeenCalledTimes(1)
+    expect(document.querySelectorAll('[data-selected]')).toHaveLength(3)
+
+    // A plain click drops the bulk selection and opens the row as before.
+    fireEvent.click(screen.getByText('src/two.ts'))
+    expect(onOpenFile).toHaveBeenCalledTimes(2)
+    expect(document.querySelectorAll('[data-selected]')).toHaveLength(0)
+  })
+
+  it('right-click outside the selection copies only that file', async () => {
+    renderMenu()
+    fireEvent.click(screen.getByText('src/one.ts'), { metaKey: true, ctrlKey: true })
+    fireEvent.contextMenu(screen.getByText('src/two.ts'))
+    mocks.menuProps?.onCopyFullSource?.()
+    const args = mocks.copy.mock.calls[0]?.[0]
+    await expect(args.loadCommitFiles(item)).resolves.toEqual([entries[1]])
+  })
+
+  it('drops the selection when the same pane switches to another commit', async () => {
+    const slot = commitFilesMenuSlot(defaultModel, 'repo-wt', '/repo')
+    const other: GitHistoryItem = { ...item, id: 'b'.repeat(40), displayId: 'bbbbbbb' }
+    const list = (selectedPaths: ReadonlySet<string>): React.JSX.Element => (
+      <div>
+        {entries.map((entry) => (
+          <button
+            key={entry.path}
+            type="button"
+            data-commit-file-path={entry.path}
+            data-selected={selectedPaths.has(entry.path) || undefined}
+          >
+            {entry.path}
+          </button>
+        ))}
+      </div>
+    )
+    // Same position, new commit: what the full graph's single details pane does.
+    const { rerender } = render(<>{slot(item, entries, vi.fn(), list)}</>)
+    fireEvent.click(screen.getByText('src/one.ts'), { metaKey: true, ctrlKey: true })
+    fireEvent.click(screen.getByText('src/two.ts'), { metaKey: true, ctrlKey: true })
+    expect(document.querySelectorAll('[data-selected]')).toHaveLength(2)
+
+    rerender(<>{slot(other, entries, vi.fn(), list)}</>)
+    expect(document.querySelectorAll('[data-selected]')).toHaveLength(0)
+    fireEvent.contextMenu(screen.getByText('src/two.ts'))
+    mocks.menuProps?.onCopyFullSource?.()
+    const args = mocks.copy.mock.calls[0]?.[0]
+    expect(args.items).toEqual([other])
+    await expect(args.loadCommitFiles(other)).resolves.toEqual([entries[1]])
+  })
+
   it('is fed by the upstream Commits panel when a commit expands', async () => {
     const result: GitHistoryResult = {
       items: [item],
@@ -107,8 +200,8 @@ describe('GitHistoryCommitFilesMenu', () => {
         _item: GitHistoryItem,
         _entries: readonly GitBranchChangeEntry[],
         _open: unknown,
-        list: React.JSX.Element
-      ) => list
+        renderList: (selectedPaths: ReadonlySet<string>) => React.JSX.Element
+      ) => renderList(new Set(['src/two.ts']))
     )
     render(
       <TooltipProvider>
@@ -132,6 +225,9 @@ describe('GitHistoryCommitFilesMenu', () => {
       expect.any(Function),
       expect.anything()
     )
-    expect(document.querySelector('[data-commit-file-path="src/two.ts"]')).not.toBeNull()
+    expect(
+      document.querySelector('[data-commit-file-path="src/two.ts"][data-selected]')
+    ).not.toBeNull()
+    expect(document.querySelector('[data-commit-file-path="src/one.ts"][data-selected]')).toBeNull()
   })
 })
