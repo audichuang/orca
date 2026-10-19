@@ -13,6 +13,36 @@ type StatusSnapshot = ReturnType<
 >
 let statusSnapshot: StatusSnapshot | undefined
 let resetStatusSnapshot: StatusSnapshot | undefined
+const pendingRealTimerClears = new Set<() => void>()
+
+// Why: vi.resetModules() does not stop real timers, so an undisposed session's retry/poll loops
+// would otherwise fire into the next test's rAF/setTimeout stubs. Wrapped at load (before any
+// test fakes timers) and once per worker, since mock factories re-import this module.
+if (!('clearsTestScopedTimers' in globalThis.setTimeout)) {
+  const realSetTimeout = globalThis.setTimeout
+  const realSetInterval = globalThis.setInterval
+  globalThis.setTimeout = Object.assign(
+    (...args: Parameters<typeof realSetTimeout>) => {
+      const handle = realSetTimeout(...args)
+      pendingRealTimerClears.add(() => clearTimeout(handle))
+      return handle
+    },
+    realSetTimeout,
+    { clearsTestScopedTimers: true }
+  )
+  globalThis.setInterval = Object.assign((...args: Parameters<typeof realSetInterval>) => {
+    const handle = realSetInterval(...args)
+    pendingRealTimerClears.add(() => clearInterval(handle))
+    return handle
+  }, realSetInterval)
+}
+
+function clearTrackedRealTimers(): void {
+  for (const clear of pendingRealTimerClears) {
+    clear()
+  }
+  pendingRealTimerClears.clear()
+}
 
 export function buildAgentStatusModuleMock(
   actual: Record<string, unknown>
@@ -128,6 +158,7 @@ export async function restoreTerminalTestGlobals(): Promise<void> {
     cancelPendingSafeFitContinuations(pane as unknown as ManagedPane)
   }
   await flushAsyncTicks(20)
+  clearTrackedRealTimers()
   statusSnapshot?.dispose()
   resetStatusSnapshot?.dispose()
   statusSnapshot = undefined
