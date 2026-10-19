@@ -156,21 +156,27 @@ async function reportClipcodeCopyResult(
   }
   if (result.entryCount === 0) {
     toast.warning(
-      result.skippedBinaryFileCount > 0
+      result.skippedUnsafePathCount > 0
         ? translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyBinarySkipped',
-            'Nothing to copy: {{value0}} binary file(s) skipped.',
-            { value0: result.skippedBinaryFileCount }
+            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyUnsafeNamesSkipped',
+            'Nothing to copy: {{value0}} file(s) skipped because their names cannot be restored safely.',
+            { value0: result.skippedUnsafePathCount }
           )
-        : source === 'git'
+        : result.skippedBinaryFileCount > 0
           ? translate(
-              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
-              'No Git changes found to copy.'
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyBinarySkipped',
+              'Nothing to copy: {{value0}} binary file(s) skipped.',
+              { value0: result.skippedBinaryFileCount }
             )
-          : translate(
-              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.noFiles',
-              'No files found to copy.'
-            )
+          : source === 'git'
+            ? translate(
+                'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
+                'No Git changes found to copy.'
+              )
+            : translate(
+                'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.noFiles',
+                'No files found to copy.'
+              )
     )
     return
   }
@@ -199,6 +205,14 @@ async function reportClipcodeCopyResult(
           { value0: result.skippedBinaryFileCount }
         )}`
       : ''
+  const unsafe =
+    result.skippedUnsafePathCount > 0
+      ? ` ${translate(
+          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.unsafeNamesSkipped',
+          '({{value0}} skipped: unsafe file name)',
+          { value0: result.skippedUnsafePathCount }
+        )}`
+      : ''
   const copied =
     source === 'git'
       ? translate(
@@ -211,7 +225,7 @@ async function reportClipcodeCopyResult(
           '{{value0}} file(s) copied',
           { value0: result.copiedFileCount }
         )
-  notifyCopied(`${copied}${skipped}${binary}${unreadable}.`, result.payload)
+  notifyCopied(`${copied}${skipped}${binary}${unsafe}${unreadable}.`, result.payload)
 }
 
 function notifyCopyFailed(error: unknown): void {

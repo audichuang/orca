@@ -165,6 +165,7 @@ export async function buildClipcodeCommitCopy(args: {
   let skippedFileSizeCount = 0
   let unreadableFileCount = 0
   let skippedBinaryFileCount = 0
+  let skippedUnsafePathCount = 0
   planned.forEach((item, index) => {
     const content = contents[index]
     const verdict =
@@ -177,6 +178,8 @@ export async function buildClipcodeCommitCopy(args: {
       skippedBinaryFileCount++
     } else if (verdict.kind === 'unreadable') {
       unreadableFileCount++
+    } else if (verdict.kind === 'unsafePath') {
+      skippedUnsafePathCount++
     } else {
       skippedFileSizeCount += verdict.sizeSkipped ? 1 : 0
       files.push(verdict.file)
@@ -193,6 +196,7 @@ export async function buildClipcodeCommitCopy(args: {
     skippedFileSizeCount,
     unreadableFileCount,
     skippedBinaryFileCount,
+    skippedUnsafePathCount,
     entryCount: files.length
   }
 }
