@@ -14668,6 +14668,7 @@
             "parents": "부모 커밋",
             "refs": "참조",
             "containedIn": "포함된 브랜치",
+            "containedInHint": "불러온 목록에 끝 커밋이 있는 브랜치만 표시하며, 목록 밖의 브랜치는 포함되지 않습니다.",
             "moreBranches": "외 {{count}}개"
           }
         }
