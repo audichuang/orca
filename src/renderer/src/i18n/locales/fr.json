@@ -17377,7 +17377,10 @@
                 "removeWorktree": "retirer le worktree",
                 "trashWorktree": "mettre le worktree à la corbeille",
                 "addQuickCommand": "ajouter une commande rapide",
-                "newQuickCommand": "nouvelle commande rapide"
+                "newQuickCommand": "nouvelle commande rapide",
+                "openGitGraph": "ouvrir git graph",
+                "gitLog": "journal git",
+                "commitHistory": "historique des commits"
               }
             }
           },
@@ -19223,6 +19226,13 @@
         "setting-global-off": "La confiance des dossiers est désactivée dans les paramètres Agents : les agents posent donc toujours la question.",
         "keyword-trust": "confiance",
         "keyword-hooks": "hooks"
+      },
+      "gitGraphTab": {
+        "noRepo": "Aucun dépôt Git n’est disponible pour cet espace de travail.",
+        "repoSwitcher": "Dépôt",
+        "selectRepo": "Sélectionner un dépôt",
+        "searchRepos": "Rechercher des dépôts...",
+        "noRepos": "Aucun dépôt trouvé."
       }
     },
     "i18n": {
