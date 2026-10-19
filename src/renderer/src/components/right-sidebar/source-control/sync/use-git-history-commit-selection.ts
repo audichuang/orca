@@ -13,58 +13,123 @@ function isMacPlatform(): boolean {
   return navigator.userAgent.includes('Mac')
 }
 
+export type CommitClickModifiers = Pick<MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey'>
+
 export type GitHistoryCommitSelection = {
   isSelected: (id: string) => boolean
   /** Returns true when the click was a selection gesture, so the row must not also expand. */
-  handleRowClick: (item: GitHistoryItem, event: MouseEvent) => boolean
+  /**
+   * `fallbackAnchorId`: the commit the caller shows as selected when no click in this hook has
+   * (a restored selection); it anchors a Shift range and joins a Cmd/Ctrl-click.
+   */
+  handleRowClick: (
+    item: GitHistoryItem,
+    event: CommitClickModifiers,
+    fallbackAnchorId?: string | null
+  ) => boolean
   /** The selection when it covers the right-clicked commit, else just that commit. */
   itemsFor: (item: GitHistoryItem) => GitHistoryItem[]
+  /** Explicitly selected commits in graph order; empty after a plain click. */
+  selectedItems: readonly GitHistoryItem[]
+}
+
+type SelectionState = {
+  result: GitHistoryResult | undefined
+  ownerKey: string | undefined
+  ids: string[]
+  anchor: string | null
+  /** Row of the last plain click; a following Cmd/Ctrl-click folds it in (same as the file list). */
+  plainClicked: string | null
+}
+
+function emptySelection(
+  result: GitHistoryResult | undefined,
+  ownerKey: string | undefined
+): SelectionState {
+  return { result, ownerKey, ids: [], anchor: null, plainClicked: null }
+}
+
+/** The selection limited to commits `result` still lists. */
+function reconcileSelection(
+  selection: SelectionState,
+  result: GitHistoryResult | undefined
+): SelectionState {
+  const listed = new Set((result?.items ?? []).map((item) => item.id))
+  const keep = (id: string | null): string | null => (id !== null && listed.has(id) ? id : null)
+  return {
+    result,
+    ownerKey: selection.ownerKey,
+    ids: selection.ids.filter((id) => listed.has(id)),
+    anchor: keep(selection.anchor),
+    plainClicked: keep(selection.plainClicked)
+  }
 }
 
 export function useGitHistoryCommitSelection(
-  result: GitHistoryResult | undefined
+  result: GitHistoryResult | undefined,
+  options?: {
+    /**
+     * Keep commits a new result still lists (refresh, branch filter) instead of starting over.
+     * `ownerKey` names the repo owner; a different owner always starts over.
+     */
+    retainAcrossResults?: { ownerKey: string }
+  }
 ): GitHistoryCommitSelection {
-  const [selection, setSelection] = useState<{
-    result: GitHistoryResult | undefined
-    ids: string[]
-    anchor: string | null
-  }>({ result, ids: [], anchor: null })
-  // Why: a new result can reorder or drop commits, so a stale selection must not survive it.
-  const current = useMemo(
-    () => (selection.result === result ? selection : { result, ids: [], anchor: null }),
-    [result, selection]
-  )
+  const ownerKey = options?.retainAcrossResults?.ownerKey
+  const [selection, setSelection] = useState<SelectionState>(() => emptySelection(result, ownerKey))
+  // Why: a new result can reorder or drop commits, so a stale selection must not survive it as is.
+  // A retained selection is pruned and stored, so a commit that disappears stays deselected.
+  let current = selection
+  if (selection.result !== result || selection.ownerKey !== ownerKey) {
+    current =
+      ownerKey !== undefined && selection.ownerKey === ownerKey
+        ? reconcileSelection(selection, result)
+        : emptySelection(result, ownerKey)
+    setSelection(current)
+  }
 
   const handleRowClick = useCallback(
-    (item: GitHistoryItem, event: MouseEvent): boolean => {
+    (
+      item: GitHistoryItem,
+      event: CommitClickModifiers,
+      fallbackAnchorId?: string | null
+    ): boolean => {
       const items = result?.items ?? []
       const toggle = isMacPlatform() ? event.metaKey : event.ctrlKey
-      if (event.shiftKey && current.anchor) {
-        const from = items.findIndex((candidate) => candidate.id === current.anchor)
+      const anchor = current.anchor ?? fallbackAnchorId ?? null
+      if (event.shiftKey && anchor) {
+        const from = items.findIndex((candidate) => candidate.id === anchor)
         const to = items.findIndex((candidate) => candidate.id === item.id)
         if (from !== -1 && to !== -1) {
           const [start, end] = from < to ? [from, to] : [to, from]
           setSelection({
             result,
+            ownerKey,
             ids: items.slice(start, end + 1).map((candidate) => candidate.id),
-            anchor: current.anchor
+            anchor,
+            plainClicked: null
           })
           return true
         }
       }
       if (toggle) {
-        const ids = current.ids.includes(item.id)
-          ? current.ids.filter((id) => id !== item.id)
-          : [...current.ids, item.id]
-        setSelection({ result, ids, anchor: item.id })
+        // Why: Cmd/Ctrl-click right after a plain click (or onto a restored selection) selects both,
+        // like IntelliJ's log.
+        const seed = current.plainClicked ?? fallbackAnchorId ?? null
+        // Cmd/Ctrl-clicking that same row deselects it: the toggle below removes it from the seed.
+        const base = current.ids.length === 0 && seed ? [seed] : current.ids
+        const ids = base.includes(item.id)
+          ? base.filter((id) => id !== item.id)
+          : [...base, item.id]
+        setSelection({ result, ownerKey, ids, anchor: item.id, plainClicked: null })
         return true
       }
-      if (current.ids.length > 0 || current.anchor !== item.id) {
-        setSelection({ result, ids: [], anchor: item.id })
+      if (current.ids.length > 0 || current.plainClicked !== item.id) {
+        setSelection({ result, ownerKey, ids: [], anchor: item.id, plainClicked: item.id })
       }
       return false
     },
-    [current, result]
+    [current, ownerKey, result]
   )
 
   // Why precomputed: every row asks on each render, and a Shift range can cover a thousand commits.
@@ -80,5 +145,5 @@ export function useGitHistoryCommitSelection(
   )
   const isSelected = useCallback((id: string) => selectedIds.has(id), [selectedIds])
 
-  return { isSelected, handleRowClick, itemsFor }
+  return { isSelected, handleRowClick, itemsFor, selectedItems }
 }
