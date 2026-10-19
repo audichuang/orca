@@ -14,6 +14,7 @@ import type {
   ConflictReviewState,
   DiffSource,
   OpenCheckRunDetailsState,
+  OpenGitGraphState,
   OpenConflictMetadata
 } from '../../../../../../shared/editor-tab-view-types'
 
@@ -84,6 +85,8 @@ export type OpenFile = {
   fileContentReloadNonce?: number
   /** Why: CI check-details tabs are virtual editor tabs backed by fetched PR check-run metadata, not a file on disk. */
   checkRunDetails?: OpenCheckRunDetailsState
+  /** Fork: the repo a Git Graph tab shows; the tab itself stays owned by `worktreeId`. */
+  gitGraph?: OpenGitGraphState
   // Only host-mirrored tabs may be culled on omission; locally opened tabs survive.
   mirroredFromRuntimeSession?: boolean
   // Read-only is orthogonal to mode: logs cannot edit/autosave/rename; persist only true.
@@ -92,7 +95,7 @@ export type OpenFile = {
   csvPreviewOnly?: boolean
   /** Why: explicit live tail, only meaningful for a read-only local log. */
   liveTail?: boolean
-  mode: 'edit' | 'diff' | 'conflict-review' | 'markdown-preview' | 'check-details'
+  mode: 'edit' | 'diff' | 'conflict-review' | 'markdown-preview' | 'check-details' | 'git-graph'
 }
 
 export type ActivityBarPosition = 'top' | 'side'

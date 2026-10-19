@@ -84,6 +84,11 @@ export type OpenCheckRunDetailsState = {
   gitlabProjectRef?: GitLabProjectRef | null
 }
 
+/** Fork: a Git Graph tab's repo worktree, which may differ from the workspace hosting the tab. */
+export type OpenGitGraphState = {
+  repoWorktreeId: string
+}
+
 /** An editor tab's view, keyed by its mode, with exactly the open-file fields that mode uses today. The view is not saved. */
 export type EditorTabView =
   | { mode: 'edit'; conflict: OpenConflictMetadata }
@@ -107,3 +112,4 @@ export type EditorTabView =
     }
   | { mode: 'conflict-review'; conflictReview?: ConflictReviewState }
   | { mode: 'check-details'; checkRunDetails?: OpenCheckRunDetailsState }
+  | { mode: 'git-graph'; gitGraph?: OpenGitGraphState }
