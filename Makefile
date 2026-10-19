@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-coverage fork-check-tests fork-check-lint fork-base-guard
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-base-guard
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -162,19 +162,6 @@ fork-dmg: computer-use
 
 # Upstream release the fork sits on (fork tags excluded). Override: make fork-check FORK_BASE=v1.4.229
 FORK_BASE ?= $(shell git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' HEAD)
-# Upstream areas the fork edits; their whole suites run because upstream tests there import fork-changed modules.
-FORK_TEST_DIRS := src/renderer/src/components/right-sidebar src/renderer/src/components/editor \
-  src/renderer/src/store/slices/editor src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts \
-  src/shared/workspace-layout src/main/git/source-control src/main/providers src/renderer/src/components/tab-bar \
-  src/shared/git-history src/main/runtime/rpc/methods/git.test.ts src/main/runtime/runtime-git-api-contract.test.ts \
-  src/main/git/history src/renderer/src/components/terminal-pane src/main/ipc/filesystem \
-  src/main/runtime/rpc/methods src/main/runtime/runtime-git-status-admission.test.ts src/renderer/src/runtime \
-  src/renderer/src/web/preload-api src/shared/workspace-session-schema src/renderer/src/components/sidebar \
-  src/main/project-groups src/main/git/status src/main/ipc/pty src/main/runtime/runtime-git src/main/updater src/preload/api/git \
-  src/renderer/src/hooks/editor-external-watch src/renderer/src/hooks/useEditorExternalWatch \
-  src/renderer/src/lib/remap-open-editor-tabs src/renderer/src/lib/workspace-session src/shared/git-diff \
-  src/shared/project-group src/shared/rpc-contract src/shared/workspace-session
-
 # Why the guard: a clone without upstream tags resolves an ancient FORK_BASE and silently runs thousands of unrelated tests.
 FORK_MAX_COMMITS ?= 200
 
@@ -182,10 +169,10 @@ FORK_MAX_COMMITS ?= 200
 FORK_TEST_SHARD ?=
 
 fork-check: export LC_ALL = C
-fork-check: fork-check-coverage fork-check-static-types fork-check-tests fork-check-quality fork-check-lint
+fork-check: fork-check-static-types fork-check-tests fork-check-quality fork-check-lint
 
 fork-check-static: export LC_ALL = C
-fork-check-static: fork-check-coverage fork-check-static-types fork-check-quality fork-check-lint
+fork-check-static: fork-check-static-types fork-check-quality fork-check-lint
 
 fork-base-guard:
 	@echo ">> fork base: $(FORK_BASE)"
@@ -194,13 +181,6 @@ fork-base-guard:
 
 fork-check-static-types: fork-base-guard
 	pnpm tc
-
-# Runs first so a missing FORK_TEST_DIRS entry fails before the long test run, not after it.
-fork-check-coverage: fork-base-guard
-	@# Why: vitest filters by path substring, so an upstream file the fork edits is covered when an entry prefixes its path.
-	@missing=$$(for f in $$(git diff --name-only --diff-filter=M $(FORK_BASE) HEAD -- src | grep -vE '\.test\.tsx?$$|/locales/'); do \
-	  s=$${f%.*}; for d in $(FORK_TEST_DIRS); do case "$$s" in "$${d%.test.ts}"*) continue 2;; esac; done; echo "  $$f"; done); \
-	  if [ -n "$$missing" ]; then echo "fork-check: add these upstream files' paths to FORK_TEST_DIRS:"; echo "$$missing"; exit 1; fi
 
 fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
@@ -217,8 +197,9 @@ fork-check-lint: fork-base-guard
 
 fork-check-tests: export LC_ALL = C
 fork-check-tests: fork-base-guard
-	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) $(FORK_TEST_DIRS) \
-	  $$(git diff --name-only --diff-filter=AM $(FORK_BASE) HEAD | grep -E '\.test\.tsx?$$' | grep -v '^tests/e2e/')
+	@# Why --changed: it follows imports, so upstream tests that use a fork-changed module run too. A package.json or vitest config change runs the whole suite.
+	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) \
+	  --changed $(FORK_BASE) --exclude 'tests/e2e/**'
 
 FORK_REPO ?= audichuang/orca
 # The fork's remote in this clone, whatever it is named (origin on a plain clone of the fork).
@@ -247,7 +228,6 @@ fork-ci-disable-upstream:
 
 fork-check-full: export LC_ALL = C
 fork-check-full: fork-check
-	pnpm exec vitest run --config config/vitest.config.ts --changed $(FORK_BASE)
 	ORCA_BACKGROUND_LAUNCH=1 pnpm run ensure:electron-runtime
 	ORCA_BACKGROUND_LAUNCH=1 npx playwright test tests/e2e/folder-multi-repo-source-control.spec.ts \
 	  --config tests/playwright.config.ts --project=electron-headless --workers=1
