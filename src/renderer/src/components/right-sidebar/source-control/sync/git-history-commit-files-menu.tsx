@@ -130,6 +130,8 @@ export function commitFilesMenuSlot(
 ): NonNullable<GitHistoryPanelSlots['renderCommitFilesMenu']> {
   return (item, entries, onOpenFile, renderList) => (
     <GitHistoryCommitFilesMenu
+      // Why: the full graph reuses one details pane; a new repo or commit must not inherit the old selection.
+      key={`${worktreeId}:${item.id}`}
       {...{ model, worktreeId, worktreePath, item, entries, onOpenFile, renderList }}
     />
   )
