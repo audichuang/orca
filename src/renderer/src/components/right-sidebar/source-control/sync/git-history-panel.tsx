@@ -266,6 +266,7 @@ export function GitHistoryPanel({
             {result && <span className="text-[10px] font-medium tabular-nums">{count}</span>}
             {result?.hasMore && <span className="text-[10px] font-medium">+</span>}
           </button>
+          {slots.headerActions}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
