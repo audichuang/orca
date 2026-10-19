@@ -1,5 +1,5 @@
 // Fork-only: opens the full-width Git Graph from the Commits toolbar.
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { Maximize2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -9,6 +9,7 @@ import { GitGraphFullView, type GitGraphFullViewProps } from './git-graph-full-v
 
 export function GitGraphFullViewLauncher(props: GitGraphFullViewProps): React.JSX.Element {
   const [open, setOpen] = useState(false)
+  const escapeHandlerRef = useRef<(() => boolean) | null>(null)
   const label = translate('auto.components.right.sidebar.GitGraphFullView.open', 'Open Git Graph')
   // Why close first: diffs open in the editor behind this modal.
   const closeThen =
@@ -36,7 +37,17 @@ export function GitGraphFullViewLauncher(props: GitGraphFullViewProps): React.JS
         </TooltipContent>
       </Tooltip>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="flex h-[calc(100vh-4rem)] w-[calc(100vw-4rem)] max-w-none flex-col overflow-hidden sm:max-w-none">
+        <DialogContent
+          className="flex h-[calc(100vh-4rem)] w-[calc(100vw-4rem)] max-w-none flex-col overflow-hidden sm:max-w-none"
+          // Why: the view focuses the commit list itself; Radix would land on the first toolbar button.
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          // Why: with the branch-tree overlay open, Escape closes the overlay, not the dialog.
+          onEscapeKeyDown={(event) => {
+            if (escapeHandlerRef.current?.()) {
+              event.preventDefault()
+            }
+          }}
+        >
           <DialogTitle className="sr-only">{label}</DialogTitle>
           <DialogDescription className="sr-only">
             {translate(
@@ -49,6 +60,7 @@ export function GitGraphFullViewLauncher(props: GitGraphFullViewProps): React.JS
               {...props}
               onOpenCommit={closeThen(props.onOpenCommit)}
               onOpenCommitFile={closeThen(props.onOpenCommitFile)}
+              escapeHandlerRef={escapeHandlerRef}
             />
           )}
         </DialogContent>

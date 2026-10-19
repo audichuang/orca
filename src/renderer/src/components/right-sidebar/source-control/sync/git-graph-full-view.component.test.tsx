@@ -19,6 +19,8 @@ const { GitGraphFullViewLauncher } = await import('./git-graph-full-view-dialog'
 const { GitHistoryGraphToolbar } = await import('./git-history-graph-toolbar')
 const { useSourceControlGitHistory } = await import('./use-git-history')
 const { resetGitHistoryGraphFiltersForTest } = await import('./git-history-graph-filter')
+const { resetGitGraphRememberedSelectionForTest } = await import('./use-git-graph-full-view-state')
+const { resetGitGraphBranchTreePreferenceForTest } = await import('./use-git-graph-branch-tree')
 
 const WORKTREE = 'wt-1'
 const WORKTREES = new Map<string, unknown>([[WORKTREE, {}]])
@@ -107,7 +109,10 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
   resetGitHistoryGraphFiltersForTest()
+  resetGitGraphRememberedSelectionForTest()
+  resetGitGraphBranchTreePreferenceForTest()
   vi.clearAllMocks()
 })
 
@@ -122,10 +127,9 @@ describe('full-width Git Graph', () => {
     const dialog = await screen.findByRole('dialog')
     const rows = await within(dialog).findAllByTestId('git-graph-full-row')
     expect(rows).toHaveLength(2)
-    // The sidebar row caps refs at two; the full view shows all of them.
-    for (const name of ['main', 'one', 'two', 'v1']) {
-      expect(within(rows[0]!).getByText(name)).toBeInTheDocument()
-    }
+    // One readable badge plus "+N"; the rest are named in its tooltip and in the details pane.
+    expect(within(rows[0]!).getByText('main')).toBeInTheDocument()
+    expect(within(rows[0]!).getByText('+3')).toHaveAttribute('title', 'one\ntwo\nv1')
 
     fireEvent.click(rows[0]!)
     expect(onLoadCommitFiles).toHaveBeenCalledWith(TIP)
@@ -139,7 +143,7 @@ describe('full-width Git Graph', () => {
   it('hands the selected commit files to the fork menu with a dialog-closing open', async () => {
     const onOpenCommitFile = vi.fn()
     const renderCommitFilesMenu = vi.fn<NonNullable<GitHistoryPanelSlots['renderCommitFilesMenu']>>(
-      (_item, _entries, _open, renderList) => renderList(new Set())
+      (_items, _entries, _open, renderList) => renderList(new Set())
     )
     render(
       <Harness
@@ -154,12 +158,148 @@ describe('full-width Git Graph', () => {
     fireEvent.click((await within(dialog).findAllByTestId('git-graph-full-row'))[0]!)
     await within(dialog).findByTestId('git-history-commit-file')
 
-    const [item, entries, openFile] = renderCommitFilesMenu.mock.lastCall!
-    expect(item).toBe(TIP)
+    const [items, entries, openFile] = renderCommitFilesMenu.mock.lastCall!
+    expect(items).toEqual([TIP])
     expect(entries).toEqual([FILE])
     act(() => openFile(FILE, { altKey: false, ctrlKey: false, metaKey: false, shiftKey: false }))
     expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything())
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
+  it('Cmd/Ctrl-click merges the files of both commits; each file opens at its newest commit', async () => {
+    const onOpenCommitFile = vi.fn()
+    const OTHER: GitBranchChangeEntry = { path: 'src/other.ts', status: 'added' }
+    const filesOf: Record<string, GitBranchChangeEntry[]> = {
+      [TIP.id]: [FILE],
+      [PARENT.id]: [{ ...FILE, status: 'added' }, OTHER]
+    }
+    render(
+      <Harness
+        onOpenCommitFile={onOpenCommitFile}
+        onLoadCommitFiles={vi.fn(async (item: GitHistoryItem) => filesOf[item.id] ?? [])}
+      />
+    )
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    const rows = await within(dialog).findAllByTestId('git-graph-full-row')
+    fireEvent.click(rows[0]!)
+    // Both modifiers so the test holds on every platform's Cmd-or-Ctrl key.
+    fireEvent.click(rows[1]!, { metaKey: true, ctrlKey: true })
+
+    expect(rows[0]).toHaveAttribute('data-selected', 'true')
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+    expect(await within(dialog).findByText('Changed files (2) · 2 commits')).toBeInTheDocument()
+    const files = within(dialog).getAllByTestId('git-history-commit-file')
+    expect(files.map((row) => row.getAttribute('data-commit-file-path'))).toEqual([
+      'src/app.ts',
+      'src/other.ts'
+    ])
+    fireEvent.click(files[0]!)
+    expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything())
+  })
+
+  it('emptying a Cmd/Ctrl selection shows nothing instead of an older plain click', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    const rows = await within(dialog).findAllByTestId('git-graph-full-row')
+    const toggle = { metaKey: true, ctrlKey: true }
+    fireEvent.click(rows[0]!)
+    fireEvent.click(rows[1]!, toggle)
+    fireEvent.click(rows[0]!, toggle)
+    fireEvent.click(rows[1]!, toggle)
+
+    expect(rows[0]).not.toHaveAttribute('data-selected')
+    expect(rows[1]).not.toHaveAttribute('data-selected')
+    expect(
+      await within(dialog).findByText('Select a commit to see its details and changed files.')
+    ).toBeInTheDocument()
+  })
+
+  it('reopening after a file diff lands on the same commit', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    let dialog = await screen.findByRole('dialog')
+    fireEvent.click((await within(dialog).findAllByTestId('git-graph-full-row'))[1]!)
+    fireEvent.click(await within(dialog).findByTestId('git-history-commit-file'))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    dialog = await screen.findByRole('dialog')
+    const rows = await within(dialog).findAllByTestId('git-graph-full-row')
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+    expect(await within(dialog).findByText('Bravo', { selector: 'p' })).toBeInTheDocument()
+  })
+
+  it('focuses the commit list on open; arrows move the selection and Shift+Arrow extends it', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    const rows = await within(dialog).findAllByTestId('git-graph-full-row')
+    await waitFor(() => expect(rows[0]).toHaveFocus())
+    expect(rows[0]).toHaveAttribute('tabindex', '0')
+    expect(rows[1]).toHaveAttribute('tabindex', '-1')
+
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' })
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+    expect(rows[1]).toHaveFocus()
+    fireEvent.keyDown(rows[1]!, { key: 'ArrowUp', shiftKey: true })
+    expect(rows[0]).toHaveAttribute('data-selected', 'true')
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+  })
+
+  it('Escape with the narrow branch overlay open closes the overlay, not the dialog', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    await within(dialog).findAllByTestId('git-graph-full-row')
+    const toggle = within(dialog).getByRole('button', { name: 'Toggle branches' })
+    fireEvent.click(toggle)
+    expect(within(dialog).getByRole('navigation', { name: 'Branches and tags' })).toBeVisible()
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(within(dialog).queryByRole('navigation', { name: 'Branches and tags' })).toBeNull()
+    expect(toggle).toHaveFocus()
+  })
+
+  it('Escape over an open popover closes only the popover, even with the branch overlay open', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    await within(dialog).findAllByTestId('git-graph-full-row')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Toggle branches' }))
+    fireEvent.click(within(dialog).getByRole('combobox', { name: 'Branch filter' }))
+    await waitFor(() => expect(document.querySelector('[cmdk-item]')).not.toBeNull())
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await waitFor(() => expect(document.querySelector('[cmdk-item]')).toBeNull())
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(within(dialog).getByRole('navigation', { name: 'Branches and tags' })).toBeVisible()
+  })
+
+  it('keeps the branch tree closed after the user closed it, across reopening', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1600 })
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    let dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('navigation', { name: 'Branches and tags' })).toBeVisible()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Toggle branches' }))
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    dialog = await screen.findByRole('dialog')
+    expect(within(dialog).queryByRole('navigation', { name: 'Branches and tags' })).toBeNull()
   })
 
   it('reloads the selected commit files after a refresh replaces the result', async () => {

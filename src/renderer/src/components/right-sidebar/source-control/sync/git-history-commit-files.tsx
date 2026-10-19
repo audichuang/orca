@@ -49,6 +49,7 @@ function CommitFileRow({
       data-testid="git-history-commit-file"
       data-commit-file-path={entry.path}
       data-selected={selected ? 'true' : undefined}
+      aria-pressed={selected || undefined}
       onClick={(event) => onOpen(entry, toSourceControlRowOpenEvent(event))}
       onDoubleClick={(event) => onOpen(entry, toPermanentSourceControlRowOpenEvent(event))}
     >
@@ -152,7 +153,8 @@ export function GitHistoryCommitFiles({
   timestamp,
   onOpenFile,
   onOpenAll,
-  renderFilesMenu
+  renderFilesMenu,
+  className
 }: {
   state: GitHistoryCommitFilesState
   author?: string
@@ -160,12 +162,13 @@ export function GitHistoryCommitFiles({
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   onOpenAll?: () => void
   renderFilesMenu?: GitHistoryCommitFilesMenuRenderer
+  className?: string
 }): React.JSX.Element {
   // Author and date move off the dense commit row and surface here on expand.
   const body = <CommitFilesBody state={state} onOpenFile={onOpenFile} onOpenAll={onOpenAll} />
   const meta = [author, formatGitHistoryTimestamp(timestamp)].filter(Boolean).join(' · ')
   return (
-    <div className="border-l border-border/60 bg-muted/20">
+    <div className={cn('border-l border-border/60 bg-muted/20', className)}>
       {meta && <div className="py-1 pl-9 pr-3 text-[11px] text-muted-foreground">{meta}</div>}
       {renderFilesMenu
         ? renderFilesMenu(

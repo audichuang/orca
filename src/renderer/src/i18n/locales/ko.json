@@ -14639,7 +14639,29 @@
             "author": "작성자",
             "date": "날짜",
             "commit": "커밋",
-            "selectCommit": "커밋을 선택하면 세부 정보와 변경된 파일이 표시됩니다."
+            "selectCommit": "커밋을 선택하면 세부 정보와 변경된 파일이 표시됩니다.",
+            "resizeDetails": "커밋 세부 정보 크기 조정",
+            "copyFullSource": "변경된 모든 파일의 전체 소스 복사",
+            "filesInCommits": "변경된 파일 ({{files}}) · 커밋 {{commits}}개",
+            "filesChanged": "변경된 파일 ({{files}})",
+            "toggleBranches": "브랜치 패널 전환"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "로컬",
+            "tags": "태그",
+            "label": "브랜치 및 태그",
+            "empty": "아직 불러온 브랜치가 없습니다.",
+            "showRef": "현재 목록에 없음 — 클릭하면 이 브랜치만 표시"
+          },
+          "GitGraphCommitInfo": {
+            "author": "작성자",
+            "date": "날짜",
+            "copySha": "커밋 SHA 복사",
+            "parents": "부모 커밋",
+            "refs": "참조",
+            "containedIn": "포함된 브랜치",
+            "containedInHint": "불러온 목록에 끝 커밋이 있는 브랜치만 표시하며, 목록 밖의 브랜치는 포함되지 않습니다.",
+            "moreBranches": "외 {{count}}개"
           }
         }
       },
