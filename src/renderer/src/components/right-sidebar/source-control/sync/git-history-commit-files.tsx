@@ -24,7 +24,8 @@ export type GitHistoryCommitFilesState =
 /** Fork-only: wraps an expanded commit's file rows, e.g. in one shared context menu. */
 export type GitHistoryCommitFilesMenuRenderer = (
   entries: readonly GitBranchChangeEntry[],
-  rows: React.JSX.Element
+  rows: React.JSX.Element,
+  onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
 ) => React.ReactNode
 
 function CommitFileRow({
@@ -121,7 +122,7 @@ function CommitFilesBody({
   )
   return (
     <>
-      {renderFilesMenu ? renderFilesMenu(state.entries, rows) : rows}
+      {renderFilesMenu ? renderFilesMenu(state.entries, rows, onOpenFile) : rows}
       {onOpenAll && (
         <button
           type="button"
