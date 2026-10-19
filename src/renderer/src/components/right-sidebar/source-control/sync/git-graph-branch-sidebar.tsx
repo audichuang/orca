@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react'
 import { ChevronDown, ChevronRight, Cloud, GitBranch, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
+import { rovingKeyTarget } from './git-graph-roving-keys'
 import type { GitHistoryResult } from '../../../../../../shared/git-history'
 import type { GitHistoryGraphRefOption } from '../../../../../../shared/git-history-graph-query-types'
 
@@ -119,15 +120,14 @@ export function GitGraphBranchSidebar({
   ])
   const tabStopKey = focusKey !== null && treeKeys.includes(focusKey) ? focusKey : treeKeys[0]
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>): void => {
-    const step = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
-    if (step === 0) {
-      return
-    }
-    event.preventDefault()
     const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[data-tree-key]')]
     const active = document.activeElement
     const index = active instanceof HTMLButtonElement ? buttons.indexOf(active) : -1
-    buttons[Math.min(buttons.length - 1, Math.max(0, index + step))]?.focus()
+    const next = rovingKeyTarget(event.key, index, buttons.length)
+    if (next !== null) {
+      event.preventDefault()
+      buttons[next]?.focus()
+    }
   }
 
   return (
