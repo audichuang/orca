@@ -14233,7 +14233,9 @@
                       "onlyBinarySkipped": "Rien à copier : {{value0}} fichier(s) binaire(s) ignoré(s).",
                       "filesCopied": "{{value0}} fichier(s) copié(s)",
                       "filesUnreadable": "Impossible de lire {{value0}} fichier(s).",
-                      "noFiles": "Aucun fichier à copier."
+                      "noFiles": "Aucun fichier à copier.",
+                      "onlyUnsafeNamesSkipped": "Rien à copier : {{value0}} fichier(s) ignoré(s) car leur nom ne peut pas être restauré en toute sécurité.",
+                      "unsafeNamesSkipped": "({{value0}} ignoré(s) : nom de fichier non sûr)"
                     }
                   },
                   "restore": {
