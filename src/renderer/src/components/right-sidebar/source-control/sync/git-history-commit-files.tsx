@@ -24,9 +24,11 @@ export type GitHistoryCommitFilesState =
 
 function CommitFileRow({
   entry,
+  selected,
   onOpen
 }: {
   entry: GitBranchChangeEntry
+  selected: boolean
   onOpen: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
 }): React.JSX.Element {
   const status = entry.status as GitFileStatus
@@ -37,10 +39,11 @@ function CommitFileRow({
   return (
     <button
       type="button"
-      className="group flex w-full min-w-0 cursor-pointer items-center gap-1 py-1 pl-9 pr-3 text-left text-xs transition-colors hover:bg-accent/40"
+      className="group flex w-full min-w-0 cursor-pointer items-center gap-1 py-1 pl-9 pr-3 text-left text-xs transition-colors hover:bg-accent/40 data-[selected]:bg-accent/60"
       title={entry.path}
       data-testid="git-history-commit-file"
       data-commit-file-path={entry.path}
+      data-selected={selected || undefined}
       onClick={(event) => onOpen(entry, toSourceControlRowOpenEvent(event))}
       onDoubleClick={(event) => onOpen(entry, toPermanentSourceControlRowOpenEvent(event))}
     >
@@ -63,12 +66,16 @@ function CommitFileRow({
   )
 }
 
+const NO_SELECTION: ReadonlySet<string> = new Set()
+
 function CommitFilesBody({
   state,
+  selectedPaths = NO_SELECTION,
   onOpenFile,
   onOpenAll
 }: {
   state: GitHistoryCommitFilesState
+  selectedPaths?: ReadonlySet<string>
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   onOpenAll?: () => void
 }): React.JSX.Element {
@@ -108,7 +115,12 @@ function CommitFilesBody({
   return (
     <>
       {state.entries.map((entry) => (
-        <CommitFileRow key={entry.path} entry={entry} onOpen={onOpenFile} />
+        <CommitFileRow
+          key={entry.path}
+          entry={entry}
+          selected={selectedPaths.has(entry.path)}
+          onOpen={onOpenFile}
+        />
       ))}
       {onOpenAll && (
         <button
@@ -154,7 +166,16 @@ export function GitHistoryCommitFiles({
         ? renderFilesMenu(
             state.status === 'ready' ? state.entries : [],
             onOpenFile,
-            <div>{body}</div>
+            (selectedPaths) => (
+              <div>
+                <CommitFilesBody
+                  state={state}
+                  selectedPaths={selectedPaths}
+                  onOpenFile={onOpenFile}
+                  onOpenAll={onOpenAll}
+                />
+              </div>
+            )
           )
         : body}
     </div>
