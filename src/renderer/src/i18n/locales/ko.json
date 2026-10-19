@@ -14824,7 +14824,11 @@
             "author": "작성자",
             "date": "날짜",
             "commit": "커밋",
-            "selectCommit": "커밋을 선택하면 세부 정보와 변경된 파일이 표시됩니다."
+            "selectCommit": "커밋을 선택하면 세부 정보와 변경된 파일이 표시됩니다.",
+            "resizeDetails": "커밋 세부 정보 크기 조정",
+            "copyFullSource": "변경된 모든 파일의 전체 소스 복사",
+            "filesInCommits": "변경된 파일 ({{files}}) · 커밋 {{commits}}개",
+            "filesChanged": "변경된 파일 ({{files}})"
           }
         }
       },

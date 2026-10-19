@@ -1309,7 +1309,8 @@ html.native-shell .app-layout {
 }
 
 [data-file-explorer-row][data-selected='true'],
-[data-commit-file-path][data-selected='true'] {
+[data-commit-file-path][data-selected='true'],
+[data-git-graph-row][data-selected='true'] {
   /* Why: flat bg-accent ≈ panel background in light mode, so selection mixes
      foreground into accent and adds an inset ring to stay legible in both themes. */
   background: color-mix(in srgb, var(--foreground) 8%, var(--accent));
@@ -1318,17 +1319,20 @@ html.native-shell .app-layout {
 }
 
 [data-file-explorer-row][data-selected='true']:hover,
-[data-commit-file-path][data-selected='true']:hover {
+[data-commit-file-path][data-selected='true']:hover,
+[data-git-graph-row][data-selected='true']:hover {
   background: color-mix(in srgb, var(--foreground) 10%, var(--accent));
 }
 
 .dark [data-file-explorer-row][data-selected='true'],
-.dark [data-commit-file-path][data-selected='true'] {
+.dark [data-commit-file-path][data-selected='true'],
+.dark [data-git-graph-row][data-selected='true'] {
   background: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 .dark [data-file-explorer-row][data-selected='true']:hover,
-.dark [data-commit-file-path][data-selected='true']:hover {
+.dark [data-commit-file-path][data-selected='true']:hover,
+.dark [data-git-graph-row][data-selected='true']:hover {
   background: color-mix(in srgb, var(--accent) 80%, transparent);
 }
 

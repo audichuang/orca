@@ -5,6 +5,7 @@ import path from 'node:path'
 import { expect, test } from './helpers/orca-app'
 import { waitForSessionReady } from './helpers/store'
 import { openSourceControlForWorktree } from './helpers/worktree-registration'
+import { clipboardText, setClipboard } from './helpers/folder-multi-repo-scenario-context'
 
 const SHOTS_DIR = process.env.ORCA_E2E_SHOTS_DIR ?? path.join(os.tmpdir(), 'orca-git-graph-shots')
 
@@ -115,8 +116,48 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   const files = dialog.getByTestId('git-history-commit-file')
   await expect(files.first()).toBeVisible({ timeout: 15_000 })
   await expect(files.filter({ hasText: 'after-merge.ts' })).toBeVisible()
+  await expect(rows.filter({ hasText: 'Post-merge cleanup' })).toHaveAttribute(
+    'data-selected',
+    'true'
+  )
   await orcaPage.waitForTimeout(300)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '02-git-graph-commit-selected.png') })
+
+  // Cmd/Ctrl-click a second commit: the files of both merge, and one click copies them all.
+  await rows.filter({ hasText: 'Feature A: second step' }).click()
+  await rows.filter({ hasText: 'Feature A: first step' }).click({ modifiers: ['ControlOrMeta'] })
+  await expect(dialog.getByText('Changed files (2) · 2 commits')).toBeVisible()
+  await expect(files.filter({ hasText: 'a1.ts' })).toBeVisible()
+  await expect(files.filter({ hasText: 'a2.ts' })).toBeVisible()
+  await orcaPage.mouse.move(5, 500)
+  await orcaPage.waitForTimeout(300)
+  await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '02a-git-graph-multi-selected.png') })
+  await setClipboard(orcaPage, 'sentinel')
+  await dialog.getByRole('button', { name: 'Copy Full Source of all changed files' }).click()
+  await expect.poll(() => clipboardText(orcaPage), { timeout: 20_000 }).toContain('a1 = 1')
+  const copied = await clipboardText(orcaPage)
+  expect(copied).toContain('a2 = 2')
+  expect(copied).not.toContain('afterMerge')
+
+  // Drag the details divider left; the details column must widen.
+  const divider = dialog.getByRole('separator', { name: 'Resize commit details' })
+  const details = divider.locator('..')
+  const widthBefore = (await details.boundingBox())!.width
+  const handle = (await divider.boundingBox())!
+  await orcaPage.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
+  await orcaPage.mouse.down()
+  await orcaPage.mouse.move(handle.x - 200, handle.y + handle.height / 2, { steps: 5 })
+  await orcaPage.mouse.up()
+  await expect
+    .poll(async () => (await details.boundingBox())!.width)
+    .toBeGreaterThan(widthBefore + 150)
+  await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '02b-git-graph-details-resized.png') })
+
+  // Shrinking the window re-clamps the widened details so the commit list keeps its room.
+  await orcaPage.setViewportSize({ width: 1000, height: 1000 })
+  await expect.poll(async () => (await details.boundingBox())!.width).toBeLessThanOrEqual(600)
+  expect((await rows.first().boundingBox())!.width).toBeGreaterThan(300)
+  await orcaPage.setViewportSize({ width: 1600, height: 1000 })
 
   // Also capture the merge commit's detail (multi-parent).
   await rows.filter({ hasText: 'Merge branch' }).click()
