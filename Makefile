@@ -188,6 +188,7 @@ fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
 
 # Whole-repo `pnpm lint` checks fork edits can break, plus fork locale parity; fork-check-quality covers the rest on changed lines.
+# check:path-literal-ratchet is left out: a release tag can carry main's workflow files, which name main-only paths (v1.4.230).
 fork-check-lint: fork-base-guard
 	pnpm run check:dead-classes
 	pnpm run verify:localization-catalogs
@@ -195,6 +196,8 @@ fork-check-lint: fork-base-guard
 	pnpm run verify:localization-coverage
 	pnpm run verify:rpc-params-catalog
 	pnpm run check:max-lines-ratchet
+	pnpm run check:deprecated-runtime-owner-ratchet
+	pnpm run check:legacy-relay-fence-ratchet
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
 
 fork-check-tests: export LC_ALL = C
