@@ -14933,7 +14933,11 @@
             "author": "Author",
             "date": "Date",
             "commit": "Commit",
-            "selectCommit": "Select a commit to see its details and changed files."
+            "selectCommit": "Select a commit to see its details and changed files.",
+            "resizeDetails": "Resize commit details",
+            "copyFullSource": "Copy Full Source of all changed files",
+            "filesInCommits": "Changed files ({{files}}) · {{commits}} commits",
+            "filesChanged": "Changed files ({{files}})"
           }
         }
       },
