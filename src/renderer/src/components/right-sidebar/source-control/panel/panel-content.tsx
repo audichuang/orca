@@ -243,7 +243,12 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
             onLoadCommitFiles={loadCommitFiles}
             onOpenCommitFile={openCommitFile}
             onCommitAction={handleCommitAction}
-            renderCommitFilesMenu={commitFilesMenuSlot(model, currentWorktreeId, worktreePath)}
+            renderCommitFilesMenu={commitFilesMenuSlot(
+              model,
+              currentWorktreeId,
+              worktreePath,
+              loadCommitFiles
+            )}
             toolbar={
               <GitHistoryGraphToolbar
                 worktreeId={currentWorktreeId}
@@ -260,10 +265,12 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
                     onOpenCommit={(item) => void openHistoryCommitDiff(item)}
                     onLoadCommitFiles={loadCommitFiles}
                     onOpenCommitFile={openCommitFile}
+                    onCommitAction={handleCommitAction}
                     renderCommitFilesMenu={commitFilesMenuSlot(
                       model,
                       currentWorktreeId,
-                      worktreePath
+                      worktreePath,
+                      loadCommitFiles
                     )}
                   />
                 }
