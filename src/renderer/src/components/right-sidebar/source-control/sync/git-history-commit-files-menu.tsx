@@ -31,7 +31,8 @@ export function GitHistoryCommitFilesMenu({
   model,
   worktreeId,
   worktreePath,
-  item,
+  items,
+  loadCommitFiles,
   entries,
   onOpenFile,
   renderList
@@ -42,7 +43,9 @@ export function GitHistoryCommitFilesMenu({
   >
   worktreeId: string
   worktreePath: string
-  item: GitHistoryItem
+  /** Newest first; several when the full graph merges a multi-commit selection. */
+  items: readonly GitHistoryItem[]
+  loadCommitFiles: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
   entries: readonly GitBranchChangeEntry[]
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   renderList: (selectedPaths: ReadonlySet<string>) => React.JSX.Element
@@ -89,15 +92,16 @@ export function GitHistoryCommitFilesMenu({
       ? entries.filter((e) => selection.selected.has(e.path))
       : [target]
   const copyFullSource = (target: GitBranchChangeEntry): void => {
-    const files = copyTargets(target)
+    const paths = new Set(copyTargets(target).map((e) => e.path))
     void copyHistoryCommitsFullSource({
-      items: [item],
+      items,
       worktreeId,
       worktreePath,
       editorWorktreeId: model.editorWorktreeId ?? null,
       activeRepoTarget: model.activeRepoTarget,
-      // Why a narrowed loader: the commit's Copy Full Source, limited to the selected files.
-      loadCommitFiles: async () => files
+      // Why a narrowed loader: the commits' Copy Full Source, limited to the selected files.
+      loadCommitFiles: async (item) =>
+        (await loadCommitFiles(item)).filter((entry) => paths.has(entry.path))
     })
   }
   return (
@@ -126,13 +130,23 @@ export function GitHistoryCommitFilesMenu({
 export function commitFilesMenuSlot(
   model: React.ComponentProps<typeof GitHistoryCommitFilesMenu>['model'],
   worktreeId: string,
-  worktreePath: string
+  worktreePath: string,
+  loadCommitFiles: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
 ): NonNullable<GitHistoryPanelSlots['renderCommitFilesMenu']> {
-  return (item, entries, onOpenFile, renderList) => (
+  return (items, entries, onOpenFile, renderList) => (
     <GitHistoryCommitFilesMenu
       // Why: the full graph reuses one details pane; a new repo or commit must not inherit the old selection.
-      key={`${worktreeId}:${item.id}`}
-      {...{ model, worktreeId, worktreePath, item, entries, onOpenFile, renderList }}
+      key={`${worktreeId}:${items.map((item) => item.id).join(',')}`}
+      {...{
+        model,
+        worktreeId,
+        worktreePath,
+        items,
+        loadCommitFiles,
+        entries,
+        onOpenFile,
+        renderList
+      }}
     />
   )
 }
