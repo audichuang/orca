@@ -17148,7 +17148,10 @@
                 "removeWorktree": "quitar worktree",
                 "trashWorktree": "mandar worktree a la papelera",
                 "addQuickCommand": "agregar comando rápido",
-                "newQuickCommand": "nuevo comando rápido"
+                "newQuickCommand": "nuevo comando rápido",
+                "openGitGraph": "abrir git graph",
+                "gitLog": "registro de git",
+                "commitHistory": "historial de commits"
               }
             }
           },
@@ -18998,6 +19001,13 @@
         "setting-global-off": "La confianza de carpetas está desactivada en los ajustes de Agentes, así que los agentes siempre preguntan.",
         "keyword-trust": "confianza",
         "keyword-hooks": "hooks"
+      },
+      "gitGraphTab": {
+        "noRepo": "No hay ningún repositorio Git disponible para este espacio de trabajo.",
+        "repoSwitcher": "Repositorio",
+        "selectRepo": "Seleccionar repositorio",
+        "searchRepos": "Buscar repositorios...",
+        "noRepos": "No se encontraron repositorios."
       }
     },
     "i18n": {
