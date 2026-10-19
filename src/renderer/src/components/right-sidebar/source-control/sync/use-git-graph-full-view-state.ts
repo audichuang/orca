@@ -69,7 +69,10 @@ export function useGitGraphSelection(args: {
     [selectionKey]
   )
   const selected = result?.items.find((item) => item.id === selectedId) ?? null
-  const commitSelection = useGitHistoryCommitSelection(result)
+  // Why retain: a refresh or branch filter must not drop a multi-selection the user is reviewing.
+  const commitSelection = useGitHistoryCommitSelection(result, {
+    retainAcrossResults: { ownerKey: selectionKey }
+  })
   const multiSelected = commitSelection.selectedItems
   const shownItems = useMemo(
     () => (multiSelected.length > 0 ? multiSelected : selected ? [selected] : []),
