@@ -11,16 +11,22 @@ import {
   buildDefaultGitHistoryColorMap,
   buildGitHistoryViewModels
 } from '../../../../../../shared/git-history-graph'
-import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import type { GitHistoryPanelState } from './git-history-panel'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
-import { GitHistoryCommitFiles, type GitHistoryCommitFilesState } from './git-history-commit-files'
+import type { GitHistoryCommitFilesState } from './git-history-commit-files'
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
 import { GitHistoryGraphLoadMore } from './git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from './git-history-graph-empty-message'
-import { formatGitHistoryTimestamp } from './git-history-format'
-import { GIT_GRAPH_FULL_ROW_COLUMNS, GitGraphFullRow, GitGraphRefBadge } from './git-graph-full-row'
+import { GIT_GRAPH_FULL_ROW_COLUMNS, GitGraphFullRow } from './git-graph-full-row'
+import { GitGraphDetailsPane } from './git-graph-full-view-details'
+import {
+  useGitHistoryCommitSelection,
+  type GitHistoryCommitActionHandler
+} from './use-git-history-commit-selection'
+
+// Why bounded: a Shift range can cover hundreds of commits; the runtime RPC queue rejects past 256.
+const FILE_LOAD_CONCURRENCY = 6
 
 // Mirrors SWIMLANE_WIDTH in git-history-graph-svg.tsx; only used to align the subject column.
 const GRAPH_LANE_WIDTH = 11
@@ -38,6 +44,8 @@ export type GitGraphFullViewProps = {
     entry: GitBranchChangeEntry,
     event?: SourceControlRowOpenEvent
   ) => void
+  /** Commit actions (Copy Full Source) over the selected commits. */
+  onCommitAction?: GitHistoryCommitActionHandler
   renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
 }
 
@@ -85,61 +93,6 @@ function useCommitFiles(
   return { filesByCommit, ensureFiles }
 }
 
-function CommitDetails({
-  item,
-  files,
-  onOpenCommit,
-  onOpenCommitFile,
-  renderCommitFilesMenu
-}: {
-  item: GitHistoryItem
-  files: GitHistoryCommitFilesState
-  onOpenCommit: GitGraphFullViewProps['onOpenCommit']
-  onOpenCommitFile: GitGraphFullViewProps['onOpenCommitFile']
-  renderCommitFilesMenu: GitGraphFullViewProps['renderCommitFilesMenu']
-}): React.JSX.Element {
-  const refs = dedupeRemoteTrackingRefs(item.references ?? [])
-  const body = item.message.startsWith(item.subject)
-    ? item.message.slice(item.subject.length).trim()
-    : item.message.trim()
-  const author = item.authorEmail ? `${item.author ?? ''} <${item.authorEmail}>` : item.author
-  return (
-    <div className="flex flex-col gap-2 py-3">
-      <div className="flex flex-col gap-1 px-3">
-        <p className="text-sm font-medium break-words text-foreground">{item.subject}</p>
-        {refs.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {refs.map((ref) => (
-              <GitGraphRefBadge key={ref.id} itemRef={ref} />
-            ))}
-          </div>
-        )}
-        <p className="font-mono text-2xs break-all text-muted-foreground select-text">{item.id}</p>
-        {author && <p className="text-2xs text-muted-foreground select-text">{author}</p>}
-        {item.timestamp != null && (
-          <p className="text-2xs text-muted-foreground">
-            {formatGitHistoryTimestamp(item.timestamp)}
-          </p>
-        )}
-        {body && (
-          <p className="text-xs break-words whitespace-pre-wrap text-foreground select-text">
-            {body}
-          </p>
-        )}
-      </div>
-      {/* Why the override: the shared list indents for the sidebar tree; align it with the details above. */}
-      <div className="[&_.pl-9]:pl-3">
-        <GitHistoryCommitFiles
-          state={files}
-          onOpenFile={(entry, event) => onOpenCommitFile(item, entry, event)}
-          onOpenAll={() => onOpenCommit(item)}
-          renderFilesMenu={renderCommitFilesMenu?.bind(null, item)}
-        />
-      </div>
-    </div>
-  )
-}
-
 export function GitGraphFullView({
   worktreeId,
   worktreePath,
@@ -149,6 +102,7 @@ export function GitGraphFullView({
   onOpenCommit,
   onLoadCommitFiles,
   onOpenCommitFile,
+  onCommitAction,
   renderCommitFilesMenu
 }: GitGraphFullViewProps): React.JSX.Element {
   const result = state.result
@@ -180,15 +134,23 @@ export function GitGraphFullView({
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = result?.items.find((item) => item.id === selectedId) ?? null
+  const commitSelection = useGitHistoryCommitSelection(result)
+  const multiSelected = commitSelection.selectedItems
+  const shownItems = useMemo(
+    () => (multiSelected.length > 0 ? multiSelected : selected ? [selected] : []),
+    [multiSelected, selected]
+  )
   const { filesByCommit, ensureFiles } = useCommitFiles(result, onLoadCommitFiles)
   const loading = state.status === 'loading' || state.status === 'refreshing'
 
   // Why an effect: a refresh drops the file cache but keeps the selection, so it must refetch too.
   useEffect(() => {
-    if (selected && !filesByCommit[selected.id]) {
-      ensureFiles(selected)
+    const inFlight = shownItems.filter((item) => filesByCommit[item.id]?.status === 'loading')
+    const missing = shownItems.filter((item) => !filesByCommit[item.id])
+    for (const item of missing.slice(0, Math.max(0, FILE_LOAD_CONCURRENCY - inFlight.length))) {
+      ensureFiles(item)
     }
-  }, [selected, filesByCommit, ensureFiles])
+  }, [shownItems, filesByCommit, ensureFiles])
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -257,31 +219,33 @@ export function GitGraphFullView({
                 key={viewModel.historyItem.id}
                 viewModel={viewModel}
                 graphWidth={graphWidth}
-                selected={viewModel.historyItem.id === selectedId}
-                onSelect={() => setSelectedId(viewModel.historyItem.id)}
+                selected={
+                  multiSelected.length > 0
+                    ? commitSelection.isSelected(viewModel.historyItem.id)
+                    : viewModel.historyItem.id === selectedId
+                }
+                onSelect={(event) => {
+                  if (!commitSelection.handleRowClick(viewModel.historyItem, event)) {
+                    setSelectedId(viewModel.historyItem.id)
+                  }
+                }}
               />
             ))}
             {result && <GitHistoryGraphLoadMore worktreeId={worktreeId} state={state} />}
           </div>
         </div>
-        <div className="scrollbar-sleek w-[clamp(16rem,28vw,26rem)] shrink-0 overflow-y-auto border-l border-border">
-          {selected ? (
-            <CommitDetails
-              item={selected}
-              files={filesByCommit[selected.id] ?? { status: 'loading' }}
-              onOpenCommit={onOpenCommit}
-              onOpenCommitFile={onOpenCommitFile}
-              renderCommitFilesMenu={renderCommitFilesMenu}
-            />
-          ) : (
-            <p className="px-3 py-3 text-xs text-muted-foreground">
-              {translate(
-                'auto.components.right.sidebar.GitGraphFullView.selectCommit',
-                'Select a commit to see its details and changed files.'
-              )}
-            </p>
-          )}
-        </div>
+        <GitGraphDetailsPane
+          items={shownItems}
+          filesByCommit={filesByCommit}
+          onOpenCommit={onOpenCommit}
+          onOpenCommitFile={onOpenCommitFile}
+          onCopyFullSource={
+            onCommitAction
+              ? (items) => items[0] && onCommitAction('copy-full-source', items[0], items)
+              : undefined
+          }
+          renderCommitFilesMenu={renderCommitFilesMenu}
+        />
       </div>
     </div>
   )
