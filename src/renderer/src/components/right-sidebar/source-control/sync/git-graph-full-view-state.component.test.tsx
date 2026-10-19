@@ -7,8 +7,14 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { TooltipProvider } from '@/components/ui/tooltip'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
+import type * as WorktreeRuntimeOwner from '@/lib/worktree-runtime-owner'
 
-const mocks = vi.hoisted(() => ({ getRuntimeGitHistory: vi.fn() }))
+const mocks = vi.hoisted(() => ({ getRuntimeGitHistory: vi.fn(), executionHostId: 'local' }))
+vi.mock('@/lib/worktree-runtime-owner', async (importOriginal) => ({
+  ...(await importOriginal<typeof WorktreeRuntimeOwner>()),
+  // The execution host the store resolves for the worktree (local, ssh:…, runtime:…).
+  getExecutionHostIdForWorktree: () => mocks.executionHostId
+}))
 vi.mock('@/runtime/runtime-git-status-client', () => ({
   getRuntimeGitHistory: mocks.getRuntimeGitHistory
 }))
@@ -82,6 +88,7 @@ function offRow(): HTMLElement {
 
 beforeEach(() => {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1600 })
+  mocks.executionHostId = 'local'
   mocks.getRuntimeGitHistory.mockImplementation(
     async (context: { target: RuntimeClientTarget }) => ({
       ...historyResult(),
@@ -90,9 +97,11 @@ beforeEach(() => {
         remotes: [],
         limit: 1,
         refs: [
-          context.target.kind === 'local'
-            ? { fullName: 'refs/heads/local-only', name: 'local-only', category: 'branches' }
-            : { fullName: 'refs/heads/env-only', name: 'env-only', category: 'branches' }
+          context.target.kind !== 'local'
+            ? { fullName: 'refs/heads/env-only', name: 'env-only', category: 'branches' }
+            : mocks.executionHostId.startsWith('ssh:')
+              ? { fullName: 'refs/heads/ssh-only', name: 'ssh-only', category: 'branches' }
+              : { fullName: 'refs/heads/local-only', name: 'local-only', category: 'branches' }
         ]
       }
     })
@@ -133,21 +142,42 @@ describe('full Git Graph state', () => {
     expect(offRow()).toHaveAttribute('data-dimmed', 'true')
   })
 
-  it('remembers the selection per host, not per bare worktree id', async () => {
-    const local: RuntimeClientTarget = { kind: 'local' }
-    const remote: RuntimeClientTarget = { kind: 'environment', environmentId: 'env-1' }
-    const first = render(view(historyResult(), local))
+  it('remembers the selection per execution host, even when SSH shares the local target', () => {
+    const target: RuntimeClientTarget = { kind: 'local' }
+    const first = render(view(historyResult(), target))
     fireEvent.click(row('Elsewhere'))
     first.unmount()
 
-    const onRemote = render(view(historyResult(), remote))
+    mocks.executionHostId = 'ssh:conn-1'
+    const onSsh = render(view(historyResult(), target))
     expect(row('Elsewhere')).not.toHaveAttribute('data-selected')
     fireEvent.click(row('On main'))
-    onRemote.unmount()
+    onSsh.unmount()
 
-    render(view(historyResult(), local))
+    mocks.executionHostId = 'local'
+    render(view(historyResult(), target))
     expect(row('Elsewhere')).toHaveAttribute('data-selected', 'true')
     expect(row('On main')).not.toHaveAttribute('data-selected')
+  })
+
+  it('refetches the branch list when the same local target moves to an SSH host', async () => {
+    const { rerender } = render(view(historyResult(), { kind: 'local' }))
+    expect(await screen.findByText('local-only')).toBeInTheDocument()
+    mocks.executionHostId = 'ssh:conn-1'
+    rerender(view(historyResult(), { kind: 'local' }))
+    expect(await screen.findByText('ssh-only')).toBeInTheDocument()
+    expect(screen.queryByText('local-only')).not.toBeInTheDocument()
+  })
+
+  it('Cmd/Ctrl-click after reopening keeps the restored commit in the selection', () => {
+    const first = render(view(historyResult(), { kind: 'local' }))
+    fireEvent.click(row('On main'))
+    first.unmount()
+
+    render(view(historyResult(), { kind: 'local' }))
+    fireEvent.click(row('Elsewhere'), { metaKey: true, ctrlKey: true })
+    expect(row('On main')).toHaveAttribute('data-selected', 'true')
+    expect(row('Elsewhere')).toHaveAttribute('data-selected', 'true')
   })
 
   it('Shift+Arrow after reopening ranges from the restored commit', () => {
@@ -211,6 +241,24 @@ describe('full Git Graph state', () => {
     }
     rerender(view({ ...historyResult(), items: [TIP, LOCAL_ONLY, OFF] }, { kind: 'local' }))
     expect(row('Elsewhere')).toHaveAttribute('data-selected', 'true')
+    expect(row('Local only work')).not.toHaveAttribute('data-selected')
+  })
+
+  it('drops a pending branch jump after a multi-selection gesture', async () => {
+    const { rerender } = render(view(historyResult(), { kind: 'local' }))
+    fireEvent.click(row('On main'), { metaKey: true, ctrlKey: true })
+    fireEvent.click(await screen.findByText('local-only', { selector: 'nav span' }))
+    // Still a multi-selection gesture (no single selected id before or after).
+    fireEvent.click(row('Elsewhere'), { metaKey: true, ctrlKey: true })
+
+    const LOCAL_ONLY: GitHistoryItem = {
+      id: 'e'.repeat(40),
+      parentIds: [],
+      subject: 'Local only work',
+      message: 'Local only work',
+      references: [{ id: 'refs/heads/local-only', name: 'local-only', category: 'branches' }]
+    }
+    rerender(view({ ...historyResult(), items: [TIP, LOCAL_ONLY, OFF] }, { kind: 'local' }))
     expect(row('Local only work')).not.toHaveAttribute('data-selected')
   })
 

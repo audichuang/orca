@@ -15,8 +15,8 @@ type PendingTipJump = {
   ref: string
   /** Only the first history that replaces this one may complete the jump. */
   fromResult: GitHistoryResult | undefined
-  /** Any selection change since the request means the user moved on. */
-  fromSelectedId: string | null
+  /** Any selection gesture since the request means the user moved on. */
+  fromGeneration: number
 }
 
 export type GitGraphBranchTreeState = {
@@ -34,12 +34,12 @@ export type GitGraphBranchTreeState = {
 export function useGitGraphBranchTree(args: {
   windowWidth: number
   result: GitHistoryResult | undefined
-  selectedId: string | null
+  getNavigationGeneration: GitGraphSelectionState['getNavigationGeneration']
   jumpTo: GitGraphSelectionState['jumpTo']
   /** Narrows the graph to one ref whose tip is not loaded. */
   showRef: (fullName: string) => void
 }): GitGraphBranchTreeState {
-  const { windowWidth, result, selectedId, jumpTo, showRef } = args
+  const { windowWidth, result, getNavigationGeneration, jumpTo, showRef } = args
   const [preference, setPreferenceState] = useState(rememberedTreePreference)
   const setPreference = useCallback((next: boolean): void => {
     rememberedTreePreference = next
@@ -67,14 +67,14 @@ export function useGitGraphBranchTree(args: {
       return
     }
     pendingRef.current = null
-    if (selectedId !== pending.fromSelectedId) {
+    if (getNavigationGeneration() !== pending.fromGeneration) {
       return
     }
     const tip = result?.items.find((item) => item.references?.some((ref) => ref.id === pending.ref))
     if (tip) {
       jumpTo(tip.id, { focus: true })
     }
-  }, [jumpTo, result, selectedId])
+  }, [getNavigationGeneration, jumpTo, result])
 
   return {
     open,
@@ -91,7 +91,11 @@ export function useGitGraphBranchTree(args: {
       }
     },
     onShowRef: (fullName) => {
-      pendingRef.current = { ref: fullName, fromResult: result, fromSelectedId: selectedId }
+      pendingRef.current = {
+        ref: fullName,
+        fromResult: result,
+        fromGeneration: getNavigationGeneration()
+      }
       showRef(fullName)
       dismissOverlay()
     }
