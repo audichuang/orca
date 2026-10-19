@@ -28,16 +28,15 @@ import { GitGraphDetailsPane } from './git-graph-full-view-details'
 import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-graph-branch-sidebar'
 import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
-import { useGitGraphBranchContext, useGitGraphSelection } from './use-git-graph-full-view-state'
+import {
+  useGitGraphBranchContext,
+  useGitGraphBranchTree,
+  useGitGraphSelection
+} from './use-git-graph-full-view-state'
 import { useWindowWidth } from '../../use-window-width'
 import { composeWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getRuntimeTargetHostId } from '@/runtime/runtime-client-target'
 import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
-
-// Why: below this the branch tree would squeeze the commit list; it stays one click away.
-const SIDEBAR_AUTO_OPEN_MIN_WIDTH = 1200
-// Branch tree + details minimum + commit list minimum + dialog chrome; below it the tree cannot open.
-const SIDEBAR_FIT_MIN_WIDTH = 1080
 
 // Why bounded: a Shift range can cover hundreds of commits; the runtime RPC queue rejects past 256.
 const FILE_LOAD_CONCURRENCY = 6
@@ -166,13 +165,14 @@ export function GitGraphFullView({
     jumpTo
   })
   const { containment, headRefId } = branchContext
-  const windowWidth = useWindowWidth() ?? SIDEBAR_AUTO_OPEN_MIN_WIDTH
-  const [sidebarPreference, setSidebarPreference] = useState<boolean | null>(null)
-  const sidebarFits = windowWidth >= SIDEBAR_FIT_MIN_WIDTH
-  const sidebarOpen = sidebarPreference ?? windowWidth >= SIDEBAR_AUTO_OPEN_MIN_WIDTH
-  // Why an overlay when it does not fit: docking it would crush the commit list, but hiding it
-  // outright would cut off branch and tag navigation on small windows.
-  const sidebarOverlay = sidebarOpen && !sidebarFits
+  const windowWidth = useWindowWidth() ?? 0
+  const tree = useGitGraphBranchTree({
+    windowWidth,
+    result,
+    jumpTo,
+    showRef: (fullName) =>
+      updateGitHistoryGraphFilter(worktreeId, { scope: 'refs', refs: [fullName] })
+  })
   // Why once, and only while focus is untouched: opening lands on the commit list (IntelliJ's log),
   // but history that arrives later must not pull focus out of a control the user already chose.
   const focusedOnOpenRef = useRef(false)
@@ -196,7 +196,6 @@ export function GitGraphFullView({
       list.focus({ preventScroll: true })
     }
   }, [selection.cursorId])
-  const toggleRef = useRef<HTMLButtonElement>(null)
   const selectedTipIds = useMemo(() => new Set(shownItems.map((item) => item.id)), [shownItems])
   const { filesByCommit, ensureFiles } = useCommitFiles(result, onLoadCommitFiles)
   const loading = state.status === 'loading' || state.status === 'refreshing'
@@ -217,10 +216,10 @@ export function GitGraphFullView({
           type="button"
           variant="ghost"
           size="icon-xs"
-          ref={toggleRef}
+          ref={tree.toggleRef}
           className="ml-2"
-          aria-pressed={sidebarOpen}
-          onClick={() => setSidebarPreference(!sidebarOpen)}
+          aria-pressed={tree.open}
+          onClick={tree.toggle}
           aria-label={translate(
             'auto.components.right.sidebar.GitGraphFullView.toggleBranches',
             'Toggle branches'
@@ -250,32 +249,21 @@ export function GitGraphFullView({
         </Button>
       </div>
       <div className="relative flex min-h-0 flex-1">
-        {sidebarOpen && (
+        {tree.open && (
           <div
             className={cn(
               'flex min-h-0',
-              sidebarOverlay && 'absolute inset-y-0 left-0 z-20 bg-background shadow-lg'
+              tree.overlay && 'absolute inset-y-0 left-0 z-20 bg-background shadow-lg'
             )}
+            data-git-graph-tree-overlay={tree.overlay ? '' : undefined}
           >
             <GitGraphBranchSidebar
               result={result}
               refOptions={branchContext.refOptions}
               headRefId={headRefId}
               selectedTipIds={selectedTipIds}
-              onJump={(commitId) => {
-                // Why focus: closing the overlay removes the focused tree button with it.
-                jumpTo(commitId, { focus: sidebarOverlay })
-                if (sidebarOverlay) {
-                  setSidebarPreference(false)
-                }
-              }}
-              onShowRef={(fullName) => {
-                updateGitHistoryGraphFilter(worktreeId, { scope: 'refs', refs: [fullName] })
-                if (sidebarOverlay) {
-                  toggleRef.current?.focus()
-                  setSidebarPreference(false)
-                }
-              }}
+              onJump={tree.onJump}
+              onShowRef={tree.onShowRef}
             />
           </div>
         )}
@@ -355,7 +343,7 @@ export function GitGraphFullView({
           }
           renderCommitFilesMenu={renderCommitFilesMenu}
           commitContext={branchContext.commitContext}
-          reservedWidth={sidebarOpen && !sidebarOverlay ? GIT_GRAPH_BRANCH_SIDEBAR_WIDTH : 0}
+          reservedWidth={tree.open && !tree.overlay ? GIT_GRAPH_BRANCH_SIDEBAR_WIDTH : 0}
         />
       </div>
     </div>
