@@ -13,10 +13,12 @@ function isMacPlatform(): boolean {
   return navigator.userAgent.includes('Mac')
 }
 
+type CommitClickModifiers = Pick<MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey'>
+
 export type GitHistoryCommitSelection = {
   isSelected: (id: string) => boolean
   /** Returns true when the click was a selection gesture, so the row must not also expand. */
-  handleRowClick: (item: GitHistoryItem, event: MouseEvent) => boolean
+  handleRowClick: (item: GitHistoryItem, event: CommitClickModifiers) => boolean
   /** The selection when it covers the right-clicked commit, else just that commit. */
   itemsFor: (item: GitHistoryItem) => GitHistoryItem[]
   /** Explicitly selected commits in graph order; empty after a plain click. */
@@ -30,15 +32,20 @@ export function useGitHistoryCommitSelection(
     result: GitHistoryResult | undefined
     ids: string[]
     anchor: string | null
-  }>({ result, ids: [], anchor: null })
+    /** Row of the last plain click; a following Cmd/Ctrl-click folds it in (same as the file list). */
+    plainClicked: string | null
+  }>({ result, ids: [], anchor: null, plainClicked: null })
   // Why: a new result can reorder or drop commits, so a stale selection must not survive it.
   const current = useMemo(
-    () => (selection.result === result ? selection : { result, ids: [], anchor: null }),
+    () =>
+      selection.result === result
+        ? selection
+        : { result, ids: [], anchor: null, plainClicked: null },
     [result, selection]
   )
 
   const handleRowClick = useCallback(
-    (item: GitHistoryItem, event: MouseEvent): boolean => {
+    (item: GitHistoryItem, event: CommitClickModifiers): boolean => {
       const items = result?.items ?? []
       const toggle = isMacPlatform() ? event.metaKey : event.ctrlKey
       if (event.shiftKey && current.anchor) {
@@ -49,25 +56,26 @@ export function useGitHistoryCommitSelection(
           setSelection({
             result,
             ids: items.slice(start, end + 1).map((candidate) => candidate.id),
-            anchor: current.anchor
+            anchor: current.anchor,
+            plainClicked: null
           })
           return true
         }
       }
       if (toggle) {
-        // Why fold in the anchor: Cmd/Ctrl-click after a plain click selects both, like IntelliJ's log.
+        // Why: Cmd/Ctrl-click right after a plain click selects both, like IntelliJ's log.
         const base =
-          current.ids.length === 0 && current.anchor && current.anchor !== item.id
-            ? [current.anchor]
+          current.ids.length === 0 && current.plainClicked && current.plainClicked !== item.id
+            ? [current.plainClicked]
             : current.ids
         const ids = base.includes(item.id)
           ? base.filter((id) => id !== item.id)
           : [...base, item.id]
-        setSelection({ result, ids, anchor: item.id })
+        setSelection({ result, ids, anchor: item.id, plainClicked: null })
         return true
       }
-      if (current.ids.length > 0 || current.anchor !== item.id) {
-        setSelection({ result, ids: [], anchor: item.id })
+      if (current.ids.length > 0 || current.plainClicked !== item.id) {
+        setSelection({ result, ids: [], anchor: item.id, plainClicked: item.id })
       }
       return false
     },
