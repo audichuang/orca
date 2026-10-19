@@ -50,4 +50,17 @@ describe('useGitHistoryCommitSelection', () => {
     act(() => void hook.current.handleRowClick(C, click({ shiftKey: true })))
     expect(selectedIds(hook)).toEqual(['a', 'b', 'c'])
   })
+
+  it('keeps selected commits that a reloaded result still lists, and drops the rest', () => {
+    const { result: hook, rerender } = renderHook(
+      ({ history }: { history: GitHistoryResult }) => useGitHistoryCommitSelection(history),
+      { initialProps: { history: result } }
+    )
+    act(() => void hook.current.handleRowClick(A, click()))
+    act(() => void hook.current.handleRowClick(C, click({ shiftKey: true })))
+    expect(selectedIds(hook)).toEqual(['a', 'b', 'c'])
+
+    rerender({ history: { ...result, items: [C, A] } })
+    expect(selectedIds(hook)).toEqual(['c', 'a'])
+  })
 })
