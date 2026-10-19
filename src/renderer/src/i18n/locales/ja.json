@@ -14290,7 +14290,10 @@
                       "7c6daaf4fa": "ソース全体のコピーに失敗しました",
                       "9c3f952874": "{{value0}} 件の Git ファイルを読み取れませんでした。",
                       "binarySkipped": "（{{value0}} 件をスキップ: バイナリ）",
-                      "onlyBinarySkipped": "コピーするものがありません: バイナリファイル {{value0}} 件をスキップしました。"
+                      "onlyBinarySkipped": "コピーするものがありません: バイナリファイル {{value0}} 件をスキップしました。",
+                      "filesCopied": "{{value0}} 個のファイルをコピーしました",
+                      "filesUnreadable": "{{value0}} 個のファイルを読み取れませんでした。",
+                      "noFiles": "コピーするファイルがありません。"
                     }
                   },
                   "restore": {
