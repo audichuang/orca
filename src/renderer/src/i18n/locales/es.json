@@ -16935,7 +16935,10 @@
                 "chatPaneRight": "panel de chat a la derecha",
                 "splitChatDown": "dividir chat abajo",
                 "newChatBelow": "nuevo chat abajo",
-                "chatPaneBelow": "panel de chat abajo"
+                "chatPaneBelow": "panel de chat abajo",
+                "openGitGraph": "abrir git graph",
+                "gitLog": "registro de git",
+                "commitHistory": "historial de commits"
               },
               "splitChatRight": "Dividir chat a la derecha",
               "splitChatRightDescription": "Abre un chat nuevo en un panel dividido a la derecha.",
@@ -18730,6 +18733,13 @@
           "noMovableChat": "No se puede ejecutar «{{action}}» — no hay ningún chat activo que se pueda mover.",
           "clientUnsupported": "No se puede ejecutar «{{action}}» — este cliente y este entorno de ejecución no lo admiten."
         }
+      },
+      "gitGraphTab": {
+        "noRepo": "No hay ningún repositorio Git disponible para este espacio de trabajo.",
+        "repoSwitcher": "Repositorio",
+        "selectRepo": "Seleccionar repositorio",
+        "searchRepos": "Buscar repositorios...",
+        "noRepos": "No se encontraron repositorios."
       }
     },
     "i18n": {

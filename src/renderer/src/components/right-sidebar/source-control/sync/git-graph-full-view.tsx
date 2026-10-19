@@ -1,4 +1,4 @@
-// Fork-only: full-width Git Graph body. Host-agnostic (dialog today, maybe an editor tab later).
+// Fork-only: full-width Git Graph body. Host-agnostic; the Git Graph editor tab hosts it today.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PanelLeft, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,8 @@ import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
 import { useGitGraphBranchContext, useGitGraphSelection } from './use-git-graph-full-view-state'
 import { useGitGraphBranchTree } from './use-git-graph-branch-tree'
 import { useWindowWidth } from '../../use-window-width'
+import { useMeasuredWidth } from '../../right-sidebar-measured-width'
+import { useGitGraphOpenFocus } from './use-git-graph-open-focus'
 import { composeWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getRuntimeTargetHostId } from '@/runtime/runtime-client-target'
 import { useAppStore } from '@/store'
@@ -59,8 +61,8 @@ export type GitGraphFullViewProps = {
   /** Commit actions (Copy Full Source) over the selected commits. */
   onCommitAction?: GitHistoryCommitActionHandler
   renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
-  /** The host dialog's Escape asks this first; true means the view consumed it (closed an overlay). */
-  escapeHandlerRef?: React.RefObject<(() => boolean) | null>
+  /** Host controls at the end of the filter row (the tab's repo switcher). */
+  toolbarTrailing?: React.ReactNode
 }
 
 function useCommitFiles(
@@ -118,7 +120,7 @@ export function GitGraphFullView({
   onOpenCommitFile,
   onCommitAction,
   renderCommitFilesMenu,
-  escapeHandlerRef
+  toolbarTrailing
 }: GitGraphFullViewProps): React.JSX.Element {
   const result = state.result
   const viewModels = useMemo(
@@ -171,49 +173,35 @@ export function GitGraphFullView({
     jumpTo
   })
   const { containment, headRefId } = branchContext
+  // Why the view's own width: a tab shares the window with sidebars and splits; 0 means unmeasured (hidden, jsdom).
+  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null)
+  const rootRef = useMeasuredWidth(setMeasuredWidth)
   const windowWidth = useWindowWidth() ?? 0
+  const viewWidth = measuredWidth || windowWidth
   const tree = useGitGraphBranchTree({
-    windowWidth,
+    viewWidth,
     result,
     getNavigationGeneration: selection.getNavigationGeneration,
     jumpTo,
     showRef: (fullName) =>
       updateGitHistoryGraphFilter(worktreeId, { scope: 'refs', refs: [fullName] })
   })
-  // Why once, and only while focus is untouched: opening lands on the commit list (IntelliJ's log),
-  // but history that arrives later must not pull focus out of a control the user already chose.
-  const focusedOnOpenRef = useRef(false)
-  useEffect(() => {
-    const list = listRef.current
-    if (focusedOnOpenRef.current || !list) {
+  useGitGraphOpenFocus(listRef, selection.cursorId)
+  // Why containment: React bubbles keydown out of portaled popovers too, and their Escape is theirs.
+  const handleRootKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (
+      event.key !== 'Escape' ||
+      event.defaultPrevented ||
+      !(event.target instanceof Node) ||
+      !event.currentTarget.contains(event.target)
+    ) {
       return
     }
-    const active = document.activeElement
-    const root = list.closest('[data-git-graph-root]')
-    if (active && active !== list && root?.contains(active)) {
-      focusedOnOpenRef.current = true
-      return
+    if (tree.dismissOverlay()) {
+      event.preventDefault()
+      event.stopPropagation()
     }
-    const row = list.querySelector<HTMLElement>('[tabindex="0"]')
-    if (row) {
-      focusedOnOpenRef.current = true
-      row.focus({ preventScroll: true })
-    } else {
-      // Placeholder while history loads; a later row may take over only from here.
-      list.focus({ preventScroll: true })
-    }
-  }, [selection.cursorId])
-  // Why through the dialog: Radix routes Escape to the topmost layer (a popover first), so the
-  // overlay closes only when it is that layer — a window listener would fire under a popover too.
-  useEffect(() => {
-    if (!escapeHandlerRef) {
-      return
-    }
-    escapeHandlerRef.current = tree.dismissOverlay
-    return () => {
-      escapeHandlerRef.current = null
-    }
-  }, [escapeHandlerRef, tree.dismissOverlay])
+  }
   const selectedTipIds = useMemo(() => new Set(shownItems.map((item) => item.id)), [shownItems])
   const { filesByCommit, ensureFiles } = useCommitFiles(result, onLoadCommitFiles)
   const loading = state.status === 'loading' || state.status === 'refreshing'
@@ -228,8 +216,15 @@ export function GitGraphFullView({
   }, [shownItems, filesByCommit, ensureFiles])
 
   return (
-    <div className="flex h-full min-h-0 flex-col" data-git-graph-root="">
-      <div className="flex items-start gap-1 border-b border-border pt-1.5 pr-10">
+    <div
+      ref={rootRef}
+      // Why focusable: a click on a non-focusable spot keeps focus here, so Escape still reaches the handler.
+      tabIndex={-1}
+      className="flex h-full min-h-0 flex-col outline-none"
+      data-git-graph-root=""
+      onKeyDown={handleRootKeyDown}
+    >
+      <div className="flex items-start gap-1 border-b border-border pt-1.5">
         <Button
           type="button"
           variant="ghost"
@@ -251,6 +246,7 @@ export function GitGraphFullView({
             worktreePath={worktreePath}
             activeRepoTarget={activeRepoTarget}
             state={state}
+            trailing={toolbarTrailing}
           />
         </div>
         <Button
@@ -360,6 +356,7 @@ export function GitGraphFullView({
           }
           renderCommitFilesMenu={renderCommitFilesMenu}
           commitContext={branchContext.commitContext}
+          viewWidth={viewWidth}
           reservedWidth={tree.open && !tree.overlay ? GIT_GRAPH_BRANCH_SIDEBAR_WIDTH : 0}
         />
       </div>
