@@ -198,8 +198,9 @@ fork-check-lint: fork-base-guard
 fork-check-tests: export LC_ALL = C
 fork-check-tests: fork-base-guard
 	@# Why --changed: it follows imports, so upstream tests that use a fork-changed module run too. A package.json or vitest config change runs the whole suite.
+	@# Why path filters, not --exclude: the config's projects override a CLI --exclude; filters intersect with --changed and leave tests/ (e2e, wire job) out.
 	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) \
-	  --changed $(FORK_BASE) --exclude 'tests/e2e/**'
+	  --changed $(FORK_BASE) src/ config/
 
 FORK_REPO ?= audichuang/orca
 # The fork's remote in this clone, whatever it is named (origin on a plain clone of the fork).
