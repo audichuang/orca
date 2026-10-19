@@ -14661,6 +14661,7 @@
             "parents": "父提交",
             "refs": "引用",
             "containedIn": "所在分支",
+            "containedInHint": "只计算末端提交在已加载列表中的分支;列表外的分支不计入。",
             "moreBranches": "还有 {{count}} 个"
           }
         }
