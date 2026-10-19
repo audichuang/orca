@@ -32,6 +32,8 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   testRepoPath,
   registerPostElectronShutdownCleanup
 }) => {
+  // Why longer than the default: the review screenshot matrix walks five window sizes and both themes.
+  test.setTimeout(300_000)
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`
   const branchName = `e2e-graph-${suffix}`
   const worktreePath = path.join(os.tmpdir(), branchName)
@@ -124,6 +126,8 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   const rows = dialog.getByTestId('git-graph-full-row')
   await expect(rows.filter({ hasText: 'Feature B: experiment' })).toBeVisible({ timeout: 15_000 })
   await expect(rows.filter({ hasText: 'Merge branch' })).toBeVisible()
+  // Keyboard focus lands on the commit list, not the first toolbar button.
+  await expect(rows.first()).toBeFocused()
   await orcaPage.waitForTimeout(1000)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '01-git-graph-dialog.png') })
 
@@ -212,9 +216,30 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
     await expect(dialog.getByText('Changed files (2) · 2 commits')).toBeVisible()
     await shoot(`size-${size.width}x${size.height}-multi`)
   }
-  // Too narrow for three panes: the tree stays closed and its toggle is disabled.
-  await expect(dialog.getByRole('button', { name: 'Toggle branches' })).toBeDisabled()
-  await expect(dialog.getByRole('navigation', { name: 'Branches and tags' })).toBeHidden()
+  // Too narrow to dock: the tree starts closed but still opens, as an overlay that closes on a jump.
+  const tree = dialog.getByRole('navigation', { name: 'Branches and tags' })
+  await expect(tree).toBeHidden()
+  await dialog.getByRole('button', { name: 'Toggle branches' }).click()
+  await expect(tree).toBeVisible()
+  await shoot('size-1024x700-tree-overlay')
+  await dialog.locator(`[data-branch-ref="refs/heads/${extraBranches[1]}"]`).click()
+  await expect(tree).toBeHidden()
+  await expect(rows.filter({ hasText: 'Feature B: experiment' })).toHaveAttribute(
+    'data-selected',
+    'true'
+  )
+
+  // The smallest window still shows readable subjects and never scrolls sideways.
+  await orcaPage.setViewportSize({ width: 600, height: 600 })
+  await rows.filter({ hasText: 'Post-merge cleanup' }).click()
+  const subject = rows.filter({ hasText: 'Post-merge cleanup' }).getByText('Post-merge cleanup', {
+    exact: false
+  })
+  await expect(subject).toBeVisible()
+  expect((await subject.boundingBox())!.width).toBeGreaterThan(100)
+  const list = dialog.locator('[data-git-graph-list]')
+  expect(await list.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  await shoot('size-600x600-single')
   await orcaPage.setViewportSize({ width: 1600, height: 1000 })
   await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'dark' }))
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
@@ -232,4 +257,12 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   ).toBeVisible()
   await orcaPage.waitForTimeout(500)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '04-diff-opened.png') })
+
+  // Back to the graph: it reopens on the commit whose file was inspected.
+  await orcaPage.getByRole('button', { name: 'Open Git Graph' }).click()
+  await expect(rows.filter({ hasText: 'Post-merge cleanup' })).toHaveAttribute(
+    'data-selected',
+    'true'
+  )
+  await expect(files.filter({ hasText: 'after-merge.ts' })).toBeVisible()
 })
