@@ -2,18 +2,41 @@
 
 import '@testing-library/jest-dom/vitest'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import { GitGraphTabLauncher } from './git-graph-tab-launcher'
+import { GitHistoryPanel } from './git-history-panel'
 
 afterEach(() => {
   cleanup()
   useAppStore.setState(useAppStore.getInitialState(), true)
 })
 
-describe('Commits toolbar Git Graph button', () => {
+describe('Commits header Git Graph button', () => {
+  it('sits beside the Commits toggle while collapsed; clicking it opens the tab without expanding', () => {
+    const onToggle = vi.fn()
+    const openGitGraphTab = vi.fn()
+    useAppStore.setState({ openGitGraphTab })
+    render(
+      <TooltipProvider>
+        <GitHistoryPanel
+          state={{ status: 'idle' }}
+          collapsed
+          onToggle={onToggle}
+          onRefresh={vi.fn()}
+          headerActions={<GitGraphTabLauncher workspaceId="wt-web" repoWorktreeId="wt-web" />}
+          toolbar={<div>toolbar</div>}
+        />
+      </TooltipProvider>
+    )
+    expect(screen.queryByText('toolbar')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    expect(onToggle).not.toHaveBeenCalled()
+    expect(openGitGraphTab).toHaveBeenCalledWith('wt-web', { repoWorktreeId: 'wt-web' })
+  })
+
   it("opens the folder workspace's Git Graph tab on the sidebar's repo", () => {
     useAppStore.setState({
       activeWorktreeId: 'folder:f1',
