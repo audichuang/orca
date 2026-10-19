@@ -13,6 +13,7 @@ import { translate } from '@/i18n/i18n'
 import { formatGitHistoryTimestamp } from './git-history-format'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import type { GitFileStatus } from '../../../../../../shared/git-status-types'
+import type { GitHistoryCommitFilesMenuRenderer } from './git-history-panel-slots'
 
 // State for a single commit's lazily-loaded file list. Owned by GitHistoryPanel,
 // populated through the onLoadCommitFiles loader supplied by SourceControl.
@@ -20,13 +21,6 @@ export type GitHistoryCommitFilesState =
   | { status: 'loading' }
   | { status: 'error'; error: string }
   | { status: 'ready'; entries: GitBranchChangeEntry[] }
-
-/** Fork-only: wraps an expanded commit's file rows, e.g. in one shared context menu. */
-export type GitHistoryCommitFilesMenuRenderer = (
-  entries: readonly GitBranchChangeEntry[],
-  rows: React.JSX.Element,
-  onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
-) => React.ReactNode
 
 function CommitFileRow({
   entry,
@@ -72,13 +66,11 @@ function CommitFileRow({
 function CommitFilesBody({
   state,
   onOpenFile,
-  onOpenAll,
-  renderFilesMenu
+  onOpenAll
 }: {
   state: GitHistoryCommitFilesState
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   onOpenAll?: () => void
-  renderFilesMenu?: GitHistoryCommitFilesMenuRenderer
 }): React.JSX.Element {
   if (state.status === 'loading') {
     return (
@@ -113,16 +105,11 @@ function CommitFilesBody({
     )
   }
 
-  const rows = (
-    <div>
+  return (
+    <>
       {state.entries.map((entry) => (
         <CommitFileRow key={entry.path} entry={entry} onOpen={onOpenFile} />
       ))}
-    </div>
-  )
-  return (
-    <>
-      {renderFilesMenu ? renderFilesMenu(state.entries, rows, onOpenFile) : rows}
       {onOpenAll && (
         <button
           type="button"
@@ -158,16 +145,18 @@ export function GitHistoryCommitFiles({
   renderFilesMenu?: GitHistoryCommitFilesMenuRenderer
 }): React.JSX.Element {
   // Author and date move off the dense commit row and surface here on expand.
+  const body = <CommitFilesBody state={state} onOpenFile={onOpenFile} onOpenAll={onOpenAll} />
   const meta = [author, formatGitHistoryTimestamp(timestamp)].filter(Boolean).join(' · ')
   return (
     <div className="border-l border-border/60 bg-muted/20">
       {meta && <div className="py-1 pl-9 pr-3 text-[11px] text-muted-foreground">{meta}</div>}
-      <CommitFilesBody
-        state={state}
-        onOpenFile={onOpenFile}
-        onOpenAll={onOpenAll}
-        renderFilesMenu={renderFilesMenu}
-      />
+      {renderFilesMenu
+        ? renderFilesMenu(
+            state.status === 'ready' ? state.entries : [],
+            onOpenFile,
+            <div>{body}</div>
+          )
+        : body}
     </div>
   )
 }
