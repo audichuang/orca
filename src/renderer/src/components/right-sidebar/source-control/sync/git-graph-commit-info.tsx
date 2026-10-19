@@ -36,14 +36,19 @@ export type GitGraphCommitContext = {
 
 function InfoRow({
   label,
+  hint,
   children
 }: {
   label: string
+  /** What the value covers, when that is not obvious from the label. */
+  hint?: string
   children: React.ReactNode
 }): React.JSX.Element {
   return (
     <>
-      <dt className="text-2xs text-muted-foreground">{label}</dt>
+      <dt className="text-2xs text-muted-foreground" title={hint}>
+        {label}
+      </dt>
       <dd className="min-w-0 text-xs text-foreground">{children}</dd>
     </>
   )
@@ -61,6 +66,7 @@ function CommitLink({
     return <span className="font-mono text-2xs text-muted-foreground">{id.slice(0, 7)}</span>
   }
   return (
+    // Why not <Button variant="link">: a hash link is mono caption text, which the primitive owns.
     <button
       type="button"
       className="font-mono text-2xs text-primary hover:underline"
@@ -112,11 +118,7 @@ export function GitGraphCommitInfo({
             label={translate('auto.components.right.sidebar.GitGraphCommitInfo.author', 'Author')}
           >
             <span className="flex min-w-0 items-center gap-1.5 select-text">
-              <GitGraphAuthorAvatar
-                name={item.author}
-                email={item.authorEmail}
-                className="size-5 text-3xs"
-              />
+              <GitGraphAuthorAvatar name={item.author} email={item.authorEmail} />
               <span className="truncate">
                 {item.author}
                 {item.authorEmail && (
@@ -186,6 +188,10 @@ export function GitGraphCommitInfo({
               'auto.components.right.sidebar.GitGraphCommitInfo.containedIn',
               'In branches'
             )}
+            hint={translate(
+              'auto.components.right.sidebar.GitGraphCommitInfo.containedInHint',
+              'Branches whose tips are in the loaded list; branches outside it are not counted.'
+            )}
           >
             <span className="flex flex-wrap gap-1">
               {containing.slice(0, CONTAINING_BRANCH_LIMIT).map((refId) => (
@@ -234,13 +240,7 @@ export function GitGraphCommitsSummary({
             <span className="min-w-0 flex-1 truncate text-foreground" title={item.subject}>
               {item.subject}
             </span>
-            {item.author && (
-              <GitGraphAuthorAvatar
-                name={item.author}
-                email={item.authorEmail}
-                className="size-5 text-3xs"
-              />
-            )}
+            {item.author && <GitGraphAuthorAvatar name={item.author} email={item.authorEmail} />}
             <span className="shrink-0 text-2xs text-muted-foreground">
               {formatGitGraphShortDate(item.timestamp)}
             </span>
