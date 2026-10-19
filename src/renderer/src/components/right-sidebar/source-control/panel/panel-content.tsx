@@ -4,6 +4,7 @@ import { GitHistoryGraphLoadMore } from '../sync/git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from '../sync/git-history-graph-empty-message'
 import { GitGraphFullViewLauncher } from '../sync/git-graph-full-view-dialog'
 import { GitHistoryCommitFilesMenu } from '../sync/git-history-commit-files-menu'
+import type { GitHistoryPanelSlots } from '../sync/git-history-panel-slots'
 import { shouldShowSourceControlCompareUnavailableCard } from './header-toolbar'
 import { shouldRenderCommitArea } from '../commit/component-gates'
 import { SourceControlBranchSection } from '../listing/branch-section'
@@ -88,6 +89,19 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
     visibleListRowsBySection,
     visibleTreeRowsBySection
   } = model
+
+  const renderCommitFilesMenu: GitHistoryPanelSlots['renderCommitFilesMenu'] = (
+    item,
+    entries,
+    rows,
+    onOpenFile
+  ) => (
+    <GitHistoryCommitFilesMenu
+      {...{ model, item, entries, onOpenFile, worktreePath, worktreeId: currentWorktreeId }}
+    >
+      {rows}
+    </GitHistoryCommitFilesMenu>
+  )
 
   const hasFilteredUncommittedEntries = displaySections.length > 0
   const hasFilteredBranchEntries = filteredBranchEntries.length > 0
@@ -243,13 +257,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
             onLoadCommitFiles={loadCommitFiles}
             onOpenCommitFile={openCommitFile}
             onCommitAction={handleCommitAction}
-            renderCommitFilesMenu={(item, entries, rows) => (
-              <GitHistoryCommitFilesMenu
-                {...{ model, item, entries, worktreePath, worktreeId: currentWorktreeId }}
-              >
-                {rows}
-              </GitHistoryCommitFilesMenu>
-            )}
+            renderCommitFilesMenu={renderCommitFilesMenu}
             toolbar={
               <GitHistoryGraphToolbar
                 worktreeId={currentWorktreeId}
@@ -266,6 +274,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
                     onOpenCommit={(item) => void openHistoryCommitDiff(item)}
                     onLoadCommitFiles={loadCommitFiles}
                     onOpenCommitFile={openCommitFile}
+                    renderCommitFilesMenu={renderCommitFilesMenu}
                   />
                 }
               />
