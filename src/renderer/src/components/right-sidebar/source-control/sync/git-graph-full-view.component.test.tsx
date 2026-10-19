@@ -195,6 +195,25 @@ describe('full-width Git Graph', () => {
     expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything())
   })
 
+  it('emptying a Cmd/Ctrl selection shows nothing instead of an older plain click', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const dialog = await screen.findByRole('dialog')
+    const rows = await within(dialog).findAllByTestId('git-graph-full-row')
+    const toggle = { metaKey: true, ctrlKey: true }
+    fireEvent.click(rows[0]!)
+    fireEvent.click(rows[1]!, toggle)
+    fireEvent.click(rows[0]!, toggle)
+    fireEvent.click(rows[1]!, toggle)
+
+    expect(rows[0]).not.toHaveAttribute('data-selected')
+    expect(rows[1]).not.toHaveAttribute('data-selected')
+    expect(
+      await within(dialog).findByText('Select a commit to see its details and changed files.')
+    ).toBeInTheDocument()
+  })
+
   it('reloads the selected commit files after a refresh replaces the result', async () => {
     const onLoadCommitFiles = vi.fn(async () => [FILE])
     render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={onLoadCommitFiles} />)
