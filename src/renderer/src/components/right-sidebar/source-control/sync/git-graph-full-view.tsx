@@ -167,8 +167,14 @@ export function GitGraphFullView({
   const sidebarFits = windowWidth >= SIDEBAR_FIT_MIN_WIDTH
   const sidebarOpen =
     sidebarFits && (sidebarPreference ?? windowWidth >= SIDEBAR_AUTO_OPEN_MIN_WIDTH)
-  const [refOptions, setRefOptions] = useState<readonly GitHistoryGraphRefOption[] | null>(null)
-  // Why a ref: callers may pass a fresh target object each render; fetch once per open, not per render.
+  // Why keyed by owner: the repo can move hosts with the same worktree, and a late reply must not land.
+  const refOwnerKey = `${worktreeId}\0${worktreePath}\0${JSON.stringify(activeRepoTarget)}`
+  const [fetchedRefs, setFetchedRefs] = useState<{
+    key: string
+    refs: readonly GitHistoryGraphRefOption[] | null
+  } | null>(null)
+  const refOptions = fetchedRefs?.key === refOwnerKey ? fetchedRefs.refs : null
+  // Why a ref: callers may pass a fresh target object each render; refetch only when the owner changes.
   const repoTargetRef = useRef(activeRepoTarget)
   useEffect(() => {
     repoTargetRef.current = activeRepoTarget
@@ -176,26 +182,32 @@ export function GitGraphFullView({
   useEffect(() => {
     let current = true
     loadRefOptions({ worktreeId, worktreePath, activeRepoTarget: repoTargetRef.current })
-      .then((graph) => current && setRefOptions(graph?.refs ?? null))
+      .then((graph) => current && setFetchedRefs({ key: refOwnerKey, refs: graph?.refs ?? null }))
       .catch(() => {})
     return () => {
       current = false
     }
-  }, [worktreeId, worktreePath])
+  }, [refOwnerKey, worktreeId, worktreePath])
 
-  // Why: a search drops in-between commits, so ancestry through them is unknown, not "off branch".
+  // Why: a search drops in-between commits, so ancestry through them is unknown, not "off branch" —
+  // and so is a searched result still on screen after the query clears, until fresh history replaces it.
   const searching = useGitHistoryGraphFilter(worktreeId).query.trim() !== ''
+  const [searchedResult, setSearchedResult] = useState<GitHistoryResult | undefined>(undefined)
+  if (searching && result && searchedResult !== result) {
+    setSearchedResult(result)
+  }
+  const ancestryUnknown = searching || (result !== undefined && result === searchedResult)
   const containment = useMemo(
     () =>
-      searching
+      ancestryUnknown
         ? new Map<string, readonly string[]>()
         : computeBranchContainment(result?.items ?? []),
-    [result, searching]
+    [result, ancestryUnknown]
   )
   const headRefId = result?.currentRef?.id
   // Why: dim only when the checked-out tip is loaded; otherwise nothing is known to be off-branch.
   const headLoaded =
-    !searching &&
+    !ancestryUnknown &&
     headRefId !== undefined &&
     (result?.items ?? []).some((item) => item.references?.some((ref) => ref.id === headRefId))
   const jumpTo = useCallback(
