@@ -6,7 +6,15 @@ import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import { SourceControlEntryContextMenu } from '../listing/entry-context-menu'
 import { SOURCE_CONTROL_OPEN_TO_SIDE_EVENT } from '../listing/split-open'
+import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import type { SourceControlPanelModel } from '../panel/use-panel-model'
+
+const PLAIN_OPEN_EVENT: SourceControlRowOpenEvent = {
+  altKey: false,
+  ctrlKey: false,
+  metaKey: false,
+  shiftKey: false
+}
 
 // Why one menu per commit, not per row: each menu subscribes to the store and this list is not virtualized.
 export function GitHistoryCommitFilesMenu({
@@ -15,16 +23,19 @@ export function GitHistoryCommitFilesMenu({
   worktreePath,
   item,
   entries,
+  onOpenFile,
   children
 }: {
   model: Pick<
     SourceControlPanelModel,
-    'activeConnectionId' | 'openCommitFile' | 'copyCommitFileFullSource' | 'revealInExplorer'
+    'activeConnectionId' | 'copyCommitFileFullSource' | 'revealInExplorer'
   >
   worktreeId: string
   worktreePath: string
   item: GitHistoryItem
   entries: readonly GitBranchChangeEntry[]
+  /** The list's own open, so a host (the full-view dialog) can close itself first. */
+  onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   children: React.JSX.Element
 }): React.JSX.Element {
   const [entry, setEntry] = useState<GitBranchChangeEntry | null>(null)
@@ -41,12 +52,8 @@ export function GitHistoryCommitFilesMenu({
       relativePath={entry?.path}
       hasWorkingTreeFile={entry !== null && entry.status !== 'deleted'}
       connectionId={model.activeConnectionId}
-      onView={entry ? () => model.openCommitFile(item, entry) : undefined}
-      onOpenToSide={
-        entry
-          ? () => model.openCommitFile(item, entry, SOURCE_CONTROL_OPEN_TO_SIDE_EVENT)
-          : undefined
-      }
+      onView={entry ? () => onOpenFile(entry, PLAIN_OPEN_EVENT) : undefined}
+      onOpenToSide={entry ? () => onOpenFile(entry, SOURCE_CONTROL_OPEN_TO_SIDE_EVENT) : undefined}
       onCopyFullSource={entry ? () => model.copyCommitFileFullSource(item, entry) : undefined}
       onRevealInExplorer={model.revealInExplorer}
     >
