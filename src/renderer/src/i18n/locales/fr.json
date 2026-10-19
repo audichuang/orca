@@ -14948,7 +14948,24 @@
             "resizeDetails": "Redimensionner les détails du commit",
             "copyFullSource": "Copier la source complète de tous les fichiers modifiés",
             "filesInCommits": "Fichiers modifiés ({{files}}) · {{commits}} commits",
-            "filesChanged": "Fichiers modifiés ({{files}})"
+            "filesChanged": "Fichiers modifiés ({{files}})",
+            "toggleBranches": "Afficher ou masquer les branches"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "Locales",
+            "tags": "Tags",
+            "label": "Branches et tags",
+            "empty": "Aucune branche chargée pour le moment.",
+            "showRef": "Absente de la liste actuelle — cliquez pour n’afficher que cette branche"
+          },
+          "GitGraphCommitInfo": {
+            "author": "Auteur",
+            "date": "Date",
+            "copySha": "Copier le SHA du commit",
+            "parents": "Parents",
+            "refs": "Références",
+            "containedIn": "Dans les branches",
+            "moreBranches": "+{{count}} de plus"
           }
         }
       },

@@ -15094,7 +15094,24 @@
             "resizeDetails": "Resize commit details",
             "copyFullSource": "Copy Full Source of all changed files",
             "filesInCommits": "Changed files ({{files}}) · {{commits}} commits",
-            "filesChanged": "Changed files ({{files}})"
+            "filesChanged": "Changed files ({{files}})",
+            "toggleBranches": "Toggle branches"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "Local",
+            "tags": "Tags",
+            "label": "Branches and tags",
+            "empty": "No branches loaded yet.",
+            "showRef": "Not in the current list — click to show only this branch"
+          },
+          "GitGraphCommitInfo": {
+            "author": "Author",
+            "date": "Date",
+            "copySha": "Copy commit SHA",
+            "parents": "Parents",
+            "refs": "Refs",
+            "containedIn": "In branches",
+            "moreBranches": "+{{count}} more"
           }
         }
       },
