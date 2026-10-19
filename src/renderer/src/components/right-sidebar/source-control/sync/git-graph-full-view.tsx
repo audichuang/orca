@@ -28,11 +28,8 @@ import { GitGraphDetailsPane } from './git-graph-full-view-details'
 import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-graph-branch-sidebar'
 import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
-import {
-  useGitGraphBranchContext,
-  useGitGraphBranchTree,
-  useGitGraphSelection
-} from './use-git-graph-full-view-state'
+import { useGitGraphBranchContext, useGitGraphSelection } from './use-git-graph-full-view-state'
+import { useGitGraphBranchTree } from './use-git-graph-branch-tree'
 import { useWindowWidth } from '../../use-window-width'
 import { composeWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getRuntimeTargetHostId } from '@/runtime/runtime-client-target'
@@ -60,6 +57,8 @@ export type GitGraphFullViewProps = {
   /** Commit actions (Copy Full Source) over the selected commits. */
   onCommitAction?: GitHistoryCommitActionHandler
   renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
+  /** The host dialog's Escape asks this first; true means the view consumed it (closed an overlay). */
+  escapeHandlerRef?: React.RefObject<(() => boolean) | null>
 }
 
 function useCommitFiles(
@@ -116,7 +115,8 @@ export function GitGraphFullView({
   onLoadCommitFiles,
   onOpenCommitFile,
   onCommitAction,
-  renderCommitFilesMenu
+  renderCommitFilesMenu,
+  escapeHandlerRef
 }: GitGraphFullViewProps): React.JSX.Element {
   const result = state.result
   const viewModels = useMemo(
@@ -146,17 +146,20 @@ export function GitGraphFullView({
     [viewModels]
   )
   const listRef = useRef<HTMLDivElement>(null)
+  // Why host-qualified: two hosts can publish the same worktree id.
+  const ownerIdentity = composeWorktreeHostIdentity(
+    activeRepoTarget ? getRuntimeTargetHostId(activeRepoTarget) : undefined,
+    worktreeId
+  )
   const selection = useGitGraphSelection({
-    selectionKey: composeWorktreeHostIdentity(
-      activeRepoTarget ? getRuntimeTargetHostId(activeRepoTarget) : undefined,
-      worktreeId
-    ),
+    selectionKey: ownerIdentity,
     result,
     viewModels,
     listRef
   })
   const { shownItems, jumpTo } = selection
   const branchContext = useGitGraphBranchContext({
+    ownerKey: `${ownerIdentity}\0${worktreePath}`,
     worktreeId,
     worktreePath,
     activeRepoTarget,
@@ -169,6 +172,7 @@ export function GitGraphFullView({
   const tree = useGitGraphBranchTree({
     windowWidth,
     result,
+    selectedId: selection.selectedId,
     jumpTo,
     showRef: (fullName) =>
       updateGitHistoryGraphFilter(worktreeId, { scope: 'refs', refs: [fullName] })
@@ -196,6 +200,17 @@ export function GitGraphFullView({
       list.focus({ preventScroll: true })
     }
   }, [selection.cursorId])
+  // Why through the dialog: Radix routes Escape to the topmost layer (a popover first), so the
+  // overlay closes only when it is that layer — a window listener would fire under a popover too.
+  useEffect(() => {
+    if (!escapeHandlerRef) {
+      return
+    }
+    escapeHandlerRef.current = tree.dismissOverlay
+    return () => {
+      escapeHandlerRef.current = null
+    }
+  }, [escapeHandlerRef, tree.dismissOverlay])
   const selectedTipIds = useMemo(() => new Set(shownItems.map((item) => item.id)), [shownItems])
   const { filesByCommit, ensureFiles } = useCommitFiles(result, onLoadCommitFiles)
   const loading = state.status === 'loading' || state.status === 'refreshing'
@@ -255,7 +270,6 @@ export function GitGraphFullView({
               'flex min-h-0',
               tree.overlay && 'absolute inset-y-0 left-0 z-20 bg-background shadow-lg'
             )}
-            data-git-graph-tree-overlay={tree.overlay ? '' : undefined}
           >
             <GitGraphBranchSidebar
               result={result}
