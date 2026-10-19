@@ -21,9 +21,9 @@ export type GitHistoryPanelSlots = {
   footer?: React.ReactNode
   /** Replaces "No commits yet", e.g. when a filter matched nothing. */
   emptyMessage?: React.ReactNode
-  /** Context menu over an expanded commit's file rows. */
+  /** Context menu over the file rows of one commit, or of several merged (newest change per file). */
   renderCommitFilesMenu?: (
-    item: GitHistoryItem,
+    items: readonly GitHistoryItem[],
     ...args: Parameters<GitHistoryCommitFilesMenuRenderer>
   ) => React.ReactNode
 }
