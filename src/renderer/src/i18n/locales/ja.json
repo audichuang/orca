@@ -17595,7 +17595,10 @@
                 "newQuickCommand": "新規クイックコマンド",
                 "browserRight": "ブラウザ右",
                 "splitBrowser": "ブラウザを分割",
-                "browserSplit": "ブラウザ分割"
+                "browserSplit": "ブラウザ分割",
+                "openGitGraph": "git graph を開く",
+                "gitLog": "git ログ",
+                "commitHistory": "コミット履歴"
               },
               "newBrowserTabSplitRight": "右の分割に新規ブラウザタブ",
               "newBrowserTabSplitRightDescription": "右側の新しい分割にブラウザタブを開きます。"
@@ -19412,6 +19415,13 @@
       },
       "NewWorkspaceComposerFooter": {
         "create": "作成"
+      },
+      "gitGraphTab": {
+        "noRepo": "このワークスペースで利用できる Git リポジトリはありません。",
+        "repoSwitcher": "リポジトリ",
+        "selectRepo": "リポジトリを選択",
+        "searchRepos": "リポジトリを検索...",
+        "noRepos": "リポジトリが見つかりません。"
       }
     },
     "i18n": {

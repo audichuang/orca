@@ -17647,7 +17647,10 @@
                 "newQuickCommand": "新的快捷命令",
                 "browserRight": "右侧浏览器",
                 "splitBrowser": "拆分浏览器",
-                "browserSplit": "浏览器分屏"
+                "browserSplit": "浏览器分屏",
+                "openGitGraph": "打开 git graph",
+                "gitLog": "git 日志",
+                "commitHistory": "提交历史"
               },
               "newBrowserTabSplitRight": "在右侧分屏中新建浏览器标签页",
               "newBrowserTabSplitRightDescription": "在右侧新建分屏并打开浏览器标签页"
@@ -19512,6 +19515,13 @@
       },
       "NewWorkspaceComposerFooter": {
         "create": "创建"
+      },
+      "gitGraphTab": {
+        "noRepo": "此工作区没有可用的 Git 仓库。",
+        "repoSwitcher": "仓库",
+        "selectRepo": "选择仓库",
+        "searchRepos": "搜索仓库...",
+        "noRepos": "未找到仓库。"
       }
     },
     "i18n": {
