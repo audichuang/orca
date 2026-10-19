@@ -212,6 +212,9 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
     await expect(dialog.getByText('Changed files (2) · 2 commits')).toBeVisible()
     await shoot(`size-${size.width}x${size.height}-multi`)
   }
+  // Too narrow for three panes: the tree stays closed and its toggle is disabled.
+  await expect(dialog.getByRole('button', { name: 'Toggle branches' })).toBeDisabled()
+  await expect(dialog.getByRole('navigation', { name: 'Branches and tags' })).toBeHidden()
   await orcaPage.setViewportSize({ width: 1600, height: 1000 })
   await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'dark' }))
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
