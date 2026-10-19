@@ -13,11 +13,18 @@ function git(cwd: string, args: string[]): string {
   return execFileSync('git', args, { cwd, stdio: 'pipe', encoding: 'utf8' })
 }
 
+const AUTHORS = ['Ada Lovelace', 'Linus Torvalds', 'Grace Hopper', 'Ken Thompson']
+let authorTurn = 0
+
 function commitFile(cwd: string, file: string, content: string, message: string): void {
   mkdirSync(path.dirname(path.join(cwd, file)), { recursive: true })
   writeFileSync(path.join(cwd, file), content)
   git(cwd, ['add', file])
-  git(cwd, ['commit', '-m', message])
+  // Distinct authors so the avatars and author column show real variety.
+  const author = AUTHORS[authorTurn++ % AUTHORS.length]!
+  const email = `${author.split(' ')[0]!.toLowerCase()}@example.com`
+  // Why --author: the e2e env pins GIT_AUTHOR_NAME, which beats `-c user.name`.
+  git(cwd, ['commit', `--author=${author} <${email}>`, '-m', message])
 }
 
 test('opens the full-screen Git Graph and opens a commit file diff', async ({
@@ -75,8 +82,16 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
     worktreePath,
     'src/graph/after-merge.ts',
     'export const afterMerge = true\n',
-    'Post-merge cleanup with multiple files'
+    'Post-merge cleanup with multiple files\n\nFollows the feature A merge.\n- drops the temporary shim\n- keeps module B exports stable'
   )
+  // A remote-tracking branch, so the branch tree shows a remote group.
+  const remoteRef = `refs/remotes/origin/graph-review-${suffix}`
+  git(worktreePath, ['update-ref', remoteRef, `${extraBranches[1]}`])
+  registerPostElectronShutdownCleanup(async () => {
+    try {
+      git(testRepoPath, ['update-ref', '-d', remoteRef])
+    } catch {}
+  })
 
   mkdirSync(SHOTS_DIR, { recursive: true })
   await orcaPage.setViewportSize({ width: 1600, height: 1000 })
@@ -164,6 +179,44 @@ test('opens the full-screen Git Graph and opens a commit file diff', async ({
   await expect(files.first()).toBeVisible({ timeout: 15_000 })
   await orcaPage.waitForTimeout(300)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '03-git-graph-merge-selected.png') })
+
+  // The branch tree jumps to a loaded tip and the details name the containing branches.
+  await dialog.locator(`[data-branch-ref="refs/heads/${extraBranches[1]}"]`).click()
+  await expect(rows.filter({ hasText: 'Feature B: experiment' })).toHaveAttribute(
+    'data-selected',
+    'true'
+  )
+  await expect(dialog.getByText('In branches')).toBeVisible()
+
+  // Screenshot matrix for review: window sizes x single / multi selection, then dark theme.
+  // Why: the hidden test window never advances CSS transitions, so a deselected row would keep its tint.
+  await orcaPage.addStyleTag({ content: '*, *::before, *::after { transition: none !important; }' })
+  const shoot = async (name: string): Promise<void> => {
+    await orcaPage.mouse.move(2, 2)
+    await orcaPage.waitForTimeout(400)
+    await orcaPage.screenshot({ path: path.join(SHOTS_DIR, `${name}.png`) })
+  }
+  const sizes = [
+    { width: 1920, height: 1080 },
+    { width: 1440, height: 900 },
+    { width: 1280, height: 800 },
+    { width: 1024, height: 700 }
+  ]
+  for (const size of sizes) {
+    await orcaPage.setViewportSize(size)
+    await rows.filter({ hasText: 'Post-merge cleanup' }).click()
+    await expect(files.filter({ hasText: 'after-merge.ts' })).toBeVisible()
+    await shoot(`size-${size.width}x${size.height}-single`)
+    await rows.filter({ hasText: 'Feature A: second step' }).click()
+    await rows.filter({ hasText: 'Main: add module B' }).click({ modifiers: ['ControlOrMeta'] })
+    await expect(dialog.getByText('Changed files (2) · 2 commits')).toBeVisible()
+    await shoot(`size-${size.width}x${size.height}-multi`)
+  }
+  await orcaPage.setViewportSize({ width: 1600, height: 1000 })
+  await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'dark' }))
+  await rows.filter({ hasText: 'Post-merge cleanup' }).click()
+  await shoot('dark-single')
+  await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'light' }))
 
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
   await files.filter({ hasText: 'after-merge.ts' }).click()
