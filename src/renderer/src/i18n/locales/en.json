@@ -17405,7 +17405,10 @@
                 "chatPaneRight": "chat pane right",
                 "splitChatDown": "split chat down",
                 "newChatBelow": "new chat below",
-                "chatPaneBelow": "chat pane below"
+                "chatPaneBelow": "chat pane below",
+                "openGitGraph": "open git graph",
+                "gitLog": "git log",
+                "commitHistory": "commit history"
               },
               "splitChatRight": "Split Chat Right",
               "splitChatRightDescription": "Open a new chat in a split pane to the right.",
@@ -19089,6 +19092,13 @@
         "viewing": "Currently viewing",
         "viewingChild": "Viewing subagent {{name}}",
         "returnHint": "Click the parent row to return. Esc stops this subagent. Enter sends your draft to this subagent."
+      },
+      "gitGraphTab": {
+        "noRepo": "No Git repository is available for this workspace.",
+        "repoSwitcher": "Repository",
+        "selectRepo": "Select repository",
+        "searchRepos": "Search repositories...",
+        "noRepos": "No repositories found."
       }
     },
     "i18n": {

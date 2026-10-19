@@ -16982,7 +16982,10 @@
                 "chatPaneRight": "聊天窗格右侧",
                 "splitChatDown": "拆分聊天",
                 "newChatBelow": "在下方新建聊天",
-                "chatPaneBelow": "下面的聊天窗格"
+                "chatPaneBelow": "下面的聊天窗格",
+                "openGitGraph": "打开 git graph",
+                "gitLog": "git 日志",
+                "commitHistory": "提交历史"
               },
               "splitChatRight": "右侧拆分聊天",
               "splitChatRightDescription": "在右侧的拆分窗格中打开新聊天。",
@@ -18709,6 +18712,13 @@
         "cancelled": "此普通 SSH 终端在启动前已关闭。",
         "terminalUnavailable": "Orca 无法在此处打开终端。",
         "openHint": "在 Orca 无法在该主机上完成设置时，仍可让你继续在主机上工作。"
+      },
+      "gitGraphTab": {
+        "noRepo": "此工作区没有可用的 Git 仓库。",
+        "repoSwitcher": "仓库",
+        "selectRepo": "选择仓库",
+        "searchRepos": "搜索仓库...",
+        "noRepos": "未找到仓库。"
       }
     },
     "i18n": {

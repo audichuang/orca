@@ -82,6 +82,10 @@ export function isMobilePublishableOpenFile(file: AppState['openFiles'][number])
   if (file.mirroredFromRuntimeSession === true) {
     return false
   }
+  // Fork: the Git Graph tab's path is a synthetic id, so a phone would try to read a missing file.
+  if (file.mode === 'git-graph') {
+    return false
+  }
   // Combined diff tabs use display labels as paths and need the desktop renderer.
   return !(
     file.diffSource === 'combined-all' ||
