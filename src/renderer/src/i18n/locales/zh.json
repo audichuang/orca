@@ -16733,7 +16733,10 @@
                 "removeWorktree": "删除工作树",
                 "trashWorktree": "垃圾工作树",
                 "addQuickCommand": "添加快捷命令",
-                "newQuickCommand": "新的快捷命令"
+                "newQuickCommand": "新的快捷命令",
+                "openGitGraph": "打开 git graph",
+                "gitLog": "git 日志",
+                "commitHistory": "提交历史"
               }
             }
           },
@@ -18498,6 +18501,13 @@
         "pluginNameDisambiguation": {
           "nameWithPublisher": "{{value0}}（{{value1}}）"
         }
+      },
+      "gitGraphTab": {
+        "noRepo": "此工作区没有可用的 Git 仓库。",
+        "repoSwitcher": "仓库",
+        "selectRepo": "选择仓库",
+        "searchRepos": "搜索仓库...",
+        "noRepos": "未找到仓库。"
       }
     },
     "i18n": {

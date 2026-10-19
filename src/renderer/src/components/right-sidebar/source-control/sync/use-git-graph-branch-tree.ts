@@ -8,7 +8,7 @@ import type { GitGraphSelectionState } from './use-git-graph-full-view-state'
 let rememberedTreePreference: boolean | null = null
 // Why: below this the branch tree would squeeze the commit list; it stays one click away.
 const TREE_AUTO_OPEN_MIN_WIDTH = 1200
-// Branch tree + details minimum + commit list minimum + dialog chrome; below it the tree overlays.
+// Branch tree + details minimum + commit list minimum + margin; below it the tree overlays.
 const TREE_DOCK_MIN_WIDTH = 1080
 
 type PendingTipJump = {
@@ -32,21 +32,22 @@ export type GitGraphBranchTreeState = {
 }
 
 export function useGitGraphBranchTree(args: {
-  windowWidth: number
+  /** Width of the Git Graph view itself, not the window. */
+  viewWidth: number
   result: GitHistoryResult | undefined
   getNavigationGeneration: GitGraphSelectionState['getNavigationGeneration']
   jumpTo: GitGraphSelectionState['jumpTo']
   /** Narrows the graph to one ref whose tip is not loaded. */
   showRef: (fullName: string) => void
 }): GitGraphBranchTreeState {
-  const { windowWidth, result, getNavigationGeneration, jumpTo, showRef } = args
+  const { viewWidth, result, getNavigationGeneration, jumpTo, showRef } = args
   const [preference, setPreferenceState] = useState(rememberedTreePreference)
   const setPreference = useCallback((next: boolean): void => {
     rememberedTreePreference = next
     setPreferenceState(next)
   }, [])
-  const open = preference ?? windowWidth >= TREE_AUTO_OPEN_MIN_WIDTH
-  const overlay = open && windowWidth < TREE_DOCK_MIN_WIDTH
+  const open = preference ?? viewWidth >= TREE_AUTO_OPEN_MIN_WIDTH
+  const overlay = open && viewWidth < TREE_DOCK_MIN_WIDTH
   const toggleRef = useRef<HTMLButtonElement>(null)
 
   const dismissOverlay = useCallback((): boolean => {
