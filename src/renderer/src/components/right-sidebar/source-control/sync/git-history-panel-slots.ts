@@ -4,11 +4,14 @@ import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 
-/** Wraps an expanded commit's file list; `onOpenFile` is the list's own open (a dialog host closes first). */
+/**
+ * Wraps an expanded commit's file list; `onOpenFile` is the list's own open (a dialog host closes first).
+ * `renderList` paints the rows with the wrapper's multi-selection highlighted.
+ */
 export type GitHistoryCommitFilesMenuRenderer = (
   entries: readonly GitBranchChangeEntry[],
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void,
-  list: React.JSX.Element
+  renderList: (selectedPaths: ReadonlySet<string>) => React.JSX.Element
 ) => React.ReactNode
 
 export type GitHistoryPanelSlots = {
