@@ -14505,7 +14505,11 @@
             "author": "Auteur",
             "date": "Date",
             "commit": "Commit",
-            "selectCommit": "Sélectionnez un commit pour voir ses détails et les fichiers modifiés."
+            "selectCommit": "Sélectionnez un commit pour voir ses détails et les fichiers modifiés.",
+            "resizeDetails": "Redimensionner les détails du commit",
+            "copyFullSource": "Copier la source complète de tous les fichiers modifiés",
+            "filesInCommits": "Fichiers modifiés ({{files}}) · {{commits}} commits",
+            "filesChanged": "Fichiers modifiés ({{files}})"
           }
         }
       },
