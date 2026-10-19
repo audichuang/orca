@@ -47,6 +47,7 @@ function CommitFileRow({
       data-testid="git-history-commit-file"
       data-commit-file-path={entry.path}
       data-selected={selected ? 'true' : undefined}
+      aria-pressed={selected || undefined}
       onClick={(event) => onOpen(entry, toSourceControlRowOpenEvent(event))}
       onDoubleClick={(event) => onOpen(entry, toPermanentSourceControlRowOpenEvent(event))}
     >
