@@ -14,7 +14,8 @@ function flatKeys(tree, prefix = '', out = new Set()) {
   for (const [key, value] of Object.entries(tree)) {
     if (value && typeof value === 'object') {
       flatKeys(value, `${prefix}${key}.`, out)
-    } else {
+    } else if (typeof value === 'string' && value.trim() !== '') {
+      // Why: an empty value renders a blank label, so it counts as missing.
       out.add(prefix + key)
     }
   }
