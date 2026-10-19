@@ -12,7 +12,7 @@ import type { DetectedWorktreeListResult, Worktree } from '../../../../../../sha
 type FilesystemOwnerFields = Pick<Repo, 'connectionId' | 'executionHostId'>
 
 // Why: a paired server's native repos and its nested SSH repos share one runtime host id; only the SSH target tells their filesystems apart.
-function getFilesystemOwnerKey(owner: FilesystemOwnerFields): string {
+export function getFilesystemOwnerKey(owner: FilesystemOwnerFields): string {
   return `${getRepoExecutionHostId(owner)}|${getRepoSshConnectionId(owner) ?? ''}`
 }
 
