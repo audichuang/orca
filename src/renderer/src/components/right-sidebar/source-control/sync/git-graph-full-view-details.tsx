@@ -24,12 +24,20 @@ const DETAILS_DEFAULT_WIDTH = 480
 const DETAILS_RESERVED_CHROME = 112
 const COMMIT_LIST_MIN_WIDTH = 460
 
+// Why viewport-relative: a flat default left one-file commits in a half-empty pane on laptops.
+function defaultDetailsWidth(): number {
+  return Math.max(
+    DETAILS_MIN_WIDTH,
+    Math.min(DETAILS_DEFAULT_WIDTH, Math.round(window.innerWidth * 0.3))
+  )
+}
+
 function readDetailsWidth(): number {
   try {
     const stored = Number(window.localStorage.getItem(DETAILS_WIDTH_KEY))
-    return stored >= DETAILS_MIN_WIDTH ? stored : DETAILS_DEFAULT_WIDTH
+    return stored >= DETAILS_MIN_WIDTH ? stored : defaultDetailsWidth()
   } catch {
-    return DETAILS_DEFAULT_WIDTH
+    return defaultDetailsWidth()
   }
 }
 
