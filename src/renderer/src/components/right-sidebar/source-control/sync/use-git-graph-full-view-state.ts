@@ -252,7 +252,94 @@ export function useGitGraphBranchContext(args: {
   return { refOptions, containment, headRefId, canDim, commitContext }
 }
 
+// Why module scope: closing the tree is a layout choice for the session, not for one dialog.
+let rememberedTreePreference: boolean | null = null
+// Why: below this the branch tree would squeeze the commit list; it stays one click away.
+const TREE_AUTO_OPEN_MIN_WIDTH = 1200
+// Branch tree + details minimum + commit list minimum + dialog chrome; below it the tree overlays.
+const TREE_DOCK_MIN_WIDTH = 1080
+
+export type GitGraphBranchTreeState = {
+  open: boolean
+  /** Too narrow to dock: the tree floats over the commit list. */
+  overlay: boolean
+  toggleRef: React.RefObject<HTMLButtonElement | null>
+  toggle: () => void
+  onJump: (commitId: string) => void
+  onShowRef: (fullName: string) => void
+}
+
+export function useGitGraphBranchTree(args: {
+  windowWidth: number
+  result: GitHistoryResult | undefined
+  jumpTo: GitGraphSelectionState['jumpTo']
+  /** Narrows the graph to one ref whose tip is not loaded. */
+  showRef: (fullName: string) => void
+}): GitGraphBranchTreeState {
+  const { windowWidth, result, jumpTo, showRef } = args
+  const [preference, setPreferenceState] = useState(rememberedTreePreference)
+  const setPreference = useCallback((next: boolean): void => {
+    rememberedTreePreference = next
+    setPreferenceState(next)
+  }, [])
+  const open = preference ?? windowWidth >= TREE_AUTO_OPEN_MIN_WIDTH
+  const overlay = open && windowWidth < TREE_DOCK_MIN_WIDTH
+  const toggleRef = useRef<HTMLButtonElement>(null)
+
+  // Why: Escape in the overlay closes the overlay, not the whole dialog (the dialog's own
+  // Escape handler defers while `[data-git-graph-tree-overlay]` is on screen).
+  useEffect(() => {
+    if (!overlay) {
+      return
+    }
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        setPreference(false)
+        toggleRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [overlay, setPreference])
+
+  // Why pending: an unloaded branch first reloads the graph; select its tip once it arrives.
+  const pendingRefRef = useRef<string | null>(null)
+  useEffect(() => {
+    const pending = pendingRefRef.current
+    const tip = pending
+      ? result?.items.find((item) => item.references?.some((ref) => ref.id === pending))
+      : undefined
+    if (tip) {
+      pendingRefRef.current = null
+      jumpTo(tip.id, { focus: true })
+    }
+  }, [jumpTo, result])
+
+  return {
+    open,
+    overlay,
+    toggleRef,
+    toggle: () => setPreference(!open),
+    onJump: (commitId) => {
+      // Why focus: closing the overlay removes the focused tree button with it.
+      jumpTo(commitId, { focus: overlay })
+      if (overlay) {
+        setPreference(false)
+      }
+    },
+    onShowRef: (fullName) => {
+      pendingRefRef.current = fullName
+      showRef(fullName)
+      if (overlay) {
+        toggleRef.current?.focus()
+        setPreference(false)
+      }
+    }
+  }
+}
+
 /** Test seam: the remembered selection outlives a dialog, so tests reset it between cases. */
 export function resetGitGraphRememberedSelectionForTest(): void {
   rememberedCommitByWorktree.clear()
+  rememberedTreePreference = null
 }
