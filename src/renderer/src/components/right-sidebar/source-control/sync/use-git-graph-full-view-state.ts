@@ -22,6 +22,7 @@ const PLAIN_CLICK = { metaKey: false, ctrlKey: false, shiftKey: false }
 
 // Why module scope: the dialog unmounts the view on close (opening a diff closes it), and
 // reopening should land on the same commit, like returning to IntelliJ's log.
+// Keyed by host-qualified worktree identity: two hosts can publish the same worktree id.
 const rememberedCommitByWorktree = new Map<string, string>()
 
 function isNavigable(viewModel: GitHistoryItemViewModel): boolean {
@@ -36,28 +37,30 @@ export type GitGraphSelectionState = {
   isRowSelected: (id: string) => boolean
   handleRowSelect: (item: GitHistoryItem, event: React.MouseEvent) => void
   handleListKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void
-  jumpTo: (commitId: string) => void
+  /** `focus` moves keyboard focus to the row, for callers whose own control is going away. */
+  jumpTo: (commitId: string, options?: { focus?: boolean }) => void
 }
 
 export function useGitGraphSelection(args: {
-  worktreeId: string
+  /** Host-qualified worktree identity (composeWorktreeHostIdentity). */
+  selectionKey: string
   result: GitHistoryResult | undefined
   viewModels: readonly GitHistoryItemViewModel[]
   listRef: React.RefObject<HTMLDivElement | null>
 }): GitGraphSelectionState {
-  const { worktreeId, result, viewModels, listRef } = args
+  const { selectionKey, result, viewModels, listRef } = args
   const [selectedId, setSelectedIdState] = useState<string | null>(
-    () => rememberedCommitByWorktree.get(worktreeId) ?? null
+    () => rememberedCommitByWorktree.get(selectionKey) ?? null
   )
   const [cursorState, setCursorId] = useState<string | null>(selectedId)
   const setSelectedId = useCallback(
     (id: string | null): void => {
       setSelectedIdState(id)
       if (id) {
-        rememberedCommitByWorktree.set(worktreeId, id)
+        rememberedCommitByWorktree.set(selectionKey, id)
       }
     },
-    [worktreeId]
+    [selectionKey]
   )
   const selected = result?.items.find((item) => item.id === selectedId) ?? null
   const commitSelection = useGitHistoryCommitSelection(result)
@@ -100,11 +103,14 @@ export function useGitGraphSelection(args: {
       item: GitHistoryItem,
       modifiers: { metaKey: boolean; ctrlKey: boolean; shiftKey: boolean }
     ) => {
+      // Why the fallback anchor: a restored or refreshed selection has no click anchor yet, so the
+      // first Shift gesture would otherwise drop the selected commit from its own range.
+      const handled = commitSelection.handleRowClick(item, modifiers, selectedId ?? cursorId)
       // Why clear on a gesture: emptying the multi-selection must not fall back to an old click.
-      setSelectedId(commitSelection.handleRowClick(item, modifiers) ? null : item.id)
+      setSelectedId(handled ? null : item.id)
       setCursorId(item.id)
     },
-    [commitSelection, setSelectedId]
+    [commitSelection, cursorId, selectedId, setSelectedId]
   )
 
   const handleListKeyDown = useCallback(
@@ -130,11 +136,11 @@ export function useGitGraphSelection(args: {
   )
 
   const jumpTo = useCallback(
-    (commitId: string): void => {
+    (commitId: string, options?: { focus?: boolean }): void => {
       const item = result?.items.find((candidate) => candidate.id === commitId)
       if (item) {
         select(item, PLAIN_CLICK)
-        scrollToRow(commitId, false)
+        scrollToRow(commitId, options?.focus ?? false)
       }
     },
     [result, scrollToRow, select]
