@@ -19,7 +19,6 @@ import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import type { GitHistoryPanelState } from './git-history-panel'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import type { GitHistoryCommitFilesState } from './git-history-commit-files'
-import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
 import { GitHistoryGraphLoadMore } from './git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from './git-history-graph-empty-message'
 import {
@@ -32,7 +31,9 @@ import { GitGraphDetailsPane } from './git-graph-full-view-details'
 import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-graph-branch-sidebar'
 import { computeBranchContainment } from './git-graph-branch-containment'
 import type { GitGraphCommitContext } from './git-graph-commit-info'
-import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
+import { updateGitHistoryGraphFilter, useGitHistoryGraphFilter } from './git-history-graph-filter'
+import { GitHistoryGraphToolbar, loadRefOptions } from './git-history-graph-toolbar'
+import type { GitHistoryGraphRefOption } from '../../../../../../shared/git-history-graph-query-types'
 import { useWindowWidth } from '../../use-window-width'
 import {
   useGitHistoryCommitSelection,
@@ -41,6 +42,8 @@ import {
 
 // Why: below this the branch tree would squeeze the commit list; it stays one click away.
 const SIDEBAR_AUTO_OPEN_MIN_WIDTH = 1200
+// Branch tree + details minimum + commit list minimum + dialog chrome; below it the tree cannot open.
+const SIDEBAR_FIT_MIN_WIDTH = 1080
 const PLAIN_CLICK = { metaKey: false, ctrlKey: false, shiftKey: false }
 
 // Why bounded: a Shift range can cover hundreds of commits; the runtime RPC queue rejects past 256.
@@ -161,12 +164,38 @@ export function GitGraphFullView({
   const listRef = useRef<HTMLDivElement>(null)
   const windowWidth = useWindowWidth() ?? SIDEBAR_AUTO_OPEN_MIN_WIDTH
   const [sidebarPreference, setSidebarPreference] = useState<boolean | null>(null)
-  const sidebarOpen = sidebarPreference ?? windowWidth >= SIDEBAR_AUTO_OPEN_MIN_WIDTH
+  const sidebarFits = windowWidth >= SIDEBAR_FIT_MIN_WIDTH
+  const sidebarOpen =
+    sidebarFits && (sidebarPreference ?? windowWidth >= SIDEBAR_AUTO_OPEN_MIN_WIDTH)
+  const [refOptions, setRefOptions] = useState<readonly GitHistoryGraphRefOption[] | null>(null)
+  // Why a ref: callers may pass a fresh target object each render; fetch once per open, not per render.
+  const repoTargetRef = useRef(activeRepoTarget)
+  useEffect(() => {
+    repoTargetRef.current = activeRepoTarget
+  })
+  useEffect(() => {
+    let current = true
+    loadRefOptions({ worktreeId, worktreePath, activeRepoTarget: repoTargetRef.current })
+      .then((graph) => current && setRefOptions(graph?.refs ?? null))
+      .catch(() => {})
+    return () => {
+      current = false
+    }
+  }, [worktreeId, worktreePath])
 
-  const containment = useMemo(() => computeBranchContainment(result?.items ?? []), [result])
+  // Why: a search drops in-between commits, so ancestry through them is unknown, not "off branch".
+  const searching = useGitHistoryGraphFilter(worktreeId).query.trim() !== ''
+  const containment = useMemo(
+    () =>
+      searching
+        ? new Map<string, readonly string[]>()
+        : computeBranchContainment(result?.items ?? []),
+    [result, searching]
+  )
   const headRefId = result?.currentRef?.id
   // Why: dim only when the checked-out tip is loaded; otherwise nothing is known to be off-branch.
   const headLoaded =
+    !searching &&
     headRefId !== undefined &&
     (result?.items ?? []).some((item) => item.references?.some((ref) => ref.id === headRefId))
   const jumpTo = useCallback(
@@ -234,6 +263,7 @@ export function GitGraphFullView({
           size="icon-xs"
           className="ml-2"
           aria-pressed={sidebarOpen}
+          disabled={!sidebarFits}
           onClick={() => setSidebarPreference(!sidebarOpen)}
           aria-label={translate(
             'auto.components.right.sidebar.GitGraphFullView.toggleBranches',
@@ -267,6 +297,7 @@ export function GitGraphFullView({
         {sidebarOpen && (
           <GitGraphBranchSidebar
             result={result}
+            refOptions={refOptions}
             headRefId={headRefId}
             selectedTipIds={selectedTipIds}
             onJump={jumpTo}
