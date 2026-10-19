@@ -139,7 +139,7 @@ describe('full-width Git Graph', () => {
   it('hands the selected commit files to the fork menu with a dialog-closing open', async () => {
     const onOpenCommitFile = vi.fn()
     const renderCommitFilesMenu = vi.fn<NonNullable<GitHistoryPanelSlots['renderCommitFilesMenu']>>(
-      (_item, _entries, _open, list) => list
+      (_item, _entries, _open, renderList) => renderList(new Set())
     )
     render(
       <Harness
