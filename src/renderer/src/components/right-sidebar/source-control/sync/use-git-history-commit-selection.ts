@@ -43,14 +43,21 @@ export function useGitHistoryCommitSelection(
     /** Row of the last plain click; a following Cmd/Ctrl-click folds it in (same as the file list). */
     plainClicked: string | null
   }>({ result, ids: [], anchor: null, plainClicked: null })
-  // Why: a new result can reorder or drop commits, so a stale selection must not survive it.
-  const current = useMemo(
-    () =>
-      selection.result === result
-        ? selection
-        : { result, ids: [], anchor: null, plainClicked: null },
-    [result, selection]
-  )
+  // Why: a new result (refresh, branch filter) can reorder or drop commits; keep the commits it
+  // still lists, so a selection survives a reload, and drop the ones it no longer has.
+  const current = useMemo(() => {
+    if (selection.result === result) {
+      return selection
+    }
+    const listed = new Set((result?.items ?? []).map((item) => item.id))
+    const keep = (id: string | null): string | null => (id !== null && listed.has(id) ? id : null)
+    return {
+      result,
+      ids: selection.ids.filter((id) => listed.has(id)),
+      anchor: keep(selection.anchor),
+      plainClicked: keep(selection.plainClicked)
+    }
+  }, [result, selection])
 
   const handleRowClick = useCallback(
     (
