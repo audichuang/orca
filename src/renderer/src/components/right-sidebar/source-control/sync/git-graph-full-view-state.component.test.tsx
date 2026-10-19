@@ -17,6 +17,7 @@ vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => undefined })
 const { GitGraphFullView } = await import('./git-graph-full-view')
 const { resetGitHistoryGraphFiltersForTest, updateGitHistoryGraphFilter } =
   await import('./git-history-graph-filter')
+const { resetGitGraphRememberedSelectionForTest } = await import('./use-git-graph-full-view-state')
 
 const WORKTREE = 'wt-state'
 const TIP: GitHistoryItem = {
@@ -93,6 +94,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   resetGitHistoryGraphFiltersForTest()
+  resetGitGraphRememberedSelectionForTest()
   vi.clearAllMocks()
 })
 
