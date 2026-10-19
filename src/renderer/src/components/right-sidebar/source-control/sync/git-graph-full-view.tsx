@@ -33,6 +33,8 @@ import { useGitGraphBranchTree } from './use-git-graph-branch-tree'
 import { useWindowWidth } from '../../use-window-width'
 import { composeWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getRuntimeTargetHostId } from '@/runtime/runtime-client-target'
+import { useAppStore } from '@/store'
+import { getExecutionHostIdForWorktree } from '@/lib/worktree-runtime-owner'
 import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
 
 // Why bounded: a Shift range can cover hundreds of commits; the runtime RPC queue rejects past 256.
@@ -146,11 +148,10 @@ export function GitGraphFullView({
     [viewModels]
   )
   const listRef = useRef<HTMLDivElement>(null)
-  // Why host-qualified: two hosts can publish the same worktree id.
-  const ownerIdentity = composeWorktreeHostIdentity(
-    activeRepoTarget ? getRuntimeTargetHostId(activeRepoTarget) : undefined,
-    worktreeId
-  )
+  // Why the worktree's execution host, not the runtime target: a direct SSH repo uses the local
+  // target, and two hosts can publish the same worktree id and path.
+  const executionHostId = useAppStore((state) => getExecutionHostIdForWorktree(state, worktreeId))
+  const ownerIdentity = composeWorktreeHostIdentity(executionHostId, worktreeId)
   const selection = useGitGraphSelection({
     selectionKey: ownerIdentity,
     result,
@@ -159,7 +160,8 @@ export function GitGraphFullView({
   })
   const { shownItems, jumpTo } = selection
   const branchContext = useGitGraphBranchContext({
-    ownerKey: `${ownerIdentity}\0${worktreePath}`,
+    // Why the target too: an unresolved owner becoming resolved must refetch the ref list.
+    ownerKey: `${ownerIdentity}\0${worktreePath}\0${activeRepoTarget ? getRuntimeTargetHostId(activeRepoTarget) : ''}`,
     worktreeId,
     worktreePath,
     activeRepoTarget,
@@ -172,7 +174,7 @@ export function GitGraphFullView({
   const tree = useGitGraphBranchTree({
     windowWidth,
     result,
-    selectedId: selection.selectedId,
+    getNavigationGeneration: selection.getNavigationGeneration,
     jumpTo,
     showRef: (fullName) =>
       updateGitHistoryGraphFilter(worktreeId, { scope: 'refs', refs: [fullName] })
