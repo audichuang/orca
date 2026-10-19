@@ -5,11 +5,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
-import type {
-  GitHistoryGraphColorId,
-  GitHistoryItem,
-  GitHistoryResult
-} from '../../../../../../shared/git-history'
+import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import {
   buildDefaultGitHistoryColorMap,
@@ -23,28 +19,23 @@ import { GitHistoryGraphLoadMore } from './git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from './git-history-graph-empty-message'
 import {
   GIT_GRAPH_AUTHOR_COLUMN,
+  GIT_GRAPH_DATE_COLUMN,
   GIT_GRAPH_FULL_ROW_COLUMNS,
   GIT_GRAPH_HASH_COLUMN,
   GitGraphFullRow
 } from './git-graph-full-row'
 import { GitGraphDetailsPane } from './git-graph-full-view-details'
 import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-graph-branch-sidebar'
-import { computeBranchContainment } from './git-graph-branch-containment'
-import type { GitGraphCommitContext } from './git-graph-commit-info'
-import { updateGitHistoryGraphFilter, useGitHistoryGraphFilter } from './git-history-graph-filter'
-import { GitHistoryGraphToolbar, loadRefOptions } from './git-history-graph-toolbar'
-import type { GitHistoryGraphRefOption } from '../../../../../../shared/git-history-graph-query-types'
+import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
+import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
+import { useGitGraphBranchContext, useGitGraphSelection } from './use-git-graph-full-view-state'
 import { useWindowWidth } from '../../use-window-width'
-import {
-  useGitHistoryCommitSelection,
-  type GitHistoryCommitActionHandler
-} from './use-git-history-commit-selection'
+import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
 
 // Why: below this the branch tree would squeeze the commit list; it stays one click away.
 const SIDEBAR_AUTO_OPEN_MIN_WIDTH = 1200
 // Branch tree + details minimum + commit list minimum + dialog chrome; below it the tree cannot open.
 const SIDEBAR_FIT_MIN_WIDTH = 1080
-const PLAIN_CLICK = { metaKey: false, ctrlKey: false, shiftKey: false }
 
 // Why bounded: a Shift range can cover hundreds of commits; the runtime RPC queue rejects past 256.
 const FILE_LOAD_CONCURRENCY = 6
@@ -153,106 +144,33 @@ export function GitGraphFullView({
         1),
     [viewModels]
   )
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const selected = result?.items.find((item) => item.id === selectedId) ?? null
-  const commitSelection = useGitHistoryCommitSelection(result)
-  const multiSelected = commitSelection.selectedItems
-  const shownItems = useMemo(
-    () => (multiSelected.length > 0 ? multiSelected : selected ? [selected] : []),
-    [multiSelected, selected]
-  )
   const listRef = useRef<HTMLDivElement>(null)
+  const selection = useGitGraphSelection({ worktreeId, result, viewModels, listRef })
+  const { shownItems, jumpTo } = selection
+  const branchContext = useGitGraphBranchContext({
+    worktreeId,
+    worktreePath,
+    activeRepoTarget,
+    result,
+    viewModels,
+    jumpTo
+  })
+  const { containment, headRefId } = branchContext
   const windowWidth = useWindowWidth() ?? SIDEBAR_AUTO_OPEN_MIN_WIDTH
   const [sidebarPreference, setSidebarPreference] = useState<boolean | null>(null)
   const sidebarFits = windowWidth >= SIDEBAR_FIT_MIN_WIDTH
-  const sidebarOpen =
-    sidebarFits && (sidebarPreference ?? windowWidth >= SIDEBAR_AUTO_OPEN_MIN_WIDTH)
-  // Why keyed by owner: the repo can move hosts with the same worktree, and a late reply must not land.
-  const refOwnerKey = `${worktreeId}\0${worktreePath}\0${JSON.stringify(activeRepoTarget)}`
-  const [fetchedRefs, setFetchedRefs] = useState<{
-    key: string
-    refs: readonly GitHistoryGraphRefOption[] | null
-  } | null>(null)
-  const refOptions = fetchedRefs?.key === refOwnerKey ? fetchedRefs.refs : null
-  // Why a ref: callers may pass a fresh target object each render; refetch only when the owner changes.
-  const repoTargetRef = useRef(activeRepoTarget)
+  const sidebarOpen = sidebarPreference ?? windowWidth >= SIDEBAR_AUTO_OPEN_MIN_WIDTH
+  // Why an overlay when it does not fit: docking it would crush the commit list, but hiding it
+  // outright would cut off branch and tag navigation on small windows.
+  const sidebarOverlay = sidebarOpen && !sidebarFits
+  // Why once: opening the view lands keyboard focus on the commit list, like IntelliJ's log.
+  const focusedOnOpenRef = useRef(false)
   useEffect(() => {
-    repoTargetRef.current = activeRepoTarget
-  })
-  useEffect(() => {
-    let current = true
-    loadRefOptions({ worktreeId, worktreePath, activeRepoTarget: repoTargetRef.current })
-      .then((graph) => current && setFetchedRefs({ key: refOwnerKey, refs: graph?.refs ?? null }))
-      .catch(() => {})
-    return () => {
-      current = false
+    if (!focusedOnOpenRef.current && selection.cursorId) {
+      focusedOnOpenRef.current = true
+      listRef.current?.querySelector<HTMLElement>('[tabindex="0"]')?.focus({ preventScroll: true })
     }
-  }, [refOwnerKey, worktreeId, worktreePath])
-
-  // Why: a search drops in-between commits, so ancestry through them is unknown, not "off branch" —
-  // and so is a searched result still on screen after the query clears, until fresh history replaces it.
-  const searching = useGitHistoryGraphFilter(worktreeId).query.trim() !== ''
-  const [searchedResult, setSearchedResult] = useState<GitHistoryResult | undefined>(undefined)
-  if (searching && result && searchedResult !== result) {
-    setSearchedResult(result)
-  }
-  const ancestryUnknown = searching || (result !== undefined && result === searchedResult)
-  const containment = useMemo(
-    () =>
-      ancestryUnknown
-        ? new Map<string, readonly string[]>()
-        : computeBranchContainment(result?.items ?? []),
-    [result, ancestryUnknown]
-  )
-  const headRefId = result?.currentRef?.id
-  // Why: dim only when the checked-out tip is loaded; otherwise nothing is known to be off-branch.
-  const headLoaded =
-    !ancestryUnknown &&
-    headRefId !== undefined &&
-    (result?.items ?? []).some((item) => item.references?.some((ref) => ref.id === headRefId))
-  const jumpTo = useCallback(
-    (commitId: string): void => {
-      const item = result?.items.find((candidate) => candidate.id === commitId)
-      if (!item) {
-        return
-      }
-      commitSelection.handleRowClick(item, PLAIN_CLICK)
-      setSelectedId(commitId)
-      listRef.current
-        ?.querySelector(`[data-commit-id="${commitId}"]`)
-        ?.scrollIntoView({ block: 'nearest' })
-    },
-    [commitSelection, result]
-  )
-  const commitContext = useMemo((): GitGraphCommitContext => {
-    const branchNames = new Map<string, string>()
-    for (const ref of result?.graph?.refs ?? []) {
-      branchNames.set(ref.fullName, ref.name)
-    }
-    for (const item of result?.items ?? []) {
-      for (const ref of item.references ?? []) {
-        if (!branchNames.has(ref.id)) {
-          branchNames.set(ref.id, ref.name)
-        }
-      }
-    }
-    const refColors = new Map<string, GitHistoryGraphColorId>()
-    for (const viewModel of viewModels) {
-      for (const ref of viewModel.historyItem.references ?? []) {
-        if (ref.color) {
-          refColors.set(ref.id, ref.color)
-        }
-      }
-    }
-    return {
-      refColors,
-      itemsById: new Map((result?.items ?? []).map((item) => [item.id, item])),
-      containment,
-      branchNames,
-      headRefId,
-      onJump: jumpTo
-    }
-  }, [containment, headRefId, jumpTo, result, viewModels])
+  }, [selection.cursorId])
   const selectedTipIds = useMemo(() => new Set(shownItems.map((item) => item.id)), [shownItems])
   const { filesByCommit, ensureFiles } = useCommitFiles(result, onLoadCommitFiles)
   const loading = state.status === 'loading' || state.status === 'refreshing'
@@ -275,7 +193,6 @@ export function GitGraphFullView({
           size="icon-xs"
           className="ml-2"
           aria-pressed={sidebarOpen}
-          disabled={!sidebarFits}
           onClick={() => setSidebarPreference(!sidebarOpen)}
           aria-label={translate(
             'auto.components.right.sidebar.GitGraphFullView.toggleBranches',
@@ -305,24 +222,39 @@ export function GitGraphFullView({
           <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
         </Button>
       </div>
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
         {sidebarOpen && (
-          <GitGraphBranchSidebar
-            result={result}
-            refOptions={refOptions}
-            headRefId={headRefId}
-            selectedTipIds={selectedTipIds}
-            onJump={jumpTo}
-            onShowRef={(fullName) =>
-              updateGitHistoryGraphFilter(worktreeId, { scope: 'refs', refs: [fullName] })
-            }
-          />
+          <div
+            className={cn(
+              'flex min-h-0',
+              sidebarOverlay && 'absolute inset-y-0 left-0 z-20 bg-background shadow-lg'
+            )}
+          >
+            <GitGraphBranchSidebar
+              result={result}
+              refOptions={branchContext.refOptions}
+              headRefId={headRefId}
+              selectedTipIds={selectedTipIds}
+              onJump={(commitId) => {
+                jumpTo(commitId)
+                if (sidebarOverlay) {
+                  setSidebarPreference(false)
+                }
+              }}
+              onShowRef={(fullName) => {
+                updateGitHistoryGraphFilter(worktreeId, { scope: 'refs', refs: [fullName] })
+                if (sidebarOverlay) {
+                  setSidebarPreference(false)
+                }
+              }}
+            />
+          </div>
         )}
         <div className="@container flex min-w-0 flex-1 flex-col">
           {/* Why both reserve the gutter: the header must lose the same scrollbar width as the rows. */}
           <div
             className={cn(
-              'scrollbar-sleek grid shrink-0 items-center gap-x-3 overflow-y-hidden border-b border-border px-3 py-1 text-2xs text-muted-foreground [scrollbar-gutter:stable]',
+              'scrollbar-sleek grid shrink-0 items-center gap-x-3 overflow-hidden border-b border-border px-3 py-1 text-2xs text-muted-foreground [scrollbar-gutter:stable]',
               GIT_GRAPH_FULL_ROW_COLUMNS
             )}
           >
@@ -333,14 +265,18 @@ export function GitGraphFullView({
             <span className={GIT_GRAPH_AUTHOR_COLUMN}>
               {translate('auto.components.right.sidebar.GitGraphFullView.author', 'Author')}
             </span>
-            <span>{translate('auto.components.right.sidebar.GitGraphFullView.date', 'Date')}</span>
+            <span className={GIT_GRAPH_DATE_COLUMN}>
+              {translate('auto.components.right.sidebar.GitGraphFullView.date', 'Date')}
+            </span>
             <span className={GIT_GRAPH_HASH_COLUMN}>
               {translate('auto.components.right.sidebar.GitGraphFullView.commit', 'Commit')}
             </span>
           </div>
           <div
             ref={listRef}
-            className="scrollbar-sleek min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable]"
+            data-git-graph-list=""
+            className="scrollbar-sleek min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
+            onKeyDown={selection.handleListKeyDown}
           >
             {state.status === 'error' && !result && (
               <p className="px-3 py-2 text-xs text-destructive">{state.error}</p>
@@ -363,25 +299,15 @@ export function GitGraphFullView({
                 key={viewModel.historyItem.id}
                 viewModel={viewModel}
                 graphWidth={graphWidth}
-                selected={
-                  multiSelected.length > 0
-                    ? commitSelection.isSelected(viewModel.historyItem.id)
-                    : viewModel.historyItem.id === selectedId
-                }
+                selected={selection.isRowSelected(viewModel.historyItem.id)}
+                isTabStop={viewModel.historyItem.id === selection.cursorId}
                 headRefId={headRefId}
                 dimmed={
-                  headLoaded &&
+                  branchContext.canDim &&
                   headRefId !== undefined &&
                   !(containment.get(viewModel.historyItem.id) ?? []).includes(headRefId)
                 }
-                onSelect={(event) => {
-                  // Why clear on a gesture: emptying the multi-selection must not fall back to an old click.
-                  setSelectedId(
-                    commitSelection.handleRowClick(viewModel.historyItem, event)
-                      ? null
-                      : viewModel.historyItem.id
-                  )
-                }}
+                onSelect={(event) => selection.handleRowSelect(viewModel.historyItem, event)}
               />
             ))}
             {result && <GitHistoryGraphLoadMore worktreeId={worktreeId} state={state} />}
@@ -398,8 +324,8 @@ export function GitGraphFullView({
               : undefined
           }
           renderCommitFilesMenu={renderCommitFilesMenu}
-          commitContext={commitContext}
-          reservedWidth={sidebarOpen ? GIT_GRAPH_BRANCH_SIDEBAR_WIDTH : 0}
+          commitContext={branchContext.commitContext}
+          reservedWidth={sidebarOpen && !sidebarOverlay ? GIT_GRAPH_BRANCH_SIDEBAR_WIDTH : 0}
         />
       </div>
     </div>
