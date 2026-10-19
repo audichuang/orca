@@ -3,6 +3,7 @@ import { GitHistoryGraphToolbar } from '../sync/git-history-graph-toolbar'
 import { GitHistoryGraphLoadMore } from '../sync/git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from '../sync/git-history-graph-empty-message'
 import { GitGraphFullViewLauncher } from '../sync/git-graph-full-view-dialog'
+import { commitFilesMenuSlot } from '../sync/git-history-commit-files-menu'
 import { shouldShowSourceControlCompareUnavailableCard } from './header-toolbar'
 import { shouldRenderCommitArea } from '../commit/component-gates'
 import { SourceControlBranchSection } from '../listing/branch-section'
@@ -244,6 +245,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
             onLoadCommitFiles={loadCommitFiles}
             onOpenCommitFile={openCommitFile}
             onCommitAction={handleCommitAction}
+            renderCommitFilesMenu={commitFilesMenuSlot(model, currentWorktreeId, worktreePath)}
             toolbar={
               <GitHistoryGraphToolbar
                 worktreeId={currentWorktreeId}
@@ -260,6 +262,11 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
                     onOpenCommit={(item) => void openHistoryCommitDiff(item)}
                     onLoadCommitFiles={loadCommitFiles}
                     onOpenCommitFile={openCommitFile}
+                    renderCommitFilesMenu={commitFilesMenuSlot(
+                      model,
+                      currentWorktreeId,
+                      worktreePath
+                    )}
                   />
                 }
               />
