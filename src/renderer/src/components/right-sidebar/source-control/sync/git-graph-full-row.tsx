@@ -84,7 +84,7 @@ export function GitGraphAuthorAvatar({
     <span
       aria-hidden="true"
       className={cn(
-        'flex shrink-0 items-center justify-center rounded-full font-semibold text-background',
+        'flex size-5 shrink-0 items-center justify-center rounded-full text-3xs font-semibold text-background',
         className
       )}
       style={{ background: authorColor(email ?? name ?? '') }}
@@ -209,13 +209,7 @@ export function GitGraphFullRow({
           GIT_GRAPH_AUTHOR_COLUMN
         )}
       >
-        {item.author && (
-          <GitGraphAuthorAvatar
-            name={item.author}
-            email={item.authorEmail}
-            className="size-5 text-3xs"
-          />
-        )}
+        {item.author && <GitGraphAuthorAvatar name={item.author} email={item.authorEmail} />}
         <span className="truncate" title={item.authorEmail}>
           {item.author}
         </span>

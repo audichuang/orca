@@ -13,7 +13,7 @@ function isMacPlatform(): boolean {
   return navigator.userAgent.includes('Mac')
 }
 
-type CommitClickModifiers = Pick<MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey'>
+export type CommitClickModifiers = Pick<MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey'>
 
 export type GitHistoryCommitSelection = {
   isSelected: (id: string) => boolean
