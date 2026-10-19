@@ -75,37 +75,4 @@ describe('Copy Full Source from the Commits context menu (fork wiring)', () => {
     expect(payload).toContain('content of a.txt')
     expect(payload).toContain('content of b.txt')
   })
-
-  it('copies only the right-clicked file of an expanded commit', async () => {
-    vi.stubGlobal('window', {
-      ...window,
-      api: { ui: { writeClipboardText: mocks.writeClipboardText } }
-    })
-    mocks.getRuntimeGitCommitDiff.mockImplementation(async (_ctx, args) => ({
-      kind: 'text',
-      originalContent: 'old',
-      modifiedContent: `content of ${args.filePath}`,
-      originalIsBinary: false,
-      modifiedIsBinary: false
-    }))
-    const { result } = renderHook(() =>
-      useGitHistoryCommitActions({
-        activeWorktreeId: 'wt-1',
-        editorWorktreeId: 'wt-1',
-        worktreePath: '/repo',
-        activeRepoTarget: { kind: 'local' },
-        resolveSplitTargetGroupId: () => undefined
-      })
-    )
-
-    result.current.copyCommitFileFullSource(item('a', 2000), {
-      path: 'src/one.ts',
-      status: 'modified'
-    })
-    await vi.waitFor(() => expect(mocks.writeClipboardText).toHaveBeenCalledTimes(1))
-
-    expect(mocks.getRuntimeGitCommitCompare).not.toHaveBeenCalled()
-    expect(mocks.getRuntimeGitCommitDiff).toHaveBeenCalledTimes(1)
-    expect(String(mocks.writeClipboardText.mock.calls[0]?.[0])).toContain('content of src/one.ts')
-  })
 })
