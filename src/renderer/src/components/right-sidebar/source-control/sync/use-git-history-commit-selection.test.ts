@@ -51,9 +51,21 @@ describe('useGitHistoryCommitSelection', () => {
     expect(selectedIds(hook)).toEqual(['a', 'b', 'c'])
   })
 
-  it('keeps selected commits that a reloaded result still lists, and drops the rest', () => {
+  it('by default (sidebar) starts over when a new result arrives', () => {
     const { result: hook, rerender } = renderHook(
       ({ history }: { history: GitHistoryResult }) => useGitHistoryCommitSelection(history),
+      { initialProps: { history: result } }
+    )
+    act(() => void hook.current.handleRowClick(A, click({ toggle: true })))
+    act(() => void hook.current.handleRowClick(B, click({ toggle: true })))
+    rerender({ history: { ...result } })
+    expect(selectedIds(hook)).toEqual([])
+  })
+
+  it('retained: keeps commits a reload still lists, and a dropped one stays dropped', () => {
+    const { result: hook, rerender } = renderHook(
+      ({ history }: { history: GitHistoryResult }) =>
+        useGitHistoryCommitSelection(history, { retainAcrossResults: { ownerKey: 'repo' } }),
       { initialProps: { history: result } }
     )
     act(() => void hook.current.handleRowClick(A, click()))
@@ -62,5 +74,28 @@ describe('useGitHistoryCommitSelection', () => {
 
     rerender({ history: { ...result, items: [C, A] } })
     expect(selectedIds(hook)).toEqual(['c', 'a'])
+    // B comes back in a later list, but the user never reselected it.
+    rerender({ history: { ...result } })
+    expect(selectedIds(hook)).toEqual(['a', 'c'])
+  })
+
+  it('retained: a different repo owner starts over even with the same commits', () => {
+    const { result: hook, rerender } = renderHook(
+      ({ owner }: { owner: string }) =>
+        useGitHistoryCommitSelection(result, { retainAcrossResults: { ownerKey: owner } }),
+      { initialProps: { owner: 'repo-a' } }
+    )
+    act(() => void hook.current.handleRowClick(A, click({ toggle: true })))
+    act(() => void hook.current.handleRowClick(B, click({ toggle: true })))
+    rerender({ owner: 'repo-b' })
+    expect(selectedIds(hook)).toEqual([])
+  })
+
+  it('Cmd/Ctrl-clicking the plain-clicked row deselects it, so the next one stands alone', () => {
+    const { result: hook } = renderHook(() => useGitHistoryCommitSelection(result))
+    act(() => void hook.current.handleRowClick(A, click()))
+    act(() => void hook.current.handleRowClick(A, click({ toggle: true })))
+    act(() => void hook.current.handleRowClick(B, click({ toggle: true })))
+    expect(selectedIds(hook)).toEqual(['b'])
   })
 })
