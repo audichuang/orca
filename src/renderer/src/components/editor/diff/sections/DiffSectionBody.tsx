@@ -1,7 +1,6 @@
 import { DiffTooLargeNotice } from '../large-files/DiffTooLargeNotice'
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import type { editor } from 'monaco-editor'
-import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { AlertCircle, RefreshCw } from 'lucide-react'
 import { DiffEditor, type DiffOnMount } from '@monaco-editor/react'
 import { cn } from '@/lib/utils'
@@ -27,8 +26,8 @@ import {
 } from '@/lib/monaco-languages/plugin-syntax-editor-options'
 import { useMonacoTheme } from '@/hooks/use-monaco-theme'
 import { monacoTypographyOptions, type EditorTypography } from '@/lib/editor-typography'
-
-const ImageDiffViewer = lazy(() => import('../large-files/ImageDiffViewer'))
+import { ImageDiffViewer } from '../../editor-lazy-views'
+import { deferDiffEditorDispose } from '../../monaco-diff-editor-deferred-dispose'
 
 type DiffSectionBodyProps = {
   section: DiffSection
@@ -100,6 +99,7 @@ export function DiffSectionBody({
     }),
     [isEditable, sideBySide, typography, diffWordWrap, diffShowWhitespace]
   )
+  const cancelPendingDisposeRef = useRef<(() => void) | null>(null)
   useLayoutEffect(() => {
     diffWordWrapRef.current = diffWordWrap
   }, [diffWordWrap])
@@ -108,8 +108,14 @@ export function DiffSectionBody({
     applyModelLanguage([models?.original, models?.modified], language)
   }, [language])
   const handleEditorMount: DiffOnMount = (diffEditor, monaco) => {
+    // Why: the wrapper re-fires onMount when StrictMode reconnects its effects; keep the same editor.
+    if (diffEditorRef.current === diffEditor) {
+      cancelPendingDisposeRef.current?.()
+      return
+    }
     diffEditorRef.current = diffEditor
     applyModelLanguage([diffEditor.getModel()?.original, diffEditor.getModel()?.modified], language)
+    cancelPendingDisposeRef.current = deferDiffEditorDispose(diffEditor)
     const cleanupShiftWheelScroll = installDiffEditorShiftWheelScroll(diffEditor)
     const cleanupCursorReveal = installCombinedDiffCursorReveal(diffEditor)
     diffEditor.getModifiedEditor().onDidDispose(() => {
