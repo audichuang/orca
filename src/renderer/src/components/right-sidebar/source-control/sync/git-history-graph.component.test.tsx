@@ -301,6 +301,9 @@ describe('Commits graph filter, end to end through the history hook', () => {
     const items = await screen.findAllByRole('menuitem')
     const copyItem = items.find((item) => item.textContent === 'Copy Full Source (2 commits)')
     expect(copyItem).toBeDefined()
+    const labels = items.map((item) => item.textContent)
+    expect(labels).toContain('Copy commit hashes (2 commits)')
+    expect(labels).toContain('Copy commit messages (2 commits)')
     fireEvent.click(copyItem!)
 
     const [action, target, selected] = onCommitAction.mock.calls[0] ?? []

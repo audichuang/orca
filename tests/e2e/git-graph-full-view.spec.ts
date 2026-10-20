@@ -163,6 +163,16 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   expect(copied).toContain('a2 = 2')
   expect(copied).not.toContain('afterMerge')
 
+  // Right-clicking inside the selection copies every selected hash, newest first.
+  const featureASecond = git(worktreePath, ['rev-parse', extraBranches[0]!]).trim()
+  const featureAFirst = git(worktreePath, ['rev-parse', `${extraBranches[0]}~1`]).trim()
+  await rows.filter({ hasText: 'Feature A: first step' }).click({ button: 'right' })
+  await orcaPage.getByRole('menuitem', { name: 'Copy commit hashes (2 commits)' }).click()
+  await expect
+    .poll(() => clipboardText(orcaPage), { timeout: 10_000 })
+    .toBe(`${featureASecond}\n${featureAFirst}`)
+  await expect(graph.getByText('Changed files (2) · 2 commits')).toBeVisible()
+
   // Drag the details divider both ways; the details column follows.
   const divider = graph.getByRole('separator', { name: 'Resize commit details' })
   const details = divider.locator('..')
@@ -379,4 +389,18 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   await switcher.click()
   await orcaPage.locator('[cmdk-item]').filter({ hasText: branchName }).first().click()
   await expect(rows.filter({ hasText: 'Post-merge cleanup' })).toBeVisible({ timeout: 15_000 })
+
+  // Alt-click opens the diff in a split right of the graph, so both stay on screen.
+  await rows.filter({ hasText: 'Main: add module B' }).click()
+  await files.filter({ hasText: 'main-b.ts' }).click({ modifiers: ['Alt'] })
+  const splitDiffLine = orcaPage
+    .locator('.modified-in-monaco-diff-editor .view-line')
+    .filter({ hasText: 'export const b = 2' })
+  await expect(splitDiffLine).toBeVisible({ timeout: 20_000 })
+  await expect(graph).toBeVisible()
+  const graphBox = (await graph.boundingBox())!
+  const diffBox = (await splitDiffLine.boundingBox())!
+  expect(diffBox.x).toBeGreaterThanOrEqual(graphBox.x + graphBox.width - 1)
+  await expect(graphTab).toHaveCount(1)
+  await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '07-diff-beside-graph.png') })
 })
