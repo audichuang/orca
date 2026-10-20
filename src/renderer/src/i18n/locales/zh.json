@@ -14786,6 +14786,7 @@
           },
           "GitGraphFullView": {
             "open": "打开 Git Graph",
+            "openShort": "Git Graph",
             "description": "当前仓库的提交图。",
             "message": "提交信息",
             "author": "作者",

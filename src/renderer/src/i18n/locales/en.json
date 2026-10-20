@@ -15092,6 +15092,7 @@
           },
           "GitGraphFullView": {
             "open": "Open Git Graph",
+            "openShort": "Git Graph",
             "description": "Commit graph for the current repository.",
             "message": "Message",
             "author": "Author",
