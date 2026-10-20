@@ -15196,7 +15196,7 @@
             "openShort": "Git Graph",
             "laneContinuesBelow": "Continues {{count}} rows below at {{sha}} {{subject}}. Click to jump.",
             "laneComesFromAbove": "Comes from {{sha}} {{subject}}, {{count}} rows above. Click to jump.",
-            "laneContinuesPastLoaded": "Continues past the loaded commits"
+            "laneContinuesPastLoaded": "Continues past the loaded commits. Load more commits to follow it."
           },
           "GitGraphBranchSidebar": {
             "local": "Local",
@@ -15213,7 +15213,9 @@
             "refs": "Refs",
             "containedIn": "In branches",
             "moreBranches": "+{{count}} more",
-            "containedInHint": "Branches whose tips are in the loaded list; branches outside it are not counted."
+            "containedInHint": "Branches whose tips are in the loaded list; branches outside it are not counted.",
+            "children": "Children",
+            "childrenHint": "Commits in the loaded list whose parent is this commit."
           }
         }
       },
