@@ -27,7 +27,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 
 - The tag push runs `.github/workflows/fork-release.yml` on a macOS arm64 runner: it refuses a tag that is not fork `main`, builds `make fork-dmg`, publishes the GitHub Release with the dmg and its SHA-256, and bumps `audichuang/homebrew-tap`'s `Casks/orca-fork.rb`. Secrets: `FORK_SIGNING_P12` (base64) and `FORK_SIGNING_P12_PASSWORD` from 1Password (Agent vault, "Orca Fork Code Signing (p12)" / "(p12 password)"), `HOMEBREW_TAP_TOKEN` (fine-grained PAT, Contents write on the tap). Re-running the workflow on the same tag replaces the dmg and notes.
 - To test a workflow change without releasing, push a `fork-release-dryrun-<anything>` tag: it builds and signs, uploads the dmg as an artifact, and skips the release and the tap. Delete the tag afterwards.
-- `make fork-dmg FORK_VERSION=X.Y.Z-fork.N` still builds locally (the identity must be in the keychain) when CI is unavailable.
+- `make fork-dmg FORK_VERSION=X.Y.Z-fork.N` still builds locally (the identity must be in the keychain) when CI is unavailable. The fork builder config excludes untracked checkout entries, and the build fails if app.asar still ships one: local dmgs once leaked `.orca/drops` screenshots and `CLAUDE.local.md`.
 - Pushed tags and `backup/*` branches keep released commits reachable; don't protect `main`, or allow force pushes if you do.
 - Install side: `make sync && make update`, never `git pull`, which merges the old and new histories. `sync` refuses on tracked changes, on local `main` commits the fork never had, and on ignored files the new commit would overwrite (`make clean` clears `dist/` and `out/`).
 
