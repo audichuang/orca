@@ -300,6 +300,8 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
       <FolderRepoPanelToolbar
         name={folderWorkspace.name}
         folderPath={folderWorkspace.folderPath}
+        workspaceKey={folderWorkspaceKey}
+        selectedRepoId={selectedId}
         onCopyAll={copyAllChanges}
         onAddRepos={canAddRepos ? () => setAddReposOpen(true) : undefined}
         onRestore={requestRestore}

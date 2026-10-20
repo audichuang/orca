@@ -14641,6 +14641,7 @@
           },
           "GitGraphFullView": {
             "open": "Git Graph 열기",
+            "openShort": "Git Graph",
             "description": "현재 저장소의 커밋 그래프입니다.",
             "message": "메시지",
             "author": "작성자",
