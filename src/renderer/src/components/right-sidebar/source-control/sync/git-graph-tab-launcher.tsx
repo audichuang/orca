@@ -91,10 +91,14 @@ export function GitGraphOpenButton({
         variant="ghost"
         size="xs"
         className="shrink-0"
+        aria-label={openGitGraphLabel()}
         onClick={() => openGitGraphTab(workspaceId, { repoWorktreeId })}
       >
         <GitGraph />
-        {translate('auto.components.right.sidebar.GitGraphFullView.openShort', 'Git Graph')}
+        {/* Why: in a narrow sidebar the label would squeeze out the folder name or Create PR. */}
+        <span className="@max-[300px]/sc-toolbar:hidden">
+          {translate('auto.components.right.sidebar.GitGraphFullView.openShort', 'Git Graph')}
+        </span>
       </Button>
     </GitGraphShortcutTooltip>
   )
