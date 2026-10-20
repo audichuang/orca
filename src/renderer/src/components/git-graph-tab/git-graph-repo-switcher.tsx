@@ -1,6 +1,6 @@
 // Fork-only: picks which repo worktree a Git Graph tab shows.
 import React, { useMemo, useState } from 'react'
-import { Check, ChevronsUpDown, FolderGit2 } from 'lucide-react'
+import { Check, ChevronsUpDown, FolderGit2, FolderPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Command,
@@ -8,7 +8,8 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList
+  CommandList,
+  CommandSeparator
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
@@ -40,12 +41,15 @@ function groupByRepo(
 export function GitGraphRepoSwitcher({
   choices,
   value,
-  onValueChange
+  onValueChange,
+  addRepos
 }: {
   /** From listGitGraphRepoChoices for the tab's workspace. */
   choices: readonly GitGraphRepoChoice[]
   value: string | null
   onValueChange: (repoWorktreeId: string) => void
+  /** Folder workspaces only: an entry for the repos under the folder that Orca has not added. */
+  addRepos?: { label: string; hidden: boolean; onMenuOpen: () => void; onSelect: () => void }
 }): React.JSX.Element | null {
   const [open, setOpen] = useState(false)
   const groups = useMemo(() => groupByRepo(choices, value), [choices, value])
@@ -55,7 +59,15 @@ export function GitGraphRepoSwitcher({
   }
   const label = translate('auto.components.gitGraphTab.repoSwitcher', 'Repository')
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (next) {
+          addRepos?.onMenuOpen()
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -111,6 +123,25 @@ export function GitGraphRepoSwitcher({
                 ))}
               </CommandGroup>
             ))}
+            {addRepos && !addRepos.hidden && (
+              <>
+                <CommandSeparator alwaysRender />
+                {/* Why forceMount: a search that matches no added repo is when this entry matters. */}
+                <CommandGroup forceMount>
+                  <CommandItem
+                    forceMount
+                    value="__add-repos__"
+                    onSelect={() => {
+                      setOpen(false)
+                      addRepos.onSelect()
+                    }}
+                  >
+                    <FolderPlus className="size-3 text-muted-foreground" />
+                    <span className="truncate">{addRepos.label}</span>
+                  </CommandItem>
+                </CommandGroup>
+              </>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
