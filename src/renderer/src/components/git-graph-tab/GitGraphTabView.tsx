@@ -158,6 +158,7 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
           addRepos
             ? {
                 label: addRepos.label,
+                missingLabel: addRepos.missingLabel,
                 hidden: addRepos.allAdded,
                 onMenuOpen: addRepos.scan,
                 onSelect: () => setAddReposOpen(true)
