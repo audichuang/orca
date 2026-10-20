@@ -14936,7 +14936,7 @@
           "GitGraphFullView": {
             "laneContinuesBelow": "Continues {{count}} rows below at {{sha}} {{subject}}. Click to jump.",
             "laneComesFromAbove": "Comes from {{sha}} {{subject}}, {{count}} rows above. Click to jump.",
-            "laneContinuesPastLoaded": "Continues past the loaded commits",
+            "laneContinuesPastLoaded": "Continues past the loaded commits. Load more commits to follow it.",
             "open": "Open Git Graph",
             "openShort": "Git Graph",
             "description": "Commit graph for the current repository.",
@@ -14963,6 +14963,8 @@
             "date": "Date",
             "copySha": "Copy commit SHA",
             "parents": "Parents",
+            "children": "Children",
+            "childrenHint": "Commits in the loaded list whose parent is this commit.",
             "refs": "Refs",
             "containedIn": "In branches",
             "containedInHint": "Branches whose tips are in the loaded list; branches outside it are not counted.",

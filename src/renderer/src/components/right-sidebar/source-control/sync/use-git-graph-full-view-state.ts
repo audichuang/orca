@@ -102,9 +102,9 @@ export function useGitGraphSelection(args: {
       : (navigable[0]?.id ?? null)
 
   const scrollToRow = useCallback(
-    (id: string, focus: boolean): void => {
+    (id: string, focus: boolean, block: ScrollLogicalPosition = 'nearest'): void => {
       const row = listRef.current?.querySelector<HTMLElement>(`[data-commit-id="${id}"]`)
-      row?.scrollIntoView({ block: 'nearest' })
+      row?.scrollIntoView({ block })
       if (focus) {
         row?.focus()
       }
@@ -169,7 +169,8 @@ export function useGitGraphSelection(args: {
       const item = result?.items.find((candidate) => candidate.id === commitId)
       if (item) {
         select(item, PLAIN_CLICK)
-        scrollToRow(commitId, options?.focus ?? false)
+        // Why centered: a jump lands far from where the eye was; rows on both sides orient it.
+        scrollToRow(commitId, options?.focus ?? false, 'center')
       }
     },
     [result, scrollToRow, select]
