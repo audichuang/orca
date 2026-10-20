@@ -203,6 +203,8 @@ fork-check-lint: fork-base-guard
 fork-check-tests: export LC_ALL = C
 # Why: upstream's CI mode; it applies UNIT_EXCLUDE (live-shell, node-pty, electron probes, the wire job's files) and balances shards by timing.
 fork-check-tests: export ORCA_BALANCE_UNIT_SHARDS = 1
+# Why: upstream CI sets it; browser-manager tests assert it and --changed pulls them in via shared tab types.
+fork-check-tests: export ORCA_BACKGROUND_LAUNCH = 1
 fork-check-tests: fork-base-guard
 	@# Why --changed: it follows imports, so upstream tests that use a fork-changed module run too.
 	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) --changed $(FORK_BASE)
