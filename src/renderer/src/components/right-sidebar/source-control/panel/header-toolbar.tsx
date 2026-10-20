@@ -211,7 +211,7 @@ export function SourceControlHeaderToolbar({
     : translate('auto.components.right.sidebar.SourceControl.b3c8f1a902', 'Filter files by name')
 
   return (
-    <div className="border-b border-border px-3 pt-1.5 pb-1">
+    <div className="@container/sc-toolbar border-b border-border px-3 pt-1.5 pb-1">
       <div
         className={cn('flex min-w-0 items-center gap-1', filterExpanded && 'w-full gap-1.5')}
         data-filter-expanded={filterExpanded ? 'true' : 'false'}
