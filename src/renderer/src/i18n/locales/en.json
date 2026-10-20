@@ -18686,7 +18686,10 @@
         "repoSwitcher": "Repository",
         "selectRepo": "Select repository",
         "searchRepos": "Search repositories...",
-        "noRepos": "No repositories found."
+        "noRepos": "No repositories found.",
+        "addRepos": "Add repositories in this folder...",
+        "addReposMissing": "Add repositories in this folder ({{value0}} not added)...",
+        "addReposButton": "Add repositories in this folder"
       }
     },
     "i18n": {

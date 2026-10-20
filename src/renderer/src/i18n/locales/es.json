@@ -18419,7 +18419,10 @@
         "repoSwitcher": "Repositorio",
         "selectRepo": "Seleccionar repositorio",
         "searchRepos": "Buscar repositorios...",
-        "noRepos": "No se encontraron repositorios."
+        "noRepos": "No se encontraron repositorios.",
+        "addRepos": "Añadir repositorios de esta carpeta...",
+        "addReposMissing": "Añadir repositorios de esta carpeta ({{value0}} sin añadir)...",
+        "addReposButton": "Añadir repositorios de esta carpeta"
       }
     },
     "i18n": {
