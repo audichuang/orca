@@ -13641,7 +13641,9 @@
             "entryDiscardFailed": "「{{value0}}」を破棄できませんでした",
             "entryDeleteFailed": "「{{value0}}」を削除できませんでした",
             "entryFailedInWorkspace": "{{value0}} の {{value1}}",
-            "diffCommentNotesCopyFailed": "メモのコピーに失敗しました"
+            "diffCommentNotesCopyFailed": "メモのコピーに失敗しました",
+            "commitHashes": "コミットハッシュ",
+            "commitMessages": "コミットメッセージ"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "選択した Agent を開始できませんでした。",
@@ -14618,7 +14620,9 @@
             "9d3e60bc24": "コミットメッセージをコピー",
             "ae4f71cd35": "変更を説明",
             "copyFullSource": "完全なソースをコピー",
-            "copyFullSourceMany": "完全なソースをコピー（{{value0}} 件のコミット）"
+            "copyFullSourceMany": "完全なソースをコピー（{{value0}} 件のコミット）",
+            "copyHashMany": "コミットハッシュをコピー（{{value0}} 件のコミット）",
+            "copyMessageMany": "コミットメッセージをコピー（{{value0}} 件のコミット）"
           },
           "pull": {
             "policy": {

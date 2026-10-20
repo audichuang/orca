@@ -13674,7 +13674,9 @@
             "entryDiscardFailed": "No se pudo descartar \"{{value0}}\"",
             "entryDeleteFailed": "No se pudo eliminar \"{{value0}}\"",
             "entryFailedInWorkspace": "{{value0}} en {{value1}}",
-            "diffCommentNotesCopyFailed": "No se pudieron copiar notas"
+            "diffCommentNotesCopyFailed": "No se pudieron copiar notas",
+            "commitHashes": "Hashes de los commits",
+            "commitMessages": "Mensajes de los commits"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "No se pudo iniciar el agente seleccionado.",
@@ -14651,7 +14653,9 @@
             "9d3e60bc24": "Copiar mensaje del commit",
             "ae4f71cd35": "Explicar los cambios",
             "copyFullSource": "Copiar código fuente completo",
-            "copyFullSourceMany": "Copiar código fuente completo ({{value0}} commits)"
+            "copyFullSourceMany": "Copiar código fuente completo ({{value0}} commits)",
+            "copyHashMany": "Copiar hashes de commit ({{value0}} commits)",
+            "copyMessageMany": "Copiar mensajes de commit ({{value0}} commits)"
           },
           "pull": {
             "policy": {
