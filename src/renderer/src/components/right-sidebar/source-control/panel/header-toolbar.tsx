@@ -16,6 +16,8 @@ import { SourceControlBranchContextRow } from './branch-context-row'
 import { shouldShowSourceControlBranchContextChrome } from './branch-context-stats'
 import { SourceControlHeaderOverflowMenu } from './header-overflow-menu'
 import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
+// Fork-only: always-visible Git Graph entry.
+import { RepoWorkspaceGitGraphButton } from '../sync/git-graph-tab-launcher'
 
 type SourceControlHeaderToolbarProps = {
   filterQuery: string
@@ -244,6 +246,7 @@ export function SourceControlHeaderToolbar({
               // Why: keep filter/overflow pinned right without stretching Create PR.
               <span className="min-w-0 flex-1" aria-hidden="true" />
             ) : null}
+            <RepoWorkspaceGitGraphButton />
             <button
               type="button"
               data-testid="source-control-filter-toggle"
