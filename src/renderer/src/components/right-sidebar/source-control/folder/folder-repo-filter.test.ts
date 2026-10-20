@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterFolderRepoIndexes, getFolderRepoFilterView } from './folder-repo-filter'
+import { filterFolderRepoIndexes } from './folder-repo-filter'
 
 const LABELS = [
   'bfs-regression (develop)',
@@ -19,14 +19,5 @@ describe('filterFolderRepoIndexes', () => {
 
   it('matches the branch shown in the label', () => {
     expect(filterFolderRepoIndexes(LABELS, 'release')).toEqual([1])
-  })
-})
-
-describe('getFolderRepoFilterView', () => {
-  it('keeps the open repo listed in order without counting it as a match', () => {
-    expect(getFolderRepoFilterView(LABELS, 'console', 0)).toEqual({
-      matchIndexes: [2],
-      visibleIndexes: [0, 2]
-    })
   })
 })
