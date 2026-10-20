@@ -159,6 +159,7 @@ fork-dmg: computer-use
 	pnpm run ensure:electron-runtime
 	ORCA_FORK_VERSION=$(FORK_VERSION) ORCA_FORK_SIGN_IDENTITY="$(FORK_SIGN_IDENTITY)" \
 		$(if $(filter -,$(FORK_SIGN_IDENTITY)),,CSC_NAME="$(FORK_SIGN_IDENTITY)") pnpm exec electron-builder --config config/electron-builder.fork.config.cjs --mac --arm64
+	node config/scripts/fork-verify-packaged-files.cjs dist/mac-arm64/Orca.app/Contents/Resources/app.asar
 
 # Upstream release the fork sits on (fork tags excluded). Override: make fork-check FORK_BASE=v1.4.229
 FORK_BASE ?= $(shell git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' HEAD)
@@ -229,10 +230,10 @@ sync:
 	echo ">> main was $$(git rev-parse --short main 2>/dev/null) (git reflog keeps it)"; \
 	git checkout --no-overwrite-ignore -B main "refs/remotes/$$r/main" && \
 	echo ">> main is now $$(git rev-parse --short HEAD). next: make update"
-# Fork CI is fork-pr.yml only (macOS arm64 is the only target); rerun after a rebase brings new upstream workflows.
+# Fork CI is the fork-*.yml workflows only (macOS arm64 is the only target); rerun after a rebase brings new upstream workflows.
 fork-ci-disable-upstream:
 	gh workflow list -R $(FORK_REPO) --all --limit 500 --json path,state \
-	  --jq '.[] | select(.state == "active" and .path != ".github/workflows/fork-pr.yml") | .path' | \
+	  --jq '.[] | select(.state == "active" and (.path | startswith(".github/workflows/fork-") | not)) | .path' | \
 	  while read -r wf; do gh workflow disable "$${wf##*/}" -R $(FORK_REPO); done
 
 fork-check-full: export LC_ALL = C
