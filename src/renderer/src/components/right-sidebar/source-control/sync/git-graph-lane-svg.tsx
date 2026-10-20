@@ -10,7 +10,7 @@ import {
   SWIMLANE_WIDTH as W
 } from './git-history-graph-svg'
 
-/** Marks a fold arrow; a click jumps to this commit (empty: not loaded) instead of selecting the row. */
+/** The commit a fold arrow jumps to; empty when it is not loaded yet. */
 export const GIT_GRAPH_JUMP_ATTRIBUTE = 'data-git-graph-jump'
 
 const x = (column: number): number => W * (column + 1)
@@ -68,9 +68,11 @@ function foldLabel(
 }
 
 function FoldArrow({
-  segment
+  segment,
+  onJump
 }: {
   segment: Extract<GitGraphLaneSegment, { kind: 'fold-down' | 'fold-up' }>
+  onJump?: (commitId: string) => void
 }): React.JSX.Element {
   const cx = x(segment.at)
   // Why clear of y=12: connectors run horizontally through the middle of the row.
@@ -83,6 +85,13 @@ function FoldArrow({
       {...{ [GIT_GRAPH_JUMP_ATTRIBUTE]: segment.target?.id ?? '' }}
       className={segment.target ? 'cursor-pointer' : undefined}
       data-fold={segment.kind}
+      // Why stop here: the arrow sits inside a row button (or a boundary row) that must not also select.
+      onClick={(event) => {
+        event.stopPropagation()
+        if (segment.target) {
+          onJump?.(segment.target.id)
+        }
+      }}
     >
       <title>{foldLabel(segment)}</title>
       <rect x={cx - W / 2} y={0} width={W} height={H} fill="transparent" />
@@ -93,10 +102,13 @@ function FoldArrow({
 
 export function GitGraphLaneSvg({
   viewModel,
-  lanes
+  lanes,
+  onJump
 }: {
   viewModel: GitHistoryItemViewModel
   lanes: GitGraphLaneRow
+  /** A click on a fold arrow jumps to the commit at its other end. */
+  onJump?: (commitId: string) => void
 }): React.JSX.Element {
   const node = lanes.nodeColumn
   const width = W * (lanes.laneCount + 1)
@@ -128,7 +140,7 @@ export function GitGraphLaneSvg({
             )
           case 'fold-down':
           case 'fold-up':
-            return <FoldArrow key={index} segment={segment} />
+            return <FoldArrow key={index} segment={segment} onJump={onJump} />
         }
       })}
       <GitHistoryGraphNodeMarker viewModel={viewModel} cx={x(node)} color={lanes.nodeColor} />
