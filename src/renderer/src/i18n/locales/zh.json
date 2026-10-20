@@ -14855,7 +14855,7 @@
             "openShort": "Git Graph",
             "laneContinuesBelow": "往下 {{count}} 列接到 {{sha}} {{subject}}。點一下跳過去。",
             "laneComesFromAbove": "從上方 {{count}} 列的 {{sha}} {{subject}} 接過來。點一下跳過去。",
-            "laneContinuesPastLoaded": "接到尚未載入的更早 commit"
+            "laneContinuesPastLoaded": "接到尚未載入的更早 commit。載入更多 commit 後即可跳過去。"
           },
           "GitGraphBranchSidebar": {
             "local": "本地",
@@ -14872,7 +14872,9 @@
             "refs": "引用",
             "containedIn": "所在分支",
             "moreBranches": "还有 {{count}} 个",
-            "containedInHint": "只计算末端提交在已加载列表中的分支;列表外的分支不计入。"
+            "containedInHint": "只计算末端提交在已加载列表中的分支;列表外的分支不计入。",
+            "children": "子提交",
+            "childrenHint": "已載入的清單中,以這個 commit 為父提交的 commit。"
           }
         }
       },

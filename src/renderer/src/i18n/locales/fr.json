@@ -15015,7 +15015,7 @@
             "openShort": "Git Graph",
             "laneContinuesBelow": "Continue {{count}} lignes plus bas sur {{sha}} {{subject}}. Cliquez pour y aller.",
             "laneComesFromAbove": "Vient de {{sha}} {{subject}}, {{count}} lignes plus haut. Cliquez pour y aller.",
-            "laneContinuesPastLoaded": "Continue au-delà des commits chargés"
+            "laneContinuesPastLoaded": "Continue au-delà des commits chargés. Chargez plus de commits pour la suivre."
           },
           "GitGraphBranchSidebar": {
             "local": "Locales",
@@ -15032,7 +15032,9 @@
             "refs": "Références",
             "containedIn": "Dans les branches",
             "moreBranches": "+{{count}} de plus",
-            "containedInHint": "Branches dont le dernier commit figure dans la liste chargée ; les autres ne sont pas comptées."
+            "containedInHint": "Branches dont le dernier commit figure dans la liste chargée ; les autres ne sont pas comptées.",
+            "children": "Enfants",
+            "childrenHint": "Commits de la liste chargée dont le parent est ce commit."
           }
         }
       },

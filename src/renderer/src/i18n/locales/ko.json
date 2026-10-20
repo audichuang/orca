@@ -14855,7 +14855,7 @@
             "openShort": "Git Graph",
             "laneContinuesBelow": "{{count}}행 아래 {{sha}} {{subject}}(으)로 이어집니다. 클릭하면 이동합니다.",
             "laneComesFromAbove": "{{count}}행 위 {{sha}} {{subject}}에서 이어집니다. 클릭하면 이동합니다.",
-            "laneContinuesPastLoaded": "아직 불러오지 않은 이전 커밋으로 이어집니다"
+            "laneContinuesPastLoaded": "아직 불러오지 않은 이전 커밋으로 이어집니다. 커밋을 더 불러오면 이동할 수 있습니다."
           },
           "GitGraphBranchSidebar": {
             "local": "로컬",
@@ -14872,7 +14872,9 @@
             "refs": "참조",
             "containedIn": "포함된 브랜치",
             "moreBranches": "외 {{count}}개",
-            "containedInHint": "불러온 목록에 끝 커밋이 있는 브랜치만 표시하며, 목록 밖의 브랜치는 포함되지 않습니다."
+            "containedInHint": "불러온 목록에 끝 커밋이 있는 브랜치만 표시하며, 목록 밖의 브랜치는 포함되지 않습니다.",
+            "children": "자식 커밋",
+            "childrenHint": "불러온 목록에서 이 커밋을 부모로 둔 커밋입니다."
           }
         }
       },
