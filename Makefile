@@ -230,10 +230,10 @@ sync:
 	echo ">> main was $$(git rev-parse --short main 2>/dev/null) (git reflog keeps it)"; \
 	git checkout --no-overwrite-ignore -B main "refs/remotes/$$r/main" && \
 	echo ">> main is now $$(git rev-parse --short HEAD). next: make update"
-# Fork CI is fork-pr.yml only (macOS arm64 is the only target); rerun after a rebase brings new upstream workflows.
+# Fork CI is the fork-*.yml workflows only (macOS arm64 is the only target); rerun after a rebase brings new upstream workflows.
 fork-ci-disable-upstream:
 	gh workflow list -R $(FORK_REPO) --all --limit 500 --json path,state \
-	  --jq '.[] | select(.state == "active" and .path != ".github/workflows/fork-pr.yml") | .path' | \
+	  --jq '.[] | select(.state == "active" and (.path | startswith(".github/workflows/fork-") | not)) | .path' | \
 	  while read -r wf; do gh workflow disable "$${wf##*/}" -R $(FORK_REPO); done
 
 fork-check-full: export LC_ALL = C
