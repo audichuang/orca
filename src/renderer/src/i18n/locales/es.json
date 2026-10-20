@@ -18663,8 +18663,8 @@
         "selectRepo": "Seleccionar repositorio",
         "searchRepos": "Buscar repositorios...",
         "noRepos": "No se encontraron repositorios.",
-        "addRepos": "Añadir repositorios de esta carpeta...",
-        "addReposMissing": "Añadir repositorios de esta carpeta ({{value0}} sin añadir)...",
+        "addRepos": "Añadir repositorios...",
+        "addReposMissing": "{{value0}} sin añadir",
         "addReposButton": "Añadir repositorios de esta carpeta"
       }
     },
