@@ -109,4 +109,30 @@ describe('GitGraphFullRow folded edges', () => {
     expect(onSelect).toHaveBeenCalledTimes(1)
     expect(onJump).toHaveBeenCalledTimes(1)
   })
+
+  it('ignores a click on an arrow whose far end is not loaded yet', () => {
+    const onSelect = vi.fn()
+    const onJump = vi.fn()
+    render(
+      <GitGraphFullRow
+        viewModel={viewModel('node', 'abc1234')}
+        lanes={{
+          ...lanes,
+          segments: [{ kind: 'fold-down', at: 1, color: 'git-graph-lane-1' }]
+        }}
+        graphWidth={33}
+        columns={COLUMNS}
+        selected={false}
+        onSelect={onSelect}
+        onJump={onJump}
+      />
+    )
+    const row = screen.getByTestId('git-graph-full-row')
+    expect(row.querySelector('[data-fold="fold-down"] title')).toHaveTextContent(
+      'Load more commits'
+    )
+    fireEvent.click(row.querySelector('[data-fold="fold-down"] path')!)
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(onJump).not.toHaveBeenCalled()
+  })
 })
