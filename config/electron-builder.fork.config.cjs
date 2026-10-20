@@ -44,6 +44,8 @@ module.exports = {
     // Why a stable self-signed identity: ad-hoc signatures change every build, so keychain "Always
     // Allow" and TCC grants reset on each update. '-' (ad-hoc) remains for machines without the cert.
     identity: process.env.ORCA_FORK_SIGN_IDENTITY || '-',
+    // Why: the fork is never notarized and the cert outlives any release; Apple's timestamp server added ~1s per signed file.
+    timestamp: 'none',
     target: [{ target: 'dmg', arch: ['arm64'] }]
   },
   dmg: { ...base.dmg, artifactName: 'orca-fork-macos-${arch}.${ext}' }

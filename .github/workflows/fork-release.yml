@@ -55,6 +55,9 @@ jobs:
       - uses: ./.github/actions/install-node-dependencies
         with:
           native-runtime: electron
+          # Why: the self-hosted runner keeps its stores on disk; uploading them took longer than the build.
+          cache-pnpm-store: ${{ runner.environment == 'github-hosted' }}
+          persist-native-cache: ${{ runner.environment == 'github-hosted' }}
 
       # Why: build:desktop bundles the mobile web app, which resolves from mobile/node_modules.
       - uses: ./.github/actions/install-mobile-dependencies
