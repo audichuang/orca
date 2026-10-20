@@ -102,9 +102,9 @@ export function useGitGraphSelection(args: {
       : (navigable[0]?.id ?? null)
 
   const scrollToRow = useCallback(
-    (id: string, focus: boolean): void => {
+    (id: string, focus: boolean, block: ScrollLogicalPosition = 'nearest'): void => {
       const row = listRef.current?.querySelector<HTMLElement>(`[data-commit-id="${id}"]`)
-      row?.scrollIntoView({ block: 'nearest' })
+      row?.scrollIntoView({ block })
       if (focus) {
         row?.focus()
       }
@@ -169,7 +169,8 @@ export function useGitGraphSelection(args: {
       const item = result?.items.find((candidate) => candidate.id === commitId)
       if (item) {
         select(item, PLAIN_CLICK)
-        scrollToRow(commitId, options?.focus ?? false)
+        // Why centered: a jump lands far from where the eye was; rows on both sides orient it.
+        scrollToRow(commitId, options?.focus ?? false, 'center')
       }
     },
     [result, scrollToRow, select]
@@ -205,7 +206,7 @@ export function useGitGraphBranchContext(args: {
   activeRepoTarget: RuntimeClientTarget | null
   result: GitHistoryResult | undefined
   viewModels: readonly GitHistoryItemViewModel[]
-  jumpTo: (commitId: string) => void
+  jumpTo: GitGraphSelectionState['jumpTo']
 }): GitGraphBranchContext {
   const {
     ownerKey: refOwnerKey,
@@ -284,7 +285,8 @@ export function useGitGraphBranchContext(args: {
       containment,
       branchNames,
       headRefId,
-      onJump: jumpTo
+      // Why focus: the clicked link unmounts with the old selection, and arrow keys must keep working.
+      onJump: (commitId: string) => jumpTo(commitId, { focus: true })
     }
   }, [containment, headRefId, jumpTo, result, viewModels])
 

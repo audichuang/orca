@@ -11,7 +11,9 @@ import {
 } from '../../../../../../shared/git-history'
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
 import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
-import { GitHistoryGraphSvg, graphColor } from './git-history-graph-svg'
+import { graphColor } from './git-history-graph-svg'
+import { GitGraphLaneSvg } from './git-graph-lane-svg'
+import type { GitGraphLaneRow } from './git-graph-lane-layout'
 import { formatGitHistoryTimestamp } from './git-history-format'
 
 function RefIcon({
@@ -167,6 +169,7 @@ export function gitGraphGridTemplate(columns: GitGraphColumns): string {
 
 export function GitGraphFullRow({
   viewModel,
+  lanes,
   graphWidth,
   columns,
   selected,
@@ -174,9 +177,12 @@ export function GitGraphFullRow({
   headRefId,
   dimmed = false,
   contextMenu,
-  onSelect
+  onSelect,
+  onJump
 }: {
   viewModel: GitHistoryItemViewModel
+  /** This row's slice of the folded, HEAD-pinned lane layout. */
+  lanes: GitGraphLaneRow
   /** Widest graph in the list, so every subject starts in the same column. */
   graphWidth: number
   /** Shared with the header (gitGraphColumnsForWidth). */
@@ -192,6 +198,8 @@ export function GitGraphFullRow({
   contextMenu?: React.ReactNode
   /** Gets the click so Cmd/Ctrl- and Shift-click can extend the selection. */
   onSelect: (event: React.MouseEvent) => void
+  /** A click on a folded edge's arrow jumps to the commit at its other end. */
+  onJump?: (commitId: string) => void
 }): React.JSX.Element {
   const item = viewModel.historyItem
   const isBoundaryNode =
@@ -203,7 +211,7 @@ export function GitGraphFullRow({
   const cells = (
     <>
       <div data-col="graph" className="flex h-6 items-center" style={{ width: graphWidth }}>
-        <GitHistoryGraphSvg viewModel={viewModel} />
+        <GitGraphLaneSvg viewModel={viewModel} lanes={lanes} onJump={onJump} />
       </div>
       <div data-col="message" className="flex min-w-0 items-center gap-1.5 overflow-hidden">
         {columns.refs && primaryRef && (
