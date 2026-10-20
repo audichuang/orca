@@ -13144,6 +13144,8 @@
             "c06193ef57": "无法复制{{value0}}",
             "d172a4f068": "提交哈希",
             "e283b50179": "提交信息",
+            "commitHashes": "提交哈希",
+            "commitMessages": "提交信息",
             "f394c6128a": "没有可用于解释此提交的智能体",
             "04a5d7239b": "此仓库没有受支持的网页远程库",
             "15b6e834ac": "无法在浏览器中打开提交",
@@ -14183,7 +14185,9 @@
             "9d3e60bc24": "复制提交信息",
             "ae4f71cd35": "解释更改",
             "copyFullSource": "复制完整源码",
-            "copyFullSourceMany": "复制完整源码（{{value0}} 个提交）"
+            "copyFullSourceMany": "复制完整源码（{{value0}} 个提交）",
+            "copyHashMany": "复制提交哈希（{{value0}} 个提交）",
+            "copyMessageMany": "复制提交信息（{{value0}} 个提交）"
           },
           "pull": {
             "policy": {
