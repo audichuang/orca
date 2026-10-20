@@ -14085,7 +14085,10 @@
                         "da953a696f": "粘贴并还原",
                         "5de321918e": "此文件夹下的隐藏工作树未包含在内（{{value0}}）。",
                         "ab32287003": "代码仓库",
-                        "addRepos": "添加此文件夹中的仓库"
+                        "addRepos": "添加此文件夹中的仓库",
+                        "filterRepos": "筛选仓库",
+                        "clearFilter": "清除筛选",
+                        "filterNoMatch": "没有匹配的仓库"
                       }
                     }
                   },
@@ -14638,6 +14641,7 @@
           },
           "GitGraphFullView": {
             "open": "打开 Git Graph",
+            "openShort": "Git Graph",
             "description": "当前仓库的提交图。",
             "message": "提交信息",
             "author": "作者",

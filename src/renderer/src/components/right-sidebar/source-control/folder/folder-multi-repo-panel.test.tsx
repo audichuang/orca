@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import type { Repo } from '../../../../../../shared/repo-types'
@@ -64,7 +64,7 @@ function worktree(name: string): Worktree {
 // A fresh folder id per render, so the module-level remembered pick cannot leak between tests.
 let folderCount = 0
 
-function renderPanel(changeCounts: Record<string, number>): void {
+function renderPanel(changeCounts: Record<string, number>, names: readonly string[] = NAMES): void {
   folderCount += 1
   const folderId = `folder-${folderCount}`
   useAppStore.setState({
@@ -86,10 +86,10 @@ function renderPanel(changeCounts: Record<string, number>): void {
         updatedAt: 0
       }
     ],
-    repos: NAMES.map(repo),
-    worktreesByRepo: Object.fromEntries(NAMES.map((name) => [`repo-${name}`, [worktree(name)]])),
+    repos: names.map(repo),
+    worktreesByRepo: Object.fromEntries(names.map((name) => [`repo-${name}`, [worktree(name)]])),
     gitStatusByWorktree: Object.fromEntries(
-      NAMES.map((name) => [
+      names.map((name) => [
         `wt-${name}`,
         Array.from({ length: changeCounts[name] ?? 0 }, (_, i) => ({
           path: `f${i}.ts`,
@@ -159,5 +159,82 @@ describe('FolderMultiRepoPanel accordion', () => {
     renderPanel({ api: 3, core: 0, web: 12 })
     expect(header('api')).toHaveTextContent('3')
     expect(header('web')).toHaveTextContent('12')
+  })
+})
+
+const MANY = ['api', 'core', 'docs', 'orders-api', 'orders-web', 'payments-api', 'web'] as const
+const filterBox = () => screen.getByRole('textbox', { name: 'Filter repositories' })
+
+describe('FolderMultiRepoPanel filter', () => {
+  it('has no filter box for a short repo list', () => {
+    renderPanel({ api: 1 })
+    expect(screen.queryByRole('textbox', { name: 'Filter repositories' })).toBeNull()
+  })
+
+  it('folds the open repo away and lists only the matches right under the box', () => {
+    renderPanel({ api: 1 }, MANY)
+    expect(openPanel()).toBe('wt-api')
+    fireEvent.change(filterBox(), { target: { value: 'orders' } })
+    expect(openPanel()).toBeNull()
+    expect(
+      screen.getAllByRole('button', { name: / \(main\) / }).map((row) => row.textContent)
+    ).toEqual(['orders-api (main)0', 'orders-web (main)0'])
+  })
+
+  it('opens a clicked match and clears the filter', () => {
+    renderPanel({ api: 1 }, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'api' } })
+    fireEvent.click(header('api'))
+    expect(openPanel()).toBe('wt-api')
+    expect(filterBox()).toHaveValue('')
+    expect(header('web')).toBeInTheDocument()
+  })
+
+  it('opens the top match on Enter and clears on Escape', () => {
+    renderPanel({}, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'payments' } })
+    fireEvent.keyDown(filterBox(), { key: 'Enter' })
+    expect(openPanel()).toBe('wt-payments-api')
+    expect(filterBox()).toHaveValue('')
+    fireEvent.change(filterBox(), { target: { value: 'web' } })
+    fireEvent.keyDown(filterBox(), { key: 'Escape' })
+    expect(filterBox()).toHaveValue('')
+    expect(openPanel()).toBe('wt-payments-api')
+  })
+
+  it('moves focus from the box to the first match on ArrowDown', () => {
+    renderPanel({}, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'orders' } })
+    fireEvent.keyDown(filterBox(), { key: 'ArrowDown' })
+    expect(header('orders-api')).toHaveFocus()
+  })
+
+  it('drops the query when the box hides, so it cannot narrow the list when it returns', () => {
+    renderPanel({}, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'orders' } })
+    const allRepos = useAppStore.getState().repos
+    act(() => useAppStore.setState({ repos: allRepos.slice(0, 5) }))
+    expect(screen.queryByRole('textbox', { name: 'Filter repositories' })).toBeNull()
+    act(() => useAppStore.setState({ repos: allRepos }))
+    expect(filterBox()).toHaveValue('')
+    expect(header('web')).toBeInTheDocument()
+  })
+
+  it('says so when nothing matches', () => {
+    renderPanel({}, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'zzz' } })
+    expect(screen.getByText('No repositories match')).toBeInTheDocument()
+  })
+})
+
+describe('FolderMultiRepoPanel Git Graph button', () => {
+  it('opens the graph on the repo currently open in the list', () => {
+    const openGitGraphTab = vi.fn()
+    useAppStore.setState({ openGitGraphTab })
+    renderPanel({ api: 0, core: 2, web: 1 })
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    expect(openGitGraphTab).toHaveBeenCalledWith(expect.stringContaining('folder-'), {
+      repoWorktreeId: 'wt-core'
+    })
   })
 })
