@@ -1,5 +1,7 @@
 // Fork-only: the Git Graph editor tab. Loads one repo's history and hosts GitGraphFullView.
-import React, { useCallback, useEffect, useMemo, useRef } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FolderPlus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
 import { useAllWorktrees, useRepoMap, useWorktreeMap } from '@/store/selectors'
 import type { OpenFile } from '@/store/slices/editor'
@@ -13,7 +15,9 @@ import { GitGraphFullView } from '../right-sidebar/source-control/sync/git-graph
 import { useSourceControlGitHistory } from '../right-sidebar/source-control/sync/use-git-history'
 import { useGitHistoryCommitActions } from '../right-sidebar/source-control/sync/use-git-history-commit-actions'
 import { commitFilesMenuSlot } from '../right-sidebar/source-control/sync/git-history-commit-files-menu'
+import { FolderAddReposDialog } from '../right-sidebar/source-control/folder/folder-add-repos-dialog'
 import { GitGraphRepoSwitcher } from './git-graph-repo-switcher'
+import { useGitGraphFolderAddRepos } from './use-git-graph-folder-add-repos'
 import { listGitGraphRepoChoices } from './git-graph-tab-model'
 import { resolveGitGraphSplitTargetGroupId } from './git-graph-split-target'
 import type { SourceControlRowOpenEvent } from '../right-sidebar/source-control/listing/split-open'
@@ -135,8 +139,34 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
     (id: string) => setGitGraphTabRepo(file.id, id),
     [file.id, setGitGraphTabRepo]
   )
+  const addRepos = useGitGraphFolderAddRepos(workspaceId)
+  const [addReposOpen, setAddReposOpen] = useState(false)
+  const addReposDialog =
+    addReposOpen && addRepos ? (
+      <FolderAddReposDialog
+        folderWorkspace={addRepos.folderWorkspace}
+        onClose={() => setAddReposOpen(false)}
+      />
+    ) : null
   const switcher = (
-    <GitGraphRepoSwitcher choices={choices} value={repoWorktreeId} onValueChange={selectRepo} />
+    <>
+      <GitGraphRepoSwitcher
+        choices={choices}
+        value={repoWorktreeId}
+        onValueChange={selectRepo}
+        addRepos={
+          addRepos
+            ? {
+                label: addRepos.label,
+                hidden: addRepos.allAdded,
+                onMenuOpen: addRepos.scan,
+                onSelect: () => setAddReposOpen(true)
+              }
+            : undefined
+        }
+      />
+      {addReposDialog}
+    </>
   )
   if (!choice) {
     return (
@@ -145,12 +175,29 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
         {choices.length > 0 ? (
           switcher
         ) : (
-          <p>
-            {translate(
-              'auto.components.gitGraphTab.noRepo',
-              'No Git repository is available for this workspace.'
+          <>
+            <p>
+              {translate(
+                'auto.components.gitGraphTab.noRepo',
+                'No Git repository is available for this workspace.'
+              )}
+            </p>
+            {addRepos && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAddReposOpen(true)}
+              >
+                <FolderPlus />
+                {translate(
+                  'auto.components.gitGraphTab.addReposButton',
+                  'Add repositories in this folder'
+                )}
+              </Button>
             )}
-          </p>
+            {addReposDialog}
+          </>
         )}
       </div>
     )
