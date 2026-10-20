@@ -14851,7 +14851,8 @@
             "copyFullSource": "すべての変更ファイルの完全なソースをコピー",
             "filesInCommits": "変更ファイル ({{files}}) · {{commits}} 件のコミット",
             "filesChanged": "変更ファイル ({{files}})",
-            "toggleBranches": "ブランチパネルの切り替え"
+            "toggleBranches": "ブランチパネルの切り替え",
+            "openShort": "Git Graph"
           },
           "GitGraphBranchSidebar": {
             "local": "ローカル",
