@@ -1,0 +1,147 @@
+name: Fork Release
+
+# Fork-only: a pushed release tag builds the signed arm64 dmg, publishes the GitHub Release and bumps the Homebrew cask.
+# fork-release-dryrun-* tags build and sign only (artifact upload, no release, no tap change).
+on:
+  push:
+    tags:
+      - 'v*-fork.*'
+      - 'fork-release-dryrun-*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: fork release dmg
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      TAG: ${{ github.ref_name }}
+      DRY_RUN: ${{ startsWith(github.ref_name, 'fork-release-dryrun-') }}
+      # Why: the packaging PTY check times out under the runner's default login shell setup.
+      SHELL: /bin/zsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          # Why: fork-dmg's FORK_BASE guard needs the upstream release tags.
+          fetch-depth: 0
+
+      - name: Resolve version and check the tag sits on main
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$DRY_RUN" = true ]; then
+            version="0.0.0-fork.0"
+          else
+            version="${TAG#v}"
+            # Why: FORK.md moves main and pushes the tag atomically; a tag off main is a mistake, not a release.
+            main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+            test "$main_sha" = "$GITHUB_SHA" || {
+              echo "::error::$TAG ($GITHUB_SHA) is not fork main ($main_sha)."
+              exit 1
+            }
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: electron
+
+      # Why: build:desktop bundles the mobile web app, which resolves from mobile/node_modules.
+      - uses: ./.github/actions/install-mobile-dependencies
+
+      - name: Import the self-signed signing identity
+        env:
+          P12_BASE64: ${{ secrets.FORK_SIGNING_P12 }}
+          P12_PASSWORD: ${{ secrets.FORK_SIGNING_P12_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/fork-signing.keychain-db"
+          keychain_password=$(uuidgen)
+          printf '%s' "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/signing.p12" -k "$keychain" -P "$P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" > /dev/null
+          existing=()
+          while IFS= read -r line; do existing+=("$(echo "$line" | tr -d ' "')"); done < <(security list-keychains -d user)
+          security list-keychains -d user -s "$keychain" "${existing[@]}"
+          # Why: a self-signed cert is not a valid code-signing identity until trusted; fork-dmg checks `find-identity -v`.
+          security find-certificate -c "Orca Fork Code Signing" -p "$keychain" > "$RUNNER_TEMP/signing.pem"
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/signing.pem"
+          rm -f "$RUNNER_TEMP/signing.p12"
+          security find-identity -v -p codesigning "$keychain"
+
+      - name: make fork-dmg
+        run: make fork-dmg FORK_VERSION=${{ steps.version.outputs.version }}
+
+      - name: Check the packaged version
+        id: dmg
+        run: |
+          actual=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' dist/mac-arm64/Orca.app/Contents/Info.plist)
+          test "$actual" = "${{ steps.version.outputs.version }}" || {
+            echo "::error::Packaged version $actual != ${{ steps.version.outputs.version }}."
+            exit 1
+          }
+          echo "sha256=$(shasum -a 256 dist/orca-fork-macos-arm64.dmg | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload dry-run dmg
+        if: env.DRY_RUN == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: orca-fork-dryrun-dmg
+          path: dist/orca-fork-macos-arm64.dmg
+          retention-days: 3
+
+      - name: Publish the GitHub Release
+        if: env.DRY_RUN != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA256: ${{ steps.dmg.outputs.sha256 }}
+        run: |
+          # Why: the release notes are written in the annotated tag's message; a lightweight tag gets a stub.
+          notes=$(git for-each-ref "refs/tags/$TAG" --format='%(contents)' | sed '/-----BEGIN PGP SIGNATURE-----/,$d')
+          [ -n "$notes" ] || notes="Orca Fork ${TAG#v}"
+          printf "%s\n\nSHA-256:\`%s\`\n" "$notes" "$SHA256" > "$RUNNER_TEMP/notes.md"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" dist/orca-fork-macos-arm64.dmg --clobber
+            gh release edit "$TAG" --notes-file "$RUNNER_TEMP/notes.md" --latest
+          else
+            gh release create "$TAG" --verify-tag --latest --title "Orca Fork ${TAG#v}" \
+              --notes-file "$RUNNER_TEMP/notes.md" dist/orca-fork-macos-arm64.dmg
+          fi
+
+      - name: Bump the Homebrew cask
+        if: env.DRY_RUN != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          SHA256: ${{ steps.dmg.outputs.sha256 }}
+        run: |
+          path=repos/audichuang/homebrew-tap/contents/Casks/orca-fork.rb
+          gh api "$path" > "$RUNNER_TEMP/cask.json"
+          python3 - "$RUNNER_TEMP/cask.json" "$RUNNER_TEMP/cask-put.json" <<'PY'
+          import base64, json, os, re, sys
+          current = json.load(open(sys.argv[1]))
+          text = base64.b64decode(current["content"]).decode()
+          text, n_version = re.subn(r'^(\s*version )"[^"]*"', rf'\g<1>"{os.environ["VERSION"]}"', text, count=1, flags=re.M)
+          text, n_sha = re.subn(r'^(\s*sha256 )"[0-9a-f]*"', rf'\g<1>"{os.environ["SHA256"]}"', text, count=1, flags=re.M)
+          if n_version != 1 or n_sha != 1:
+              sys.exit("cask has no single version/sha256 line to bump")
+          json.dump({"message": f"orca-fork {os.environ['VERSION']}",
+                     "content": base64.b64encode(text.encode()).decode(),
+                     "sha": current["sha"]}, open(sys.argv[2], "w"))
+          PY
+          gh api -X PUT "$path" --input "$RUNNER_TEMP/cask-put.json" --jq '.commit.html_url'
+
+      - name: Remove the signing keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/fork-signing.keychain-db" 2>/dev/null || true
