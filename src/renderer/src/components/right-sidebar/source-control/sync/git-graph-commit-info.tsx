@@ -93,6 +93,10 @@ export function GitGraphCommitInfo({
     ? item.message.slice(item.subject.length).trim()
     : item.message.trim()
   const containing = context.containment.get(item.id) ?? []
+  // Why listed: with Parents it is the keyboard route along an edge the graph folds into arrows.
+  const childIds = [...context.itemsById.values()]
+    .filter((candidate) => candidate.parentIds.includes(item.id))
+    .map((candidate) => candidate.id)
   const copySha = (): void => void window.api.ui.writeClipboardText(item.id)
   const branchBadge = (refId: string): GitHistoryItemRef => ({
     id: refId,
@@ -162,6 +166,24 @@ export function GitGraphCommitInfo({
           >
             <span className="flex flex-wrap gap-2">
               {item.parentIds.map((id) => (
+                <CommitLink key={id} id={id} context={context} />
+              ))}
+            </span>
+          </InfoRow>
+        )}
+        {childIds.length > 0 && (
+          <InfoRow
+            label={translate(
+              'auto.components.right.sidebar.GitGraphCommitInfo.children',
+              'Children'
+            )}
+            hint={translate(
+              'auto.components.right.sidebar.GitGraphCommitInfo.childrenHint',
+              'Commits in the loaded list whose parent is this commit.'
+            )}
+          >
+            <span className="flex flex-wrap gap-2">
+              {childIds.map((id) => (
                 <CommitLink key={id} id={id} context={context} />
               ))}
             </span>
