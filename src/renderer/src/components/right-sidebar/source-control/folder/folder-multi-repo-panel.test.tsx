@@ -226,3 +226,15 @@ describe('FolderMultiRepoPanel filter', () => {
     expect(screen.getByText('No repositories match')).toBeInTheDocument()
   })
 })
+
+describe('FolderMultiRepoPanel Git Graph button', () => {
+  it('opens the graph on the repo currently open in the list', () => {
+    const openGitGraphTab = vi.fn()
+    useAppStore.setState({ openGitGraphTab })
+    renderPanel({ api: 0, core: 2, web: 1 })
+    fireEvent.click(screen.getByRole('button', { name: 'Git Graph' }))
+    expect(openGitGraphTab).toHaveBeenCalledWith(expect.stringContaining('folder-'), {
+      repoWorktreeId: 'wt-core'
+    })
+  })
+})
