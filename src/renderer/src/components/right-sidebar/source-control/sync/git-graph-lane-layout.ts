@@ -78,6 +78,7 @@ function newTrack(first: number, slot: number): Track {
 function extractTracks(viewModels: readonly GitHistoryItemViewModel[]): {
   tracks: Track[]
   rowSegments: RowSegment[][]
+  chain: Set<string>
 } {
   const tracks: Track[] = []
   const rowSegments: RowSegment[][] = []
@@ -146,7 +147,7 @@ function extractTracks(viewModels: readonly GitHistoryItemViewModel[]): {
     rowSegments.push(segments)
     above = below
   })
-  return { tracks, rowSegments }
+  return { tracks, rowSegments, chain }
 }
 
 function foldTracks(tracks: readonly Track[], foldAfterRows: number, stubRows: number): void {
@@ -210,10 +211,11 @@ export function buildGitGraphLaneRows(
   foldAfterRows = GIT_GRAPH_FOLD_AFTER_ROWS,
   stubRows = GIT_GRAPH_FOLD_STUB_ROWS
 ): GitGraphLaneRow[] {
-  const { tracks, rowSegments } = extractTracks(viewModels)
+  const { tracks, rowSegments, chain } = extractTracks(viewModels)
   foldTracks(tracks, foldAfterRows, stubRows)
   const heldAt: Track[][] = Array.from({ length: viewModels.length + 1 }, () => [])
-  let pinnedUntil = -2
+  // Why from the rows too: a parentless HEAD has no outgoing line yet still belongs in column 0.
+  let pinnedUntil = viewModels.findLastIndex((vm) => chain.has(vm.historyItem.id)) - 1
   for (const track of tracks) {
     for (let boundary = track.first; boundary <= track.last; boundary += 1) {
       if (holdsColumn(track, boundary)) {
@@ -256,13 +258,14 @@ export function buildGitGraphLaneRows(
       !topUsed.has(column) &&
       ![...bottom.values()].includes(column) &&
       !blocked(row).has(column)
-    let nodeColumn = firstOut?.track.pinned
+    const onHead = chain.has(vm.historyItem.id)
+    let nodeColumn = onHead
       ? 0
       : intoColumns.length > 0
         ? Math.min(...intoColumns)
         : lowestFree(topUsed, new Set(bottom.values()), blocked(row - 1), blocked(row))
     // Why one column per row: lanes drift left into freed space without ever sweeping past a dot.
-    if (!firstOut?.track.pinned && firstOut && free(nodeColumn - 1)) {
+    if (!onHead && firstOut && free(nodeColumn - 1)) {
       nodeColumn -= 1
     }
     if (firstOut && held.includes(firstOut.track)) {
