@@ -45,17 +45,29 @@ export function GitHistoryCommitContextMenu({
       ) : null}
       <ContextMenuItem onSelect={() => onAction('copy-hash', item)}>
         <Hash className="size-3.5" />
-        {translate(
-          'auto.components.right.sidebar.GitHistoryCommitContextMenu.8c2d5fab13',
-          'Copy commit hash'
-        )}
+        {selectedCount > 1
+          ? translate(
+              'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyHashMany',
+              'Copy commit hashes ({{value0}} commits)',
+              { value0: selectedCount }
+            )
+          : translate(
+              'auto.components.right.sidebar.GitHistoryCommitContextMenu.8c2d5fab13',
+              'Copy commit hash'
+            )}
       </ContextMenuItem>
       <ContextMenuItem onSelect={() => onAction('copy-message', item)}>
         <Copy className="size-3.5" />
-        {translate(
-          'auto.components.right.sidebar.GitHistoryCommitContextMenu.9d3e60bc24',
-          'Copy commit message'
-        )}
+        {selectedCount > 1
+          ? translate(
+              'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyMessageMany',
+              'Copy commit messages ({{value0}} commits)',
+              { value0: selectedCount }
+            )
+          : translate(
+              'auto.components.right.sidebar.GitHistoryCommitContextMenu.9d3e60bc24',
+              'Copy commit message'
+            )}
       </ContextMenuItem>
       <ContextMenuItem onSelect={() => onAction('copy-full-source', item)}>
         <ClipboardCopy className="size-3.5" />
