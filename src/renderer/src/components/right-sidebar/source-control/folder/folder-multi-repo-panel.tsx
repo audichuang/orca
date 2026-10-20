@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ClipboardPaste, Copy, FolderPlus, RefreshCw } from 'lucide-react'
+import { FolderPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,6 @@ import {
 } from '../../../../../../shared/execution-host'
 import { copyClipcodeGitChanges } from '../clipcode/clipcode-copy-action'
 import { useClipcodeRestore } from '../clipcode/use-clipcode-restore'
-import { ActionButton } from '../listing/action-button'
 import { SourceControlSingleRepoPanel } from '../panel/single-repo-panel'
 import {
   countHiddenFolderWorktrees,
@@ -21,7 +20,10 @@ import {
   type FolderGitWorktree
 } from './folder-git-worktrees'
 import { FolderAddReposDialog } from './folder-add-repos-dialog'
+import { FolderRepoFilterBox } from './folder-repo-filter-box'
+import { FolderRepoPanelToolbar } from './folder-repo-panel-toolbar'
 import { FolderRepoRow } from './folder-repo-row'
+import { filterFolderRepoIndexes, FOLDER_REPO_FILTER_MIN_REPOS } from './folder-repo-filter'
 import {
   isRepoHiddenFromSidebar,
   setReposHiddenFromSidebar,
@@ -125,17 +127,37 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     },
     [folderWorkspaceKey]
   )
+  const [filter, setFilter] = useState('')
+  const showFilter = members.length >= FOLDER_REPO_FILTER_MIN_REPOS
+  // Why: a query left behind when the box hides would silently narrow the list once it reappears.
+  if (!showFilter && filter !== '') {
+    setFilter('')
+  }
+  // Why: while filtering, the open repo's panel folds away so the matches sit right under the box.
+  const filtering = showFilter && filter.trim() !== ''
+  const expandedIndex = collapsed || filtering ? -1 : memberIds.indexOf(selectedId)
+  const labels = useMemo(
+    () => members.map((member) => folderRepoSectionLabel(member, members)),
+    [members]
+  )
+  const visibleIndexes = filterFolderRepoIndexes(labels, filtering ? filter : '')
+  const visibleIds = visibleIndexes.map((index) => memberIds[index])
   const listRef = useRef<HTMLDivElement>(null)
   const [focusId, setFocusId] = useState<string | null>(null)
-  const rovingId = focusId !== null && memberIds.includes(focusId) ? focusId : selectedId
+  const rovingId =
+    focusId !== null && visibleIds.includes(focusId)
+      ? focusId
+      : visibleIds.includes(selectedId)
+        ? selectedId
+        : visibleIds[0]
   const pendingFocusRef = useRef<string | null>(null)
   const focusRow = useCallback(
     (id: string) => {
       listRef.current
         ?.querySelectorAll<HTMLElement>('[data-repo-row]')
-        [memberIds.indexOf(id)]?.focus()
+        [visibleIds.indexOf(id)]?.focus()
     },
-    [memberIds]
+    [visibleIds]
   )
   // Why: opening a repo moves headers between the above/below-panel lists, which remounts them and drops focus.
   useLayoutEffect(() => {
@@ -144,19 +166,19 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
       pendingFocusRef.current = null
     }
   })
+  // Why: judged by what is drawn, so a match picked while filtering opens even if it was the open repo.
   const toggleRepo = (id: string) => {
     pendingFocusRef.current = id
     setFocusId(id)
-    if (id === selectedId && !collapsed) {
+    if (memberIds.indexOf(id) === expandedIndex) {
       setCollapsed(true)
       return
     }
+    setFilter('')
     selectRepo(id)
     setCollapsed(false)
   }
-  const expandedIndex = collapsed ? -1 : memberIds.indexOf(selectedId)
-  const selectedMember = members.find((member) => member.worktree.id === selectedId)
-  const selectedLabel = selectedMember ? folderRepoSectionLabel(selectedMember, members) : undefined
+  const selectedLabel = labels[memberIds.indexOf(selectedId)]
   // Accordion keys: arrows/Home/End move focus between headers; Enter/Space opens or closes one.
   const onListKeyDown = (event: React.KeyboardEvent) => {
     // Why: only the repo rows navigate; arrow keys on a row's Copy button must not move focus.
@@ -167,14 +189,18 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     ) {
       return
     }
-    const nextId = moveRepoSelection(memberIds, rovingId, event.key)
+    const nextId = moveRepoSelection(visibleIds, rovingId, event.key)
     if (nextId === undefined) {
       return
     }
     event.preventDefault()
-    setFocusId(nextId)
-    focusRow(nextId)
+    focusRepo(nextId)
   }
+  const focusRepo = (id: string) => {
+    setFocusId(id)
+    focusRow(id)
+  }
+  const firstMatchId = visibleIds[0]
 
   const folderPath = folderWorkspace?.folderPath ?? ''
   const repoWorktrees = useMemo(
@@ -216,7 +242,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     <FolderRepoRow
       key={member.worktree.id}
       worktreeId={member.worktree.id}
-      label={folderRepoSectionLabel(member, members)}
+      label={labels[index]}
       changeCount={changeCounts[index] ?? 0}
       focusable={member.worktree.id === rovingId}
       expanded={index === expandedIndex}
@@ -271,56 +297,16 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 items-center gap-1 border-b border-border pl-3 pr-2 py-1">
-        <span
-          className="min-w-0 flex-1 truncate text-xs font-semibold"
-          title={folderWorkspace.folderPath}
-        >
-          {folderWorkspace.name}
-        </span>
-        <ActionButton
-          icon={Copy}
-          title={translate(
-            'auto.components.right.sidebar.source.control.folder.folder.multi.repo.panel.d98e7b731c',
-            'Copy all changes'
-          )}
-          onClick={copyAllChanges}
-        />
-        {canAddRepos && (
-          <ActionButton
-            icon={FolderPlus}
-            title={translate(
-              'auto.components.right.sidebar.source.control.folder.folder.multi.repo.panel.addRepos',
-              'Add repositories in this folder'
-            )}
-            onClick={() => setAddReposOpen(true)}
-          />
-        )}
-        <ActionButton
-          icon={ClipboardPaste}
-          title={translate(
-            'auto.components.right.sidebar.source.control.folder.folder.multi.repo.panel.da953a696f',
-            'Paste & Restore'
-          )}
-          onClick={requestRestore}
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          onClick={() => void refreshAll()}
-          aria-label={translate(
-            'auto.components.right.sidebar.source.control.folder.folder.multi.repo.panel.a044a830f1',
-            'Refresh all repositories'
-          )}
-          title={translate(
-            'auto.components.right.sidebar.source.control.folder.folder.multi.repo.panel.a044a830f1',
-            'Refresh all repositories'
-          )}
-        >
-          <RefreshCw />
-        </Button>
-      </div>
+      <FolderRepoPanelToolbar
+        name={folderWorkspace.name}
+        folderPath={folderWorkspace.folderPath}
+        workspaceKey={folderWorkspaceKey}
+        selectedRepoId={selectedId}
+        onCopyAll={copyAllChanges}
+        onAddRepos={canAddRepos ? () => setAddReposOpen(true) : undefined}
+        onRestore={requestRestore}
+        onRefresh={() => void refreshAll()}
+      />
       {hiddenNotice && (
         <div className="shrink-0 border-b border-border px-3 py-1 text-[11px] text-muted-foreground">
           {hiddenNotice}
@@ -333,6 +319,15 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
             'This folder sits inside an imported repository, so changes outside the folder are listed too.'
           )}
         </div>
+      )}
+      {showFilter && (
+        <FolderRepoFilterBox
+          value={filter}
+          onChange={setFilter}
+          noMatch={firstMatchId === undefined}
+          onFocusFirst={() => firstMatchId !== undefined && focusRepo(firstMatchId)}
+          onOpenFirst={() => firstMatchId !== undefined && toggleRepo(firstMatchId)}
+        />
       )}
       {/* Why: one repo open at a time; its regular full panel fills the height between the headers, so its commit dock sits at the bottom like a repo workspace. */}
       <div
@@ -347,7 +342,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
       >
         {expandedIndex === -1 ? (
           <div className="min-h-0 flex-1 overflow-y-auto py-1 scrollbar-sleek">
-            {members.map(renderRow)}
+            {visibleIndexes.map((index) => renderRow(members[index], index))}
           </div>
         ) : (
           <>

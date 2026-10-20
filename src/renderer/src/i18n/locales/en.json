@@ -14142,7 +14142,10 @@
                         "da953a696f": "Paste & Restore",
                         "5de321918e": "Hidden worktrees under this folder are not included ({{value0}}).",
                         "ab32287003": "Repositories",
-                        "addRepos": "Add repositories in this folder"
+                        "addRepos": "Add repositories in this folder",
+                        "filterRepos": "Filter repositories",
+                        "clearFilter": "Clear filter",
+                        "filterNoMatch": "No repositories match"
                       }
                     }
                   },
@@ -14695,6 +14698,7 @@
           },
           "GitGraphFullView": {
             "open": "Open Git Graph",
+            "openShort": "Git Graph",
             "description": "Commit graph for the current repository.",
             "message": "Message",
             "author": "Author",

@@ -13838,7 +13838,10 @@
                         "da953a696f": "Pegar y restaurar",
                         "5de321918e": "No se incluyen los worktrees ocultos de esta carpeta ({{value0}}).",
                         "ab32287003": "Repositorios",
-                        "addRepos": "Añadir repositorios de esta carpeta"
+                        "addRepos": "Añadir repositorios de esta carpeta",
+                        "filterRepos": "Filtrar repositorios",
+                        "clearFilter": "Borrar filtro",
+                        "filterNoMatch": "Ningún repositorio coincide"
                       }
                     }
                   },
@@ -14391,6 +14394,7 @@
           },
           "GitGraphFullView": {
             "open": "Abrir Git Graph",
+            "openShort": "Git Graph",
             "description": "Gráfico de commits del repositorio actual.",
             "message": "Mensaje",
             "author": "Autor",
