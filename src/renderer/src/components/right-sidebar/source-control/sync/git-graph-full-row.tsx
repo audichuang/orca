@@ -258,7 +258,8 @@ export function GitGraphFullRow({
       )}
       {columns.hash && (
         <span data-col="hash" className="truncate font-mono text-muted-foreground">
-          {item.displayId}
+          {/* Why: boundary markers carry a placeholder id (0000000), not a commit hash. */}
+          {isBoundaryNode ? null : item.displayId}
         </span>
       )}
     </>
