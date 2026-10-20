@@ -14787,7 +14787,7 @@
           "GitGraphFullView": {
             "laneContinuesBelow": "往下 {{count}} 列接到 {{sha}} {{subject}}。點一下跳過去。",
             "laneComesFromAbove": "從上方 {{count}} 列的 {{sha}} {{subject}} 接過來。點一下跳過去。",
-            "laneContinuesPastLoaded": "接到尚未載入的更早 commit",
+            "laneContinuesPastLoaded": "接到尚未載入的更早 commit。載入更多 commit 後即可跳過去。",
             "open": "打开 Git Graph",
             "openShort": "Git Graph",
             "description": "当前仓库的提交图。",
@@ -14814,6 +14814,8 @@
             "date": "日期",
             "copySha": "复制提交 SHA",
             "parents": "父提交",
+            "children": "子提交",
+            "childrenHint": "已載入的清單中,以這個 commit 為父提交的 commit。",
             "refs": "引用",
             "containedIn": "所在分支",
             "containedInHint": "只计算末端提交在已加载列表中的分支;列表外的分支不计入。",
