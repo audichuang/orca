@@ -14247,7 +14247,9 @@
             "entryDiscardFailed": "Failed to discard “{{value0}}”",
             "entryDeleteFailed": "Failed to delete “{{value0}}”",
             "entryFailedInWorkspace": "{{value0}} in {{value1}}",
-            "diffCommentNotesCopyFailed": "Failed to copy notes"
+            "diffCommentNotesCopyFailed": "Failed to copy notes",
+            "commitHashes": "Commit hashes",
+            "commitMessages": "Commit messages"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "Could not start the selected agent.",
@@ -15249,7 +15251,9 @@
             "9d3e60bc24": "Copy commit message",
             "ae4f71cd35": "Explain changes",
             "copyFullSource": "Copy Full Source",
-            "copyFullSourceMany": "Copy Full Source ({{value0}} commits)"
+            "copyFullSourceMany": "Copy Full Source ({{value0}} commits)",
+            "copyHashMany": "Copy commit hashes ({{value0}} commits)",
+            "copyMessageMany": "Copy commit messages ({{value0}} commits)"
           },
           "pull": {
             "policy": {

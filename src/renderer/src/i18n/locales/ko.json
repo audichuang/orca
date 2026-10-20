@@ -13705,7 +13705,9 @@
             "entryDiscardFailed": "'{{value0}}'을(를) 삭제하지 못했습니다.",
             "entryDeleteFailed": "'{{value0}}'을(를) 삭제하지 못했습니다.",
             "entryFailedInWorkspace": "{{value1}}의 {{value0}}",
-            "diffCommentNotesCopyFailed": "메모를 복사하지 못했습니다."
+            "diffCommentNotesCopyFailed": "메모를 복사하지 못했습니다.",
+            "commitHashes": "Commit 해시",
+            "commitMessages": "Commit 메시지"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "선택한 agent를 시작할 수 없습니다.",
@@ -14683,7 +14685,9 @@
             "9d3e60bc24": "commit 메시지 복사",
             "ae4f71cd35": "변경 사항 설명",
             "copyFullSource": "전체 소스 복사",
-            "copyFullSourceMany": "전체 소스 복사 (커밋 {{value0}}개)"
+            "copyFullSourceMany": "전체 소스 복사 (커밋 {{value0}}개)",
+            "copyHashMany": "Commit 해시 복사 (커밋 {{value0}}개)",
+            "copyMessageMany": "Commit 메시지 복사 (커밋 {{value0}}개)"
           },
           "pull": {
             "policy": {
