@@ -9,6 +9,9 @@ import { useAppStore } from '@/store'
 import type { Repo } from '../../../../shared/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import type { GitHistoryResult } from '../../../../shared/git-history'
+import type { FolderWorkspace } from '../../../../shared/folder-workspace-types'
+import type { NestedRepoScanResult } from '../../../../shared/project-group-types'
+import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
 import { resetGitHistoryGraphFiltersForTest } from '../right-sidebar/source-control/sync/git-history-graph-filter'
 import GitGraphTabView from './GitGraphTabView'
 
@@ -69,13 +72,50 @@ const history = vi.fn(async (_args: { worktreePath: string; limit?: number }) =>
 // The branch list read (limit 1) runs on mount; only the page read is gated on visibility.
 const pageReads = () => history.mock.calls.filter(([args]) => args.limit === 50)
 
+const scanNested = vi.fn(async (_args: { path: string }): Promise<NestedRepoScanResult> => ({
+  selectedPath: '/work',
+  selectedPathKind: 'non_git_folder',
+  repos: [
+    { path: '/work/api', displayName: 'api', depth: 1 },
+    { path: '/work/billing', displayName: 'billing', depth: 1 },
+    { path: '/work/docs/specs', displayName: 'specs', depth: 2 }
+  ],
+  truncated: false,
+  timedOut: false,
+  stopped: false,
+  durationMs: 1,
+  maxDepth: 4,
+  maxRepos: 200,
+  timeoutMs: null
+}))
+
+function folder(extra: Partial<FolderWorkspace> = {}): FolderWorkspace {
+  return {
+    id: 'folder-1',
+    projectGroupId: 'group-1',
+    name: 'work',
+    folderPath: '/work',
+    connectionId: null,
+    linkedTask: null,
+    comment: '',
+    isArchived: false,
+    isUnread: false,
+    isPinned: false,
+    sortOrder: 0,
+    lastActivityAt: 0,
+    createdAt: 0,
+    updatedAt: 0,
+    ...extra
+  }
+}
+
 function Host({ fileId }: { fileId: string }): React.JSX.Element | null {
   const file = useAppStore((s) => s.openFiles.find((entry) => entry.id === fileId))
   return file ? <GitGraphTabView file={file} /> : null
 }
 
 beforeEach(() => {
-  vi.stubGlobal('api', { git: { history } })
+  vi.stubGlobal('api', { git: { history }, projectGroups: { scanNested } })
   useAppStore.setState({
     activeView: 'terminal',
     activeWorktreeId: 'wt-api',
@@ -95,6 +135,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
   useAppStore.setState(useAppStore.getInitialState(), true)
   history.mockClear()
+  scanNested.mockClear()
 })
 
 describe('Git Graph tab', () => {
@@ -172,5 +213,57 @@ describe('Git Graph tab', () => {
       'Select repository'
     )
     expect(screen.queryByText('No Git repository is available for this workspace.')).toBeNull()
+  })
+  it("offers the folder's not-added repos from the switcher, counted once the menu opens", async () => {
+    useAppStore.setState({ folderWorkspaces: [folder()] })
+    const id = useAppStore.getState().openGitGraphTab(folderWorkspaceKey('folder-1'))!
+    render(
+      <TooltipProvider>
+        <Host fileId={id} />
+      </TooltipProvider>
+    )
+    const trigger = await screen.findByRole('combobox', { name: 'Repository' })
+    expect(scanNested).not.toHaveBeenCalled()
+
+    fireEvent.click(trigger)
+    // /work/api is added, so billing and docs/specs are the two left.
+    expect(await screen.findByText('2 not added')).toBeInTheDocument()
+    const entry = screen.getByText('Add repositories...')
+    expect(scanNested).toHaveBeenCalledWith(expect.objectContaining({ path: '/work' }))
+
+    fireEvent.click(entry)
+    expect(await screen.findByRole('dialog')).toHaveTextContent('docs/specs')
+  })
+
+  it('offers adding repos when the last added repo under a local folder is gone', async () => {
+    useAppStore.setState({ folderWorkspaces: [folder()] })
+    const id = useAppStore.getState().openGitGraphTab(folderWorkspaceKey('folder-1'))!
+    useAppStore.setState({ worktreesByRepo: {} })
+    render(
+      <TooltipProvider>
+        <Host fileId={id} />
+      </TooltipProvider>
+    )
+    expect(
+      await screen.findByText('No Git repository is available for this workspace.')
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Add repositories in this folder' }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('billing')
+  })
+
+  it('keeps the add entry out of SSH folders, whose add path is local only', async () => {
+    useAppStore.setState({
+      folderWorkspaces: [folder({ folderPath: '/work', connectionId: 'ssh-1' })]
+    })
+    const id = useAppStore.getState().openGitGraphTab(folderWorkspaceKey('folder-1'))!
+    render(
+      <TooltipProvider>
+        <Host fileId={id} />
+      </TooltipProvider>
+    )
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Repository' }))
+    expect(await screen.findByText('remote-main')).toBeInTheDocument()
+    expect(screen.queryByText('Add repositories...')).toBeNull()
+    expect(scanNested).not.toHaveBeenCalled()
   })
 })
