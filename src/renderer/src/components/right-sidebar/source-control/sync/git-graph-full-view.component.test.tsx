@@ -131,6 +131,23 @@ afterEach(() => {
 })
 
 describe('full-width Git Graph', () => {
+  it('centers the commit a jump lands on', async () => {
+    const scroll = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scroll
+    })
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const view = await screen.findByRole('region', { name: 'Git Graph' })
+    fireEvent.click((await within(view).findAllByTestId('git-graph-full-row'))[0]!)
+    scroll.mockClear()
+
+    fireEvent.click(await within(view).findByRole('button', { name: 'bbbbbbb' }))
+    expect(scroll).toHaveBeenCalledWith({ block: 'center' })
+  })
+
   it('shows every ref, loads a selected commit, and opens a file diff', async () => {
     const onOpenCommitFile = vi.fn()
     const onLoadCommitFiles = vi.fn(async () => [FILE])
