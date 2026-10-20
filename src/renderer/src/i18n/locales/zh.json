@@ -14852,7 +14852,10 @@
             "filesInCommits": "变更文件 ({{files}}) · {{commits}} 个提交",
             "filesChanged": "变更文件 ({{files}})",
             "toggleBranches": "切换分支面板",
-            "openShort": "Git Graph"
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "往下 {{count}} 列接到 {{sha}} {{subject}}。點一下跳過去。",
+            "laneComesFromAbove": "從上方 {{count}} 列的 {{sha}} {{subject}} 接過來。點一下跳過去。",
+            "laneContinuesPastLoaded": "接到尚未載入的更早 commit"
           },
           "GitGraphBranchSidebar": {
             "local": "本地",

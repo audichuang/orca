@@ -14868,7 +14868,10 @@
             "filesInCommits": "Archivos modificados ({{files}}) · {{commits}} commits",
             "filesChanged": "Archivos modificados ({{files}})",
             "toggleBranches": "Mostrar u ocultar ramas",
-            "openShort": "Git Graph"
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "Continúa {{count}} filas más abajo en {{sha}} {{subject}}. Haz clic para ir.",
+            "laneComesFromAbove": "Viene de {{sha}} {{subject}}, {{count}} filas más arriba. Haz clic para ir.",
+            "laneContinuesPastLoaded": "Continúa más allá de los commits cargados"
           },
           "GitGraphBranchSidebar": {
             "local": "Locales",
