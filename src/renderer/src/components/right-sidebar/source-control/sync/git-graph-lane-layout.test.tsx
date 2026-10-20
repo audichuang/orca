@@ -133,8 +133,30 @@ describe('buildGitGraphLaneRows', () => {
 
     expect(folds(rows, 'fold-down')).toEqual([{ row: 2, target: 'm30', rows: 29 }])
     expect(folds(rows, 'fold-up')).toEqual([{ row: 29, target: 'b0', rows: 29 }])
-    expect(Math.max(...rows.slice(3, 29).map((row) => row.laneCount))).toBe(1)
+    expect(Math.max(...rows.slice(5, 27).map((row) => row.laneCount))).toBe(1)
     expect(rows[31]!.segments.filter((s) => s.kind === 'into-node')).toHaveLength(2)
+  })
+
+  it('never puts a commit dot on a fold arrow or right next to its tip', () => {
+    // Stacked long-lived branches: each block's arrow row is the next block's first commit.
+    const blocks = [0, 1, 2, 3, 4, 5].flatMap((j) => [
+      item(`b${j}a`, [`b${j}b`]),
+      item(`b${j}b`, [`m${30 + j * 5}`])
+    ])
+    const rows = buildGitGraphLaneRows(
+      buildGitHistoryViewModels([...blocks, ...chain('m', 0, 60, [])])
+    )
+    const arrows = rows.flatMap((row, index) =>
+      row.segments.flatMap((s) =>
+        s.kind === 'fold-down' || s.kind === 'fold-up' ? [{ index, s }] : []
+      )
+    )
+    expect(arrows.filter(({ s }) => s.kind === 'fold-down')).toHaveLength(6)
+    for (const { index, s } of arrows) {
+      const neighbour = s.kind === 'fold-down' ? index + 1 : index - 1
+      expect(rows[index]!.nodeColumn).not.toBe(s.at)
+      expect(rows[neighbour]!.nodeColumn).not.toBe(s.at)
+    }
   })
 
   it('keeps an edge whose span is within the threshold', () => {
