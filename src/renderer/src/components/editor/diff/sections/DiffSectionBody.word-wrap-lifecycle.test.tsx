@@ -19,6 +19,7 @@ const { mountedEditors, renderedOptions, syncWordWrap, cleanupShiftWheel, create
           getModifiedEditor: () => modified,
           getContainerDomNode: () => document.createElement('div'),
           getModel: () => null,
+          dispose: vi.fn(),
           onDidDispose: vi.fn(() => ({ dispose: vi.fn() }))
         },
         disposeModified: () => listeners.forEach((listener) => listener())
