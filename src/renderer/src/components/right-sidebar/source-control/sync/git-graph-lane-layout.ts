@@ -183,23 +183,70 @@ function isVisible(track: Track, boundary: number): boolean {
   )
 }
 
+// Why reserve a row past each arrow: otherwise the next commit's dot lands on the arrow's column and hides it.
+function holdsColumn(track: Track, boundary: number): boolean {
+  if (isVisible(track, boundary)) {
+    return true
+  }
+  if (track.hiddenFrom === undefined || boundary < track.first || boundary > track.last) {
+    return false
+  }
+  return (
+    boundary <= track.hiddenFrom + 1 ||
+    (track.endRow !== undefined && boundary >= (track.hiddenTo ?? track.hiddenFrom) - 1)
+  )
+}
+
 function assignColumns(tracks: readonly Track[], rowCount: number): Map<Track, number>[] {
   const byBoundary: Track[][] = Array.from({ length: rowCount + 1 }, () => [])
   for (const track of tracks) {
     for (let boundary = Math.max(track.first, -1); boundary <= track.last; boundary += 1) {
-      if (isVisible(track, boundary)) {
+      if (holdsColumn(track, boundary)) {
         byBoundary[boundary + 1]!.push(track)
       }
     }
   }
-  return byBoundary.map((visible, index) => {
+  const columns: Map<Track, number>[] = []
+  let previous = new Map<Track, number>()
+  byBoundary.forEach((held, index) => {
     const boundary = index - 1
-    visible.sort(
-      (a, b) =>
-        Number(b.pinned) - Number(a.pinned) || a.slots.get(boundary)! - b.slots.get(boundary)!
-    )
-    return new Map(visible.map((track, column) => [track, column]))
+    // Why fixed: a reserved column must not slide during compaction, or a dot lands on the arrow anyway.
+    const stays = (track: Track): boolean =>
+      previous.has(track) && (!isVisible(track, boundary) || !isVisible(track, boundary - 1))
+    const current = new Map<Track, number>()
+    const taken = new Set<number>()
+    for (const track of held) {
+      if (stays(track)) {
+        current.set(track, previous.get(track)!)
+        taken.add(previous.get(track)!)
+      }
+    }
+    const rest = held
+      .filter((track) => !current.has(track))
+      .sort(
+        (a, b) =>
+          Number(b.pinned) - Number(a.pinned) || a.slots.get(boundary)! - b.slots.get(boundary)!
+      )
+    let column = 0
+    for (const track of rest) {
+      while (taken.has(column)) {
+        column += 1
+      }
+      current.set(track, column)
+      column += 1
+    }
+    columns.push(current)
+    previous = current
   })
+  return columns
+}
+
+function columnCount(columns: Map<Track, number>): number {
+  let count = 0
+  for (const column of columns.values()) {
+    count = Math.max(count, column + 1)
+  }
+  return count
 }
 
 export function buildGitGraphLaneRows(
@@ -222,10 +269,10 @@ export function buildGitGraphLaneRows(
       ? bottom.get(firstOut.track)!
       : circleInto
         ? top.get(circleInto.track)!
-        : top.size
+        : columnCount(top)
     for (const segment of rowSegments[row]!) {
-      const above = top.get(segment.track)
-      const below = bottom.get(segment.track)
+      const above = isVisible(segment.track, row - 1) ? top.get(segment.track) : undefined
+      const below = isVisible(segment.track, row) ? bottom.get(segment.track) : undefined
       if (segment.kind === 'into-node' && above !== undefined) {
         segments.push({ kind: 'into-node', from: above, color: segment.color })
       } else if (segment.kind === 'out-of-node' && below !== undefined) {
@@ -258,7 +305,7 @@ export function buildGitGraphLaneRows(
     return {
       nodeColumn,
       nodeColor: getGitHistoryItemColor(vm),
-      laneCount: Math.max(top.size, bottom.size, nodeColumn + 1),
+      laneCount: Math.max(columnCount(top), columnCount(bottom), nodeColumn + 1),
       segments
     }
   })
