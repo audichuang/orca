@@ -12973,7 +12973,9 @@
             "discardFailedPlural": "Failed to discard {{count}} files",
             "noteCountSingular": "{{count}} note",
             "noteCountPlural": "{{count}} notes",
-            "statusReadFailed": "Git could not read this workspace. Changes shown may be out of date."
+            "statusReadFailed": "Git could not read this workspace. Changes shown may be out of date.",
+            "commitHashes": "Commit hashes",
+            "commitMessages": "Commit messages"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "Could not start the selected agent.",
@@ -13921,7 +13923,9 @@
             "9d3e60bc24": "Copy commit message",
             "ae4f71cd35": "Explain changes",
             "copyFullSource": "Copy Full Source",
-            "copyFullSourceMany": "Copy Full Source ({{value0}} commits)"
+            "copyFullSourceMany": "Copy Full Source ({{value0}} commits)",
+            "copyHashMany": "Copy commit hashes ({{value0}} commits)",
+            "copyMessageMany": "Copy commit messages ({{value0}} commits)"
           },
           "pull": {
             "policy": {

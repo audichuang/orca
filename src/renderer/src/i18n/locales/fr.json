@@ -12806,7 +12806,9 @@
             "discardFailedSingular": "Échec de l'abandon de {{count}} fichier",
             "discardFailedPlural": "Échec de l'abandon de {{count}} fichiers",
             "noteCountSingular": "{{count}} note",
-            "noteCountPlural": "{{count}} notes"
+            "noteCountPlural": "{{count}} notes",
+            "commitHashes": "Hashs des commits",
+            "commitMessages": "Messages des commits"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "Impossible de démarrer l'agent sélectionné.",
@@ -13756,7 +13758,9 @@
             "9d3e60bc24": "Copier le message de commit",
             "ae4f71cd35": "Expliquer les modifications",
             "copyFullSource": "Copier la source complète",
-            "copyFullSourceMany": "Copier la source complète ({{value0}} commits)"
+            "copyFullSourceMany": "Copier la source complète ({{value0}} commits)",
+            "copyHashMany": "Copier les hashs de commit ({{value0}} commits)",
+            "copyMessageMany": "Copier les messages de commit ({{value0}} commits)"
           },
           "pull": {
             "policy": {

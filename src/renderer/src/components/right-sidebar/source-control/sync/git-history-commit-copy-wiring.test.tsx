@@ -75,4 +75,34 @@ describe('Copy Full Source from the Commits context menu (fork wiring)', () => {
     expect(payload).toContain('content of a.txt')
     expect(payload).toContain('content of b.txt')
   })
+
+  it('copies every selected hash and message in graph order, or the clicked one alone', async () => {
+    vi.stubGlobal('window', {
+      ...window,
+      api: { ui: { writeClipboardText: mocks.writeClipboardText } }
+    })
+    mocks.writeClipboardText.mockResolvedValue(undefined)
+    const a = item('a', 2000)
+    const b = item('b', 1000)
+    const { result } = renderHook(() =>
+      useGitHistoryCommitActions({
+        activeWorktreeId: 'wt-1',
+        editorWorktreeId: 'wt-1',
+        worktreePath: '/repo',
+        activeRepoTarget: { kind: 'local' },
+        resolveSplitTargetGroupId: () => undefined
+      })
+    )
+
+    result.current.handleCommitAction('copy-hash', b, [a, b])
+    result.current.handleCommitAction('copy-message', b, [a, b])
+    result.current.handleCommitAction('copy-hash', b, [b])
+    await vi.waitFor(() => expect(mocks.writeClipboardText).toHaveBeenCalledTimes(3))
+
+    expect(mocks.writeClipboardText.mock.calls.map((call) => call[0])).toEqual([
+      `${a.id}\n${b.id}`,
+      'a\n\nb',
+      b.id
+    ])
+  })
 })
