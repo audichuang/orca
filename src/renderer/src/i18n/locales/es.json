@@ -14801,6 +14801,9 @@
             "noMatchingCommits": "Ningún commit coincide con este filtro"
           },
           "GitGraphFullView": {
+            "laneContinuesBelow": "Continúa {{count}} filas más abajo en {{sha}} {{subject}}. Haz clic para ir.",
+            "laneComesFromAbove": "Viene de {{sha}} {{subject}}, {{count}} filas más arriba. Haz clic para ir.",
+            "laneContinuesPastLoaded": "Continúa más allá de los commits cargados",
             "open": "Abrir Git Graph",
             "openShort": "Git Graph",
             "description": "Gráfico de commits del repositorio actual.",
