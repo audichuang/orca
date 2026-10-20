@@ -13105,7 +13105,9 @@
             "abortRebaseFailed": "リベースの中止に失敗しました",
             "abortMergeFailed": "マージの中止に失敗しました",
             "clearNotesFromWorkspace_other": "このワークスペースから {{count}} 件のメモを削除しますか？",
-            "clearNotesFromFile_other": "{{path}} から {{count}} 件のメモを削除しますか？"
+            "clearNotesFromFile_other": "{{path}} から {{count}} 件のメモを削除しますか？",
+            "commitHashes": "コミットハッシュ",
+            "commitMessages": "コミットメッセージ"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "選択した Agent を開始できませんでした。",
@@ -14067,7 +14069,9 @@
             "9d3e60bc24": "コミットメッセージをコピー",
             "ae4f71cd35": "変更を説明",
             "copyFullSource": "完全なソースをコピー",
-            "copyFullSourceMany": "完全なソースをコピー（{{value0}} 件のコミット）"
+            "copyFullSourceMany": "完全なソースをコピー（{{value0}} 件のコミット）",
+            "copyHashMany": "コミットハッシュをコピー（{{value0}} 件のコミット）",
+            "copyMessageMany": "コミットメッセージをコピー（{{value0}} 件のコミット）"
           },
           "pull": {
             "policy": {
