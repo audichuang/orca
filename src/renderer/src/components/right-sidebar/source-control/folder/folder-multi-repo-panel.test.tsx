@@ -171,16 +171,23 @@ describe('FolderMultiRepoPanel filter', () => {
     expect(screen.queryByRole('textbox', { name: 'Filter repositories' })).toBeNull()
   })
 
-  it('narrows the headers to repos matching every typed term and keeps the open one', () => {
+  it('folds the open repo away and lists only the matches right under the box', () => {
     renderPanel({ api: 1 }, MANY)
     expect(openPanel()).toBe('wt-api')
     fireEvent.change(filterBox(), { target: { value: 'inv bfs' } })
-    expect(screen.getAllByRole('button', { name: /^inv-/ }).map((row) => row.textContent)).toEqual([
-      'inv-bfs (main)0',
-      'inv-svc-bfs (main)0'
-    ])
-    expect(screen.queryByRole('button', { name: /^web / })).toBeNull()
-    expect(header('api')).toHaveAttribute('aria-expanded', 'true')
+    expect(openPanel()).toBeNull()
+    expect(
+      screen.getAllByRole('button', { name: / \(main\) / }).map((row) => row.textContent)
+    ).toEqual(['inv-bfs (main)0', 'inv-svc-bfs (main)0'])
+  })
+
+  it('opens a clicked match and clears the filter', () => {
+    renderPanel({ api: 1 }, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'api' } })
+    fireEvent.click(header('api'))
+    expect(openPanel()).toBe('wt-api')
+    expect(filterBox()).toHaveValue('')
+    expect(header('web')).toBeInTheDocument()
   })
 
   it('opens the top match on Enter and clears on Escape', () => {
@@ -188,9 +195,11 @@ describe('FolderMultiRepoPanel filter', () => {
     fireEvent.change(filterBox(), { target: { value: 'svc' } })
     fireEvent.keyDown(filterBox(), { key: 'Enter' })
     expect(openPanel()).toBe('wt-inv-svc-bfs')
+    expect(filterBox()).toHaveValue('')
+    fireEvent.change(filterBox(), { target: { value: 'web' } })
     fireEvent.keyDown(filterBox(), { key: 'Escape' })
     expect(filterBox()).toHaveValue('')
-    expect(header('web')).toBeInTheDocument()
+    expect(openPanel()).toBe('wt-inv-svc-bfs')
   })
 
   it('says so when nothing matches', () => {
