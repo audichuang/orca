@@ -14642,7 +14642,7 @@
           "GitGraphFullView": {
             "laneContinuesBelow": "{{count}} 行下の {{sha}} {{subject}} に続きます。クリックで移動します。",
             "laneComesFromAbove": "{{count}} 行上の {{sha}} {{subject}} から続いています。クリックで移動します。",
-            "laneContinuesPastLoaded": "読み込まれていない以前のコミットに続きます",
+            "laneContinuesPastLoaded": "読み込まれていない以前のコミットに続きます。さらに読み込むと移動できます。",
             "open": "Git Graph を開く",
             "openShort": "Git Graph",
             "description": "現在のリポジトリのコミットグラフ。",
@@ -14669,6 +14669,8 @@
             "date": "日付",
             "copySha": "コミット SHA をコピー",
             "parents": "親コミット",
+            "children": "子コミット",
+            "childrenHint": "読み込まれた一覧のうち、このコミットを親に持つコミット。",
             "refs": "参照",
             "containedIn": "含まれるブランチ",
             "containedInHint": "読み込み済みの一覧に先端コミットがあるブランチのみ。一覧外のブランチは含まれません。",
