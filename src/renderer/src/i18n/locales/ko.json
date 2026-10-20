@@ -13566,6 +13566,8 @@
             "c06193ef57": "{{value0}}을(를) 복사하지 못했습니다",
             "d172a4f068": "Commit 해시",
             "e283b50179": "Commit 메시지",
+            "commitHashes": "Commit 해시",
+            "commitMessages": "Commit 메시지",
             "f394c6128a": "이 commit을 설명할 agent가 없습니다",
             "04a5d7239b": "이 repos에는 지원되는 웹 원격이 없습니다",
             "15b6e834ac": "브라우저에서 commit을 열지 못했습니다",
@@ -14605,7 +14607,9 @@
             "9d3e60bc24": "commit 메시지 복사",
             "ae4f71cd35": "변경 사항 설명",
             "copyFullSource": "전체 소스 복사",
-            "copyFullSourceMany": "전체 소스 복사 (커밋 {{value0}}개)"
+            "copyFullSourceMany": "전체 소스 복사 (커밋 {{value0}}개)",
+            "copyHashMany": "Commit 해시 복사 (커밋 {{value0}}개)",
+            "copyMessageMany": "Commit 메시지 복사 (커밋 {{value0}}개)"
           },
           "pull": {
             "policy": {
