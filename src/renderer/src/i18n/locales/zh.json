@@ -13217,7 +13217,9 @@
             "clearNotesFromFile_other": "清除 {{path}} 中的 {{count}} 条备注？",
             "markResolved": "标记为已解决",
             "keepFile": "保留文件",
-            "keepDeletion": "保留删除"
+            "keepDeletion": "保留删除",
+            "commitHashes": "提交哈希",
+            "commitMessages": "提交信息"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "无法启动选定的智能体。",
@@ -14181,7 +14183,9 @@
             "9d3e60bc24": "复制提交信息",
             "ae4f71cd35": "解释更改",
             "copyFullSource": "复制完整源码",
-            "copyFullSourceMany": "复制完整源码（{{value0}} 个提交）"
+            "copyFullSourceMany": "复制完整源码（{{value0}} 个提交）",
+            "copyHashMany": "复制提交哈希（{{value0}} 个提交）",
+            "copyMessageMany": "复制提交信息（{{value0}} 个提交）"
           },
           "pull": {
             "policy": {
