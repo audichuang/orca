@@ -14852,7 +14852,8 @@
             "copyFullSource": "Copiar el código completo de todos los archivos modificados",
             "filesInCommits": "Archivos modificados ({{files}}) · {{commits}} commits",
             "filesChanged": "Archivos modificados ({{files}})",
-            "toggleBranches": "Mostrar u ocultar ramas"
+            "toggleBranches": "Mostrar u ocultar ramas",
+            "openShort": "Git Graph"
           },
           "GitGraphBranchSidebar": {
             "local": "Locales",

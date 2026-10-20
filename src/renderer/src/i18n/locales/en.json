@@ -15192,7 +15192,8 @@
             "copyFullSource": "Copy Full Source of all changed files",
             "filesInCommits": "Changed files ({{files}}) · {{commits}} commits",
             "filesChanged": "Changed files ({{files}})",
-            "toggleBranches": "Toggle branches"
+            "toggleBranches": "Toggle branches",
+            "openShort": "Git Graph"
           },
           "GitGraphBranchSidebar": {
             "local": "Local",

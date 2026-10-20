@@ -14836,7 +14836,8 @@
             "copyFullSource": "변경된 모든 파일의 전체 소스 복사",
             "filesInCommits": "변경된 파일 ({{files}}) · 커밋 {{commits}}개",
             "filesChanged": "변경된 파일 ({{files}})",
-            "toggleBranches": "브랜치 패널 전환"
+            "toggleBranches": "브랜치 패널 전환",
+            "openShort": "Git Graph"
           },
           "GitGraphBranchSidebar": {
             "local": "로컬",
