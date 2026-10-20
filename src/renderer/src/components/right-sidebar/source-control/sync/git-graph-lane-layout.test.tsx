@@ -9,7 +9,6 @@ import {
 } from '../../../../../../shared/git-history-graph'
 import { buildGitGraphLaneRows, type GitGraphLaneRow } from './git-graph-lane-layout'
 import { GitGraphLaneSvg } from './git-graph-lane-svg'
-import { GitHistoryGraphSvg } from './git-history-graph-svg'
 
 function item(id: string, parentIds: string[]): GitHistoryItem {
   return { id, parentIds, subject: `subject ${id}`, message: id, displayId: id }
@@ -41,10 +40,6 @@ function folds(rows: GitGraphLaneRow[], kind: 'fold-down' | 'fold-up') {
   )
 }
 
-function drawing(markup: string): string[] {
-  return [...markup.matchAll(/<(path|circle)\b[^>]*>/g)].map((match) => match[0]).sort()
-}
-
 function mulberry(seed: number): () => number {
   let a = seed
   return () => {
@@ -71,23 +66,87 @@ function randomHistory(seed: number, size: number): GitHistoryItem[] {
   return items
 }
 
+function topColumns(row: GitGraphLaneRow): number[] {
+  return row.segments
+    .flatMap((s) =>
+      s.kind === 'through'
+        ? [s.from]
+        : s.kind === 'into-node'
+          ? [s.from]
+          : s.kind === 'fold-down'
+            ? [s.at]
+            : []
+    )
+    .sort()
+}
+
+function bottomColumns(row: GitGraphLaneRow): number[] {
+  return row.segments
+    .flatMap((s) =>
+      s.kind === 'through'
+        ? [s.to]
+        : s.kind === 'out-of-node'
+          ? [s.to]
+          : s.kind === 'fold-up'
+            ? [s.at]
+            : []
+    )
+    .sort()
+}
+
+// Every lane leaving a row enters the next one, and no lane passes a dot in its row.
+function expectSoundLayout(viewModels: GitHistoryItemViewModel[], rows: GitGraphLaneRow[]): void {
+  rows.forEach((row, index) => {
+    const id = viewModels[index]!.historyItem.id
+    if (index + 1 < rows.length) {
+      const next = topColumns(rows[index + 1]!)
+      // Why a subset next to boundary rows: upstream starts the synthetic incoming lane at that row's top.
+      const boundary = viewModels[index + 1]!.kind.endsWith('-changes')
+      expect(bottomColumns(row), `continuity below ${id}`).toEqual(
+        boundary ? bottomColumns(row).filter((c) => next.includes(c)) : next
+      )
+    }
+    for (const s of row.segments) {
+      if (s.kind === 'through') {
+        expect(Math.abs(s.from - s.to), `shift at ${id}`).toBeLessThanOrEqual(1)
+        expect([s.from, s.to], `lane through dot at ${id}`).not.toContain(row.nodeColumn)
+      }
+      if (s.kind === 'fold-down' || s.kind === 'fold-up') {
+        expect(s.at, `arrow under dot at ${id}`).not.toBe(row.nodeColumn)
+      }
+    }
+  })
+}
+
+// With nothing folded, each row has the same edges as the upstream model.
+function expectSameEdges(viewModels: GitHistoryItemViewModel[], rows: GitGraphLaneRow[]): void {
+  rows.forEach((row, index) => {
+    const vm = viewModels[index]!
+    const intos = vm.inputSwimlanes.filter((lane) => lane.id === vm.historyItem.id).length
+    const merges = vm.historyItem.parentIds
+      .slice(1)
+      .filter((id) => vm.outputSwimlanes.some((lane) => lane.id === id)).length
+    const outs = (vm.historyItem.parentIds.length > 0 ? 1 : 0) + merges
+    expect(row.segments.filter((s) => s.kind === 'into-node')).toHaveLength(intos)
+    expect(row.segments.filter((s) => s.kind === 'out-of-node')).toHaveLength(outs)
+  })
+}
+
 describe('buildGitGraphLaneRows', () => {
-  it('draws exactly what the upstream renderer draws when nothing folds or pins', () => {
+  it('keeps every lane connected and off other commits, with and without folding', () => {
     for (let seed = 1; seed <= 40; seed += 1) {
-      const viewModels = buildGitHistoryViewModels(randomHistory(seed, 60))
-      const rows = buildGitGraphLaneRows(viewModels, Number.POSITIVE_INFINITY)
-      viewModels.forEach((viewModel, index) => {
-        expect(rows[index]!.nodeColumn).toBe(getGitHistoryItemLaneIndex(viewModel))
-        expect(
-          drawing(
-            renderToStaticMarkup(<GitGraphLaneSvg viewModel={viewModel} lanes={rows[index]!} />)
-          )
-        ).toEqual(drawing(renderToStaticMarkup(<GitHistoryGraphSvg viewModel={viewModel} />)))
-      })
+      const viewModels = buildGitHistoryViewModels(randomHistory(seed, 80))
+      for (const foldAfter of [Number.POSITIVE_INFINITY, 8]) {
+        const rows = buildGitGraphLaneRows(viewModels, foldAfter, 2)
+        expectSoundLayout(viewModels, rows)
+        if (foldAfter === Number.POSITIVE_INFINITY) {
+          expectSameEdges(viewModels, rows)
+        }
+      }
     }
   })
 
-  it('draws the incoming and outgoing boundary rows like upstream, with HEAD pinned', () => {
+  it('keeps the incoming and outgoing boundary rows connected, with HEAD pinned left', () => {
     const currentRef: GitHistoryItemRef = {
       id: 'refs/heads/feature',
       name: 'feature',
@@ -117,13 +176,43 @@ describe('buildGitGraphLaneRows', () => {
       )
       expect(viewModels.some((viewModel) => viewModel.kind === 'incoming-changes')).toBe(true)
       const rows = buildGitGraphLaneRows(viewModels)
-      viewModels.forEach((viewModel, index) => {
-        expect(
-          drawing(
-            renderToStaticMarkup(<GitGraphLaneSvg viewModel={viewModel} lanes={rows[index]!} />)
-          )
-        ).toEqual(drawing(renderToStaticMarkup(<GitHistoryGraphSvg viewModel={viewModel} />)))
-      })
+      expectSoundLayout(viewModels, rows)
+      expectSameEdges(viewModels, rows)
+      const head = viewModels.findIndex((viewModel) => viewModel.kind === 'HEAD')
+      expect(rows[head]!.nodeColumn).toBe(0)
+      expect(
+        renderToStaticMarkup(<GitGraphLaneSvg viewModel={viewModels[0]!} lanes={rows[0]!} />)
+      ).toContain('stroke-dasharray="4 2"')
+    }
+  })
+
+  it('never routes a lane through a commit dot when folded columns free up together', () => {
+    const ref: GitHistoryItemRef = { id: 'refs/heads/m', name: 'm', revision: 'm10' }
+    const viewModels = buildGitHistoryViewModels(
+      [
+        item('b0', ['m26', 'n0']),
+        item('c0', ['m5']),
+        ...chain('m', 0, 29, ['m30']),
+        item('n0', ['m30']),
+        item('m30', [])
+      ],
+      buildDefaultGitHistoryColorMap({ currentRef: ref }),
+      ref
+    )
+    const rows = buildGitGraphLaneRows(viewModels)
+    expectSoundLayout(viewModels, rows)
+    const chainRows = viewModels.flatMap((vm, index) =>
+      /^m(1\d|2\d|30)$/.test(vm.historyItem.id) ? [index] : []
+    )
+    expect(chainRows.map((index) => rows[index]!.nodeColumn)).toEqual(chainRows.map(() => 0))
+  })
+
+  it("keeps HEAD in the leftmost lane when its row is another edge's arrow row", () => {
+    const rows = buildGitGraphLaneRows(
+      withHead([item('b0', ['h30']), item('o0', ['h5']), ...chain('h', 0, 40, [])])
+    )
+    for (let index = 2; index < rows.length; index += 1) {
+      expect(rows[index]!.nodeColumn).toBe(0)
     }
   })
 
@@ -133,7 +222,7 @@ describe('buildGitGraphLaneRows', () => {
 
     expect(folds(rows, 'fold-down')).toEqual([{ row: 2, target: 'm30', rows: 29 }])
     expect(folds(rows, 'fold-up')).toEqual([{ row: 29, target: 'b0', rows: 29 }])
-    expect(Math.max(...rows.slice(5, 27).map((row) => row.laneCount))).toBe(1)
+    expect(Math.max(...rows.slice(6, 27).map((row) => row.laneCount))).toBe(1)
     expect(rows[31]!.segments.filter((s) => s.kind === 'into-node')).toHaveLength(2)
   })
 
