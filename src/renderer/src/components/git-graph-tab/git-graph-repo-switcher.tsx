@@ -123,26 +123,26 @@ export function GitGraphRepoSwitcher({
                 ))}
               </CommandGroup>
             ))}
-            {addRepos && !addRepos.hidden && (
-              <>
-                <CommandSeparator alwaysRender />
-                {/* Why forceMount: a search that matches no added repo is when this entry matters. */}
-                <CommandGroup forceMount>
-                  <CommandItem
-                    forceMount
-                    value="__add-repos__"
-                    onSelect={() => {
-                      setOpen(false)
-                      addRepos.onSelect()
-                    }}
-                  >
-                    <FolderPlus className="size-3 text-muted-foreground" />
-                    <span className="truncate">{addRepos.label}</span>
-                  </CommandItem>
-                </CommandGroup>
-              </>
-            )}
           </CommandList>
+          {addRepos && !addRepos.hidden && (
+            <>
+              <CommandSeparator alwaysRender />
+              {/* Why outside the list and forceMount: stays in view however long the list or whatever the search. */}
+              <CommandGroup forceMount>
+                <CommandItem
+                  forceMount
+                  value="__add-repos__"
+                  onSelect={() => {
+                    setOpen(false)
+                    addRepos.onSelect()
+                  }}
+                >
+                  <FolderPlus className="size-3 text-muted-foreground" />
+                  <span className="truncate">{addRepos.label}</span>
+                </CommandItem>
+              </CommandGroup>
+            </>
+          )}
         </Command>
       </PopoverContent>
     </Popover>
