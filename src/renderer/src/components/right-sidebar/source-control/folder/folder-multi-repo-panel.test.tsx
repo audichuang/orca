@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import type { Repo } from '../../../../../../shared/repo-types'
@@ -200,6 +200,24 @@ describe('FolderMultiRepoPanel filter', () => {
     fireEvent.keyDown(filterBox(), { key: 'Escape' })
     expect(filterBox()).toHaveValue('')
     expect(openPanel()).toBe('wt-payments-api')
+  })
+
+  it('moves focus from the box to the first match on ArrowDown', () => {
+    renderPanel({}, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'orders' } })
+    fireEvent.keyDown(filterBox(), { key: 'ArrowDown' })
+    expect(header('orders-api')).toHaveFocus()
+  })
+
+  it('drops the query when the box hides, so it cannot narrow the list when it returns', () => {
+    renderPanel({}, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'orders' } })
+    const allRepos = useAppStore.getState().repos
+    act(() => useAppStore.setState({ repos: allRepos.slice(0, 5) }))
+    expect(screen.queryByRole('textbox', { name: 'Filter repositories' })).toBeNull()
+    act(() => useAppStore.setState({ repos: allRepos }))
+    expect(filterBox()).toHaveValue('')
+    expect(header('web')).toBeInTheDocument()
   })
 
   it('says so when nothing matches', () => {
