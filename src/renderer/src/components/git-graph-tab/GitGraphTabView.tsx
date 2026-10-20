@@ -15,8 +15,8 @@ import { useGitHistoryCommitActions } from '../right-sidebar/source-control/sync
 import { commitFilesMenuSlot } from '../right-sidebar/source-control/sync/git-history-commit-files-menu'
 import { GitGraphRepoSwitcher } from './git-graph-repo-switcher'
 import { listGitGraphRepoChoices } from './git-graph-tab-model'
-
-const noSplitTarget = (): undefined => undefined
+import { resolveGitGraphSplitTargetGroupId } from './git-graph-split-target'
+import type { SourceControlRowOpenEvent } from '../right-sidebar/source-control/listing/split-open'
 
 function GitGraphTabBody({
   fileId,
@@ -74,13 +74,18 @@ function GitGraphTabBody({
       void refreshGitHistoryRef.current()
     }
   }, [refreshGitHistoryRef, refreshKey, sshStatus])
+  const resolveSplitTargetGroupId = useCallback(
+    (event?: SourceControlRowOpenEvent) =>
+      resolveGitGraphSplitTargetGroupId(useAppStore.getState(), workspaceId, fileId, event),
+    [fileId, workspaceId]
+  )
   const { loadCommitFiles, openHistoryCommitDiff, openCommitFile, handleCommitAction } =
     useGitHistoryCommitActions({
       activeWorktreeId: worktree.id,
       editorWorktreeId: workspaceId,
       worktreePath: worktree.path,
       activeRepoTarget: target,
-      resolveSplitTargetGroupId: noSplitTarget
+      resolveSplitTargetGroupId
     })
   const revealInExplorer = useAppStore((s) => s.revealInExplorer)
   const renderCommitFilesMenu = commitFilesMenuSlot(

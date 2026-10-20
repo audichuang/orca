@@ -13480,6 +13480,8 @@
             "c06193ef57": "Failed to copy {{value0}}",
             "d172a4f068": "Commit hash",
             "e283b50179": "Commit message",
+            "commitHashes": "Commit hashes",
+            "commitMessages": "Commit messages",
             "f394c6128a": "No agent available to explain this commit",
             "04a5d7239b": "This repository has no supported web remote",
             "15b6e834ac": "Failed to open commit in browser",
@@ -14519,7 +14521,9 @@
             "9d3e60bc24": "Copy commit message",
             "ae4f71cd35": "Explain changes",
             "copyFullSource": "Copy Full Source",
-            "copyFullSourceMany": "Copy Full Source ({{value0}} commits)"
+            "copyFullSourceMany": "Copy Full Source ({{value0}} commits)",
+            "copyHashMany": "Copy commit hashes ({{value0}} commits)",
+            "copyMessageMany": "Copy commit messages ({{value0}} commits)"
           },
           "pull": {
             "policy": {
