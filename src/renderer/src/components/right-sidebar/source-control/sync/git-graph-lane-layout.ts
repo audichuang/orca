@@ -2,10 +2,15 @@
 import type { GitHistoryGraphColorId, GitHistoryItem } from '../../../../../../shared/git-history'
 import {
   getGitHistoryItemColor,
-  getGitHistoryItemLaneIndex,
-  getGitHistoryMergeParentLaneIndex,
   type GitHistoryItemViewModel
 } from '../../../../../../shared/git-history-graph'
+import {
+  extractTracks,
+  foldTracks,
+  holdsColumn,
+  isVisible,
+  type Track
+} from './git-graph-lane-tracks'
 
 /** An edge spanning more rows than this is drawn as two short stubs with arrows. */
 export const GIT_GRAPH_FOLD_AFTER_ROWS = 20
@@ -39,163 +44,6 @@ export type GitGraphLaneRow = {
   /** Columns the row's drawing spans, node included. */
   laneCount: number
   segments: GitGraphLaneSegment[]
-}
-
-type Track = {
-  /** Boundary b is the gap below row b; a track occupies a contiguous boundary range. */
-  first: number
-  last: number
-  slots: Map<number, number>
-  startRow?: number
-  endRow?: number
-  pinned: boolean
-  hiddenFrom?: number
-  hiddenTo?: number
-}
-
-type RowSegment =
-  | { kind: 'through'; track: Track; color: GitHistoryGraphColorId }
-  | { kind: 'into-node'; track: Track; color: GitHistoryGraphColorId; atCircle: boolean }
-  | { kind: 'out-of-node'; track: Track; color: GitHistoryGraphColorId; firstParent: boolean }
-
-function headChainIds(viewModels: readonly GitHistoryItemViewModel[]): Set<string> {
-  const byId = new Map(viewModels.map((vm) => [vm.historyItem.id, vm.historyItem]))
-  const chain = new Set<string>()
-  const outgoing = viewModels.find((vm) => vm.kind === 'outgoing-changes')
-  let id = outgoing?.historyItem.id ?? viewModels.find((vm) => vm.kind === 'HEAD')?.historyItem.id
-  while (id !== undefined && !chain.has(id)) {
-    chain.add(id)
-    id = byId.get(id)?.parentIds[0]
-  }
-  return chain
-}
-
-function newTrack(first: number, slot: number): Track {
-  return { first, last: first, slots: new Map([[first, slot]]), pinned: false }
-}
-
-// Why positional: the upstream renderer connects rows by slot index, so slot j below row r is slot j above row r+1.
-function extractTracks(viewModels: readonly GitHistoryItemViewModel[]): {
-  tracks: Track[]
-  rowSegments: RowSegment[][]
-  chain: Set<string>
-} {
-  const tracks: Track[] = []
-  const rowSegments: RowSegment[][] = []
-  const chain = headChainIds(viewModels)
-  let above: Track[] = []
-  viewModels.forEach((vm, row) => {
-    const { historyItem, inputSwimlanes: input, outputSwimlanes: output } = vm
-    const circle = getGitHistoryItemLaneIndex(vm)
-    const segments: RowSegment[] = []
-    const below: Track[] = []
-    const place = (track: Track, slot: number): void => {
-      below[slot] = track
-      track.last = row
-      track.slots.set(row, slot)
-    }
-    const top = input.map((_, slot) => {
-      const track = above[slot]
-      if (track) {
-        return track
-      }
-      const dangling = newTrack(row - 1, slot)
-      tracks.push(dangling)
-      return dangling
-    })
-    let outIndex = 0
-    input.forEach((lane, slot) => {
-      const track = top[slot]!
-      if (lane.id === historyItem.id) {
-        track.endRow = row
-        segments.push({ kind: 'into-node', track, color: lane.color, atCircle: slot === circle })
-        if (slot === circle && historyItem.parentIds.length > 0) {
-          outIndex += 1
-        }
-        return
-      }
-      if (outIndex < output.length && lane.id === output[outIndex]!.id) {
-        place(track, outIndex)
-        segments.push({ kind: 'through', track, color: lane.color })
-        outIndex += 1
-      }
-    })
-    const startAt = (slot: number, color: GitHistoryGraphColorId, firstParent: boolean): void => {
-      const track = newTrack(row, slot)
-      track.startRow = row
-      track.pinned = firstParent && chain.has(historyItem.id)
-      tracks.push(track)
-      below[slot] = track
-      segments.push({ kind: 'out-of-node', track, color, firstParent })
-    }
-    if (historyItem.parentIds.length > 0) {
-      startAt(circle, getGitHistoryItemColor(vm), true)
-    }
-    for (const parentId of historyItem.parentIds.slice(1)) {
-      const slot = getGitHistoryMergeParentLaneIndex(vm, parentId)
-      if (slot !== -1) {
-        startAt(slot, output[slot]!.color, false)
-      }
-    }
-    output.forEach((_, slot) => {
-      if (!below[slot]) {
-        const dangling = newTrack(row, slot)
-        tracks.push(dangling)
-        below[slot] = dangling
-      }
-    })
-    rowSegments.push(segments)
-    above = below
-  })
-  return { tracks, rowSegments, chain }
-}
-
-function foldTracks(tracks: readonly Track[], foldAfterRows: number, stubRows: number): void {
-  for (const track of tracks) {
-    // Why never pinned: folding HEAD's own line would hide the branch the user is on.
-    if (track.pinned) {
-      continue
-    }
-    const from = track.first + stubRows
-    if (track.endRow === undefined) {
-      if (track.last - track.first + 1 > foldAfterRows && from <= track.last) {
-        track.hiddenFrom = from
-        track.hiddenTo = track.last
-      }
-      continue
-    }
-    const to = track.last - stubRows
-    if (track.endRow - (track.startRow ?? track.first) > foldAfterRows && from <= to) {
-      track.hiddenFrom = from
-      track.hiddenTo = to
-    }
-  }
-}
-
-function isVisible(track: Track, boundary: number): boolean {
-  return (
-    boundary >= track.first &&
-    boundary <= track.last &&
-    !(
-      track.hiddenFrom !== undefined &&
-      boundary >= track.hiddenFrom &&
-      boundary <= (track.hiddenTo ?? track.hiddenFrom)
-    )
-  )
-}
-
-// Why reserve a row past each arrow: otherwise the next commit's dot lands on the arrow's column and hides it.
-function holdsColumn(track: Track, boundary: number): boolean {
-  if (isVisible(track, boundary)) {
-    return true
-  }
-  if (track.hiddenFrom === undefined || boundary < track.first || boundary > track.last) {
-    return false
-  }
-  return (
-    boundary <= track.hiddenFrom + 1 ||
-    (track.endRow !== undefined && boundary >= (track.hiddenTo ?? track.hiddenFrom) - 1)
-  )
 }
 
 function lowestFree(...used: ReadonlySet<number>[]): number {
@@ -233,6 +81,20 @@ export function buildGitGraphLaneRows(
     (a.slots.get(boundary) ?? 0) - (b.slots.get(boundary) ?? 0)
   const itemAt = (row: number | undefined): GitHistoryItem | undefined =>
     row === undefined ? undefined : viewModels[row]?.historyItem
+  // Why: Incoming/Outgoing rows cannot be selected, so a jump follows the line through them to a commit.
+  const realRow = (row: number | undefined, toward: 'start' | 'end'): number | undefined => {
+    let current = row
+    for (let hop = 0; current !== undefined && hop < 4; hop += 1) {
+      if (!viewModels[current]!.kind.endsWith('-changes')) {
+        return current
+      }
+      const next = rowSegments[current]!.find((s) =>
+        toward === 'end' ? s.kind === 'out-of-node' && s.firstParent : s.kind === 'into-node'
+      )
+      current = toward === 'end' ? next?.track.endRow : next?.track.startRow
+    }
+    return undefined
+  }
   // Why stable columns: a lane that never moves sideways can never cut through another commit's dot.
   let top = new Map<Track, number>()
   return viewModels.map((vm, row) => {
@@ -301,20 +163,22 @@ export function buildGitGraphLaneRows(
       } else if (segment.kind === 'through' && above !== undefined && below !== undefined) {
         drawn.push({ kind: 'through', from: above, to: below, color })
       } else if (segment.kind === 'through' && above !== undefined) {
+        const end = realRow(track.endRow, 'end')
         drawn.push({
           kind: 'fold-down',
           at: above,
           color,
-          target: itemAt(track.endRow),
-          rows: track.endRow === undefined ? undefined : track.endRow - row
+          target: itemAt(end),
+          rows: end === undefined ? undefined : end - row
         })
       } else if (segment.kind === 'through' && below !== undefined) {
+        const start = realRow(track.startRow, 'start')
         drawn.push({
           kind: 'fold-up',
           at: below,
           color,
-          target: itemAt(track.startRow),
-          rows: row - (track.startRow ?? track.first)
+          target: itemAt(start),
+          rows: row - (start ?? track.first)
         })
       }
     }
