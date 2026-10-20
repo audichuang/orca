@@ -18134,7 +18134,10 @@
         "repoSwitcher": "リポジトリ",
         "selectRepo": "リポジトリを選択",
         "searchRepos": "リポジトリを検索...",
-        "noRepos": "リポジトリが見つかりません。"
+        "noRepos": "リポジトリが見つかりません。",
+        "addRepos": "このフォルダ内のリポジトリを追加...",
+        "addReposMissing": "このフォルダ内のリポジトリを追加（未追加 {{value0}} 件）...",
+        "addReposButton": "このフォルダ内のリポジトリを追加"
       }
     },
     "i18n": {
