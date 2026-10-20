@@ -1,3 +1,5 @@
+import type { AppState } from '@/store/types'
+import { getAllWorktreesFromState } from '@/store/selectors'
 import { normalizeRuntimePathForComparison } from '../../../../../../shared/cross-platform-path'
 import type { NestedRepoCandidate } from '../../../../../../shared/project-group-types'
 import type { Repo } from '../../../../../../shared/repo-types'
@@ -5,6 +7,9 @@ import type { Worktree } from '../../../../../../shared/worktree/types'
 import { folderSidebarHiddenRepoKey } from './folder-sidebar-hidden-repos'
 
 type FolderOwner = Pick<Repo, 'connectionId' | 'executionHostId'>
+
+// Why deeper than Add Project's default 3: monorepo folders nest repos inside repos (cat/docs/etf).
+export const FOLDER_NESTED_REPO_SCAN_OPTIONS = { descendIntoRepos: true, maxDepth: 4 }
 
 /**
  * Scanned repos under the folder that Orca does not know yet on the folder's host, in path order.
@@ -33,6 +38,26 @@ export function getNewNestedRepoCandidates(args: {
         !known.has(folderSidebarHiddenRepoKey({ ...args.folderOwner, path: candidate.path }))
     )
     .sort((a, b) => a.path.localeCompare(b.path))
+}
+
+/** getNewNestedRepoCandidates against the store, counting detected linked worktrees as known too. */
+export function getNewNestedRepoCandidatesFromState(
+  state: Pick<AppState, 'repos' | 'worktreesByRepo' | 'detectedWorktreesByRepo'>,
+  folder: FolderOwner & { folderPath: string },
+  scanned: readonly NestedRepoCandidate[]
+): NestedRepoCandidate[] {
+  return getNewNestedRepoCandidates({
+    folderPath: folder.folderPath,
+    folderOwner: folder,
+    scanned,
+    repos: state.repos,
+    worktrees: [
+      ...getAllWorktreesFromState(state),
+      ...Object.entries(state.detectedWorktreesByRepo).flatMap(([repoId, detected]) =>
+        (detected?.worktrees ?? []).map((worktree) => ({ repoId, path: worktree.path }))
+      )
+    ]
+  })
 }
 
 /** Path shown in the picker, relative to the folder so nested repos read as `docs/etf`. */
