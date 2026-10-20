@@ -18,7 +18,8 @@ concurrency:
 jobs:
   release:
     name: fork release dmg
-    runs-on: macos-15
+    # Why a variable: `orca-release` is the macmini self-hosted runner; unset it to fall back to hosted.
+    runs-on: ${{ vars.FORK_RELEASE_RUNNER || 'macos-15' }}
     timeout-minutes: 90
     env:
       TAG: ${{ github.ref_name }}
@@ -58,7 +59,9 @@ jobs:
       # Why: build:desktop bundles the mobile web app, which resolves from mobile/node_modules.
       - uses: ./.github/actions/install-mobile-dependencies
 
+      # Why hosted only: the self-hosted runner signs from its login keychain, which already trusts the identity.
       - name: Import the self-signed signing identity
+        if: runner.environment == 'github-hosted'
         env:
           P12_BASE64: ${{ secrets.FORK_SIGNING_P12 }}
           P12_PASSWORD: ${{ secrets.FORK_SIGNING_P12_PASSWORD }}
@@ -143,5 +146,5 @@ jobs:
           gh api -X PUT "$path" --input "$RUNNER_TEMP/cask-put.json" --jq '.commit.html_url'
 
       - name: Remove the signing keychain
-        if: always()
+        if: always() && runner.environment == 'github-hosted'
         run: security delete-keychain "$RUNNER_TEMP/fork-signing.keychain-db" 2>/dev/null || true
