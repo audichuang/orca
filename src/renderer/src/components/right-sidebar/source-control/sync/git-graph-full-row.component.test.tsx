@@ -135,4 +135,25 @@ describe('GitGraphFullRow folded edges', () => {
     expect(onSelect).not.toHaveBeenCalled()
     expect(onJump).not.toHaveBeenCalled()
   })
+
+  it('jumps from an arrow drawn on a boundary row', () => {
+    const onJump = vi.fn()
+    render(
+      <GitGraphFullRow
+        viewModel={viewModel('incoming-changes', '0000000')}
+        lanes={lanes}
+        graphWidth={33}
+        columns={COLUMNS}
+        selected={false}
+        onSelect={vi.fn()}
+        onJump={onJump}
+      />
+    )
+    fireEvent.click(
+      screen
+        .getByTestId('git-graph-full-row')
+        .querySelector('[data-git-graph-jump="far-parent"] path')!
+    )
+    expect(onJump).toHaveBeenCalledWith('far-parent')
+  })
 })
