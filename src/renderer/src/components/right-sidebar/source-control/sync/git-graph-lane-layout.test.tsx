@@ -207,6 +207,19 @@ describe('buildGitGraphLaneRows', () => {
     expect(chainRows.map((index) => rows[index]!.nodeColumn)).toEqual(chainRows.map(() => 0))
   })
 
+  it('puts a parentless HEAD in the leftmost lane', () => {
+    const ref: GitHistoryItemRef = { id: 'refs/heads/orphan', name: 'orphan', revision: 'H' }
+    const rows = buildGitGraphLaneRows(
+      buildGitHistoryViewModels(
+        [item('A', ['P']), item('H', []), item('P', [])],
+        buildDefaultGitHistoryColorMap({ currentRef: ref }),
+        ref
+      )
+    )
+    expect(rows[1]!.nodeColumn).toBe(0)
+    expect(rows[0]!.nodeColumn).not.toBe(0)
+  })
+
   it("keeps HEAD in the leftmost lane when its row is another edge's arrow row", () => {
     const rows = buildGitGraphLaneRows(
       withHead([item('b0', ['h30']), item('o0', ['h5']), ...chain('h', 0, 40, [])])
