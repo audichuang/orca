@@ -29,7 +29,7 @@ export function FolderRepoFilterBox({
     } else if (event.key === 'ArrowDown') {
       event.preventDefault()
       onFocusFirst()
-    } else if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+    } else if (event.key === 'Enter') {
       event.preventDefault()
       onOpenFirst()
     }
@@ -46,6 +46,7 @@ export function FolderRepoFilterBox({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={onKeyDown}
+          data-escape-clears-value={value ? 'true' : undefined}
           spellCheck={false}
         />
         {value ? (
