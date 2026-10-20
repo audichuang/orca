@@ -304,14 +304,15 @@ export function GitGraphFullRow({
       data-testid="git-graph-full-row"
       onClick={(event) => {
         // Why not a nested button: the row is already one; the arrow is a hit area inside it.
-        const jumpTarget =
+        const arrow =
           event.target instanceof Element
-            ? event.target
-                .closest(`[${GIT_GRAPH_JUMP_ATTRIBUTE}]`)
-                ?.getAttribute(GIT_GRAPH_JUMP_ATTRIBUTE)
-            : undefined
-        if (jumpTarget && onJump) {
-          onJump(jumpTarget)
+            ? event.target.closest(`[${GIT_GRAPH_JUMP_ATTRIBUTE}]`)
+            : null
+        if (arrow) {
+          const jumpTarget = arrow.getAttribute(GIT_GRAPH_JUMP_ATTRIBUTE)
+          if (jumpTarget) {
+            onJump?.(jumpTarget)
+          }
           return
         }
         onSelect(event)
