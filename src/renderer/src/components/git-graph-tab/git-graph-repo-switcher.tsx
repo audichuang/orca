@@ -49,7 +49,13 @@ export function GitGraphRepoSwitcher({
   value: string | null
   onValueChange: (repoWorktreeId: string) => void
   /** Folder workspaces only: an entry for the repos under the folder that Orca has not added. */
-  addRepos?: { label: string; hidden: boolean; onMenuOpen: () => void; onSelect: () => void }
+  addRepos?: {
+    label: string
+    missingLabel: string | null
+    hidden: boolean
+    onMenuOpen: () => void
+    onSelect: () => void
+  }
 }): React.JSX.Element | null {
   const [open, setOpen] = useState(false)
   const groups = useMemo(() => groupByRepo(choices, value), [choices, value])
@@ -139,6 +145,11 @@ export function GitGraphRepoSwitcher({
                 >
                   <FolderPlus className="size-3 text-muted-foreground" />
                   <span className="truncate">{addRepos.label}</span>
+                  {addRepos.missingLabel && (
+                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                      {addRepos.missingLabel}
+                    </span>
+                  )}
                 </CommandItem>
               </CommandGroup>
             </>
