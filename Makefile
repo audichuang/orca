@@ -159,6 +159,7 @@ fork-dmg: computer-use
 	pnpm run ensure:electron-runtime
 	ORCA_FORK_VERSION=$(FORK_VERSION) ORCA_FORK_SIGN_IDENTITY="$(FORK_SIGN_IDENTITY)" \
 		$(if $(filter -,$(FORK_SIGN_IDENTITY)),,CSC_NAME="$(FORK_SIGN_IDENTITY)") pnpm exec electron-builder --config config/electron-builder.fork.config.cjs --mac --arm64
+	node config/scripts/fork-verify-packaged-files.cjs dist/mac-arm64/Orca.app/Contents/Resources/app.asar
 
 # Upstream release the fork sits on (fork tags excluded). Override: make fork-check FORK_BASE=v1.4.229
 FORK_BASE ?= $(shell git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' HEAD)
