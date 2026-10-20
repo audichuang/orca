@@ -146,6 +146,8 @@ describe('full-width Git Graph', () => {
 
     fireEvent.click(await within(view).findByRole('button', { name: 'bbbbbbb' }))
     expect(scroll).toHaveBeenCalledWith({ block: 'center' })
+    // The link unmounts with the old selection; focus moves to the row so arrow keys keep working.
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('data-commit-id', PARENT.id))
   })
 
   it('shows every ref, loads a selected commit, and opens a file diff', async () => {
