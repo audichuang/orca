@@ -33,7 +33,7 @@ export function GitHistoryCommitContextMenu({
       'enabled'
   )
   return (
-    <ContextMenuContent className="w-56">
+    <ContextMenuContent className="w-64">
       {managedBrowserCreationEnabled ? (
         <ContextMenuItem onSelect={() => onAction('open-remote', item)}>
           <Globe className="size-3.5" />
