@@ -2,7 +2,7 @@ import { GitHistoryPanel } from '../sync/git-history-panel'
 import { GitHistoryGraphToolbar } from '../sync/git-history-graph-toolbar'
 import { GitHistoryGraphLoadMore } from '../sync/git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from '../sync/git-history-graph-empty-message'
-import { GitGraphFullViewLauncher } from '../sync/git-graph-full-view-dialog'
+import { GitGraphTabLauncher } from '../sync/git-graph-tab-launcher'
 import { commitFilesMenuSlot } from '../sync/git-history-commit-files-menu'
 import { shouldShowSourceControlCompareUnavailableCard } from './header-toolbar'
 import { shouldRenderCommitArea } from '../commit/component-gates'
@@ -251,31 +251,15 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
               worktreePath,
               loadCommitFiles
             )}
+            headerActions={
+              <GitGraphTabLauncher workspaceId={tabOwnerId} repoWorktreeId={currentWorktreeId} />
+            }
             toolbar={
               <GitHistoryGraphToolbar
                 worktreeId={currentWorktreeId}
                 worktreePath={worktreePath}
                 activeRepoTarget={activeRepoTarget}
                 state={gitHistoryState}
-                trailing={
-                  <GitGraphFullViewLauncher
-                    worktreeId={currentWorktreeId}
-                    worktreePath={worktreePath}
-                    activeRepoTarget={activeRepoTarget}
-                    state={gitHistoryState}
-                    onRefresh={() => void refreshGitHistory()}
-                    onOpenCommit={(item) => void openHistoryCommitDiff(item)}
-                    onLoadCommitFiles={loadCommitFiles}
-                    onOpenCommitFile={openCommitFile}
-                    onCommitAction={handleCommitAction}
-                    renderCommitFilesMenu={commitFilesMenuSlot(
-                      model,
-                      currentWorktreeId,
-                      worktreePath,
-                      loadCommitFiles
-                    )}
-                  />
-                }
               />
             }
             footer={

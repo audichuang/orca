@@ -79,6 +79,10 @@ export function isMobileFileDiffSource(
 
 export function isMobilePublishableOpenFile(file: AppState['openFiles'][number]): boolean {
   // Combined diff tabs use display labels as paths and need the desktop renderer.
+  // Fork: the Git Graph tab's path is a synthetic id, so a phone would try to read a missing file.
+  if (file.mode === 'git-graph') {
+    return false
+  }
   return !(
     file.diffSource === 'combined-all' ||
     file.diffSource === 'combined-uncommitted' ||

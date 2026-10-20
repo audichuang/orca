@@ -13139,6 +13139,8 @@
             "c06193ef57": "No se pudo copiar {{value0}}",
             "d172a4f068": "Hash del commit",
             "e283b50179": "Mensaje del commit",
+            "commitHashes": "Hashes de los commits",
+            "commitMessages": "Mensajes de los commits",
             "f394c6128a": "No hay ningún agente disponible para explicar este commit",
             "04a5d7239b": "Este repositorio no tiene un remoto web compatible",
             "15b6e834ac": "No se pudo abrir el commit en el navegador",
@@ -14178,7 +14180,9 @@
             "9d3e60bc24": "Copiar mensaje del commit",
             "ae4f71cd35": "Explicar los cambios",
             "copyFullSource": "Copiar código fuente completo",
-            "copyFullSourceMany": "Copiar código fuente completo ({{value0}} commits)"
+            "copyFullSourceMany": "Copiar código fuente completo ({{value0}} commits)",
+            "copyHashMany": "Copiar hashes de commit ({{value0}} commits)",
+            "copyMessageMany": "Copiar mensajes de commit ({{value0}} commits)"
           },
           "pull": {
             "policy": {
@@ -16488,7 +16492,10 @@
                 "chatPaneRight": "panel de chat a la derecha",
                 "splitChatDown": "dividir chat abajo",
                 "moveChatDown": "mover chat abajo",
-                "chatPaneBelow": "panel de chat abajo"
+                "chatPaneBelow": "panel de chat abajo",
+                "openGitGraph": "abrir git graph",
+                "gitLog": "registro de git",
+                "commitHistory": "historial de commits"
               },
               "splitChatRight": "Dividir chat a la derecha",
               "splitChatRightDescription": "Abre el chat activo en un panel dividido a la derecha.",
@@ -18116,6 +18123,13 @@
         "a62f9db53d": "Cancel",
         "c77189bc0c": "Update filter",
         "19af906d12": "Save filter"
+      },
+      "gitGraphTab": {
+        "noRepo": "No hay ningún repositorio Git disponible para este espacio de trabajo.",
+        "repoSwitcher": "Repositorio",
+        "selectRepo": "Seleccionar repositorio",
+        "searchRepos": "Buscar repositorios...",
+        "noRepos": "No se encontraron repositorios."
       }
     },
     "i18n": {

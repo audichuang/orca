@@ -13250,6 +13250,8 @@
             "c06193ef57": "Échec de la copie : {{value0}}",
             "d172a4f068": "Hash du commit",
             "e283b50179": "Message de commit",
+            "commitHashes": "Hashs des commits",
+            "commitMessages": "Messages des commits",
             "f394c6128a": "Aucun agent disponible pour expliquer ce commit",
             "04a5d7239b": "Ce dépôt n'a aucun remote web pris en charge",
             "15b6e834ac": "Échec de l'ouverture du commit dans le navigateur",
@@ -14291,7 +14293,9 @@
             "9d3e60bc24": "Copier le message de commit",
             "ae4f71cd35": "Expliquer les modifications",
             "copyFullSource": "Copier la source complète",
-            "copyFullSourceMany": "Copier la source complète ({{value0}} commits)"
+            "copyFullSourceMany": "Copier la source complète ({{value0}} commits)",
+            "copyHashMany": "Copier les hashs de commit ({{value0}} commits)",
+            "copyMessageMany": "Copier les messages de commit ({{value0}} commits)"
           },
           "pull": {
             "policy": {
@@ -16601,7 +16605,10 @@
                 "chatPaneRight": "volet de discussion à droite",
                 "splitChatDown": "diviser la discussion",
                 "moveChatDown": "déplacer le chat vers le bas",
-                "chatPaneBelow": "volet de discussion ci-dessous"
+                "chatPaneBelow": "volet de discussion ci-dessous",
+                "openGitGraph": "ouvrir git graph",
+                "gitLog": "journal git",
+                "commitHistory": "historique des commits"
               },
               "splitChatRight": "Diviser le chat à droite",
               "splitChatRightDescription": "Ouvrez le chat actif dans un volet divisé à droite.",
@@ -18225,6 +18232,13 @@
         "a62f9db53d": "Annuler",
         "c77189bc0c": "Mettre à jour le filtre",
         "19af906d12": "Enregistrer le filtre"
+      },
+      "gitGraphTab": {
+        "noRepo": "Aucun dépôt Git n’est disponible pour cet espace de travail.",
+        "repoSwitcher": "Dépôt",
+        "selectRepo": "Sélectionner un dépôt",
+        "searchRepos": "Rechercher des dépôts...",
+        "noRepos": "Aucun dépôt trouvé."
       }
     },
     "i18n": {
