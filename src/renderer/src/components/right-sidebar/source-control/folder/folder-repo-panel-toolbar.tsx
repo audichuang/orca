@@ -2,11 +2,14 @@ import { ClipboardPaste, Copy, FolderPlus, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { ActionButton } from '../listing/action-button'
+import { GitGraphOpenButton } from '../sync/git-graph-tab-launcher'
 
 /** Folder name and folder-wide actions above a folder workspace's repo headers. */
 export function FolderRepoPanelToolbar({
   name,
   folderPath,
+  workspaceKey,
+  selectedRepoId,
   onCopyAll,
   onAddRepos,
   onRestore,
@@ -14,6 +17,9 @@ export function FolderRepoPanelToolbar({
 }: {
   name: string
   folderPath: string
+  workspaceKey: string
+  /** Repo the Git Graph button opens on; the graph can still switch to the others. */
+  selectedRepoId: string
   onCopyAll: () => void
   /** Undefined hides the action, e.g. for folders on SSH hosts. */
   onAddRepos?: () => void
@@ -25,6 +31,7 @@ export function FolderRepoPanelToolbar({
       <span className="min-w-0 flex-1 truncate text-xs font-semibold" title={folderPath}>
         {name}
       </span>
+      <GitGraphOpenButton workspaceId={workspaceKey} repoWorktreeId={selectedRepoId} />
       <ActionButton
         icon={Copy}
         title={translate(
