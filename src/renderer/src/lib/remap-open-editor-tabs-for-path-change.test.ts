@@ -572,7 +572,8 @@ describe('remapOpenEditorTabsForPathChange', () => {
       fromPath: '/f/a/docs',
       toPath: '/f/a/notes',
       worktreePath: '/f/a',
-      worktreeId: 'repo-a'
+      worktreeId: 'repo-a',
+      owner: localMoveOwner('repo-a')
     })
 
     const moved = useAppStore.getState().openFiles.find((f) => f.mode === 'diff')
@@ -591,7 +592,8 @@ describe('remapOpenEditorTabsForPathChange', () => {
       fromPath: '/f/a/docs/x.ts',
       toPath: '/f/a/docs/y.ts',
       worktreePath: '/f',
-      worktreeId: 'folder:f1'
+      worktreeId: 'folder:f1',
+      owner: localMoveOwner('folder:f1')
     })
 
     const moved = useAppStore.getState().openFiles.find((f) => f.mode === 'diff')
@@ -618,7 +620,8 @@ describe('remapOpenEditorTabsForPathChange', () => {
       fromPath: '/f/a/docs/x.ts',
       toPath: '/f/b/x.ts',
       worktreePath: '/f',
-      worktreeId: 'folder:f1'
+      worktreeId: 'folder:f1',
+      owner: localMoveOwner('folder:f1')
     })
 
     const moved = useAppStore.getState().openFiles.find((f) => f.mode === 'edit')
@@ -638,7 +641,8 @@ describe('remapOpenEditorTabsForPathChange', () => {
       fromPath: '/f/a/docs/x.ts',
       toPath: '/f/b/x.ts',
       worktreePath: '/f',
-      worktreeId: 'folder:f1'
+      worktreeId: 'folder:f1',
+      owner: localMoveOwner('folder:f1')
     })
 
     const diff = useAppStore.getState().openFiles.find((f) => f.mode === 'diff')
