@@ -232,7 +232,7 @@ describe('FolderMultiRepoPanel Git Graph button', () => {
     const openGitGraphTab = vi.fn()
     useAppStore.setState({ openGitGraphTab })
     renderPanel({ api: 0, core: 2, web: 1 })
-    fireEvent.click(screen.getByRole('button', { name: 'Git Graph' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
     expect(openGitGraphTab).toHaveBeenCalledWith(expect.stringContaining('folder-'), {
       repoWorktreeId: 'wt-core'
     })
