@@ -14748,6 +14748,9 @@
             "noMatchingCommits": "Aucun commit ne correspond à ce filtre"
           },
           "GitGraphFullView": {
+            "laneContinuesBelow": "Continue {{count}} lignes plus bas sur {{sha}} {{subject}}. Cliquez pour y aller.",
+            "laneComesFromAbove": "Vient de {{sha}} {{subject}}, {{count}} lignes plus haut. Cliquez pour y aller.",
+            "laneContinuesPastLoaded": "Continue au-delà des commits chargés. Chargez plus de commits pour la suivre.",
             "open": "Ouvrir Git Graph",
             "openShort": "Git Graph",
             "description": "Graphe des commits du dépôt actuel.",
@@ -14774,6 +14777,8 @@
             "date": "Date",
             "copySha": "Copier le SHA du commit",
             "parents": "Parents",
+            "children": "Enfants",
+            "childrenHint": "Commits de la liste chargée dont le parent est ce commit.",
             "refs": "Références",
             "containedIn": "Dans les branches",
             "containedInHint": "Branches dont le dernier commit figure dans la liste chargée ; les autres ne sont pas comptées.",

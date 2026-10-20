@@ -23,6 +23,8 @@ import {
   gitGraphGridTemplate
 } from './git-graph-full-row'
 import { GitGraphDetailsPane } from './git-graph-full-view-details'
+import { buildGitGraphLaneRows } from './git-graph-lane-layout'
+import { SWIMLANE_WIDTH } from './git-history-graph-svg'
 import { GitHistoryCommitContextMenu } from './git-history-commit-context-menu'
 import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-graph-branch-sidebar'
 import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
@@ -40,9 +42,6 @@ import type { GitHistoryCommitActionHandler } from './use-git-history-commit-sel
 
 // Why bounded: a Shift range can cover hundreds of commits; the runtime RPC queue rejects past 256.
 const FILE_LOAD_CONCURRENCY = 6
-
-// Mirrors SWIMLANE_WIDTH in git-history-graph-svg.tsx; only used to align the subject column.
-const GRAPH_LANE_WIDTH = 11
 
 export type GitGraphFullViewProps = {
   worktreeId: string
@@ -138,15 +137,10 @@ export function GitGraphFullView({
         : [],
     [result]
   )
+  const laneRows = useMemo(() => buildGitGraphLaneRows(viewModels), [viewModels])
   const graphWidth = useMemo(
-    () =>
-      GRAPH_LANE_WIDTH *
-      (Math.max(
-        1,
-        ...viewModels.map((vm) => Math.max(vm.inputSwimlanes.length, vm.outputSwimlanes.length))
-      ) +
-        1),
-    [viewModels]
+    () => SWIMLANE_WIDTH * (Math.max(1, ...laneRows.map((row) => row.laneCount)) + 1),
+    [laneRows]
   )
   const listRef = useRef<HTMLDivElement>(null)
   // Why the worktree's execution host, not the runtime target: a direct SSH repo uses the local
@@ -335,10 +329,11 @@ export function GitGraphFullView({
                 <GitHistoryGraphEmptyMessage worktreeId={worktreeId} />
               </div>
             )}
-            {viewModels.map((viewModel) => (
+            {viewModels.map((viewModel, index) => (
               <GitGraphFullRow
                 key={viewModel.historyItem.id}
                 viewModel={viewModel}
+                lanes={laneRows[index]!}
                 graphWidth={graphWidth}
                 columns={columns}
                 selected={selection.isRowSelected(viewModel.historyItem.id)}
@@ -361,6 +356,7 @@ export function GitGraphFullView({
                   )
                 }
                 onSelect={(event) => selection.handleRowSelect(viewModel.historyItem, event)}
+                onJump={(commitId) => jumpTo(commitId, { focus: true })}
               />
             ))}
             {result && <GitHistoryGraphLoadMore worktreeId={worktreeId} state={state} />}
