@@ -83,10 +83,11 @@ function FoldArrow({
   segment: Extract<GitGraphLaneSegment, { kind: 'fold-down' | 'fold-up' }>
 }): React.JSX.Element {
   const cx = x(segment.at)
+  // Why clear of y=12: connectors run horizontally through the middle of the row.
   const d =
     segment.kind === 'fold-down'
-      ? `M ${cx} 0 V 14 M ${cx - 3} 11 L ${cx} 15 L ${cx + 3} 11`
-      : `M ${cx - 3} 13 L ${cx} 9 L ${cx + 3} 13 M ${cx} 9.5 V ${H}`
+      ? `M ${cx} 0 V 9 M ${cx - 3} 6 L ${cx} 9.5 L ${cx + 3} 6`
+      : `M ${cx - 3} 18 L ${cx} 14.5 L ${cx + 3} 18 M ${cx} 15 V ${H}`
   return (
     <g
       {...(segment.target ? { [GIT_GRAPH_JUMP_ATTRIBUTE]: segment.target.id } : {})}
