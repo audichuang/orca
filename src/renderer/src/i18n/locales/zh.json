@@ -14649,6 +14649,9 @@
             "noMatchingCommits": "没有符合此筛选条件的提交"
           },
           "GitGraphFullView": {
+            "laneContinuesBelow": "往下 {{count}} 列接到 {{sha}} {{subject}}。點一下跳過去。",
+            "laneComesFromAbove": "從上方 {{count}} 列的 {{sha}} {{subject}} 接過來。點一下跳過去。",
+            "laneContinuesPastLoaded": "接到尚未載入的更早 commit",
             "open": "打开 Git Graph",
             "openShort": "Git Graph",
             "description": "当前仓库的提交图。",
