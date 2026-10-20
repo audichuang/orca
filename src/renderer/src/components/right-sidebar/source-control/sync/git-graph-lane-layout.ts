@@ -197,56 +197,12 @@ function holdsColumn(track: Track, boundary: number): boolean {
   )
 }
 
-function assignColumns(tracks: readonly Track[], rowCount: number): Map<Track, number>[] {
-  const byBoundary: Track[][] = Array.from({ length: rowCount + 1 }, () => [])
-  for (const track of tracks) {
-    for (let boundary = Math.max(track.first, -1); boundary <= track.last; boundary += 1) {
-      if (holdsColumn(track, boundary)) {
-        byBoundary[boundary + 1]!.push(track)
-      }
-    }
+function lowestFree(...used: ReadonlySet<number>[]): number {
+  let column = 0
+  while (used.some((set) => set.has(column))) {
+    column += 1
   }
-  const columns: Map<Track, number>[] = []
-  let previous = new Map<Track, number>()
-  byBoundary.forEach((held, index) => {
-    const boundary = index - 1
-    // Why fixed: a reserved column must not slide during compaction, or a dot lands on the arrow anyway.
-    const stays = (track: Track): boolean =>
-      previous.has(track) && (!isVisible(track, boundary) || !isVisible(track, boundary - 1))
-    const current = new Map<Track, number>()
-    const taken = new Set<number>()
-    for (const track of held) {
-      if (stays(track)) {
-        current.set(track, previous.get(track)!)
-        taken.add(previous.get(track)!)
-      }
-    }
-    const rest = held
-      .filter((track) => !current.has(track))
-      .sort(
-        (a, b) =>
-          Number(b.pinned) - Number(a.pinned) || a.slots.get(boundary)! - b.slots.get(boundary)!
-      )
-    let column = 0
-    for (const track of rest) {
-      while (taken.has(column)) {
-        column += 1
-      }
-      current.set(track, column)
-      column += 1
-    }
-    columns.push(current)
-    previous = current
-  })
-  return columns
-}
-
-function columnCount(columns: Map<Track, number>): number {
-  let count = 0
-  for (const column of columns.values()) {
-    count = Math.max(count, column + 1)
-  }
-  return count
+  return column
 }
 
 export function buildGitGraphLaneRows(
@@ -256,57 +212,111 @@ export function buildGitGraphLaneRows(
 ): GitGraphLaneRow[] {
   const { tracks, rowSegments } = extractTracks(viewModels)
   foldTracks(tracks, foldAfterRows, stubRows)
-  const columns = assignColumns(tracks, viewModels.length)
-  const itemAt = (row: number | undefined): GitHistoryItem | undefined =>
-    row === undefined ? undefined : viewModels[row]?.historyItem
-  return viewModels.map((vm, row) => {
-    const top = columns[row]!
-    const bottom = columns[row + 1]!
-    const segments: GitGraphLaneSegment[] = []
-    const firstOut = rowSegments[row]!.find((s) => s.kind === 'out-of-node' && s.firstParent)
-    const circleInto = rowSegments[row]!.find((s) => s.kind === 'into-node' && s.atCircle)
-    const nodeColumn = firstOut
-      ? bottom.get(firstOut.track)!
-      : circleInto
-        ? top.get(circleInto.track)!
-        : columnCount(top)
-    for (const segment of rowSegments[row]!) {
-      const above = isVisible(segment.track, row - 1) ? top.get(segment.track) : undefined
-      const below = isVisible(segment.track, row) ? bottom.get(segment.track) : undefined
-      if (segment.kind === 'into-node' && above !== undefined) {
-        segments.push({ kind: 'into-node', from: above, color: segment.color })
-      } else if (segment.kind === 'out-of-node' && below !== undefined) {
-        segments.push({ kind: 'out-of-node', to: below, color: segment.color })
-      } else if (segment.kind === 'through') {
-        const { track, color } = segment
-        if (above !== undefined && below !== undefined) {
-          segments.push({ kind: 'through', from: above, to: below, color })
-        } else if (above !== undefined) {
-          const target = itemAt(track.endRow)
-          segments.push({
-            kind: 'fold-down',
-            at: above,
-            color,
-            target,
-            rows: track.endRow === undefined ? undefined : track.endRow - row
-          })
-        } else if (below !== undefined) {
-          const start = track.startRow ?? track.first
-          segments.push({
-            kind: 'fold-up',
-            at: below,
-            color,
-            target: itemAt(track.startRow),
-            rows: row - start
-          })
-        }
+  const heldAt: Track[][] = Array.from({ length: viewModels.length + 1 }, () => [])
+  let pinnedUntil = -2
+  for (const track of tracks) {
+    for (let boundary = track.first; boundary <= track.last; boundary += 1) {
+      if (holdsColumn(track, boundary)) {
+        heldAt[boundary + 1]!.push(track)
       }
     }
-    return {
-      nodeColumn,
-      nodeColor: getGitHistoryItemColor(vm),
-      laneCount: Math.max(columnCount(top), columnCount(bottom), nodeColumn + 1),
-      segments
+    if (track.pinned) {
+      pinnedUntil = Math.max(pinnedUntil, track.last)
     }
+  }
+  // Why column 0 is kept free down to HEAD's last row: the checked-out line never has to shove another lane aside.
+  const blocked = (boundary: number): ReadonlySet<number> =>
+    boundary <= pinnedUntil ? new Set([0]) : new Set()
+  const bySlot = (boundary: number) => (a: Track, b: Track) =>
+    (a.slots.get(boundary) ?? 0) - (b.slots.get(boundary) ?? 0)
+  const itemAt = (row: number | undefined): GitHistoryItem | undefined =>
+    row === undefined ? undefined : viewModels[row]?.historyItem
+  // Why stable columns: a lane that never moves sideways can never cut through another commit's dot.
+  let top = new Map<Track, number>()
+  return viewModels.map((vm, row) => {
+    for (const track of heldAt[row]!.filter((t) => !top.has(t)).sort(bySlot(row - 1))) {
+      top.set(track, lowestFree(new Set(top.values()), blocked(row - 1)))
+    }
+    const topUsed = new Set(top.values())
+    const bottom = new Map<Track, number>()
+    const held = heldAt[row + 1]!
+    for (const track of held) {
+      const column = top.get(track)
+      if (column !== undefined) {
+        bottom.set(track, column)
+      }
+    }
+    const segments = rowSegments[row]!
+    const firstOut = segments.find((s) => s.kind === 'out-of-node' && s.firstParent)
+    const intoColumns = segments.flatMap((s) =>
+      s.kind === 'into-node' && top.has(s.track) ? [top.get(s.track)!] : []
+    )
+    const free = (column: number): boolean =>
+      column >= 0 &&
+      !topUsed.has(column) &&
+      ![...bottom.values()].includes(column) &&
+      !blocked(row).has(column)
+    let nodeColumn = firstOut?.track.pinned
+      ? 0
+      : intoColumns.length > 0
+        ? Math.min(...intoColumns)
+        : lowestFree(topUsed, new Set(bottom.values()), blocked(row - 1), blocked(row))
+    // Why one column per row: lanes drift left into freed space without ever sweeping past a dot.
+    if (!firstOut?.track.pinned && firstOut && free(nodeColumn - 1)) {
+      nodeColumn -= 1
+    }
+    if (firstOut && held.includes(firstOut.track)) {
+      bottom.set(firstOut.track, nodeColumn)
+    }
+    for (const track of held.filter((t) => !bottom.has(t)).sort(bySlot(row))) {
+      bottom.set(
+        track,
+        lowestFree(topUsed, new Set(bottom.values()), new Set([nodeColumn]), blocked(row))
+      )
+    }
+    for (const [track, column] of [...bottom].sort((x, y) => x[1] - y[1])) {
+      const moves =
+        !track.pinned &&
+        isVisible(track, row - 1) &&
+        isVisible(track, row) &&
+        column - 1 !== nodeColumn &&
+        column !== nodeColumn &&
+        free(column - 1)
+      if (moves) {
+        bottom.set(track, column - 1)
+      }
+    }
+    const drawn: GitGraphLaneSegment[] = []
+    for (const segment of segments) {
+      const { track, color } = segment
+      const above = isVisible(track, row - 1) ? top.get(track) : undefined
+      const below = isVisible(track, row) ? bottom.get(track) : undefined
+      if (segment.kind === 'into-node' && above !== undefined) {
+        drawn.push({ kind: 'into-node', from: above, color })
+      } else if (segment.kind === 'out-of-node' && below !== undefined) {
+        drawn.push({ kind: 'out-of-node', to: below, color })
+      } else if (segment.kind === 'through' && above !== undefined && below !== undefined) {
+        drawn.push({ kind: 'through', from: above, to: below, color })
+      } else if (segment.kind === 'through' && above !== undefined) {
+        drawn.push({
+          kind: 'fold-down',
+          at: above,
+          color,
+          target: itemAt(track.endRow),
+          rows: track.endRow === undefined ? undefined : track.endRow - row
+        })
+      } else if (segment.kind === 'through' && below !== undefined) {
+        drawn.push({
+          kind: 'fold-up',
+          at: below,
+          color,
+          target: itemAt(track.startRow),
+          rows: row - (track.startRow ?? track.first)
+        })
+      }
+    }
+    const laneCount = Math.max(...top.values(), ...bottom.values(), nodeColumn) + 1
+    top = bottom
+    return { nodeColumn, nodeColor: getGitHistoryItemColor(vm), laneCount, segments: drawn }
   })
 }
