@@ -226,7 +226,7 @@ export function GitGraphCommitsSummary({
   onJump: (commitId: string) => void
 }): React.JSX.Element {
   return (
-    <ul className="flex flex-col py-1">
+    <ul className="@container flex flex-col py-1">
       {items.map((item) => (
         <li key={item.id}>
           <button
@@ -240,8 +240,13 @@ export function GitGraphCommitsSummary({
             <span className="min-w-0 flex-1 truncate text-foreground" title={item.subject}>
               {item.subject}
             </span>
-            {item.author && <GitGraphAuthorAvatar name={item.author} email={item.authorEmail} />}
-            <span className="shrink-0 text-2xs text-muted-foreground">
+            {/* Why: in a narrow details pane the subject matters more than avatar and date. */}
+            {item.author && (
+              <span className="shrink-0 @max-xs:hidden">
+                <GitGraphAuthorAvatar name={item.author} email={item.authorEmail} />
+              </span>
+            )}
+            <span className="shrink-0 text-2xs text-muted-foreground @max-xs:hidden">
               {formatGitGraphShortDate(item.timestamp)}
             </span>
           </button>
