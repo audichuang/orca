@@ -1,6 +1,6 @@
 // Fork-only: the full Git Graph's right pane, IntelliJ-style: changed files on top, commit details below.
 import React, { useCallback, useMemo, useState } from 'react'
-import { Copy } from 'lucide-react'
+import { Copy, List, ListTree } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
@@ -9,7 +9,11 @@ import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
-import { GitHistoryCommitFiles, type GitHistoryCommitFilesState } from './git-history-commit-files'
+import {
+  GitHistoryCommitFiles,
+  type GitHistoryCommitFilesLayout,
+  type GitHistoryCommitFilesState
+} from './git-history-commit-files'
 import {
   GitGraphCommitInfo,
   GitGraphCommitsSummary,
@@ -17,6 +21,7 @@ import {
 } from './git-graph-commit-info'
 
 const DETAILS_WIDTH_KEY = 'orca:git-graph-details-width'
+const FILES_LAYOUT_KEY = 'orca:git-graph-files-layout'
 const DETAILS_MIN_WIDTH = 280
 // Smallest width the pane can take (tiny windows); a saved width at or above it stays valid.
 const DETAILS_FLOOR_WIDTH = 200
@@ -45,6 +50,21 @@ function readDetailsWidth(): number {
 function writeDetailsWidth(width: number): void {
   try {
     window.localStorage.setItem(DETAILS_WIDTH_KEY, String(width))
+  } catch {}
+}
+
+// Why tree by default: like IntelliJ, deep Java/resource paths read better grouped by folder.
+function readFilesLayout(): GitHistoryCommitFilesLayout {
+  try {
+    return window.localStorage.getItem(FILES_LAYOUT_KEY) === 'list' ? 'list' : 'tree'
+  } catch {
+    return 'tree'
+  }
+}
+
+function writeFilesLayout(layout: GitHistoryCommitFilesLayout): void {
+  try {
+    window.localStorage.setItem(FILES_LAYOUT_KEY, layout)
   } catch {}
 }
 
@@ -148,6 +168,17 @@ export function GitGraphDetailsPane({
     }
   }
 
+  const [filesLayout, setFilesLayout] = useState(readFilesLayout)
+  const toggleFilesLayout = (): void => {
+    const next = filesLayout === 'tree' ? 'list' : 'tree'
+    setFilesLayout(next)
+    writeFilesLayout(next)
+  }
+  const layoutLabel =
+    filesLayout === 'tree'
+      ? translate('auto.components.right.sidebar.SourceControl.a91f8e2b01', 'View as list')
+      : translate('auto.components.right.sidebar.SourceControl.b82e9f3c12', 'View as tree')
+
   const merged = useMemo(() => mergeCommitFiles(items, filesByCommit), [items, filesByCommit])
   const first = items[0]
   const fileCount = merged.state.status === 'ready' ? merged.state.entries.length : null
@@ -202,6 +233,26 @@ export function GitGraphDetailsPane({
                     { files: fileCount ?? '…' }
                   )}
             </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={layoutLabel}
+                  onClick={toggleFilesLayout}
+                >
+                  {filesLayout === 'tree' ? (
+                    <List className="size-3.5" />
+                  ) : (
+                    <ListTree className="size-3.5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={6}>
+                {layoutLabel}
+              </TooltipContent>
+            </Tooltip>
             {onCopyFullSource && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -227,6 +278,7 @@ export function GitGraphDetailsPane({
             <GitHistoryCommitFiles
               className="border-l-0 bg-transparent"
               state={merged.state}
+              layout={filesLayout}
               onOpenFile={(entry, event) =>
                 onOpenCommitFile(merged.ownerByPath.get(entry.path) ?? first, entry, event)
               }
