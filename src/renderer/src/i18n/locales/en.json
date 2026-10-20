@@ -14697,6 +14697,9 @@
             "noMatchingCommits": "No commits match this filter"
           },
           "GitGraphFullView": {
+            "laneContinuesBelow": "Continues {{count}} rows below at {{sha}} {{subject}}. Click to jump.",
+            "laneComesFromAbove": "Comes from {{sha}} {{subject}}, {{count}} rows above. Click to jump.",
+            "laneContinuesPastLoaded": "Continues past the loaded commits",
             "open": "Open Git Graph",
             "openShort": "Git Graph",
             "description": "Commit graph for the current repository.",
