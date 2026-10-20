@@ -14802,6 +14802,7 @@
           },
           "GitGraphFullView": {
             "open": "Git Graph を開く",
+            "openShort": "Git Graph",
             "description": "現在のリポジトリのコミットグラフ。",
             "message": "メッセージ",
             "author": "作成者",
