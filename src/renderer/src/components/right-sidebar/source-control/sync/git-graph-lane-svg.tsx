@@ -6,12 +6,11 @@ import type { GitGraphLaneRow, GitGraphLaneSegment } from './git-graph-lane-layo
 import {
   GitHistoryGraphNodeMarker,
   GraphPath,
-  SWIMLANE_CURVE_RADIUS as R,
   SWIMLANE_HEIGHT as H,
   SWIMLANE_WIDTH as W
 } from './git-history-graph-svg'
 
-/** Marks a fold arrow; the row's click handler jumps to this commit instead of selecting. */
+/** Marks a fold arrow; a click jumps to this commit (empty: not loaded) instead of selecting the row. */
 export const GIT_GRAPH_JUMP_ATTRIBUTE = 'data-git-graph-jump'
 
 const x = (column: number): number => W * (column + 1)
@@ -20,16 +19,7 @@ function throughPath(from: number, to: number): string {
   if (from === to) {
     return `M ${x(from)} 0 V ${H}`
   }
-  const dir = to < from ? -1 : 1
-  const sweep = dir < 0 ? [1, 0] : [0, 1]
-  return [
-    `M ${x(from)} 0`,
-    'V 6',
-    `A ${R} ${R} 0 0 ${sweep[0]} ${x(from) + dir * R} ${H / 2}`,
-    `H ${x(to) - dir * R}`,
-    `A ${R} ${R} 0 0 ${sweep[1]} ${x(to)} ${H / 2 + R}`,
-    `V ${H}`
-  ].join(' ')
+  return `M ${x(from)} 0 V 4 C ${x(from)} ${H / 2} ${x(to)} ${H / 2} ${x(to)} ${H - 4} V ${H}`
 }
 
 function intoNodePath(from: number, node: number): string {
@@ -56,7 +46,7 @@ function foldLabel(
   if (!target) {
     return translate(
       'auto.components.right.sidebar.GitGraphFullView.laneContinuesPastLoaded',
-      'Continues past the loaded commits'
+      'Continues past the loaded commits. Load more commits to follow it.'
     )
   }
   const values = {
@@ -90,7 +80,7 @@ function FoldArrow({
       : `M ${cx - 3} 18 L ${cx} 14.5 L ${cx + 3} 18 M ${cx} 15 V ${H}`
   return (
     <g
-      {...(segment.target ? { [GIT_GRAPH_JUMP_ATTRIBUTE]: segment.target.id } : {})}
+      {...{ [GIT_GRAPH_JUMP_ATTRIBUTE]: segment.target?.id ?? '' }}
       className={segment.target ? 'cursor-pointer' : undefined}
       data-fold={segment.kind}
     >
