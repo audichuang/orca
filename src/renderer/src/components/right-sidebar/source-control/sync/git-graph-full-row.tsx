@@ -12,7 +12,7 @@ import {
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
 import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
 import { graphColor } from './git-history-graph-svg'
-import { GIT_GRAPH_JUMP_ATTRIBUTE, GitGraphLaneSvg } from './git-graph-lane-svg'
+import { GitGraphLaneSvg } from './git-graph-lane-svg'
 import type { GitGraphLaneRow } from './git-graph-lane-layout'
 import { formatGitHistoryTimestamp } from './git-history-format'
 
@@ -211,7 +211,7 @@ export function GitGraphFullRow({
   const cells = (
     <>
       <div data-col="graph" className="flex h-6 items-center" style={{ width: graphWidth }}>
-        <GitGraphLaneSvg viewModel={viewModel} lanes={lanes} />
+        <GitGraphLaneSvg viewModel={viewModel} lanes={lanes} onJump={onJump} />
       </div>
       <div data-col="message" className="flex min-w-0 items-center gap-1.5 overflow-hidden">
         {columns.refs && primaryRef && (
@@ -302,21 +302,7 @@ export function GitGraphFullRow({
       data-dimmed={dimmed ? 'true' : undefined}
       data-selected={selected ? 'true' : undefined}
       data-testid="git-graph-full-row"
-      onClick={(event) => {
-        // Why not a nested button: the row is already one; the arrow is a hit area inside it.
-        const arrow =
-          event.target instanceof Element
-            ? event.target.closest(`[${GIT_GRAPH_JUMP_ATTRIBUTE}]`)
-            : null
-        if (arrow) {
-          const jumpTarget = arrow.getAttribute(GIT_GRAPH_JUMP_ATTRIBUTE)
-          if (jumpTarget) {
-            onJump?.(jumpTarget)
-          }
-          return
-        }
-        onSelect(event)
-      }}
+      onClick={onSelect}
     >
       {cells}
     </button>
