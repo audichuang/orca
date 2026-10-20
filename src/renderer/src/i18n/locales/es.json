@@ -14395,7 +14395,7 @@
           "GitGraphFullView": {
             "laneContinuesBelow": "Continúa {{count}} filas más abajo en {{sha}} {{subject}}. Haz clic para ir.",
             "laneComesFromAbove": "Viene de {{sha}} {{subject}}, {{count}} filas más arriba. Haz clic para ir.",
-            "laneContinuesPastLoaded": "Continúa más allá de los commits cargados",
+            "laneContinuesPastLoaded": "Continúa más allá de los commits cargados. Carga más commits para seguirla.",
             "open": "Abrir Git Graph",
             "openShort": "Git Graph",
             "description": "Gráfico de commits del repositorio actual.",
@@ -14422,6 +14422,8 @@
             "date": "Fecha",
             "copySha": "Copiar el SHA del commit",
             "parents": "Padres",
+            "children": "Hijos",
+            "childrenHint": "Commits de la lista cargada cuyo padre es este commit.",
             "refs": "Referencias",
             "containedIn": "En las ramas",
             "containedInHint": "Ramas cuyo último commit está en la lista cargada; no se cuentan las ramas fuera de ella.",
