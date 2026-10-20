@@ -16,35 +16,37 @@ function candidate(path: string) {
 describe('getNewNestedRepoCandidates', () => {
   it('skips the folder itself, added repos and their linked worktrees on the same host', () => {
     const result = getNewNestedRepoCandidates({
-      folderPath: '/work/cat/',
+      folderPath: '/work/folder/',
       folderOwner: { connectionId: null },
       scanned: [
-        candidate('/work/cat'),
-        candidate('/work/cat/docs/overseas'),
-        candidate('/work/cat/docs'),
-        candidate('/work/cat/docs/etf'),
-        candidate('/work/cat/bfs'),
-        candidate('/work/cat/web-feature')
+        candidate('/work/folder'),
+        candidate('/work/folder/docs/guide'),
+        candidate('/work/folder/docs'),
+        candidate('/work/folder/docs/remote-only'),
+        candidate('/work/folder/added'),
+        candidate('/work/folder/web-feature')
       ],
       repos: [
-        repo('bfs', '/work/cat/bfs'),
-        repo('remote-etf', '/work/cat/docs/etf', { connectionId: 'ssh-1' }),
+        repo('added', '/work/folder/added'),
+        repo('remote-only', '/work/folder/docs/remote-only', { connectionId: 'ssh-1' }),
         repo('web', '/work/web')
       ],
-      worktrees: [{ repoId: 'web', path: '/work/cat/web-feature' }]
+      worktrees: [{ repoId: 'web', path: '/work/folder/web-feature' }]
     })
 
     expect(result.map((entry) => entry.path)).toEqual([
-      '/work/cat/docs',
-      '/work/cat/docs/etf',
-      '/work/cat/docs/overseas'
+      '/work/folder/docs',
+      '/work/folder/docs/guide',
+      '/work/folder/docs/remote-only'
     ])
   })
 })
 
 describe('nestedRepoRelativeLabel', () => {
   it('shows nested repos relative to the folder', () => {
-    expect(nestedRepoRelativeLabel('/work/cat/', '/work/cat/docs/etf')).toBe('docs/etf')
-    expect(nestedRepoRelativeLabel('C:\\work\\cat', 'C:\\work\\cat\\docs\\etf')).toBe('docs\\etf')
+    expect(nestedRepoRelativeLabel('/work/folder/', '/work/folder/docs/guide')).toBe('docs/guide')
+    expect(nestedRepoRelativeLabel('C:\\work\\folder', 'C:\\work\\folder\\docs\\guide')).toBe(
+      'docs\\guide'
+    )
   })
 })
