@@ -14801,6 +14801,9 @@
             "noMatchingCommits": "이 필터와 일치하는 커밋이 없습니다"
           },
           "GitGraphFullView": {
+            "laneContinuesBelow": "{{count}}행 아래 {{sha}} {{subject}}(으)로 이어집니다. 클릭하면 이동합니다.",
+            "laneComesFromAbove": "{{count}}행 위 {{sha}} {{subject}}에서 이어집니다. 클릭하면 이동합니다.",
+            "laneContinuesPastLoaded": "아직 불러오지 않은 이전 커밋으로 이어집니다",
             "open": "Git Graph 열기",
             "openShort": "Git Graph",
             "description": "현재 저장소의 커밋 그래프입니다.",

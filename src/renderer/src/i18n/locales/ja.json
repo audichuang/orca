@@ -14801,6 +14801,9 @@
             "noMatchingCommits": "このフィルターに一致するコミットはありません"
           },
           "GitGraphFullView": {
+            "laneContinuesBelow": "{{count}} 行下の {{sha}} {{subject}} に続きます。クリックで移動します。",
+            "laneComesFromAbove": "{{count}} 行上の {{sha}} {{subject}} から続いています。クリックで移動します。",
+            "laneContinuesPastLoaded": "読み込まれていない以前のコミットに続きます",
             "open": "Git Graph を開く",
             "openShort": "Git Graph",
             "description": "現在のリポジトリのコミットグラフ。",
