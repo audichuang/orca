@@ -23,7 +23,7 @@ import { FolderAddReposDialog } from './folder-add-repos-dialog'
 import { FolderRepoFilterBox } from './folder-repo-filter-box'
 import { FolderRepoPanelToolbar } from './folder-repo-panel-toolbar'
 import { FolderRepoRow } from './folder-repo-row'
-import { FOLDER_REPO_FILTER_MIN_REPOS, getFolderRepoFilterView } from './folder-repo-filter'
+import { filterFolderRepoIndexes, FOLDER_REPO_FILTER_MIN_REPOS } from './folder-repo-filter'
 import {
   isRepoHiddenFromSidebar,
   setReposHiddenFromSidebar,
@@ -127,18 +127,17 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     },
     [folderWorkspaceKey]
   )
-  const expandedIndex = collapsed ? -1 : memberIds.indexOf(selectedId)
   const [filter, setFilter] = useState('')
   const showFilter = members.length >= FOLDER_REPO_FILTER_MIN_REPOS
+  // Why: while filtering, the open repo's panel folds away so the matches sit right under the box.
+  const filtering = showFilter && filter.trim() !== ''
+  const expandedIndex = collapsed || filtering ? -1 : memberIds.indexOf(selectedId)
   const labels = useMemo(
     () => members.map((member) => folderRepoSectionLabel(member, members)),
     [members]
   )
-  const { matchIndexes, visibleIndexes } = getFolderRepoFilterView(
-    labels,
-    showFilter ? filter : '',
-    expandedIndex
-  )
+  const matchIndexes = filterFolderRepoIndexes(labels, filtering ? filter : '')
+  const visibleIndexes = matchIndexes
   const visibleIds = visibleIndexes.map((index) => memberIds[index])
   const listRef = useRef<HTMLDivElement>(null)
   const [focusId, setFocusId] = useState<string | null>(null)
@@ -199,8 +198,9 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     setFocusId(id)
     focusRow(id)
   }
-  // Why: unlike toggleRepo, opening from the filter never collapses an already-open repo.
+  // Why: unlike toggleRepo, picking a match never collapses it; clearing the filter brings its panel back.
   const openRepo = (id: string) => {
+    setFilter('')
     pendingFocusRef.current = id
     setFocusId(id)
     selectRepo(id)
@@ -251,7 +251,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
       changeCount={changeCounts[index] ?? 0}
       focusable={member.worktree.id === rovingId}
       expanded={index === expandedIndex}
-      onToggle={() => toggleRepo(member.worktree.id)}
+      onToggle={() => (filtering ? openRepo : toggleRepo)(member.worktree.id)}
       // Why main worktree only: the choice covers the whole repo, so a linked worktree's row would hide its siblings too.
       sidebarHidden={
         member.containsFolder || !member.worktree.isMainWorktree
