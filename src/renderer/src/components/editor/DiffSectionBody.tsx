@@ -1,6 +1,5 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useRef } from 'react'
 import type { editor } from 'monaco-editor'
-import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { AlertCircle, RefreshCw } from 'lucide-react'
 import { DiffEditor, type DiffOnMount } from '@monaco-editor/react'
 import { cn } from '@/lib/utils'
@@ -18,8 +17,8 @@ import {
 } from './diff-editor-word-wrap-options'
 import { monacoFindOptions } from './monaco-find-options'
 import { installDiffEditorShiftWheelScroll } from './diff-editor-shift-wheel-scroll'
-
-const ImageDiffViewer = lazy(() => import('./ImageDiffViewer'))
+import { ImageDiffViewer } from './editor-lazy-views'
+import { deferDiffEditorDispose } from './monaco-diff-editor-deferred-dispose'
 
 type DiffSectionBodyProps = {
   section: DiffSection
@@ -67,11 +66,18 @@ export function DiffSectionBody({
   const wordWrapOptionsSubRef = useRef<{ dispose: () => void } | null>(null)
   const wordWrapMountFrameRef = useRef(0)
   const diffWordWrapRef = useRef(diffWordWrap)
+  const cancelPendingDisposeRef = useRef<(() => void) | null>(null)
   useLayoutEffect(() => {
     diffWordWrapRef.current = diffWordWrap
   }, [diffWordWrap])
   const handleEditorMount: DiffOnMount = (diffEditor, monaco) => {
+    // Why: the wrapper re-fires onMount when StrictMode reconnects its effects; keep the same editor.
+    if (diffEditorRef.current === diffEditor) {
+      cancelPendingDisposeRef.current?.()
+      return
+    }
     diffEditorRef.current = diffEditor
+    cancelPendingDisposeRef.current = deferDiffEditorDispose(diffEditor)
     const cleanupShiftWheelScroll = installDiffEditorShiftWheelScroll(diffEditor)
     diffEditor.getModifiedEditor().onDidDispose(() => {
       cleanupShiftWheelScroll()
@@ -153,14 +159,17 @@ export function DiffSectionBody({
         </div>
       ) : section.diffResult?.kind === 'binary' ? (
         section.diffResult.isImage ? (
-          <ImageDiffViewer
-            originalContent={section.diffResult.originalContent}
-            modifiedContent={section.diffResult.modifiedContent}
-            filePath={section.path}
-            mimeType={section.diffResult.mimeType}
-            sideBySide={sideBySide}
-            layout={useIntrinsicImageHeight ? 'intrinsic' : 'fill'}
-          />
+          // Why: loading the image chunk must not re-suspend the boundary holding sibling Monaco editors.
+          <Suspense fallback={null}>
+            <ImageDiffViewer
+              originalContent={section.diffResult.originalContent}
+              modifiedContent={section.diffResult.modifiedContent}
+              filePath={section.path}
+              mimeType={section.diffResult.mimeType}
+              sideBySide={sideBySide}
+              layout={useIntrinsicImageHeight ? 'intrinsic' : 'fill'}
+            />
+          </Suspense>
         ) : (
           <div className="flex h-full items-center justify-center px-6 text-center">
             <div className="space-y-2">

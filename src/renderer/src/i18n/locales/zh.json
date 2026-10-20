@@ -13653,7 +13653,9 @@
             "entryDiscardFailed": "无法丢弃“{{value0}}”",
             "entryDeleteFailed": "删除“{{value0}}”失败",
             "entryFailedInWorkspace": "{{value0}} 在 {{value1}} 中",
-            "diffCommentNotesCopyFailed": "复制笔记失败"
+            "diffCommentNotesCopyFailed": "复制笔记失败",
+            "commitHashes": "提交哈希",
+            "commitMessages": "提交信息"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "无法启动选定的智能体。",
@@ -14633,7 +14635,9 @@
             "9d3e60bc24": "复制提交信息",
             "ae4f71cd35": "解释更改",
             "copyFullSource": "复制完整源码",
-            "copyFullSourceMany": "复制完整源码（{{value0}} 个提交）"
+            "copyFullSourceMany": "复制完整源码（{{value0}} 个提交）",
+            "copyHashMany": "复制提交哈希（{{value0}} 个提交）",
+            "copyMessageMany": "复制提交信息（{{value0}} 个提交）"
           },
           "pull": {
             "policy": {
