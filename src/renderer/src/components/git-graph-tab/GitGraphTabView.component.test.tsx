@@ -227,7 +227,8 @@ describe('Git Graph tab', () => {
 
     fireEvent.click(trigger)
     // /work/api is added, so billing and docs/specs are the two left.
-    const entry = await screen.findByText('Add repositories in this folder (2 not added)...')
+    expect(await screen.findByText('2 not added')).toBeInTheDocument()
+    const entry = screen.getByText('Add repositories...')
     expect(scanNested).toHaveBeenCalledWith(expect.objectContaining({ path: '/work' }))
 
     fireEvent.click(entry)
@@ -262,7 +263,7 @@ describe('Git Graph tab', () => {
     )
     fireEvent.click(await screen.findByRole('combobox', { name: 'Repository' }))
     expect(await screen.findByText('remote-main')).toBeInTheDocument()
-    expect(screen.queryByText(/Add repositories in this folder/)).toBeNull()
+    expect(screen.queryByText('Add repositories...')).toBeNull()
     expect(scanNested).not.toHaveBeenCalled()
   })
 })
