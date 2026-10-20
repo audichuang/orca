@@ -14756,6 +14756,9 @@
             "noMatchingCommits": "Aucun commit ne correspond à ce filtre"
           },
           "GitGraphFullView": {
+            "laneContinuesBelow": "Continue {{count}} lignes plus bas sur {{sha}} {{subject}}. Cliquez pour y aller.",
+            "laneComesFromAbove": "Vient de {{sha}} {{subject}}, {{count}} lignes plus haut. Cliquez pour y aller.",
+            "laneContinuesPastLoaded": "Continue au-delà des commits chargés",
             "open": "Ouvrir Git Graph",
             "openShort": "Git Graph",
             "description": "Graphe des commits du dépôt actuel.",
