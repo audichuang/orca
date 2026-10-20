@@ -77,7 +77,7 @@ const scanNested = vi.fn(async (_args: { path: string }): Promise<NestedRepoScan
   selectedPathKind: 'non_git_folder',
   repos: [
     { path: '/work/api', displayName: 'api', depth: 1 },
-    { path: '/work/billing', displayName: 'billing', depth: 1 },
+    { path: '/work/not-added', displayName: 'not-added', depth: 1 },
     { path: '/work/docs/specs', displayName: 'specs', depth: 2 }
   ],
   truncated: false,
@@ -226,7 +226,7 @@ describe('Git Graph tab', () => {
     expect(scanNested).not.toHaveBeenCalled()
 
     fireEvent.click(trigger)
-    // /work/api is added, so billing and docs/specs are the two left.
+    // /work/api is added, so not-added and docs/specs are the two left.
     expect(await screen.findByText('2 not added')).toBeInTheDocument()
     const entry = screen.getByText('Add repositories...')
     expect(scanNested).toHaveBeenCalledWith(expect.objectContaining({ path: '/work' }))
@@ -248,7 +248,7 @@ describe('Git Graph tab', () => {
       await screen.findByText('No Git repository is available for this workspace.')
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Add repositories in this folder' }))
-    expect(await screen.findByRole('dialog')).toHaveTextContent('billing')
+    expect(await screen.findByRole('dialog')).toHaveTextContent('not-added')
   })
 
   it('keeps the add entry out of SSH folders, whose add path is local only', async () => {
