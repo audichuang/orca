@@ -14750,6 +14750,7 @@
           },
           "GitGraphFullView": {
             "open": "Ouvrir Git Graph",
+            "openShort": "Git Graph",
             "description": "Graphe des commits du dépôt actuel.",
             "message": "Message",
             "author": "Auteur",
