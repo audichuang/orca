@@ -162,7 +162,7 @@ describe('FolderMultiRepoPanel accordion', () => {
   })
 })
 
-const MANY = ['api', 'billing', 'core', 'inv-bfs', 'inv-svc-bfs', 'inv-web', 'web'] as const
+const MANY = ['api', 'core', 'docs', 'orders-api', 'orders-web', 'payments-api', 'web'] as const
 const filterBox = () => screen.getByRole('textbox', { name: 'Filter repositories' })
 
 describe('FolderMultiRepoPanel filter', () => {
@@ -174,11 +174,11 @@ describe('FolderMultiRepoPanel filter', () => {
   it('folds the open repo away and lists only the matches right under the box', () => {
     renderPanel({ api: 1 }, MANY)
     expect(openPanel()).toBe('wt-api')
-    fireEvent.change(filterBox(), { target: { value: 'inv bfs' } })
+    fireEvent.change(filterBox(), { target: { value: 'orders' } })
     expect(openPanel()).toBeNull()
     expect(
       screen.getAllByRole('button', { name: / \(main\) / }).map((row) => row.textContent)
-    ).toEqual(['inv-bfs (main)0', 'inv-svc-bfs (main)0'])
+    ).toEqual(['orders-api (main)0', 'orders-web (main)0'])
   })
 
   it('opens a clicked match and clears the filter', () => {
@@ -192,14 +192,14 @@ describe('FolderMultiRepoPanel filter', () => {
 
   it('opens the top match on Enter and clears on Escape', () => {
     renderPanel({}, MANY)
-    fireEvent.change(filterBox(), { target: { value: 'svc' } })
+    fireEvent.change(filterBox(), { target: { value: 'payments' } })
     fireEvent.keyDown(filterBox(), { key: 'Enter' })
-    expect(openPanel()).toBe('wt-inv-svc-bfs')
+    expect(openPanel()).toBe('wt-payments-api')
     expect(filterBox()).toHaveValue('')
     fireEvent.change(filterBox(), { target: { value: 'web' } })
     fireEvent.keyDown(filterBox(), { key: 'Escape' })
     expect(filterBox()).toHaveValue('')
-    expect(openPanel()).toBe('wt-inv-svc-bfs')
+    expect(openPanel()).toBe('wt-payments-api')
   })
 
   it('says so when nothing matches', () => {
