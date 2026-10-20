@@ -311,6 +311,8 @@ describe('full-width Git Graph', () => {
     fireEvent.click(rows[1]!, { metaKey: true, ctrlKey: true })
     fireEvent.contextMenu(rows[1]!)
     const item = await screen.findByRole('menuitem', { name: 'Copy Full Source (2 commits)' })
+    expect(screen.getByRole('menuitem', { name: 'Copy commit hashes (2 commits)' })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: 'Copy commit messages (2 commits)' })).toBeTruthy()
     // Menu keys bubble to the list through React's tree; they must not move the selection.
     for (const key of ['ArrowDown', 'End', 'Home']) {
       fireEvent.keyDown(item, { key })

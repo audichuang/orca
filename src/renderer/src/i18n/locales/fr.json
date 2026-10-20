@@ -13725,6 +13725,8 @@
             "c06193ef57": "Échec de la copie : {{value0}}",
             "d172a4f068": "Hash du commit",
             "e283b50179": "Message de commit",
+            "commitHashes": "Hashs des commits",
+            "commitMessages": "Messages des commits",
             "f394c6128a": "Aucun agent disponible pour expliquer ce commit",
             "04a5d7239b": "Ce dépôt n'a aucun remote web pris en charge",
             "15b6e834ac": "Échec de l'ouverture du commit dans le navigateur",
@@ -14766,7 +14768,9 @@
             "9d3e60bc24": "Copier le message de commit",
             "ae4f71cd35": "Expliquer les modifications",
             "copyFullSource": "Copier la source complète",
-            "copyFullSourceMany": "Copier la source complète ({{value0}} commits)"
+            "copyFullSourceMany": "Copier la source complète ({{value0}} commits)",
+            "copyHashMany": "Copier les hashs de commit ({{value0}} commits)",
+            "copyMessageMany": "Copier les messages de commit ({{value0}} commits)"
           },
           "pull": {
             "policy": {
