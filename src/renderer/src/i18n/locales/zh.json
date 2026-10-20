@@ -18167,8 +18167,8 @@
         "selectRepo": "选择仓库",
         "searchRepos": "搜索仓库...",
         "noRepos": "未找到仓库。",
-        "addRepos": "添加此文件夹中的仓库...",
-        "addReposMissing": "添加此文件夹中的仓库（{{value0}} 个未添加）...",
+        "addRepos": "添加仓库...",
+        "addReposMissing": "{{value0}} 个未添加",
         "addReposButton": "添加此文件夹中的仓库"
       }
     },
