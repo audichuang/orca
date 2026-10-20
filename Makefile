@@ -196,7 +196,8 @@ fork-check-lint: fork-base-guard
 	pnpm run verify:localization-coverage
 	pnpm run verify:rpc-params-catalog
 	pnpm run check:max-lines-ratchet
-	pnpm run check:deprecated-runtime-owner-ratchet
+	pnpm run check:unproven-pty-retirement-ratchet
+	pnpm run check:id-only-store-write-ratchet
 	pnpm run check:legacy-relay-fence-ratchet
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
 
