@@ -179,6 +179,7 @@ function projectTab(tab: LayoutTab, scope: Scope): RuntimeMobileSessionSnapshotT
     case 'diff':
     case 'conflict-review':
     case 'check-details':
+    case 'git-graph':
     case 'simulator':
       return []
   }

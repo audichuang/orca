@@ -13181,6 +13181,8 @@
             "c06193ef57": "{{value0}} のコピーに失敗しました",
             "d172a4f068": "コミットハッシュ",
             "e283b50179": "コミットメッセージ",
+            "commitHashes": "コミットハッシュ",
+            "commitMessages": "コミットメッセージ",
             "f394c6128a": "このコミットを説明できる Agent がありません",
             "04a5d7239b": "このリポジトリには対応するWebリモートがありません",
             "15b6e834ac": "コミットをブラウザで開けませんでした",
@@ -14220,7 +14222,9 @@
             "9d3e60bc24": "コミットメッセージをコピー",
             "ae4f71cd35": "変更を説明",
             "copyFullSource": "完全なソースをコピー",
-            "copyFullSourceMany": "完全なソースをコピー（{{value0}} 件のコミット）"
+            "copyFullSourceMany": "完全なソースをコピー（{{value0}} 件のコミット）",
+            "copyHashMany": "コミットハッシュをコピー（{{value0}} 件のコミット）",
+            "copyMessageMany": "コミットメッセージをコピー（{{value0}} 件のコミット）"
           },
           "pull": {
             "policy": {
@@ -16517,7 +16521,10 @@
                 "chatPaneRight": "チャットペイン右",
                 "splitChatDown": "チャットを分割する",
                 "moveChatDown": "チャットを下に移動",
-                "chatPaneBelow": "下のチャットペイン"
+                "chatPaneBelow": "下のチャットペイン",
+                "openGitGraph": "git graph を開く",
+                "gitLog": "git ログ",
+                "commitHistory": "コミット履歴"
               },
               "splitChatRight": "右の分割チャット",
               "splitChatRightDescription": "右側の分割ペインでアクティブなチャットを開きます。",
@@ -18153,6 +18160,13 @@
         "copyFailed": "リンクをコピーできませんでした。",
         "signingIn": "サインイン中…",
         "cancel": "キャンセル"
+      },
+      "gitGraphTab": {
+        "noRepo": "このワークスペースで利用できる Git リポジトリはありません。",
+        "repoSwitcher": "リポジトリ",
+        "selectRepo": "リポジトリを選択",
+        "searchRepos": "リポジトリを検索...",
+        "noRepos": "リポジトリが見つかりません。"
       }
     },
     "i18n": {

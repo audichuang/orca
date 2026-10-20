@@ -2,6 +2,7 @@
 import React from 'react'
 import { Cloud, GitBranch, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { formatUiRelativeTime } from '@/i18n/relative-time-format'
 import { initialsFor } from '@/components/github/github-user-avatar'
 import {
@@ -132,26 +133,54 @@ export function formatGitGraphShortDate(timestamp: number | undefined): string {
   return shortDateFormatter.format(new Date(timestamp))
 }
 
-// Why container queries: the list narrows with the branch tree and details pane, not just the window.
+export type GitGraphColumns = { refs: boolean; author: boolean; date: boolean; hash: boolean }
+
+const ALL_GIT_GRAPH_COLUMNS: GitGraphColumns = { refs: true, author: true, date: true, hash: true }
+
+// Why JS, not container queries: a later stylesheet re-declaring `.flex` (React Grab in dev) beat
+// `@max-*:hidden` on flex cells only, so rows kept a column the header had dropped and wrapped.
 // Author goes first, then the hash, then the date, so the message always keeps its room.
-export const GIT_GRAPH_FULL_ROW_COLUMNS =
-  'grid-cols-[auto_minmax(0,1fr)_minmax(0,9rem)_7rem_4.5rem] @max-2xl:grid-cols-[auto_minmax(0,1fr)_7rem_4.5rem] @max-xl:grid-cols-[auto_minmax(0,1fr)_7rem] @max-md:grid-cols-[auto_minmax(0,1fr)]'
-export const GIT_GRAPH_AUTHOR_COLUMN = '@max-2xl:hidden'
-export const GIT_GRAPH_HASH_COLUMN = '@max-xl:hidden'
-export const GIT_GRAPH_DATE_COLUMN = '@max-md:hidden'
+export function gitGraphColumnsForWidth(listWidth: number | null): GitGraphColumns {
+  if (!listWidth) {
+    return ALL_GIT_GRAPH_COLUMNS
+  }
+  return {
+    refs: listWidth >= 384,
+    author: listWidth >= 672,
+    hash: listWidth >= 576,
+    date: listWidth >= 448
+  }
+}
+
+/** The one grid template header and rows share, so their cells always line up. */
+export function gitGraphGridTemplate(columns: GitGraphColumns): string {
+  return [
+    'auto',
+    'minmax(0,1fr)',
+    columns.author && 'minmax(0,9rem)',
+    columns.date && '7rem',
+    columns.hash && '4.5rem'
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
 
 export function GitGraphFullRow({
   viewModel,
   graphWidth,
+  columns,
   selected,
   isTabStop = false,
   headRefId,
   dimmed = false,
+  contextMenu,
   onSelect
 }: {
   viewModel: GitHistoryItemViewModel
   /** Widest graph in the list, so every subject starts in the same column. */
   graphWidth: number
+  /** Shared with the header (gitGraphColumnsForWidth). */
+  columns: GitGraphColumns
   selected: boolean
   /** The list's single roving tab stop; arrow keys move it. */
   isTabStop?: boolean
@@ -159,6 +188,8 @@ export function GitGraphFullRow({
   headRefId?: string
   /** Not on the checked-out branch: muted, like IntelliJ's "Highlight current branch". */
   dimmed?: boolean
+  /** Right-click menu content (the sidebar's commit menu); boundary rows never get one. */
+  contextMenu?: React.ReactNode
   /** Gets the click so Cmd/Ctrl- and Shift-click can extend the selection. */
   onSelect: (event: React.MouseEvent) => void
 }): React.JSX.Element {
@@ -171,14 +202,14 @@ export function GitGraphFullRow({
   const extraRefs = refs.filter((ref) => ref !== primaryRef)
   const cells = (
     <>
-      <div className="flex h-6 items-center" style={{ width: graphWidth }}>
+      <div data-col="graph" className="flex h-6 items-center" style={{ width: graphWidth }}>
         <GitHistoryGraphSvg viewModel={viewModel} />
       </div>
-      <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-        {primaryRef && (
+      <div data-col="message" className="flex min-w-0 items-center gap-1.5 overflow-hidden">
+        {columns.refs && primaryRef && (
           // Why capped, and gone on a tiny list: refs must not squeeze the message to nothing;
           // the details pane lists them all.
-          <div className="flex max-w-[45%] min-w-0 shrink-0 items-center gap-1 overflow-hidden @max-sm:hidden">
+          <div className="flex max-w-[45%] min-w-0 shrink-0 items-center gap-1 overflow-hidden">
             <span className="flex min-w-16 shrink">
               <GitGraphRefBadge itemRef={primaryRef} isHead={primaryRef.id === headRefId} />
             </span>
@@ -203,45 +234,50 @@ export function GitGraphFullRow({
           {item.subject}
         </span>
       </div>
-      <span
-        className={cn(
-          'flex min-w-0 items-center gap-1.5 text-muted-foreground',
-          GIT_GRAPH_AUTHOR_COLUMN
-        )}
-      >
-        {item.author && <GitGraphAuthorAvatar name={item.author} email={item.authorEmail} />}
-        <span className="truncate" title={item.authorEmail}>
-          {item.author}
+      {columns.author && (
+        <span data-col="author" className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+          {item.author && <GitGraphAuthorAvatar name={item.author} email={item.authorEmail} />}
+          <span className="truncate" title={item.authorEmail}>
+            {item.author}
+          </span>
         </span>
-      </span>
-      <span
-        className={cn('truncate text-muted-foreground tabular-nums', GIT_GRAPH_DATE_COLUMN)}
-        title={[
-          formatGitHistoryTimestamp(item.timestamp),
-          formatGitGraphRelativeDate(item.timestamp)
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-      >
-        {formatGitGraphCompactDate(item.timestamp)}
-      </span>
-      <span className={cn('truncate font-mono text-muted-foreground', GIT_GRAPH_HASH_COLUMN)}>
-        {item.displayId}
-      </span>
+      )}
+      {columns.date && (
+        <span
+          data-col="date"
+          className="truncate text-muted-foreground tabular-nums"
+          title={[
+            formatGitHistoryTimestamp(item.timestamp),
+            formatGitGraphRelativeDate(item.timestamp)
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        >
+          {formatGitGraphCompactDate(item.timestamp)}
+        </span>
+      )}
+      {columns.hash && (
+        <span data-col="hash" className="truncate font-mono text-muted-foreground">
+          {/* Why: boundary markers carry a placeholder id (0000000), not a commit hash. */}
+          {isBoundaryNode ? null : item.displayId}
+        </span>
+      )}
     </>
   )
-  const rowClassName = cn(
-    'grid h-6 w-full min-w-0 items-center gap-x-3 px-3 text-left text-xs',
-    GIT_GRAPH_FULL_ROW_COLUMNS
-  )
+  const rowClassName = 'grid h-6 w-full min-w-0 items-center gap-x-3 px-3 text-left text-xs'
+  const gridStyle = { gridTemplateColumns: gitGraphGridTemplate(columns) }
   if (isBoundaryNode) {
     return (
-      <div className={cn(rowClassName, 'text-muted-foreground')} data-testid="git-graph-full-row">
+      <div
+        className={cn(rowClassName, 'text-muted-foreground')}
+        style={gridStyle}
+        data-testid="git-graph-full-row"
+      >
         {cells}
       </div>
     )
   }
-  return (
+  const button = (
     <button
       type="button"
       className={cn(
@@ -250,6 +286,7 @@ export function GitGraphFullRow({
         // Why: the selected look (main.css) must not be washed out by the plain hover tint.
         !selected && 'hover:bg-accent/40 focus-visible:bg-accent/40'
       )}
+      style={gridStyle}
       aria-pressed={selected}
       tabIndex={isTabStop ? 0 : -1}
       data-git-graph-row=""
@@ -261,5 +298,14 @@ export function GitGraphFullRow({
     >
       {cells}
     </button>
+  )
+  if (!contextMenu) {
+    return button
+  }
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{button}</ContextMenuTrigger>
+      {contextMenu}
+    </ContextMenu>
   )
 }
