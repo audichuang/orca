@@ -8,7 +8,7 @@ import { folderSidebarHiddenRepoKey } from './folder-sidebar-hidden-repos'
 
 type FolderOwner = Pick<Repo, 'connectionId' | 'executionHostId'>
 
-// Why deeper than Add Project's default 3: monorepo folders nest repos inside repos (cat/docs/etf).
+// Why deeper than Add Project's default 3: monorepo folders nest repos inside repos (folder/docs/guide).
 export const FOLDER_NESTED_REPO_SCAN_OPTIONS = { descendIntoRepos: true, maxDepth: 4 }
 
 /**
@@ -60,7 +60,7 @@ export function getNewNestedRepoCandidatesFromState(
   })
 }
 
-/** Path shown in the picker, relative to the folder so nested repos read as `docs/etf`. */
+/** Path shown in the picker, relative to the folder so nested repos read as `docs/guide`. */
 export function nestedRepoRelativeLabel(folderPath: string, repoPath: string): string {
   const trimmed = folderPath.replace(/[\\/]+$/, '')
   const rest = repoPath.slice(trimmed.length)
