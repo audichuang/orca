@@ -19022,7 +19022,10 @@
         "repoSwitcher": "Dépôt",
         "selectRepo": "Sélectionner un dépôt",
         "searchRepos": "Rechercher des dépôts...",
-        "noRepos": "Aucun dépôt trouvé."
+        "noRepos": "Aucun dépôt trouvé.",
+        "addRepos": "Ajouter les dépôts de ce dossier...",
+        "addReposMissing": "Ajouter les dépôts de ce dossier ({{value0}} non ajoutés)...",
+        "addReposButton": "Ajouter les dépôts de ce dossier"
       }
     },
     "i18n": {
