@@ -206,7 +206,7 @@ export function useGitGraphBranchContext(args: {
   activeRepoTarget: RuntimeClientTarget | null
   result: GitHistoryResult | undefined
   viewModels: readonly GitHistoryItemViewModel[]
-  jumpTo: (commitId: string) => void
+  jumpTo: GitGraphSelectionState['jumpTo']
 }): GitGraphBranchContext {
   const {
     ownerKey: refOwnerKey,
@@ -285,7 +285,8 @@ export function useGitGraphBranchContext(args: {
       containment,
       branchNames,
       headRefId,
-      onJump: jumpTo
+      // Why focus: the clicked link unmounts with the old selection, and arrow keys must keep working.
+      onJump: (commitId: string) => jumpTo(commitId, { focus: true })
     }
   }, [containment, headRefId, jumpTo, result, viewModels])
 
