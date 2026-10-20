@@ -15,8 +15,9 @@ type Scanned = { folderPath: string; repos: NestedRepoCandidate[]; partial: bool
 
 export type GitGraphFolderAddRepos = {
   folderWorkspace: FolderWorkspace
-  /** Menu entry text; carries the not-added count once the scan lands. */
   label: string
+  /** Not-added count once the scan lands, null before then. */
+  missingLabel: string | null
   /** True once a finished scan found nothing left to add. */
   allAdded: boolean
   /** Scans the folder once; called when the repo menu opens so the tab mount stays cheap. */
@@ -71,13 +72,17 @@ export function useGitGraphFolderAddRepos(workspaceId: string): GitGraphFolderAd
   if (!local || !folderWorkspace) {
     return null
   }
-  const label =
+  const missingLabel =
     missing !== null && missing > 0
-      ? translate(
-          'auto.components.gitGraphTab.addReposMissing',
-          'Add repositories in this folder ({{value0}} not added)...',
-          { value0: scanned?.partial ? `${missing}+` : missing }
-        )
-      : translate('auto.components.gitGraphTab.addRepos', 'Add repositories in this folder...')
-  return { folderWorkspace, label, allAdded: missing === 0 && !scanned?.partial, scan }
+      ? translate('auto.components.gitGraphTab.addReposMissing', '{{value0}} not added', {
+          value0: scanned?.partial ? `${missing}+` : missing
+        })
+      : null
+  return {
+    folderWorkspace,
+    label: translate('auto.components.gitGraphTab.addRepos', 'Add repositories...'),
+    missingLabel,
+    allAdded: missing === 0 && !scanned?.partial,
+    scan
+  }
 }
