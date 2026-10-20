@@ -261,17 +261,27 @@ export function useGitHistoryCommitActions({
           })
         return
       }
+      // Why like Copy Full Source: inside a multi-selection the copy covers it, in graph order.
+      const targets = selectedItems && selectedItems.length > 1 ? selectedItems : [item]
       if (action === 'copy-hash') {
         void copyCommitText(
-          item.id,
-          translate('auto.components.right.sidebar.SourceControl.d172a4f068', 'Commit hash')
+          targets.map((target) => target.id).join('\n'),
+          targets.length > 1
+            ? translate('auto.components.right.sidebar.SourceControl.commitHashes', 'Commit hashes')
+            : translate('auto.components.right.sidebar.SourceControl.d172a4f068', 'Commit hash')
         )
         return
       }
       if (action === 'copy-message') {
         void copyCommitText(
-          item.message || item.subject,
-          translate('auto.components.right.sidebar.SourceControl.e283b50179', 'Commit message')
+          // A blank line keeps multi-line messages apart.
+          targets.map((target) => target.message || target.subject).join('\n\n'),
+          targets.length > 1
+            ? translate(
+                'auto.components.right.sidebar.SourceControl.commitMessages',
+                'Commit messages'
+              )
+            : translate('auto.components.right.sidebar.SourceControl.e283b50179', 'Commit message')
         )
         return
       }
