@@ -14837,7 +14837,10 @@
             "filesInCommits": "변경된 파일 ({{files}}) · 커밋 {{commits}}개",
             "filesChanged": "변경된 파일 ({{files}})",
             "toggleBranches": "브랜치 패널 전환",
-            "openShort": "Git Graph"
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "{{count}}행 아래 {{sha}} {{subject}}(으)로 이어집니다. 클릭하면 이동합니다.",
+            "laneComesFromAbove": "{{count}}행 위 {{sha}} {{subject}}에서 이어집니다. 클릭하면 이동합니다.",
+            "laneContinuesPastLoaded": "아직 불러오지 않은 이전 커밋으로 이어집니다"
           },
           "GitGraphBranchSidebar": {
             "local": "로컬",
