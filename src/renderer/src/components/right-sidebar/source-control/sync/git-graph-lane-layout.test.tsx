@@ -229,6 +229,42 @@ describe('buildGitGraphLaneRows', () => {
     }
   })
 
+  it('jumps through an Incoming Changes row to the commit behind it', () => {
+    const currentRef: GitHistoryItemRef = {
+      id: 'refs/heads/feature',
+      name: 'feature',
+      revision: 'h0'
+    }
+    const remoteRef: GitHistoryItemRef = {
+      id: 'refs/remotes/origin/feature',
+      name: 'origin/feature',
+      revision: 'R',
+      category: 'remote branches'
+    }
+    const viewModels = buildGitHistoryViewModels(
+      [
+        { ...item('R', ['B']), references: [remoteRef] },
+        { ...item('h0', ['h1']), references: [currentRef] },
+        ...chain('h', 1, 29, ['B']),
+        item('B', [])
+      ],
+      buildDefaultGitHistoryColorMap({ currentRef, remoteRef }),
+      currentRef,
+      remoteRef,
+      undefined,
+      true,
+      true,
+      'B'
+    )
+    const rows = buildGitGraphLaneRows(viewModels)
+    expectSoundLayout(viewModels, rows)
+    const targets = [...folds(rows, 'fold-down'), ...folds(rows, 'fold-up')].map((f) => f.target)
+    expect(targets.length).toBeGreaterThan(0)
+    expect(targets).toContain('B')
+    const loaded = new Set(['R', 'B', ...chain('h', 0, 29, []).map((c) => c.id)])
+    expect(targets.every((id) => id !== undefined && loaded.has(id))).toBe(true)
+  })
+
   it('folds a long edge into stubs that point at each other and frees its lane between them', () => {
     const viewModels = buildGitHistoryViewModels([item('b0', ['m30']), ...chain('m', 0, 40, [])])
     const rows = buildGitGraphLaneRows(viewModels, 20, 2)
