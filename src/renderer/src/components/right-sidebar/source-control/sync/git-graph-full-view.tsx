@@ -356,7 +356,7 @@ export function GitGraphFullView({
                   )
                 }
                 onSelect={(event) => selection.handleRowSelect(viewModel.historyItem, event)}
-                onJump={jumpTo}
+                onJump={(commitId) => jumpTo(commitId, { focus: true })}
               />
             ))}
             {result && <GitHistoryGraphLoadMore worktreeId={worktreeId} state={state} />}
