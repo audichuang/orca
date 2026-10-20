@@ -3,7 +3,9 @@ import { ORCA_EDITOR_FILE_SAVED_EVENT, type EditorFileSavedDetail } from './edit
 import { createEditorSaveQueue } from './editor-save-queue'
 import {
   createEditorStore,
-  stubEditorWindowWithDisk
+  createFakeEditorDisk,
+  stubEditorWindowWithDisk,
+  withLoadedBaselines
 } from './editor-autosave-controller-test-fixture'
 
 // Fork contract: folder Source Control (use-folder-repo-status-refresh) resolves the saved file via
@@ -12,7 +14,7 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe('ORCA_EDITOR_FILE_SAVED_EVENT producer', () => {
   it('fires after a real save with a fileId that names an open file', async () => {
-    stubEditorWindowWithDisk()
+    const disk = stubEditorWindowWithDisk(createFakeEditorDisk({ '/work/core/a.ts': 'prev' }))
     const store = createEditorStore()
     store.getState().openFile({
       filePath: '/work/core/a.ts',
@@ -21,6 +23,8 @@ describe('ORCA_EDITOR_FILE_SAVED_EVENT producer', () => {
       language: 'typescript',
       mode: 'edit'
     })
+    // Why: saves with no known disk version are refused, so the tab needs the baseline a load stamps.
+    withLoadedBaselines(store, disk)
     const file = store.getState().openFiles.find((f) => f.filePath === '/work/core/a.ts')!
     store.getState().setEditorDraft(file.id, 'next')
     store.getState().markFileDirty(file.id, true)
