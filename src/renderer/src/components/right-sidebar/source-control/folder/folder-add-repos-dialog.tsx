@@ -12,20 +12,17 @@ import {
 import { Label } from '@/components/ui/label'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { getAllWorktreesFromState } from '@/store/selectors'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspace-types'
 import type { NestedRepoCandidate } from '../../../../../../shared/project-group-types'
 import {
-  getNewNestedRepoCandidates,
+  FOLDER_NESTED_REPO_SCAN_OPTIONS,
+  getNewNestedRepoCandidatesFromState,
   nestedRepoRelativeLabel
 } from './folder-nested-repo-candidates'
 import {
   folderSidebarHiddenRepoKey,
   setReposHiddenFromSidebar
 } from './folder-sidebar-hidden-repos'
-
-// Why deeper than Add Project's default 3: monorepo folders nest repos inside repos (cat/docs/etf).
-const SCAN_OPTIONS = { descendIntoRepos: true, maxDepth: 4 }
 
 type ScanState =
   | { phase: 'scanning' }
@@ -49,23 +46,15 @@ export function FolderAddReposDialog({
   useEffect(() => {
     let cancelled = false
     window.api.projectGroups
-      .scanNested({ path: folderPath, options: SCAN_OPTIONS })
+      .scanNested({ path: folderPath, options: FOLDER_NESTED_REPO_SCAN_OPTIONS })
       .then((result) => {
         if (!cancelled) {
           // Why: the repo list is read once, so repos added while the dialog is open never vanish from it.
-          const state = useAppStore.getState()
-          const candidates = getNewNestedRepoCandidates({
-            folderPath,
-            folderOwner: folderWorkspace,
-            scanned: result.repos,
-            repos: state.repos,
-            worktrees: [
-              ...getAllWorktreesFromState(state),
-              ...Object.entries(state.detectedWorktreesByRepo).flatMap(([repoId, detected]) =>
-                (detected?.worktrees ?? []).map((worktree) => ({ repoId, path: worktree.path }))
-              )
-            ]
-          })
+          const candidates = getNewNestedRepoCandidatesFromState(
+            useAppStore.getState(),
+            folderWorkspace,
+            result.repos
+          )
           setScan({ phase: 'ready', candidates, truncated: result.truncated || result.timedOut })
         }
       })
