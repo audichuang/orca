@@ -64,7 +64,7 @@ function worktree(name: string): Worktree {
 // A fresh folder id per render, so the module-level remembered pick cannot leak between tests.
 let folderCount = 0
 
-function renderPanel(changeCounts: Record<string, number>): void {
+function renderPanel(changeCounts: Record<string, number>, names: readonly string[] = NAMES): void {
   folderCount += 1
   const folderId = `folder-${folderCount}`
   useAppStore.setState({
@@ -86,10 +86,10 @@ function renderPanel(changeCounts: Record<string, number>): void {
         updatedAt: 0
       }
     ],
-    repos: NAMES.map(repo),
-    worktreesByRepo: Object.fromEntries(NAMES.map((name) => [`repo-${name}`, [worktree(name)]])),
+    repos: names.map(repo),
+    worktreesByRepo: Object.fromEntries(names.map((name) => [`repo-${name}`, [worktree(name)]])),
     gitStatusByWorktree: Object.fromEntries(
-      NAMES.map((name) => [
+      names.map((name) => [
         `wt-${name}`,
         Array.from({ length: changeCounts[name] ?? 0 }, (_, i) => ({
           path: `f${i}.ts`,
@@ -159,5 +159,43 @@ describe('FolderMultiRepoPanel accordion', () => {
     renderPanel({ api: 3, core: 0, web: 12 })
     expect(header('api')).toHaveTextContent('3')
     expect(header('web')).toHaveTextContent('12')
+  })
+})
+
+const MANY = ['api', 'billing', 'core', 'inv-bfs', 'inv-svc-bfs', 'inv-web', 'web'] as const
+const filterBox = () => screen.getByRole('textbox', { name: 'Filter repositories' })
+
+describe('FolderMultiRepoPanel filter', () => {
+  it('has no filter box for a short repo list', () => {
+    renderPanel({ api: 1 })
+    expect(screen.queryByRole('textbox', { name: 'Filter repositories' })).toBeNull()
+  })
+
+  it('narrows the headers to repos matching every typed term and keeps the open one', () => {
+    renderPanel({ api: 1 }, MANY)
+    expect(openPanel()).toBe('wt-api')
+    fireEvent.change(filterBox(), { target: { value: 'inv bfs' } })
+    expect(screen.getAllByRole('button', { name: /^inv-/ }).map((row) => row.textContent)).toEqual([
+      'inv-bfs (main)0',
+      'inv-svc-bfs (main)0'
+    ])
+    expect(screen.queryByRole('button', { name: /^web / })).toBeNull()
+    expect(header('api')).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('opens the top match on Enter and clears on Escape', () => {
+    renderPanel({}, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'svc' } })
+    fireEvent.keyDown(filterBox(), { key: 'Enter' })
+    expect(openPanel()).toBe('wt-inv-svc-bfs')
+    fireEvent.keyDown(filterBox(), { key: 'Escape' })
+    expect(filterBox()).toHaveValue('')
+    expect(header('web')).toBeInTheDocument()
+  })
+
+  it('says so when nothing matches', () => {
+    renderPanel({}, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'zzz' } })
+    expect(screen.getByText('No repositories match')).toBeInTheDocument()
   })
 })
