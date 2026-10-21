@@ -51,8 +51,21 @@ describe('forkPrGateErrors', () => {
     expect(forkPrGateErrors(workflow())).toEqual([])
   })
 
-  it('accepts the required script with CRLF line endings', () => {
-    expect(forkPrGateErrors(workflow().replace(/\n/g, '\r\n'))).toEqual([])
+  it('rejects CRLF line endings', () => {
+    expect(forkPrGateErrors(workflow().replace(/\n/g, '\r\n'))).toEqual([
+      `fork-pr-gate: ${WORKFLOW} must be printable ASCII with LF line endings; line 1 is not`
+    ])
+  })
+
+  it.each(['windows-latest', 'self-hosted', '${{ matrix.os }}'])('rejects runs-on %s', (runner) => {
+    expect(
+      forkPrGateErrors(
+        workflow().replace(
+          'runs-on: ubuntu-24.04\n    steps:\n      -',
+          `runs-on: ${runner}\n    steps:\n      -`
+        )
+      )
+    ).toEqual(['fork-pr-gate: verify must run on an ubuntu-<version> runner'])
   })
 
   it.each([
@@ -126,7 +139,7 @@ describe('forkPrGateErrors', () => {
     )
   })
 
-  it.each(['\u0085', ' ', ' '])(
+  it.each(['\r', ...[0x85, 0x2028, 0x2029].map((code) => String.fromCharCode(code))])(
     'rejects a non-ASCII line separator that hides a key from the parser (%j)',
     (separator) => {
       const source = workflow().replace(
@@ -134,7 +147,7 @@ describe('forkPrGateErrors', () => {
         `runs-on: ubuntu-24.04 # note${separator}    continue-on-error: true\n    steps:\n      - name`
       )
       expect(forkPrGateErrors(source)).toEqual([
-        `fork-pr-gate: ${WORKFLOW} must be ASCII; line 12 is not`
+        `fork-pr-gate: ${WORKFLOW} must be printable ASCII with LF line endings; line 12 is not`
       ])
     }
   )
