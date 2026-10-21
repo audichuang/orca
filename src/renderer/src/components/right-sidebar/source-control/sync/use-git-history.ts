@@ -27,7 +27,8 @@ export function useSourceControlGitHistory({
   isBranchVisible,
   isGitHistoryExpanded,
   isGitHistoryVisible,
-  worktreeMap
+  worktreeMap,
+  graphFilterKey
 }: {
   activeRepoTarget: RuntimeClientTarget | null
   activeWorktreeId: string | null
@@ -38,6 +39,8 @@ export function useSourceControlGitHistory({
   isGitHistoryExpanded: boolean
   isGitHistoryVisible: boolean
   worktreeMap: ReadonlyMap<string, unknown>
+  /** Fork: the Git Graph tab's own filter key; defaults to the worktree's. */
+  graphFilterKey?: string
 }): {
   gitHistoryState: GitHistoryPanelState
   refreshGitHistory: () => Promise<void>
@@ -55,7 +58,7 @@ export function useSourceControlGitHistory({
   const ownerHostKey =
     activeRepoTarget?.kind === 'environment' ? activeRepoTarget.environmentId : ''
   // Fork: branch filter / search; undefined keeps upstream's HEAD-only request byte for byte.
-  const graphFilter = useGitHistoryGraphFilter(activeWorktreeId)
+  const graphFilter = useGitHistoryGraphFilter(graphFilterKey ?? activeWorktreeId)
   const graphRequest = useMemo(() => toGitHistoryGraphRequest(graphFilter), [graphFilter])
 
   useEffect(() => {
