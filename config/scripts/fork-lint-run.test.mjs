@@ -10,6 +10,10 @@ describe('fork-lint-run', () => {
     expect(parseLintSteps(LINT)).toEqual(['oxlint', 'pnpm run check:a', 'pnpm run check:skipped'])
   })
 
+  it('rejects a lint script whose commands a newline separates', () => {
+    expect(() => parseLintSteps('pnpm run a\npnpm run b')).toThrow('spans several lines')
+  })
+
   it('drops excluded steps and keeps the rest in order', () => {
     expect(applyExclusions(parseLintSteps(LINT), EXCLUDED)).toEqual(['oxlint', 'pnpm run check:a'])
   })
