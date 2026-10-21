@@ -25,6 +25,8 @@ import { FolderRepoPanelToolbar } from './folder-repo-panel-toolbar'
 import { FolderRepoRow } from './folder-repo-row'
 import {
   buildFolderRepoListItems,
+  expandFolderRepoGroup,
+  folderRepoGroupOf,
   getFolderRepoExpandedGroups,
   toggleFolderRepoGroup,
   type FolderRepoGroupId
@@ -38,10 +40,8 @@ import {
 } from './folder-sidebar-hidden-repos'
 import {
   getRememberedFolderRepo,
-  isFolderRepoListCollapsed,
   moveRepoSelection,
   rememberFolderRepo,
-  rememberFolderRepoListCollapsed,
   resolveFolderDefaultRepo,
   resolveSelectedRepoId,
   isFolderRepoSelectionKey
@@ -132,16 +132,6 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     ids: memberIds,
     firstDirtyId: landingId ?? undefined
   })
-  const [collapsed, setCollapsedState] = useState(() =>
-    isFolderRepoListCollapsed(folderWorkspaceKey)
-  )
-  const setCollapsed = useCallback(
-    (next: boolean) => {
-      setCollapsedState(next)
-      rememberFolderRepoListCollapsed(folderWorkspaceKey, next)
-    },
-    [folderWorkspaceKey]
-  )
   const selectRepo = useCallback(
     (id: string) => {
       setChosenId(id)
@@ -157,7 +147,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   }
   // Why: while filtering, the open repo's panel folds away so the matches sit right under the box.
   const filtering = showFilter && filter.trim() !== ''
-  const expandedIndex = collapsed || filtering ? -1 : memberIds.indexOf(selectedId)
+  const expandedIndex = filtering ? -1 : memberIds.indexOf(selectedId)
   const labels = useMemo(
     () => members.map((member) => folderRepoSectionLabel(member, members)),
     [members]
@@ -171,6 +161,28 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   )
   const toggleGroup = (group: FolderRepoGroupId) =>
     setExpandedGroups(toggleFolderRepoGroup(folderWorkspaceKey, group))
+  const selectedIndex = memberIds.indexOf(selectedId)
+  const selectedCount = selectedIndex === -1 ? undefined : changeCounts[selectedIndex]
+  const selectedGroup =
+    selectedCount === undefined
+      ? null
+      : folderRepoGroupOf(selectedCount, pendingSync[selectedIndex] ?? false)
+  // Why: once the open repo moves between groups (a refresh cleaned it, a filter pick), unfold its group;
+  // a first known status only seeds this, so No changes still starts folded.
+  const [selectedPlacement, setSelectedPlacement] = useState({
+    id: selectedId,
+    group: selectedGroup
+  })
+  if (selectedPlacement.id !== selectedId || selectedPlacement.group !== selectedGroup) {
+    setSelectedPlacement({ id: selectedId, group: selectedGroup })
+    if (
+      selectedPlacement.group !== null &&
+      selectedGroup !== null &&
+      !expandedGroups.has(selectedGroup)
+    ) {
+      setExpandedGroups(expandFolderRepoGroup(folderWorkspaceKey, selectedGroup))
+    }
+  }
   const listItems = buildFolderRepoListItems({
     visibleIndexes: filterFolderRepoIndexes(labels, filtering ? filter : ''),
     changeCounts,
@@ -184,24 +196,17 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   const visibleIds = listItems.flatMap((item) =>
     item.kind === 'repo' ? [memberIds[item.index]] : []
   )
-  const { listRef, rovingId, focusRepo, keepFocusAfterToggle } = useFolderRepoRowFocus(
-    visibleIds,
-    selectedId
-  )
-  // Why: judged by what is drawn, so a match picked while filtering opens even if it was the open repo.
-  const toggleRepo = (id: string) => {
+  const { listRef, rovingId, focusRepo, keepFocusAfterToggle, onListFocus, onListBlur } =
+    useFolderRepoRowFocus(visibleIds, selectedId)
+  // Why no toggle-off: re-picking the open repo keeps it open, so the panel below is never left blank.
+  const openRepo = (id: string) => {
     keepFocusAfterToggle(id)
-    if (memberIds.indexOf(id) === expandedIndex) {
-      setCollapsed(true)
-      return
-    }
     setFilter('')
     selectRepo(id)
-    setCollapsed(false)
   }
-  const selectedMember = members[memberIds.indexOf(selectedId)]
+  const selectedMember = members[selectedIndex]
   const showDetail = selectedMember !== undefined && expandedIndex !== -1
-  // Accordion keys: arrows/Home/End move focus between headers; Enter/Space opens or closes one.
+  // List keys: arrows/Home/End move focus and select, like an editor's file list; Enter/Space re-pick.
   const onListKeyDown = (event: React.KeyboardEvent) => {
     // Why: only the repo rows navigate; arrow keys on a row's Copy button must not move focus.
     if (
@@ -217,6 +222,8 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     }
     event.preventDefault()
     focusRepo(nextId)
+    // Why the filter stays: arrowing walks the matches; a click or Enter is what ends the search.
+    selectRepo(nextId)
   }
   const firstMatchId = visibleIds[0]
 
@@ -267,7 +274,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
       changeCount={changeCounts[index] ?? 0}
       focusable={member.worktree.id === rovingId}
       expanded={index === expandedIndex}
-      onToggle={() => toggleRepo(member.worktree.id)}
+      onToggle={() => openRepo(member.worktree.id)}
       // Why main worktree only: the choice covers the whole repo, so a linked worktree's row would hide its siblings too.
       sidebarHidden={
         member.containsFolder || !member.worktree.isMainWorktree
@@ -347,7 +354,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
           onChange={setFilter}
           noMatch={firstMatchId === undefined}
           onFocusFirst={() => firstMatchId !== undefined && focusRepo(firstMatchId)}
-          onOpenFirst={() => firstMatchId !== undefined && toggleRepo(firstMatchId)}
+          onOpenFirst={() => firstMatchId !== undefined && openRepo(firstMatchId)}
         />
       )}
       {/* Why: one list scroller with the open repo's full panel pinned below it, so its commit dock sits at the bottom like a repo workspace. */}
@@ -359,6 +366,8 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
           'Repositories'
         )}
         onKeyDown={onListKeyDown}
+        onFocus={onListFocus}
+        onBlur={onListBlur}
         className="flex min-h-0 flex-1 flex-col"
       >
         <FolderRepoList
@@ -377,7 +386,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
                 key={selectedId}
                 gitWorktreeId={selectedId}
                 editorWorktreeId={folderWorkspaceKey}
-                label={names[expandedIndex]}
+                label={names[selectedIndex]}
                 color={repoColor(selectedMember.repo)}
               />
             </div>
