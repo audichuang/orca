@@ -28,4 +28,6 @@ export type GitHistoryPanelSlots = {
     items: readonly GitHistoryItem[],
     ...args: Parameters<GitHistoryCommitFilesMenuRenderer>
   ) => React.ReactNode
+  /** Commit context menu entry that opens the commit in the Git Graph tab. */
+  onShowCommitInGraph?: (item: GitHistoryItem) => void
 }
