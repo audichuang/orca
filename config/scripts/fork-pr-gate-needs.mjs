@@ -13,12 +13,7 @@ function gateNeeds(gate) {
   return [gate.needs ?? []].flat()
 }
 
-export function gateNeedsErrors(workflow) {
-  const jobs = workflow?.jobs ?? {}
-  const gate = jobs[GATE]
-  if (!gate) {
-    return [`fork-pr-gate: ${WORKFLOW} has no \`${GATE}\` job`]
-  }
+function gateNeedsErrors(jobs, gate) {
   const needs = gateNeeds(gate)
   const others = Object.keys(jobs).filter((job) => job !== GATE)
   return [
@@ -48,11 +43,7 @@ function needsContext(needs, failing, result) {
 }
 
 // Why execute the step instead of matching its text: any rewrite that lets a non-success through must fail here.
-export async function gateSuccessErrors(workflow, run = runWithBash) {
-  const gate = workflow?.jobs?.[GATE]
-  if (!gate) {
-    return [`fork-pr-gate: ${WORKFLOW} has no \`${GATE}\` job`]
-  }
+async function gateSuccessErrors(gate, run = runWithBash) {
   const steps = (gate.steps ?? []).filter(
     (step) => String(step.env?.RESULTS ?? '').replace(/\s+/g, '') === RESULTS_EXPRESSION
   )
@@ -83,8 +74,12 @@ export async function gateSuccessErrors(workflow, run = runWithBash) {
 }
 
 export async function forkPrGateErrors(source) {
-  const workflow = parse(source)
-  return [...gateNeedsErrors(workflow), ...(await gateSuccessErrors(workflow))]
+  const jobs = parse(source)?.jobs ?? {}
+  const gate = jobs[GATE]
+  if (!gate) {
+    return [`fork-pr-gate: ${WORKFLOW} has no \`${GATE}\` job`]
+  }
+  return [...gateNeedsErrors(jobs, gate), ...(await gateSuccessErrors(gate))]
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
