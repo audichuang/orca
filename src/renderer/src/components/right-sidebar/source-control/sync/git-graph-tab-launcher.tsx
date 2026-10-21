@@ -63,6 +63,7 @@ export function GitGraphTabLauncher({
         variant="ghost"
         size="icon-xs"
         className="my-auto"
+        data-git-graph-launcher="commits"
         aria-label={openGitGraphLabel()}
         onClick={() => openGitGraphTab(workspaceId, { repoWorktreeId })}
       >
