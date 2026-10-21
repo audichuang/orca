@@ -15,6 +15,8 @@ import type { GitLabProjectRef } from '../../gitlab/gitlab-types'
 import type { PRCheckDetail, PRCheckRunDetails } from '../../github/checks/check-types'
 import type { GitHubRepositoryIdentity } from '../../github/repositories/repository-identity'
 
+import type { GitHistoryGraphSavedFilter } from '../../git-history-graph-query-types'
+
 export type DiffSource =
   | 'unstaged'
   | 'staged'
@@ -87,6 +89,8 @@ export type OpenCheckRunDetailsState = {
 /** Fork: a Git Graph tab's repo worktree, which may differ from the workspace hosting the tab. */
 export type OpenGitGraphState = {
   repoWorktreeId: string
+  /** Absent on tabs from older builds, which then open on the tab default. */
+  filter?: GitHistoryGraphSavedFilter
 }
 
 /** An editor tab's view, keyed by its mode, with exactly the open-file fields that mode uses today. The view is not saved. */
