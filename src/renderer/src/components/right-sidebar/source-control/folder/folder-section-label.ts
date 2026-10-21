@@ -13,17 +13,31 @@ function baseName(member: LabelMember, members: readonly LabelMember[]): string 
   return sharesRepo ? basename(member.worktree.path) : member.repo.displayName
 }
 
-/** Section title: the repo name, or the worktree folder name when one repo has several sections. */
+/** Row title: the repo name, or the worktree folder name when one repo has several rows. */
+export function folderRepoSectionName(
+  member: LabelMember,
+  members: readonly LabelMember[]
+): string {
+  const name = baseName(member, members)
+  // Why: identical titles (same folder name under different parents) need the parent folder to be told apart.
+  if (members.some((other) => other !== member && baseName(other, members) === name)) {
+    return `${basename(dirname(member.worktree.path))}/${basename(member.worktree.path)}`
+  }
+  return name
+}
+
+/** Checked-out branch name, or null when HEAD is detached. */
+export function folderRepoSectionBranch(member: LabelMember): string | null {
+  const identity = getWorktreeGitIdentityDisplay(member.worktree)
+  return identity?.kind === 'branch' ? identity.branchName : null
+}
+
+/** Name and branch as one string, which is what the repo filter matches against. */
 export function folderRepoSectionLabel(
   member: LabelMember,
   members: readonly LabelMember[]
 ): string {
-  const identity = getWorktreeGitIdentityDisplay(member.worktree)
-  const branch = identity?.kind === 'branch' ? identity.branchName : null
-  let name = baseName(member, members)
-  // Why: identical titles (same folder name under different parents) need the parent folder to be told apart.
-  if (members.some((other) => other !== member && baseName(other, members) === name)) {
-    name = `${basename(dirname(member.worktree.path))}/${basename(member.worktree.path)}`
-  }
+  const name = folderRepoSectionName(member, members)
+  const branch = folderRepoSectionBranch(member)
   return branch ? `${name} (${branch})` : name
 }
