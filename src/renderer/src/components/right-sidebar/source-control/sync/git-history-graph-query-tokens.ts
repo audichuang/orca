@@ -2,6 +2,7 @@
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import {
   getDefaultGitHistoryGraphFilter,
+  isGitGraphTabFilterKeyOf,
   setGitHistoryGraphDraftQuery,
   splitGitHistoryGraphQuery,
   updateGitHistoryGraphFilter
@@ -97,6 +98,17 @@ export function rememberGitHistoryGraphPath(worktreeId: string, path: string): v
 
 export function listRecentGitHistoryGraphPaths(worktreeId: string): readonly string[] {
   return recentPaths.get(worktreeId) ?? []
+}
+
+/** Drops the remembered authors and paths of a closed Git Graph tab. */
+export function forgetGitGraphTabQueryMemory(tabFileId: string): void {
+  for (const map of [seenAuthors, recentPaths]) {
+    for (const key of map.keys()) {
+      if (isGitGraphTabFilterKeyOf(key, tabFileId)) {
+        map.delete(key)
+      }
+    }
+  }
 }
 
 /** Also forgets remembered authors. */

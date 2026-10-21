@@ -44,8 +44,10 @@ import {
   rememberFolderRepo,
   resolveFolderDefaultRepo,
   resolveSelectedRepoId,
-  isFolderRepoSelectionKey
+  isFolderRepoSelectionKey,
+  useRememberedFolderRepo
 } from './folder-repo-selection'
+import { pickFolderRepo } from '../../../git-graph-tab/git-graph-source-control-link'
 import {
   folderRepoSectionBranch,
   folderRepoSectionLabel,
@@ -114,9 +116,8 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
       })
     )
   )
-  const [chosenId, setChosenId] = useState<string | null>(() =>
-    getRememberedFolderRepo(folderWorkspaceKey)
-  )
+  // Why shared: the folder's Git Graph tab writes the same pick when its repo switcher changes.
+  const chosenId = useRememberedFolderRepo(folderWorkspaceKey)
   const [defaultId, setDefaultId] = useState<string | null>(null)
   const memberIds = members.map((member) => member.worktree.id)
   const landingId = resolveFolderDefaultRepo(memberIds, changeCounts)
@@ -124,8 +125,12 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   useEffect(() => {
     if (defaultId === null && landingId !== null) {
       setDefaultId(landingId)
+      // Why share it: a Git Graph tab opened later should land on the same repo as this list.
+      if (getRememberedFolderRepo(folderWorkspaceKey) === null) {
+        rememberFolderRepo(folderWorkspaceKey, landingId)
+      }
     }
-  }, [defaultId, landingId])
+  }, [defaultId, folderWorkspaceKey, landingId])
   const selectedId = resolveSelectedRepoId({
     chosenId,
     defaultId,
@@ -133,10 +138,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     firstDirtyId: landingId ?? undefined
   })
   const selectRepo = useCallback(
-    (id: string) => {
-      setChosenId(id)
-      rememberFolderRepo(folderWorkspaceKey, id)
-    },
+    (id: string, opts?: { defer?: boolean }) => pickFolderRepo(folderWorkspaceKey, id, opts),
     [folderWorkspaceKey]
   )
   const [filter, setFilter] = useState('')
@@ -223,7 +225,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     event.preventDefault()
     focusRepo(nextId)
     // Why the filter stays: arrowing walks the matches; a click or Enter is what ends the search.
-    selectRepo(nextId)
+    selectRepo(nextId, { defer: true })
   }
   const firstMatchId = visibleIds[0]
 
