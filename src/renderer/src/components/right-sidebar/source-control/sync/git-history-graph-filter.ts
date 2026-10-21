@@ -89,20 +89,52 @@ export function useGitHistoryGraphFilter(worktreeId: string | null): GitHistoryG
   return useSyncExternalStore(subscribe, () => getGitHistoryGraphFilter(worktreeId))
 }
 
-const QUERY_TOKEN = /(author|path):(?:"([^"]*)"|(\S+))/gi
+export type GitHistoryGraphQuerySegment =
+  | { kind: 'token'; key: 'author' | 'path'; value: string; raw: string }
+  | { kind: 'text'; raw: string }
+
+// Quoted values escape `"` and `\` with a backslash; a hand-typed trailing `\` falls back to a literal read.
+const QUERY_TOKEN = /(author|path):(?:"((?:[^"\\]|\\.)*)"|"([^"]*)"|(\S+))/gi
+
+/** The query as tokens and whitespace-free words, so callers can rewrite it without re-reading values. */
+export function splitGitHistoryGraphQuery(query: string): GitHistoryGraphQuerySegment[] {
+  const segments: GitHistoryGraphQuerySegment[] = []
+  const pushText = (text: string): void => {
+    for (const word of text.split(/\s+/)) {
+      if (word) {
+        segments.push({ kind: 'text', raw: word })
+      }
+    }
+  }
+  let end = 0
+  for (const match of query.matchAll(QUERY_TOKEN)) {
+    const start = match.index ?? end
+    pushText(query.slice(end, start))
+    const value =
+      match[2] !== undefined ? match[2].replace(/\\(["\\])/g, '$1') : (match[3] ?? match[4] ?? '')
+    segments.push({
+      kind: 'token',
+      key: match[1].toLowerCase() === 'author' ? 'author' : 'path',
+      value: value.trim(),
+      raw: match[0]
+    })
+    end = start + match[0].length
+  }
+  pushText(query.slice(end))
+  return segments
+}
 
 export function parseGitHistoryGraphQuery(query: string): GitHistoryGraphSearch {
   const search: GitHistoryGraphSearch = {}
-  const text = query
-    .replace(QUERY_TOKEN, (_match, key: string, quoted?: string, bare?: string) => {
-      const value = (quoted ?? bare ?? '').trim()
-      if (value) {
-        search[key.toLowerCase() === 'author' ? 'author' : 'path'] = value
-      }
-      return ' '
-    })
-    .replace(/\s+/g, ' ')
-    .trim()
+  const words: string[] = []
+  for (const segment of splitGitHistoryGraphQuery(query)) {
+    if (segment.kind === 'text') {
+      words.push(segment.raw)
+    } else if (segment.value) {
+      search[segment.key] = segment.value
+    }
+  }
+  const text = words.join(' ')
   return text ? { text, ...search } : search
 }
 
