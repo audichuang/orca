@@ -74,7 +74,10 @@ function FilterButton({
             className="min-w-0 justify-between"
           >
             {icon}
-            <span className="truncate">{shownValue ? `${label}: ${shownValue}` : label}</span>
+            {/* Why whitespace-pre: paths are matched literally, so repeated spaces must show. */}
+            <span className="overflow-hidden text-ellipsis whitespace-pre">
+              {shownValue ? `${label}: ${shownValue}` : label}
+            </span>
             <ChevronDown className="size-3 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -256,7 +259,7 @@ export function GitHistoryGraphFilterButtons({
                     onSelect={() => applyPath(entry)}
                   >
                     {check(entry === path)}
-                    <span className="truncate">{entry}</span>
+                    <span className="overflow-hidden text-ellipsis whitespace-pre">{entry}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>
