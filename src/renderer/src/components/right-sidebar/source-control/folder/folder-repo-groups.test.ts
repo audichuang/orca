@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildFolderRepoListItems,
+  expandFolderRepoGroup,
+  folderRepoGroupOf,
   getFolderRepoExpandedGroups,
   toggleFolderRepoGroup
 } from './folder-repo-groups'
@@ -59,5 +61,18 @@ describe('folder repo group expansion', () => {
     toggleFolderRepoGroup('folder:a', 'clean')
     expect(getFolderRepoExpandedGroups('folder:a').has('clean')).toBe(true)
     expect(getFolderRepoExpandedGroups('folder:b').has('clean')).toBe(false)
+  })
+
+  it('expands a group without toggling it closed when it is already open', () => {
+    expect(expandFolderRepoGroup('folder:c', 'clean').has('clean')).toBe(true)
+    expect(expandFolderRepoGroup('folder:c', 'clean').has('clean')).toBe(true)
+  })
+})
+
+describe('folderRepoGroupOf', () => {
+  it('treats a still-loading count or pending sync as changes', () => {
+    expect(folderRepoGroupOf(0, false)).toBe('clean')
+    expect(folderRepoGroupOf(undefined, false)).toBe('changes')
+    expect(folderRepoGroupOf(0, true)).toBe('changes')
   })
 })

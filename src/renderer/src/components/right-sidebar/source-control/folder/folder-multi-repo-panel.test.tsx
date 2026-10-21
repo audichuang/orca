@@ -112,8 +112,7 @@ function renderPanel(changeCounts: Record<string, number>, names: readonly strin
 }
 
 const rows = () => [...document.querySelectorAll<HTMLElement>('[data-repo-row]')]
-// The row's name span is its first text after the colour mark.
-const rowName = (row: HTMLElement) => row.querySelector('span:not([aria-hidden])')?.textContent
+const rowName = (row: HTMLElement) => row.querySelector('[data-repo-row-name]')?.textContent
 const header = (name: string) => {
   const row = rows().find((candidate) => rowName(candidate) === name)
   if (!row) {
@@ -126,6 +125,20 @@ const openPanel = () => screen.queryByTestId('repo-panel')?.textContent ?? null
 const groupToggle = (name: RegExp) => screen.getByRole('button', { name })
 const MANY = ['api', 'core', 'docs', 'orders-api', 'orders-web', 'payments-api', 'web'] as const
 const filterBox = () => screen.getByRole('textbox', { name: 'Filter repositories' })
+const filterlessOutside = () => screen.getByRole('button', { name: 'Refresh all repositories' })
+const setChanges = (name: string, count: number) =>
+  act(() =>
+    useAppStore.setState((s) => ({
+      gitStatusByWorktree: {
+        ...s.gitStatusByWorktree,
+        [`wt-${name}`]: Array.from({ length: count }, (_, i) => ({
+          path: `f${i}.ts`,
+          status: 'modified' as const,
+          area: 'unstaged' as const
+        }))
+      }
+    }))
+  )
 
 beforeEach(() => {
   useAppStore.setState(useAppStore.getInitialState(), true)
@@ -140,28 +153,30 @@ describe('FolderMultiRepoPanel accordion', () => {
     expect(openPanel()).toBe('wt-core')
   })
 
-  it('opens one repo at a time and collapses all when the open header is clicked', () => {
+  it('opens one repo at a time and keeps the open repo open when its row is clicked again', () => {
     renderPanel({ api: 1, core: 1, web: 1 })
     fireEvent.click(header('web'))
     expect(openPanel()).toBe('wt-web')
     expect(openRows()).toHaveLength(1)
     fireEvent.click(header('web'))
-    expect(openPanel()).toBeNull()
-    expect(openRows()).toHaveLength(0)
-    fireEvent.click(header('web'))
     expect(openPanel()).toBe('wt-web')
+    expect(header('web')).toHaveAttribute('aria-current', 'true')
   })
 
-  it('moves focus with arrow keys without opening, and Enter opens the focused repo', () => {
+  it('selects the repo arrow keys land on and switches the pinned panel', () => {
     renderPanel({ api: 1, core: 1, web: 1 })
     header('api').focus()
     fireEvent.keyDown(header('api'), { key: 'ArrowDown' })
     expect(header('core')).toHaveFocus()
-    expect(openPanel()).toBe('wt-api')
+    expect(openPanel()).toBe('wt-core')
+    expect(header('core')).toHaveAttribute('aria-current', 'true')
     fireEvent.keyDown(header('core'), { key: 'End' })
     expect(header('web')).toHaveFocus()
+    expect(openPanel()).toBe('wt-web')
     expect(header('web')).toHaveAttribute('tabindex', '0')
     expect(header('api')).toHaveAttribute('tabindex', '-1')
+    fireEvent.keyDown(header('web'), { key: 'Home' })
+    expect(openPanel()).toBe('wt-api')
   })
 
   it('keeps focus on a row when it opens', () => {
@@ -178,6 +193,20 @@ describe('FolderMultiRepoPanel accordion', () => {
     expect(header('api')).toHaveTextContent(/3$/)
     expect(header('web')).toHaveTextContent(/12$/)
     expect(header('core').textContent).not.toMatch(/\d/)
+  })
+
+  it('gives the hover actions their own track before the change count instead of covering it', () => {
+    renderPanel({ api: 10 })
+    const row = header('api').parentElement!
+    const actions = row.querySelector('[aria-label="Copy all changes"]')!.parentElement!
+    const count = [...row.querySelectorAll('span')].find((span) => span.textContent === '10')!
+    expect(header('api')).toHaveTextContent(/10$/)
+    // No layout in happy-dom: the grid tracks are what keep the count clear of the actions.
+    expect(actions).not.toHaveClass('absolute')
+    expect(actions).toHaveClass('col-start-2')
+    expect(count.parentElement).toHaveClass('col-start-3')
+    // display:none would drop eye/copy out of the Tab order, so idle hides by width and opacity instead.
+    expect(actions).not.toHaveClass('hidden')
   })
 
   it('shows the repo colour mark and the branch as its own column', () => {
@@ -216,14 +245,63 @@ describe('FolderMultiRepoPanel groups', () => {
     expect(rows().map(rowName)).toEqual(['api'])
   })
 
-  it('shows no row under a folded group once its open repo closes, and keeps focus in the list', () => {
-    renderPanel({ api: 0, core: 0, web: 0 })
+  it('unfolds No changes when a status refresh cleans the open repo, keeping its row focused', () => {
+    renderPanel({ api: 0, core: 2, web: 1 })
+    expect(groupToggle(/^No changes\s*1/)).toHaveAttribute('aria-expanded', 'false')
+    expect(openPanel()).toBe('wt-core')
+    header('core').focus()
+    setChanges('core', 0)
+    expect(groupToggle(/^No changes\s*2/)).toHaveAttribute('aria-expanded', 'true')
+    expect(openPanel()).toBe('wt-core')
+    expect(header('core')).toHaveFocus()
+  })
+
+  it('keeps focus in the list when a focused closed row is cleaned away by a status refresh', () => {
+    renderPanel({ api: 0, core: 2, web: 1 })
+    header('web').focus()
+    setChanges('web', 0)
+    expect(rows().map(rowName)).toEqual(['core'])
+    expect(document.activeElement).not.toBe(document.body)
+    expect(header('core')).toHaveFocus()
+  })
+
+  it('does not pull focus back into the list when it was elsewhere', () => {
+    renderPanel({ api: 0, core: 2, web: 1 })
+    filterlessOutside().focus()
+    setChanges('web', 0)
+    expect(filterlessOutside()).toHaveFocus()
+  })
+
+  it('leaves focus where the user moved it when an unrelated re-render follows', () => {
+    renderPanel({ api: 1, core: 1 })
     header('api').focus()
-    fireEvent.click(header('api'))
-    expect(openPanel()).toBeNull()
-    expect(rows()).toHaveLength(0)
-    expect(groupToggle(/^No changes\s*3/)).toHaveAttribute('aria-expanded', 'false')
-    expect(groupToggle(/^No changes\s*3/)).toHaveFocus()
+    act(() => {
+      header('api').blur()
+      setReposHiddenFromSidebar([useAppStore.getState().repos[0]], true)
+    })
+    expect(document.activeElement).toBe(document.body)
+    act(() => setReposHiddenFromSidebar([useAppStore.getState().repos[0]], false))
+    expect(document.activeElement).toBe(document.body)
+  })
+
+  it('does not pull focus back to a re-picked open row once the user moves on', () => {
+    renderPanel({ api: 1, core: 1, web: 1 })
+    fireEvent.click(header('web'))
+    fireEvent.click(header('web'))
+    filterlessOutside().focus()
+    setChanges('api', 3)
+    expect(filterlessOutside()).toHaveFocus()
+  })
+
+  // Enter/Space on a row button fire click, so this also covers the keyboard re-pick.
+  it('does not pull focus back after re-picking an arrowed-to open row once the user moves on', () => {
+    renderPanel({ api: 1, core: 1, web: 1 })
+    header('api').focus()
+    fireEvent.keyDown(header('api'), { key: 'ArrowDown' })
+    fireEvent.click(header('core'))
+    filterlessOutside().focus()
+    setChanges('web', 4)
+    expect(filterlessOutside()).toHaveFocus()
   })
 
   it('keeps focus on a picked match that moves once the filter clears', () => {
@@ -232,7 +310,8 @@ describe('FolderMultiRepoPanel groups', () => {
     expect(rows().map(rowName)).toEqual(['api', 'orders-api', 'payments-api'])
     header('orders-api').focus()
     fireEvent.click(header('orders-api'))
-    expect(rows().map(rowName)).toEqual(['api', 'web', 'orders-api'])
+    expect(rows().map(rowName).slice(0, 3)).toEqual(['api', 'web', 'core'])
+    expect(groupToggle(/^No changes/)).toHaveAttribute('aria-expanded', 'true')
     expect(header('orders-api')).toHaveFocus()
   })
 
