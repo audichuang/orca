@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-base-guard
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-source-scans fork-base-guard
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -175,7 +175,7 @@ fork-check: export LC_ALL = C
 fork-check: fork-check-static fork-check-tests
 
 fork-check-static: export LC_ALL = C
-fork-check-static: fork-check-static-types fork-check-quality fork-check-lint
+fork-check-static: fork-check-static-types fork-check-quality fork-check-lint fork-check-source-scans
 
 fork-base-guard:
 	@echo ">> fork base: $(FORK_BASE)"
@@ -188,21 +188,46 @@ fork-check-static-types: fork-base-guard
 fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
 
-# Whole-repo `pnpm lint` checks fork edits can break, plus fork locale parity; fork-check-quality covers the rest on changed lines.
-# check:path-literal-ratchet is left out: a release tag can carry main's workflow files, which name main-only paths (v1.4.230).
+# Upstream's `pnpm lint` minus the checks fork-lint-parity.mjs excludes (with reasons), plus fork locale parity.
+# fork-lint-parity fails when a newer upstream release adds a lint step this list lacks.
 fork-check-lint: fork-base-guard
+	node config/scripts/fork-lint-parity.mjs
+	pnpm exec oxlint
+	pnpm run audit:anti-slop
+	pnpm run audit:code-quality:native
+	pnpm run audit:code-quality:type-aware
+	pnpm run check:reliability-gates
 	pnpm run check:dead-classes
+	pnpm run check:max-lines-ratchet
+	pnpm run check:ts-nocheck-ratchet
+	pnpm run check:runtime-electron-ratchet
+	pnpm run check:focus-read-ratchet
+	pnpm run check:layout-writer-ratchets
+	pnpm run check:legacy-relay-fence-ratchet
+	pnpm run check:unproven-pty-retirement-ratchet
+	pnpm run check:id-only-store-write-ratchet
+	pnpm run check:repo-host-read-ratchet
+	pnpm run check:host-list-render-ratchet
+	pnpm run check:readme-local-links
+	pnpm run check:node-runtime-pin
+	pnpm run check:mobile-shared-dependency-versions
+	pnpm run verify:rpc-params-catalog
+	pnpm run verify:acp-protocol
+	pnpm run verify:bundled-skill-guides
+	pnpm run verify:skill-bundle-manifest
 	pnpm run verify:localization-catalogs
 	pnpm run verify:localization-extraction
 	pnpm run verify:localization-coverage
-	pnpm run verify:rpc-params-catalog
-	pnpm run check:max-lines-ratchet
-	pnpm run check:unproven-pty-retirement-ratchet
-	pnpm run check:id-only-store-write-ratchet
-	pnpm run check:legacy-relay-fence-ratchet
-	pnpm run check:host-list-render-ratchet
-	pnpm run check:mobile-shared-dependency-versions
+	pnpm run check:process-host-imports
+	pnpm run check:main-sync-spawn-ratchet
+	pnpm run check:compat-boundary-imports
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
+
+fork-check-source-scans: export LC_ALL = C
+fork-check-source-scans: export ORCA_BACKGROUND_LAUNCH = 1
+fork-check-source-scans: fork-base-guard
+	@# Why: these tests read source text instead of importing it, so --changed never picks them.
+	pnpm exec vitest run --config config/vitest.config.ts $$(node config/scripts/fork-source-scan-tests.mjs)
 
 fork-check-tests: export LC_ALL = C
 # Why: upstream's CI mode; it applies UNIT_EXCLUDE (live-shell, node-pty, electron probes, the wire job's files) and balances shards by timing.
