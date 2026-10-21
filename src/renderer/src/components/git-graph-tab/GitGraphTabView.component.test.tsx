@@ -151,7 +151,17 @@ describe('Git Graph tab', () => {
     )
     expect(await screen.findByText('Initial commit')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('combobox', { name: 'Repository' }))
+    // The switcher leads the toolbar, names the repo and branch, and the repo colour tops the tab.
+    const repoSwitcher = screen.getByRole('combobox', { name: 'Repository' })
+    expect(repoSwitcher).toHaveTextContent('apimain')
+    expect(
+      repoSwitcher.compareDocumentPosition(screen.getByRole('combobox', { name: 'Branch filter' }))
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(
+      document.querySelector<HTMLElement>('[data-git-graph-accent]')?.style.backgroundColor
+    ).toMatch(/^(#000|rgb\(0, 0, 0\))$/)
+
+    fireEvent.click(repoSwitcher)
     expect(await screen.findByText('web-main')).toBeInTheDocument()
     expect(screen.queryByText('remote-main')).toBeNull()
     fireEvent.click(screen.getByText('web-main'))

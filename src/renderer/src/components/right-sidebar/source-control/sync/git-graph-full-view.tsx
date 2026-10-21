@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PanelLeft, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
@@ -59,8 +60,12 @@ export type GitGraphFullViewProps = {
   /** Commit actions (Copy Full Source) over the selected commits. */
   onCommitAction?: GitHistoryCommitActionHandler
   renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
-  /** Host controls at the end of the filter row (the tab's repo switcher). */
+  /** Host controls at the end of the filter row. */
   toolbarTrailing?: React.ReactNode
+  /** Host controls at the start of the toolbar row (the tab's repo switcher). */
+  toolbarLeading?: React.ReactNode
+  /** The shown repo's badge colour, drawn as a bar along the toolbar's top edge. */
+  accentColor?: string
 }
 
 function useCommitFiles(
@@ -118,7 +123,9 @@ export function GitGraphFullView({
   onOpenCommitFile,
   onCommitAction,
   renderCommitFilesMenu,
-  toolbarTrailing
+  toolbarTrailing,
+  toolbarLeading,
+  accentColor
 }: GitGraphFullViewProps): React.JSX.Element {
   const result = state.result
   const viewModels = useMemo(
@@ -223,7 +230,20 @@ export function GitGraphFullView({
       data-git-graph-root=""
       onKeyDown={handleRootKeyDown}
     >
+      {accentColor && (
+        <div
+          data-git-graph-accent=""
+          className="h-0.5 shrink-0"
+          style={{ backgroundColor: accentColor }}
+        />
+      )}
       <div className="flex items-start gap-1 border-b border-border pt-1.5">
+        {toolbarLeading && (
+          <div className="ml-2 flex h-6 max-w-72 min-w-0 shrink-0 items-center gap-1.5">
+            {toolbarLeading}
+            <Separator orientation="vertical" className="h-4" />
+          </div>
+        )}
         <Button
           type="button"
           variant="ghost"
@@ -246,6 +266,7 @@ export function GitGraphFullView({
             activeRepoTarget={activeRepoTarget}
             state={state}
             trailing={toolbarTrailing}
+            fullView
           />
         </div>
         <Button
@@ -357,6 +378,7 @@ export function GitGraphFullView({
                 }
                 onSelect={(event) => selection.handleRowSelect(viewModel.historyItem, event)}
                 onJump={(commitId) => jumpTo(commitId, { focus: true })}
+                onOpen={() => onOpenCommit(viewModel.historyItem)}
               />
             ))}
             {result && <GitHistoryGraphLoadMore worktreeId={worktreeId} state={state} />}
