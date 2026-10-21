@@ -3,15 +3,11 @@ import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import {
   DEFAULT_GIT_HISTORY_GRAPH_FILTER,
   setGitHistoryGraphDraftQuery,
+  splitGitHistoryGraphQuery,
   updateGitHistoryGraphFilter
 } from './git-history-graph-filter'
 
 export type GitHistoryGraphQueryTokenKey = 'author' | 'path'
-
-// Why the same shape as parseGitHistoryGraphQuery: strip exactly what the backend would read as a token.
-function tokenPattern(key: GitHistoryGraphQueryTokenKey): RegExp {
-  return new RegExp(`${key}:(?:"([^"]*)"|(\\S+))`, 'gi')
-}
 
 /** The value the search will use for `key` (the parser keeps the last one), or null. */
 export function readGitHistoryGraphQueryToken(
@@ -19,10 +15,9 @@ export function readGitHistoryGraphQueryToken(
   key: GitHistoryGraphQueryTokenKey
 ): string | null {
   let value: string | null = null
-  for (const match of query.matchAll(tokenPattern(key))) {
-    const next = (match[1] ?? match[2] ?? '').trim()
-    if (next) {
-      value = next
+  for (const segment of splitGitHistoryGraphQuery(query)) {
+    if (segment.kind === 'token' && segment.key === key && segment.value) {
+      value = segment.value
     }
   }
   return value
@@ -34,14 +29,17 @@ export function setGitHistoryGraphQueryToken(
   key: GitHistoryGraphQueryTokenKey,
   value: string | null
 ): string {
-  const rest = query.replace(tokenPattern(key), ' ').replace(/\s+/g, ' ').trim()
-  // Why drop quotes: the quoted form cannot escape one, so it would end the value early.
-  const clean = value?.replace(/"/g, '').trim() ?? ''
-  if (!clean) {
-    return rest
+  // Why raw: re-serializing the other tokens would rewrite what the user typed.
+  const rest = splitGitHistoryGraphQuery(query)
+    .filter((segment) => segment.kind === 'text' || segment.key !== key)
+    .map((segment) => segment.raw)
+  const clean = value?.trim() ?? ''
+  if (clean) {
+    rest.push(
+      /[\s"]/.test(clean) ? `${key}:"${clean.replace(/["\\]/g, '\\$&')}"` : `${key}:${clean}`
+    )
   }
-  const token = /\s/.test(clean) ? `${key}:"${clean}"` : `${key}:${clean}`
-  return rest ? `${rest} ${token}` : token
+  return rest.join(' ')
 }
 
 /** Commits the query at once; the draft too, or the search box debounce would write the old text back. */
