@@ -27,6 +27,7 @@ import type { SourceControlRowOpenEvent } from '../right-sidebar/source-control/
 import { useRepoDisplayColor } from '@/lib/repo-display-color'
 import { openSourceControlOnRepo } from './git-graph-source-control-link'
 import { useGitGraphTabReveal } from './use-git-graph-tab-reveal'
+import { consumeGitGraphFocusRequest, useGitGraphFocusRequest } from './git-graph-focus-request'
 
 function GitGraphTabBody({
   fileId,
@@ -108,6 +109,11 @@ function GitGraphTabBody({
     })
   const revealInExplorer = useAppStore((s) => s.revealInExplorer)
   const reveal = useGitGraphTabReveal(fileId, worktree.id, filterKey)
+  const focusRequest = useGitGraphFocusRequest(fileId)
+  const onFocusHandled = useCallback(
+    (nonce: number) => consumeGitGraphFocusRequest(fileId, nonce),
+    [fileId]
+  )
   const renderCommitFilesMenu = commitFilesMenuSlot(
     {
       activeConnectionId: getConnectionId(worktree.id) ?? repo.connectionId ?? null,
@@ -137,7 +143,11 @@ function GitGraphTabBody({
       accentColor={repoColor(repo)}
       filterKey={filterKey}
       selectHeadOnOpen
-      tab={{ selectionScope: fileId, claimFocusOnOpen }}
+      tab={{
+        selectionScope: fileId,
+        claimFocusOnOpen,
+        focusRequest: { pending: focusRequest, onHandled: onFocusHandled }
+      }}
       reveal={reveal}
     />
   )
