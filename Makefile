@@ -194,6 +194,7 @@ fork-check-quality: fork-base-guard
 # Upstream's `pnpm lint` minus fork-lint-parity.mjs's EXCLUDED, plus fork locale parity; the parity check fails on a new upstream step.
 fork-check-lint: fork-base-guard
 	node config/scripts/fork-lint-parity.mjs
+	node config/scripts/fork-pr-gate-needs.mjs
 	pnpm exec oxlint
 	pnpm run audit:anti-slop
 	pnpm run audit:code-quality:native
