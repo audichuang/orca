@@ -4,6 +4,7 @@ import type React from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { useAppStore } from '@/store'
 import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 
@@ -12,6 +13,7 @@ type MenuProps = {
   absolutePath?: string
   onView?: () => void
   onCopyFullSource?: () => void
+  onShowFileHistory?: () => void
   onRevealInExplorer: (worktreeId: string, absolutePath: string) => void
   children: React.ReactNode
 }
@@ -30,6 +32,8 @@ vi.mock('./git-history-commit-copy', () => ({ copyHistoryCommitsFullSource: mock
 const { GitHistoryCommitFilesMenu, commitFilesMenuSlot } =
   await import('./git-history-commit-files-menu')
 const { GitHistoryPanel } = await import('./git-history-panel')
+const { getGitHistoryGraphFilter, resetGitHistoryGraphFiltersForTest } =
+  await import('./git-history-graph-filter')
 
 const item: GitHistoryItem = {
   id: 'a'.repeat(40),
@@ -86,6 +90,8 @@ afterEach(() => {
   cleanup()
   mocks.menuProps = null
   vi.clearAllMocks()
+  resetGitHistoryGraphFiltersForTest()
+  useAppStore.setState(useAppStore.getInitialState(), true)
 })
 
 describe('GitHistoryCommitFilesMenu', () => {
@@ -129,6 +135,26 @@ describe('GitHistoryCommitFilesMenu', () => {
     mocks.menuProps?.onCopyFullSource?.()
     const args = mocks.copy.mock.calls[0]?.[0]
     await expect(args.loadCommitFiles(item)).resolves.toEqual(entries)
+  })
+
+  it('Show File History filters the Git Graph to the right-clicked file or folder', () => {
+    const openGitGraphTab = vi.fn()
+    useAppStore.setState({ openGitGraphTab })
+    renderMenu()
+    expect(mocks.menuProps?.onShowFileHistory).toBeUndefined()
+
+    fireEvent.contextMenu(screen.getByText('src/two.ts'))
+    mocks.menuProps?.onShowFileHistory?.()
+    expect(getGitHistoryGraphFilter('repo-wt')).toMatchObject({
+      scope: 'all',
+      query: 'path:src/two.ts'
+    })
+    expect(openGitGraphTab).toHaveBeenLastCalledWith('folder-1', { repoWorktreeId: 'repo-wt' })
+
+    fireEvent.contextMenu(screen.getByText('src folder'))
+    mocks.menuProps?.onShowFileHistory?.()
+    expect(getGitHistoryGraphFilter('repo-wt').query).toBe('path:src')
+    expect(openGitGraphTab).toHaveBeenCalledTimes(2)
   })
 
   it('Cmd/Ctrl-click builds a selection without opening, and Copy Full Source copies all of it', async () => {
