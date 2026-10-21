@@ -506,9 +506,8 @@ describe('full-width Git Graph', () => {
         graph: { mode: 'head', search: { text: 'fix', author: 'Ada' } }
       })
     )
-    expect(within(view).getByRole('textbox', { name: 'Search commits' })).toHaveValue(
-      'fix author:Ada'
-    )
+    // The box keeps only the free text; the author lives on the User button.
+    expect(within(view).getByRole('textbox', { name: 'Search commits' })).toHaveValue('fix')
     expect(within(view).getByRole('combobox', { name: 'User' })).toHaveTextContent('User: Ada')
 
     fireEvent.click(within(view).getByRole('button', { name: 'Clear user filter' }))
@@ -547,9 +546,7 @@ describe('full-width Git Graph', () => {
     expect(within(view).getByRole('combobox', { name: 'Paths' })).toHaveTextContent(/^Paths$/)
     fireEvent.click(within(view).getByRole('combobox', { name: 'Paths' }))
     fireEvent.click(await screen.findByText('src/app.ts', { selector: '[cmdk-item] *' }))
-    expect(within(view).getByRole('textbox', { name: 'Search commits' })).toHaveValue(
-      'path:src/app.ts'
-    )
+    expect(within(view).getByRole('textbox', { name: 'Search commits' })).toHaveValue('')
   })
 
   it('keeps a query typed in the full view when an older sidebar draft is still debouncing', async () => {
