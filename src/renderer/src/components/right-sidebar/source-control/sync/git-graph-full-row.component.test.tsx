@@ -110,6 +110,27 @@ describe('GitGraphFullRow folded edges', () => {
     expect(onJump).toHaveBeenCalledTimes(1)
   })
 
+  it('does not open the row commit on an arrow double-click', () => {
+    const onOpen = vi.fn()
+    render(
+      <GitGraphFullRow
+        viewModel={viewModel('node', 'abc1234')}
+        lanes={lanes}
+        graphWidth={33}
+        columns={COLUMNS}
+        selected={false}
+        onSelect={vi.fn()}
+        onJump={vi.fn()}
+        onOpen={onOpen}
+      />
+    )
+    const row = screen.getByTestId('git-graph-full-row')
+    fireEvent.doubleClick(row.querySelector('[data-fold="fold-down"] path')!)
+    expect(onOpen).not.toHaveBeenCalled()
+    fireEvent.doubleClick(row.querySelector('[data-col="message"]')!)
+    expect(onOpen).toHaveBeenCalledTimes(1)
+  })
+
   it('ignores a click on an arrow whose far end is not loaded yet', () => {
     const onSelect = vi.fn()
     const onJump = vi.fn()
