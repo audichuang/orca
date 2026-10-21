@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-base-guard
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-check-wire fork-check-mobile fork-base-guard
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -199,6 +199,8 @@ fork-check-lint: fork-base-guard
 	node config/scripts/fork-lint-run.mjs
 	node config/scripts/fork-pr-gate-needs.mjs
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
+	@# Why here too: a branch goes red in CI once upstream releases a daemon protocol bump.
+	pnpm run check:daemon-protocol-crossing
 
 fork-check-tests: export LC_ALL = C
 # Why: upstream CI's env; it applies UNIT_EXCLUDE, balances shards by timing, and some tests assert background launch.
@@ -207,6 +209,8 @@ fork-check-tests: export ORCA_BACKGROUND_LAUNCH = 1
 # Why no guard for all: the full suite needs no FORK_BASE, so CI can use upstream's shallow checkout.
 fork-check-tests: $(if $(filter all,$(FORK_TESTS)),,fork-base-guard)
 	@test -z "$(FORK_TESTS)" -o "$(FORK_TESTS)" = all || { echo "fork-check-tests: FORK_TESTS must be empty or all, not $(FORK_TESTS)"; exit 1; }
+	@# Why: fork-check-e2e leaves Electron-built native modules behind, which vitest cannot load.
+	node config/scripts/ensure-native-runtime.mjs --runtime=node
 ifeq ($(FORK_TESTS),all)
 	node config/scripts/run-vitest.mjs run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD))
 else
@@ -238,10 +242,39 @@ fork-ci-disable-upstream:
 	  --jq '.[] | select(.state == "active" and (.path | startswith(".github/workflows/fork-") | not)) | .path' | \
 	  while read -r wf; do gh workflow disable "$${wf##*/}" -R $(FORK_REPO); done
 
+# Everything fork CI runs except the full unit suite and the macOS build, so a push rarely goes red.
 fork-check-full: export LC_ALL = C
 fork-check-full: fork-check
-	@# Why a sub-make: as a -j prerequisite, its Electron native rebuild would race the vitest run.
+	@# Why sub-makes: as -j prerequisites, the Electron native rebuild would race the vitest runs.
 	$(MAKE) fork-check-e2e
+	$(MAKE) fork-check-wire
+	$(MAKE) fork-check-mobile
+
+# CI's cross-version wire journeys: old/new clients and servers talking to each other.
+# Why skip one file: at the fork base this upstream test reads isStructuredTab from a module that no longer exports it.
+# Explicit paths, because a directory filter overrides --exclude; find keeps new files in.
+fork-check-wire: export LC_ALL = C
+# Why the guard: the journeys pick their baseline from the newest local vX.Y.Z tag.
+fork-check-wire: fork-base-guard
+	node config/scripts/ensure-native-runtime.mjs --runtime=node
+	pnpm exec vitest run --config config/vitest.config.ts $$(find tests/e2e/cross-version-wire -name '*.test.ts' ! -name 'cross-version-registered-agents.unit.test.ts' | sort)
+
+# CI's mobile web app checks; fork-check-tests skips these without mobile/node_modules.
+fork-check-mobile: export LC_ALL = C
+fork-check-mobile: MOBILE_ROUTES = $(CURDIR)/out/fork-check-mobile-routes.json
+fork-check-mobile:
+	@# Why not on CI: the job's install-mobile-dependencies step already installed and checked the lockfile.
+	$(if $(CI),,cd mobile && pnpm install --frozen-lockfile && git diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml)
+	@# The drawer check also runs on WebKit, the engine of the shell's iOS WebView.
+	pnpm exec playwright-core install $(if $(CI),--with-deps) webkit
+	mkdir -p out && node config/scripts/run-mobile-web-app-checks.mjs --prepare-route-snapshot "$(MOBILE_ROUTES)"
+	pnpm run build:mobile-web
+	@# Why fail instead of skip: without a browser the render checks skip silently.
+	@chrome=$${ORCA_MOBILE_WEB_RENDER_BROWSER:-$$(command -v google-chrome || command -v google-chrome-stable || command -v "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")}; \
+	  test -n "$$chrome" || { echo "fork-check-mobile: no Google Chrome; the render check would silently skip"; exit 1; }; \
+	  "$$chrome" --version && \
+	  ORCA_MOBILE_WEB_APP_DEPS_REQUIRED=1 ORCA_MOBILE_WEB_PREPARED_ROUTE_SNAPSHOT="$(MOBILE_ROUTES)" ORCA_MOBILE_WEB_RENDER_BROWSER="$$chrome" \
+	    node config/scripts/run-mobile-web-app-checks.mjs
 
 # The folder multi-repo e2e plus every spec the fork added or changed since FORK_BASE.
 fork-check-e2e: export LC_ALL = C
