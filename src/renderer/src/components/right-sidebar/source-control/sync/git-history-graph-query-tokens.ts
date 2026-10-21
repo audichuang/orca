@@ -1,7 +1,7 @@
 // Fork-only: reads and rewrites the `author:` / `path:` tokens of the Git Graph search query.
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import {
-  DEFAULT_GIT_HISTORY_GRAPH_FILTER,
+  getDefaultGitHistoryGraphFilter,
   setGitHistoryGraphDraftQuery,
   splitGitHistoryGraphQuery,
   updateGitHistoryGraphFilter
@@ -49,7 +49,7 @@ export function applyGitHistoryGraphQuery(worktreeId: string, query: string): vo
 }
 
 export function resetGitHistoryGraphFilterToDefault(worktreeId: string): void {
-  updateGitHistoryGraphFilter(worktreeId, { ...DEFAULT_GIT_HISTORY_GRAPH_FILTER })
+  updateGitHistoryGraphFilter(worktreeId, { ...getDefaultGitHistoryGraphFilter(worktreeId) })
   setGitHistoryGraphDraftQuery(worktreeId, '')
 }
 

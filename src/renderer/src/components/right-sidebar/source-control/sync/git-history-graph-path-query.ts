@@ -1,6 +1,8 @@
 // Fork-only: narrows the Git Graph to one path's history through its `path:` search token.
+import { buildGitGraphTabId } from '../../../git-graph-tab/git-graph-tab-model'
 import {
   getGitHistoryGraphDraftQuery,
+  gitGraphTabFilterKey,
   updateGitHistoryGraphFilter
 } from './git-history-graph-filter'
 import {
@@ -23,20 +25,18 @@ export function showGitGraphPathHistory({
   path: string
   openGitGraphTab: (workspaceId: string, opts: { repoWorktreeId: string }) => unknown
 }): void {
+  // Why the tab's key: the history shows in the tab, and the sidebar Commits panel keeps its own filter.
+  const key = gitGraphTabFilterKey(buildGitGraphTabId(workspaceId), repoWorktreeId)
   // Why the draft: it can hold typed text the debounce has not committed yet.
-  const query = setGitHistoryGraphQueryToken(
-    getGitHistoryGraphDraftQuery(repoWorktreeId),
-    'path',
-    path
-  )
+  const query = setGitHistoryGraphQueryToken(getGitHistoryGraphDraftQuery(key), 'path', path)
   // Why all branches and remotes: HEAD-only or local-only hides the file's commits elsewhere.
-  updateGitHistoryGraphFilter(repoWorktreeId, {
+  updateGitHistoryGraphFilter(key, {
     scope: 'all',
     refs: [],
     local: true,
     remotes: 'all'
   })
-  applyGitHistoryGraphQuery(repoWorktreeId, query)
-  rememberGitHistoryGraphPath(repoWorktreeId, path)
+  applyGitHistoryGraphQuery(key, query)
+  rememberGitHistoryGraphPath(key, path)
   openGitGraphTab(workspaceId, { repoWorktreeId })
 }
