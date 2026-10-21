@@ -16,7 +16,11 @@ import { useSourceControlWorktreeScope } from './worktree-scope'
 vi.mock('../panel/single-repo-panel', () => ({
   SourceControlSingleRepoPanel: () => {
     const scope = useSourceControlWorktreeScope()
-    return <div data-testid="repo-panel">{scope?.gitWorktreeId}</div>
+    return (
+      <div data-testid="repo-panel" data-label={scope?.label} data-color={scope?.color}>
+        {scope?.gitWorktreeId}
+      </div>
+    )
   }
 }))
 vi.mock('./use-folder-repo-status-refresh', () => ({
@@ -179,7 +183,7 @@ describe('FolderMultiRepoPanel accordion', () => {
   it('shows the repo colour mark and the branch as its own column', () => {
     renderPanel({ api: 1 })
     const row = header('api')
-    expect(row.querySelector('[aria-hidden="true"]')).toHaveStyle({ backgroundColor: '#000' })
+    expect(row.querySelector('[aria-hidden="true"]')).toHaveStyle({ backgroundColor: '#000000' })
     expect(row).toHaveTextContent(/^api main/)
     expect(row.textContent).not.toContain('(main)')
   })
@@ -192,7 +196,7 @@ describe('FolderMultiRepoPanel accordion', () => {
     expect(list?.querySelectorAll('[data-repo-row]')).toHaveLength(3)
     expect(list?.nextElementSibling).toBe(detail)
     expect(detail).toContainElement(screen.getByTestId('repo-panel'))
-    expect(detail).toHaveTextContent(/^core/)
+    expect(screen.getByTestId('repo-panel')).toHaveAttribute('data-label', 'core')
   })
 })
 
@@ -259,20 +263,11 @@ describe('FolderMultiRepoPanel sync and hidden state', () => {
     behind
   })
 
-  it('names the upstream the open repo tracks', () => {
-    useAppStore.setState({ remoteStatusesByWorktree: { 'wt-core': upstream(0) } })
+  it("names the open repo with its colour in the panel's own toolbar", () => {
     renderPanel({ core: 1 })
-    expect(document.querySelector('[data-folder-repo-header]')).toHaveTextContent(
-      'tracks origin/main'
-    )
-  })
-
-  it('omits the upstream when the branch has none', () => {
-    useAppStore.setState({
-      remoteStatusesByWorktree: { 'wt-core': { hasUpstream: false, ahead: 0, behind: 0 } }
-    })
-    renderPanel({ core: 1 })
-    expect(document.querySelector('[data-folder-repo-header]')).not.toHaveTextContent('tracks')
+    const panel = screen.getByTestId('repo-panel')
+    expect(panel).toHaveAttribute('data-label', 'core')
+    expect(panel.getAttribute('data-color')).toMatch(/^(#|hsl)/)
   })
 
   it('lists a clean repo with commits to push under Changes with its count', () => {
