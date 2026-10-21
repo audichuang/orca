@@ -1,4 +1,4 @@
-// Fork-only: per-worktree (and per Git Graph tab) branch filter and search for the Commits graph (in memory, like the repo accordion).
+// Fork-only: in-memory branch filter and search per Commits graph (sidebar worktree or Git Graph tab).
 import { useSyncExternalStore } from 'react'
 import type {
   GitHistoryGraphRequest,
@@ -31,32 +31,49 @@ export const GIT_GRAPH_TAB_DEFAULT_FILTER: GitHistoryGraphFilter = {
 }
 
 const filters = new Map<string, GitHistoryGraphFilter>()
-const defaultsByKey = new Map<string, GitHistoryGraphFilter>()
 const listeners = new Set<() => void>()
 
+// Why NUL: it cannot occur in a worktree id, so only tab keys carry it.
+const TAB_KEY_SEPARATOR = '\0'
+
 /**
- * The filter key of one repo shown in a Git Graph tab; also marks the key as defaulting to all branches.
+ * The filter key of one repo shown in a Git Graph tab.
  * Why apart from the repo's worktree id: the sidebar Commits panel keys by that and keeps its own filter.
  */
 export function gitGraphTabFilterKey(tabFileId: string, repoWorktreeId: string): string {
-  const key = `${tabFileId}\0${repoWorktreeId}`
-  defaultsByKey.set(key, GIT_GRAPH_TAB_DEFAULT_FILTER)
-  return key
+  return `${tabFileId}${TAB_KEY_SEPARATOR}${repoWorktreeId}`
+}
+
+export function isGitGraphTabFilterKeyOf(key: string, tabFileId: string): boolean {
+  return key.startsWith(`${tabFileId}${TAB_KEY_SEPARATOR}`)
 }
 
 export function getDefaultGitHistoryGraphFilter(key: string | null): GitHistoryGraphFilter {
-  return (key && defaultsByKey.get(key)) || DEFAULT_GIT_HISTORY_GRAPH_FILTER
+  return key?.includes(TAB_KEY_SEPARATOR)
+    ? GIT_GRAPH_TAB_DEFAULT_FILTER
+    : DEFAULT_GIT_HISTORY_GRAPH_FILTER
 }
 
 export function getGitHistoryGraphFilter(worktreeId: string | null): GitHistoryGraphFilter {
   return (worktreeId && filters.get(worktreeId)) || getDefaultGitHistoryGraphFilter(worktreeId)
 }
 
-/** Installs a saved filter for a key that has none yet; silent, so it can run while rendering. */
+/**
+ * Makes `saved` the key's filter (and draft) unless it already is; silent, so it can run while rendering.
+ * Why overwrite: the tab's saved filter moves on while another repo is shown, leaving this entry stale.
+ */
 export function seedGitHistoryGraphFilter(key: string, saved: GitHistoryGraphSavedFilter): void {
-  if (!filters.has(key)) {
-    filters.set(key, { ...saved, limit: GIT_HISTORY_GRAPH_PAGE_SIZE })
+  const current = filters.get(key)
+  const next = { ...saved, limit: GIT_HISTORY_GRAPH_PAGE_SIZE }
+  if (
+    current &&
+    JSON.stringify(toSavedGitHistoryGraphFilter(current)) ===
+      JSON.stringify(toSavedGitHistoryGraphFilter(next))
+  ) {
+    return
   }
+  filters.set(key, next)
+  draftQueries.delete(key)
 }
 
 export function toSavedGitHistoryGraphFilter(
@@ -107,9 +124,19 @@ export function useGitHistoryGraphDraftQuery(worktreeId: string): string {
   return useSyncExternalStore(subscribe, () => getGitHistoryGraphDraftQuery(worktreeId))
 }
 
+/** Drops every filter and draft of a closed Git Graph tab. */
+export function forgetGitGraphTabFilters(tabFileId: string): void {
+  for (const map of [filters, draftQueries]) {
+    for (const key of map.keys()) {
+      if (isGitGraphTabFilterKeyOf(key, tabFileId)) {
+        map.delete(key)
+      }
+    }
+  }
+}
+
 export function resetGitHistoryGraphFiltersForTest(): void {
   filters.clear()
-  defaultsByKey.clear()
   draftQueries.clear()
 }
 
