@@ -116,7 +116,8 @@ function GitGraphTabBody({
       onOpenCommitFile={openCommitFile}
       onCommitAction={handleCommitAction}
       renderCommitFilesMenu={renderCommitFilesMenu}
-      toolbarTrailing={switcher}
+      toolbarLeading={switcher}
+      accentColor={repo.badgeColor}
     />
   )
 }
