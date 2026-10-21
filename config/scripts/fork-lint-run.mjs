@@ -56,6 +56,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   let steps
   try {
     steps = applyExclusions(parseLintSteps(lintScript))
+    steps.forEach(stepCommand)
   } catch (error) {
     console.error(error instanceof Error ? error.message : error)
     process.exit(1)
