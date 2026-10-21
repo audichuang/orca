@@ -30,7 +30,7 @@ export function applyExclusions(steps, excluded = EXCLUDED) {
 }
 
 // Why reject shell syntax: steps run with no shell, so a step that needs one must fail loudly.
-export function stepCommand(step) {
+export function pnpmArgs(step) {
   if (/[|;<>&$`'"()\\]/.test(step)) {
     throw new Error(`fork-lint-run: upstream lint step \`${step}\` needs a shell; run it by hand`)
   }
@@ -40,7 +40,7 @@ export function stepCommand(step) {
 
 export function runLintSteps(steps, run) {
   for (const step of steps) {
-    const args = stepCommand(step)
+    const args = pnpmArgs(step)
     console.log(`>> pnpm ${args.join(' ')}`)
     const code = run(args)
     if (code !== 0) {
@@ -56,7 +56,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   let steps
   try {
     steps = applyExclusions(parseLintSteps(lintScript))
-    steps.forEach(stepCommand)
+    steps.forEach(pnpmArgs)
   } catch (error) {
     console.error(error instanceof Error ? error.message : error)
     process.exit(1)
