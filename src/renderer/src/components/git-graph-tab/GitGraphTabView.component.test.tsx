@@ -159,7 +159,7 @@ describe('Git Graph tab', () => {
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
     expect(
       document.querySelector<HTMLElement>('[data-git-graph-accent]')?.style.backgroundColor
-    ).toMatch(/^(#000|rgb\(0, 0, 0\))$/)
+    ).toMatch(/^(#000000|rgb\(0, 0, 0\))$/)
 
     fireEvent.click(repoSwitcher)
     expect(await screen.findByText('web-main')).toBeInTheDocument()
