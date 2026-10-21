@@ -21,6 +21,7 @@ import type { GitHistoryGraphApplied } from '../../../../../../shared/git-histor
 import type { GitHistoryPanelState } from './git-history-panel'
 import { GitHistoryGraphBranchGroups } from './git-history-graph-branch-groups'
 import { GitHistoryGraphHostNotice, hostTooOldText } from './git-history-graph-host-status'
+import { GitHistoryGraphFilterButtons } from './git-history-graph-filter-buttons'
 import {
   getGitHistoryGraphDraftQuery,
   getGitHistoryGraphFilter,
@@ -86,7 +87,8 @@ export function GitHistoryGraphToolbar({
   worktreePath,
   activeRepoTarget,
   state,
-  trailing
+  trailing,
+  fullView = false
 }: {
   worktreeId: string
   worktreePath: string
@@ -94,6 +96,8 @@ export function GitHistoryGraphToolbar({
   state: GitHistoryPanelState
   /** Rendered at the end of the filter row. */
   trailing?: React.ReactNode
+  /** The Git Graph tab's wide toolbar: User / Paths buttons, Clear, and wrapping. Off in the sidebar. */
+  fullView?: boolean
 }): React.JSX.Element {
   const result = state.result
   const filter = useGitHistoryGraphFilter(worktreeId)
@@ -194,7 +198,7 @@ export function GitHistoryGraphToolbar({
 
   return (
     <div className="flex flex-col gap-1 px-3 pb-1.5">
-      <div className="flex min-w-0 items-center gap-1.5">
+      <div className={cn('flex min-w-0 items-center gap-1.5', fullView && 'flex-wrap gap-y-1')}>
         <Popover open={open} onOpenChange={handleOpenChange}>
           <PopoverTrigger asChild>
             <Button
@@ -319,7 +323,15 @@ export function GitHistoryGraphToolbar({
             </Command>
           </PopoverContent>
         </Popover>
-        <div className="flex min-w-0 flex-1 items-center gap-1 rounded-md border border-input px-1.5">
+        {fullView && (
+          <GitHistoryGraphFilterButtons worktreeId={worktreeId} items={result?.items ?? []} />
+        )}
+        <div
+          className={cn(
+            'flex min-w-0 flex-1 items-center gap-1 rounded-md border border-input px-1.5',
+            fullView && 'min-w-40'
+          )}
+        >
           <Search className="size-3 shrink-0 text-muted-foreground" />
           <ImeInput
             type="text"
@@ -331,10 +343,17 @@ export function GitHistoryGraphToolbar({
                 setDraftQuery('')
               }
             }}
-            placeholder={translate(
-              'auto.components.right.sidebar.GitHistoryGraph.searchCommits',
-              'Search commits (author: path:)'
-            )}
+            placeholder={
+              fullView
+                ? translate(
+                    'auto.components.right.sidebar.GitHistoryGraph.searchCommitMessages',
+                    'Search commit messages'
+                  )
+                : translate(
+                    'auto.components.right.sidebar.GitHistoryGraph.searchCommits',
+                    'Search commits (author: path:)'
+                  )
+            }
             aria-label={translate(
               'auto.components.right.sidebar.GitHistoryGraph.searchCommitsLabel',
               'Search commits'
