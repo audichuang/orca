@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { folderRepoSectionLabel } from './folder-section-label'
+import {
+  folderRepoSectionBranch,
+  folderRepoSectionLabel,
+  folderRepoSectionName
+} from './folder-section-label'
 
 function member(repoId: string, name: string, path: string, branch: string) {
   return {
@@ -27,5 +31,23 @@ describe('folderRepoSectionLabel', () => {
     const b = member('r1', 'WebApp', '/f/b/WebApp', 'dev')
     expect(folderRepoSectionLabel(a, [a, b])).toBe('a/WebApp (main)')
     expect(folderRepoSectionLabel(b, [a, b])).toBe('b/WebApp (dev)')
+  })
+})
+
+describe('folderRepoSectionName / folderRepoSectionBranch', () => {
+  it('splits the label into the row name and the branch column', () => {
+    const a = member('r1', 'WebApp', '/f/a/WebApp', 'feature/x')
+    const b = member('r1', 'WebApp', '/f/b/WebApp', 'dev')
+    expect(folderRepoSectionName(a, [a, b])).toBe('a/WebApp')
+    expect(folderRepoSectionBranch(a)).toBe('feature/x')
+  })
+
+  it('has no branch for a detached HEAD', () => {
+    const detached = {
+      repo: { id: 'r1', displayName: 'WebApp' },
+      worktree: { path: '/f/WebApp', branch: '', head: 'abc1234' }
+    }
+    expect(folderRepoSectionName(detached, [detached])).toBe('WebApp')
+    expect(folderRepoSectionBranch(detached)).toBeNull()
   })
 })

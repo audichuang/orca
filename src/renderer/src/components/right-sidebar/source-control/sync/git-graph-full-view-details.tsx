@@ -1,6 +1,6 @@
 // Fork-only: the full Git Graph's right pane, IntelliJ-style: changed files on top, commit details below.
 import React, { useCallback, useMemo, useState } from 'react'
-import { Copy, List, ListTree } from 'lucide-react'
+import { ArrowUpRight, Copy, List, ListTree } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
@@ -29,6 +29,7 @@ const DETAILS_DEFAULT_WIDTH = 480
 // Margin around the panes, plus the narrowest commit list that still shows message and date.
 const DETAILS_RESERVED_CHROME = 112
 const COMMIT_LIST_MIN_WIDTH = 460
+const isMac = navigator.userAgent.includes('Mac')
 
 // Why view-relative: a flat default left one-file commits in a half-empty pane on laptops.
 function defaultDetailsWidth(): number {
@@ -186,6 +187,14 @@ export function GitGraphDetailsPane({
     'auto.components.right.sidebar.GitGraphFullView.copyFullSource',
     'Copy Full Source of all changed files'
   )
+  const openAllLabel = translate(
+    'auto.components.right.sidebar.GitGraphFullView.openAllChanges',
+    'Open all changes'
+  )
+  const enterKey = isMac
+    ? '↩'
+    : translate('auto.components.right.sidebar.GitGraphFullView.enterKey', 'Enter')
+  const openAllHint = `${openAllLabel} (${enterKey})`
 
   return (
     // Why: useSidebarResize owns the inline width so a rerender mid-drag can't snap it back.
@@ -239,6 +248,23 @@ export function GitGraphDetailsPane({
                   type="button"
                   variant="ghost"
                   size="icon-xs"
+                  aria-label={openAllLabel}
+                  disabled={items.length !== 1}
+                  onClick={() => onOpenCommit(first)}
+                >
+                  <ArrowUpRight className="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={6}>
+                {openAllHint}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   aria-label={layoutLabel}
                   onClick={toggleFilesLayout}
                 >
@@ -273,6 +299,7 @@ export function GitGraphDetailsPane({
               </Tooltip>
             )}
           </div>
+          {/* No onOpenAll: the header button and row double-click/Enter replace the bottom link. */}
           {/* Why the override: the shared list indents for the sidebar tree; align it with the header. */}
           <div className="scrollbar-sleek min-h-0 flex-1 overflow-y-auto py-1 [&_.pl-9]:pl-3">
             <GitHistoryCommitFiles
@@ -282,7 +309,6 @@ export function GitGraphDetailsPane({
               onOpenFile={(entry, event) =>
                 onOpenCommitFile(merged.ownerByPath.get(entry.path) ?? first, entry, event)
               }
-              onOpenAll={items.length === 1 ? () => onOpenCommit(first) : undefined}
               renderFilesMenu={renderCommitFilesMenu?.bind(null, items)}
             />
           </div>

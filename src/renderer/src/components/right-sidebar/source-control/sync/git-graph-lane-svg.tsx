@@ -92,6 +92,8 @@ function FoldArrow({
           onJump?.(segment.target.id)
         }
       }}
+      // Why: a double-click on the arrow must not open the row's commit as well.
+      onDoubleClick={(event) => event.stopPropagation()}
     >
       <title>{foldLabel(segment)}</title>
       <rect x={cx - W / 2} y={0} width={W} height={H} fill="transparent" />
