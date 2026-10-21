@@ -1,17 +1,12 @@
-// Fork-only: per-worktree branch filter and search for the Commits graph (in memory, like the repo accordion).
+// Fork-only: per-worktree (and per Git Graph tab) branch filter and search for the Commits graph (in memory, like the repo accordion).
 import { useSyncExternalStore } from 'react'
 import type {
-  GitHistoryGraphMode,
   GitHistoryGraphRequest,
-  GitHistoryGraphSearch,
-  GitHistoryGraphSource
+  GitHistoryGraphSavedFilter,
+  GitHistoryGraphSearch
 } from '../../../../../../shared/git-history-graph-query-types'
 
-export type GitHistoryGraphFilter = GitHistoryGraphSource & {
-  scope: GitHistoryGraphMode
-  refs: string[]
-  /** Raw search box text; `author:` and `path:` tokens narrow it. */
-  query: string
+export type GitHistoryGraphFilter = GitHistoryGraphSavedFilter & {
   limit: number
 }
 
@@ -27,11 +22,48 @@ export const DEFAULT_GIT_HISTORY_GRAPH_FILTER: GitHistoryGraphFilter = {
   limit: GIT_HISTORY_GRAPH_PAGE_SIZE
 }
 
+// Why all branches and remotes: the tab has the whole editor width, where IntelliJ's log opens the same way.
+export const GIT_GRAPH_TAB_DEFAULT_FILTER: GitHistoryGraphFilter = {
+  ...DEFAULT_GIT_HISTORY_GRAPH_FILTER,
+  scope: 'all',
+  local: true,
+  remotes: 'all'
+}
+
 const filters = new Map<string, GitHistoryGraphFilter>()
+const defaultsByKey = new Map<string, GitHistoryGraphFilter>()
 const listeners = new Set<() => void>()
 
+/**
+ * The filter key of one repo shown in a Git Graph tab; also marks the key as defaulting to all branches.
+ * Why apart from the repo's worktree id: the sidebar Commits panel keys by that and keeps its own filter.
+ */
+export function gitGraphTabFilterKey(tabFileId: string, repoWorktreeId: string): string {
+  const key = `${tabFileId}\0${repoWorktreeId}`
+  defaultsByKey.set(key, GIT_GRAPH_TAB_DEFAULT_FILTER)
+  return key
+}
+
+export function getDefaultGitHistoryGraphFilter(key: string | null): GitHistoryGraphFilter {
+  return (key && defaultsByKey.get(key)) || DEFAULT_GIT_HISTORY_GRAPH_FILTER
+}
+
 export function getGitHistoryGraphFilter(worktreeId: string | null): GitHistoryGraphFilter {
-  return (worktreeId && filters.get(worktreeId)) || DEFAULT_GIT_HISTORY_GRAPH_FILTER
+  return (worktreeId && filters.get(worktreeId)) || getDefaultGitHistoryGraphFilter(worktreeId)
+}
+
+/** Installs a saved filter for a key that has none yet; silent, so it can run while rendering. */
+export function seedGitHistoryGraphFilter(key: string, saved: GitHistoryGraphSavedFilter): void {
+  if (!filters.has(key)) {
+    filters.set(key, { ...saved, limit: GIT_HISTORY_GRAPH_PAGE_SIZE })
+  }
+}
+
+export function toSavedGitHistoryGraphFilter(
+  filter: GitHistoryGraphFilter
+): GitHistoryGraphSavedFilter {
+  const { scope, refs, local, remotes, query } = filter
+  return { scope, refs, local, remotes, query }
 }
 
 export function updateGitHistoryGraphFilter(
@@ -57,7 +89,7 @@ export function updateGitHistoryGraphFilter(
   }
 }
 
-// Why shared: the sidebar and full-view search boxes are one draft, so neither debounce can commit a stale copy.
+// Why keyed like the filter: every search box on one key shares a draft, so no debounce commits a stale copy.
 const draftQueries = new Map<string, string>()
 
 export function getGitHistoryGraphDraftQuery(worktreeId: string): string {
@@ -77,6 +109,7 @@ export function useGitHistoryGraphDraftQuery(worktreeId: string): string {
 
 export function resetGitHistoryGraphFiltersForTest(): void {
   filters.clear()
+  defaultsByKey.clear()
   draftQueries.clear()
 }
 
@@ -156,9 +189,23 @@ export function toGitHistoryGraphRequest(
   }
 }
 
-/** True when the user narrowed the graph, so an empty result means "no match", not "empty repo". */
-export function isGitHistoryGraphFiltered(filter: GitHistoryGraphFilter): boolean {
-  return filter.scope !== 'head' || hasGraphSearch(parseGitHistoryGraphQuery(filter.query))
+/**
+ * True when the user narrowed the graph past `key`'s default, so an empty result means "no
+ * match", not "empty repo".
+ */
+export function isGitHistoryGraphFiltered(
+  filter: GitHistoryGraphFilter,
+  key: string | null = null
+): boolean {
+  const base = getDefaultGitHistoryGraphFilter(key)
+  const sourcesChanged =
+    filter.scope === 'all' &&
+    (filter.local !== base.local || JSON.stringify(filter.remotes) !== JSON.stringify(base.remotes))
+  return (
+    filter.scope !== base.scope ||
+    sourcesChanged ||
+    hasGraphSearch(parseGitHistoryGraphQuery(filter.query))
+  )
 }
 
 function hasGraphSearch(search: GitHistoryGraphSearch): boolean {

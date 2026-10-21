@@ -1,6 +1,6 @@
 // Fork-only: the full Git Graph's right pane, IntelliJ-style: changed files on top, commit details below.
 import React, { useCallback, useMemo, useState } from 'react'
-import { ArrowUpRight, Copy, List, ListTree } from 'lucide-react'
+import { ArrowUpRight, Copy, List, ListTree, PanelRightOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
@@ -131,6 +131,12 @@ export function GitGraphDetailsPane({
   reservedWidth: number
 }): React.JSX.Element {
   const [width, setWidth] = useState(readDetailsWidth)
+  // Rule: with nothing selected the pane is a strip; an explicit expand lasts until the next selection.
+  const [expandedWhileEmpty, setExpandedWhileEmpty] = useState(false)
+  if (items.length > 0 && expandedWhileEmpty) {
+    setExpandedWhileEmpty(false)
+  }
+  const collapsed = items.length === 0 && !expandedWhileEmpty
   // Why: the cap leaves the commit list its minimum, and follows resizes of the view.
   // Why a smaller floor on tiny views: a fixed 280px left near-identical subjects unreadable.
   const minWidth = Math.min(
@@ -150,7 +156,8 @@ export function GitGraphDetailsPane({
     writeDetailsWidth(next)
   }, [])
   const { containerRef, onResizeStart } = useSidebarResize<HTMLDivElement>({
-    isOpen: true,
+    // Why tied to collapsed: the toggle re-runs the hook's width effect once the pane div mounts.
+    isOpen: !collapsed,
     width: shownWidth,
     minWidth,
     maxWidth,
@@ -195,6 +202,33 @@ export function GitGraphDetailsPane({
     ? '↩'
     : translate('auto.components.right.sidebar.GitGraphFullView.enterKey', 'Enter')
   const openAllHint = `${openAllLabel} (${enterKey})`
+
+  if (collapsed) {
+    const showLabel = translate(
+      'auto.components.right.sidebar.GitGraphFullView.showDetails',
+      'Show details'
+    )
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={showLabel}
+            className="flex w-9 shrink-0 flex-col items-center gap-2 border-l border-border py-2 text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            onClick={() => setExpandedWhileEmpty(true)}
+          >
+            <PanelRightOpen aria-hidden="true" className="size-3.5" />
+            <span aria-hidden="true" className="text-2xs [writing-mode:vertical-rl]">
+              {translate('auto.components.right.sidebar.GitGraphFullView.detailsStrip', 'Details')}
+            </span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="left" sideOffset={6}>
+          {showLabel}
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
 
   return (
     // Why: useSidebarResize owns the inline width so a rerender mid-drag can't snap it back.
