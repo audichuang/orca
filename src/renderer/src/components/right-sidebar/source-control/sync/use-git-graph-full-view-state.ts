@@ -18,21 +18,17 @@ import { useGitHistoryGraphFilter } from './git-history-graph-filter'
 import { loadRefOptions } from './git-history-graph-toolbar'
 import {
   useGitHistoryCommitSelection,
-  type CommitClickModifiers,
-  type GitHistoryCommitSelectionSnapshot
+  type CommitClickModifiers
 } from './use-git-history-commit-selection'
 import { rovingKeyTarget } from './git-graph-roving-keys'
 import { useGitGraphReveal, type GitGraphRevealOptions } from './use-git-graph-reveal'
+import {
+  clearGitGraphRememberedSelections,
+  peekRememberedGitGraphSelection,
+  rememberGitGraphSelection
+} from './git-graph-remembered-selection'
 
 const PLAIN_CLICK: CommitClickModifiers = { metaKey: false, ctrlKey: false, shiftKey: false }
-
-// Why module scope: the editor renders only the active tab, so opening a diff unmounts the view, and
-// returning should land on the same commits, like returning to IntelliJ's log.
-// Keyed by host-qualified worktree identity: two hosts can publish the same worktree id.
-const rememberedSelectionByWorktree = new Map<
-  string,
-  { commitId: string | null; commits: GitHistoryCommitSelectionSnapshot | null }
->()
 
 function isNavigable(viewModel: GitHistoryItemViewModel): boolean {
   return viewModel.kind !== 'incoming-changes' && viewModel.kind !== 'outgoing-changes'
@@ -55,6 +51,8 @@ export type GitGraphSelectionState = {
 export function useGitGraphSelection(args: {
   /** Host-qualified worktree identity (composeWorktreeHostIdentity). */
   selectionKey: string
+  /** The hosting tab; its memory is dropped together with the tab. */
+  selectionScope?: string
   result: GitHistoryResult | undefined
   viewModels: readonly GitHistoryItemViewModel[]
   listRef: React.RefObject<HTMLDivElement | null>
@@ -64,7 +62,8 @@ export function useGitGraphSelection(args: {
   reveal?: GitGraphRevealOptions
 }): GitGraphSelectionState {
   const { selectionKey, result, viewModels, listRef, selectHeadOnOpen = false } = args
-  const [remembered] = useState(() => rememberedSelectionByWorktree.get(selectionKey))
+  const selectionScope = args.selectionScope ?? ''
+  const [remembered] = useState(() => peekRememberedGitGraphSelection(selectionScope, selectionKey))
   const [selectedId, setSelectedIdState] = useState<string | null>(remembered?.commitId ?? null)
   // Why the anchor first: it is the latest gesture, a multi-selection's included.
   const [cursorState, setCursorId] = useState<string | null>(
@@ -74,10 +73,13 @@ export function useGitGraphSelection(args: {
     (id: string | null): void => {
       setSelectedIdState(id)
       // Why also on null: a cleared click must not come back as selected after a remount.
-      const entry = rememberedSelectionByWorktree.get(selectionKey)
-      rememberedSelectionByWorktree.set(selectionKey, { commits: null, ...entry, commitId: id })
+      rememberGitGraphSelection(selectionScope, selectionKey, (entry) => ({
+        commits: null,
+        ...entry,
+        commitId: id
+      }))
     },
-    [selectionKey]
+    [selectionKey, selectionScope]
   )
   const selected = result?.items.find((item) => item.id === selectedId) ?? null
   // Why retain: a refresh or branch filter must not drop a multi-selection the user is reviewing.
@@ -86,12 +88,11 @@ export function useGitGraphSelection(args: {
   })
   const { snapshot } = commitSelection
   useEffect(() => {
-    const entry = rememberedSelectionByWorktree.get(selectionKey)
-    rememberedSelectionByWorktree.set(selectionKey, {
+    rememberGitGraphSelection(selectionScope, selectionKey, (entry) => ({
       commitId: entry?.commitId ?? null,
       commits: snapshot
-    })
-  }, [selectionKey, snapshot])
+    }))
+  }, [selectionKey, selectionScope, snapshot])
   const multiSelected = commitSelection.selectedItems
   const shownItems = useMemo(
     () => (multiSelected.length > 0 ? multiSelected : selected ? [selected] : []),
@@ -336,5 +337,5 @@ export function useGitGraphBranchContext(args: {
 
 /** Test seam: the remembered selection outlives a dialog, so tests reset it between cases. */
 export function resetGitGraphRememberedSelectionForTest(): void {
-  rememberedSelectionByWorktree.clear()
+  clearGitGraphRememberedSelections()
 }
