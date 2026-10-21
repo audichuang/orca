@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   getRememberedFolderRepo,
-  isFolderRepoListCollapsed,
   moveRepoSelection,
-  rememberFolderRepoListCollapsed,
   rememberFolderRepo,
   resolveFolderDefaultRepo,
   resolveSelectedRepoId
@@ -49,14 +47,6 @@ describe('remembered selection', () => {
     rememberFolderRepo('folder:1', 'b')
     expect(getRememberedFolderRepo('folder:1')).toBe('b')
     expect(getRememberedFolderRepo('folder:2')).toBeNull()
-  })
-
-  it('remembers a fully collapsed list per folder workspace', () => {
-    rememberFolderRepoListCollapsed('folder:1', true)
-    expect(isFolderRepoListCollapsed('folder:1')).toBe(true)
-    expect(isFolderRepoListCollapsed('folder:2')).toBe(false)
-    rememberFolderRepoListCollapsed('folder:1', false)
-    expect(isFolderRepoListCollapsed('folder:1')).toBe(false)
   })
 })
 
