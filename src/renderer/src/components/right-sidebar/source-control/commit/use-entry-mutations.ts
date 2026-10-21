@@ -1,10 +1,11 @@
 import { useCallback } from 'react'
 import { requireGitOwnerTarget } from '../../worktree-git-owner-target'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
+import { notifyEditorExternalFileChange } from '@/components/editor/editor-autosave'
 import {
-  notifyEditorExternalFileChange,
-  requestEditorSaveQuiesce
-} from '@/components/editor/editor-autosave'
+  releaseEditorSaveHolds,
+  requestEditorSaveQuiesceAll
+} from '@/components/editor/editor-save-quiesce-batch'
 import { getConnectionId } from '@/lib/connection-context'
 import { basename } from '@/lib/path'
 import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
@@ -26,28 +27,6 @@ function editorOwnerIds(gitWorktreeId: string, editorWorktreeId: string | undefi
   return editorWorktreeId && editorWorktreeId !== gitWorktreeId
     ? [gitWorktreeId, editorWorktreeId]
     : [gitWorktreeId]
-}
-
-function releaseAll(releases: (() => void)[]): void {
-  for (const release of releases) {
-    release()
-  }
-}
-
-/** Takes every autosave hold or none: one path that can't be quiesced frees the holds the rest took. */
-async function quiesceEditorSaves(
-  targets: Parameters<typeof requestEditorSaveQuiesce>[0][]
-): Promise<(() => void)[]> {
-  const quiesced = await Promise.allSettled(targets.map(requestEditorSaveQuiesce))
-  const releases = quiesced.flatMap((result) =>
-    result.status === 'fulfilled' ? [result.value] : []
-  )
-  const failed = quiesced.find((result) => result.status === 'rejected')
-  if (failed) {
-    releaseAll(releases)
-    throw failed.reason
-  }
-  return releases
 }
 
 export function useSourceControlEntryMutations({
@@ -139,7 +118,7 @@ export function useSourceControlEntryMutations({
       const runtimeEnvironmentId =
         activeRepoTarget?.kind === 'environment' ? activeRepoTarget.environmentId : null
       // Hold pending autosaves so delayed writes cannot recreate edits after Git restores the file.
-      const releases = await quiesceEditorSaves(
+      const releases = await requestEditorSaveQuiesceAll(
         editorOwnerIds(activeWorktreeId, editorWorktreeId).map((worktreeId) => ({
           worktreeId,
           worktreePath,
@@ -169,7 +148,7 @@ export function useSourceControlEntryMutations({
           })
         }
       } finally {
-        releaseAll(releases)
+        releaseEditorSaveHolds(releases)
       }
     },
     [activeRepoTarget, activeWorktreeId, editorWorktreeId, worktreePath]
@@ -183,7 +162,7 @@ export function useSourceControlEntryMutations({
       const runtimeEnvironmentId =
         activeRepoTarget?.kind === 'environment' ? activeRepoTarget.environmentId : null
       // Quiesce matching editors so delayed autosaves cannot recreate edits after Git mutates files.
-      const releases = await quiesceEditorSaves(
+      const releases = await requestEditorSaveQuiesceAll(
         editorOwnerIds(activeWorktreeId, editorWorktreeId).flatMap((worktreeId) =>
           filePaths.map((relativePath) => ({
             worktreeId,
@@ -216,7 +195,7 @@ export function useSourceControlEntryMutations({
           }
         }
       } finally {
-        releaseAll(releases)
+        releaseEditorSaveHolds(releases)
       }
     },
     [activeRepoTarget, activeWorktreeId, editorWorktreeId, worktreePath]
