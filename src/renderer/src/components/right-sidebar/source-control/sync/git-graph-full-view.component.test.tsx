@@ -124,6 +124,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  window.localStorage.removeItem('orca:git-graph-details-collapsed')
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
   resetGitHistoryGraphFiltersForTest()
   resetRecentGitHistoryGraphPathsForTest()
@@ -307,6 +308,39 @@ describe('full-width Git Graph', () => {
       within(view).getByRole('separator', { name: 'Resize commit details' }).parentElement
     ).toHaveStyle({ width: '300px' })
     window.localStorage.removeItem('orca:git-graph-details-width')
+  })
+
+  it('hides the details pane on request while a commit is selected, and remembers it', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    let view = await screen.findByRole('region', { name: 'Git Graph' })
+    let rows = await within(view).findAllByTestId('git-graph-full-row')
+    fireEvent.click(rows[0]!)
+    await within(view).findByTestId('git-history-commit-file')
+
+    fireEvent.click(within(view).getByRole('button', { name: 'Hide details' }))
+    expect(within(view).getByRole('button', { name: 'Show details' })).toBeInTheDocument()
+    expect(within(view).queryByTestId('git-history-commit-file')).toBeNull()
+    expect(rows[0]).toHaveAttribute('data-selected', 'true')
+    // The user's choice outlives later picks.
+    fireEvent.click(rows[1]!)
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+    expect(within(view).getByRole('button', { name: 'Show details' })).toBeInTheDocument()
+
+    // And a fresh view.
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    view = await screen.findByRole('region', { name: 'Git Graph' })
+    rows = await within(view).findAllByTestId('git-graph-full-row')
+    expect(rows[1]).toHaveAttribute('data-selected', 'true')
+    expect(within(view).getByRole('button', { name: 'Show details' })).toBeInTheDocument()
+
+    fireEvent.click(within(view).getByRole('button', { name: 'Show details' }))
+    expect(await within(view).findByTestId('git-history-commit-file')).toBeInTheDocument()
+    fireEvent.click(rows[0]!)
+    expect(within(view).queryByRole('button', { name: 'Show details' })).toBeNull()
+    expect(window.localStorage.getItem('orca:git-graph-details-collapsed')).toBeNull()
   })
 
   it('remounting the view lands on the same commit', async () => {
