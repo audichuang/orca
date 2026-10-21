@@ -62,6 +62,15 @@ async function gateSuccessErrors(gate, run = runWithBash) {
       `fork-pr-gate: ${GATE}'s result step must use the default bash shell, not ${step.shell}`
     ]
   }
+  // Why: GitHub skips a step with `if:` and tolerates a failing one with continue-on-error, so either neuters the check.
+  const controls = [
+    ['if', step.if],
+    ['continue-on-error', step['continue-on-error']],
+    ['job continue-on-error', gate['continue-on-error']]
+  ].filter(([, value]) => value !== undefined)
+  if (controls.length > 0) {
+    return controls.map(([name]) => `fork-pr-gate: ${GATE}'s result step must not set \`${name}\``)
+  }
   const needs = gateNeeds(gate)
   const errors = []
   if ((await run(step.run, JSON.stringify(needsContext(needs, null)))) !== 0) {
@@ -78,10 +87,18 @@ async function gateSuccessErrors(gate, run = runWithBash) {
 }
 
 export async function forkPrGateErrors(source) {
-  const jobs = parse(source)?.jobs ?? {}
+  const workflow = parse(source) ?? {}
+  const jobs = workflow.jobs ?? {}
   const gate = jobs[GATE]
   if (!gate) {
     return [`fork-pr-gate: ${WORKFLOW} has no \`${GATE}\` job`]
+  }
+  // Why: the simulation runs bash, so an inherited non-bash default shell would make it test the wrong thing.
+  const inherited = [workflow.defaults?.run?.shell, gate.defaults?.run?.shell].filter(
+    (shell) => shell !== undefined && shell !== 'bash'
+  )
+  if (inherited.length > 0) {
+    return [`fork-pr-gate: ${GATE} must run under the default bash shell, not ${inherited[0]}`]
   }
   return [...gateNeedsErrors(jobs, gate), ...(await gateSuccessErrors(gate))]
 }
