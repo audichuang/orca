@@ -12,7 +12,8 @@ const FROM_THE_TREE = new RegExp(
     String.raw`__dirname`,
     String.raw`import\.meta\.(?:url|dirname|filename)`,
     String.raw`process\.cwd\(\)`,
-    String.raw`['"\`](?:\.\/)?(?:${REPO_ROOTS})\/`
+    String.raw`['"\`](?:\.\/)?(?:${REPO_ROOTS})\/`,
+    String.raw`['"\`](?:\.\/)?(?:package\.json|Makefile|pnpm-workspace\.yaml|pnpm-lock\.yaml|tsconfig[\w.-]*\.json|\.oxlintrc\.json)['"\`]`
   ].join('|')
 )
 
