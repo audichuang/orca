@@ -2,11 +2,15 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   DEFAULT_GIT_HISTORY_GRAPH_FILTER,
   getGitHistoryGraphFilter,
+  gitGraphTabFilterKey,
+  isGitHistoryGraphFiltered,
   parseGitHistoryGraphQuery,
+  seedGitHistoryGraphFilter,
   resetGitHistoryGraphFiltersForTest,
   toGitHistoryGraphRequest,
   updateGitHistoryGraphFilter
 } from './git-history-graph-filter'
+import { resetGitHistoryGraphFilterToDefault } from './git-history-graph-query-tokens'
 
 afterEach(() => resetGitHistoryGraphFiltersForTest())
 
@@ -94,5 +98,46 @@ describe('per-worktree filter state', () => {
 
     updateGitHistoryGraphFilter('wt-a', { scope: 'refs' })
     expect(getGitHistoryGraphFilter('wt-a').limit).toBe(DEFAULT_GIT_HISTORY_GRAPH_FILTER.limit)
+  })
+})
+
+describe('Git Graph tab filter', () => {
+  it('defaults to all branches and stays apart from the sidebar filter of the same repo', () => {
+    const tabKey = gitGraphTabFilterKey('ws::git-graph', 'wt-a')
+    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({
+      scope: 'all',
+      local: true,
+      remotes: 'all'
+    })
+    expect(getGitHistoryGraphFilter('wt-a').scope).toBe('head')
+
+    updateGitHistoryGraphFilter(tabKey, { query: 'fix' })
+    updateGitHistoryGraphFilter('wt-a', { scope: 'refs', refs: ['refs/heads/x'] })
+    expect(getGitHistoryGraphFilter('wt-a')).toMatchObject({ scope: 'refs', query: '' })
+    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({ scope: 'all', refs: [], query: 'fix' })
+  })
+
+  it("measures 'filtered' and Clear against the tab's own default", () => {
+    const tabKey = gitGraphTabFilterKey('ws::git-graph', 'wt-a')
+    expect(isGitHistoryGraphFiltered(getGitHistoryGraphFilter(tabKey), tabKey)).toBe(false)
+    updateGitHistoryGraphFilter(tabKey, { scope: 'head' })
+    expect(isGitHistoryGraphFiltered(getGitHistoryGraphFilter(tabKey), tabKey)).toBe(true)
+
+    resetGitHistoryGraphFilterToDefault(tabKey)
+    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({ scope: 'all', remotes: 'all' })
+    // The sidebar keeps upstream's HEAD-only default as unfiltered.
+    expect(isGitHistoryGraphFiltered(getGitHistoryGraphFilter('wt-a'), 'wt-a')).toBe(false)
+    updateGitHistoryGraphFilter('wt-a', { scope: 'all' })
+    expect(isGitHistoryGraphFiltered(getGitHistoryGraphFilter('wt-a'), 'wt-a')).toBe(true)
+  })
+
+  it('seeds a saved filter only when the key has none yet', () => {
+    const tabKey = gitGraphTabFilterKey('ws::git-graph', 'wt-a')
+    const saved = { scope: 'head' as const, refs: [], local: true, remotes: [], query: 'fix' }
+    seedGitHistoryGraphFilter(tabKey, saved)
+    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({ ...saved, limit: 50 })
+
+    seedGitHistoryGraphFilter(tabKey, { ...saved, query: 'other' })
+    expect(getGitHistoryGraphFilter(tabKey).query).toBe('fix')
   })
 })
