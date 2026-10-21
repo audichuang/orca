@@ -223,7 +223,9 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
           const ys = [r.top + r.height * 0.2, r.top + r.height / 2, r.bottom - r.height * 0.2]
           return xs.every((x) => ys.every((y) => b.contains(document.elementFromPoint(x, y))))
         }
+        const dock = document.querySelector('[data-git-history-dock]')
         return {
+          dockTop: dock ? dock.getBoundingClientRect().top : null,
           barBox: [br.left, br.right, br.top, br.bottom],
           detailBox: [detail.left, detail.right, detail.top, detail.bottom],
           labelText: label.innerText,
@@ -287,6 +289,11 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
     const bar1 = await barGeo()
     if ('barBox' in bar1) {
       expect(toast.bottom, 'settled toast sits above the bar').toBeLessThanOrEqual(bar1.barBox[2])
+      // Why: the bar's padding lifts the dock without resizing it (fb2dba0af8).
+      expect(bar1.dockTop, 'Git History dock is on screen').not.toBeNull()
+      expect(toast.bottom, 'settled toast sits above Git History').toBeLessThanOrEqual(
+        bar1.dockTop ?? Number.NEGATIVE_INFINITY
+      )
     }
     ev.push(`bulk bar with toast: ${JSON.stringify(bar1)}`)
     expect('error' in bar1 ? bar1.error : '').toBe('')
