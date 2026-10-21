@@ -167,6 +167,17 @@ export function gitGraphGridTemplate(columns: GitGraphColumns): string {
     .join(' ')
 }
 
+function isPlainEnter(event: React.KeyboardEvent): boolean {
+  return (
+    event.key === 'Enter' &&
+    !event.nativeEvent.isComposing &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.shiftKey
+  )
+}
+
 export function GitGraphFullRow({
   viewModel,
   lanes,
@@ -178,7 +189,8 @@ export function GitGraphFullRow({
   dimmed = false,
   contextMenu,
   onSelect,
-  onJump
+  onJump,
+  onOpen
 }: {
   viewModel: GitHistoryItemViewModel
   /** This row's slice of the folded, HEAD-pinned lane layout. */
@@ -200,6 +212,8 @@ export function GitGraphFullRow({
   onSelect: (event: React.MouseEvent) => void
   /** A click on a folded edge's arrow jumps to the commit at its other end. */
   onJump?: (commitId: string) => void
+  /** Double-click or Enter: open the commit's whole diff. */
+  onOpen?: () => void
 }): React.JSX.Element {
   const item = viewModel.historyItem
   const isBoundaryNode =
@@ -303,6 +317,15 @@ export function GitGraphFullRow({
       data-selected={selected ? 'true' : undefined}
       data-testid="git-graph-full-row"
       onClick={onSelect}
+      onDoubleClick={onOpen}
+      onKeyDown={(event) => {
+        if (!onOpen || !isPlainEnter(event)) {
+          return
+        }
+        // Why prevent: a button's Enter also fires a click, which would collapse a multi-selection.
+        event.preventDefault()
+        onOpen()
+      }}
     >
       {cells}
     </button>
