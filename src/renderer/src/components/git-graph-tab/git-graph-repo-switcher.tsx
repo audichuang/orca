@@ -41,6 +41,26 @@ function groupByRepo(
   return current > 0 ? [list[current]!, ...list.filter((_, index) => index !== current)] : list
 }
 
+/** Keywords in the order repoSwitcherFilter reads them: full path first, then always-searched names. */
+function repoSwitcherKeywords(choice: GitGraphRepoChoice, repoLabel: string): string[] {
+  const { path } = choice.worktree
+  // Why the folder name: both display names can be custom labels that hide it.
+  const folder = path.split(/[\\/]/).findLast(Boolean) ?? ''
+  return [path, folder, repoLabel, choice.worktree.displayName, branchName(choice.worktree.branch)]
+}
+
+/** Substring match on folder, repo, worktree and branch names; paths only for a query with a slash. */
+function repoSwitcherFilter(_value: string, search: string, keywords?: string[]): number {
+  const query = search.trim().toLowerCase()
+  if (!query) {
+    return 1
+  }
+  const [path = '', ...names] = keywords ?? []
+  // Why not cmdk's fuzzy default: every path shares the folder prefix, so any query scored every row.
+  const haystacks = query.includes('/') ? [...names, path] : names
+  return haystacks.some((text) => text.toLowerCase().includes(query)) ? 1 : 0
+}
+
 export function GitGraphRepoSwitcher({
   choices,
   value,
@@ -109,7 +129,7 @@ export function GitGraphRepoSwitcher({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[min(320px,calc(100vw-1rem))]">
-        <Command density="menu">
+        <Command density="menu" filter={repoSwitcherFilter}>
           <CommandInput
             placeholder={translate(
               'auto.components.gitGraphTab.searchRepos',
@@ -123,34 +143,39 @@ export function GitGraphRepoSwitcher({
             {/* Why flat rows: most repos have one worktree, so a heading per repo doubled the list. */}
             <CommandGroup>
               {groups.flatMap((group) =>
-                group.choices.map((choice) => (
-                  <CommandItem
-                    key={choice.worktree.id}
-                    value={`${group.label} ${choice.worktree.displayName} ${choice.worktree.path}`}
-                    onSelect={() => {
-                      setOpen(false)
-                      if (choice.worktree.id !== value) {
-                        onValueChange(choice.worktree.id)
-                      }
-                    }}
-                  >
-                    {/* Why the repo's own badge colour: the same mark the sidebar shows, so rows tell apart at a glance. */}
-                    <RepoBadgeMark
-                      color={repoColor(choice.repo)}
-                      className="size-2.5 rounded-[2px]"
-                    />
-                    <span className="min-w-0 flex-1 truncate">{group.label}</span>
-                    <span className="min-w-0 max-w-[45%] truncate text-muted-foreground">
-                      {choice.worktree.displayName}
-                    </span>
-                    <Check
-                      className={cn(
-                        'size-3.5 text-muted-foreground',
-                        choice.worktree.id !== value && 'invisible'
-                      )}
-                    />
-                  </CommandItem>
-                ))
+                group.choices.map((choice) => {
+                  const keywords = repoSwitcherKeywords(choice, group.label)
+                  return (
+                    <CommandItem
+                      key={choice.worktree.id}
+                      // Why the keywords in the value: cmdk re-reads keywords only when the value changes.
+                      value={[choice.worktree.id, ...keywords].join('\u0000')}
+                      keywords={keywords}
+                      onSelect={() => {
+                        setOpen(false)
+                        if (choice.worktree.id !== value) {
+                          onValueChange(choice.worktree.id)
+                        }
+                      }}
+                    >
+                      {/* Why the repo's own badge colour: the same mark the sidebar shows, so rows tell apart at a glance. */}
+                      <RepoBadgeMark
+                        color={repoColor(choice.repo)}
+                        className="size-2.5 rounded-[2px]"
+                      />
+                      <span className="min-w-0 flex-1 truncate">{group.label}</span>
+                      <span className="min-w-0 max-w-[45%] truncate text-muted-foreground">
+                        {choice.worktree.displayName}
+                      </span>
+                      <Check
+                        className={cn(
+                          'size-3.5 text-muted-foreground',
+                          choice.worktree.id !== value && 'invisible'
+                        )}
+                      />
+                    </CommandItem>
+                  )
+                })
               )}
             </CommandGroup>
           </CommandList>
