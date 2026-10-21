@@ -88,7 +88,6 @@ export type OpenCheckRunDetailsState = {
 /** Fork: a Git Graph tab's repo worktree, which may differ from the workspace hosting the tab. */
 export type OpenGitGraphState = {
   repoWorktreeId: string
-  /** Absent on tabs from older builds, which then open on the tab default. */
   filter?: GitHistoryGraphSavedFilter
 }
 

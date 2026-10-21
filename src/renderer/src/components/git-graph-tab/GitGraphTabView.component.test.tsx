@@ -13,13 +13,32 @@ import type { FolderWorkspace } from '../../../../shared/folder-workspace-types'
 import type { NestedRepoScanResult } from '../../../../shared/project-group-types'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
 import {
+  getGitHistoryGraphDraftQuery,
   getGitHistoryGraphFilter,
   gitGraphTabFilterKey,
   resetGitHistoryGraphFiltersForTest,
+  setGitHistoryGraphDraftQuery,
   updateGitHistoryGraphFilter
 } from '../right-sidebar/source-control/sync/git-history-graph-filter'
+import { showGitGraphPathHistory } from '../right-sidebar/source-control/sync/git-history-graph-path-query'
+import { peekGitGraphRevealRequest } from './git-graph-reveal-request'
 import { resetGitGraphRememberedSelectionForTest } from '../right-sidebar/source-control/sync/use-git-graph-full-view-state'
+import {
+  getRememberedFolderRepo,
+  rememberFolderRepo
+} from '../right-sidebar/source-control/folder/folder-repo-selection'
 import GitGraphTabView from './GitGraphTabView'
+
+type ToastOptions = { action?: { label: string; onClick: () => void } }
+const toastInfo = vi.hoisted(() => vi.fn<(message: string, options?: ToastOptions) => void>())
+vi.mock('sonner', () => ({
+  toast: Object.assign(vi.fn(), {
+    info: toastInfo,
+    error: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn()
+  })
+}))
 
 function repo(name: string, extra: Partial<Repo> = {}): Repo {
   return {
@@ -145,6 +164,7 @@ afterEach(() => {
   history.mockReset()
   history.mockImplementation(async () => ({ ...RESULT }))
   scanNested.mockClear()
+  toastInfo.mockClear()
 })
 
 describe('Git Graph tab', () => {
@@ -383,6 +403,58 @@ describe('Git Graph tab filters', () => {
     expect(savedFilter(id)).toMatchObject({ scope: 'all', refs: [], query: 'fix' })
   })
 
+  it("restores the tab's current filter, not an old in-memory one, on returning to a repo", async () => {
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    const apiKey = gitGraphTabFilterKey(id, 'wt-api')
+    renderTab(id)
+    act(() => {
+      updateGitHistoryGraphFilter(apiKey, { scope: 'refs', refs: ['refs/heads/old'], query: 'a' })
+      setGitHistoryGraphDraftQuery(apiKey, 'a draft')
+    })
+    await waitFor(() => expect(savedFilter(id)).toMatchObject({ query: 'a' }))
+
+    act(() => useAppStore.getState().setGitGraphTabRepo(id, 'wt-web'))
+    await waitFor(() =>
+      expect(history).toHaveBeenLastCalledWith(
+        expect.objectContaining({ worktreePath: '/work/web' })
+      )
+    )
+    act(() => updateGitHistoryGraphFilter(gitGraphTabFilterKey(id, 'wt-web'), { query: 'b' }))
+    await waitFor(() => expect(savedFilter(id)).toMatchObject({ query: 'b' }))
+
+    act(() => useAppStore.getState().setGitGraphTabRepo(id, 'wt-api'))
+    await waitFor(() =>
+      expect(history).toHaveBeenLastCalledWith(
+        expect.objectContaining({ worktreePath: '/work/api' })
+      )
+    )
+    expect(lastPageGraph()).toMatchObject({ mode: 'all', search: { text: 'b' } })
+    expect(savedFilter(id)).toMatchObject({ scope: 'all', refs: [], query: 'b' })
+    expect(getGitHistoryGraphDraftQuery(apiKey)).toBe('b')
+  })
+
+  it('keeps a Show File History path filter when it switches the open tab to another repo', async () => {
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    renderTab(id)
+    await waitFor(() => expect(savedFilter(id)).toBeDefined())
+
+    act(() =>
+      showGitGraphPathHistory({
+        workspaceId: 'wt-api',
+        repoWorktreeId: 'wt-web',
+        path: 'src/a.ts',
+        openGitGraphTab: useAppStore.getState().openGitGraphTab
+      })
+    )
+    await waitFor(() =>
+      expect(history).toHaveBeenLastCalledWith(
+        expect.objectContaining({ worktreePath: '/work/web' })
+      )
+    )
+    expect(lastPageGraph()).toMatchObject({ search: { path: 'src/a.ts' } })
+    expect(savedFilter(id)).toMatchObject({ query: 'path:src/a.ts' })
+  })
+
   it('offers Clear filters and Show all branches when the filter matches nothing', async () => {
     history.mockImplementation(async () => ({ ...RESULT, items: [] }))
     const id = useAppStore.getState().openGitGraphTab('wt-api')!
@@ -452,5 +524,105 @@ describe('Git Graph tab first selection', () => {
     history.mockImplementation(async () => ({ ...withHead(), items: [NEWER, OLDER] }))
     renderTab(useAppStore.getState().openGitGraphTab('wt-api')!)
     await waitFor(() => expect(selectedSubjects()).toEqual([expect.stringContaining('Elsewhere')]))
+  })
+
+  it('selects a revealed commit over the checked-out one', async () => {
+    history.mockImplementation(async () => withHead())
+    renderTab(useAppStore.getState().openGitGraphTab('wt-api', { revealCommit: OLDER.id })!)
+    await waitFor(() => expect(selectedSubjects()).toEqual([expect.stringContaining('Older')]))
+  })
+
+  it('reveals a commit in a tab that is already showing the repo', async () => {
+    history.mockImplementation(async () => withHead())
+    renderTab(useAppStore.getState().openGitGraphTab('wt-api')!)
+    await waitFor(() =>
+      expect(selectedSubjects()).toEqual([expect.stringContaining('Head commit')])
+    )
+    act(() => {
+      useAppStore.getState().openGitGraphTab('wt-api', { revealCommit: NEWER.id })
+    })
+    await waitFor(() => expect(selectedSubjects()).toEqual([expect.stringContaining('Elsewhere')]))
+  })
+
+  it('keeps the usual first pick when the revealed commit is not loaded', async () => {
+    history.mockImplementation(async () => withHead())
+    const id = useAppStore.getState().openGitGraphTab('wt-api', { revealCommit: 'e'.repeat(40) })!
+    renderTab(id)
+    await waitFor(() =>
+      expect(selectedSubjects()).toEqual([expect.stringContaining('Head commit')])
+    )
+    expect(toastInfo.mock.calls.at(-1)?.[0]).toBe('That commit is not in the loaded history.')
+    expect(peekGitGraphRevealRequest(id)).toBeNull()
+  })
+
+  it('selects the detached checked-out commit by its revision', async () => {
+    history.mockImplementation(async () => ({
+      ...RESULT,
+      items: [NEWER, OLDER],
+      currentRef: { id: OLDER.id, name: 'bbbbbbb', revision: OLDER.id, category: 'commits' }
+    }))
+    renderTab(useAppStore.getState().openGitGraphTab('wt-api')!)
+    await waitFor(() => expect(selectedSubjects()).toEqual([expect.stringContaining('Older')]))
+  })
+
+  it('loads deeper history to find a revealed commit past the first page', async () => {
+    const DEEP = { ...RESULT.items[0]!, id: 'f'.repeat(40), subject: 'Deep', message: 'Deep' }
+    history.mockImplementation(async (args) =>
+      args.graph?.limit === 1000
+        ? { ...withHead(), items: [NEWER, HEAD, OLDER, DEEP], hasMore: false }
+        : { ...withHead(), hasMore: true }
+    )
+    const id = useAppStore.getState().openGitGraphTab('wt-api', { revealCommit: DEEP.id })!
+    renderTab(id)
+    await waitFor(() => expect(selectedSubjects()).toEqual([expect.stringContaining('Deep')]))
+    expect(toastInfo).not.toHaveBeenCalled()
+    expect(peekGitGraphRevealRequest(id)).toBeNull()
+  })
+
+  it('offers to clear filters when a filtered graph hides the revealed commit', async () => {
+    history.mockImplementation(async (args) => (args.graph?.search ? { ...RESULT } : withHead()))
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    const key = gitGraphTabFilterKey(id, 'wt-api')
+    renderTab(id)
+    act(() => updateGitHistoryGraphFilter(key, { query: 'fix' }))
+    await waitFor(() => expect(lastPageGraph()).toMatchObject({ search: { text: 'fix' } }))
+    await waitFor(() => expect(screen.getAllByTestId('git-graph-full-row')).toHaveLength(1))
+
+    act(() => {
+      useAppStore.getState().openGitGraphTab('wt-api', { revealCommit: OLDER.id })
+    })
+    await waitFor(() =>
+      expect(toastInfo).toHaveBeenCalledWith(
+        'That commit is not in the loaded history.',
+        expect.objectContaining({ action: expect.objectContaining({ label: 'Clear filters' }) })
+      )
+    )
+    act(() => toastInfo.mock.calls.at(-1)?.[1]?.action?.onClick())
+    expect(getGitHistoryGraphFilter(key).query).toBe('')
+    await waitFor(() => expect(selectedSubjects()).toEqual([expect.stringContaining('Older')]))
+  })
+})
+
+describe('Git Graph tab and Source Control', () => {
+  it("selects the switched-to repo in the folder's Source Control", async () => {
+    useAppStore.setState({ folderWorkspaces: [folder()] })
+    const key = folderWorkspaceKey('folder-1')
+    renderTab(useAppStore.getState().openGitGraphTab(key, { repoWorktreeId: 'wt-api' })!)
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Repository' }))
+    fireEvent.click(await screen.findByText('web-main'))
+    expect(getRememberedFolderRepo(key)).toBe('wt-web')
+  })
+
+  it('opens Source Control on the shown repo', async () => {
+    useAppStore.setState({ folderWorkspaces: [folder()], rightSidebarOpen: false })
+    const key = folderWorkspaceKey('folder-1')
+    renderTab(useAppStore.getState().openGitGraphTab(key, { repoWorktreeId: 'wt-web' })!)
+    // Source Control moved on meanwhile; the button brings it back to the graph's repo.
+    act(() => rememberFolderRepo(key, 'wt-api'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Open in Source Control' }))
+    const state = useAppStore.getState()
+    expect(state.rightSidebarOpen).toBe(true)
+    expect(state.rightSidebarTab).toBe('source-control')
+    expect(getRememberedFolderRepo(key)).toBe('wt-web')
   })
 })
