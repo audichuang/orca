@@ -6,6 +6,10 @@ export type SourceControlWorktreeScope = {
   gitWorktreeId: string
   /** Worktree whose editor receives the tabs the panel opens (the active folder workspace). */
   editorWorktreeId: string
+  /** Repo name shown in the panel toolbar so the detail pane names what it shows. */
+  label?: string
+  /** Repo colour mark beside the label. */
+  color?: string
 }
 
 export const SourceControlWorktreeScopeContext = createContext<SourceControlWorktreeScope | null>(
