@@ -15,6 +15,7 @@ import {
 import { unifiedTabsKeepWorktreeSelected } from './unified-tabs-keep-worktree-selected'
 import { isSameEditorOwner, mayShareEditorBackingFile } from '../file-ids/editor-file-ids'
 import { isEditorTabContentType } from '../tabs/editor-tab-content-type'
+import { forgetClosedGitGraphTabs } from '@/components/git-graph-tab/git-graph-tab-cleanup'
 
 function isSameDocumentOwner(candidate: OpenFile, closedFile: OpenFile): boolean {
   const expectedRoute = closedFile.operationProvenance?.generation.route
@@ -121,6 +122,7 @@ export function createCloseFileAction(
       for (const file of preCloseFiles) {
         notifyHostOfMirroredEditorClose(get(), file.worktreeId, file.id)
       }
+      forgetClosedGitGraphTabs(preCloseFiles)
 
       set((s) => {
         const closedFile = s.openFiles.find((f) => f.id === fileId)
