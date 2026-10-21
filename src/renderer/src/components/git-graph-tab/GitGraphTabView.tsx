@@ -1,7 +1,8 @@
 // Fork-only: the Git Graph editor tab. Loads one repo's history and hosts GitGraphFullView.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FolderPlus } from 'lucide-react'
+import { FolderPlus, PanelRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import { useAllWorktrees, useRepoMap, useWorktreeMap } from '@/store/selectors'
 import type { OpenFile } from '@/store/slices/editor'
@@ -24,6 +25,8 @@ import { listGitGraphRepoChoices } from './git-graph-tab-model'
 import { resolveGitGraphSplitTargetGroupId } from './git-graph-split-target'
 import type { SourceControlRowOpenEvent } from '../right-sidebar/source-control/listing/split-open'
 import { useRepoDisplayColor } from '@/lib/repo-display-color'
+import { openSourceControlOnRepo } from './git-graph-source-control-link'
+import { useGitGraphTabReveal } from './use-git-graph-tab-reveal'
 
 function GitGraphTabBody({
   fileId,
@@ -100,6 +103,7 @@ function GitGraphTabBody({
       resolveSplitTargetGroupId
     })
   const revealInExplorer = useAppStore((s) => s.revealInExplorer)
+  const reveal = useGitGraphTabReveal(fileId, worktree.id, filterKey)
   const renderCommitFilesMenu = commitFilesMenuSlot(
     {
       activeConnectionId: getConnectionId(worktree.id) ?? repo.connectionId ?? null,
@@ -128,6 +132,7 @@ function GitGraphTabBody({
       accentColor={repoColor(repo)}
       filterKey={filterKey}
       selectHeadOnOpen
+      reveal={reveal}
     />
   )
 }
@@ -159,6 +164,10 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
         onClose={() => setAddReposOpen(false)}
       />
     ) : null
+  const openInSourceControlLabel = translate(
+    'auto.components.gitGraphTab.openInSourceControl',
+    'Open in Source Control'
+  )
   const switcher = (
     <>
       <GitGraphRepoSwitcher
@@ -177,6 +186,24 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
             : undefined
         }
       />
+      {choice && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={openInSourceControlLabel}
+              onClick={() => openSourceControlOnRepo(workspaceId, choice.worktree.id)}
+            >
+              <PanelRight />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={6}>
+            {openInSourceControlLabel}
+          </TooltipContent>
+        </Tooltip>
+      )}
       {addReposDialog}
     </>
   )
