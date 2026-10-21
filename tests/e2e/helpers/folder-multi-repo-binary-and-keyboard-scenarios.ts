@@ -55,7 +55,7 @@ export async function runBinaryAndKeyboardScenarios(ctx: ExtraScenarioContext): 
     await shot('S17-binary-to-text')
   })
 
-  await scenario('S18 Keyboard: ArrowDown + Enter selects the next repo', async (ev) => {
+  await scenario('S18 Keyboard: ArrowDown selects the next repo', async (ev) => {
     const rows = page.locator('[data-repo-row]')
     const selected = page.locator('[data-repo-row][aria-current="true"]')
     const labels = (await rows.allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim())
@@ -67,7 +67,6 @@ export async function runBinaryAndKeyboardScenarios(ctx: ExtraScenarioContext): 
     await rows.first().focus()
     await expect(rows.first()).toBeFocused()
     await page.keyboard.press('ArrowDown')
-    await page.keyboard.press('Enter')
     await expect(rows.nth(1)).toHaveAttribute('aria-current', 'true')
     await expect(rows.nth(1)).toBeFocused()
     await expect(selected).toHaveCount(1)
@@ -76,29 +75,21 @@ export async function runBinaryAndKeyboardScenarios(ctx: ExtraScenarioContext): 
     const apiFirst = readStatus(R.api)[0]!
     await expect(entry(coreFirst.area, coreFirst.path)).toHaveCount(1, { timeout: 15_000 })
     await expect(entry(apiFirst.area, apiFirst.path)).toHaveCount(0)
-    ev.push(`ArrowDown+Enter: ${labels[0]} -> ${labels[1]}; panel shows ${coreFirst.path}`)
-    await shot('S18a-arrowdown-enter')
-    // Accordion keys: End/Home only move focus; Enter opens the focused repo.
+    ev.push(`ArrowDown: ${labels[0]} -> ${labels[1]}; panel shows ${coreFirst.path}`)
+    await shot('S18a-arrowdown')
+    // List keys: End/Home move focus and select; Enter on the open repo keeps it open.
     await page.keyboard.press('End')
     await expect(rows.last()).toBeFocused()
-    await expect(rows.nth(1)).toHaveAttribute('aria-current', 'true')
-    await page.keyboard.press('Enter')
     await expect(rows.last()).toHaveAttribute('aria-current', 'true')
-    await expect(rows.last()).toBeFocused()
     await page.keyboard.press('Home')
     await expect(rows.first()).toBeFocused()
+    await expect(rows.first()).toHaveAttribute('aria-current', 'true')
     await page.keyboard.press('Enter')
     await expect(rows.first()).toHaveAttribute('aria-current', 'true')
+    await expect(selected).toHaveCount(1)
     await expect(rows.first()).toBeFocused()
-    // Enter on the open repo collapses it; Enter again reopens it.
-    await page.keyboard.press('Enter')
-    await expect(selected).toHaveCount(0)
-    await expect(rows.first()).toBeFocused()
-    await page.keyboard.press('Enter')
-    await expect(rows.first()).toHaveAttribute('aria-current', 'true')
     await page.keyboard.press('ArrowUp')
     await expect(rows.first()).toHaveAttribute('aria-current', 'true')
-    await expect(rows.first()).toBeFocused()
     // The detail toolbar names the selected repo.
     await expect(
       page
