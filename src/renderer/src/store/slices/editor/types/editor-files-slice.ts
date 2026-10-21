@@ -14,6 +14,7 @@ import type {
 } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import type { WorkspaceVisibleTabType } from '../../../../../../shared/workspace-layout/tab-groups/tab-types'
+import type { GitHistoryGraphSavedFilter } from '../../../../../../shared/git-history-graph-query-types'
 import type {
   BranchCompareLike,
   ClosedEditorTabSnapshot,
@@ -247,6 +248,7 @@ export type EditorFilesSlice = GitGraphTabSlice & {
     opts?: { repoWorktreeId?: string; targetGroupId?: string }
   ) => string | null
   setGitGraphTabRepo: (fileId: string, repoWorktreeId: string) => void
+  setGitGraphTabFilter: (fileId: string, filter: GitHistoryGraphSavedFilter) => void
   openBranchAllDiffs: (
     worktreeId: string,
     worktreePath: string,
