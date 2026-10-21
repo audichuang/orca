@@ -17,6 +17,7 @@ import { branchName } from '@/lib/git-utils'
 import { RepoBadgeMark } from '@/components/repo/RepoBadgeLabel'
 import { translate } from '@/i18n/i18n'
 import type { GitGraphRepoChoice } from './git-graph-tab-model'
+import { useRepoDisplayColor } from '@/lib/repo-display-color'
 
 function groupByRepo(
   choices: readonly GitGraphRepoChoice[],
@@ -60,6 +61,7 @@ export function GitGraphRepoSwitcher({
   }
 }): React.JSX.Element | null {
   const [open, setOpen] = useState(false)
+  const repoColor = useRepoDisplayColor()
   const groups = useMemo(() => groupByRepo(choices, value), [choices, value])
   const selected = choices.find((choice) => choice.worktree.id === value) ?? null
   if (choices.length === 0) {
@@ -88,7 +90,7 @@ export function GitGraphRepoSwitcher({
         >
           {selected ? (
             <>
-              <RepoBadgeMark color={selected.repo.badgeColor} className="size-2 rounded-[2px]" />
+              <RepoBadgeMark color={repoColor(selected.repo)} className="size-2 rounded-[2px]" />
               <span className="truncate text-foreground">{selected.repo.displayName}</span>
               {/* Why the worktree name as fallback: a detached HEAD has no branch. */}
               <span className="min-w-0 truncate text-muted-foreground">
@@ -134,7 +136,7 @@ export function GitGraphRepoSwitcher({
                   >
                     {/* Why the repo's own badge colour: the same mark the sidebar shows, so rows tell apart at a glance. */}
                     <RepoBadgeMark
-                      color={choice.repo.badgeColor}
+                      color={repoColor(choice.repo)}
                       className="size-2.5 rounded-[2px]"
                     />
                     <span className="min-w-0 flex-1 truncate">{group.label}</span>
