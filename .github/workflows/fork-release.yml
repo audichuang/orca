@@ -18,7 +18,7 @@ concurrency:
 jobs:
   release:
     name: fork release dmg
-    # Why a variable: `orca-release` is the macmini self-hosted runner; unset it to fall back to hosted.
+    # Why a variable: it can name a self-hosted runner label; unset, releases build hosted.
     # fork-release-dryrun-hosted-* always runs hosted so the fallback stays tested.
     runs-on: ${{ startsWith(github.ref_name, 'fork-release-dryrun-hosted-') && 'macos-15' || vars.FORK_RELEASE_RUNNER || 'macos-15' }}
     timeout-minutes: 90
