@@ -7,6 +7,9 @@ import {
 } from 'lucide-react'
 import { Toaster as Sonner, type ToasterProps } from 'sonner'
 import { useAppStore } from '@/store'
+import { TOAST_BOTTOM_CLEARANCE_VAR } from '@/lib/toast-bottom-clearance'
+
+const TOAST_BOTTOM_OFFSET = `max(calc(2.5rem + env(safe-area-inset-bottom, 0px)), var(${TOAST_BOTTOM_CLEARANCE_VAR}, 0px))`
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const theme = useAppStore((s) => s.settings?.theme) || 'system'
@@ -20,8 +23,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       // mobileOffset keeps that clearance below Sonner's 600px breakpoint
       // (narrow/resized windows and the web client), which otherwise reverts
       // to Sonner's default 16px and lets toasts crowd the status bar again.
-      offset={{ bottom: 'calc(2.5rem + env(safe-area-inset-bottom, 0px))' }}
-      mobileOffset={{ bottom: 'calc(2.5rem + env(safe-area-inset-bottom, 0px))' }}
+      // Fork-only: max() lifts toasts above bottom chrome that registers a clearance (toast-bottom-clearance.ts).
+      offset={{ bottom: TOAST_BOTTOM_OFFSET }}
+      mobileOffset={{ bottom: TOAST_BOTTOM_OFFSET }}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,
