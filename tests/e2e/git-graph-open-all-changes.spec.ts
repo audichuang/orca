@@ -8,7 +8,7 @@ import { waitForSessionReady } from './helpers/store'
 import { openSourceControlForWorktree } from './helpers/worktree-registration'
 
 // Regression for a one-off "InstantiationService has been disposed" workbench crash: graph file diff
-// (preview tab) -> back to the graph -> "Open all changes together" on a many-file commit.
+// (preview tab) -> back to the graph -> "Open all changes" on a many-file commit.
 
 function git(cwd: string, args: string[]): string {
   return execFileSync('git', args, { cwd, stdio: 'pipe', encoding: 'utf8' })
@@ -69,7 +69,7 @@ async function expectWorkbenchHealthy(page: Page, errors: string[]): Promise<voi
   expect(errors.filter((error) => /InstantiationService/.test(error))).toEqual([])
 }
 
-test('graph tab: file diff, back, then Open all changes together keeps the workbench alive', async ({
+test('graph tab: file diff, back, then Open all changes keeps the workbench alive', async ({
   orcaPage,
   testRepoPath,
   registerPostElectronShutdownCleanup
@@ -103,7 +103,7 @@ test('graph tab: file diff, back, then Open all changes together keeps the workb
     }
     await rows.filter({ hasText: 'Add eight files' }).click()
     await expect(files).toHaveCount(8, { timeout: 15_000 })
-    await graph.getByRole('button', { name: 'Open all changes together' }).click()
+    await graph.getByRole('button', { name: 'Open all changes', exact: true }).click()
     await expect(orcaPage.locator('.monaco-diff-editor').first()).toBeVisible({ timeout: 20_000 })
     await expectWorkbenchHealthy(orcaPage, errors)
     await graphTab.click()
