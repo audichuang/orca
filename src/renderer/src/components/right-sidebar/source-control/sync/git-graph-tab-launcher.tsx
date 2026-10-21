@@ -1,13 +1,18 @@
 // Fork-only: entry points to the Git Graph editor tab.
-import React from 'react'
-import { GitGraph, Maximize2 } from 'lucide-react'
+import React, { useMemo } from 'react'
+import { GitGraph } from 'lucide-react'
+import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { useShortcutKeyDetails } from '@/hooks/useShortcutLabel'
-import { resolveGitGraphDefaultRepoWorktreeId } from '../../../git-graph-tab/git-graph-tab-model'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import {
+  listGitGraphRepoChoicesFromState,
+  resolveGitGraphDefaultRepoWorktreeId
+} from '../../../git-graph-tab/git-graph-tab-model'
 import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 
 function openGitGraphLabel(): string {
@@ -61,7 +66,7 @@ export function GitGraphTabLauncher({
         aria-label={openGitGraphLabel()}
         onClick={() => openGitGraphTab(workspaceId, { repoWorktreeId })}
       >
-        <Maximize2 className="size-3" />
+        <GitGraph className="size-3" />
       </Button>
     </GitGraphShortcutTooltip>
   )
@@ -110,5 +115,55 @@ export function RepoWorkspaceGitGraphButton(): React.JSX.Element | null {
   const activeWorktreeId = useAppStore((s) => s.activeWorktreeId)
   return inFolder || !activeWorktreeId ? null : (
     <GitGraphOpenButton workspaceId={activeWorktreeId} />
+  )
+}
+
+/** True when Git Graph can open for the workspace; recomputed only when repos, worktrees or folders change. */
+function useWorkspaceHasGitGraphRepo(workspaceId: string): boolean {
+  const { repos, worktreesByRepo, folderWorkspaces } = useAppStore(
+    useShallow((s) => ({
+      repos: s.repos,
+      worktreesByRepo: s.worktreesByRepo,
+      folderWorkspaces: s.folderWorkspaces
+    }))
+  )
+  return useMemo(() => {
+    const choices = listGitGraphRepoChoicesFromState(
+      { repos, worktreesByRepo, folderWorkspaces },
+      workspaceId
+    )
+    // Why mirror resolveGitGraphDefaultRepoWorktreeId: a non-git repo workspace still lists same-host siblings.
+    return parseWorkspaceKey(workspaceId)?.type === 'folder'
+      ? choices.length > 0
+      : choices.some((choice) => choice.worktree.id === workspaceId)
+  }, [repos, worktreesByRepo, folderWorkspaces, workspaceId])
+}
+
+/** Tab-strip entry beside the right-sidebar toggle, so the graph opens without the sidebar. */
+export function TabStripGitGraphButton({
+  workspaceId,
+  active
+}: {
+  workspaceId: string
+  /** The group's active tab is already the Git Graph. */
+  active: boolean
+}): React.JSX.Element | null {
+  const openGitGraphTab = useAppStore((s) => s.openGitGraphTab)
+  const hasRepo = useWorkspaceHasGitGraphRepo(workspaceId)
+  if (!hasRepo) {
+    return null
+  }
+  return (
+    <GitGraphShortcutTooltip>
+      <button
+        type="button"
+        aria-label={openGitGraphLabel()}
+        aria-pressed={active}
+        onClick={() => openGitGraphTab(workspaceId)}
+        className="my-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent aria-pressed:bg-accent aria-pressed:text-accent-foreground @max-[260px]/tab-strip:hidden"
+      >
+        <GitGraph className="size-3.5" />
+      </button>
+    </GitGraphShortcutTooltip>
   )
 }
