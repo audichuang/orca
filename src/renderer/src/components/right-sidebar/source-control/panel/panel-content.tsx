@@ -15,6 +15,7 @@ import { SourceControlCommitSurface } from './commit-surface'
 import { SourceControlForkPushNotice } from './fork-push-notice'
 import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 import type { SourceControlPanelReadyProps } from './panel-props'
+import { toastBottomClearanceRef } from '@/lib/toast-bottom-clearance'
 
 /** The scrolling surface: status, commit affordances, the file sections and the history dock. */
 export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
@@ -234,7 +235,10 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
 
       {isGitHistoryVisible && (
         // Why: the graph is reference context, so keep it docked at the bottom as the pane scrolls.
-        <div className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-sidebar/95 backdrop-blur-sm">
+        <div
+          ref={toastBottomClearanceRef}
+          className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-sidebar/95 backdrop-blur-sm"
+        >
           <GitHistoryPanel
             state={gitHistoryState}
             collapsed={collapsedSections.has('history')}
