@@ -10,6 +10,12 @@ export const EXCLUDED = {
 }
 
 export function parseLintSteps(lintScript) {
+  // Why: a newline also separates shell commands, so splitting on && alone would drop the steps after it.
+  if (/[\r\n]/.test(lintScript)) {
+    throw new Error(
+      'fork-lint-run: upstream lint script spans several lines; teach fork-lint-run its separators'
+    )
+  }
   return lintScript.split('&&').map((step) => step.trim())
 }
 
