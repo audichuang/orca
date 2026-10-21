@@ -354,7 +354,8 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
     await commitsHeader.click()
   }
   await expect(historyRows.first()).toBeHidden()
-  const openButton = orcaPage.getByRole('button', { name: 'Open Git Graph' })
+  // Why scoped: the tab strip and the panel header carry their own Open Git Graph buttons.
+  const openButton = orcaPage.locator('[data-git-graph-launcher="commits"]')
   await expect(openButton).toBeVisible()
   await openButton.click()
   await expect(graph).toBeVisible()
