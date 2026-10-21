@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   getRememberedFolderRepo,
+  subscribeFolderRepoSelection,
   moveRepoSelection,
   rememberFolderRepo,
   resolveFolderDefaultRepo,
@@ -47,6 +48,17 @@ describe('remembered selection', () => {
     rememberFolderRepo('folder:1', 'b')
     expect(getRememberedFolderRepo('folder:1')).toBe('b')
     expect(getRememberedFolderRepo('folder:2')).toBeNull()
+  })
+
+  it('notifies subscribers on a change only, so mirrored writes cannot loop', () => {
+    const listener = vi.fn()
+    const unsubscribe = subscribeFolderRepoSelection(listener)
+    rememberFolderRepo('folder:3', 'a')
+    rememberFolderRepo('folder:3', 'a')
+    expect(listener).toHaveBeenCalledTimes(1)
+    unsubscribe()
+    rememberFolderRepo('folder:3', 'b')
+    expect(listener).toHaveBeenCalledTimes(1)
   })
 })
 
