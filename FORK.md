@@ -6,7 +6,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 
 - Fork CI (below) is the merge gate for every rebase and every merge into `develop`; it runs upstream's full unit suite (`FORK_TESTS=all`), like upstream's own PR CI. Locally, `make fork-check` is the fast pre-check: `pnpm tc`, `vitest --changed $(FORK_BASE)`, the changed-code quality gate and `fork-check-lint`.
 - Local `--changed` does not run the tests that read source as text instead of importing it; only CI's full suite does.
-- `make fork-check-e2e` runs the folder multi-repo e2e plus every e2e spec the fork added or changed since `FORK_BASE`; `make fork-check-full` is `fork-check` plus it.
+- `make fork-check-e2e` runs the folder multi-repo e2e plus every e2e spec the fork added or changed since `FORK_BASE`, all in the `electron-headless` project, so a fork test tagged `@headful` never runs there; `make fork-check-full` is `fork-check` plus it.
 - On GitHub the gate is `.github/workflows/fork-pr.yml`'s "Fork PR checks passed" job: `fork-check-static`, full-suite `fork-check-tests` shards, `fork-check-e2e` under Xvfb, cross-version wire compatibility (the fork client talks to upstream-release hosts), the mobile web app checks, and the macOS arm64 `make build`. Upstream workflows stay unedited but disabled on the fork; run `make fork-ci-disable-upstream` after a rebase that adds new ones.
 - `config/scripts/fork-pr-gate-needs.mjs` (in `fork-check-lint`) fails when `verify` could pass without every other `fork-pr.yml` job succeeding.
 - `FORK_BASE` is the newest upstream `vX.Y.Z` tag. A clone without upstream tags resolves an ancient one; the target now refuses to run then, and when no tag resolves at all. Fix with `git fetch <upstream-remote> --tags`.
