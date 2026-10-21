@@ -184,6 +184,7 @@ fork-base-guard:
 	@echo ">> fork base: $(FORK_BASE)"
 	@# Why: an empty FORK_BASE makes the count below `..HEAD`, which is 0 and passes.
 	@test -n "$(FORK_BASE)" || { echo "fork-check: FORK_BASE is empty (no upstream vX.Y.Z tag reachable from HEAD); fetch upstream tags (git fetch <upstream-remote> --tags) or pass FORK_BASE=vX.Y.Z"; exit 1; }
+	@case '$(FORK_BASE)' in -*|*[!A-Za-z0-9._/~^-]*) echo "fork-check: FORK_BASE must be one tag or commit, not '$(FORK_BASE)'"; exit 1;; esac
 	@n=$$(git rev-list --count $(FORK_BASE)..HEAD 2>/dev/null || echo 999999); if [ "$$n" -gt "$(FORK_MAX_COMMITS)" ]; then \
 	  echo "fork-check: $(FORK_BASE) is $$n commits behind HEAD; fetch upstream tags (git fetch <upstream-remote> --tags) or pass FORK_BASE=vX.Y.Z"; exit 1; fi
 
@@ -250,6 +251,9 @@ fork-check-e2e: fork-base-guard
 	@# Why the diff alone: piped into sort its failure was lost; --no-renames avoids blob fetches in a blob:none clone.
 	changed=$$(git diff --name-only --no-renames --diff-filter=d $(FORK_BASE) HEAD -- 'tests/e2e/*.spec.ts') && \
 	  specs=$$(printf '%s\n' tests/e2e/folder-multi-repo-source-control.spec.ts $$changed | sort -u) && \
-	  for spec in $$specs; do test -f "$$spec" || { echo "fork-check-e2e: $$spec is missing; playwright would skip it silently"; exit 1; }; done && \
+	  for spec in $$specs; do \
+	    case "$$spec" in *[!A-Za-z0-9._/-]*) echo "fork-check-e2e: rename $$spec; playwright reads spec arguments as regexes"; exit 1;; esac; \
+	    test -f "$$spec" || { echo "fork-check-e2e: $$spec is missing; playwright would skip it silently"; exit 1; }; \
+	  done && \
 	  echo ">> fork e2e specs:" $$specs && \
 	  npx playwright test $$specs --config tests/playwright.config.ts --project=electron-headless --workers=1
