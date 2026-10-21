@@ -2,6 +2,7 @@ import { expect } from './orca-app'
 import { runBinaryAndKeyboardScenarios } from './folder-multi-repo-binary-and-keyboard-scenarios'
 import { expectRowHoverKeepsCount } from './folder-repo-row-hover-count-check'
 import type { ExtraScenarioContext } from './folder-multi-repo-scenario-context'
+import { settledToastBox } from './settled-toast-box'
 
 // S15-S16: open-to-the-side and master-detail layout; then S17-S18.
 export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<void> {
@@ -282,7 +283,11 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
       await entry('unstaged', 'README.md').click({ modifiers: ['ControlOrMeta'] })
     }
     await expect(barCopy).toBeVisible()
+    const toast = await settledToastBox(page)
     const bar1 = await barGeo()
+    if ('barBox' in bar1) {
+      expect(toast.bottom, 'settled toast sits above the bar').toBeLessThanOrEqual(bar1.barBox[2])
+    }
     ev.push(`bulk bar with toast: ${JSON.stringify(bar1)}`)
     expect('error' in bar1 ? bar1.error : '').toBe('')
     if ('results' in bar1) {
