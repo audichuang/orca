@@ -49,7 +49,8 @@ export function GitGraphRefBadge({
     <span
       className={cn(
         'flex min-w-0 items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-3xs leading-none',
-        isHead ? 'font-semibold' : 'bg-background'
+        // Why capped: a long branch name must not push the commit message out of the row.
+        isHead ? 'max-w-40 font-semibold' : 'max-w-32 bg-background'
       )}
       style={
         isHead
@@ -248,8 +249,8 @@ export function GitGraphFullRow({
         <span
           className={cn(
             'min-w-0 flex-1 truncate',
-            // Why not when selected: the selection must read at full strength, whatever the branch.
-            dimmed && !selected ? 'text-muted-foreground' : 'text-foreground'
+            // Why /80, not muted: off-branch messages stay readable; selection reads at full strength.
+            dimmed && !selected ? 'text-foreground/80' : 'text-foreground'
           )}
           title={item.subject}
         >
