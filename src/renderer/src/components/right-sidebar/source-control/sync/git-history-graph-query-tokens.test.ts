@@ -41,9 +41,33 @@ describe('Git Graph query tokens', () => {
     )
     expect(parseGitHistoryGraphQuery(query)).toEqual({
       text: 'bug',
-      author: 'Ada the Lovelace',
+      author: 'Ada "the" Lovelace',
       path: 'src/a b.ts'
     })
+  })
+
+  it('keeps other quoted values verbatim when setting a token', () => {
+    const query = setGitHistoryGraphQueryToken('path:"docs/two  spaces.md"', 'author', 'Ada')
+    expect(query).toBe('path:"docs/two  spaces.md" author:Ada')
+    expect(readGitHistoryGraphQueryToken(query, 'path')).toBe('docs/two  spaces.md')
+    expect(parseGitHistoryGraphQuery(query).path).toBe('docs/two  spaces.md')
+  })
+
+  it('escapes quotes and backslashes in quoted values', () => {
+    const value = 'dir/a\\"b c.md'
+    const query = setGitHistoryGraphQueryToken('fix', 'path', value)
+    expect(readGitHistoryGraphQueryToken(query, 'path')).toBe(value)
+    expect(parseGitHistoryGraphQuery(query)).toEqual({ text: 'fix', path: value })
+    expect(parseGitHistoryGraphQuery('path:"a\\"b\\\\c"')).toEqual({ path: 'a"b\\c' })
+    expect(setGitHistoryGraphQueryToken('', 'path', 'a\\b')).toBe('path:a\\b')
+    expect(parseGitHistoryGraphQuery('path:a\\b')).toEqual({ path: 'a\\b' })
+  })
+
+  it('finds tokens where the search parser does, keeping other keys as typed', () => {
+    expect(setGitHistoryGraphQueryToken('fix  AUTHOR:"b  c"  y', 'path', 'p')).toBe(
+      'fix AUTHOR:"b  c" y path:p'
+    )
+    expect(readGitHistoryGraphQueryToken('xauthor:a', 'author')).toBe('a')
   })
 
   it('lists distinct loaded authors in order', () => {
