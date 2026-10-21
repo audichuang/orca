@@ -193,39 +193,10 @@ fork-check-static-types: fork-base-guard
 fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
 
-# Upstream's `pnpm lint` minus fork-lint-parity.mjs's EXCLUDED, plus fork locale parity; the parity check fails on a new upstream step.
+# Upstream's `pnpm lint` steps minus fork-lint-run.mjs's EXCLUDED, then the fork-only checks.
 fork-check-lint: fork-base-guard
-	node config/scripts/fork-lint-parity.mjs
+	node config/scripts/fork-lint-run.mjs
 	node config/scripts/fork-pr-gate-needs.mjs
-	pnpm exec oxlint
-	pnpm run audit:anti-slop
-	pnpm run audit:code-quality:native
-	pnpm run audit:code-quality:type-aware
-	pnpm run check:reliability-gates
-	pnpm run check:dead-classes
-	pnpm run check:max-lines-ratchet
-	pnpm run check:ts-nocheck-ratchet
-	pnpm run check:runtime-electron-ratchet
-	pnpm run check:focus-read-ratchet
-	pnpm run check:layout-writer-ratchets
-	pnpm run check:legacy-relay-fence-ratchet
-	pnpm run check:unproven-pty-retirement-ratchet
-	pnpm run check:id-only-store-write-ratchet
-	pnpm run check:repo-host-read-ratchet
-	pnpm run check:host-list-render-ratchet
-	pnpm run check:readme-local-links
-	pnpm run check:node-runtime-pin
-	pnpm run check:mobile-shared-dependency-versions
-	pnpm run verify:rpc-params-catalog
-	pnpm run verify:acp-protocol
-	pnpm run verify:bundled-skill-guides
-	pnpm run verify:skill-bundle-manifest
-	pnpm run verify:localization-catalogs
-	pnpm run verify:localization-extraction
-	pnpm run verify:localization-coverage
-	pnpm run check:process-host-imports
-	pnpm run check:main-sync-spawn-ratchet
-	pnpm run check:compat-boundary-imports
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
 
 fork-check-tests: export LC_ALL = C
