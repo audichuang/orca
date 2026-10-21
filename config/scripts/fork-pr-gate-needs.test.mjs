@@ -10,9 +10,11 @@ const REQUIRE_ALL = `echo "$RESULTS" | jq -e 'to_entries | all(.value.result == 
 function workflow({
   needs = '[build, test]',
   run = REQUIRE_ALL,
-  results = '${{ toJSON(needs) }}'
+  results = '${{ toJSON(needs) }}',
+  stepControl = '',
+  header = ''
 } = {}) {
-  return `
+  return `${header}
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -25,7 +27,7 @@ jobs:
     if: \${{ !cancelled() }}
     runs-on: ubuntu-24.04
     steps:
-      - name: Require every check to succeed
+      - name: Require every check to succeed${stepControl}
         env:
           RESULTS: ${results}
         run: |
@@ -34,6 +36,23 @@ jobs:
 }
 
 describe('forkPrGateErrors', () => {
+  it.each([
+    ['\n        if: false', "fork-pr-gate: verify's result step must not set `if`"],
+    [
+      '\n        continue-on-error: true',
+      "fork-pr-gate: verify's result step must not set `continue-on-error`"
+    ]
+  ])('rejects a result step GitHub could skip or tolerate (%j)', async (stepControl, error) => {
+    expect(await forkPrGateErrors(workflow({ stepControl }))).toEqual([error])
+  })
+
+  it('rejects an inherited non-bash default shell', async () => {
+    const header = 'defaults:\n  run:\n    shell: python'
+    expect(await forkPrGateErrors(workflow({ header }))).toEqual([
+      'fork-pr-gate: verify must run under the default bash shell, not python'
+    ])
+  })
+
   it('accepts a gate that needs every job and requires each to succeed', async () => {
     expect(await forkPrGateErrors(workflow())).toEqual([])
   })
