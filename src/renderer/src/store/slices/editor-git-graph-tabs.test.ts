@@ -3,7 +3,26 @@ import { createEditorTabsStore } from './editor-slice-test-harness'
 import type { AppState } from '../types'
 import type { Repo } from '../../../../shared/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
-import { rememberFolderRepo } from '@/components/right-sidebar/source-control/folder/folder-repo-selection'
+import {
+  getRememberedFolderRepo,
+  rememberFolderRepo
+} from '@/components/right-sidebar/source-control/folder/folder-repo-selection'
+import {
+  peekGitGraphRevealRequest,
+  requestGitGraphReveal
+} from '@/components/git-graph-tab/git-graph-reveal-request'
+import {
+  getGitHistoryGraphDraftQuery,
+  getGitHistoryGraphFilter,
+  gitGraphTabFilterKey,
+  setGitHistoryGraphDraftQuery,
+  updateGitHistoryGraphFilter
+} from '@/components/right-sidebar/source-control/sync/git-history-graph-filter'
+import {
+  collectGitHistoryAuthors,
+  listRecentGitHistoryGraphPaths,
+  rememberGitHistoryGraphPath
+} from '@/components/right-sidebar/source-control/sync/git-history-graph-query-tokens'
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 
@@ -147,6 +166,66 @@ describe('Git Graph editor tab', () => {
     expect(gitGraphFiles(store)[0]).toEqual(
       expect.objectContaining({ worktreeId: 'folder:f1', gitGraph: { repoWorktreeId: 'wt-web' } })
     )
+  })
+
+  it("mirrors a folder tab's repo switch into the folder's Source Control pick", () => {
+    const store = seededStore()
+    const id = store.getState().openGitGraphTab('folder:f1', { repoWorktreeId: 'wt-api' })!
+    store.getState().setGitGraphTabRepo(id, 'wt-api-feature')
+    expect(getRememberedFolderRepo('folder:f1')).toBe('wt-api-feature')
+  })
+
+  it('keeps a reveal request off the persisted tab state', () => {
+    const store = seededStore()
+    const id = store.getState().openGitGraphTab('wt-api', { revealCommit: 'c'.repeat(40) })!
+    expect(gitGraphFiles(store)[0]?.gitGraph).toEqual({ repoWorktreeId: 'wt-api' })
+    expect(peekGitGraphRevealRequest(id)).toMatchObject({
+      repoWorktreeId: 'wt-api',
+      commitId: 'c'.repeat(40)
+    })
+  })
+
+  it("records a folder tab's resolved repo as the folder's Source Control pick", () => {
+    const store = seededStore()
+    store.getState().openGitGraphTab('folder:f1', { repoWorktreeId: 'wt-web' })
+    expect(getRememberedFolderRepo('folder:f1')).toBe('wt-web')
+  })
+
+  it('saves a filter passed on open as the tab filter', () => {
+    const store = seededStore()
+    const filter = { scope: 'all' as const, refs: [], local: true, remotes: [], query: 'path:a' }
+    store.getState().openGitGraphTab('wt-api', { repoWorktreeId: 'wt-web', filter })
+    expect(gitGraphFiles(store)[0]?.gitGraph).toEqual({ repoWorktreeId: 'wt-web', filter })
+  })
+
+  it('drops a pending reveal for another repo when the tab switches repo', () => {
+    const store = seededStore()
+    const id = store.getState().openGitGraphTab('wt-api', { revealCommit: 'c'.repeat(40) })!
+    store.getState().setGitGraphTabRepo(id, 'wt-web')
+    expect(peekGitGraphRevealRequest(id)).toBeNull()
+  })
+
+  it("forgets the tab's in-memory filter state when it closes", () => {
+    const store = seededStore()
+    const id = store.getState().openGitGraphTab('wt-api')!
+    const key = gitGraphTabFilterKey(id, 'wt-api')
+    updateGitHistoryGraphFilter(key, { query: 'fix' })
+    setGitHistoryGraphDraftQuery(key, 'fix more')
+    rememberGitHistoryGraphPath(key, 'src/a.ts')
+    collectGitHistoryAuthors(key, [
+      { id: 'x', parentIds: [], subject: 's', message: 's', author: 'Ada' }
+    ])
+    requestGitGraphReveal(id, 'wt-api', 'c'.repeat(40))
+    updateGitHistoryGraphFilter('wt-api', { query: 'sidebar' })
+
+    store.getState().closeFile(id)
+
+    expect(getGitHistoryGraphFilter(key).query).toBe('')
+    expect(getGitHistoryGraphDraftQuery(key)).toBe('')
+    expect(listRecentGitHistoryGraphPaths(key)).toEqual([])
+    expect(collectGitHistoryAuthors(key, [])).toEqual([])
+    expect(peekGitGraphRevealRequest(id)).toBeNull()
+    expect(getGitHistoryGraphFilter('wt-api').query).toBe('sidebar')
   })
 
   it('opens nothing for a workspace without a git repo', () => {

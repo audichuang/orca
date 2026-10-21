@@ -22,6 +22,7 @@ import {
   type GitHistoryCommitSelectionSnapshot
 } from './use-git-history-commit-selection'
 import { rovingKeyTarget } from './git-graph-roving-keys'
+import { useGitGraphReveal, type GitGraphRevealOptions } from './use-git-graph-reveal'
 
 const PLAIN_CLICK: CommitClickModifiers = { metaKey: false, ctrlKey: false, shiftKey: false }
 
@@ -59,6 +60,8 @@ export function useGitGraphSelection(args: {
   listRef: React.RefObject<HTMLDivElement | null>
   /** Pick the checked-out commit once the first history lands, unless a selection exists. */
   selectHeadOnOpen?: boolean
+  /** One-shot commit to select and scroll to; it wins over the checked-out pick. */
+  reveal?: GitGraphRevealOptions
 }): GitGraphSelectionState {
   const { selectionKey, result, viewModels, listRef, selectHeadOnOpen = false } = args
   const [remembered] = useState(() => rememberedSelectionByWorktree.get(selectionKey))
@@ -129,29 +132,6 @@ export function useGitGraphSelection(args: {
 
   // Why skip a remembered entry: returning to the tab restores what was there, an empty pick included.
   const headPickedRef = useRef(!selectHeadOnOpen || remembered !== undefined)
-  useEffect(() => {
-    if (
-      headPickedRef.current ||
-      selectedId !== null ||
-      multiSelected.length > 0 ||
-      navigationGenerationRef.current > 0
-    ) {
-      return
-    }
-    const headRefId = result?.currentRef?.id
-    const head =
-      (headRefId &&
-        navigable.find((item) => item.references?.some((ref) => ref.id === headRefId))) ||
-      navigable[0]
-    // Why wait for a row: a filter that matches nothing must not spend the one pick.
-    if (!head) {
-      return
-    }
-    headPickedRef.current = true
-    // Why not select(): that bumps the generation, which would cancel a pending branch-tip jump.
-    setSelectedId(head.id)
-    setCursorId(head.id)
-  }, [multiSelected.length, navigable, result, selectedId, setSelectedId])
   const select = useCallback(
     (item: GitHistoryItem, modifiers: CommitClickModifiers) => {
       // Why the fallback anchor: a restored or refreshed selection has no click anchor yet, so the
@@ -203,6 +183,36 @@ export function useGitGraphSelection(args: {
     },
     [result, scrollToRow, select]
   )
+
+  // Why after jumpTo: a reveal selects through it, and the checked-out pick below waits for it.
+  const revealPending = useGitGraphReveal(args.reveal, result, jumpTo)
+  useEffect(() => {
+    if (
+      headPickedRef.current ||
+      revealPending ||
+      selectedId !== null ||
+      multiSelected.length > 0 ||
+      navigationGenerationRef.current > 0
+    ) {
+      return
+    }
+    const headRefId = result?.currentRef?.id
+    // Why the revision first: a detached HEAD has no ref decoration on its row.
+    const headRevision = result?.currentRef?.revision
+    const head =
+      (headRevision && navigable.find((item) => item.id === headRevision)) ||
+      (headRefId &&
+        navigable.find((item) => item.references?.some((ref) => ref.id === headRefId))) ||
+      navigable[0]
+    // Why wait for a row: a filter that matches nothing must not spend the one pick.
+    if (!head) {
+      return
+    }
+    headPickedRef.current = true
+    // Why not select(): that bumps the generation, which would cancel a pending branch-tip jump.
+    setSelectedId(head.id)
+    setCursorId(head.id)
+  }, [multiSelected.length, navigable, result, revealPending, selectedId, setSelectedId])
 
   return {
     selectedId,
