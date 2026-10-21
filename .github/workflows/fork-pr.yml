@@ -63,23 +63,27 @@ jobs:
       matrix:
         shard: [1/8, 2/8, 3/8, 4/8, 5/8, 6/8, 7/8, 8/8]
     steps:
+      # Why shallow, like upstream: with history, scripts that diff a PR merge ref against HEAD^1 ignore the base a test passes them.
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
-          filter: blob:none
           persist-credentials: false
-
-      # Why: FORK_BASE is the newest upstream vX.Y.Z tag, and the fork repo has only -fork tags.
-      - name: Fetch upstream release tags
-        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
 
       - uses: ./.github/actions/install-node-dependencies
         with:
           native-runtime: node
+          cache-electron-package: 'true'
+
+      # The rest mirrors upstream's unit-tests.yml shard job, which runs the full suite on every PR.
+      - name: Install Electron package binary for tests
+        run: node config/scripts/install-electron-package-binary.mjs
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: config/.bun-version
 
       - name: make fork-check-tests
-        run: make fork-check-tests FORK_TEST_SHARD=${{ matrix.shard }}
+        run: make fork-check-tests FORK_TESTS=all FORK_TEST_SHARD=${{ matrix.shard }}
 
   cross_version_wire:
     # Why kept: the fork desktop client talks to hosts running upstream releases.
@@ -112,6 +116,109 @@ jobs:
           pnpm exec vitest run --config config/vitest.config.ts
           $(find tests/e2e/cross-version-wire -name '*.test.ts' ! -name 'cross-version-registered-agents.unit.test.ts' | sort)
 
+  fork_e2e:
+    # Why on every PR: the unattended upstream rebase PRs merge on this gate, and the fork's UI lives in these specs.
+    name: fork e2e specs
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      # Why: FORK_BASE picks which specs the fork changed, and the fork repo has only -fork tags.
+      - name: Fetch upstream release tags
+        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
+
+      # Same packages and mirror workaround as upstream's e2e.yml shards: Xvfb and a window manager for Electron.
+      - name: Install headless UI tools
+        env:
+          ORCA_E2E_APT_PACKAGES: build-essential fonts-noto-cjk openssh-client python3 ripgrep xvfb zsh openbox x11-utils xdotool
+        run: |
+          read -r -a packages <<< "$ORCA_E2E_APT_PACKAGES"
+          for source in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's|https*://azure\.archive\.ubuntu\.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
+            fi
+          done
+          sudo tee /etc/apt/apt.conf.d/99-orca-e2e >/dev/null <<'APTCONF'
+          Acquire::http::Timeout "15";
+          Acquire::https::Timeout "15";
+          Acquire::Retries "1";
+          APTCONF
+          timeout 120 sudo apt-get update
+          timeout 300 sudo apt-get install -y "${packages[@]}" || timeout 300 sudo apt-get install -y --fix-missing "${packages[@]}"
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: electron
+
+      - name: make fork-check-e2e
+        run: xvfb-run --auto-servernum bash .github/scripts/e2e-with-window-manager.sh env ORCA_E2E_FORWARD_APP_LOGS=1 make fork-check-e2e
+
+      - name: Upload Playwright traces
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fork-e2e-playwright-traces
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  fork_mobile_web_app:
+    # Why: fork-check's tests skip the mobile bundling checks without mobile/node_modules; this job installs them.
+    # Upstream's mobile_web_app job and scripts, unchanged except that its background steps run one after another.
+    name: fork mobile web app bundle
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: none
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mobile/pnpm-lock.yaml
+
+      # The drawer check also runs on WebKit, the engine of the shell's iOS WebView.
+      - name: Install WebKit for the drawer check
+        run: pnpm exec playwright-core install --with-deps webkit
+
+      - uses: ./.github/actions/install-mobile-dependencies
+
+      - name: Prepare mobile route snapshot
+        run: node config/scripts/run-mobile-web-app-checks.mjs --prepare-route-snapshot "$RUNNER_TEMP/mobile-routes.json"
+
+      # Why fail instead of skip: without a browser the render checks skip silently.
+      - name: Resolve Chrome for the render check
+        run: |
+          set -euo pipefail
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || true)"
+          if [ -z "$chrome" ]; then
+            echo "::error::No Google Chrome on the runner; the render check would silently skip."
+            exit 1
+          fi
+          "$chrome" --version
+          echo "ORCA_MOBILE_WEB_RENDER_BROWSER=$chrome" >> "$GITHUB_ENV"
+
+      - name: Build and verify the app bundle
+        run: pnpm run build:mobile-web
+
+      - name: Builder, override census and render checks
+        env:
+          ORCA_MOBILE_WEB_APP_DEPS_REQUIRED: '1'
+          ORCA_MOBILE_WEB_PREPARED_ROUTE_SNAPSHOT: ${{ runner.temp }}/mobile-routes.json
+        run: node config/scripts/run-mobile-web-app-checks.mjs
+
   mac_arm64_build:
     # Same steps as `make build`, the build installed on the fork's only target machine.
     name: fork macOS arm64 build
@@ -138,7 +245,13 @@ jobs:
 
   verify:
     name: Fork PR checks passed
-    needs: [fork_check_static, fork_check_tests, cross_version_wire, mac_arm64_build]
+    needs:
+      - fork_check_static
+      - fork_check_tests
+      - cross_version_wire
+      - fork_e2e
+      - fork_mobile_web_app
+      - mac_arm64_build
     if: ${{ !cancelled() && github.event.pull_request.draft != true }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5

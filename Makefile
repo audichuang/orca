@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-base-guard
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-base-guard
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -33,7 +33,8 @@ help:
 	@echo "  make typecheck  full type check (optional safety gate)"
 	@echo "  make clean      remove dist/ and out/"
 	@echo "  make fork-check       after a rebase: typecheck + tests the fork's changes reach + lint + quality gate"
-	@echo "  make fork-check-full  before a release: fork-check + headless e2e"
+	@echo "  make fork-check-e2e   the fork's headless e2e specs (CI runs it on every PR)"
+	@echo "  make fork-check-full  before a release: fork-check + fork-check-e2e"
 
 install:
 	pnpm install
@@ -170,6 +171,8 @@ FORK_MAX_COMMITS ?= 200
 
 # fork-check = fork-check-static + fork-check-tests; CI runs the halves as parallel jobs, tests in FORK_TEST_SHARD slices.
 FORK_TEST_SHARD ?=
+# all: upstream CI's full unit suite; empty: the fast local --changed pre-check.
+FORK_TESTS ?=
 
 fork-check: export LC_ALL = C
 fork-check: fork-check-static fork-check-tests
@@ -179,6 +182,9 @@ fork-check-static: fork-check-static-types fork-check-quality fork-check-lint
 
 fork-base-guard:
 	@echo ">> fork base: $(FORK_BASE)"
+	@# Why: an empty FORK_BASE makes the count below `..HEAD`, which is 0 and passes.
+	@test -n "$(FORK_BASE)" || { echo "fork-check: FORK_BASE is empty (no upstream vX.Y.Z tag reachable from HEAD); fetch upstream tags (git fetch <upstream-remote> --tags) or pass FORK_BASE=vX.Y.Z"; exit 1; }
+	@case '$(FORK_BASE)' in -*|*[!A-Za-z0-9._/~^-]*) echo "fork-check: FORK_BASE must be one tag or commit, not '$(FORK_BASE)'"; exit 1;; esac
 	@n=$$(git rev-list --count $(FORK_BASE)..HEAD 2>/dev/null || echo 999999); if [ "$$n" -gt "$(FORK_MAX_COMMITS)" ]; then \
 	  echo "fork-check: $(FORK_BASE) is $$n commits behind HEAD; fetch upstream tags (git fetch <upstream-remote> --tags) or pass FORK_BASE=vX.Y.Z"; exit 1; fi
 
@@ -188,30 +194,24 @@ fork-check-static-types: fork-base-guard
 fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
 
-# Whole-repo `pnpm lint` checks fork edits can break, plus fork locale parity; fork-check-quality covers the rest on changed lines.
-# check:path-literal-ratchet is left out: a release tag can carry main's workflow files, which name main-only paths (v1.4.230).
+# Upstream's `pnpm lint` steps minus fork-lint-run.mjs's EXCLUDED, then the fork-only checks.
 fork-check-lint: fork-base-guard
-	pnpm run check:dead-classes
-	pnpm run verify:localization-catalogs
-	pnpm run verify:localization-extraction
-	pnpm run verify:localization-coverage
-	pnpm run verify:rpc-params-catalog
-	pnpm run check:max-lines-ratchet
-	pnpm run check:unproven-pty-retirement-ratchet
-	pnpm run check:id-only-store-write-ratchet
-	pnpm run check:legacy-relay-fence-ratchet
-	pnpm run check:host-list-render-ratchet
-	pnpm run check:mobile-shared-dependency-versions
+	node config/scripts/fork-lint-run.mjs
+	node config/scripts/fork-pr-gate-needs.mjs
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
 
 fork-check-tests: export LC_ALL = C
-# Why: upstream's CI mode; it applies UNIT_EXCLUDE (live-shell, node-pty, electron probes, the wire job's files) and balances shards by timing.
+# Why: upstream CI's env; it applies UNIT_EXCLUDE, balances shards by timing, and some tests assert background launch.
 fork-check-tests: export ORCA_BALANCE_UNIT_SHARDS = 1
-# Why: upstream CI sets it; browser-manager tests assert it and --changed pulls them in via shared tab types.
 fork-check-tests: export ORCA_BACKGROUND_LAUNCH = 1
-fork-check-tests: fork-base-guard
-	@# Why --changed: it follows imports, so upstream tests that use a fork-changed module run too.
+# Why no guard for all: the full suite needs no FORK_BASE, so CI can use upstream's shallow checkout.
+fork-check-tests: $(if $(filter all,$(FORK_TESTS)),,fork-base-guard)
+	@test -z "$(FORK_TESTS)" -o "$(FORK_TESTS)" = all || { echo "fork-check-tests: FORK_TESTS must be empty or all, not $(FORK_TESTS)"; exit 1; }
+ifeq ($(FORK_TESTS),all)
+	node config/scripts/run-vitest.mjs run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD))
+else
 	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) --changed $(FORK_BASE)
+endif
 
 FORK_REPO ?= audichuang/orca
 # The fork's remote in this clone, whatever it is named (origin on a plain clone of the fork).
@@ -240,6 +240,20 @@ fork-ci-disable-upstream:
 
 fork-check-full: export LC_ALL = C
 fork-check-full: fork-check
-	ORCA_BACKGROUND_LAUNCH=1 pnpm run ensure:electron-runtime
-	ORCA_BACKGROUND_LAUNCH=1 npx playwright test tests/e2e/folder-multi-repo-source-control.spec.ts \
-	  --config tests/playwright.config.ts --project=electron-headless --workers=1
+	@# Why a sub-make: as a -j prerequisite, its Electron native rebuild would race the vitest run.
+	$(MAKE) fork-check-e2e
+
+# The folder multi-repo e2e plus every spec the fork added or changed since FORK_BASE.
+fork-check-e2e: export LC_ALL = C
+fork-check-e2e: export ORCA_BACKGROUND_LAUNCH = 1
+fork-check-e2e: fork-base-guard
+	pnpm run ensure:electron-runtime
+	@# Why the diff alone: piped into sort its failure was lost; --no-renames avoids blob fetches in a blob:none clone.
+	changed=$$(git diff --name-only --no-renames --diff-filter=d $(FORK_BASE) HEAD -- 'tests/e2e/*.spec.ts') && \
+	  specs=$$(printf '%s\n' tests/e2e/folder-multi-repo-source-control.spec.ts $$changed | sort -u) && \
+	  for spec in $$specs; do \
+	    case "$$spec" in *[!A-Za-z0-9._/-]*) echo "fork-check-e2e: rename $$spec; playwright reads spec arguments as regexes"; exit 1;; esac; \
+	    test -f "$$spec" || { echo "fork-check-e2e: $$spec is missing; playwright would skip it silently"; exit 1; }; \
+	  done && \
+	  echo ">> fork e2e specs:" $$specs && \
+	  npx playwright test $$specs --config tests/playwright.config.ts --project=electron-headless --workers=1

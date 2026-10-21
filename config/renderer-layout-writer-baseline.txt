@@ -58,6 +58,7 @@
 2 src/renderer/src/store/slices/browser/create-browser-slice.ts
 9 src/renderer/src/store/slices/editor/actions/check-run-details-actions.ts
 7 src/renderer/src/store/slices/editor/actions/close-file-action.ts
+5 src/renderer/src/store/slices/editor/actions/git-graph-tab-actions.ts
 1 src/renderer/src/store/slices/editor/actions/git-status-actions.ts
 4 src/renderer/src/store/slices/editor/actions/hydrated-editor-session-state.ts
 3 src/renderer/src/store/slices/editor/actions/markdown-preview-actions.ts
