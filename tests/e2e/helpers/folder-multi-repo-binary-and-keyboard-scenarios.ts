@@ -134,6 +134,8 @@ export async function runBinaryAndKeyboardScenarios(ctx: ExtraScenarioContext): 
     compare(ev, 'S19-multi-context', actual, actual === rev ? rev : fwd)
     expect(toast).toContain(statsLine(actual))
     // Selection outlives the menu; later scenarios assume none.
+    // Why wait: the copy toast can sit over Clear selection and swallow the click.
+    await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, { timeout: 20_000 })
     await page.getByRole('button', { name: 'Clear selection' }).click()
   })
 }
