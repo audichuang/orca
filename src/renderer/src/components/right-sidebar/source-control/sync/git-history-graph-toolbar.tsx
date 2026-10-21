@@ -19,6 +19,7 @@ import { getRuntimeGitHistory } from '@/runtime/runtime-git-status-client'
 import { requireGitOwnerTarget } from '../../worktree-git-owner-target'
 import type { GitHistoryGraphApplied } from '../../../../../../shared/git-history-graph-query-types'
 import type { GitHistoryPanelState } from './git-history-panel'
+import { GitHistoryGraphBranchGroups } from './git-history-graph-branch-groups'
 import { GitHistoryGraphHostNotice, hostTooOldText } from './git-history-graph-host-status'
 import {
   getGitHistoryGraphDraftQuery,
@@ -214,7 +215,7 @@ export function GitHistoryGraphToolbar({
             </Button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-[min(300px,calc(100vw-1rem))]">
-            <Command shouldFilter={false}>
+            <Command shouldFilter={false} density="menu">
               <CommandInput
                 placeholder={translate(
                   'auto.components.right.sidebar.GitHistoryGraph.searchBranches',
@@ -284,49 +285,36 @@ export function GitHistoryGraphToolbar({
                     ))}
                   </CommandGroup>
                 )}
-                <CommandGroup
-                  heading={translate(
-                    'auto.components.right.sidebar.GitHistoryGraph.branches',
-                    'Branches'
-                  )}
-                >
-                  {refOptions.status === 'loading' && (
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                      {translate(
-                        'auto.components.right.sidebar.GitHistoryGraph.loadingBranches',
-                        'Loading branches...'
-                      )}
-                    </div>
-                  )}
-                  {(refOptions.status === 'unsupported' || refOptions.status === 'error') && (
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                      {refOptions.status === 'unsupported'
-                        ? hostTooOldText()
-                        : translate(
-                            'auto.components.right.sidebar.GitHistoryGraph.branchesFailed',
-                            'Failed to load branches'
-                          )}
-                    </div>
-                  )}
-                  {visibleRefs.map((ref) => (
-                    <CommandItem
-                      key={ref.fullName}
-                      value={ref.fullName}
-                      onSelect={() => toggleRef(ref.fullName)}
-                    >
-                      {check(filter.scope === 'refs' && filter.refs.includes(ref.fullName))}
-                      <span className="min-w-0 flex-1 truncate">{ref.name}</span>
-                      {ref.category === 'remote branches' && (
-                        <span className="shrink-0 text-3xs text-muted-foreground">
-                          {translate(
-                            'auto.components.right.sidebar.GitHistoryGraph.remote',
-                            'remote'
-                          )}
-                        </span>
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
+                {refOptions.status !== 'ready' && refOptions.status !== 'idle' && (
+                  <CommandGroup>
+                    {refOptions.status === 'loading' && (
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                        {translate(
+                          'auto.components.right.sidebar.GitHistoryGraph.loadingBranches',
+                          'Loading branches...'
+                        )}
+                      </div>
+                    )}
+                    {(refOptions.status === 'unsupported' || refOptions.status === 'error') && (
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                        {refOptions.status === 'unsupported'
+                          ? hostTooOldText()
+                          : translate(
+                              'auto.components.right.sidebar.GitHistoryGraph.branchesFailed',
+                              'Failed to load branches'
+                            )}
+                      </div>
+                    )}
+                  </CommandGroup>
+                )}
+                <GitHistoryGraphBranchGroups
+                  refs={visibleRefs}
+                  isChecked={(fullName) =>
+                    filter.scope === 'refs' && filter.refs.includes(fullName)
+                  }
+                  renderCheck={check}
+                  onToggle={toggleRef}
+                />
               </CommandList>
             </Command>
           </PopoverContent>

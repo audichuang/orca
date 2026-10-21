@@ -120,12 +120,14 @@ function CommitFilesTree({
     <>
       {flattenSourceControlTree(roots, collapsed).map((node) =>
         node.type === 'directory' ? (
-          <SourceControlBranchTreeDirectoryRow
-            key={node.key}
-            node={node}
-            isCollapsed={collapsed.has(node.key)}
-            onToggle={() => toggle(node.key)}
-          />
+          // Why the wrapper: the files menu finds a right-clicked folder by this attribute.
+          <div key={node.key} data-commit-dir-path={node.path}>
+            <SourceControlBranchTreeDirectoryRow
+              node={node}
+              isCollapsed={collapsed.has(node.key)}
+              onToggle={() => toggle(node.key)}
+            />
+          </div>
         ) : (
           <CommitFileRow
             key={node.key}
