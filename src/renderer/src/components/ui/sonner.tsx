@@ -9,6 +9,9 @@ import type { SyntheticEvent } from 'react'
 import { Toaster as Sonner, type ToasterProps } from 'sonner'
 import { useAppStore } from '@/store'
 import { MODAL_OVERLAY_CHILD_SELECTOR } from '@/lib/body-overlay-attributes'
+import { TOAST_BOTTOM_CLEARANCE_VAR } from '@/lib/toast-bottom-clearance'
+
+const TOAST_BOTTOM_OFFSET = `max(calc(2.5rem + env(safe-area-inset-bottom, 0px)), var(${TOAST_BOTTOM_CLEARANCE_VAR}, 0px))`
 
 // Why: a short outcome reads best with its action beside it; the toaster's default wraps actions below.
 export const INLINE_ACTION_CLASS_NAMES = {
@@ -60,8 +63,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
         theme={theme as ToasterProps['theme']}
         position="bottom-right"
         // Reserve status-bar clearance at both normal and sub-600px mobileOffset breakpoints.
-        offset={{ bottom: 'calc(2.5rem + env(safe-area-inset-bottom, 0px))' }}
-        mobileOffset={{ bottom: 'calc(2.5rem + env(safe-area-inset-bottom, 0px))' }}
+        // Fork-only: max() lifts toasts above bottom chrome that registers a clearance (toast-bottom-clearance.ts).
+        offset={{ bottom: TOAST_BOTTOM_OFFSET }}
+        mobileOffset={{ bottom: TOAST_BOTTOM_OFFSET }}
         className="toaster group"
         icons={{
           success: <CircleCheckIcon className="size-4" />,
