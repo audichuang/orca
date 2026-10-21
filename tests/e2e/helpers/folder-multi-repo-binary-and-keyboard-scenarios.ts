@@ -94,7 +94,7 @@ export async function runBinaryAndKeyboardScenarios(ctx: ExtraScenarioContext): 
     await expect(
       page
         .locator('[data-testid="source-control-filter-toggle"]')
-        .locator('xpath=preceding-sibling::span[contains(text(), "api-server")]')
+        .locator('xpath=preceding-sibling::span[contains(., "api-server")]')
     ).toHaveCount(1)
     ev.push('End/Home/ArrowUp clamp and move selection with focus')
     await shot('S18b-home-end')
