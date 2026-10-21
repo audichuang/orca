@@ -203,7 +203,8 @@ fork-check-tests: export LC_ALL = C
 # Why: upstream CI's env; it applies UNIT_EXCLUDE, balances shards by timing, and some tests assert background launch.
 fork-check-tests: export ORCA_BALANCE_UNIT_SHARDS = 1
 fork-check-tests: export ORCA_BACKGROUND_LAUNCH = 1
-fork-check-tests: fork-base-guard
+# Why no guard for all: the full suite needs no FORK_BASE, so CI can use upstream's shallow checkout.
+fork-check-tests: $(if $(filter all,$(FORK_TESTS)),,fork-base-guard)
 	@test -z "$(filter-out all,$(FORK_TESTS))" || { echo "fork-check-tests: FORK_TESTS must be empty or all, not $(FORK_TESTS)"; exit 1; }
 ifeq ($(FORK_TESTS),all)
 	node config/scripts/run-vitest.mjs run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD))
