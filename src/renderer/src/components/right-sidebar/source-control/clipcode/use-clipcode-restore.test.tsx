@@ -35,8 +35,10 @@ vi.mock('../../file-explorer-operation-owner', () => ({
   getFileExplorerOperationOwner: () => undefined
 }))
 vi.mock('@/components/editor/editor-autosave', () => ({
-  requestEditorSaveQuiesce: async (target: { worktreeId: string; relativePath: string }) =>
-    void calls.push(`quiesce ${target.worktreeId}:${target.relativePath}`),
+  requestEditorSaveQuiesce: async (target: { worktreeId: string; relativePath: string }) => {
+    calls.push(`quiesce ${target.worktreeId}:${target.relativePath}`)
+    return () => void calls.push(`release ${target.worktreeId}:${target.relativePath}`)
+  },
   notifyEditorExternalFileChange: (target: { worktreeId: string; relativePath: string }) =>
     void calls.push(`notify ${target.worktreeId}:${target.relativePath}`)
 }))
@@ -94,9 +96,14 @@ describe('useClipcodeRestore', () => {
     expect(calls).toEqual([])
   })
 
-  it('drains editor saves before writing and notifies after', async () => {
+  it('drains editor saves before writing, notifies after, then releases the autosave hold', async () => {
     await runRestore('// file: [NEW] ok.ts\nx\n')
-    expect(calls).toEqual(['quiesce folder-1:ok.ts', 'write /f/ok.ts', 'notify folder-1:ok.ts'])
+    expect(calls).toEqual([
+      'quiesce folder-1:ok.ts',
+      'write /f/ok.ts',
+      'notify folder-1:ok.ts',
+      'release folder-1:ok.ts'
+    ])
   })
 
   it('also quiesces and notifies tabs owned by the repo worktree containing the file', async () => {
@@ -106,7 +113,9 @@ describe('useClipcodeRestore', () => {
       'quiesce repo-a::/f/a:src/x.ts',
       'write /f/a/src/x.ts',
       'notify folder-1:a/src/x.ts',
-      'notify repo-a::/f/a:src/x.ts'
+      'notify repo-a::/f/a:src/x.ts',
+      'release folder-1:a/src/x.ts',
+      'release repo-a::/f/a:src/x.ts'
     ])
   })
 
@@ -115,7 +124,12 @@ describe('useClipcodeRestore', () => {
       dir === '/f' ? [{ name: 'README.md', isDirectory: false, isSymlink: false }] : []
     )
     await runRestore('// file: [NEW] README.md/child.ts\nx\n// file: [NEW] ok.txt\nok\n')
-    expect(calls).toEqual(['quiesce folder-1:ok.txt', 'write /f/ok.txt', 'notify folder-1:ok.txt'])
+    expect(calls).toEqual([
+      'quiesce folder-1:ok.txt',
+      'write /f/ok.txt',
+      'notify folder-1:ok.txt',
+      'release folder-1:ok.txt'
+    ])
   })
 
   it('overwrites an existing UTF-8 file but never a non-UTF-8 one', async () => {
@@ -125,7 +139,12 @@ describe('useClipcodeRestore', () => {
       isBinary: false
     }))
     await runRestore('// file: latin1.txt\ncafé\n// file: ok.txt\nnew\n', { overwrite: true })
-    expect(calls).toEqual(['quiesce folder-1:ok.txt', 'write /f/ok.txt', 'notify folder-1:ok.txt'])
+    expect(calls).toEqual([
+      'quiesce folder-1:ok.txt',
+      'write /f/ok.txt',
+      'notify folder-1:ok.txt',
+      'release folder-1:ok.txt'
+    ])
   })
 
   it('skips an entry whose target cannot be stat-ed instead of failing the whole restore', async () => {
@@ -133,7 +152,12 @@ describe('useClipcodeRestore', () => {
       throw new Error(path === '/f/locked.ts' ? 'EACCES: permission denied' : 'ENOENT')
     })
     await runRestore('// file: [NEW] locked.ts\nx\n// file: [NEW] ok.txt\nok\n')
-    expect(calls).toEqual(['quiesce folder-1:ok.txt', 'write /f/ok.txt', 'notify folder-1:ok.txt'])
+    expect(calls).toEqual([
+      'quiesce folder-1:ok.txt',
+      'write /f/ok.txt',
+      'notify folder-1:ok.txt',
+      'release folder-1:ok.txt'
+    ])
   })
 
   it('blocks a symlink whose name differs only by Unicode normalization', async () => {
