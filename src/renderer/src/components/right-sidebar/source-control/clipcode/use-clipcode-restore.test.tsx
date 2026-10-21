@@ -119,6 +119,20 @@ describe('useClipcodeRestore', () => {
     ])
   })
 
+  it('drains editor saves before a delete, notifies after, then releases the autosave hold', async () => {
+    statRuntimePath.mockResolvedValue({ isDirectory: false, size: 4, mtime: 0 })
+    await runRestore('// file: [DELETED] a/src/gone.ts\n')
+    expect(calls).toEqual([
+      'quiesce folder-1:a/src/gone.ts',
+      'quiesce repo-a::/f/a:src/gone.ts',
+      'delete /f/a/src/gone.ts',
+      'notify folder-1:a/src/gone.ts',
+      'notify repo-a::/f/a:src/gone.ts',
+      'release folder-1:a/src/gone.ts',
+      'release repo-a::/f/a:src/gone.ts'
+    ])
+  })
+
   it('skips an entry whose parent is a file and still restores the others', async () => {
     readRuntimeDirectory.mockImplementation(async (_c: unknown, dir: string) =>
       dir === '/f' ? [{ name: 'README.md', isDirectory: false, isSymlink: false }] : []
