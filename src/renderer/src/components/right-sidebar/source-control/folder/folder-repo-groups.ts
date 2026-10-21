@@ -24,8 +24,8 @@ export function buildFolderRepoListItems(args: {
   if (filtering) {
     return visibleIndexes.map((index) => ({ kind: 'repo', index }))
   }
-  // Why: an unknown count is still loading, not clean, so it waits in the open group instead of hiding.
-  const isClean = (index: number) => changeCounts[index] === 0 && !pendingSync[index]
+  const isClean = (index: number) =>
+    folderRepoGroupOf(changeCounts[index], pendingSync[index] ?? false) === 'clean'
   const groups: [FolderRepoGroupId, number[]][] = [
     ['changes', visibleIndexes.filter((index) => !isClean(index))],
     ['clean', visibleIndexes.filter(isClean)]
@@ -44,6 +44,14 @@ export function buildFolderRepoListItems(args: {
     }
   }
   return items
+}
+
+// Why: an unknown count is still loading, not clean, so it waits in the open group instead of hiding.
+export function folderRepoGroupOf(
+  changeCount: number | undefined,
+  pendingSync: boolean
+): FolderRepoGroupId {
+  return changeCount === 0 && !pendingSync ? 'clean' : 'changes'
 }
 
 const DEFAULT_EXPANDED: readonly FolderRepoGroupId[] = ['changes']
@@ -68,4 +76,15 @@ export function toggleFolderRepoGroup(
   }
   expandedByFolder.set(folderWorkspaceKey, next)
   return next
+}
+
+export function expandFolderRepoGroup(
+  folderWorkspaceKey: string,
+  group: FolderRepoGroupId
+): ReadonlySet<FolderRepoGroupId> {
+  const current = getFolderRepoExpandedGroups(folderWorkspaceKey)
+  if (current.has(group)) {
+    return current
+  }
+  return toggleFolderRepoGroup(folderWorkspaceKey, group)
 }

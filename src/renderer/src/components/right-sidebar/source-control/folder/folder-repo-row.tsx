@@ -4,7 +4,10 @@ import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { ActionButton } from '../listing/action-button'
-import { SOURCE_CONTROL_ROW_ACTION_OVERLAY_CLASS } from '../listing/row-layout'
+
+// Why width, not display: idle takes no track width yet stays tabbable, and pointer-events-none keeps hit-tests off it.
+const ROW_ACTIONS_CLASS =
+  'col-start-2 row-start-1 flex w-0 items-center gap-0.5 overflow-hidden opacity-0 pointer-events-none group-hover:w-auto group-hover:opacity-100 group-hover:pointer-events-auto focus-within:w-auto focus-within:opacity-100 focus-within:pointer-events-auto [@media(hover:none)]:w-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto'
 
 /** One selectable repo row in a folder workspace's repo list. */
 export function FolderRepoRow({
@@ -40,7 +43,7 @@ export function FolderRepoRow({
     <div
       data-current={expanded ? 'true' : undefined}
       className={cn(
-        'group relative mx-1 flex items-center overflow-hidden rounded-md hover:bg-accent has-[[data-repo-row]:focus-visible]:ring-[3px] has-[[data-repo-row]:focus-visible]:ring-ring/50',
+        'group relative mx-1 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center overflow-hidden rounded-md hover:bg-accent has-[[data-repo-row]:focus-visible]:ring-[3px] has-[[data-repo-row]:focus-visible]:ring-ring/50',
         expanded && 'bg-accent text-accent-foreground'
       )}
     >
@@ -50,27 +53,33 @@ export function FolderRepoRow({
           className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-primary"
         />
       )}
-      {/* Why: the spaces between spans keep the accessible name and innerText readable as "name branch count". */}
+      {/* Why subgrid: the hover actions take the middle track between branch and counts, so the counts never move or hide. */}
       <button
         type="button"
         data-repo-row
+        data-repo-row-id={worktreeId}
         aria-expanded={expanded}
         aria-current={expanded ? 'true' : undefined}
         tabIndex={focusable ? 0 : -1}
         onClick={onToggle}
         title={title}
-        className="flex min-h-7 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs focus-visible:outline-none"
+        className="col-span-full row-start-1 grid min-h-7 grid-cols-subgrid items-center rounded-md px-2 py-1 text-left text-xs focus-visible:outline-none"
       >
-        <RepoBadgeMark color={color} className="size-2.5 rounded-[2px]" />
-        <span className="min-w-0 truncate text-foreground">{name}</span>{' '}
-        {branch && (
-          <>
-            <span className="min-w-0 max-w-[42%] truncate text-muted-foreground">
-              {branch}
-            </span>{' '}
-          </>
-        )}
-        <span className="ml-auto flex shrink-0 items-center gap-1.5 pl-1 text-2xs tabular-nums text-muted-foreground">
+        {/* Why: the spaces inside the spans keep the accessible name and innerText readable as "name branch count". */}
+        <span className="flex min-w-0 items-center gap-1.5">
+          <RepoBadgeMark color={color} className="size-2.5 shrink-0 rounded-[2px]" />
+          <span data-repo-row-name className="min-w-0 truncate text-foreground">
+            {name}
+          </span>{' '}
+          {branch && (
+            <>
+              <span className="min-w-0 max-w-[42%] truncate text-muted-foreground">
+                {branch}
+              </span>{' '}
+            </>
+          )}
+        </span>
+        <span className="col-start-3 flex items-center gap-1.5 pl-1 text-2xs tabular-nums text-muted-foreground">
           {/* Why: the eye toggle only shows on hover, so a hidden repo keeps a static marker. */}
           {sidebarHidden && (
             <EyeOff data-sidebar-hidden-marker aria-hidden="true" className="size-3" />
@@ -78,7 +87,7 @@ export function FolderRepoRow({
           <RepoSyncCounts worktreeId={worktreeId} /> {changeCount > 0 && <span>{changeCount}</span>}
         </span>
       </button>
-      <div className={SOURCE_CONTROL_ROW_ACTION_OVERLAY_CLASS}>
+      <div className={ROW_ACTIONS_CLASS}>
         {sidebarHidden !== undefined && onToggleSidebarHidden && (
           <ActionButton
             icon={sidebarHidden ? EyeOff : Eye}
