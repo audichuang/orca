@@ -14428,7 +14428,9 @@
                         "addRepos": "Add repositories in this folder",
                         "filterRepos": "Filter repositories",
                         "clearFilter": "Clear filter",
-                        "filterNoMatch": "No repositories match"
+                        "filterNoMatch": "No repositories match",
+                        "groupChanges": "Changes",
+                        "groupNoChanges": "No changes"
                       }
                     }
                   },
@@ -14521,7 +14523,8 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "Copy Full Source",
-                      "ce8235a6a4": "Open to the Side"
+                      "ce8235a6a4": "Open to the Side",
+                      "showFileHistory": "Show File History"
                     }
                   }
                 },
@@ -14809,7 +14812,8 @@
             "copyFullSource": "Copy Full Source",
             "copyFullSourceMany": "Copy Full Source ({{value0}} commits)",
             "copyHashMany": "Copy commit hashes ({{value0}} commits)",
-            "copyMessageMany": "Copy commit messages ({{value0}} commits)"
+            "copyMessageMany": "Copy commit messages ({{value0}} commits)",
+            "showInGraph": "Show in Git Graph"
           },
           "pull": {
             "policy": {
@@ -14995,7 +14999,22 @@
             "searchCommits": "Search commits (author: path:)",
             "searchCommitsLabel": "Search commits",
             "loadMore": "Load more commits",
-            "noMatchingCommits": "No commits match this filter"
+            "noMatchingCommits": "No commits match this filter",
+            "clearAllFilters": "Clear filters",
+            "local": "Local",
+            "showAllBranches": "Show all branches",
+            "userFilter": "User",
+            "pathsFilter": "Paths",
+            "clearUserFilter": "Clear user filter",
+            "searchUsers": "Search users...",
+            "noUsers": "No users in the loaded commits.",
+            "clearPathFilter": "Clear path filter",
+            "typePath": "Repo-relative file or folder path",
+            "typePathHint": "Type a path, then press Enter.",
+            "filterByPath": "Filter by {{value0}}",
+            "recentPaths": "Recent",
+            "clearFilters": "Clear",
+            "searchCommitMessages": "Search commit messages"
           },
           "GitGraphFullView": {
             "laneContinuesBelow": "Continues {{count}} rows below at {{sha}} {{subject}}. Click to jump.",
@@ -15013,7 +15032,12 @@
             "copyFullSource": "Copy Full Source of all changed files",
             "filesInCommits": "Changed files ({{files}}) · {{commits}} commits",
             "filesChanged": "Changed files ({{files}})",
-            "toggleBranches": "Toggle branches"
+            "toggleBranches": "Toggle branches",
+            "openAllChanges": "Open all changes",
+            "hideDetails": "Hide details",
+            "enterKey": "Enter",
+            "showDetails": "Show details",
+            "detailsStrip": "Details"
           },
           "GitGraphBranchSidebar": {
             "local": "Local",
@@ -18819,7 +18843,9 @@
         "noRepos": "No repositories found.",
         "addRepos": "Add repositories...",
         "addReposMissing": "{{value0}} not added",
-        "addReposButton": "Add repositories in this folder"
+        "addReposButton": "Add repositories in this folder",
+        "openInSourceControl": "Open in Source Control",
+        "revealNotLoaded": "That commit is not in the loaded history."
       }
     },
     "i18n": {
