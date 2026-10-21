@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type React from 'react'
 import { joinPath } from '@/lib/path'
 import { getShortcutPlatform } from '@/lib/shortcut-platform'
+import { useAppStore } from '@/store'
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import { SourceControlEntryContextMenu } from '../listing/entry-context-menu'
@@ -12,6 +13,7 @@ import {
 } from '../listing/split-open'
 import type { SourceControlPanelModel } from '../panel/use-panel-model'
 import { copyHistoryCommitsFullSource } from './git-history-commit-copy'
+import { showGitGraphPathHistory } from './git-history-graph-path-query'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import {
   applyCommitFileClick,
@@ -133,6 +135,17 @@ export function GitHistoryCommitFilesMenu({
           : dirEntries.length > 0
             ? () => copyFullSource(dirEntries)
             : undefined
+      }
+      onShowFileHistory={
+        targetPath === undefined
+          ? undefined
+          : () =>
+              showGitGraphPathHistory({
+                workspaceId: model.editorWorktreeId ?? worktreeId,
+                repoWorktreeId: worktreeId,
+                path: targetPath,
+                openGitGraphTab: useAppStore.getState().openGitGraphTab
+              })
       }
       // Why: in a folder workspace the explorer belongs to the folder, not this child repo.
       onRevealInExplorer={(_repoId, path) =>
