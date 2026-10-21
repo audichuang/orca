@@ -57,8 +57,10 @@ export function useGitGraphSelection(args: {
   result: GitHistoryResult | undefined
   viewModels: readonly GitHistoryItemViewModel[]
   listRef: React.RefObject<HTMLDivElement | null>
+  /** Pick the checked-out commit once the first history lands, unless a selection exists. */
+  selectHeadOnOpen?: boolean
 }): GitGraphSelectionState {
-  const { selectionKey, result, viewModels, listRef } = args
+  const { selectionKey, result, viewModels, listRef, selectHeadOnOpen = false } = args
   const [remembered] = useState(() => rememberedSelectionByWorktree.get(selectionKey))
   const [selectedId, setSelectedIdState] = useState<string | null>(remembered?.commitId ?? null)
   // Why the anchor first: it is the latest gesture, a multi-selection's included.
@@ -124,6 +126,32 @@ export function useGitGraphSelection(args: {
 
   const navigationGenerationRef = useRef(0)
   const getNavigationGeneration = useCallback(() => navigationGenerationRef.current, [])
+
+  // Why skip a remembered entry: returning to the tab restores what was there, an empty pick included.
+  const headPickedRef = useRef(!selectHeadOnOpen || remembered !== undefined)
+  useEffect(() => {
+    if (
+      headPickedRef.current ||
+      selectedId !== null ||
+      multiSelected.length > 0 ||
+      navigationGenerationRef.current > 0
+    ) {
+      return
+    }
+    const headRefId = result?.currentRef?.id
+    const head =
+      (headRefId &&
+        navigable.find((item) => item.references?.some((ref) => ref.id === headRefId))) ||
+      navigable[0]
+    // Why wait for a row: a filter that matches nothing must not spend the one pick.
+    if (!head) {
+      return
+    }
+    headPickedRef.current = true
+    // Why not select(): that bumps the generation, which would cancel a pending branch-tip jump.
+    setSelectedId(head.id)
+    setCursorId(head.id)
+  }, [multiSelected.length, navigable, result, selectedId, setSelectedId])
   const select = useCallback(
     (item: GitHistoryItem, modifiers: CommitClickModifiers) => {
       // Why the fallback anchor: a restored or refreshed selection has no click anchor yet, so the
@@ -202,6 +230,8 @@ export function useGitGraphBranchContext(args: {
   /** Host-qualified repo owner identity; the ref list is refetched when it changes. */
   ownerKey: string
   worktreeId: string
+  /** The filter the view shows; its search makes ancestry unknown. */
+  filterKey: string
   worktreePath: string
   activeRepoTarget: RuntimeClientTarget | null
   result: GitHistoryResult | undefined
@@ -211,6 +241,7 @@ export function useGitGraphBranchContext(args: {
   const {
     ownerKey: refOwnerKey,
     worktreeId,
+    filterKey,
     worktreePath,
     activeRepoTarget,
     result,
@@ -240,7 +271,7 @@ export function useGitGraphBranchContext(args: {
 
   // Why: a search drops in-between commits, so ancestry through them is unknown, not "off branch" —
   // and so is a searched result still on screen after the query clears, until fresh history replaces it.
-  const searching = useGitHistoryGraphFilter(worktreeId).query.trim() !== ''
+  const searching = useGitHistoryGraphFilter(filterKey).query.trim() !== ''
   const [searchedResult, setSearchedResult] = useState<GitHistoryResult | undefined>(undefined)
   if (searching && result && searchedResult !== result) {
     setSearchedResult(result)

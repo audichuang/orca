@@ -279,9 +279,34 @@ describe('full-width Git Graph', () => {
 
     expect(rows[0]).not.toHaveAttribute('data-selected')
     expect(rows[1]).not.toHaveAttribute('data-selected')
+    // A cleared selection folds the pane back to its strip.
+    expect(await within(view).findByRole('button', { name: 'Show details' })).toBeInTheDocument()
+    expect(within(view).queryByTestId('git-history-commit-file')).toBeNull()
+  })
+
+  it('folds the details pane to a strip until a commit is selected', async () => {
+    window.localStorage.setItem('orca:git-graph-details-width', '300')
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const view = await screen.findByRole('region', { name: 'Git Graph' })
+    const rows = await within(view).findAllByTestId('git-graph-full-row')
+    const emptyMessage = 'Select a commit to see its details and changed files.'
+    expect(within(view).queryByText(emptyMessage)).toBeNull()
+    expect(within(view).queryByRole('separator', { name: 'Resize commit details' })).toBeNull()
+
+    fireEvent.click(within(view).getByRole('button', { name: 'Show details' }))
+    expect(within(view).getByText(emptyMessage)).toBeInTheDocument()
+    const handle = within(view).getByRole('separator', { name: 'Resize commit details' })
+    expect(handle.parentElement).toHaveStyle({ width: '300px' })
+
+    fireEvent.click(rows[0]!)
+    expect(await within(view).findByTestId('git-history-commit-file')).toBeInTheDocument()
+    expect(within(view).queryByRole('button', { name: 'Show details' })).toBeNull()
     expect(
-      await within(view).findByText('Select a commit to see its details and changed files.')
-    ).toBeInTheDocument()
+      within(view).getByRole('separator', { name: 'Resize commit details' }).parentElement
+    ).toHaveStyle({ width: '300px' })
+    window.localStorage.removeItem('orca:git-graph-details-width')
   })
 
   it('remounting the view lands on the same commit', async () => {
