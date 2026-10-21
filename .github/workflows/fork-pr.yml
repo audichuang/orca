@@ -185,12 +185,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
-          filter: blob:none
           persist-credentials: false
-
-      - name: Fetch upstream release tags
-        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
 
       - uses: ./.github/actions/install-node-dependencies
         with:
