@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { applyExclusions, parseLintSteps, runLintSteps, stepCommand } from './fork-lint-run.mjs'
+import { applyExclusions, parseLintSteps, runLintSteps, pnpmArgs } from './fork-lint-run.mjs'
 
 const LINT = 'oxlint && pnpm run check:a &&  pnpm run check:skipped'
 const EXCLUDED = { 'check:skipped': 'reason' }
@@ -21,12 +21,12 @@ describe('fork-lint-run', () => {
   })
 
   it('runs pnpm steps as-is and bare binaries through pnpm exec', () => {
-    expect(stepCommand('pnpm run check:a')).toEqual(['run', 'check:a'])
-    expect(stepCommand('oxlint')).toEqual(['exec', 'oxlint'])
+    expect(pnpmArgs('pnpm run check:a')).toEqual(['run', 'check:a'])
+    expect(pnpmArgs('oxlint')).toEqual(['exec', 'oxlint'])
   })
 
   it('rejects a step that needs a shell', () => {
-    expect(() => stepCommand('pnpm run a | tee log')).toThrow('needs a shell')
+    expect(() => pnpmArgs('pnpm run a | tee log')).toThrow('needs a shell')
   })
 
   it('stops at the first failing step and returns its exit code', () => {
@@ -43,6 +43,6 @@ describe('fork-lint-run', () => {
     const lintScript = JSON.parse(readFileSync('package.json', 'utf8')).scripts.lint
     const steps = applyExclusions(parseLintSteps(lintScript))
     expect(steps.length).toBeGreaterThan(0)
-    expect(() => steps.map(stepCommand)).not.toThrow()
+    expect(() => steps.map(pnpmArgs)).not.toThrow()
   })
 })
