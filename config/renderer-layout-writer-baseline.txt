@@ -61,6 +61,7 @@
 2 src/renderer/src/store/slices/editor/file-ids/hydrated-editor-file-selection.ts
 1 src/renderer/src/store/slices/editor/file-ids/open-file-path-rekey.ts
 2 src/renderer/src/store/slices/editor/file-ids/rekey-open-files-action.ts
+5 src/renderer/src/store/slices/editor/git/git-graph-tab-actions.ts
 1 src/renderer/src/store/slices/editor/git/git-status-actions.ts
 3 src/renderer/src/store/slices/editor/git/open-combined-diff.ts
 1 src/renderer/src/store/slices/editor/git/open-conflict-file.ts
