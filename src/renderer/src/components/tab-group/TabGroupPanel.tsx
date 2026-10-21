@@ -7,6 +7,7 @@ import TabBar from '../tab-bar/TabBar'
 import { TabBarQuickCommandsButton } from '../tab-bar/quick-commands/TabBarQuickCommandsButton'
 import { TabGroupPaneActionsMenu } from './panel/TabGroupPaneActionsMenu'
 import { useTabGroupWorkspaceModel } from './workspace-model/useTabGroupWorkspaceModel'
+import { TabStripGitGraphButton } from '../right-sidebar/source-control/sync/git-graph-tab-launcher'
 import { closeTerminalTab } from '../terminal/terminal-tab-actions'
 import { resolveGroupTabFromVisibleId } from './workspace-model/tab-group-visible-id'
 import { getTabPaneBodyDroppableId } from './drag/useTabDragSplit'
@@ -326,6 +327,12 @@ export default function TabGroupPanel({
                     isFocused={isFocused}
                   />
                 </div>
+                {reserveClosedExplorerToggleSpace ? (
+                  <TabStripGitGraphButton
+                    workspaceId={worktreeId}
+                    active={activeTab?.contentType === 'git-graph'}
+                  />
+                ) : null}
                 {hasSplitGroups ? (
                   <div className="contents @max-[114px]/tab-strip:hidden">
                     <TabGroupPaneActionsMenu
