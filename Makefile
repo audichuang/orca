@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-source-scans fork-base-guard
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-source-scans fork-check-e2e fork-base-guard
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -33,7 +33,8 @@ help:
 	@echo "  make typecheck  full type check (optional safety gate)"
 	@echo "  make clean      remove dist/ and out/"
 	@echo "  make fork-check       after a rebase: typecheck + tests the fork's changes reach + lint + quality gate"
-	@echo "  make fork-check-full  before a release: fork-check + headless e2e"
+	@echo "  make fork-check-e2e   the fork's headless e2e specs (CI runs it on every PR)"
+	@echo "  make fork-check-full  before a release: fork-check + fork-check-e2e"
 
 install:
 	pnpm install
@@ -188,8 +189,7 @@ fork-check-static-types: fork-base-guard
 fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
 
-# Upstream's `pnpm lint` minus the checks fork-lint-parity.mjs excludes (with reasons), plus fork locale parity.
-# fork-lint-parity fails when a newer upstream release adds a lint step this list lacks.
+# Upstream's `pnpm lint` minus fork-lint-parity.mjs's EXCLUDED, plus fork locale parity; the parity check fails on a new upstream step.
 fork-check-lint: fork-base-guard
 	node config/scripts/fork-lint-parity.mjs
 	pnpm exec oxlint
@@ -226,8 +226,9 @@ fork-check-lint: fork-base-guard
 fork-check-source-scans: export LC_ALL = C
 fork-check-source-scans: export ORCA_BACKGROUND_LAUNCH = 1
 fork-check-source-scans: fork-base-guard
-	@# Why: these tests read source text instead of importing it, so --changed never picks them.
-	pnpm exec vitest run --config config/vitest.config.ts $$(node config/scripts/fork-source-scan-tests.mjs)
+	@# Why: these tests read repo files as text instead of importing them, so --changed never picks them.
+	@# `&&`, not $$(...) inline: a failed or empty selection must stop here, not run vitest over the whole suite.
+	files=$$(node config/scripts/fork-source-scan-tests.mjs) && pnpm exec vitest run --config config/vitest.config.ts $$files
 
 fork-check-tests: export LC_ALL = C
 # Why: upstream's CI mode; it applies UNIT_EXCLUDE (live-shell, node-pty, electron probes, the wire job's files) and balances shards by timing.
@@ -264,7 +265,14 @@ fork-ci-disable-upstream:
 	  while read -r wf; do gh workflow disable "$${wf##*/}" -R $(FORK_REPO); done
 
 fork-check-full: export LC_ALL = C
-fork-check-full: fork-check
-	ORCA_BACKGROUND_LAUNCH=1 pnpm run ensure:electron-runtime
-	ORCA_BACKGROUND_LAUNCH=1 npx playwright test tests/e2e/folder-multi-repo-source-control.spec.ts \
-	  --config tests/playwright.config.ts --project=electron-headless --workers=1
+fork-check-full: fork-check fork-check-e2e
+
+# The folder multi-repo e2e plus every spec the fork added or changed since FORK_BASE.
+fork-check-e2e: export LC_ALL = C
+fork-check-e2e: export ORCA_BACKGROUND_LAUNCH = 1
+fork-check-e2e: fork-base-guard
+	pnpm run ensure:electron-runtime
+	specs=$$( { echo tests/e2e/folder-multi-repo-source-control.spec.ts; \
+	  git diff --name-only --diff-filter=d $(FORK_BASE) HEAD -- 'tests/e2e/*.spec.ts'; } | sort -u) && \
+	  echo ">> fork e2e specs:" $$specs && \
+	  npx playwright test $$specs --config tests/playwright.config.ts --project=electron-headless --workers=1
