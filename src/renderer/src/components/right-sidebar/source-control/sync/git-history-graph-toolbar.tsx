@@ -27,6 +27,7 @@ import {
   stripGitHistoryGraphQueryTokens
 } from './git-history-graph-query-tokens'
 import {
+  getDefaultGitHistoryGraphFilter,
   getGitHistoryGraphDraftQuery,
   getGitHistoryGraphFilter,
   setGitHistoryGraphDraftQuery,
@@ -92,7 +93,8 @@ export function GitHistoryGraphToolbar({
   activeRepoTarget,
   state,
   trailing,
-  fullView = false
+  fullView = false,
+  filterKey = worktreeId
 }: {
   worktreeId: string
   worktreePath: string
@@ -102,13 +104,15 @@ export function GitHistoryGraphToolbar({
   trailing?: React.ReactNode
   /** The Git Graph tab's wide toolbar: User / Paths buttons, Clear, and wrapping. Off in the sidebar. */
   fullView?: boolean
+  /** Whose filter this toolbar edits; the Git Graph tab keeps its own apart from the sidebar's. */
+  filterKey?: string
 }): React.JSX.Element {
   const result = state.result
-  const filter = useGitHistoryGraphFilter(worktreeId)
+  const filter = useGitHistoryGraphFilter(filterKey)
   const [open, setOpen] = useState(false)
   const [branchQuery, setBranchQuery] = useState('')
-  const draftQuery = useGitHistoryGraphDraftQuery(worktreeId)
-  const setDraftQuery = (query: string): void => setGitHistoryGraphDraftQuery(worktreeId, query)
+  const draftQuery = useGitHistoryGraphDraftQuery(filterKey)
+  const setDraftQuery = (query: string): void => setGitHistoryGraphDraftQuery(filterKey, query)
   // Why: the full view shows author/path as buttons, so its box holds only the free text; while
   // focused it keeps what was typed, so a half-typed `author:` token is not yanked out of the box.
   const [focusedText, setFocusedText] = useState<string | null>(null)
@@ -153,13 +157,13 @@ export function GitHistoryGraphToolbar({
     }
     // Why re-read: every mounted toolbar runs this timer; only the first commit of the latest draft should refetch.
     const timer = window.setTimeout(() => {
-      const latest = getGitHistoryGraphDraftQuery(worktreeId)
-      if (latest !== getGitHistoryGraphFilter(worktreeId).query) {
-        updateGitHistoryGraphFilter(worktreeId, { query: latest })
+      const latest = getGitHistoryGraphDraftQuery(filterKey)
+      if (latest !== getGitHistoryGraphFilter(filterKey).query) {
+        updateGitHistoryGraphFilter(filterKey, { query: latest })
       }
     }, SEARCH_DEBOUNCE_MS)
     return () => window.clearTimeout(timer)
-  }, [draftQuery, filter.query, worktreeId])
+  }, [draftQuery, filter.query, filterKey])
 
   const handleOpenChange = (nextOpen: boolean): void => {
     setOpen(nextOpen)
@@ -196,8 +200,10 @@ export function GitHistoryGraphToolbar({
       ? current.filter((ref) => ref !== fullName)
       : [...current, fullName]
     updateGitHistoryGraphFilter(
-      worktreeId,
-      refs.length ? { scope: 'refs', refs } : { scope: 'head', refs: [] }
+      filterKey,
+      refs.length
+        ? { scope: 'refs', refs }
+        : { scope: getDefaultGitHistoryGraphFilter(filterKey).scope, refs: [] }
     )
   }
 
@@ -207,7 +213,7 @@ export function GitHistoryGraphToolbar({
     const next = current.includes(remote)
       ? current.filter((name) => name !== remote)
       : [...current, remote]
-    updateGitHistoryGraphFilter(worktreeId, { scope: 'all', remotes: next })
+    updateGitHistoryGraphFilter(filterKey, { scope: 'all', remotes: next })
   }
 
   const check = (on: boolean): React.JSX.Element => (
@@ -253,7 +259,7 @@ export function GitHistoryGraphToolbar({
                   <CommandItem
                     value="scope-head"
                     onSelect={() =>
-                      updateGitHistoryGraphFilter(worktreeId, { scope: 'head', refs: [] })
+                      updateGitHistoryGraphFilter(filterKey, { scope: 'head', refs: [] })
                     }
                   >
                     {check(filter.scope === 'head')}
@@ -266,7 +272,7 @@ export function GitHistoryGraphToolbar({
                     value="scope-all"
                     disabled={refOptions.status === 'unsupported'}
                     onSelect={() =>
-                      updateGitHistoryGraphFilter(worktreeId, { scope: 'all', refs: [] })
+                      updateGitHistoryGraphFilter(filterKey, { scope: 'all', refs: [] })
                     }
                   >
                     {check(filter.scope === 'all')}
@@ -286,7 +292,7 @@ export function GitHistoryGraphToolbar({
                     <CommandItem
                       value="source-local"
                       onSelect={() =>
-                        updateGitHistoryGraphFilter(worktreeId, { local: !filter.local })
+                        updateGitHistoryGraphFilter(filterKey, { local: !filter.local })
                       }
                     >
                       {check(filter.local)}
@@ -342,7 +348,7 @@ export function GitHistoryGraphToolbar({
           </PopoverContent>
         </Popover>
         {fullView && (
-          <GitHistoryGraphFilterButtons worktreeId={worktreeId} items={result?.items ?? []} />
+          <GitHistoryGraphFilterButtons filterKey={filterKey} items={result?.items ?? []} />
         )}
         <div
           className={cn(
@@ -385,7 +391,7 @@ export function GitHistoryGraphToolbar({
         </div>
         {trailing}
       </div>
-      <GitHistoryGraphHostNotice worktreeId={worktreeId} state={state} />
+      <GitHistoryGraphHostNotice worktreeId={filterKey} state={state} />
     </div>
   )
 }
