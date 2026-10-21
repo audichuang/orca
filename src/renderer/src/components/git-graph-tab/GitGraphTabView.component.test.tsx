@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import type { Repo } from '../../../../shared/repo-types'
@@ -12,7 +12,13 @@ import type { GitHistoryResult } from '../../../../shared/git-history'
 import type { FolderWorkspace } from '../../../../shared/folder-workspace-types'
 import type { NestedRepoScanResult } from '../../../../shared/project-group-types'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
-import { resetGitHistoryGraphFiltersForTest } from '../right-sidebar/source-control/sync/git-history-graph-filter'
+import {
+  getGitHistoryGraphFilter,
+  gitGraphTabFilterKey,
+  resetGitHistoryGraphFiltersForTest,
+  updateGitHistoryGraphFilter
+} from '../right-sidebar/source-control/sync/git-history-graph-filter'
+import { resetGitGraphRememberedSelectionForTest } from '../right-sidebar/source-control/sync/use-git-graph-full-view-state'
 import GitGraphTabView from './GitGraphTabView'
 
 function repo(name: string, extra: Partial<Repo> = {}): Repo {
@@ -68,7 +74,8 @@ const RESULT: GitHistoryResult = {
   limit: 50
 }
 
-const history = vi.fn(async (_args: { worktreePath: string; limit?: number }) => ({ ...RESULT }))
+type HistoryArgs = { worktreePath: string; limit?: number; graph?: Record<string, unknown> }
+const history = vi.fn(async (_args: HistoryArgs): Promise<GitHistoryResult> => ({ ...RESULT }))
 // The branch list read (limit 1) runs on mount; only the page read is gated on visibility.
 const pageReads = () => history.mock.calls.filter(([args]) => args.limit === 50)
 
@@ -132,9 +139,11 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   resetGitHistoryGraphFiltersForTest()
+  resetGitGraphRememberedSelectionForTest()
   vi.unstubAllGlobals()
   useAppStore.setState(useAppStore.getInitialState(), true)
-  history.mockClear()
+  history.mockReset()
+  history.mockImplementation(async () => ({ ...RESULT }))
   scanNested.mockClear()
 })
 
@@ -149,7 +158,7 @@ describe('Git Graph tab', () => {
     await waitFor(() =>
       expect(history).toHaveBeenCalledWith(expect.objectContaining({ worktreePath: '/work/api' }))
     )
-    expect(await screen.findByText('Initial commit')).toBeInTheDocument()
+    expect(await screen.findByTestId('git-graph-full-row')).toHaveTextContent('Initial commit')
 
     // The switcher leads the toolbar, names the repo and branch, and the repo colour tops the tab.
     const repoSwitcher = screen.getByRole('combobox', { name: 'Repository' })
@@ -171,9 +180,11 @@ describe('Git Graph tab', () => {
         expect.objectContaining({ worktreePath: '/work/web' })
       )
     )
-    expect(useAppStore.getState().openFiles.find((file) => file.id === id)?.gitGraph).toEqual({
-      repoWorktreeId: 'wt-web'
-    })
+    expect(useAppStore.getState().openFiles.find((file) => file.id === id)?.gitGraph).toMatchObject(
+      {
+        repoWorktreeId: 'wt-web'
+      }
+    )
   })
 
   it('does not fetch while its workspace is in the background', async () => {
@@ -275,5 +286,171 @@ describe('Git Graph tab', () => {
     expect(await screen.findByText('remote-main')).toBeInTheDocument()
     expect(screen.queryByText('Add repositories...')).toBeNull()
     expect(scanNested).not.toHaveBeenCalled()
+  })
+})
+
+function renderTab(id: string): void {
+  render(
+    <TooltipProvider>
+      <Host fileId={id} />
+    </TooltipProvider>
+  )
+}
+
+const lastPageGraph = (): Record<string, unknown> | undefined => pageReads().at(-1)?.[0].graph
+const savedFilter = (id: string): unknown =>
+  useAppStore.getState().openFiles.find((file) => file.id === id)?.gitGraph?.filter
+
+describe('Git Graph tab filters', () => {
+  it('opens on all branches without touching the sidebar Commits filter', async () => {
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    renderTab(id)
+    await waitFor(() =>
+      expect(lastPageGraph()).toMatchObject({
+        mode: 'all',
+        source: { local: true, remotes: 'all' }
+      })
+    )
+    expect(getGitHistoryGraphFilter('wt-api').scope).toBe('head')
+
+    act(() => updateGitHistoryGraphFilter(gitGraphTabFilterKey(id, 'wt-api'), { query: 'fix' }))
+    await waitFor(() => expect(lastPageGraph()).toMatchObject({ search: { text: 'fix' } }))
+    expect(getGitHistoryGraphFilter('wt-api').query).toBe('')
+
+    const reads = pageReads().length
+    act(() => updateGitHistoryGraphFilter('wt-api', { query: 'sidebar only' }))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(pageReads()).toHaveLength(reads)
+  })
+
+  it('saves the filter on the tab and restores it on a fresh mount', async () => {
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    renderTab(id)
+    act(() =>
+      updateGitHistoryGraphFilter(gitGraphTabFilterKey(id, 'wt-api'), { query: 'fix', limit: 300 })
+    )
+    await waitFor(() =>
+      expect(savedFilter(id)).toEqual({
+        scope: 'all',
+        refs: [],
+        local: true,
+        remotes: 'all',
+        query: 'fix'
+      })
+    )
+    cleanup()
+    // A fresh renderer: nothing in memory, only what the tab saved.
+    resetGitHistoryGraphFiltersForTest()
+    history.mockClear()
+    useAppStore.setState((s) => ({
+      openFiles: s.openFiles.map((file) =>
+        file.id === id
+          ? {
+              ...file,
+              gitGraph: {
+                repoWorktreeId: 'wt-api',
+                filter: { scope: 'head', refs: [], local: true, remotes: [], query: 'fix' }
+              }
+            }
+          : file
+      )
+    }))
+    renderTab(id)
+    await waitFor(() => expect(pageReads()).toHaveLength(1))
+    expect(lastPageGraph()).toEqual({ mode: 'head', search: { text: 'fix' }, limit: 50 })
+  })
+
+  it('carries scope and search to another repo but drops its branch picks', async () => {
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    renderTab(id)
+    act(() =>
+      updateGitHistoryGraphFilter(gitGraphTabFilterKey(id, 'wt-api'), {
+        scope: 'refs',
+        refs: ['refs/heads/api-only'],
+        query: 'fix'
+      })
+    )
+    await waitFor(() => expect(savedFilter(id)).toMatchObject({ refs: ['refs/heads/api-only'] }))
+
+    act(() => useAppStore.getState().setGitGraphTabRepo(id, 'wt-web'))
+    await waitFor(() =>
+      expect(history).toHaveBeenLastCalledWith(
+        expect.objectContaining({ worktreePath: '/work/web' })
+      )
+    )
+    expect(lastPageGraph()).toMatchObject({ mode: 'all', search: { text: 'fix' } })
+    expect(lastPageGraph()).not.toHaveProperty('refs')
+    expect(savedFilter(id)).toMatchObject({ scope: 'all', refs: [], query: 'fix' })
+  })
+
+  it('offers Clear filters and Show all branches when the filter matches nothing', async () => {
+    history.mockImplementation(async () => ({ ...RESULT, items: [] }))
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    const key = gitGraphTabFilterKey(id, 'wt-api')
+    renderTab(id)
+    act(() => updateGitHistoryGraphFilter(key, { scope: 'refs', refs: ['refs/heads/gone'] }))
+    expect(await screen.findByText('No commits match this filter')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show all branches' }))
+    expect(getGitHistoryGraphFilter(key)).toMatchObject({ scope: 'all', refs: [], remotes: 'all' })
+
+    act(() => updateGitHistoryGraphFilter(key, { query: 'zzz' }))
+    expect(await screen.findByRole('button', { name: 'Clear filters' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Show all branches' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
+    expect(getGitHistoryGraphFilter(key)).toMatchObject({ scope: 'all', query: '' })
+  })
+
+  it('does not offer filter actions for a repo with no commits', async () => {
+    history.mockImplementation(async () => ({ ...RESULT, items: [] }))
+    renderTab(useAppStore.getState().openGitGraphTab('wt-api')!)
+    expect(await screen.findByText('No commits yet')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Clear filters' })).toBeNull()
+  })
+})
+
+describe('Git Graph tab first selection', () => {
+  const OLDER = { ...RESULT.items[0]!, id: 'b'.repeat(40), subject: 'Older', message: 'Older' }
+  const NEWER = { ...RESULT.items[0]!, id: 'c'.repeat(40), subject: 'Elsewhere', message: 'x' }
+  const HEAD = {
+    ...RESULT.items[0]!,
+    id: 'd'.repeat(40),
+    subject: 'Head commit',
+    message: 'Head commit',
+    references: [{ id: 'refs/heads/main', name: 'main', category: 'branches' as const }]
+  }
+  const withHead = (): GitHistoryResult => ({
+    ...RESULT,
+    items: [NEWER, HEAD, OLDER],
+    currentRef: { id: 'refs/heads/main', name: 'main', revision: HEAD.id }
+  })
+  const selectedSubjects = (): string[] =>
+    screen
+      .getAllByTestId('git-graph-full-row')
+      .filter((row) => row.getAttribute('data-selected') === 'true')
+      .map((row) => row.textContent ?? '')
+
+  it('selects the checked-out commit once, then leaves the selection to the user', async () => {
+    history.mockImplementation(async () => withHead())
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    renderTab(id)
+    await waitFor(() =>
+      expect(selectedSubjects()).toEqual([expect.stringContaining('Head commit')])
+    )
+
+    fireEvent.click(screen.getByText('Older'))
+    expect(selectedSubjects()).toEqual([expect.stringContaining('Older')])
+    // A refresh brings a new result; the user's pick stays.
+    useAppStore.setState((s) => ({
+      worktreesByRepo: { ...s.worktreesByRepo, 'repo-api': [{ ...worktree('api'), head: 'def' }] }
+    }))
+    await waitFor(() => expect(pageReads()).toHaveLength(2))
+    expect(selectedSubjects()).toEqual([expect.stringContaining('Older')])
+  })
+
+  it('falls back to the first commit when HEAD is not in the list', async () => {
+    history.mockImplementation(async () => ({ ...withHead(), items: [NEWER, OLDER] }))
+    renderTab(useAppStore.getState().openGitGraphTab('wt-api')!)
+    await waitFor(() => expect(selectedSubjects()).toEqual([expect.stringContaining('Elsewhere')]))
   })
 })
