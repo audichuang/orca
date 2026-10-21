@@ -4,8 +4,9 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { discoverUnitFiles } from './ci-unit-files.mjs'
 
+// scanSourceTree/readAllowlist read files for their callers (src/shared/source-scan/source-tree-scan.ts).
 const READS_FILES =
-  /\b(?:readFileSync|readdirSync|readFile|readdir|opendirSync|opendir|globSync|glob)\s*\(|['"](?:node:)?fs\/promises['"]/
+  /\b(?:readFileSync|readdirSync|readFile|readdir|opendirSync|opendir|globSync|glob|scanSourceTree|readAllowlist)\s*\(|['"](?:node:)?fs\/promises['"]/
 const REPO_ROOTS = 'src|resources|config|tests|docs|mobile|native|skills|\\.github'
 const FROM_THE_TREE = new RegExp(
   [
