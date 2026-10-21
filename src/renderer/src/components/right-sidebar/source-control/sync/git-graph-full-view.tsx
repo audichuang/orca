@@ -34,7 +34,11 @@ import type { GitGraphRevealOptions } from './use-git-graph-reveal'
 import { useGitGraphBranchTree } from './use-git-graph-branch-tree'
 import { useWindowWidth } from '../../use-window-width'
 import { useMeasuredWidth } from '../../right-sidebar-measured-width'
-import { useGitGraphOpenFocus } from './use-git-graph-open-focus'
+import {
+  type GitGraphFocusRequest,
+  useGitGraphOpenFocus,
+  useGitGraphRequestedFocus
+} from './use-git-graph-open-focus'
 import { composeWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getRuntimeTargetHostId } from '@/runtime/runtime-client-target'
 import { useAppStore } from '@/store'
@@ -69,7 +73,7 @@ export type GitGraphFullViewProps = {
   /** Select the checked-out commit when the first history arrives and nothing is selected yet. */
   selectHeadOnOpen?: boolean
   /** The hosting tab: whose selection memory this is, and whether opening may take focus. */
-  tab?: { selectionScope: string; claimFocusOnOpen: boolean }
+  tab?: { selectionScope: string; claimFocusOnOpen: boolean; focusRequest?: GitGraphFocusRequest }
   /** One-shot commit to select and scroll to, ahead of the checked-out pick. */
   reveal?: Pick<GitGraphRevealOptions, 'request' | 'onHandled'>
 }
@@ -164,6 +168,10 @@ export function GitGraphFullView({
       updateGitHistoryGraphFilter(filterKey, { scope: 'refs', refs: [fullName] })
   })
   useGitGraphOpenFocus(listRef, selection.cursorId, tab?.claimFocusOnOpen)
+  useGitGraphRequestedFocus(listRef, selection.cursorId, tab?.focusRequest, {
+    revealPending: Boolean(reveal?.request),
+    settled: state.status === 'ready' || state.status === 'error'
+  })
   // Why containment: React bubbles keydown out of portaled popovers too, and their Escape is theirs.
   const handleRootKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
     if (
