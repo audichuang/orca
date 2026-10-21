@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { RepoBadgeMark } from '@/components/repo/RepoBadgeLabel'
 import { translate } from '@/i18n/i18n'
 import type { GitGraphRepoChoice } from './git-graph-tab-model'
 
@@ -84,7 +85,11 @@ export function GitGraphRepoSwitcher({
           aria-label={label}
           className="max-w-[40%] shrink-0 justify-between"
         >
-          <FolderGit2 className="size-3 shrink-0" />
+          {selected ? (
+            <RepoBadgeMark color={selected.repo.badgeColor} className="size-2 rounded-[2px]" />
+          ) : (
+            <FolderGit2 className="size-3 shrink-0" />
+          )}
           <span className="truncate">
             {selected
               ? `${selected.repo.displayName} · ${selected.worktree.displayName}`
@@ -94,7 +99,7 @@ export function GitGraphRepoSwitcher({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[min(320px,calc(100vw-1rem))]">
-        <Command>
+        <Command density="menu">
           <CommandInput
             placeholder={translate(
               'auto.components.gitGraphTab.searchRepos',
@@ -105,9 +110,10 @@ export function GitGraphRepoSwitcher({
             <CommandEmpty>
               {translate('auto.components.gitGraphTab.noRepos', 'No repositories found.')}
             </CommandEmpty>
-            {groups.map((group) => (
-              <CommandGroup key={group.repoId} heading={group.label}>
-                {group.choices.map((choice) => (
+            {/* Why flat rows: most repos have one worktree, so a heading per repo doubled the list. */}
+            <CommandGroup>
+              {groups.flatMap((group) =>
+                group.choices.map((choice) => (
                   <CommandItem
                     key={choice.worktree.id}
                     value={`${group.label} ${choice.worktree.displayName} ${choice.worktree.path}`}
@@ -118,17 +124,25 @@ export function GitGraphRepoSwitcher({
                       }
                     }}
                   >
+                    {/* Why the repo's own badge colour: the same mark the sidebar shows, so rows tell apart at a glance. */}
+                    <RepoBadgeMark
+                      color={choice.repo.badgeColor}
+                      className="size-2.5 rounded-[2px]"
+                    />
+                    <span className="min-w-0 flex-1 truncate">{group.label}</span>
+                    <span className="min-w-0 max-w-[45%] truncate text-muted-foreground">
+                      {choice.worktree.displayName}
+                    </span>
                     <Check
                       className={cn(
-                        'size-3 text-muted-foreground',
-                        choice.worktree.id === value ? 'opacity-70' : 'opacity-0'
+                        'size-3.5 text-muted-foreground',
+                        choice.worktree.id !== value && 'invisible'
                       )}
                     />
-                    <span className="truncate">{choice.worktree.displayName}</span>
                   </CommandItem>
-                ))}
-              </CommandGroup>
-            ))}
+                ))
+              )}
+            </CommandGroup>
           </CommandList>
           {addRepos && !addRepos.hidden && (
             <>
@@ -143,7 +157,7 @@ export function GitGraphRepoSwitcher({
                     addRepos.onSelect()
                   }}
                 >
-                  <FolderPlus className="size-3 text-muted-foreground" />
+                  <FolderPlus className="size-3.5 text-muted-foreground" />
                   <span className="truncate">{addRepos.label}</span>
                   {addRepos.missingLabel && (
                     <span className="ml-auto shrink-0 text-xs text-muted-foreground">
