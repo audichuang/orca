@@ -29,8 +29,13 @@ export function showGitGraphPathHistory({
     'path',
     path
   )
-  // Why all branches: a HEAD-only graph hides the file's commits on other branches.
-  updateGitHistoryGraphFilter(repoWorktreeId, { scope: 'all', refs: [] })
+  // Why all branches and remotes: HEAD-only or local-only hides the file's commits elsewhere.
+  updateGitHistoryGraphFilter(repoWorktreeId, {
+    scope: 'all',
+    refs: [],
+    local: true,
+    remotes: 'all'
+  })
   applyGitHistoryGraphQuery(repoWorktreeId, query)
   rememberGitHistoryGraphPath(repoWorktreeId, path)
   openGitGraphTab(workspaceId, { repoWorktreeId })
