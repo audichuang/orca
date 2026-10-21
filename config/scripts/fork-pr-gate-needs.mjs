@@ -75,6 +75,13 @@ function gateStepErrors(workflow, gate) {
 }
 
 export function forkPrGateErrors(source) {
+  // Why: the `yaml` package and GitHub's parser split lines differently on U+0085/U+2028/U+2029, so a key
+  // hidden from this check could still run on GitHub.
+  const nonAscii = [...source].findIndex((c) => c.charCodeAt(0) > 0x7f)
+  if (nonAscii !== -1) {
+    const line = source.slice(0, nonAscii).split('\n').length
+    return [`fork-pr-gate: ${WORKFLOW} must be ASCII; line ${line} is not`]
+  }
   const workflow = parse(source) ?? {}
   const jobs = workflow.jobs ?? {}
   const gate = jobs[GATE]
