@@ -1,8 +1,7 @@
-import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { runProcess } from '@orca/process-host'
-import { forkPrGateErrors } from './fork-pr-gate-needs.mjs'
+import { WORKFLOW, forkPrGateErrors } from './fork-pr-gate-needs.mjs'
 
 const ROOT = join(import.meta.dirname, '..', '..')
 const SCRIPT = join(import.meta.dirname, 'fork-pr-gate-needs.mjs')
@@ -70,15 +69,16 @@ describe('forkPrGateErrors', () => {
     ])
   })
 
+  it('fails once when there is no verify job', async () => {
+    expect(await forkPrGateErrors('jobs:\n  build:\n    runs-on: ubuntu-24.04\n')).toEqual([
+      `fork-pr-gate: ${WORKFLOW} has no \`verify\` job`
+    ])
+  })
+
   it('fails when no step reads toJSON(needs)', async () => {
     expect(await forkPrGateErrors(workflow({ results: '${{ toJSON(github) }}' }))).toEqual([
       'fork-pr-gate: verify needs exactly one run step with `RESULTS: ${{ toJSON(needs) }}`; found 0'
     ])
-  })
-
-  it("accepts this repo's fork-pr.yml", async () => {
-    const source = readFileSync(join(ROOT, '.github/workflows/fork-pr.yml'), 'utf8')
-    expect(await forkPrGateErrors(source)).toEqual([])
   })
 })
 
