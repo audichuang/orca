@@ -26,12 +26,12 @@ function gateNeedsErrors(jobs, gate) {
   ]
 }
 
-// Mirrors GitHub's default `bash` run shell on Linux runners.
+// Why `-e` without pipefail: it is GitHub's command for a step with no `shell:` on Linux.
 async function runWithBash(script, results) {
   const { code } = await runProcess({
     program: 'bash',
-    args: ['--noprofile', '--norc', '-eo', 'pipefail', '-c', script],
-    env: { ...process.env, RESULTS: results }
+    args: ['--noprofile', '--norc', '-e', '-c', script],
+    env: { PATH: process.env.PATH, RESULTS: results }
   })
   // Why: 127 is "command not found"; without jq every simulated result would read as a failing gate.
   if (code === 127) {
@@ -46,39 +46,68 @@ function needsContext(needs, failing, result) {
   )
 }
 
-// Why execute the step instead of matching its text: any rewrite that lets a non-success through must fail here.
-async function gateSuccessErrors(gate, run = runWithBash) {
-  const steps = (gate.steps ?? []).filter(
-    (step) => String(step.env?.RESULTS ?? '').replace(/\s+/g, '') === RESULTS_EXPRESSION
-  )
-  if (steps.length !== 1 || typeof steps[0].run !== 'string') {
-    return [
-      `fork-pr-gate: ${GATE} needs exactly one run step with \`RESULTS: \${{ toJSON(needs) }}\`; found ${steps.length}`
-    ]
+// Why allowlists: env, shell, if, continue-on-error, defaults and expressions all change what GitHub runs
+// without changing what the simulation below sees.
+const GATE_KEYS = ['name', 'needs', 'if', 'runs-on', 'timeout-minutes', 'steps']
+const STEP_KEYS = ['name', 'env', 'run']
+
+function gateBypassErrors(workflow, gate) {
+  const errors = [
+    ...(workflow.defaults === undefined
+      ? []
+      : [`fork-pr-gate: ${WORKFLOW} must not set \`defaults\``]),
+    ...Object.keys(gate)
+      .filter((key) => !GATE_KEYS.includes(key))
+      .map((key) => `fork-pr-gate: ${GATE} must not set \`${key}\``)
+  ]
+  const steps = gate.steps ?? []
+  if (steps.length !== 1) {
+    return [...errors, `fork-pr-gate: ${GATE} must have exactly one step; found ${steps.length}`]
   }
   const [step] = steps
-  if (step.shell !== undefined && step.shell !== 'bash') {
-    return [
-      `fork-pr-gate: ${GATE}'s result step must use the default bash shell, not ${step.shell}`
-    ]
+  errors.push(
+    ...Object.keys(step)
+      .filter((key) => !STEP_KEYS.includes(key))
+      .map((key) => `fork-pr-gate: ${GATE}'s result step must not set \`${key}\``)
+  )
+  const env = step.env ?? {}
+  if (
+    Object.keys(env).join() !== 'RESULTS' ||
+    String(env.RESULTS).replace(/\s+/g, '') !== RESULTS_EXPRESSION
+  ) {
+    errors.push(
+      `fork-pr-gate: ${GATE}'s result step env must be exactly \`RESULTS: \${{ toJSON(needs) }}\``
+    )
   }
-  // Why: GitHub skips a step with `if:` and tolerates a failing one with continue-on-error, so either neuters the check.
-  const controls = [
-    ['if', step.if],
-    ['continue-on-error', step['continue-on-error']],
-    ['job continue-on-error', gate['continue-on-error']]
-  ].filter(([, value]) => value !== undefined)
-  if (controls.length > 0) {
-    return controls.map(([name]) => `fork-pr-gate: ${GATE}'s result step must not set \`${name}\``)
+  if (typeof step.run !== 'string') {
+    errors.push(`fork-pr-gate: ${GATE}'s result step has no \`run\` script`)
+  } else {
+    if (step.run.includes('${{')) {
+      errors.push(`fork-pr-gate: ${GATE}'s result step must not use \`\${{ }}\` expressions`)
+    }
+    const others = [...step.run.matchAll(/\$\{?([A-Za-z_]\w*)/g)]
+      .map(([, name]) => name)
+      .filter((name) => name !== 'RESULTS')
+    if (others.length > 0) {
+      errors.push(
+        `fork-pr-gate: ${GATE}'s result step may read only $RESULTS, not $${[...new Set(others)].join(', $')}`
+      )
+    }
   }
+  return errors
+}
+
+// Why execute the step instead of matching its text: any rewrite that lets a non-success through must fail here.
+async function gateSuccessErrors(gate, run = runWithBash) {
+  const script = gate.steps[0].run
   const needs = gateNeeds(gate)
   const errors = []
-  if ((await run(step.run, JSON.stringify(needsContext(needs, null)))) !== 0) {
+  if ((await run(script, JSON.stringify(needsContext(needs, null)))) !== 0) {
     errors.push(`fork-pr-gate: ${GATE} fails even when every need succeeded`)
   }
   for (const job of needs) {
     for (const result of UNSUCCESSFUL) {
-      if ((await run(step.run, JSON.stringify(needsContext(needs, job, result)))) === 0) {
+      if ((await run(script, JSON.stringify(needsContext(needs, job, result)))) === 0) {
         errors.push(`fork-pr-gate: ${GATE} passes when \`${job}\` is ${result}`)
       }
     }
@@ -93,12 +122,9 @@ export async function forkPrGateErrors(source) {
   if (!gate) {
     return [`fork-pr-gate: ${WORKFLOW} has no \`${GATE}\` job`]
   }
-  // Why: the simulation runs bash, so an inherited non-bash default shell would make it test the wrong thing.
-  const inherited = [workflow.defaults?.run?.shell, gate.defaults?.run?.shell].filter(
-    (shell) => shell !== undefined && shell !== 'bash'
-  )
-  if (inherited.length > 0) {
-    return [`fork-pr-gate: ${GATE} must run under the default bash shell, not ${inherited[0]}`]
+  const bypasses = gateBypassErrors(workflow, gate)
+  if (bypasses.length > 0) {
+    return [...gateNeedsErrors(jobs, gate), ...bypasses]
   }
   return [...gateNeedsErrors(jobs, gate), ...(await gateSuccessErrors(gate))]
 }
