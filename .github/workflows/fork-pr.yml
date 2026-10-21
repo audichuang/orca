@@ -63,16 +63,11 @@ jobs:
       matrix:
         shard: [1/8, 2/8, 3/8, 4/8, 5/8, 6/8, 7/8, 8/8]
     steps:
+      # Why shallow, like upstream: with history, scripts that diff a PR merge ref against HEAD^1 ignore the base a test passes them.
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
-          filter: blob:none
           persist-credentials: false
-
-      # Why: FORK_BASE is the newest upstream vX.Y.Z tag, and the fork repo has only -fork tags.
-      - name: Fetch upstream release tags
-        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
 
       - uses: ./.github/actions/install-node-dependencies
         with:
@@ -176,7 +171,7 @@ jobs:
 
   fork_mobile_web_app:
     # Why: fork-check's tests skip the mobile bundling checks without mobile/node_modules; this job installs them.
-    # Upstream's mobile_web_app job with its background/wait steps run in order, using its scripts unchanged.
+    # Upstream's mobile_web_app job and scripts, unchanged except that its background steps run one after another.
     name: fork mobile web app bundle
     if: github.event.pull_request.draft != true
     runs-on: ubuntu-24.04
