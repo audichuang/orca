@@ -30,8 +30,12 @@ export const DARWIN_EXCLUDE = {
     'a non-searchable PATH dir (/usr/local/bin) turns ENOENT into EACCES'
 }
 
+// Helpers that find the repo tree themselves (the unit-file ones only when called without a root).
+const READS_THE_TREE =
+  /\b(?:(?:mobileWebAppRouteClosure|mobileWebAppRouteChunkClosure)\s*\(|(?:discoverUnitFiles|collectUnitDependencyGraph)\s*\(\s*\))/
+
 export function isSourceScan(source) {
-  return READS_FILES.test(source) && FROM_THE_TREE.test(source)
+  return READS_THE_TREE.test(source) || (READS_FILES.test(source) && FROM_THE_TREE.test(source))
 }
 
 // Why discoverUnitFiles: it applies upstream's UNIT_INCLUDE/UNIT_EXCLUDE (electron probes, real-PTY tests).

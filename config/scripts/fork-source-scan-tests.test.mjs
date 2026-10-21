@@ -38,7 +38,11 @@ describe('isSourceScan', () => {
     [
       "import { scanSourceTree } from './source-scan/source-tree-scan'\nscanSourceTree(join(__dirname, '..'))"
     ],
-    ["readAllowlist(join(import.meta.dirname, 'allowlist.txt'))"]
+    ["readAllowlist(join(import.meta.dirname, 'allowlist.txt'))"],
+    ["const closure = await mobileWebAppRouteClosure('app/h/[hostId]/tasks.tsx')"],
+    ["await mobileWebAppRouteChunkClosure('app/h/[hostId]/session/[worktreeId].tsx')"],
+    ['unitFiles = new Set(discoverUnitFiles())'],
+    ['graph = collectUnitDependencyGraph()']
   ])('selects %s', (source) => {
     expect(isSourceScan(source)).toBe(true)
   })
@@ -46,7 +50,9 @@ describe('isSourceScan', () => {
   it.each([
     [IMPORT_ONLY],
     ["readFileSync(join(tmp, 'state.json'))"],
-    ["const root = join(__dirname, '..')"]
+    ["const root = join(__dirname, '..')"],
+    ['const graph = collectUnitDependencyGraph(fixture())'],
+    ['expect(discoverUnitFiles(root)).toEqual([])']
   ])('skips %s', (source) => {
     expect(isSourceScan(source)).toBe(false)
   })
@@ -90,7 +96,10 @@ describe('selectSourceScanTests on this repo', () => {
   // Why: these guards read the tree only through scanSourceTree, and --changed never reaches them.
   it.each([
     ['src/shared/export-let-function-initializer-ban.test.ts'],
-    ['src/main/ssh/ssh-remote-powershell.test.ts']
+    ['src/main/ssh/ssh-remote-powershell.test.ts'],
+    // Why: these read mobile/ through mobileWebAppRouteClosure and name no repo path themselves.
+    ['config/scripts/mobile-web-app-files-external-links.test.mjs'],
+    ['config/scripts/mobile-web-app-source-control-text-inputs.test.mjs']
   ])('selects %s', (file) => {
     const root = join(import.meta.dirname, '..', '..')
     expect(selectSourceScanTests({ root, platform: 'linux' })).toContain(file)
