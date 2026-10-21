@@ -72,6 +72,9 @@ function renderMenu(model = defaultModel, onOpenFile = vi.fn()): void {
               <span>{entry.path}</span>
             </button>
           ))}
+          <div data-commit-dir-path="src">
+            <span>src folder</span>
+          </div>
           <span>Open all</span>
         </div>
       )}
@@ -114,6 +117,18 @@ describe('GitHistoryCommitFilesMenu', () => {
       editorWorktreeId: 'folder-1'
     })
     await expect(args.loadCommitFiles(item)).resolves.toEqual([entries[1]])
+  })
+
+  it('targets a right-clicked folder: copies its path and the full source of its files', async () => {
+    renderMenu()
+    fireEvent.contextMenu(screen.getByText('src folder'))
+
+    expect(mocks.menuProps?.relativePath).toBe('src')
+    expect(mocks.menuProps?.absolutePath).toBe('/repo/src')
+    expect(mocks.menuProps?.onView).toBeUndefined()
+    mocks.menuProps?.onCopyFullSource?.()
+    const args = mocks.copy.mock.calls[0]?.[0]
+    await expect(args.loadCommitFiles(item)).resolves.toEqual(entries)
   })
 
   it('Cmd/Ctrl-click builds a selection without opening, and Copy Full Source copies all of it', async () => {
