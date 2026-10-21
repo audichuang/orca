@@ -14484,7 +14484,9 @@
                         "addRepos": "Ajouter les dépôts de ce dossier",
                         "filterRepos": "Filtrer les dépôts",
                         "clearFilter": "Effacer le filtre",
-                        "filterNoMatch": "Aucun dépôt ne correspond"
+                        "filterNoMatch": "Aucun dépôt ne correspond",
+                        "groupChanges": "Modifications",
+                        "groupNoChanges": "Aucune modification"
                       }
                     }
                   },
@@ -14577,7 +14579,8 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "Copier la source complète",
-                      "ce8235a6a4": "Ouvrir sur le côté"
+                      "ce8235a6a4": "Ouvrir sur le côté",
+                      "showFileHistory": "Afficher l’historique du fichier"
                     }
                   }
                 },
@@ -14868,7 +14871,8 @@
             "copyFullSource": "Copier la source complète",
             "copyFullSourceMany": "Copier la source complète ({{value0}} commits)",
             "copyHashMany": "Copier les hashs de commit ({{value0}} commits)",
-            "copyMessageMany": "Copier les messages de commit ({{value0}} commits)"
+            "copyMessageMany": "Copier les messages de commit ({{value0}} commits)",
+            "showInGraph": "Afficher dans Git Graph"
           },
           "pull": {
             "policy": {
@@ -15048,7 +15052,22 @@
             "searchCommits": "Rechercher des commits (author: path:)",
             "searchCommitsLabel": "Rechercher des commits",
             "loadMore": "Charger plus de commits",
-            "noMatchingCommits": "Aucun commit ne correspond à ce filtre"
+            "noMatchingCommits": "Aucun commit ne correspond à ce filtre",
+            "clearAllFilters": "Effacer les filtres",
+            "local": "Local",
+            "showAllBranches": "Afficher toutes les branches",
+            "userFilter": "Utilisateur",
+            "pathsFilter": "Chemins",
+            "clearUserFilter": "Effacer le filtre utilisateur",
+            "searchUsers": "Rechercher des utilisateurs...",
+            "noUsers": "Aucun utilisateur dans les commits chargés.",
+            "clearPathFilter": "Effacer le filtre de chemin",
+            "typePath": "Chemin de fichier ou de dossier relatif au dépôt",
+            "typePathHint": "Saisissez un chemin, puis appuyez sur Entrée.",
+            "filterByPath": "Filtrer par {{value0}}",
+            "recentPaths": "Récents",
+            "clearFilters": "Effacer",
+            "searchCommitMessages": "Rechercher dans les messages de commit"
           },
           "GitGraphFullView": {
             "open": "Ouvrir Git Graph",
@@ -15066,7 +15085,12 @@
             "openShort": "Git Graph",
             "laneContinuesBelow": "Continue {{count}} lignes plus bas sur {{sha}} {{subject}}. Cliquez pour y aller.",
             "laneComesFromAbove": "Vient de {{sha}} {{subject}}, {{count}} lignes plus haut. Cliquez pour y aller.",
-            "laneContinuesPastLoaded": "Continue au-delà des commits chargés. Chargez plus de commits pour la suivre."
+            "laneContinuesPastLoaded": "Continue au-delà des commits chargés. Chargez plus de commits pour la suivre.",
+            "openAllChanges": "Ouvrir toutes les modifications",
+            "hideDetails": "Masquer les détails",
+            "enterKey": "Entrée",
+            "showDetails": "Afficher les détails",
+            "detailsStrip": "Détails"
           },
           "GitGraphBranchSidebar": {
             "local": "Locales",
@@ -19034,7 +19058,9 @@
         "noRepos": "Aucun dépôt trouvé.",
         "addRepos": "Ajouter des dépôts...",
         "addReposMissing": "{{value0}} non ajoutés",
-        "addReposButton": "Ajouter les dépôts de ce dossier"
+        "addReposButton": "Ajouter les dépôts de ce dossier",
+        "openInSourceControl": "Ouvrir dans le contrôle de source",
+        "revealNotLoaded": "Ce commit n’est pas dans l’historique chargé."
       }
     },
     "i18n": {
