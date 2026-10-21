@@ -26,6 +26,20 @@ describe('parseGitHistoryGraphQuery', () => {
     })
   })
 
+  it('reads a hand-typed quoted value ending in a backslash literally', () => {
+    expect(parseGitHistoryGraphQuery('path:"src\\my dir\\" fix')).toEqual({
+      path: 'src\\my dir\\',
+      text: 'fix'
+    })
+  })
+
+  it('still unescapes quoted values written with escapes', () => {
+    expect(parseGitHistoryGraphQuery('path:"a \\"b\\" c\\\\" fix')).toEqual({
+      path: 'a "b" c\\',
+      text: 'fix'
+    })
+  })
+
   it('returns nothing for blank input', () => {
     expect(parseGitHistoryGraphQuery('   ')).toEqual({})
   })
