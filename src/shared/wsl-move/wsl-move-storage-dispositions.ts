@@ -47,6 +47,12 @@ export const LOCAL_STORAGE_MODULE_DISPOSITIONS: Record<string, WslMoveFieldDispo
       32,
       'Web client only; the desktop keeps visit recency in the session.'
     ),
+  // Fork-only: the folder Source Control's hidden-repo picks.
+  'src/renderer/src/components/right-sidebar/source-control/folder/folder-sidebar-hidden-repos.ts':
+    notApplicableDisposition(
+      62,
+      'Keyed by execution host and repo path; a moved repo shows again and can be hidden again.'
+    ),
   ...Object.fromEntries(
     [
       'src/renderer/src/components/browser-pane/annotate/use-markup-draw-hint.ts',
@@ -71,6 +77,7 @@ export const LOCAL_STORAGE_MODULE_DISPOSITIONS: Record<string, WslMoveFieldDispo
       'src/renderer/src/components/pet/PetOverlay.tsx',
       'src/renderer/src/components/right-sidebar/ai-vault/scope/ai-vault-view-options-persistence.ts',
       'src/renderer/src/components/right-sidebar/checks-panel/comments/pr-comment-presentation.ts',
+      'src/renderer/src/components/right-sidebar/source-control/sync/git-graph-full-view-details.tsx',
       'src/renderer/src/components/settings/browser/use/BrowserUsePane.tsx',
       'src/renderer/src/components/settings/developer-permissions/local-network-connection-history.ts',
       'src/renderer/src/components/sidebar/linear-agent-skill-runtime.ts',
