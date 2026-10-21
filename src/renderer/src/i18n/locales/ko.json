@@ -14256,7 +14256,9 @@
                         "addRepos": "이 폴더의 저장소 추가",
                         "filterRepos": "저장소 필터",
                         "clearFilter": "필터 지우기",
-                        "filterNoMatch": "일치하는 저장소가 없습니다"
+                        "filterNoMatch": "일치하는 저장소가 없습니다",
+                        "groupChanges": "변경 사항",
+                        "groupNoChanges": "변경 사항 없음"
                       }
                     }
                   },
@@ -14349,7 +14351,8 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "전체 소스 복사",
-                      "ce8235a6a4": "옆에 열기"
+                      "ce8235a6a4": "옆에 열기",
+                      "showFileHistory": "파일 기록 보기"
                     }
                   }
                 },
@@ -14640,7 +14643,8 @@
             "copyFullSource": "전체 소스 복사",
             "copyFullSourceMany": "전체 소스 복사 (커밋 {{value0}}개)",
             "copyHashMany": "Commit 해시 복사 (커밋 {{value0}}개)",
-            "copyMessageMany": "Commit 메시지 복사 (커밋 {{value0}}개)"
+            "copyMessageMany": "Commit 메시지 복사 (커밋 {{value0}}개)",
+            "showInGraph": "Git Graph에서 보기"
           },
           "pull": {
             "policy": {
@@ -14837,7 +14841,22 @@
             "searchCommits": "커밋 검색 (author: path:)",
             "searchCommitsLabel": "커밋 검색",
             "loadMore": "커밋 더 불러오기",
-            "noMatchingCommits": "이 필터와 일치하는 커밋이 없습니다"
+            "noMatchingCommits": "이 필터와 일치하는 커밋이 없습니다",
+            "clearAllFilters": "필터 지우기",
+            "local": "로컬",
+            "showAllBranches": "모든 브랜치 보기",
+            "userFilter": "사용자",
+            "pathsFilter": "경로",
+            "clearUserFilter": "사용자 필터 지우기",
+            "searchUsers": "사용자 검색...",
+            "noUsers": "불러온 커밋에 사용자가 없습니다.",
+            "clearPathFilter": "경로 필터 지우기",
+            "typePath": "저장소 기준 파일 또는 폴더 경로",
+            "typePathHint": "경로를 입력한 후 Enter를 누르세요.",
+            "filterByPath": "{{value0}}(으)로 필터",
+            "recentPaths": "최근",
+            "clearFilters": "지우기",
+            "searchCommitMessages": "커밋 메시지 검색"
           },
           "GitGraphFullView": {
             "open": "Git Graph 열기",
@@ -14855,7 +14874,12 @@
             "openShort": "Git Graph",
             "laneContinuesBelow": "{{count}}행 아래 {{sha}} {{subject}}(으)로 이어집니다. 클릭하면 이동합니다.",
             "laneComesFromAbove": "{{count}}행 위 {{sha}} {{subject}}에서 이어집니다. 클릭하면 이동합니다.",
-            "laneContinuesPastLoaded": "아직 불러오지 않은 이전 커밋으로 이어집니다. 커밋을 더 불러오면 이동할 수 있습니다."
+            "laneContinuesPastLoaded": "아직 불러오지 않은 이전 커밋으로 이어집니다. 커밋을 더 불러오면 이동할 수 있습니다.",
+            "openAllChanges": "모든 변경 사항 열기",
+            "hideDetails": "세부 정보 숨기기",
+            "enterKey": "Enter",
+            "showDetails": "세부 정보 보기",
+            "detailsStrip": "세부 정보"
           },
           "GitGraphBranchSidebar": {
             "local": "로컬",
@@ -18734,7 +18758,9 @@
         "noRepos": "저장소를 찾을 수 없습니다.",
         "addRepos": "저장소 추가...",
         "addReposMissing": "{{value0}}개 미추가",
-        "addReposButton": "이 폴더의 저장소 추가"
+        "addReposButton": "이 폴더의 저장소 추가",
+        "openInSourceControl": "소스 제어에서 열기",
+        "revealNotLoaded": "해당 커밋이 불러온 기록에 없습니다."
       }
     },
     "i18n": {
