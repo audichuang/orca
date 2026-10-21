@@ -236,6 +236,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
         // Dock history as reference context while the rest of the pane scrolls.
         <div
           ref={toastBottomClearanceRef}
+          data-git-history-dock
           className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-sidebar/95 backdrop-blur-sm"
         >
           <GitHistoryPanel
