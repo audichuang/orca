@@ -5,10 +5,12 @@ import {
   collectGitHistoryAuthors,
   listGitHistoryAuthors,
   listRecentGitHistoryGraphPaths,
+  mergeGitHistoryGraphFreeText,
   readGitHistoryGraphQueryToken,
   rememberGitHistoryGraphPath,
   resetRecentGitHistoryGraphPathsForTest,
-  setGitHistoryGraphQueryToken
+  setGitHistoryGraphQueryToken,
+  stripGitHistoryGraphQueryTokens
 } from './git-history-graph-query-tokens'
 
 afterEach(() => resetRecentGitHistoryGraphPathsForTest())
@@ -79,5 +81,16 @@ describe('Git Graph query tokens', () => {
     rememberGitHistoryGraphPath('wt', 'a.ts')
     expect(listRecentGitHistoryGraphPaths('wt')).toEqual(['a.ts', 'b.ts'])
     expect(listRecentGitHistoryGraphPaths('other')).toEqual([])
+  })
+
+  it('shows only free text in the full-view box and keeps button tokens while typing', () => {
+    const query = 'fix author:ann path:"src/a b.ts"'
+    expect(stripGitHistoryGraphQueryTokens(query)).toBe('fix')
+    expect(mergeGitHistoryGraphFreeText(query, 'fix', 'fix bug')).toBe(
+      'fix bug author:ann path:"src/a b.ts"'
+    )
+    // A token typed in the box wins over the button's, and deleting it from the box removes it.
+    expect(mergeGitHistoryGraphFreeText('author:ann', '', 'author:bo')).toBe('author:bo')
+    expect(mergeGitHistoryGraphFreeText('author:bo', 'author:bo', '')).toBe('')
   })
 })

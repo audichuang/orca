@@ -21,6 +21,7 @@ import { useGitGraphFolderAddRepos } from './use-git-graph-folder-add-repos'
 import { listGitGraphRepoChoices } from './git-graph-tab-model'
 import { resolveGitGraphSplitTargetGroupId } from './git-graph-split-target'
 import type { SourceControlRowOpenEvent } from '../right-sidebar/source-control/listing/split-open'
+import { useRepoDisplayColor } from '@/lib/repo-display-color'
 
 function GitGraphTabBody({
   fileId,
@@ -39,6 +40,7 @@ function GitGraphTabBody({
 }): React.JSX.Element {
   const target = useMemo(() => ipcOrRuntimeTargetForHostId(hostId), [hostId])
   const worktreeMap = useWorktreeMap()
+  const repoColor = useRepoDisplayColor()
   // Why: a hidden workspace keeps its tabs mounted; only fetch while this workspace is on screen.
   const isVisible = useAppStore(
     (s) => s.activeWorktreeId === workspaceId && s.activeView === 'terminal'
@@ -117,7 +119,7 @@ function GitGraphTabBody({
       onCommitAction={handleCommitAction}
       renderCommitFilesMenu={renderCommitFilesMenu}
       toolbarLeading={switcher}
-      accentColor={repo.badgeColor}
+      accentColor={repoColor(repo)}
     />
   )
 }
