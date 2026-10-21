@@ -1,5 +1,6 @@
 import { expect } from './orca-app'
 import { runBinaryAndKeyboardScenarios } from './folder-multi-repo-binary-and-keyboard-scenarios'
+import { expectRowHoverKeepsCount } from './folder-repo-row-hover-count-check'
 import type { ExtraScenarioContext } from './folder-multi-repo-scenario-context'
 
 // S15-S16: open-to-the-side and master-detail layout; then S17-S18.
@@ -65,7 +66,7 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
     await page.keyboard.press('Escape')
   })
 
-  await scenario('S16 Layout: accordion headers, open repo fills height, bulk bar', async (ev) => {
+  await scenario('S16 Layout: repo rows, open repo fills height, bulk bar', async (ev) => {
     await expandOnly(H.web)
     const geo = await page.evaluate(() => {
       const rows = [...document.querySelectorAll<HTMLElement>('[data-repo-row]')]
@@ -177,17 +178,22 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
     expect(g.detailCovered, 'detail actions are not covered by floating UI').toEqual([])
     await shot('S16a-list-and-detail')
 
-    // Clicking the open header collapses every repo; clicking it again reopens its panel.
+    // Hovering a row with changes reveals eye/copy beside the count without moving or covering it.
+    await expectRowHoverKeepsCount(
+      page.locator('[data-repo-row]').filter({ hasText: H.web }).first(),
+      ev
+    )
+    await shot('S16a1-row-hover-count')
+    await page.mouse.move(0, 0)
+
+    // Clicking the open row keeps it open, so the panel below is never left blank.
     const openHeader = page.locator('[data-repo-row][aria-current="true"]')
     const webHeader = page.locator('[data-repo-row]').filter({ hasText: H.web }).first()
     await webHeader.click()
-    await expect(openHeader).toHaveCount(0)
-    await expect(webHeader).toHaveAttribute('aria-expanded', 'false')
-    await expect(page.locator('[data-testid="source-control-entry"]')).toHaveCount(0)
-    await shot('S16a2-all-collapsed')
-    await webHeader.click()
+    await expect(openHeader).toHaveCount(1)
     await expect(webHeader).toHaveAttribute('aria-current', 'true')
     await expect(entry('unstaged', 'src/partial.ts')).toBeVisible({ timeout: 10_000 })
+    await shot('S16a2-open-row-reclicked')
 
     // Bulk action bar: anchored to the detail, not covered, label on one line.
     await entry('unstaged', 'src/partial.ts').click({ modifiers: ['ControlOrMeta'] })
