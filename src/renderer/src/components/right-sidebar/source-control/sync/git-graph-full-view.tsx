@@ -66,6 +66,10 @@ export type GitGraphFullViewProps = {
   toolbarLeading?: React.ReactNode
   /** The shown repo's badge colour, drawn as a bar along the toolbar's top edge. */
   accentColor?: string
+  /** Whose filter the view reads and edits; defaults to the worktree's (shared with the sidebar). */
+  filterKey?: string
+  /** Select the checked-out commit when the first history arrives and nothing is selected yet. */
+  selectHeadOnOpen?: boolean
 }
 
 function useCommitFiles(
@@ -125,7 +129,9 @@ export function GitGraphFullView({
   renderCommitFilesMenu,
   toolbarTrailing,
   toolbarLeading,
-  accentColor
+  accentColor,
+  filterKey = worktreeId,
+  selectHeadOnOpen = false
 }: GitGraphFullViewProps): React.JSX.Element {
   const result = state.result
   const viewModels = useMemo(
@@ -160,12 +166,14 @@ export function GitGraphFullView({
     selectionKey: ownerKey,
     result,
     viewModels,
-    listRef
+    listRef,
+    selectHeadOnOpen
   })
   const { shownItems, jumpTo } = selection
   const branchContext = useGitGraphBranchContext({
     ownerKey,
     worktreeId,
+    filterKey,
     worktreePath,
     activeRepoTarget,
     result,
@@ -187,7 +195,7 @@ export function GitGraphFullView({
     getNavigationGeneration: selection.getNavigationGeneration,
     jumpTo,
     showRef: (fullName) =>
-      updateGitHistoryGraphFilter(worktreeId, { scope: 'refs', refs: [fullName] })
+      updateGitHistoryGraphFilter(filterKey, { scope: 'refs', refs: [fullName] })
   })
   useGitGraphOpenFocus(listRef, selection.cursorId)
   // Why containment: React bubbles keydown out of portaled popovers too, and their Escape is theirs.
@@ -267,6 +275,7 @@ export function GitGraphFullView({
             state={state}
             trailing={toolbarTrailing}
             fullView
+            filterKey={filterKey}
           />
         </div>
         <Button
@@ -347,7 +356,7 @@ export function GitGraphFullView({
             )}
             {result && viewModels.length === 0 && (
               <div className="px-3 py-2 text-xs text-muted-foreground">
-                <GitHistoryGraphEmptyMessage worktreeId={worktreeId} />
+                <GitHistoryGraphEmptyMessage worktreeId={filterKey} filterActions />
               </div>
             )}
             {viewModels.map((viewModel, index) => (
@@ -381,7 +390,7 @@ export function GitGraphFullView({
                 onOpen={() => onOpenCommit(viewModel.historyItem)}
               />
             ))}
-            {result && <GitHistoryGraphLoadMore worktreeId={worktreeId} state={state} />}
+            {result && <GitHistoryGraphLoadMore worktreeId={filterKey} state={state} />}
           </div>
         </div>
         <GitGraphDetailsPane
