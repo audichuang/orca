@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { branchName } from '@/lib/git-utils'
 import { RepoBadgeMark } from '@/components/repo/RepoBadgeLabel'
 import { translate } from '@/i18n/i18n'
 import type { GitGraphRepoChoice } from './git-graph-tab-model'
@@ -83,22 +84,29 @@ export function GitGraphRepoSwitcher({
           role="combobox"
           aria-expanded={open}
           aria-label={label}
-          className="max-w-[40%] shrink-0 justify-between"
+          className="min-w-0 max-w-full justify-between"
         >
           {selected ? (
-            <RepoBadgeMark color={selected.repo.badgeColor} className="size-2 rounded-[2px]" />
+            <>
+              <RepoBadgeMark color={selected.repo.badgeColor} className="size-2 rounded-[2px]" />
+              <span className="truncate text-foreground">{selected.repo.displayName}</span>
+              {/* Why the worktree name as fallback: a detached HEAD has no branch. */}
+              <span className="min-w-0 truncate text-muted-foreground">
+                {branchName(selected.worktree.branch) || selected.worktree.displayName}
+              </span>
+            </>
           ) : (
-            <FolderGit2 className="size-3 shrink-0" />
+            <>
+              <FolderGit2 className="size-3 shrink-0" />
+              <span className="truncate">
+                {translate('auto.components.gitGraphTab.selectRepo', 'Select repository')}
+              </span>
+            </>
           )}
-          <span className="truncate">
-            {selected
-              ? `${selected.repo.displayName} · ${selected.worktree.displayName}`
-              : translate('auto.components.gitGraphTab.selectRepo', 'Select repository')}
-          </span>
           <ChevronsUpDown className="size-3 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[min(320px,calc(100vw-1rem))]">
+      <PopoverContent align="start" className="w-[min(320px,calc(100vw-1rem))]">
         <Command density="menu">
           <CommandInput
             placeholder={translate(
