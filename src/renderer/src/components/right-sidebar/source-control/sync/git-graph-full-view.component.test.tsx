@@ -21,6 +21,7 @@ const { GitGraphFullView } = await import('./git-graph-full-view')
 const { GitHistoryGraphToolbar } = await import('./git-history-graph-toolbar')
 const { useSourceControlGitHistory } = await import('./use-git-history')
 const { resetGitHistoryGraphFiltersForTest } = await import('./git-history-graph-filter')
+const { resetRecentGitHistoryGraphPathsForTest } = await import('./git-history-graph-query-tokens')
 const { resetGitGraphRememberedSelectionForTest } = await import('./use-git-graph-full-view-state')
 const { resetGitGraphBranchTreePreferenceForTest } = await import('./use-git-graph-branch-tree')
 
@@ -125,6 +126,7 @@ afterEach(() => {
   cleanup()
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
   resetGitHistoryGraphFiltersForTest()
+  resetRecentGitHistoryGraphPathsForTest()
   resetGitGraphRememberedSelectionForTest()
   resetGitGraphBranchTreePreferenceForTest()
   vi.clearAllMocks()
@@ -483,6 +485,71 @@ describe('full-width Git Graph', () => {
     fireEvent.click(within(view).getByRole('button', { name: 'Refresh commits' }))
     await waitFor(() => expect(onLoadCommitFiles).toHaveBeenCalledTimes(2))
     expect(await within(view).findByTestId('git-history-commit-file')).toBeInTheDocument()
+  })
+
+  it('User picks a loaded author into the search, and Clear resets every filter', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    // The narrow sidebar toolbar keeps only the branch filter and the search box.
+    expect(screen.queryByRole('combobox', { name: 'User' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const view = await screen.findByRole('region', { name: 'Git Graph' })
+    expect(within(view).queryByRole('button', { name: 'Clear' })).toBeNull()
+
+    fireEvent.change(within(view).getByRole('textbox', { name: 'Search commits' }), {
+      target: { value: 'fix' }
+    })
+    fireEvent.click(within(view).getByRole('combobox', { name: 'User' }))
+    fireEvent.click(await screen.findByText('Ada', { selector: '[cmdk-item] *' }))
+    await waitFor(() =>
+      expect(mocks.getRuntimeGitHistory.mock.calls.at(-1)?.[1]).toMatchObject({
+        graph: { mode: 'head', search: { text: 'fix', author: 'Ada' } }
+      })
+    )
+    expect(within(view).getByRole('textbox', { name: 'Search commits' })).toHaveValue(
+      'fix author:Ada'
+    )
+    expect(within(view).getByRole('combobox', { name: 'User' })).toHaveTextContent('User: Ada')
+
+    fireEvent.click(within(view).getByRole('button', { name: 'Clear user filter' }))
+    expect(within(view).getByRole('textbox', { name: 'Search commits' })).toHaveValue('fix')
+
+    fireEvent.click(within(view).getByRole('button', { name: 'Clear' }))
+    expect(within(view).getByRole('textbox', { name: 'Search commits' })).toHaveValue('')
+    await waitFor(() =>
+      expect(mocks.getRuntimeGitHistory.mock.calls.at(-1)?.[1]?.graph).toBeUndefined()
+    )
+    expect(within(view).queryByRole('button', { name: 'Clear' })).toBeNull()
+    // Nothing debounced writes the old text back.
+    await new Promise((resolve) => setTimeout(resolve, 450))
+    expect(mocks.getRuntimeGitHistory.mock.calls.at(-1)?.[1]?.graph).toBeUndefined()
+  })
+
+  it('Paths applies a typed path on Enter and offers it again as a recent path', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const view = await screen.findByRole('region', { name: 'Git Graph' })
+
+    fireEvent.click(within(view).getByRole('combobox', { name: 'Paths' }))
+    const input = await screen.findByPlaceholderText('Repo-relative file or folder path')
+    fireEvent.change(input, { target: { value: 'src/app.ts' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() =>
+      expect(mocks.getRuntimeGitHistory.mock.calls.at(-1)?.[1]).toMatchObject({
+        graph: { search: { path: 'src/app.ts' } }
+      })
+    )
+    const paths = within(view).getByRole('combobox', { name: 'Paths' })
+    expect(paths).toHaveTextContent('Paths: …/app.ts')
+
+    fireEvent.click(within(view).getByRole('button', { name: 'Clear path filter' }))
+    expect(within(view).getByRole('combobox', { name: 'Paths' })).toHaveTextContent(/^Paths$/)
+    fireEvent.click(within(view).getByRole('combobox', { name: 'Paths' }))
+    fireEvent.click(await screen.findByText('src/app.ts', { selector: '[cmdk-item] *' }))
+    expect(within(view).getByRole('textbox', { name: 'Search commits' })).toHaveValue(
+      'path:src/app.ts'
+    )
   })
 
   it('keeps a query typed in the full view when an older sidebar draft is still debouncing', async () => {

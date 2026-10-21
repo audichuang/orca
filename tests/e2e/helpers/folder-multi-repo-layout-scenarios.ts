@@ -70,12 +70,9 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
     const geo = await page.evaluate(() => {
       const rows = [...document.querySelectorAll<HTMLElement>('[data-repo-row]')]
       const root = rows[0]?.closest<HTMLElement>('[role="group"]')
-      // Headers up to the open repo, then its panel, then the remaining headers.
-      const list = rows[0]?.parentElement?.parentElement
-      const detail =
-        list?.nextElementSibling instanceof HTMLElement ? list.nextElementSibling : null
-      const after =
-        detail?.nextElementSibling instanceof HTMLElement ? detail.nextElementSibling : null
+      // One scrolling repo list, then the open repo's panel pinned below it.
+      const list = document.querySelector<HTMLElement>('[data-folder-repo-list]')
+      const detail = document.querySelector<HTMLElement>('[data-folder-repo-detail]')
       if (!list || !root || !detail) {
         return null
       }
@@ -97,12 +94,15 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
           insideList:
             row.getBoundingClientRect().top >= lr.top - 1 &&
             row.getBoundingClientRect().bottom <= lr.bottom + 1,
-          targets: [...row.querySelectorAll('button')].map((b) => {
-            return {
-              name: b.getAttribute('aria-label') || b.getAttribute('title') || 'row',
-              ok: hit(b)
-            }
-          })
+          // Why: eye/copy sit in a hover-only overlay that ignores the pointer until hovered.
+          targets: [...row.querySelectorAll('button')]
+            .filter((b) => getComputedStyle(b).pointerEvents !== 'none')
+            .map((b) => {
+              return {
+                name: b.getAttribute('aria-label') || b.getAttribute('title') || 'row',
+                ok: hit(b)
+              }
+            })
         }
       })
       const dr = detail.getBoundingClientRect()
@@ -126,9 +126,7 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
         listClipped: list.scrollHeight - list.clientHeight,
         root: box(root),
         detail: box(detail),
-        afterTop: after ? after.getBoundingClientRect().top : null,
-        afterH: after ? after.getBoundingClientRect().height : 0,
-        detailChild: detail.firstElementChild ? box(detail.firstElementChild) : null,
+        detailChild: detail.lastElementChild ? box(detail.lastElementChild) : null,
         firstContentGap: first ? first.getBoundingClientRect().top - dr.top : null,
         rowHits,
         detailCovered: visible
@@ -159,23 +157,21 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
     expect(g.rowHits).toHaveLength(5)
     for (const r of g.rowHits) {
       expect(r.insideList, `${r.label} is clipped by the list`).toBe(true)
-      expect(
-        r.targets.length,
-        `${r.label} has row button, sync/copy actions`
-      ).toBeGreaterThanOrEqual(2)
+      expect(r.targets.length, `${r.label} has a clickable row button`).toBeGreaterThanOrEqual(1)
       expect(
         r.targets.filter((t) => !t.ok),
         `${r.label} actions are hit-testable`
       ).toEqual([])
     }
     expect(g.listClipped, 'list scrolls internally with 5 repos').toBe(0)
-    // The open repo's panel starts right under its header and runs to the next header or the panel bottom.
+    // The open repo's panel starts right under the list and runs to the panel bottom.
     expect(Math.abs(g.detail.top - g.list.bottom)).toBeLessThanOrEqual(6)
-    expect(Math.abs(g.detail.bottom - (g.afterTop ?? g.root.bottom))).toBeLessThanOrEqual(2)
-    expect(g.detail.h).toBeGreaterThan(g.root.bottom - g.root.top - g.list.h - g.afterH - 120)
-    expect(g.detailChild!.h, 'selected repo panel fills the detail area').toBeGreaterThanOrEqual(
-      g.detail.h - 2
-    )
+    expect(Math.abs(g.detail.bottom - g.root.bottom)).toBeLessThanOrEqual(2)
+    expect(g.detail.h).toBeGreaterThan(g.root.bottom - g.root.top - g.list.h - 120)
+    expect(
+      g.detailChild!.bottom,
+      'selected repo panel fills the detail area under its header'
+    ).toBeGreaterThanOrEqual(g.detail.bottom - 2)
     expect(g.firstContentGap, 'no large gap above the repo panel content').not.toBeNull()
     expect(g.firstContentGap!).toBeLessThan(48)
     expect(g.detailCovered, 'detail actions are not covered by floating UI').toEqual([])
