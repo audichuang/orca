@@ -32,8 +32,9 @@ vi.mock('./git-history-commit-copy', () => ({ copyHistoryCommitsFullSource: mock
 const { GitHistoryCommitFilesMenu, commitFilesMenuSlot } =
   await import('./git-history-commit-files-menu')
 const { GitHistoryPanel } = await import('./git-history-panel')
-const { getGitHistoryGraphFilter, resetGitHistoryGraphFiltersForTest } =
+const { getGitHistoryGraphFilter, gitGraphTabFilterKey, resetGitHistoryGraphFiltersForTest } =
   await import('./git-history-graph-filter')
+const { buildGitGraphTabId } = await import('../../../git-graph-tab/git-graph-tab-model')
 
 const item: GitHistoryItem = {
   id: 'a'.repeat(40),
@@ -145,15 +146,18 @@ describe('GitHistoryCommitFilesMenu', () => {
 
     fireEvent.contextMenu(screen.getByText('src/two.ts'))
     mocks.menuProps?.onShowFileHistory?.()
-    expect(getGitHistoryGraphFilter('repo-wt')).toMatchObject({
+    // The Git Graph tab's own filter, not the sidebar Commits panel's.
+    const tabKey = gitGraphTabFilterKey(buildGitGraphTabId('folder-1'), 'repo-wt')
+    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({
       scope: 'all',
       query: 'path:src/two.ts'
     })
+    expect(getGitHistoryGraphFilter('repo-wt').query).toBe('')
     expect(openGitGraphTab).toHaveBeenLastCalledWith('folder-1', { repoWorktreeId: 'repo-wt' })
 
     fireEvent.contextMenu(screen.getByText('src folder'))
     mocks.menuProps?.onShowFileHistory?.()
-    expect(getGitHistoryGraphFilter('repo-wt').query).toBe('path:src')
+    expect(getGitHistoryGraphFilter(tabKey).query).toBe('path:src')
     expect(openGitGraphTab).toHaveBeenCalledTimes(2)
   })
 

@@ -10,9 +10,11 @@ import { ipcOrRuntimeTargetForHostId } from '@/runtime/runtime-client-target'
 import { translate } from '@/i18n/i18n'
 import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared/execution-host'
 import type { Repo } from '../../../../shared/repo-types'
+import type { GitHistoryGraphSavedFilter } from '../../../../shared/git-history-graph-query-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { GitGraphFullView } from '../right-sidebar/source-control/sync/git-graph-full-view'
 import { useSourceControlGitHistory } from '../right-sidebar/source-control/sync/use-git-history'
+import { useGitGraphTabFilter } from './use-git-graph-tab-filter'
 import { useGitHistoryCommitActions } from '../right-sidebar/source-control/sync/use-git-history-commit-actions'
 import { commitFilesMenuSlot } from '../right-sidebar/source-control/sync/git-history-commit-files-menu'
 import { FolderAddReposDialog } from '../right-sidebar/source-control/folder/folder-add-repos-dialog'
@@ -29,7 +31,8 @@ function GitGraphTabBody({
   worktree,
   repo,
   hostId,
-  switcher
+  switcher,
+  savedFilter
 }: {
   fileId: string
   workspaceId: string
@@ -37,8 +40,10 @@ function GitGraphTabBody({
   repo: Repo
   hostId: ExecutionHostId
   switcher: React.ReactNode
+  savedFilter: GitHistoryGraphSavedFilter | undefined
 }): React.JSX.Element {
   const target = useMemo(() => ipcOrRuntimeTargetForHostId(hostId), [hostId])
+  const filterKey = useGitGraphTabFilter(fileId, worktree.id, savedFilter)
   const worktreeMap = useWorktreeMap()
   const repoColor = useRepoDisplayColor()
   // Why: a hidden workspace keeps its tabs mounted; only fetch while this workspace is on screen.
@@ -54,7 +59,8 @@ function GitGraphTabBody({
     isBranchVisible: isVisible,
     isGitHistoryExpanded: true,
     isGitHistoryVisible: true,
-    worktreeMap
+    worktreeMap,
+    graphFilterKey: filterKey
   })
   // Why: the sidebar's commit/push/pull refresh only reaches its own history state; follow the
   // repo's head, upstream counts and SSH link instead so this tab never shows stale commits.
@@ -120,6 +126,8 @@ function GitGraphTabBody({
       renderCommitFilesMenu={renderCommitFilesMenu}
       toolbarLeading={switcher}
       accentColor={repoColor(repo)}
+      filterKey={filterKey}
+      selectHeadOnOpen
     />
   )
 }
@@ -218,6 +226,7 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
       repo={repo}
       hostId={hostId}
       switcher={switcher}
+      savedFilter={file.gitGraph?.filter}
     />
   )
 }
