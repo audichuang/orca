@@ -31,6 +31,7 @@ import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-gra
 import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
 import { useGitGraphBranchContext, useGitGraphSelection } from './use-git-graph-full-view-state'
+import type { GitGraphRevealOptions } from './use-git-graph-reveal'
 import { useGitGraphBranchTree } from './use-git-graph-branch-tree'
 import { useWindowWidth } from '../../use-window-width'
 import { useMeasuredWidth } from '../../right-sidebar-measured-width'
@@ -70,6 +71,8 @@ export type GitGraphFullViewProps = {
   filterKey?: string
   /** Select the checked-out commit when the first history arrives and nothing is selected yet. */
   selectHeadOnOpen?: boolean
+  /** One-shot commit to select and scroll to, ahead of the checked-out pick. */
+  reveal?: Pick<GitGraphRevealOptions, 'request' | 'onHandled'>
 }
 
 function useCommitFiles(
@@ -131,7 +134,8 @@ export function GitGraphFullView({
   toolbarLeading,
   accentColor,
   filterKey = worktreeId,
-  selectHeadOnOpen = false
+  selectHeadOnOpen = false,
+  reveal
 }: GitGraphFullViewProps): React.JSX.Element {
   const result = state.result
   const viewModels = useMemo(
@@ -167,7 +171,12 @@ export function GitGraphFullView({
     result,
     viewModels,
     listRef,
-    selectHeadOnOpen
+    selectHeadOnOpen,
+    reveal: reveal && {
+      ...reveal,
+      settled: state.status === 'ready' || state.status === 'error',
+      filterKey
+    }
   })
   const { shownItems, jumpTo } = selection
   const branchContext = useGitGraphBranchContext({
