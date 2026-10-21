@@ -180,6 +180,8 @@ fork-check-static: fork-check-static-types fork-check-quality fork-check-lint fo
 
 fork-base-guard:
 	@echo ">> fork base: $(FORK_BASE)"
+	@# Why: an empty FORK_BASE makes the count below `..HEAD`, which is 0 and passes.
+	@test -n "$(FORK_BASE)" || { echo "fork-check: FORK_BASE is empty (no upstream vX.Y.Z tag reachable from HEAD); fetch upstream tags (git fetch <upstream-remote> --tags) or pass FORK_BASE=vX.Y.Z"; exit 1; }
 	@n=$$(git rev-list --count $(FORK_BASE)..HEAD 2>/dev/null || echo 999999); if [ "$$n" -gt "$(FORK_MAX_COMMITS)" ]; then \
 	  echo "fork-check: $(FORK_BASE) is $$n commits behind HEAD; fetch upstream tags (git fetch <upstream-remote> --tags) or pass FORK_BASE=vX.Y.Z"; exit 1; fi
 
@@ -274,7 +276,8 @@ fork-check-e2e: export LC_ALL = C
 fork-check-e2e: export ORCA_BACKGROUND_LAUNCH = 1
 fork-check-e2e: fork-base-guard
 	pnpm run ensure:electron-runtime
-	specs=$$( { echo tests/e2e/folder-multi-repo-source-control.spec.ts; \
-	  git diff --name-only --diff-filter=d $(FORK_BASE) HEAD -- 'tests/e2e/*.spec.ts'; } | sort -u) && \
+	@# Why the diff alone: piped into sort under /bin/sh, its failure was lost. --no-renames: rename detection fetches blobs in a blob:none clone.
+	changed=$$(git diff --name-only --no-renames --diff-filter=d $(FORK_BASE) HEAD -- 'tests/e2e/*.spec.ts') && \
+	  specs=$$(printf '%s\n' tests/e2e/folder-multi-repo-source-control.spec.ts $$changed | sort -u) && \
 	  echo ">> fork e2e specs:" $$specs && \
 	  npx playwright test $$specs --config tests/playwright.config.ts --project=electron-headless --workers=1
