@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react'
-import { Copy, ExternalLink, Eye, FolderOpen, PanelRight } from 'lucide-react'
+import { Copy, ExternalLink, Eye, FolderOpen, History, PanelRight } from 'lucide-react'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -45,6 +45,7 @@ type SourceControlEntryContextMenuProps = {
   onView?: () => void
   onOpenToSide?: () => void
   onCopyFullSource?: () => void
+  onShowFileHistory?: () => void
   onRevealInExplorer: (worktreeId: string, absolutePath: string) => void
   onOpenChange?: (open: boolean) => void
   children: React.ReactNode
@@ -59,6 +60,7 @@ export function SourceControlEntryContextMenu({
   onView,
   onOpenToSide,
   onCopyFullSource,
+  onShowFileHistory,
   onRevealInExplorer,
   onOpenChange,
   children
@@ -143,6 +145,15 @@ export function SourceControlEntryContextMenu({
           {/* Why: Alt-click is the pointer shortcut; Ctrl/Cmd/Shift-click only multi-selects. */}
           <ContextMenuShortcut>{getSourceControlSplitOpenShortcutLabel()}</ContextMenuShortcut>
         </ContextMenuItem>
+        {onShowFileHistory ? (
+          <ContextMenuItem onSelect={onShowFileHistory}>
+            <History className="size-3.5" />
+            {translate(
+              'auto.components.right.sidebar.source.control.listing.entry.context.menu.showFileHistory',
+              'Show File History'
+            )}
+          </ContextMenuItem>
+        ) : null}
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={handleCopyPath} disabled={!absolutePath}>
           <Copy className="size-3.5" />
