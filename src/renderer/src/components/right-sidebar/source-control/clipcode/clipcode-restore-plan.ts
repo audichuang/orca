@@ -284,7 +284,8 @@ export function previewClipcodeRestore(
   for (const write of plan.writes) {
     const state = stateOf(write.relativePath)
     if (state === 'file' || state === 'missing') {
-      preview[state === 'file' ? 'overwrite' : 'create'].push(write)
+      const bucket = state === 'file' ? preview.overwrite : preview.create
+      bucket.push(write)
     } else {
       preview.skipped.push({ path: write.relativePath, reason: UNTOUCHABLE_STATE_REASON[state] })
     }
