@@ -35,6 +35,7 @@ function GitGraphTabBody({
   repo,
   hostId,
   switcher,
+  toolbarTrailing,
   savedFilter
 }: {
   fileId: string
@@ -43,6 +44,7 @@ function GitGraphTabBody({
   repo: Repo
   hostId: ExecutionHostId
   switcher: React.ReactNode
+  toolbarTrailing: React.ReactNode
   savedFilter: GitHistoryGraphSavedFilter | undefined
 }): React.JSX.Element {
   const target = useMemo(() => ipcOrRuntimeTargetForHostId(hostId), [hostId])
@@ -129,6 +131,7 @@ function GitGraphTabBody({
       onCommitAction={handleCommitAction}
       renderCommitFilesMenu={renderCommitFilesMenu}
       toolbarLeading={switcher}
+      toolbarTrailing={toolbarTrailing}
       accentColor={repoColor(repo)}
       filterKey={filterKey}
       selectHeadOnOpen
@@ -168,6 +171,25 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
     'auto.components.gitGraphTab.openInSourceControl',
     'Open in Source Control'
   )
+  // Why at the row's end: beside the branches toggle its panel icon read as a twin of that toggle.
+  const openInSourceControl = choice ? (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          aria-label={openInSourceControlLabel}
+          onClick={() => openSourceControlOnRepo(workspaceId, choice.worktree.id)}
+        >
+          <PanelRight />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" sideOffset={6}>
+        {openInSourceControlLabel}
+      </TooltipContent>
+    </Tooltip>
+  ) : null
   const switcher = (
     <>
       <GitGraphRepoSwitcher
@@ -186,24 +208,6 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
             : undefined
         }
       />
-      {choice && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              aria-label={openInSourceControlLabel}
-              onClick={() => openSourceControlOnRepo(workspaceId, choice.worktree.id)}
-            >
-              <PanelRight />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" sideOffset={6}>
-            {openInSourceControlLabel}
-          </TooltipContent>
-        </Tooltip>
-      )}
       {addReposDialog}
     </>
   )
@@ -253,6 +257,7 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
       repo={repo}
       hostId={hostId}
       switcher={switcher}
+      toolbarTrailing={openInSourceControl}
       savedFilter={file.gitGraph?.filter}
     />
   )
