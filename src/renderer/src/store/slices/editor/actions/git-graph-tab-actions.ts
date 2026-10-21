@@ -10,6 +10,7 @@ import {
   dropGitGraphRevealRequestUnlessRepo,
   requestGitGraphReveal
 } from '@/components/git-graph-tab/git-graph-reveal-request'
+import { requestGitGraphFocus } from '@/components/git-graph-tab/git-graph-focus-request'
 import { cancelGitGraphRepoFollow } from '@/components/git-graph-tab/git-graph-deferred-repo-follow'
 import {
   GIT_GRAPH_TAB_LABEL,
@@ -45,6 +46,8 @@ export function createGitGraphTabActions(
       if (opts?.revealCommit) {
         requestGitGraphReveal(id, repoWorktreeId, opts.revealCommit)
       }
+      // Why every call: each caller is an explicit open; a repo follow goes through setGitGraphTabRepo.
+      requestGitGraphFocus(id)
       set((s) => {
         const file: OpenFile = {
           ...s.openFiles.find((entry) => entry.id === id),

@@ -4,6 +4,7 @@ import { forgetGitGraphTabFilters } from '../right-sidebar/source-control/sync/g
 import { forgetGitGraphTabQueryMemory } from '../right-sidebar/source-control/sync/git-history-graph-query-tokens'
 import { forgetGitGraphRememberedSelection } from '../right-sidebar/source-control/sync/git-graph-remembered-selection'
 import { forgetGitGraphRevealRequest } from './git-graph-reveal-request'
+import { forgetGitGraphFocusRequest } from './git-graph-focus-request'
 
 export function forgetClosedGitGraphTabs(files: readonly { id: string; mode?: string }[]): void {
   for (const file of files) {
@@ -11,6 +12,7 @@ export function forgetClosedGitGraphTabs(files: readonly { id: string; mode?: st
       forgetGitGraphTabFilters(file.id)
       forgetGitGraphTabQueryMemory(file.id)
       forgetGitGraphRevealRequest(file.id)
+      forgetGitGraphFocusRequest(file.id)
       forgetGitGraphRememberedSelection(file.id)
     }
   }
