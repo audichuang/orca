@@ -122,6 +122,9 @@ describe('Commits graph filter, end to end through the history hook', () => {
     expect(screen.getByRole('combobox', { name: 'Branch filter' })).toHaveTextContent(
       'Current branch'
     )
+    // User / Paths buttons are the full view's; the narrow sidebar keeps typed tokens.
+    expect(screen.queryByRole('combobox', { name: 'User' })).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Paths' })).toBeNull()
   })
 
   it('switches to all branches, then narrows to two picked branches', async () => {
