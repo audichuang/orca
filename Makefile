@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-source-scans fork-check-e2e fork-base-guard
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-base-guard
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -171,12 +171,14 @@ FORK_MAX_COMMITS ?= 200
 
 # fork-check = fork-check-static + fork-check-tests; CI runs the halves as parallel jobs, tests in FORK_TEST_SHARD slices.
 FORK_TEST_SHARD ?=
+# Empty: tests --changed reaches (fast local pre-check). all: upstream CI's full unit suite, which also runs tests that read source as text.
+FORK_TESTS ?=
 
 fork-check: export LC_ALL = C
 fork-check: fork-check-static fork-check-tests
 
 fork-check-static: export LC_ALL = C
-fork-check-static: fork-check-static-types fork-check-quality fork-check-lint fork-check-source-scans
+fork-check-static: fork-check-static-types fork-check-quality fork-check-lint
 
 fork-base-guard:
 	@echo ">> fork base: $(FORK_BASE)"
@@ -226,21 +228,18 @@ fork-check-lint: fork-base-guard
 	pnpm run check:compat-boundary-imports
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
 
-fork-check-source-scans: export LC_ALL = C
-fork-check-source-scans: export ORCA_BACKGROUND_LAUNCH = 1
-fork-check-source-scans: fork-base-guard
-	@# Why: these tests read repo files as text instead of importing them, so --changed never picks them.
-	@# `&&`, not $$(...) inline: a failed or empty selection must stop here, not run vitest over the whole suite.
-	files=$$(node config/scripts/fork-source-scan-tests.mjs) && pnpm exec vitest run --config config/vitest.config.ts $$files
-
 fork-check-tests: export LC_ALL = C
 # Why: upstream's CI mode; it applies UNIT_EXCLUDE (live-shell, node-pty, electron probes, the wire job's files) and balances shards by timing.
 fork-check-tests: export ORCA_BALANCE_UNIT_SHARDS = 1
 # Why: upstream CI sets it; browser-manager tests assert it and --changed pulls them in via shared tab types.
 fork-check-tests: export ORCA_BACKGROUND_LAUNCH = 1
 fork-check-tests: fork-base-guard
-	@# Why --changed: it follows imports, so upstream tests that use a fork-changed module run too.
+	@test -z "$(filter-out all,$(FORK_TESTS))" || { echo "fork-check-tests: FORK_TESTS must be empty or all, not $(FORK_TESTS)"; exit 1; }
+ifeq ($(FORK_TESTS),all)
+	node config/scripts/run-vitest.mjs run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD))
+else
 	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) --changed $(FORK_BASE)
+endif
 
 FORK_REPO ?= audichuang/orca
 # The fork's remote in this clone, whatever it is named (origin on a plain clone of the fork).
