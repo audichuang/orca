@@ -33,7 +33,8 @@ describe('isSourceScan', () => {
     ["await readFile(new URL('./x.ts', import.meta.url))"],
     ["import { readdir } from 'node:fs/promises'\nreaddir(process.cwd())"],
     ["globSync('src/**/*.ts')"],
-    ["readFileSync('resources/icon.svg')"]
+    ["readFileSync('resources/icon.svg')"],
+    ["JSON.parse(readFileSync('package.json', 'utf8'))"]
   ])('selects %s', (source) => {
     expect(isSourceScan(source)).toBe(true)
   })
