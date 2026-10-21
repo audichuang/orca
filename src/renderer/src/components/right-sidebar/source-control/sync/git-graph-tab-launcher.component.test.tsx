@@ -3,10 +3,10 @@
 import '@testing-library/jest-dom/vitest'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
-import { GitGraphTabLauncher } from './git-graph-tab-launcher'
+import { GitGraphTabLauncher, TabStripGitGraphButton } from './git-graph-tab-launcher'
 import { GitHistoryPanel } from './git-history-panel'
 
 afterEach(() => {
@@ -101,5 +101,79 @@ describe('Commits header Git Graph button', () => {
         gitGraph: { repoWorktreeId: 'wt-web' }
       })
     )
+  })
+})
+
+const repoWorktree = {
+  id: 'wt-web',
+  repoId: 'repo-web',
+  path: '/work/web',
+  head: 'abc',
+  branch: 'refs/heads/main',
+  isBare: false,
+  isMainWorktree: true,
+  displayName: 'web',
+  comment: '',
+  linkedIssue: null,
+  linkedPR: null,
+  linkedLinearIssue: null,
+  linkedGitLabMR: null,
+  linkedGitLabIssue: null,
+  isArchived: false,
+  isUnread: false,
+  isPinned: false,
+  sortOrder: 0,
+  lastActivityAt: 0
+}
+
+function renderStripButton(active = false): void {
+  render(
+    <TooltipProvider>
+      <TabStripGitGraphButton workspaceId="wt-web" active={active} />
+    </TooltipProvider>
+  )
+}
+
+describe('Tab-strip Git Graph button', () => {
+  it('is absent when the workspace has no git repo', () => {
+    renderStripButton()
+    expect(screen.queryByRole('button', { name: 'Open Git Graph' })).toBeNull()
+  })
+
+  it('opens or focuses the workspace Git Graph tab and shows pressed while it is active', () => {
+    const openGitGraphTab = vi.fn()
+    useAppStore.setState({
+      openGitGraphTab,
+      repos: [
+        { id: 'repo-web', path: '/work/web', displayName: 'web', badgeColor: '#000', addedAt: 0 }
+      ],
+      worktreesByRepo: { 'repo-web': [repoWorktree] }
+    })
+    renderStripButton()
+    const button = screen.getByRole('button', { name: 'Open Git Graph' })
+    expect(button).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(button)
+    expect(openGitGraphTab).toHaveBeenCalledWith('wt-web')
+
+    cleanup()
+    renderStripButton(true)
+    expect(screen.getByRole('button', { name: 'Open Git Graph' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+  })
+
+  it('appears once a repo arrives without remounting', () => {
+    renderStripButton()
+    expect(screen.queryByRole('button', { name: 'Open Git Graph' })).toBeNull()
+    act(() => {
+      useAppStore.setState({
+        repos: [
+          { id: 'repo-web', path: '/work/web', displayName: 'web', badgeColor: '#000', addedAt: 0 }
+        ],
+        worktreesByRepo: { 'repo-web': [repoWorktree] }
+      })
+    })
+    expect(screen.getByRole('button', { name: 'Open Git Graph' })).toBeInTheDocument()
   })
 })
