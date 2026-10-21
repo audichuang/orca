@@ -119,6 +119,19 @@ describe('forkPrGateErrors', () => {
     )
   })
 
+  it.each(['\u0085', ' ', ' '])(
+    'rejects a non-ASCII line separator that hides a key from the parser (%j)',
+    (separator) => {
+      const source = workflow().replace(
+        'runs-on: ubuntu-24.04\n    steps:\n      - name',
+        `runs-on: ubuntu-24.04 # note${separator}    continue-on-error: true\n    steps:\n      - name`
+      )
+      expect(forkPrGateErrors(source)).toEqual([
+        `fork-pr-gate: ${WORKFLOW} must be ASCII; line 12 is not`
+      ])
+    }
+  )
+
   it('fails once when there is no verify job', () => {
     expect(forkPrGateErrors('jobs:\n  build:\n    runs-on: ubuntu-24.04\n')).toEqual([
       `fork-pr-gate: ${WORKFLOW} has no \`verify\` job`
