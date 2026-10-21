@@ -16,23 +16,6 @@ export function rememberFolderRepo(folderWorkspaceKey: string, repoId: string): 
   rememberedByFolder.set(folderWorkspaceKey, repoId)
 }
 
-const collapsedFolders = new Set<string>()
-
-export function isFolderRepoListCollapsed(folderWorkspaceKey: string): boolean {
-  return collapsedFolders.has(folderWorkspaceKey)
-}
-
-export function rememberFolderRepoListCollapsed(
-  folderWorkspaceKey: string,
-  collapsed: boolean
-): void {
-  if (collapsed) {
-    collapsedFolders.add(folderWorkspaceKey)
-  } else {
-    collapsedFolders.delete(folderWorkspaceKey)
-  }
-}
-
 /** The explicit pick wins, then the frozen default, then the first dirty repo, then the first repo. */
 export function resolveSelectedRepoId(args: {
   chosenId: string | null

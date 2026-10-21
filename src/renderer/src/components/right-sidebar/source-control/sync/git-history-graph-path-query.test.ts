@@ -4,6 +4,7 @@ import {
   getGitHistoryGraphFilter,
   parseGitHistoryGraphQuery,
   resetGitHistoryGraphFiltersForTest,
+  toGitHistoryGraphRequest,
   setGitHistoryGraphDraftQuery,
   updateGitHistoryGraphFilter
 } from './git-history-graph-filter'
@@ -54,12 +55,25 @@ describe('showGitGraphPathHistory', () => {
     })
   })
 
-  it('keeps a path with spaces whole and drops quotes the parser cannot escape', () => {
+  it('keeps a path with spaces and quotes whole through the search parser', () => {
     show('docs/say "hi" now.md')
 
     expect(parseGitHistoryGraphQuery(getGitHistoryGraphFilter('repo-wt').query)).toEqual({
-      path: 'docs/say hi now.md'
+      path: 'docs/say "hi" now.md'
     })
+  })
+
+  it('includes remote branches so a remote-only file history stays visible', () => {
+    updateGitHistoryGraphFilter('repo-wt', {
+      scope: 'refs',
+      refs: ['refs/remotes/origin/feature']
+    })
+
+    show('src/a.ts')
+
+    const filter = getGitHistoryGraphFilter('repo-wt')
+    expect(filter).toMatchObject({ scope: 'all', local: true, remotes: 'all' })
+    expect(toGitHistoryGraphRequest(filter)?.source).toEqual({ local: true, remotes: 'all' })
   })
 
   it('adds the path to the Path picker recents', () => {
