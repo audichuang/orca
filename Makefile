@@ -265,7 +265,9 @@ fork-ci-disable-upstream:
 	  while read -r wf; do gh workflow disable "$${wf##*/}" -R $(FORK_REPO); done
 
 fork-check-full: export LC_ALL = C
-fork-check-full: fork-check fork-check-e2e
+fork-check-full: fork-check
+	@# Why a sub-make: as a -j prerequisite, its Electron native rebuild would race the vitest run.
+	$(MAKE) fork-check-e2e
 
 # The folder multi-repo e2e plus every spec the fork added or changed since FORK_BASE.
 fork-check-e2e: export LC_ALL = C
