@@ -106,15 +106,9 @@ jobs:
         with:
           native-runtime: node
 
-      - name: Daemon protocol crossing against newest release
-        run: pnpm run check:daemon-protocol-crossing
-
-      - name: Old/new client and server compatibility journeys
-        # Why skip one file: at the fork base this upstream test reads isStructuredTab from a module that no longer exports it.
-        # Explicit paths, because a directory filter overrides --exclude; find keeps new files in.
-        run: >-
-          pnpm exec vitest run --config config/vitest.config.ts
-          $(find tests/e2e/cross-version-wire -name '*.test.ts' ! -name 'cross-version-registered-agents.unit.test.ts' | sort)
+      # The daemon protocol crossing check runs in fork-check-lint (fork_check_static).
+      - name: make fork-check-wire
+        run: make fork-check-wire
 
   fork_e2e:
     # Why on every PR: the unattended upstream rebase PRs merge on this gate, and the fork's UI lives in these specs.
@@ -171,7 +165,7 @@ jobs:
 
   fork_mobile_web_app:
     # Why: fork-check's tests skip the mobile bundling checks without mobile/node_modules; this job installs them.
-    # Upstream's mobile_web_app job and scripts, unchanged except that its background steps run one after another.
+    # Upstream's mobile_web_app steps, one after another, in the Makefile so they also run locally.
     name: fork mobile web app bundle
     if: github.event.pull_request.draft != true
     runs-on: ubuntu-24.04
@@ -189,35 +183,10 @@ jobs:
             pnpm-lock.yaml
             mobile/pnpm-lock.yaml
 
-      # The drawer check also runs on WebKit, the engine of the shell's iOS WebView.
-      - name: Install WebKit for the drawer check
-        run: pnpm exec playwright-core install --with-deps webkit
-
       - uses: ./.github/actions/install-mobile-dependencies
 
-      - name: Prepare mobile route snapshot
-        run: node config/scripts/run-mobile-web-app-checks.mjs --prepare-route-snapshot "$RUNNER_TEMP/mobile-routes.json"
-
-      # Why fail instead of skip: without a browser the render checks skip silently.
-      - name: Resolve Chrome for the render check
-        run: |
-          set -euo pipefail
-          chrome="$(command -v google-chrome || command -v google-chrome-stable || true)"
-          if [ -z "$chrome" ]; then
-            echo "::error::No Google Chrome on the runner; the render check would silently skip."
-            exit 1
-          fi
-          "$chrome" --version
-          echo "ORCA_MOBILE_WEB_RENDER_BROWSER=$chrome" >> "$GITHUB_ENV"
-
-      - name: Build and verify the app bundle
-        run: pnpm run build:mobile-web
-
-      - name: Builder, override census and render checks
-        env:
-          ORCA_MOBILE_WEB_APP_DEPS_REQUIRED: '1'
-          ORCA_MOBILE_WEB_PREPARED_ROUTE_SNAPSHOT: ${{ runner.temp }}/mobile-routes.json
-        run: node config/scripts/run-mobile-web-app-checks.mjs
+      - name: make fork-check-mobile
+        run: make fork-check-mobile
 
   mac_arm64_build:
     # Same steps as `make build`, the build installed on the fork's only target machine.
