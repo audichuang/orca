@@ -11,10 +11,11 @@ import {
 } from '@/runtime/runtime-file-mutation-client'
 import { statRuntimePath } from '@/runtime/runtime-file-metadata-client'
 import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
+import { notifyEditorExternalFileChange } from '@/components/editor/editor-autosave'
 import {
-  notifyEditorExternalFileChange,
-  requestEditorSaveQuiesce
-} from '@/components/editor/editor-autosave'
+  releaseEditorSaveHolds,
+  requestEditorSaveQuiesceAll
+} from '@/components/editor/editor-save-quiesce-batch'
 import { relativePathInsideRoot } from '../../../../../../shared/cross-platform-path'
 import {
   captureFileExplorerOperationGuard,
@@ -176,9 +177,8 @@ export function useClipcodeRestore({
           }
           return targets
         }
-        const quiesceEditors = async (relativePath: string) => {
-          await Promise.all(editorTargets(relativePath).map(requestEditorSaveQuiesce))
-        }
+        const quiesceEditors = (relativePath: string) =>
+          requestEditorSaveQuiesceAll(editorTargets(relativePath))
         const notifyEditors = (relativePath: string) => {
           for (const target of editorTargets(relativePath)) {
             notifyEditorExternalFileChange(target)
@@ -191,6 +191,7 @@ export function useClipcodeRestore({
         for (const write of writes) {
           // Why: the owner may change while a long restore runs; stop instead of failing every remaining file.
           current.assertCurrent()
+          let holds: (() => void)[] = []
           try {
             // Why: the preview can be stale; re-list with a fresh cache right before touching the path.
             if (await isRestorePathBlocked(context, root, write.relativePath, new Map())) {
@@ -198,7 +199,7 @@ export function useClipcodeRestore({
               continue
             }
             // Why: a save already in flight must not land after the restore and overwrite it.
-            await quiesceEditors(write.relativePath)
+            holds = await quiesceEditors(write.relativePath)
             if (write.isNew) {
               // Why: the preview can be stale; a file created since must not be clobbered when overwrite is off.
               const state = await readTargetState(context, joinPath(root, write.relativePath))
@@ -222,21 +223,26 @@ export function useClipcodeRestore({
             }
           } catch (error) {
             errors.push(`${write.relativePath}: ${readIpcErrorMessage(error) ?? String(error)}`)
+          } finally {
+            releaseEditorSaveHolds(holds)
           }
         }
         for (const item of preview.delete) {
           current.assertCurrent()
+          let holds: (() => void)[] = []
           try {
             if (await isRestorePathBlocked(context, root, item.relativePath, new Map())) {
               staleSkipped++
               continue
             }
-            await quiesceEditors(item.relativePath)
+            holds = await quiesceEditors(item.relativePath)
             await deleteRuntimePath(context, joinPath(root, item.relativePath), false)
             notifyEditors(item.relativePath)
             deleted++
           } catch (error) {
             errors.push(`${item.relativePath}: ${readIpcErrorMessage(error) ?? String(error)}`)
+          } finally {
+            releaseEditorSaveHolds(holds)
           }
         }
       } catch (error) {
