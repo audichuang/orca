@@ -4,7 +4,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 
 ## Merge gate
 
-- The merge gate for every rebase and every merge into `develop` is fork CI (below), which runs upstream's full unit suite (`make fork-check-tests FORK_TESTS=all`, like upstream's own PR CI). Locally, `make fork-check` is the fast pre-check: `pnpm tc`, `vitest --changed $(FORK_BASE)`, the changed-code quality gate and `fork-check-lint` (upstream's whole `pnpm lint` minus the exclusions listed in `config/scripts/fork-lint-parity.mjs`).
+- The merge gate for every rebase and every merge into `develop` is fork CI (below), which runs upstream's full unit suite (`make fork-check-tests FORK_TESTS=all`, like upstream's own PR CI). Locally, `make fork-check` is the fast pre-check: `pnpm tc`, `vitest --changed $(FORK_BASE)`, the changed-code quality gate and `fork-check-lint` (upstream's whole `pnpm lint` minus the exclusions listed in `config/scripts/fork-lint-run.mjs`).
 - Local `--changed` does not run the tests that read source as text instead of importing it; only CI's full suite does.
 - `make fork-check-e2e` runs the folder multi-repo e2e plus every e2e spec the fork added or changed since `FORK_BASE`; `make fork-check-full` is `fork-check` plus it.
 - On GitHub the gate is `.github/workflows/fork-pr.yml`'s "Fork PR checks passed" job: `make fork-check` (split into `fork-check-static` plus parallel full-suite `fork-check-tests` shards), `make fork-check-e2e` under Xvfb on Ubuntu, cross-version wire compatibility (the fork client talks to upstream-release hosts), and the macOS arm64 `make build`. Upstream workflows stay unedited but disabled on the fork; run `make fork-ci-disable-upstream` after a rebase that adds new ones.
@@ -12,7 +12,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 - `fork-check-lint` runs `config/scripts/fork-pr-gate-needs.mjs`: it fails when a `fork-pr.yml` job is missing from `verify.needs`, or when `verify`'s result step passes with any need not `success`.
 - `FORK_BASE` is the newest upstream `vX.Y.Z` tag. A clone without upstream tags resolves an ancient one; the target now refuses to run then, and when no tag resolves at all. Fix with `git fetch <upstream-remote> --tags`.
 - The target forces `LC_ALL=C`: upstream real-git tests match English git messages and fail under a translated locale.
-- `fork-lint-parity.mjs` fails when upstream's `lint` gains a step `fork-check-lint` lacks; add the step, or add it to `EXCLUDED` with the reason.
+- `fork-lint-run.mjs` reads its steps from `package.json`, so a new upstream lint step runs on its own; it fails when an `EXCLUDED` step is gone from upstream lint.
 - A fork file that an upstream census or ratchet must list (`config/*-baseline.txt`, `src/shared/wsl-move/*-dispositions.ts`) gets its own entry there; on a rebase conflict in those files keep both sides.
 - Keep `git config rerere.enabled true` so a conflict resolved once replays on the next rebase.
 - Rebase with `git rebase --onto vNEW vOLD`: upstream release tags are side commits (`release: vX.Y.Z` on a branch), so the old tag is not an ancestor of the new one and a plain `git rebase vNEW` replays the old release commit into a `package.json` conflict.
