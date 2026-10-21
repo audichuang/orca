@@ -23,6 +23,10 @@ import { GitHistoryGraphBranchGroups } from './git-history-graph-branch-groups'
 import { GitHistoryGraphHostNotice, hostTooOldText } from './git-history-graph-host-status'
 import { GitHistoryGraphFilterButtons } from './git-history-graph-filter-buttons'
 import {
+  mergeGitHistoryGraphFreeText,
+  stripGitHistoryGraphQueryTokens
+} from './git-history-graph-query-tokens'
+import {
   getGitHistoryGraphDraftQuery,
   getGitHistoryGraphFilter,
   setGitHistoryGraphDraftQuery,
@@ -105,6 +109,20 @@ export function GitHistoryGraphToolbar({
   const [branchQuery, setBranchQuery] = useState('')
   const draftQuery = useGitHistoryGraphDraftQuery(worktreeId)
   const setDraftQuery = (query: string): void => setGitHistoryGraphDraftQuery(worktreeId, query)
+  // Why: the full view shows author/path as buttons, so its box holds only the free text; while
+  // focused it keeps what was typed, so a half-typed `author:` token is not yanked out of the box.
+  const [focusedText, setFocusedText] = useState<string | null>(null)
+  const searchText = fullView
+    ? (focusedText ?? stripGitHistoryGraphQueryTokens(draftQuery))
+    : draftQuery
+  const changeSearchText = (text: string): void => {
+    if (!fullView) {
+      setDraftQuery(text)
+      return
+    }
+    setDraftQuery(mergeGitHistoryGraphFreeText(draftQuery, searchText, text))
+    setFocusedText((prev) => (prev === null ? null : text))
+  }
   const [fetched, setFetched] = useState<RefOptions>({ status: 'idle' })
   // Why: the open-time read is the single source; the last graph result only fills the list until it lands.
   const refOptions: RefOptions =
@@ -335,12 +353,16 @@ export function GitHistoryGraphToolbar({
           <Search className="size-3 shrink-0 text-muted-foreground" />
           <ImeInput
             type="text"
-            value={draftQuery}
-            onChange={(event) => setDraftQuery(event.target.value)}
+            value={searchText}
+            onFocus={() =>
+              setFocusedText(fullView ? stripGitHistoryGraphQueryTokens(draftQuery) : null)
+            }
+            onBlur={() => setFocusedText(null)}
+            onChange={(event) => changeSearchText(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Escape') {
                 event.preventDefault()
-                setDraftQuery('')
+                changeSearchText('')
               }
             }}
             placeholder={
