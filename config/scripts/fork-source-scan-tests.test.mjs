@@ -34,7 +34,11 @@ describe('isSourceScan', () => {
     ["import { readdir } from 'node:fs/promises'\nreaddir(process.cwd())"],
     ["globSync('src/**/*.ts')"],
     ["readFileSync('resources/icon.svg')"],
-    ["JSON.parse(readFileSync('package.json', 'utf8'))"]
+    ["JSON.parse(readFileSync('package.json', 'utf8'))"],
+    [
+      "import { scanSourceTree } from './source-scan/source-tree-scan'\nscanSourceTree(join(__dirname, '..'))"
+    ],
+    ["readAllowlist(join(import.meta.dirname, 'allowlist.txt'))"]
   ])('selects %s', (source) => {
     expect(isSourceScan(source)).toBe(true)
   })
@@ -79,6 +83,17 @@ describe('selectSourceScanTests', () => {
     const root = fixture({ [excluded]: SCAN })
     expect(selectSourceScanTests({ root, platform: 'darwin' })).toEqual([])
     expect(selectSourceScanTests({ root, platform: 'linux' })).toEqual([excluded])
+  })
+})
+
+describe('selectSourceScanTests on this repo', () => {
+  // Why: these guards read the tree only through scanSourceTree, and --changed never reaches them.
+  it.each([
+    ['src/shared/export-let-function-initializer-ban.test.ts'],
+    ['src/main/ssh/ssh-remote-powershell.test.ts']
+  ])('selects %s', (file) => {
+    const root = join(import.meta.dirname, '..', '..')
+    expect(selectSourceScanTests({ root, platform: 'linux' })).toContain(file)
   })
 })
 
