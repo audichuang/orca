@@ -71,6 +71,7 @@ export const LOCAL_STORAGE_MODULE_DISPOSITIONS: Record<string, WslMoveFieldDispo
       'src/renderer/src/components/pet/PetOverlay.tsx',
       'src/renderer/src/components/right-sidebar/ai-vault-view-options-persistence.ts',
       'src/renderer/src/components/right-sidebar/pr-comment-presentation.ts',
+      // Fork-only: the Git Graph full view details pane width and collapse.
       'src/renderer/src/components/right-sidebar/source-control/sync/git-graph-full-view-details.tsx',
       'src/renderer/src/components/settings/BrowserUsePane.tsx',
       'src/renderer/src/components/settings/local-network-connection-history.ts',
