@@ -92,6 +92,13 @@ describe('forkPrGateErrors', () => {
     ])
   })
 
+  it('rejects workflow env outside the allowlist', () => {
+    const header = 'env:\n  UPSTREAM_REPO: x\n  BASH_ENV: ./skip.sh'
+    expect(forkPrGateErrors(workflow({ header }))).toEqual([
+      `fork-pr-gate: ${WORKFLOW} env \`BASH_ENV\` is not in WORKFLOW_ENV`
+    ])
+  })
+
   it('rejects a second step', () => {
     const stepControl = "\n        run: 'true'\n      - name: second"
     expect(forkPrGateErrors(workflow({ stepControl }))).toContain(
