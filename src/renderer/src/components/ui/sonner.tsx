@@ -13,6 +13,7 @@ import { NOTIFICATION_CARD_STACK_HEIGHT_VAR } from '@/lib/notification-card-stac
 import { NOTIFICATION_CARD_STACK_BOTTOM } from '@/lib/notification-card-composer-clearance'
 import { useNotificationCardLayoutVarReader } from '@/lib/notification-card-layout-vars'
 import { useToasterModalLayer } from './toaster-modal-layer'
+import { TOAST_BOTTOM_CLEARANCE_VAR } from '@/lib/toast-bottom-clearance'
 
 // Why: a short outcome reads best with its action beside it; the toaster's default wraps actions below.
 export const INLINE_ACTION_CLASS_NAMES = {
@@ -39,7 +40,8 @@ function blockModalToastInteraction(event: SyntheticEvent): void {
 }
 
 const TOASTER_OFFSET = {
-  bottom: `calc(${NOTIFICATION_CARD_STACK_BOTTOM} + env(safe-area-inset-bottom, 0px) + var(${NOTIFICATION_CARD_STACK_HEIGHT_VAR}, 0px))`,
+  // Fork-only: max() lifts toasts above bottom chrome that registers a clearance (toast-bottom-clearance.ts).
+  bottom: `max(calc(${NOTIFICATION_CARD_STACK_BOTTOM} + env(safe-area-inset-bottom, 0px) + var(${NOTIFICATION_CARD_STACK_HEIGHT_VAR}, 0px)), var(${TOAST_BOTTOM_CLEARANCE_VAR}, 0px))`,
   // Why 1rem: the cards' right edge, so a toast above them lines up instead of jutting left.
   right: '1rem'
 }
