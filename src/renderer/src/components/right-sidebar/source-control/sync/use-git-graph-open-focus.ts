@@ -3,13 +3,15 @@ import type React from 'react'
 import { useEffect, useRef } from 'react'
 
 /**
- * The first pass takes focus (opening the graph is the gesture). Later passes, run when history
- * arrives, only take focus still parked on the loading placeholder or nowhere: a tab, unlike the
- * old dialog, sits beside other panes the user may have moved to meanwhile.
+ * The first pass takes focus (opening the graph is the gesture), unless `claimOnOpen` is false: a
+ * repo the tab followed from elsewhere lands focus only when it is parked or already in the graph.
+ * Later passes, run when history arrives, only take focus still parked on the loading placeholder
+ * or nowhere: a tab, unlike the old dialog, sits beside other panes the user may have moved to.
  */
 export function useGitGraphOpenFocus(
   listRef: React.RefObject<HTMLDivElement | null>,
-  cursorId: string | null | undefined
+  cursorId: string | null | undefined,
+  claimOnOpen = true
 ): void {
   const doneRef = useRef(false)
   const startedRef = useRef(false)
@@ -21,7 +23,7 @@ export function useGitGraphOpenFocus(
     const active = document.activeElement
     const parked = !active || active === document.body || active === list
     const root = list.closest('[data-git-graph-root]')
-    if (!parked && (startedRef.current || root?.contains(active))) {
+    if (!parked && (startedRef.current || !claimOnOpen || root?.contains(active))) {
       doneRef.current = true
       return
     }
@@ -34,5 +36,5 @@ export function useGitGraphOpenFocus(
       // Placeholder while history loads; a later row may take over only from here.
       list.focus({ preventScroll: true })
     }
-  }, [cursorId, listRef])
+  }, [claimOnOpen, cursorId, listRef])
 }
