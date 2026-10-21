@@ -200,6 +200,7 @@ fork-check-lint: fork-base-guard
 	pnpm run check:unproven-pty-retirement-ratchet
 	pnpm run check:id-only-store-write-ratchet
 	pnpm run check:legacy-relay-fence-ratchet
+	pnpm run check:mobile-shared-dependency-versions
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
 
 fork-check-tests: export LC_ALL = C
