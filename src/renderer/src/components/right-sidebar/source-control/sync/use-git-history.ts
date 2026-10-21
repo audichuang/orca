@@ -27,8 +27,8 @@ export function useSourceControlGitHistory({
   isBranchVisible,
   isGitHistoryExpanded,
   isGitHistoryVisible,
-  worktreeMap,
-  graphFilterKey
+  graphFilterKey,
+  worktreeMap
 }: {
   activeRepoTarget: RuntimeClientTarget | null
   activeWorktreeId: string | null
