@@ -619,8 +619,9 @@ test('folder workspace multi-repo source control, copy and restore', async ({
       await setClipboard(page, 'sentinel')
       const container = repoRow
         ? header(re).first().locator('xpath=..')
-        : page
-            .locator('button[aria-expanded]')
+        : // Why the detail scope: the repo list's own "Changes" group header also matches.
+          page
+            .locator('[data-folder-repo-detail] button[aria-expanded]')
             .filter({ hasText: re })
             .first()
             .locator('xpath=ancestor::div[contains(@class,"group/section")][1]')
