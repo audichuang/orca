@@ -58,7 +58,9 @@ describe('forkPrGateErrors', () => {
 
   it('fails when the result step ignores the results', async () => {
     const errors = await forkPrGateErrors(workflow({ run: 'exit 0' }))
+    // Every job × every non-success result must be reported.
     expect(errors).toHaveLength(6)
+    expect(errors).toContain('fork-pr-gate: verify passes when `build` is failure')
   })
 
   it('fails when a skipped need counts as passing', async () => {
