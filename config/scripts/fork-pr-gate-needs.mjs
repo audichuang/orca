@@ -20,6 +20,8 @@ export const REQUIRED_SCRIPT = `echo "$RESULTS" | jq -e 'to_entries | all(.value
 // Why allowlists: env, shell, if, continue-on-error and defaults all change what GitHub runs.
 const GATE_KEYS = ['name', 'needs', 'if', 'runs-on', 'timeout-minutes', 'steps']
 const STEP_KEYS = ['name', 'env', 'run']
+// Why: workflow env reaches the verify step, and names like BASH_ENV or SHELLOPTS change what bash runs.
+const WORKFLOW_ENV = ['UPSTREAM_REPO']
 
 function gateNeeds(gate) {
   return [gate.needs ?? []].flat()
@@ -43,6 +45,9 @@ function gateStepErrors(workflow, gate) {
     ...(workflow.defaults === undefined
       ? []
       : [`fork-pr-gate: ${WORKFLOW} must not set \`defaults\``]),
+    ...Object.keys(workflow.env ?? {})
+      .filter((name) => !WORKFLOW_ENV.includes(name))
+      .map((name) => `fork-pr-gate: ${WORKFLOW} env \`${name}\` is not in WORKFLOW_ENV`),
     ...Object.keys(gate)
       .filter((key) => !GATE_KEYS.includes(key))
       .map((key) => `fork-pr-gate: ${GATE} must not set \`${key}\``)
