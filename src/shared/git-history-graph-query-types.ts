@@ -9,6 +9,14 @@ export type GitHistoryGraphSource = {
   remotes: 'all' | string[]
 }
 
+/** A Git Graph filter as an editor tab saves it: the page depth is not kept. */
+export type GitHistoryGraphSavedFilter = GitHistoryGraphSource & {
+  scope: GitHistoryGraphMode
+  refs: string[]
+  /** Raw search box text; `author:` and `path:` tokens narrow it. */
+  query: string
+}
+
 export type GitHistoryGraphSearch = {
   /** Case-insensitive literal match on the commit message. */
   text?: string
