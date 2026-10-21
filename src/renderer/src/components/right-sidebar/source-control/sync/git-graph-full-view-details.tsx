@@ -1,6 +1,6 @@
 // Fork-only: the full Git Graph's right pane, IntelliJ-style: changed files on top, commit details below.
 import React, { useCallback, useMemo, useState } from 'react'
-import { ArrowUpRight, Copy, List, ListTree, PanelRightOpen } from 'lucide-react'
+import { ArrowUpRight, Copy, List, ListTree, PanelRightClose, PanelRightOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
@@ -22,6 +22,7 @@ import {
 
 const DETAILS_WIDTH_KEY = 'orca:git-graph-details-width'
 const FILES_LAYOUT_KEY = 'orca:git-graph-files-layout'
+const DETAILS_COLLAPSED_KEY = 'orca:git-graph-details-collapsed'
 const DETAILS_MIN_WIDTH = 280
 // Smallest width the pane can take (tiny windows); a saved width at or above it stays valid.
 const DETAILS_FLOOR_WIDTH = 200
@@ -51,6 +52,24 @@ function readDetailsWidth(): number {
 function writeDetailsWidth(width: number): void {
   try {
     window.localStorage.setItem(DETAILS_WIDTH_KEY, String(width))
+  } catch {}
+}
+
+function readDetailsCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(DETAILS_COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeDetailsCollapsed(collapsed: boolean): void {
+  try {
+    if (collapsed) {
+      window.localStorage.setItem(DETAILS_COLLAPSED_KEY, '1')
+    } else {
+      window.localStorage.removeItem(DETAILS_COLLAPSED_KEY)
+    }
   } catch {}
 }
 
@@ -132,11 +151,18 @@ export function GitGraphDetailsPane({
 }): React.JSX.Element {
   const [width, setWidth] = useState(readDetailsWidth)
   // Rule: with nothing selected the pane is a strip; an explicit expand lasts until the next selection.
+  // With a selection it is a strip only after Hide details, until Show details.
   const [expandedWhileEmpty, setExpandedWhileEmpty] = useState(false)
   if (items.length > 0 && expandedWhileEmpty) {
     setExpandedWhileEmpty(false)
   }
-  const collapsed = items.length === 0 && !expandedWhileEmpty
+  // Why remembered: a hide is chosen to read long subjects while stepping through commits.
+  const [hidden, setHidden] = useState(readDetailsCollapsed)
+  const setDetailsHidden = (next: boolean): void => {
+    setHidden(next)
+    writeDetailsCollapsed(next)
+  }
+  const collapsed = items.length === 0 ? !expandedWhileEmpty : hidden
   // Why: the cap leaves the commit list its minimum, and follows resizes of the view.
   // Why a smaller floor on tiny views: a fixed 280px left near-identical subjects unreadable.
   const minWidth = Math.min(
@@ -198,6 +224,10 @@ export function GitGraphDetailsPane({
     'auto.components.right.sidebar.GitGraphFullView.openAllChanges',
     'Open all changes'
   )
+  const hideLabel = translate(
+    'auto.components.right.sidebar.GitGraphFullView.hideDetails',
+    'Hide details'
+  )
   const enterKey = isMac
     ? '↩'
     : translate('auto.components.right.sidebar.GitGraphFullView.enterKey', 'Enter')
@@ -215,7 +245,10 @@ export function GitGraphDetailsPane({
             type="button"
             aria-label={showLabel}
             className="flex w-9 shrink-0 flex-col items-center gap-2 border-l border-border py-2 text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-            onClick={() => setExpandedWhileEmpty(true)}
+            onClick={() => {
+              setDetailsHidden(false)
+              setExpandedWhileEmpty(items.length === 0)
+            }}
           >
             <PanelRightOpen aria-hidden="true" className="size-3.5" />
             <span aria-hidden="true" className="text-2xs [writing-mode:vertical-rl]">
@@ -332,6 +365,22 @@ export function GitGraphDetailsPane({
                 </TooltipContent>
               </Tooltip>
             )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={hideLabel}
+                  onClick={() => setDetailsHidden(true)}
+                >
+                  <PanelRightClose className="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={6}>
+                {hideLabel}
+              </TooltipContent>
+            </Tooltip>
           </div>
           {/* No onOpenAll: the header button and row double-click/Enter replace the bottom link. */}
           {/* Why the override: the shared list indents for the sidebar tree; align it with the header. */}

@@ -28,6 +28,7 @@ import {
   rememberFolderRepo
 } from '../right-sidebar/source-control/folder/folder-repo-selection'
 import GitGraphTabView from './GitGraphTabView'
+import { pickFolderRepo } from './git-graph-source-control-link'
 
 type ToastOptions = { action?: { label: string; onClick: () => void } }
 const toastInfo = vi.hoisted(() => vi.fn<(message: string, options?: ToastOptions) => void>())
@@ -526,6 +527,42 @@ describe('Git Graph tab first selection', () => {
     await waitFor(() => expect(selectedSubjects()).toEqual([expect.stringContaining('Elsewhere')]))
   })
 
+  it("starts a reopened tab on the checked-out commit, not the closed tab's pick", async () => {
+    history.mockImplementation(async () => withHead())
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    renderTab(id)
+    await waitFor(() =>
+      expect(selectedSubjects()).toEqual([expect.stringContaining('Head commit')])
+    )
+    fireEvent.click(screen.getByText('Older'))
+    act(() => useAppStore.getState().closeFile(id))
+    expect(screen.queryByTestId('git-graph-full-row')).toBeNull()
+
+    act(() => {
+      // Closing the last tab clears the active workspace in this bare store; the app restores it.
+      useAppStore.setState({ activeWorktreeId: 'wt-api' })
+      useAppStore.getState().openGitGraphTab('wt-api')
+    })
+    await waitFor(() =>
+      expect(selectedSubjects()).toEqual([expect.stringContaining('Head commit')])
+    )
+  })
+
+  it('keeps the pick on returning to a tab that stayed open', async () => {
+    history.mockImplementation(async () => withHead())
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    renderTab(id)
+    await waitFor(() =>
+      expect(selectedSubjects()).toEqual([expect.stringContaining('Head commit')])
+    )
+    fireEvent.click(screen.getByText('Older'))
+    // Another editor tab took the view: the graph unmounts but its tab is still open.
+    cleanup()
+    renderTab(id)
+    await waitFor(() => expect(screen.getAllByTestId('git-graph-full-row')).toHaveLength(3))
+    expect(selectedSubjects()).toEqual([expect.stringContaining('Older')])
+  })
+
   it('selects a revealed commit over the checked-out one', async () => {
     history.mockImplementation(async () => withHead())
     renderTab(useAppStore.getState().openGitGraphTab('wt-api', { revealCommit: OLDER.id })!)
@@ -611,6 +648,35 @@ describe('Git Graph tab and Source Control', () => {
     fireEvent.click(await screen.findByRole('combobox', { name: 'Repository' }))
     fireEvent.click(await screen.findByText('web-main'))
     expect(getRememberedFolderRepo(key)).toBe('wt-web')
+  })
+
+  it("leaves keyboard focus in Source Control's repo list when the tab follows its pick", async () => {
+    const key = folderWorkspaceKey('folder-1')
+    useAppStore.setState({ folderWorkspaces: [folder()], activeWorktreeId: key })
+    const id = useAppStore.getState().openGitGraphTab(key, { repoWorktreeId: 'wt-api' })!
+    render(
+      <TooltipProvider>
+        <button type="button">repo list</button>
+        <Host fileId={id} />
+      </TooltipProvider>
+    )
+    // Opening the tab is the gesture that lands focus on its commit list.
+    await waitFor(() =>
+      expect(document.activeElement?.getAttribute('data-commit-id')).toBe(RESULT.items[0]!.id)
+    )
+    const repoList = screen.getByRole('button', { name: 'repo list' })
+    act(() => repoList.focus())
+
+    act(() => pickFolderRepo(key, 'wt-web'))
+    await waitFor(() =>
+      expect(pageReads().at(-1)?.[0]).toMatchObject({ worktreePath: '/work/web' })
+    )
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: 'Repository' })).toHaveTextContent('web')
+    )
+    await screen.findByTestId('git-graph-full-row')
+    await act(async () => {})
+    expect(repoList).toHaveFocus()
   })
 
   it('opens Source Control on the shown repo', async () => {
