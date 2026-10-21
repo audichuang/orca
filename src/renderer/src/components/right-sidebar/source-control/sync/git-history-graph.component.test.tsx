@@ -141,8 +141,13 @@ describe('Commits graph filter, end to end through the history hook', () => {
       expect(lastRequest()).toMatchObject({ graph: { source: { remotes: ['origin'] } } })
     )
 
+    // Remote branches sit under their remote's heading, without the repeated prefix.
+    const originRow = screen.getByTitle('origin/main')
+    expect(originRow).toHaveTextContent(/^main$/)
+    expect(originRow.closest('[cmdk-group]')).toHaveTextContent(/^origin/)
+    expect(screen.getByTitle('feature/x').closest('[cmdk-group]')).toHaveTextContent(/^Local/)
     fireEvent.click(screen.getByText('feature/x'))
-    fireEvent.click(screen.getByText('origin/main'))
+    fireEvent.click(originRow)
     await waitFor(() =>
       expect(lastRequest()).toMatchObject({
         graph: { mode: 'refs', refs: ['refs/heads/feature/x', 'refs/remotes/origin/main'] }
