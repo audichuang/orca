@@ -3,6 +3,7 @@ import { GitHistoryGraphToolbar } from '../sync/git-history-graph-toolbar'
 import { GitHistoryGraphLoadMore } from '../sync/git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from '../sync/git-history-graph-empty-message'
 import { GitGraphTabLauncher } from '../sync/git-graph-tab-launcher'
+import { showCommitInGitGraphSlot } from '../../../git-graph-tab/git-graph-source-control-link'
 import { commitFilesMenuSlot } from '../sync/git-history-commit-files-menu'
 import { shouldShowSourceControlCompareUnavailableCard } from './header-toolbar'
 import { shouldRenderCommitArea } from '../commit/component-gates'
@@ -248,6 +249,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
               worktreePath,
               loadCommitFiles
             )}
+            onShowCommitInGraph={showCommitInGitGraphSlot(tabOwnerId, currentWorktreeId)}
             headerActions={
               <GitGraphTabLauncher workspaceId={tabOwnerId} repoWorktreeId={currentWorktreeId} />
             }
