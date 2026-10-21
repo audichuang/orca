@@ -1,9 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   getRememberedFolderRepo,
-  isFolderRepoListCollapsed,
+  subscribeFolderRepoSelection,
   moveRepoSelection,
-  rememberFolderRepoListCollapsed,
   rememberFolderRepo,
   resolveFolderDefaultRepo,
   resolveSelectedRepoId
@@ -51,12 +50,15 @@ describe('remembered selection', () => {
     expect(getRememberedFolderRepo('folder:2')).toBeNull()
   })
 
-  it('remembers a fully collapsed list per folder workspace', () => {
-    rememberFolderRepoListCollapsed('folder:1', true)
-    expect(isFolderRepoListCollapsed('folder:1')).toBe(true)
-    expect(isFolderRepoListCollapsed('folder:2')).toBe(false)
-    rememberFolderRepoListCollapsed('folder:1', false)
-    expect(isFolderRepoListCollapsed('folder:1')).toBe(false)
+  it('notifies subscribers on a change only, so mirrored writes cannot loop', () => {
+    const listener = vi.fn()
+    const unsubscribe = subscribeFolderRepoSelection(listener)
+    rememberFolderRepo('folder:3', 'a')
+    rememberFolderRepo('folder:3', 'a')
+    expect(listener).toHaveBeenCalledTimes(1)
+    unsubscribe()
+    rememberFolderRepo('folder:3', 'b')
+    expect(listener).toHaveBeenCalledTimes(1)
   })
 })
 

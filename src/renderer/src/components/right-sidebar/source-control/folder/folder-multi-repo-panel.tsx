@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FolderPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
@@ -23,6 +23,15 @@ import { FolderAddReposDialog } from './folder-add-repos-dialog'
 import { FolderRepoFilterBox } from './folder-repo-filter-box'
 import { FolderRepoPanelToolbar } from './folder-repo-panel-toolbar'
 import { FolderRepoRow } from './folder-repo-row'
+import {
+  buildFolderRepoListItems,
+  expandFolderRepoGroup,
+  folderRepoGroupOf,
+  getFolderRepoExpandedGroups,
+  toggleFolderRepoGroup,
+  type FolderRepoGroupId
+} from './folder-repo-groups'
+import { FolderRepoList } from './folder-repo-list'
 import { filterFolderRepoIndexes, FOLDER_REPO_FILTER_MIN_REPOS } from './folder-repo-filter'
 import {
   isRepoHiddenFromSidebar,
@@ -31,22 +40,28 @@ import {
 } from './folder-sidebar-hidden-repos'
 import {
   getRememberedFolderRepo,
-  isFolderRepoListCollapsed,
   moveRepoSelection,
   rememberFolderRepo,
-  rememberFolderRepoListCollapsed,
   resolveFolderDefaultRepo,
   resolveSelectedRepoId,
-  isFolderRepoSelectionKey
+  isFolderRepoSelectionKey,
+  useRememberedFolderRepo
 } from './folder-repo-selection'
-import { folderRepoSectionLabel } from './folder-section-label'
+import { pickFolderRepo } from '../../../git-graph-tab/git-graph-source-control-link'
+import {
+  folderRepoSectionBranch,
+  folderRepoSectionLabel,
+  folderRepoSectionName
+} from './folder-section-label'
 import { useFolderRepoStatusRefresh } from './use-folder-repo-status-refresh'
+import { useFolderRepoRowFocus } from './use-folder-repo-row-focus'
 import { SourceControlWorktreeScopeContext } from './worktree-scope'
+import { useRepoDisplayColor } from '@/lib/repo-display-color'
 
 /**
- * Source Control for a folder workspace: an accordion of repo headers where the open repo shows its
- * regular single-repo panel pinned to that repo, so staging,
- * commit, sync and diffs behave exactly as in a repo workspace.
+ * Source Control for a folder workspace: a repo list grouped by whether a repo has changes, with the
+ * selected repo's regular single-repo panel pinned below it, so staging, commit, sync and diffs behave
+ * exactly as in a repo workspace.
  */
 export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKey: string }) {
   const scope = parseWorkspaceKey(folderWorkspaceKey)
@@ -77,6 +92,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   const memberWorktrees = useMemo(() => members.map((member) => member.worktree), [members])
   useFolderSidebarHiddenReposVersion()
   const [addReposOpen, setAddReposOpen] = useState(false)
+  const repoColor = useRepoDisplayColor()
   // Why local only: adding a project from here goes through the local add path; SSH and server folders keep the hint.
   const canAddRepos =
     folderWorkspace !== null && getRepoExecutionHostId(folderWorkspace) === LOCAL_EXECUTION_HOST_ID
@@ -92,9 +108,16 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   const changeCounts = useAppStore(
     useShallow((s) => members.map((member) => s.gitStatusByWorktree[member.worktree.id]?.length))
   )
-  const [chosenId, setChosenId] = useState<string | null>(() =>
-    getRememberedFolderRepo(folderWorkspaceKey)
+  const pendingSync = useAppStore(
+    useShallow((s) =>
+      members.map((member) => {
+        const status = s.remoteStatusesByWorktree[member.worktree.id]
+        return Boolean(status?.hasUpstream && (status.ahead > 0 || status.behind > 0))
+      })
+    )
   )
+  // Why shared: the folder's Git Graph tab writes the same pick when its repo switcher changes.
+  const chosenId = useRememberedFolderRepo(folderWorkspaceKey)
   const [defaultId, setDefaultId] = useState<string | null>(null)
   const memberIds = members.map((member) => member.worktree.id)
   const landingId = resolveFolderDefaultRepo(memberIds, changeCounts)
@@ -102,29 +125,20 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   useEffect(() => {
     if (defaultId === null && landingId !== null) {
       setDefaultId(landingId)
+      // Why share it: a Git Graph tab opened later should land on the same repo as this list.
+      if (getRememberedFolderRepo(folderWorkspaceKey) === null) {
+        rememberFolderRepo(folderWorkspaceKey, landingId)
+      }
     }
-  }, [defaultId, landingId])
+  }, [defaultId, folderWorkspaceKey, landingId])
   const selectedId = resolveSelectedRepoId({
     chosenId,
     defaultId,
     ids: memberIds,
     firstDirtyId: landingId ?? undefined
   })
-  const [collapsed, setCollapsedState] = useState(() =>
-    isFolderRepoListCollapsed(folderWorkspaceKey)
-  )
-  const setCollapsed = useCallback(
-    (next: boolean) => {
-      setCollapsedState(next)
-      rememberFolderRepoListCollapsed(folderWorkspaceKey, next)
-    },
-    [folderWorkspaceKey]
-  )
   const selectRepo = useCallback(
-    (id: string) => {
-      setChosenId(id)
-      rememberFolderRepo(folderWorkspaceKey, id)
-    },
+    (id: string, opts?: { defer?: boolean }) => pickFolderRepo(folderWorkspaceKey, id, opts),
     [folderWorkspaceKey]
   )
   const [filter, setFilter] = useState('')
@@ -135,51 +149,66 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   }
   // Why: while filtering, the open repo's panel folds away so the matches sit right under the box.
   const filtering = showFilter && filter.trim() !== ''
-  const expandedIndex = collapsed || filtering ? -1 : memberIds.indexOf(selectedId)
+  const expandedIndex = filtering ? -1 : memberIds.indexOf(selectedId)
   const labels = useMemo(
     () => members.map((member) => folderRepoSectionLabel(member, members)),
     [members]
   )
-  const visibleIndexes = filterFolderRepoIndexes(labels, filtering ? filter : '')
-  const visibleIds = visibleIndexes.map((index) => memberIds[index])
-  const listRef = useRef<HTMLDivElement>(null)
-  const [focusId, setFocusId] = useState<string | null>(null)
-  const rovingId =
-    focusId !== null && visibleIds.includes(focusId)
-      ? focusId
-      : visibleIds.includes(selectedId)
-        ? selectedId
-        : visibleIds[0]
-  const pendingFocusRef = useRef<string | null>(null)
-  const focusRow = useCallback(
-    (id: string) => {
-      listRef.current
-        ?.querySelectorAll<HTMLElement>('[data-repo-row]')
-        [visibleIds.indexOf(id)]?.focus()
-    },
-    [visibleIds]
+  const names = useMemo(
+    () => members.map((member) => folderRepoSectionName(member, members)),
+    [members]
   )
-  // Why: opening a repo moves headers between the above/below-panel lists, which remounts them and drops focus.
-  useLayoutEffect(() => {
-    if (pendingFocusRef.current !== null) {
-      focusRow(pendingFocusRef.current)
-      pendingFocusRef.current = null
-    }
+  const [expandedGroups, setExpandedGroups] = useState(() =>
+    getFolderRepoExpandedGroups(folderWorkspaceKey)
+  )
+  const toggleGroup = (group: FolderRepoGroupId) =>
+    setExpandedGroups(toggleFolderRepoGroup(folderWorkspaceKey, group))
+  const selectedIndex = memberIds.indexOf(selectedId)
+  const selectedCount = selectedIndex === -1 ? undefined : changeCounts[selectedIndex]
+  const selectedGroup =
+    selectedCount === undefined
+      ? null
+      : folderRepoGroupOf(selectedCount, pendingSync[selectedIndex] ?? false)
+  // Why: once the open repo moves between groups (a refresh cleaned it, a filter pick), unfold its group;
+  // a first known status only seeds this, so No changes still starts folded.
+  const [selectedPlacement, setSelectedPlacement] = useState({
+    id: selectedId,
+    group: selectedGroup
   })
-  // Why: judged by what is drawn, so a match picked while filtering opens even if it was the open repo.
-  const toggleRepo = (id: string) => {
-    pendingFocusRef.current = id
-    setFocusId(id)
-    if (memberIds.indexOf(id) === expandedIndex) {
-      setCollapsed(true)
-      return
+  if (selectedPlacement.id !== selectedId || selectedPlacement.group !== selectedGroup) {
+    setSelectedPlacement({ id: selectedId, group: selectedGroup })
+    if (
+      selectedPlacement.group !== null &&
+      selectedGroup !== null &&
+      !expandedGroups.has(selectedGroup)
+    ) {
+      setExpandedGroups(expandFolderRepoGroup(folderWorkspaceKey, selectedGroup))
     }
+  }
+  const listItems = buildFolderRepoListItems({
+    visibleIndexes: filterFolderRepoIndexes(labels, filtering ? filter : ''),
+    changeCounts,
+    pendingSync,
+    filtering,
+    expandedGroups,
+    // Why the open index: a closed repo inside a folded group would read as a stray unmarked row.
+    selectedIndex: expandedIndex
+  })
+  // Why: drawn order, so arrow keys and the focus hook's nth-row lookup agree with what is on screen.
+  const visibleIds = listItems.flatMap((item) =>
+    item.kind === 'repo' ? [memberIds[item.index]] : []
+  )
+  const { listRef, rovingId, focusRepo, keepFocusAfterToggle, onListFocus, onListBlur } =
+    useFolderRepoRowFocus(visibleIds, selectedId)
+  // Why no toggle-off: re-picking the open repo keeps it open, so the panel below is never left blank.
+  const openRepo = (id: string) => {
+    keepFocusAfterToggle(id)
     setFilter('')
     selectRepo(id)
-    setCollapsed(false)
   }
-  const selectedLabel = labels[memberIds.indexOf(selectedId)]
-  // Accordion keys: arrows/Home/End move focus between headers; Enter/Space opens or closes one.
+  const selectedMember = members[selectedIndex]
+  const showDetail = selectedMember !== undefined && expandedIndex !== -1
+  // List keys: arrows/Home/End move focus and select, like an editor's file list; Enter/Space re-pick.
   const onListKeyDown = (event: React.KeyboardEvent) => {
     // Why: only the repo rows navigate; arrow keys on a row's Copy button must not move focus.
     if (
@@ -195,10 +224,8 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     }
     event.preventDefault()
     focusRepo(nextId)
-  }
-  const focusRepo = (id: string) => {
-    setFocusId(id)
-    focusRow(id)
+    // Why the filter stays: arrowing walks the matches; a click or Enter is what ends the search.
+    selectRepo(nextId, { defer: true })
   }
   const firstMatchId = visibleIds[0]
 
@@ -242,11 +269,14 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
     <FolderRepoRow
       key={member.worktree.id}
       worktreeId={member.worktree.id}
-      label={labels[index]}
+      name={names[index]}
+      branch={folderRepoSectionBranch(member)}
+      title={labels[index]}
+      color={repoColor(member.repo)}
       changeCount={changeCounts[index] ?? 0}
       focusable={member.worktree.id === rovingId}
       expanded={index === expandedIndex}
-      onToggle={() => toggleRepo(member.worktree.id)}
+      onToggle={() => openRepo(member.worktree.id)}
       // Why main worktree only: the choice covers the whole repo, so a linked worktree's row would hide its siblings too.
       sidebarHidden={
         member.containsFolder || !member.worktree.isMainWorktree
@@ -326,10 +356,10 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
           onChange={setFilter}
           noMatch={firstMatchId === undefined}
           onFocusFirst={() => firstMatchId !== undefined && focusRepo(firstMatchId)}
-          onOpenFirst={() => firstMatchId !== undefined && toggleRepo(firstMatchId)}
+          onOpenFirst={() => firstMatchId !== undefined && openRepo(firstMatchId)}
         />
       )}
-      {/* Why: one repo open at a time; its regular full panel fills the height between the headers, so its commit dock sits at the bottom like a repo workspace. */}
+      {/* Why: one list scroller with the open repo's full panel pinned below it, so its commit dock sits at the bottom like a repo workspace. */}
       <div
         ref={listRef}
         role="group"
@@ -338,33 +368,31 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
           'Repositories'
         )}
         onKeyDown={onListKeyDown}
+        onFocus={onListFocus}
+        onBlur={onListBlur}
         className="flex min-h-0 flex-1 flex-col"
       >
-        {expandedIndex === -1 ? (
-          <div className="min-h-0 flex-1 overflow-y-auto py-1 scrollbar-sleek">
-            {visibleIndexes.map((index) => renderRow(members[index], index))}
-          </div>
-        ) : (
-          <>
-            <div className="max-h-[40%] shrink-0 overflow-y-auto pt-1 scrollbar-sleek">
-              {members.slice(0, expandedIndex + 1).map(renderRow)}
-            </div>
-            <div className="relative mt-1 min-h-0 flex-1 border-y border-border">
+        <FolderRepoList
+          items={listItems}
+          fill={!showDetail}
+          onToggleGroup={toggleGroup}
+          renderRow={(index) => renderRow(members[index], index)}
+        />
+        {showDetail && (
+          <div
+            data-folder-repo-detail
+            className="relative flex min-h-0 flex-1 flex-col border-t border-border"
+          >
+            <div className="relative min-h-0 flex-1">
               <ScopedRepoPanel
                 key={selectedId}
                 gitWorktreeId={selectedId}
                 editorWorktreeId={folderWorkspaceKey}
-                label={selectedLabel}
+                label={names[selectedIndex]}
+                color={repoColor(selectedMember.repo)}
               />
             </div>
-            {expandedIndex < members.length - 1 && (
-              <div className="max-h-[30%] shrink-0 overflow-y-auto py-1 scrollbar-sleek">
-                {members
-                  .slice(expandedIndex + 1)
-                  .map((member, offset) => renderRow(member, expandedIndex + 1 + offset))}
-              </div>
-            )}
-          </>
+          </div>
         )}
       </div>
       {restoreDialog}
@@ -376,15 +404,17 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
 function ScopedRepoPanel({
   gitWorktreeId,
   editorWorktreeId,
-  label
+  label,
+  color
 }: {
   gitWorktreeId: string
   editorWorktreeId: string
-  label?: string
+  label: string
+  color: string
 }) {
   const scope = useMemo(
-    () => ({ gitWorktreeId, editorWorktreeId, label }),
-    [editorWorktreeId, gitWorktreeId, label]
+    () => ({ gitWorktreeId, editorWorktreeId, label, color }),
+    [editorWorktreeId, gitWorktreeId, label, color]
   )
   return (
     <SourceControlWorktreeScopeContext.Provider value={scope}>

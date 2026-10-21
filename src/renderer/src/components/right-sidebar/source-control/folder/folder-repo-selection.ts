@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react'
+
 const SELECTION_KEYS = ['ArrowUp', 'ArrowDown', 'Home', 'End'] as const
 export type FolderRepoSelectionKey = (typeof SELECTION_KEYS)[number]
 
@@ -6,31 +8,33 @@ export function isFolderRepoSelectionKey(key: string): key is FolderRepoSelectio
 }
 
 // Why: the panel remounts per folder workspace, so the pick lives outside React to survive switching away and back.
+// It is also the one shared pick the folder's Git Graph tab reads and writes.
 const rememberedByFolder = new Map<string, string>()
+const listeners = new Set<() => void>()
 
 export function getRememberedFolderRepo(folderWorkspaceKey: string): string | null {
   return rememberedByFolder.get(folderWorkspaceKey) ?? null
 }
 
 export function rememberFolderRepo(folderWorkspaceKey: string, repoId: string): void {
-  rememberedByFolder.set(folderWorkspaceKey, repoId)
-}
-
-const collapsedFolders = new Set<string>()
-
-export function isFolderRepoListCollapsed(folderWorkspaceKey: string): boolean {
-  return collapsedFolders.has(folderWorkspaceKey)
-}
-
-export function rememberFolderRepoListCollapsed(
-  folderWorkspaceKey: string,
-  collapsed: boolean
-): void {
-  if (collapsed) {
-    collapsedFolders.add(folderWorkspaceKey)
-  } else {
-    collapsedFolders.delete(folderWorkspaceKey)
+  // Why no-op when unchanged: both sides mirror each other's writes, and only a real change may notify.
+  if (rememberedByFolder.get(folderWorkspaceKey) === repoId) {
+    return
   }
+  rememberedByFolder.set(folderWorkspaceKey, repoId)
+  for (const listener of listeners) {
+    listener()
+  }
+}
+
+export function subscribeFolderRepoSelection(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+
+export function useRememberedFolderRepo(folderWorkspaceKey: string): string | null {
+  const read = () => getRememberedFolderRepo(folderWorkspaceKey)
+  return useSyncExternalStore(subscribeFolderRepoSelection, read, read)
 }
 
 /** The explicit pick wins, then the frozen default, then the first dirty repo, then the first repo. */

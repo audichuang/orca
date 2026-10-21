@@ -19,8 +19,15 @@ import { getRuntimeGitHistory } from '@/runtime/runtime-git-status-client'
 import { requireGitOwnerTarget } from '../../worktree-git-owner-target'
 import type { GitHistoryGraphApplied } from '../../../../../../shared/git-history-graph-query-types'
 import type { GitHistoryPanelState } from './git-history-panel'
+import { GitHistoryGraphBranchGroups } from './git-history-graph-branch-groups'
 import { GitHistoryGraphHostNotice, hostTooOldText } from './git-history-graph-host-status'
+import { GitHistoryGraphFilterButtons } from './git-history-graph-filter-buttons'
 import {
+  mergeGitHistoryGraphFreeText,
+  stripGitHistoryGraphQueryTokens
+} from './git-history-graph-query-tokens'
+import {
+  getDefaultGitHistoryGraphFilter,
   getGitHistoryGraphDraftQuery,
   getGitHistoryGraphFilter,
   setGitHistoryGraphDraftQuery,
@@ -85,7 +92,9 @@ export function GitHistoryGraphToolbar({
   worktreePath,
   activeRepoTarget,
   state,
-  trailing
+  trailing,
+  fullView = false,
+  filterKey = worktreeId
 }: {
   worktreeId: string
   worktreePath: string
@@ -93,13 +102,31 @@ export function GitHistoryGraphToolbar({
   state: GitHistoryPanelState
   /** Rendered at the end of the filter row. */
   trailing?: React.ReactNode
+  /** The Git Graph tab's wide toolbar: User / Paths buttons, Clear, and wrapping. Off in the sidebar. */
+  fullView?: boolean
+  /** Whose filter this toolbar edits; the Git Graph tab keeps its own apart from the sidebar's. */
+  filterKey?: string
 }): React.JSX.Element {
   const result = state.result
-  const filter = useGitHistoryGraphFilter(worktreeId)
+  const filter = useGitHistoryGraphFilter(filterKey)
   const [open, setOpen] = useState(false)
   const [branchQuery, setBranchQuery] = useState('')
-  const draftQuery = useGitHistoryGraphDraftQuery(worktreeId)
-  const setDraftQuery = (query: string): void => setGitHistoryGraphDraftQuery(worktreeId, query)
+  const draftQuery = useGitHistoryGraphDraftQuery(filterKey)
+  const setDraftQuery = (query: string): void => setGitHistoryGraphDraftQuery(filterKey, query)
+  // Why: the full view shows author/path as buttons, so its box holds only the free text; while
+  // focused it keeps what was typed, so a half-typed `author:` token is not yanked out of the box.
+  const [focusedText, setFocusedText] = useState<string | null>(null)
+  const searchText = fullView
+    ? (focusedText ?? stripGitHistoryGraphQueryTokens(draftQuery))
+    : draftQuery
+  const changeSearchText = (text: string): void => {
+    if (!fullView) {
+      setDraftQuery(text)
+      return
+    }
+    setDraftQuery(mergeGitHistoryGraphFreeText(draftQuery, searchText, text))
+    setFocusedText((prev) => (prev === null ? null : text))
+  }
   const [fetched, setFetched] = useState<RefOptions>({ status: 'idle' })
   // Why: the open-time read is the single source; the last graph result only fills the list until it lands.
   const refOptions: RefOptions =
@@ -130,13 +157,13 @@ export function GitHistoryGraphToolbar({
     }
     // Why re-read: every mounted toolbar runs this timer; only the first commit of the latest draft should refetch.
     const timer = window.setTimeout(() => {
-      const latest = getGitHistoryGraphDraftQuery(worktreeId)
-      if (latest !== getGitHistoryGraphFilter(worktreeId).query) {
-        updateGitHistoryGraphFilter(worktreeId, { query: latest })
+      const latest = getGitHistoryGraphDraftQuery(filterKey)
+      if (latest !== getGitHistoryGraphFilter(filterKey).query) {
+        updateGitHistoryGraphFilter(filterKey, { query: latest })
       }
     }, SEARCH_DEBOUNCE_MS)
     return () => window.clearTimeout(timer)
-  }, [draftQuery, filter.query, worktreeId])
+  }, [draftQuery, filter.query, filterKey])
 
   const handleOpenChange = (nextOpen: boolean): void => {
     setOpen(nextOpen)
@@ -173,8 +200,10 @@ export function GitHistoryGraphToolbar({
       ? current.filter((ref) => ref !== fullName)
       : [...current, fullName]
     updateGitHistoryGraphFilter(
-      worktreeId,
-      refs.length ? { scope: 'refs', refs } : { scope: 'head', refs: [] }
+      filterKey,
+      refs.length
+        ? { scope: 'refs', refs }
+        : { scope: getDefaultGitHistoryGraphFilter(filterKey).scope, refs: [] }
     )
   }
 
@@ -184,7 +213,7 @@ export function GitHistoryGraphToolbar({
     const next = current.includes(remote)
       ? current.filter((name) => name !== remote)
       : [...current, remote]
-    updateGitHistoryGraphFilter(worktreeId, { scope: 'all', remotes: next })
+    updateGitHistoryGraphFilter(filterKey, { scope: 'all', remotes: next })
   }
 
   const check = (on: boolean): React.JSX.Element => (
@@ -193,7 +222,7 @@ export function GitHistoryGraphToolbar({
 
   return (
     <div className="flex flex-col gap-1 px-3 pb-1.5">
-      <div className="flex min-w-0 items-center gap-1.5">
+      <div className={cn('flex min-w-0 items-center gap-1.5', fullView && 'flex-wrap gap-y-1')}>
         <Popover open={open} onOpenChange={handleOpenChange}>
           <PopoverTrigger asChild>
             <Button
@@ -214,7 +243,7 @@ export function GitHistoryGraphToolbar({
             </Button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-[min(300px,calc(100vw-1rem))]">
-            <Command shouldFilter={false}>
+            <Command shouldFilter={false} density="menu">
               <CommandInput
                 placeholder={translate(
                   'auto.components.right.sidebar.GitHistoryGraph.searchBranches',
@@ -230,7 +259,7 @@ export function GitHistoryGraphToolbar({
                   <CommandItem
                     value="scope-head"
                     onSelect={() =>
-                      updateGitHistoryGraphFilter(worktreeId, { scope: 'head', refs: [] })
+                      updateGitHistoryGraphFilter(filterKey, { scope: 'head', refs: [] })
                     }
                   >
                     {check(filter.scope === 'head')}
@@ -243,7 +272,7 @@ export function GitHistoryGraphToolbar({
                     value="scope-all"
                     disabled={refOptions.status === 'unsupported'}
                     onSelect={() =>
-                      updateGitHistoryGraphFilter(worktreeId, { scope: 'all', refs: [] })
+                      updateGitHistoryGraphFilter(filterKey, { scope: 'all', refs: [] })
                     }
                   >
                     {check(filter.scope === 'all')}
@@ -263,7 +292,7 @@ export function GitHistoryGraphToolbar({
                     <CommandItem
                       value="source-local"
                       onSelect={() =>
-                        updateGitHistoryGraphFilter(worktreeId, { local: !filter.local })
+                        updateGitHistoryGraphFilter(filterKey, { local: !filter.local })
                       }
                     >
                       {check(filter.local)}
@@ -284,69 +313,75 @@ export function GitHistoryGraphToolbar({
                     ))}
                   </CommandGroup>
                 )}
-                <CommandGroup
-                  heading={translate(
-                    'auto.components.right.sidebar.GitHistoryGraph.branches',
-                    'Branches'
-                  )}
-                >
-                  {refOptions.status === 'loading' && (
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                      {translate(
-                        'auto.components.right.sidebar.GitHistoryGraph.loadingBranches',
-                        'Loading branches...'
-                      )}
-                    </div>
-                  )}
-                  {(refOptions.status === 'unsupported' || refOptions.status === 'error') && (
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                      {refOptions.status === 'unsupported'
-                        ? hostTooOldText()
-                        : translate(
-                            'auto.components.right.sidebar.GitHistoryGraph.branchesFailed',
-                            'Failed to load branches'
-                          )}
-                    </div>
-                  )}
-                  {visibleRefs.map((ref) => (
-                    <CommandItem
-                      key={ref.fullName}
-                      value={ref.fullName}
-                      onSelect={() => toggleRef(ref.fullName)}
-                    >
-                      {check(filter.scope === 'refs' && filter.refs.includes(ref.fullName))}
-                      <span className="min-w-0 flex-1 truncate">{ref.name}</span>
-                      {ref.category === 'remote branches' && (
-                        <span className="shrink-0 text-3xs text-muted-foreground">
-                          {translate(
-                            'auto.components.right.sidebar.GitHistoryGraph.remote',
-                            'remote'
-                          )}
-                        </span>
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
+                {refOptions.status !== 'ready' && refOptions.status !== 'idle' && (
+                  <CommandGroup>
+                    {refOptions.status === 'loading' && (
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                        {translate(
+                          'auto.components.right.sidebar.GitHistoryGraph.loadingBranches',
+                          'Loading branches...'
+                        )}
+                      </div>
+                    )}
+                    {(refOptions.status === 'unsupported' || refOptions.status === 'error') && (
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                        {refOptions.status === 'unsupported'
+                          ? hostTooOldText()
+                          : translate(
+                              'auto.components.right.sidebar.GitHistoryGraph.branchesFailed',
+                              'Failed to load branches'
+                            )}
+                      </div>
+                    )}
+                  </CommandGroup>
+                )}
+                <GitHistoryGraphBranchGroups
+                  refs={visibleRefs}
+                  isChecked={(fullName) =>
+                    filter.scope === 'refs' && filter.refs.includes(fullName)
+                  }
+                  renderCheck={check}
+                  onToggle={toggleRef}
+                />
               </CommandList>
             </Command>
           </PopoverContent>
         </Popover>
-        <div className="flex min-w-0 flex-1 items-center gap-1 rounded-md border border-input px-1.5">
+        {fullView && (
+          <GitHistoryGraphFilterButtons filterKey={filterKey} items={result?.items ?? []} />
+        )}
+        <div
+          className={cn(
+            'flex min-w-0 flex-1 items-center gap-1 rounded-md border border-input px-1.5',
+            fullView && 'min-w-40'
+          )}
+        >
           <Search className="size-3 shrink-0 text-muted-foreground" />
           <ImeInput
             type="text"
-            value={draftQuery}
-            onChange={(event) => setDraftQuery(event.target.value)}
+            value={searchText}
+            onFocus={() =>
+              setFocusedText(fullView ? stripGitHistoryGraphQueryTokens(draftQuery) : null)
+            }
+            onBlur={() => setFocusedText(null)}
+            onChange={(event) => changeSearchText(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Escape') {
                 event.preventDefault()
-                setDraftQuery('')
+                changeSearchText('')
               }
             }}
-            placeholder={translate(
-              'auto.components.right.sidebar.GitHistoryGraph.searchCommits',
-              'Search commits (author: path:)'
-            )}
+            placeholder={
+              fullView
+                ? translate(
+                    'auto.components.right.sidebar.GitHistoryGraph.searchCommitMessages',
+                    'Search commit messages'
+                  )
+                : translate(
+                    'auto.components.right.sidebar.GitHistoryGraph.searchCommits',
+                    'Search commits (author: path:)'
+                  )
+            }
             aria-label={translate(
               'auto.components.right.sidebar.GitHistoryGraph.searchCommitsLabel',
               'Search commits'
@@ -356,7 +391,7 @@ export function GitHistoryGraphToolbar({
         </div>
         {trailing}
       </div>
-      <GitHistoryGraphHostNotice worktreeId={worktreeId} state={state} />
+      <GitHistoryGraphHostNotice worktreeId={filterKey} state={state} />
     </div>
   )
 }

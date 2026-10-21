@@ -14084,7 +14084,9 @@
                         "addRepos": "Añadir repositorios de esta carpeta",
                         "filterRepos": "Filtrar repositorios",
                         "clearFilter": "Borrar filtro",
-                        "filterNoMatch": "Ningún repositorio coincide"
+                        "filterNoMatch": "Ningún repositorio coincide",
+                        "groupChanges": "Cambios",
+                        "groupNoChanges": "Sin cambios"
                       }
                     }
                   },
@@ -14177,7 +14179,8 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "Copiar código fuente completo",
-                      "ce8235a6a4": "Abrir al lado"
+                      "ce8235a6a4": "Abrir al lado",
+                      "showFileHistory": "Mostrar historial del archivo"
                     }
                   }
                 },
@@ -14465,7 +14468,8 @@
             "copyFullSource": "Copiar código fuente completo",
             "copyFullSourceMany": "Copiar código fuente completo ({{value0}} commits)",
             "copyHashMany": "Copiar hashes de commit ({{value0}} commits)",
-            "copyMessageMany": "Copiar mensajes de commit ({{value0}} commits)"
+            "copyMessageMany": "Copiar mensajes de commit ({{value0}} commits)",
+            "showInGraph": "Mostrar en Git Graph"
           },
           "pull": {
             "policy": {
@@ -14633,7 +14637,22 @@
             "searchCommits": "Buscar commits (author: path:)",
             "searchCommitsLabel": "Buscar commits",
             "loadMore": "Cargar más commits",
-            "noMatchingCommits": "Ningún commit coincide con este filtro"
+            "noMatchingCommits": "Ningún commit coincide con este filtro",
+            "clearAllFilters": "Borrar filtros",
+            "local": "Local",
+            "showAllBranches": "Mostrar todas las ramas",
+            "userFilter": "Usuario",
+            "pathsFilter": "Rutas",
+            "clearUserFilter": "Borrar filtro de usuario",
+            "searchUsers": "Buscar usuarios...",
+            "noUsers": "No hay usuarios en los commits cargados.",
+            "clearPathFilter": "Borrar filtro de ruta",
+            "typePath": "Ruta de archivo o carpeta relativa al repositorio",
+            "typePathHint": "Escribe una ruta y pulsa Intro.",
+            "filterByPath": "Filtrar por {{value0}}",
+            "recentPaths": "Recientes",
+            "clearFilters": "Borrar",
+            "searchCommitMessages": "Buscar en mensajes de commit"
           },
           "GitGraphFullView": {
             "laneContinuesBelow": "Continúa {{count}} filas más abajo en {{sha}} {{subject}}. Haz clic para ir.",
@@ -14651,7 +14670,12 @@
             "copyFullSource": "Copiar el código completo de todos los archivos modificados",
             "filesInCommits": "Archivos modificados ({{files}}) · {{commits}} commits",
             "filesChanged": "Archivos modificados ({{files}})",
-            "toggleBranches": "Mostrar u ocultar ramas"
+            "toggleBranches": "Mostrar u ocultar ramas",
+            "openAllChanges": "Abrir todos los cambios",
+            "hideDetails": "Ocultar detalles",
+            "enterKey": "Intro",
+            "showDetails": "Mostrar detalles",
+            "detailsStrip": "Detalles"
           },
           "GitGraphBranchSidebar": {
             "local": "Locales",
@@ -18424,7 +18448,9 @@
         "noRepos": "No se encontraron repositorios.",
         "addRepos": "Añadir repositorios...",
         "addReposMissing": "{{value0}} sin añadir",
-        "addReposButton": "Añadir repositorios de esta carpeta"
+        "addReposButton": "Añadir repositorios de esta carpeta",
+        "openInSourceControl": "Abrir en Control de código fuente",
+        "revealNotLoaded": "Ese commit no está en el historial cargado."
       }
     },
     "i18n": {

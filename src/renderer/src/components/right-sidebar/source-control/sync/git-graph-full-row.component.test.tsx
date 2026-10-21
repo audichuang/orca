@@ -110,6 +110,27 @@ describe('GitGraphFullRow folded edges', () => {
     expect(onJump).toHaveBeenCalledTimes(1)
   })
 
+  it('does not open the row commit on an arrow double-click', () => {
+    const onOpen = vi.fn()
+    render(
+      <GitGraphFullRow
+        viewModel={viewModel('node', 'abc1234')}
+        lanes={lanes}
+        graphWidth={33}
+        columns={COLUMNS}
+        selected={false}
+        onSelect={vi.fn()}
+        onJump={vi.fn()}
+        onOpen={onOpen}
+      />
+    )
+    const row = screen.getByTestId('git-graph-full-row')
+    fireEvent.doubleClick(row.querySelector('[data-fold="fold-down"] path')!)
+    expect(onOpen).not.toHaveBeenCalled()
+    fireEvent.doubleClick(row.querySelector('[data-col="message"]')!)
+    expect(onOpen).toHaveBeenCalledTimes(1)
+  })
+
   it('ignores a click on an arrow whose far end is not loaded yet', () => {
     const onSelect = vi.fn()
     const onJump = vi.fn()
@@ -155,5 +176,86 @@ describe('GitGraphFullRow folded edges', () => {
         .querySelector('[data-git-graph-jump="far-parent"] path')!
     )
     expect(onJump).toHaveBeenCalledWith('far-parent')
+  })
+})
+
+describe('GitGraphFullRow message room', () => {
+  const longRefs = (headName: string, otherName: string): GitHistoryItemViewModel => {
+    const vm = viewModel('node', 'abc1234')
+    return {
+      ...vm,
+      historyItem: {
+        ...vm.historyItem,
+        references: [
+          { id: 'refs/heads/head', name: headName, category: 'branches' },
+          { id: 'refs/heads/other', name: otherName, category: 'branches' }
+        ]
+      }
+    }
+  }
+
+  it('caps a ref chip width and keeps its full name in the tooltip', () => {
+    const name = 'feature/a-very-long-branch-name-that-would-push-the-message-out'
+    render(
+      <GitGraphFullRow
+        viewModel={longRefs(name, 'other')}
+        lanes={LANES}
+        graphWidth={24}
+        columns={COLUMNS}
+        selected={false}
+        onSelect={() => {}}
+      />
+    )
+    const chip = screen.getByTitle(`${name} (branches)`)
+    expect(chip).toHaveClass('max-w-32')
+    expect(chip).not.toHaveAttribute('data-head-ref')
+  })
+
+  it('gives the checked-out branch chip a slightly larger cap', () => {
+    const name = 'feature/another-very-long-branch-name-on-head'
+    render(
+      <GitGraphFullRow
+        viewModel={longRefs(name, 'other')}
+        lanes={LANES}
+        graphWidth={24}
+        columns={COLUMNS}
+        selected={false}
+        headRefId="refs/heads/head"
+        onSelect={() => {}}
+      />
+    )
+    const chip = screen.getByTitle(`${name} (branches)`)
+    expect(chip).toHaveAttribute('data-head-ref', 'true')
+    expect(chip).toHaveClass('max-w-40')
+  })
+
+  it('keeps off-branch messages readable while current-branch rows stay primary', () => {
+    const { rerender } = render(
+      <GitGraphFullRow
+        viewModel={viewModel('node', 'abc1234')}
+        lanes={LANES}
+        graphWidth={24}
+        columns={COLUMNS}
+        selected={false}
+        dimmed
+        onSelect={() => {}}
+      />
+    )
+    const message = (): HTMLElement => screen.getByTitle('node subject')
+    expect(message()).toHaveClass('text-foreground/80')
+    expect(message()).not.toHaveClass('text-muted-foreground')
+
+    rerender(
+      <GitGraphFullRow
+        viewModel={viewModel('node', 'abc1234')}
+        lanes={LANES}
+        graphWidth={24}
+        columns={COLUMNS}
+        selected={false}
+        onSelect={() => {}}
+      />
+    )
+    expect(message()).toHaveClass('text-foreground')
+    expect(message()).not.toHaveClass('text-foreground/80')
   })
 })

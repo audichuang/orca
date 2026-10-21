@@ -16,6 +16,7 @@ import { SourceControlBranchContextRow } from './branch-context-row'
 import { shouldShowSourceControlBranchContextChrome } from './branch-context-stats'
 import { SourceControlHeaderOverflowMenu } from './header-overflow-menu'
 import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
+import { FolderScopeLabel } from '../folder/folder-scope-label'
 // Fork-only: always-visible Git Graph entry.
 import { RepoWorkspaceGitGraphButton } from '../sync/git-graph-tab-launcher'
 
@@ -168,7 +169,7 @@ export function SourceControlHeaderToolbar({
   manualReviewUrl,
   branchLineTotal
 }: SourceControlHeaderToolbarProps): React.JSX.Element {
-  const scopeLabel = useSourceControlWorktreeScope()?.label
+  const scope = useSourceControlWorktreeScope()
   const filterInputRef = useRef<HTMLInputElement>(null)
   const normalizedFilter = filterQuery.trim()
   const showCollapsedToolbar = !filterExpanded
@@ -235,10 +236,8 @@ export function SourceControlHeaderToolbar({
                 isCreatingPr={isCreatingPr}
                 onClick={onCreatePrHeaderClick}
               />
-            ) : scopeLabel ? (
-              <span className="min-w-0 flex-1 truncate text-xs font-medium" title={scopeLabel}>
-                {scopeLabel}
-              </span>
+            ) : scope?.label ? (
+              <FolderScopeLabel label={scope.label} color={scope.color} />
             ) : (
               <span className="min-w-0 flex-1" aria-hidden="true" />
             )}

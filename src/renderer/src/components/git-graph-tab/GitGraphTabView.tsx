@@ -1,7 +1,8 @@
 // Fork-only: the Git Graph editor tab. Loads one repo's history and hosts GitGraphFullView.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FolderPlus } from 'lucide-react'
+import { FolderPlus, PanelRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import { useAllWorktrees, useRepoMap, useWorktreeMap } from '@/store/selectors'
 import type { OpenFile } from '@/store/slices/editor'
@@ -10,9 +11,11 @@ import { ipcOrRuntimeTargetForHostId } from '@/runtime/runtime-client-target'
 import { translate } from '@/i18n/i18n'
 import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared/execution-host'
 import type { Repo } from '../../../../shared/repo-types'
+import type { GitHistoryGraphSavedFilter } from '../../../../shared/git-history-graph-query-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { GitGraphFullView } from '../right-sidebar/source-control/sync/git-graph-full-view'
 import { useSourceControlGitHistory } from '../right-sidebar/source-control/sync/use-git-history'
+import { useGitGraphTabFilter } from './use-git-graph-tab-filter'
 import { useGitHistoryCommitActions } from '../right-sidebar/source-control/sync/use-git-history-commit-actions'
 import { commitFilesMenuSlot } from '../right-sidebar/source-control/sync/git-history-commit-files-menu'
 import { FolderAddReposDialog } from '../right-sidebar/source-control/folder/folder-add-repos-dialog'
@@ -21,6 +24,10 @@ import { useGitGraphFolderAddRepos } from './use-git-graph-folder-add-repos'
 import { listGitGraphRepoChoices } from './git-graph-tab-model'
 import { resolveGitGraphSplitTargetGroupId } from './git-graph-split-target'
 import type { SourceControlRowOpenEvent } from '../right-sidebar/source-control/listing/split-open'
+import { useRepoDisplayColor } from '@/lib/repo-display-color'
+import { openSourceControlOnRepo } from './git-graph-source-control-link'
+import { useGitGraphTabReveal } from './use-git-graph-tab-reveal'
+import { consumeGitGraphFocusRequest, useGitGraphFocusRequest } from './git-graph-focus-request'
 
 function GitGraphTabBody({
   fileId,
@@ -28,7 +35,10 @@ function GitGraphTabBody({
   worktree,
   repo,
   hostId,
-  switcher
+  switcher,
+  toolbarTrailing,
+  savedFilter,
+  claimFocusOnOpen
 }: {
   fileId: string
   workspaceId: string
@@ -36,9 +46,14 @@ function GitGraphTabBody({
   repo: Repo
   hostId: ExecutionHostId
   switcher: React.ReactNode
+  toolbarTrailing: React.ReactNode
+  savedFilter: GitHistoryGraphSavedFilter | undefined
+  claimFocusOnOpen: boolean
 }): React.JSX.Element {
   const target = useMemo(() => ipcOrRuntimeTargetForHostId(hostId), [hostId])
+  const filterKey = useGitGraphTabFilter(fileId, worktree.id, savedFilter)
   const worktreeMap = useWorktreeMap()
+  const repoColor = useRepoDisplayColor()
   // Why: a hidden workspace keeps its tabs mounted; only fetch while this workspace is on screen.
   const isVisible = useAppStore(
     (s) => s.activeWorktreeId === workspaceId && s.activeView === 'terminal'
@@ -52,7 +67,8 @@ function GitGraphTabBody({
     isBranchVisible: isVisible,
     isGitHistoryExpanded: true,
     isGitHistoryVisible: true,
-    worktreeMap
+    worktreeMap,
+    graphFilterKey: filterKey
   })
   // Why: the sidebar's commit/push/pull refresh only reaches its own history state; follow the
   // repo's head, upstream counts and SSH link instead so this tab never shows stale commits.
@@ -92,6 +108,12 @@ function GitGraphTabBody({
       resolveSplitTargetGroupId
     })
   const revealInExplorer = useAppStore((s) => s.revealInExplorer)
+  const reveal = useGitGraphTabReveal(fileId, worktree.id, filterKey)
+  const focusRequest = useGitGraphFocusRequest(fileId)
+  const onFocusHandled = useCallback(
+    (nonce: number) => consumeGitGraphFocusRequest(fileId, nonce),
+    [fileId]
+  )
   const renderCommitFilesMenu = commitFilesMenuSlot(
     {
       activeConnectionId: getConnectionId(worktree.id) ?? repo.connectionId ?? null,
@@ -116,7 +138,17 @@ function GitGraphTabBody({
       onOpenCommitFile={openCommitFile}
       onCommitAction={handleCommitAction}
       renderCommitFilesMenu={renderCommitFilesMenu}
-      toolbarTrailing={switcher}
+      toolbarLeading={switcher}
+      toolbarTrailing={toolbarTrailing}
+      accentColor={repoColor(repo)}
+      filterKey={filterKey}
+      selectHeadOnOpen
+      tab={{
+        selectionScope: fileId,
+        claimFocusOnOpen,
+        focusRequest: { pending: focusRequest, onHandled: onFocusHandled }
+      }}
+      reveal={reveal}
     />
   )
 }
@@ -134,6 +166,13 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
     [folderWorkspaces, repoById, workspaceId, worktrees]
   )
   const choice = choices.find((entry) => entry.worktree.id === repoWorktreeId) ?? null
+  const bodyKey = choice ? `${choice.worktree.id}\0${getRepoExecutionHostId(choice.repo)}` : null
+  // Why: opening or returning to the tab is the user's gesture; a later repo change follows a pick
+  // elsewhere (Source Control's repo list), whose keyboard focus must stay put.
+  const [shownBody, setShownBody] = useState({ key: bodyKey, switched: false })
+  if (bodyKey !== null && bodyKey !== shownBody.key) {
+    setShownBody({ key: bodyKey, switched: shownBody.switched || shownBody.key !== null })
+  }
   const setGitGraphTabRepo = useAppStore((s) => s.setGitGraphTabRepo)
   const selectRepo = useCallback(
     (id: string) => setGitGraphTabRepo(file.id, id),
@@ -148,6 +187,29 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
         onClose={() => setAddReposOpen(false)}
       />
     ) : null
+  const openInSourceControlLabel = translate(
+    'auto.components.gitGraphTab.openInSourceControl',
+    'Open in Source Control'
+  )
+  // Why at the row's end: beside the branches toggle its panel icon read as a twin of that toggle.
+  const openInSourceControl = choice ? (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          aria-label={openInSourceControlLabel}
+          onClick={() => openSourceControlOnRepo(workspaceId, choice.worktree.id)}
+        >
+          <PanelRight />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" sideOffset={6}>
+        {openInSourceControlLabel}
+      </TooltipContent>
+    </Tooltip>
+  ) : null
   const switcher = (
     <>
       <GitGraphRepoSwitcher
@@ -208,13 +270,16 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
   return (
     <GitGraphTabBody
       // Why remount per repo and host: selection, filters and caches are seeded once per owner.
-      key={`${worktree.id}\0${hostId}`}
+      key={bodyKey}
       fileId={file.id}
       workspaceId={workspaceId}
       worktree={worktree}
       repo={repo}
       hostId={hostId}
       switcher={switcher}
+      toolbarTrailing={openInSourceControl}
+      savedFilter={file.gitGraph?.filter}
+      claimFocusOnOpen={!shownBody.switched}
     />
   )
 }

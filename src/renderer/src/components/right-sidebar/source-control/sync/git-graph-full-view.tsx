@@ -1,11 +1,12 @@
 // Fork-only: full-width Git Graph body. Host-agnostic; the Git Graph editor tab hosts it today.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { PanelLeft, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
-import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import {
   buildDefaultGitHistoryColorMap,
@@ -14,7 +15,6 @@ import {
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import type { GitHistoryPanelState } from './git-history-panel'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
-import type { GitHistoryCommitFilesState } from './git-history-commit-files'
 import { GitHistoryGraphLoadMore } from './git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from './git-history-graph-empty-message'
 import {
@@ -30,18 +30,21 @@ import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-gra
 import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
 import { useGitGraphBranchContext, useGitGraphSelection } from './use-git-graph-full-view-state'
+import type { GitGraphRevealOptions } from './use-git-graph-reveal'
 import { useGitGraphBranchTree } from './use-git-graph-branch-tree'
 import { useWindowWidth } from '../../use-window-width'
 import { useMeasuredWidth } from '../../right-sidebar-measured-width'
-import { useGitGraphOpenFocus } from './use-git-graph-open-focus'
+import {
+  type GitGraphFocusRequest,
+  useGitGraphOpenFocus,
+  useGitGraphRequestedFocus
+} from './use-git-graph-open-focus'
 import { composeWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getRuntimeTargetHostId } from '@/runtime/runtime-client-target'
 import { useAppStore } from '@/store'
 import { getExecutionHostIdForWorktree } from '@/lib/worktree-runtime-owner'
 import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
-
-// Why bounded: a Shift range can cover hundreds of commits; the runtime RPC queue rejects past 256.
-const FILE_LOAD_CONCURRENCY = 6
+import { useGitGraphCommitFiles } from './use-git-graph-commit-files'
 
 export type GitGraphFullViewProps = {
   worktreeId: string
@@ -59,52 +62,20 @@ export type GitGraphFullViewProps = {
   /** Commit actions (Copy Full Source) over the selected commits. */
   onCommitAction?: GitHistoryCommitActionHandler
   renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
-  /** Host controls at the end of the filter row (the tab's repo switcher). */
+  /** Host controls at the end of the filter row. */
   toolbarTrailing?: React.ReactNode
-}
-
-function useCommitFiles(
-  result: GitHistoryResult | undefined,
-  onLoadCommitFiles: GitGraphFullViewProps['onLoadCommitFiles']
-): {
-  filesByCommit: Record<string, GitHistoryCommitFilesState>
-  ensureFiles: (item: GitHistoryItem) => void
-} {
-  const [filesByCommit, setFilesByCommit] = useState<Record<string, GitHistoryCommitFilesState>>({})
-  const requestedRef = useRef(new Set<string>())
-  // Why: a new result can replace commits; drop cached lists like the sidebar panel does.
-  const [shownResult, setShownResult] = useState(result)
-  if (shownResult !== result) {
-    setShownResult(result)
-    setFilesByCommit({})
-    requestedRef.current = new Set()
-  }
-  const ensureFiles = useCallback(
-    (item: GitHistoryItem): void => {
-      const requested = requestedRef.current
-      if (requested.has(item.id)) {
-        return
-      }
-      requested.add(item.id)
-      setFilesByCommit((prev) => ({ ...prev, [item.id]: { status: 'loading' } }))
-      onLoadCommitFiles(item)
-        .then((entries) => {
-          if (requestedRef.current === requested) {
-            setFilesByCommit((prev) => ({ ...prev, [item.id]: { status: 'ready', entries } }))
-          }
-        })
-        .catch((error: unknown) => {
-          if (requestedRef.current !== requested) {
-            return
-          }
-          requested.delete(item.id)
-          const message = error instanceof Error ? error.message : String(error)
-          setFilesByCommit((prev) => ({ ...prev, [item.id]: { status: 'error', error: message } }))
-        })
-    },
-    [onLoadCommitFiles]
-  )
-  return { filesByCommit, ensureFiles }
+  /** Host controls at the start of the toolbar row (the tab's repo switcher). */
+  toolbarLeading?: React.ReactNode
+  /** The shown repo's badge colour, drawn as a bar along the toolbar's top edge. */
+  accentColor?: string
+  /** Whose filter the view reads and edits; defaults to the worktree's (shared with the sidebar). */
+  filterKey?: string
+  /** Select the checked-out commit when the first history arrives and nothing is selected yet. */
+  selectHeadOnOpen?: boolean
+  /** The hosting tab: whose selection memory this is, and whether opening may take focus. */
+  tab?: { selectionScope: string; claimFocusOnOpen: boolean; focusRequest?: GitGraphFocusRequest }
+  /** One-shot commit to select and scroll to, ahead of the checked-out pick. */
+  reveal?: Pick<GitGraphRevealOptions, 'request' | 'onHandled'>
 }
 
 export function GitGraphFullView({
@@ -118,7 +89,13 @@ export function GitGraphFullView({
   onOpenCommitFile,
   onCommitAction,
   renderCommitFilesMenu,
-  toolbarTrailing
+  toolbarTrailing,
+  toolbarLeading,
+  accentColor,
+  filterKey = worktreeId,
+  selectHeadOnOpen = false,
+  tab,
+  reveal
 }: GitGraphFullViewProps): React.JSX.Element {
   const result = state.result
   const viewModels = useMemo(
@@ -151,14 +128,22 @@ export function GitGraphFullView({
   const ownerKey = `${composeWorktreeHostIdentity(executionHostId, worktreeId)}\0${worktreePath}\0${activeRepoTarget ? getRuntimeTargetHostId(activeRepoTarget) : ''}`
   const selection = useGitGraphSelection({
     selectionKey: ownerKey,
+    selectionScope: tab?.selectionScope,
     result,
     viewModels,
-    listRef
+    listRef,
+    selectHeadOnOpen,
+    reveal: reveal && {
+      ...reveal,
+      settled: state.status === 'ready' || state.status === 'error',
+      filterKey
+    }
   })
   const { shownItems, jumpTo } = selection
   const branchContext = useGitGraphBranchContext({
     ownerKey,
     worktreeId,
+    filterKey,
     worktreePath,
     activeRepoTarget,
     result,
@@ -180,9 +165,13 @@ export function GitGraphFullView({
     getNavigationGeneration: selection.getNavigationGeneration,
     jumpTo,
     showRef: (fullName) =>
-      updateGitHistoryGraphFilter(worktreeId, { scope: 'refs', refs: [fullName] })
+      updateGitHistoryGraphFilter(filterKey, { scope: 'refs', refs: [fullName] })
   })
-  useGitGraphOpenFocus(listRef, selection.cursorId)
+  useGitGraphOpenFocus(listRef, selection.cursorId, tab?.claimFocusOnOpen)
+  useGitGraphRequestedFocus(listRef, selection.cursorId, tab?.focusRequest, {
+    revealPending: Boolean(reveal?.request),
+    settled: state.status === 'ready' || state.status === 'error'
+  })
   // Why containment: React bubbles keydown out of portaled popovers too, and their Escape is theirs.
   const handleRootKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
     if (
@@ -202,17 +191,8 @@ export function GitGraphFullView({
   const selectedTipIds = useMemo(() => new Set(shownItems.map((item) => item.id)), [shownItems])
   const contextItemsFor = (item: GitHistoryItem): readonly GitHistoryItem[] =>
     shownItems.length > 1 && selectedTipIds.has(item.id) ? shownItems : [item]
-  const { filesByCommit, ensureFiles } = useCommitFiles(result, onLoadCommitFiles)
+  const filesByCommit = useGitGraphCommitFiles(result, shownItems, onLoadCommitFiles)
   const loading = state.status === 'loading' || state.status === 'refreshing'
-
-  // Why an effect: a refresh drops the file cache but keeps the selection, so it must refetch too.
-  useEffect(() => {
-    const inFlight = shownItems.filter((item) => filesByCommit[item.id]?.status === 'loading')
-    const missing = shownItems.filter((item) => !filesByCommit[item.id])
-    for (const item of missing.slice(0, Math.max(0, FILE_LOAD_CONCURRENCY - inFlight.length))) {
-      ensureFiles(item)
-    }
-  }, [shownItems, filesByCommit, ensureFiles])
 
   return (
     <div
@@ -223,7 +203,20 @@ export function GitGraphFullView({
       data-git-graph-root=""
       onKeyDown={handleRootKeyDown}
     >
+      {accentColor && (
+        <div
+          data-git-graph-accent=""
+          className="h-0.5 shrink-0"
+          style={{ backgroundColor: accentColor }}
+        />
+      )}
       <div className="flex items-start gap-1 border-b border-border pt-1.5">
+        {toolbarLeading && (
+          <div className="ml-2 flex h-6 max-w-72 min-w-0 shrink-0 items-center gap-1.5">
+            {toolbarLeading}
+            <Separator orientation="vertical" className="h-4" />
+          </div>
+        )}
         <Button
           type="button"
           variant="ghost"
@@ -246,6 +239,8 @@ export function GitGraphFullView({
             activeRepoTarget={activeRepoTarget}
             state={state}
             trailing={toolbarTrailing}
+            fullView
+            filterKey={filterKey}
           />
         </div>
         <Button
@@ -326,7 +321,7 @@ export function GitGraphFullView({
             )}
             {result && viewModels.length === 0 && (
               <div className="px-3 py-2 text-xs text-muted-foreground">
-                <GitHistoryGraphEmptyMessage worktreeId={worktreeId} />
+                <GitHistoryGraphEmptyMessage worktreeId={filterKey} filterActions />
               </div>
             )}
             {viewModels.map((viewModel, index) => (
@@ -357,9 +352,10 @@ export function GitGraphFullView({
                 }
                 onSelect={(event) => selection.handleRowSelect(viewModel.historyItem, event)}
                 onJump={(commitId) => jumpTo(commitId, { focus: true })}
+                onOpen={() => onOpenCommit(viewModel.historyItem)}
               />
             ))}
-            {result && <GitHistoryGraphLoadMore worktreeId={worktreeId} state={state} />}
+            {result && <GitHistoryGraphLoadMore worktreeId={filterKey} state={state} />}
           </div>
         </div>
         <GitGraphDetailsPane

@@ -1,5 +1,6 @@
 import { expect } from './orca-app'
 import { runBinaryAndKeyboardScenarios } from './folder-multi-repo-binary-and-keyboard-scenarios'
+import { expectRowHoverKeepsCount } from './folder-repo-row-hover-count-check'
 import type { ExtraScenarioContext } from './folder-multi-repo-scenario-context'
 
 // S15-S16: open-to-the-side and master-detail layout; then S17-S18.
@@ -65,17 +66,14 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
     await page.keyboard.press('Escape')
   })
 
-  await scenario('S16 Layout: accordion headers, open repo fills height, bulk bar', async (ev) => {
+  await scenario('S16 Layout: repo rows, open repo fills height, bulk bar', async (ev) => {
     await expandOnly(H.web)
     const geo = await page.evaluate(() => {
       const rows = [...document.querySelectorAll<HTMLElement>('[data-repo-row]')]
       const root = rows[0]?.closest<HTMLElement>('[role="group"]')
-      // Headers up to the open repo, then its panel, then the remaining headers.
-      const list = rows[0]?.parentElement?.parentElement
-      const detail =
-        list?.nextElementSibling instanceof HTMLElement ? list.nextElementSibling : null
-      const after =
-        detail?.nextElementSibling instanceof HTMLElement ? detail.nextElementSibling : null
+      // One scrolling repo list, then the open repo's panel pinned below it.
+      const list = document.querySelector<HTMLElement>('[data-folder-repo-list]')
+      const detail = document.querySelector<HTMLElement>('[data-folder-repo-detail]')
       if (!list || !root || !detail) {
         return null
       }
@@ -97,12 +95,15 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
           insideList:
             row.getBoundingClientRect().top >= lr.top - 1 &&
             row.getBoundingClientRect().bottom <= lr.bottom + 1,
-          targets: [...row.querySelectorAll('button')].map((b) => {
-            return {
-              name: b.getAttribute('aria-label') || b.getAttribute('title') || 'row',
-              ok: hit(b)
-            }
-          })
+          // Why: eye/copy sit in a hover-only overlay that ignores the pointer until hovered.
+          targets: [...row.querySelectorAll('button')]
+            .filter((b) => getComputedStyle(b).pointerEvents !== 'none')
+            .map((b) => {
+              return {
+                name: b.getAttribute('aria-label') || b.getAttribute('title') || 'row',
+                ok: hit(b)
+              }
+            })
         }
       })
       const dr = detail.getBoundingClientRect()
@@ -126,9 +127,7 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
         listClipped: list.scrollHeight - list.clientHeight,
         root: box(root),
         detail: box(detail),
-        afterTop: after ? after.getBoundingClientRect().top : null,
-        afterH: after ? after.getBoundingClientRect().height : 0,
-        detailChild: detail.firstElementChild ? box(detail.firstElementChild) : null,
+        detailChild: detail.lastElementChild ? box(detail.lastElementChild) : null,
         firstContentGap: first ? first.getBoundingClientRect().top - dr.top : null,
         rowHits,
         detailCovered: visible
@@ -159,39 +158,42 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
     expect(g.rowHits).toHaveLength(5)
     for (const r of g.rowHits) {
       expect(r.insideList, `${r.label} is clipped by the list`).toBe(true)
-      expect(
-        r.targets.length,
-        `${r.label} has row button, sync/copy actions`
-      ).toBeGreaterThanOrEqual(2)
+      expect(r.targets.length, `${r.label} has a clickable row button`).toBeGreaterThanOrEqual(1)
       expect(
         r.targets.filter((t) => !t.ok),
         `${r.label} actions are hit-testable`
       ).toEqual([])
     }
     expect(g.listClipped, 'list scrolls internally with 5 repos').toBe(0)
-    // The open repo's panel starts right under its header and runs to the next header or the panel bottom.
+    // The open repo's panel starts right under the list and runs to the panel bottom.
     expect(Math.abs(g.detail.top - g.list.bottom)).toBeLessThanOrEqual(6)
-    expect(Math.abs(g.detail.bottom - (g.afterTop ?? g.root.bottom))).toBeLessThanOrEqual(2)
-    expect(g.detail.h).toBeGreaterThan(g.root.bottom - g.root.top - g.list.h - g.afterH - 120)
-    expect(g.detailChild!.h, 'selected repo panel fills the detail area').toBeGreaterThanOrEqual(
-      g.detail.h - 2
-    )
+    expect(Math.abs(g.detail.bottom - g.root.bottom)).toBeLessThanOrEqual(2)
+    expect(g.detail.h).toBeGreaterThan(g.root.bottom - g.root.top - g.list.h - 120)
+    expect(
+      g.detailChild!.bottom,
+      'selected repo panel fills the detail area under its header'
+    ).toBeGreaterThanOrEqual(g.detail.bottom - 2)
     expect(g.firstContentGap, 'no large gap above the repo panel content').not.toBeNull()
     expect(g.firstContentGap!).toBeLessThan(48)
     expect(g.detailCovered, 'detail actions are not covered by floating UI').toEqual([])
     await shot('S16a-list-and-detail')
 
-    // Clicking the open header collapses every repo; clicking it again reopens its panel.
+    // Hovering a row with changes reveals eye/copy beside the count without moving or covering it.
+    await expectRowHoverKeepsCount(
+      page.locator('[data-repo-row]').filter({ hasText: H.web }).first(),
+      ev
+    )
+    await shot('S16a1-row-hover-count')
+    await page.mouse.move(0, 0)
+
+    // Clicking the open row keeps it open, so the panel below is never left blank.
     const openHeader = page.locator('[data-repo-row][aria-current="true"]')
     const webHeader = page.locator('[data-repo-row]').filter({ hasText: H.web }).first()
     await webHeader.click()
-    await expect(openHeader).toHaveCount(0)
-    await expect(webHeader).toHaveAttribute('aria-expanded', 'false')
-    await expect(page.locator('[data-testid="source-control-entry"]')).toHaveCount(0)
-    await shot('S16a2-all-collapsed')
-    await webHeader.click()
+    await expect(openHeader).toHaveCount(1)
     await expect(webHeader).toHaveAttribute('aria-current', 'true')
     await expect(entry('unstaged', 'src/partial.ts')).toBeVisible({ timeout: 10_000 })
+    await shot('S16a2-open-row-reclicked')
 
     // Bulk action bar: anchored to the detail, not covered, label on one line.
     await entry('unstaged', 'src/partial.ts').click({ modifiers: ['ControlOrMeta'] })

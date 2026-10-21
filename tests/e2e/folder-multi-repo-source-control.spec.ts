@@ -158,20 +158,21 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   const repoHeaders = () => page.locator('[data-repo-row]')
   const header = (re: RegExp) => page.locator('[data-repo-row]').filter({ hasText: re })
   const countOf = async (re: RegExp) => {
+    // Hidden at 0; "(?:^|\s)" keeps a sync count such as "↑2" from reading as the change count.
     const text = (await header(re).first().innerText()).replace(/\s+/g, ' ').trim()
-    const m = text.match(/(\d+)\s*$/)
-    return m ? Number(m[1]) : Number.NaN
+    const m = text.match(/(?:^|\s)(\d+)$/)
+    return m ? Number(m[1]) : 0
   }
   const entry = (area: string, p: string) =>
     page.locator(
       `[data-testid="source-control-entry"][data-source-control-area="${area}"][data-source-control-path=${JSON.stringify(p)}]`
     )
   const H = {
-    api: /^api-server \(main\)/,
-    core: /^core \(main\)/,
-    docs: /^docs-site \(main\)/,
-    web: /^WebApp \(main\)/,
-    feature: /^WebApp-feature \(/
+    api: /^api-server main\b/,
+    core: /^core main\b/,
+    docs: /^docs-site main\b/,
+    web: /^WebApp main\b/,
+    feature: /^WebApp-feature feature\/x\b/
   }
   // Selects the repo row; entry() rows are not repo-scoped, so exactly one repo may be selected.
   const expandOnly = async (re: RegExp) => {
@@ -230,7 +231,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   const hiddenHint = page.getByText(/Hidden worktrees under this folder are not included \(1\)/)
   await scenario('S0 Hidden linked worktree is flagged, not silently dropped', async (ev) => {
     await expect(hiddenHint).toBeVisible({ timeout: 30_000 })
-    await expect(header(/^WebApp \(main\)/).first()).toBeVisible({ timeout: 30_000 })
+    await expect(header(H.web).first()).toBeVisible({ timeout: 30_000 })
     await expect(header(H.feature)).toHaveCount(0)
     await setClipboard(page, 'sentinel')
     await page.getByRole('button', { name: 'Copy all changes' }).first().click()
@@ -257,6 +258,9 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   await refreshBtn.click()
 
   await scenario('S1 Repo list', async (ev) => {
+    // docs-site is clean, so it sits in the folded "No changes" group; the panel remembers it unfolded.
+    const noChanges = page.getByRole('button', { name: /^No changes/, expanded: false })
+    await noChanges.click({ timeout: 30_000 })
     await expect
       .poll(async () => (await repoHeaders().count()) >= 5, { timeout: 30_000 })
       .toBe(true)
@@ -264,11 +268,9 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     ev.push(`headers: ${JSON.stringify(labels)}`)
     ev.push(`scanned: ${JSON.stringify(ids.scanned.map((x) => path.relative(P, x)))}`)
     expect(labels.length).toBe(5)
-    expect(labels.some((l) => l.startsWith('WebApp (main) '))).toBe(true)
-    expect(labels.some((l) => l.startsWith('WebApp-feature (feature/x) '))).toBe(true)
-    expect(labels.some((l) => l.startsWith('api-server (main) '))).toBe(true)
-    expect(labels.some((l) => l.startsWith('core (main) '))).toBe(true)
-    expect(labels.some((l) => l.startsWith('docs-site (main) '))).toBe(true)
+    for (const re of [H.web, H.feature, H.api, H.core, H.docs]) {
+      expect(labels.some((l) => re.test(l))).toBe(true)
+    }
     expect(labels.join('|').toLowerCase()).not.toContain('notes')
     const expectCount = async (re: RegExp, repo: string) =>
       expect.poll(() => countOf(re), { timeout: 20_000 }).toBe(readStatus(repo).length)
@@ -617,8 +619,9 @@ test('folder workspace multi-repo source control, copy and restore', async ({
       await setClipboard(page, 'sentinel')
       const container = repoRow
         ? header(re).first().locator('xpath=..')
-        : page
-            .locator('button[aria-expanded]')
+        : // Why the detail scope: the repo list's own "Changes" group header also matches.
+          page
+            .locator('[data-folder-repo-detail] button[aria-expanded]')
             .filter({ hasText: re })
             .first()
             .locator('xpath=ancestor::div[contains(@class,"group/section")][1]')

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type React from 'react'
 import { joinPath } from '@/lib/path'
 import { getShortcutPlatform } from '@/lib/shortcut-platform'
+import { useAppStore } from '@/store'
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import { SourceControlEntryContextMenu } from '../listing/entry-context-menu'
@@ -12,6 +13,7 @@ import {
 } from '../listing/split-open'
 import type { SourceControlPanelModel } from '../panel/use-panel-model'
 import { copyHistoryCommitsFullSource } from './git-history-commit-copy'
+import { showGitGraphPathHistory } from './git-history-graph-path-query'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import {
   applyCommitFileClick,
@@ -51,6 +53,7 @@ export function GitHistoryCommitFilesMenu({
   renderList: (selectedPaths: ReadonlySet<string>) => React.JSX.Element
 }): React.JSX.Element {
   const [entry, setEntry] = useState<GitBranchChangeEntry | null>(null)
+  const [dirPath, setDirPath] = useState<string | null>(null)
   const [selection, setSelection] = useState(EMPTY_COMMIT_FILE_SELECTION)
   const entryAt = (event: React.MouseEvent): GitBranchChangeEntry | undefined => {
     const row =
@@ -78,6 +81,15 @@ export function GitHistoryCommitFilesMenu({
   }
   const handleContextMenuCapture = (event: React.MouseEvent): void => {
     const target = entryAt(event)
+    const dir =
+      event.target instanceof Element
+        ? event.target.closest('[data-commit-dir-path]')?.getAttribute('data-commit-dir-path')
+        : null
+    setDirPath(target ? null : (dir ?? null))
+    if (dir && !target) {
+      setEntry(null)
+      return
+    }
     if (!target) {
       // Why: Radix skips opening on a prevented event, so loading/error/"Open all" get no menu.
       event.preventDefault()
@@ -91,8 +103,8 @@ export function GitHistoryCommitFilesMenu({
     selection.selected.has(target.path)
       ? entries.filter((e) => selection.selected.has(e.path))
       : [target]
-  const copyFullSource = (target: GitBranchChangeEntry): void => {
-    const paths = new Set(copyTargets(target).map((e) => e.path))
+  const copyFullSource = (targets: readonly GitBranchChangeEntry[]): void => {
+    const paths = new Set(targets.map((e) => e.path))
     void copyHistoryCommitsFullSource({
       items,
       worktreeId,
@@ -104,16 +116,37 @@ export function GitHistoryCommitFilesMenu({
         (await loadCommitFiles(item)).filter((entry) => paths.has(entry.path))
     })
   }
+  const dirEntries = dirPath === null ? [] : entries.filter((e) => e.path.startsWith(`${dirPath}/`))
+  const targetPath = entry?.path ?? dirPath ?? undefined
   return (
     <SourceControlEntryContextMenu
       currentWorktreeId={worktreeId}
-      absolutePath={entry ? joinPath(worktreePath, entry.path) : undefined}
-      relativePath={entry?.path}
-      hasWorkingTreeFile={entry !== null && entry.status !== 'deleted'}
+      absolutePath={targetPath === undefined ? undefined : joinPath(worktreePath, targetPath)}
+      relativePath={targetPath}
+      hasWorkingTreeFile={
+        entry ? entry.status !== 'deleted' : dirEntries.some((e) => e.status !== 'deleted')
+      }
       connectionId={model.activeConnectionId}
       onView={entry ? () => onOpenFile(entry, PLAIN_OPEN_EVENT) : undefined}
       onOpenToSide={entry ? () => onOpenFile(entry, SOURCE_CONTROL_OPEN_TO_SIDE_EVENT) : undefined}
-      onCopyFullSource={entry ? () => copyFullSource(entry) : undefined}
+      onCopyFullSource={
+        entry
+          ? () => copyFullSource(copyTargets(entry))
+          : dirEntries.length > 0
+            ? () => copyFullSource(dirEntries)
+            : undefined
+      }
+      onShowFileHistory={
+        targetPath === undefined
+          ? undefined
+          : () =>
+              showGitGraphPathHistory({
+                workspaceId: model.editorWorktreeId ?? worktreeId,
+                repoWorktreeId: worktreeId,
+                path: targetPath,
+                openGitGraphTab: useAppStore.getState().openGitGraphTab
+              })
+      }
       // Why: in a folder workspace the explorer belongs to the folder, not this child repo.
       onRevealInExplorer={(_repoId, path) =>
         model.revealInExplorer(model.editorWorktreeId ?? worktreeId, path)

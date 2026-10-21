@@ -2,7 +2,16 @@
 import type { EditorGet, EditorSet } from '../types/editor-set-get'
 import type { EditorSlice } from '../types/editor-slice'
 import type { OpenFile } from '../types/open-file'
+import type { OpenGitGraphState } from '../../../../../../shared/editor-tab-view-types'
 import { openWorkspaceEditorItem } from '../tabs/workspace-editor-item'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { rememberFolderRepo } from '@/components/right-sidebar/source-control/folder/folder-repo-selection'
+import {
+  dropGitGraphRevealRequestUnlessRepo,
+  requestGitGraphReveal
+} from '@/components/git-graph-tab/git-graph-reveal-request'
+import { requestGitGraphFocus } from '@/components/git-graph-tab/git-graph-focus-request'
+import { cancelGitGraphRepoFollow } from '@/components/git-graph-tab/git-graph-deferred-repo-follow'
 import {
   GIT_GRAPH_TAB_LABEL,
   buildGitGraphTabId,
@@ -13,7 +22,7 @@ import {
 export function createGitGraphTabActions(
   set: EditorSet,
   get: EditorGet
-): Pick<EditorSlice, 'openGitGraphTab' | 'setGitGraphTabRepo'> {
+): Pick<EditorSlice, 'openGitGraphTab' | 'setGitGraphTabRepo' | 'setGitGraphTabFilter'> {
   return {
     openGitGraphTab: (workspaceId, opts) => {
       const state = get()
@@ -30,6 +39,15 @@ export function createGitGraphTabActions(
       if (!repoWorktreeId) {
         return null
       }
+      // Why: the tab and the folder's Source Control show one shared repo pick.
+      if (parseWorkspaceKey(workspaceId)?.type === 'folder') {
+        rememberFolderRepo(workspaceId, repoWorktreeId)
+      }
+      if (opts?.revealCommit) {
+        requestGitGraphReveal(id, repoWorktreeId, opts.revealCommit)
+      }
+      // Why every call: each caller is an explicit open; a repo follow goes through setGitGraphTabRepo.
+      requestGitGraphFocus(id)
       set((s) => {
         const file: OpenFile = {
           ...s.openFiles.find((entry) => entry.id === id),
@@ -42,7 +60,9 @@ export function createGitGraphTabActions(
           // Why null: undefined lets a Cmd+Shift+T reopen adopt the active runtime and miss this tab.
           runtimeEnvironmentId: null,
           mode: 'git-graph',
-          gitGraph: { repoWorktreeId }
+          gitGraph: opts?.filter
+            ? { repoWorktreeId, filter: opts.filter }
+            : withGitGraphRepo(existing?.gitGraph, repoWorktreeId)
         }
         const present = s.openFiles.some((entry) => entry.id === id)
         return {
@@ -74,6 +94,16 @@ export function createGitGraphTabActions(
     },
 
     setGitGraphTabRepo: (fileId, repoWorktreeId) => {
+      const workspaceId = get().openFiles.find(
+        (file) => file.id === fileId && file.mode === 'git-graph'
+      )?.worktreeId
+      // Why: a folder's graph and Source Control share one repo pick; the no-op guard there stops echoes.
+      if (workspaceId && parseWorkspaceKey(workspaceId)?.type === 'folder') {
+        rememberFolderRepo(workspaceId, repoWorktreeId)
+        // Why: this switch is newer than a keyboard walk still waiting to move the tab.
+        cancelGitGraphRepoFollow(workspaceId)
+      }
+      dropGitGraphRevealRequestUnlessRepo(fileId, repoWorktreeId)
       set((s) => {
         const target = s.openFiles.find((file) => file.id === fileId)
         if (target?.mode !== 'git-graph' || target.gitGraph?.repoWorktreeId === repoWorktreeId) {
@@ -81,10 +111,40 @@ export function createGitGraphTabActions(
         }
         return {
           openFiles: s.openFiles.map((file) =>
-            file.id === fileId ? { ...file, gitGraph: { repoWorktreeId } } : file
+            file.id === fileId
+              ? { ...file, gitGraph: withGitGraphRepo(file.gitGraph, repoWorktreeId) }
+              : file
+          )
+        }
+      })
+    },
+
+    setGitGraphTabFilter: (fileId, filter) => {
+      set((s) => {
+        const target = s.openFiles.find((file) => file.id === fileId)
+        if (target?.mode !== 'git-graph' || !target.gitGraph) {
+          return s
+        }
+        const { repoWorktreeId } = target.gitGraph
+        return {
+          openFiles: s.openFiles.map((file) =>
+            file.id === fileId ? { ...file, gitGraph: { repoWorktreeId, filter } } : file
           )
         }
       })
     }
   }
+}
+
+/** Repo switch rule: scope, sources and search carry over; branch picks are per repo and drop. */
+function withGitGraphRepo(
+  previous: OpenGitGraphState | undefined,
+  repoWorktreeId: string
+): OpenGitGraphState {
+  const filter = previous?.filter
+  if (!filter || previous.repoWorktreeId === repoWorktreeId) {
+    return { repoWorktreeId, ...(filter ? { filter } : {}) }
+  }
+  const scope = filter.scope === 'refs' ? 'all' : filter.scope
+  return { repoWorktreeId, filter: { ...filter, scope, refs: [] } }
 }

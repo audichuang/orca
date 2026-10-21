@@ -1,12 +1,19 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   DEFAULT_GIT_HISTORY_GRAPH_FILTER,
+  getDefaultGitHistoryGraphFilter,
+  getGitHistoryGraphDraftQuery,
   getGitHistoryGraphFilter,
+  gitGraphTabFilterKey,
+  isGitHistoryGraphFiltered,
   parseGitHistoryGraphQuery,
+  seedGitHistoryGraphFilter,
   resetGitHistoryGraphFiltersForTest,
+  setGitHistoryGraphDraftQuery,
   toGitHistoryGraphRequest,
   updateGitHistoryGraphFilter
 } from './git-history-graph-filter'
+import { resetGitHistoryGraphFilterToDefault } from './git-history-graph-query-tokens'
 
 afterEach(() => resetGitHistoryGraphFiltersForTest())
 
@@ -23,6 +30,20 @@ describe('parseGitHistoryGraphQuery', () => {
     expect(parseGitHistoryGraphQuery('author:"Ann Lee" path:"docs/my file.md"')).toEqual({
       author: 'Ann Lee',
       path: 'docs/my file.md'
+    })
+  })
+
+  it('reads a hand-typed quoted value ending in a backslash literally', () => {
+    expect(parseGitHistoryGraphQuery('path:"src\\my dir\\" fix')).toEqual({
+      path: 'src\\my dir\\',
+      text: 'fix'
+    })
+  })
+
+  it('still unescapes quoted values written with escapes', () => {
+    expect(parseGitHistoryGraphQuery('path:"a \\"b\\" c\\\\" fix')).toEqual({
+      path: 'a "b" c\\',
+      text: 'fix'
     })
   })
 
@@ -80,5 +101,57 @@ describe('per-worktree filter state', () => {
 
     updateGitHistoryGraphFilter('wt-a', { scope: 'refs' })
     expect(getGitHistoryGraphFilter('wt-a').limit).toBe(DEFAULT_GIT_HISTORY_GRAPH_FILTER.limit)
+  })
+})
+
+describe('Git Graph tab filter', () => {
+  it('defaults to all branches and stays apart from the sidebar filter of the same repo', () => {
+    const tabKey = gitGraphTabFilterKey('ws::git-graph', 'wt-a')
+    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({
+      scope: 'all',
+      local: true,
+      remotes: 'all'
+    })
+    expect(getGitHistoryGraphFilter('wt-a').scope).toBe('head')
+
+    updateGitHistoryGraphFilter(tabKey, { query: 'fix' })
+    updateGitHistoryGraphFilter('wt-a', { scope: 'refs', refs: ['refs/heads/x'] })
+    expect(getGitHistoryGraphFilter('wt-a')).toMatchObject({ scope: 'refs', query: '' })
+    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({ scope: 'all', refs: [], query: 'fix' })
+  })
+
+  it("measures 'filtered' and Clear against the tab's own default", () => {
+    const tabKey = gitGraphTabFilterKey('ws::git-graph', 'wt-a')
+    expect(isGitHistoryGraphFiltered(getGitHistoryGraphFilter(tabKey), tabKey)).toBe(false)
+    updateGitHistoryGraphFilter(tabKey, { scope: 'head' })
+    expect(isGitHistoryGraphFiltered(getGitHistoryGraphFilter(tabKey), tabKey)).toBe(true)
+
+    resetGitHistoryGraphFilterToDefault(tabKey)
+    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({ scope: 'all', remotes: 'all' })
+    // The sidebar keeps upstream's HEAD-only default as unfiltered.
+    expect(isGitHistoryGraphFiltered(getGitHistoryGraphFilter('wt-a'), 'wt-a')).toBe(false)
+    updateGitHistoryGraphFilter('wt-a', { scope: 'all' })
+    expect(isGitHistoryGraphFiltered(getGitHistoryGraphFilter('wt-a'), 'wt-a')).toBe(true)
+  })
+
+  it("takes the tab's saved filter over an older in-memory one, keeping depth when unchanged", () => {
+    const tabKey = gitGraphTabFilterKey('ws::git-graph', 'wt-a')
+    const saved = { scope: 'head' as const, refs: [], local: true, remotes: [], query: 'fix' }
+    seedGitHistoryGraphFilter(tabKey, saved)
+    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({ ...saved, limit: 50 })
+    updateGitHistoryGraphFilter(tabKey, { limit: 300 })
+    seedGitHistoryGraphFilter(tabKey, saved)
+    expect(getGitHistoryGraphFilter(tabKey).limit).toBe(300)
+
+    setGitHistoryGraphDraftQuery(tabKey, 'fix typed')
+    seedGitHistoryGraphFilter(tabKey, { ...saved, query: 'other' })
+    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({ query: 'other', limit: 50 })
+    expect(getGitHistoryGraphDraftQuery(tabKey)).toBe('other')
+  })
+
+  it('defaults any tab key to all branches without registering it first', () => {
+    resetGitHistoryGraphFiltersForTest()
+    expect(getDefaultGitHistoryGraphFilter('ws::git-graph\0wt-a').scope).toBe('all')
+    expect(getDefaultGitHistoryGraphFilter('wt-a').scope).toBe('head')
   })
 })

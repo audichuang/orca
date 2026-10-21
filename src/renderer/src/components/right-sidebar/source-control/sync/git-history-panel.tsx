@@ -392,6 +392,7 @@ export function GitHistoryPanel({
                     <GitHistoryCommitContextMenu
                       item={item}
                       selectedCount={selection.itemsFor(item).length}
+                      onShowInGraph={slots.onShowCommitInGraph}
                       onAction={(action, target) =>
                         onCommitAction(action, target, selection.itemsFor(target))
                       }
