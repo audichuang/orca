@@ -2,12 +2,24 @@
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { parse } from 'yaml'
-import { runProcess } from '@orca/process-host'
 
 export const WORKFLOW = '.github/workflows/fork-pr.yml'
 const GATE = 'verify'
 const RESULTS_EXPRESSION = '${{toJSON(needs)}}'
-const UNSUCCESSFUL = ['failure', 'skipped', 'cancelled']
+
+// Why pinned text instead of validating any script: three Codex rounds kept finding scripts that pass a
+// simulation but not GitHub ($0, printenv, JSON formatting, multi-failure predicates). Changing the check
+// now means changing this constant, which review sees; fork-pr-gate-needs.test.mjs proves it rejects failures.
+export const REQUIRED_SCRIPT = `echo "$RESULTS" | jq -e 'to_entries | all(.value.result == "success")' > /dev/null || {
+  echo "$RESULTS" | jq -r 'to_entries[] | "\\(.key): \\(.value.result)"'
+  echo "::error::A fork PR check did not succeed."
+  exit 1
+}
+`
+
+// Why allowlists: env, shell, if, continue-on-error and defaults all change what GitHub runs.
+const GATE_KEYS = ['name', 'needs', 'if', 'runs-on', 'timeout-minutes', 'steps']
+const STEP_KEYS = ['name', 'env', 'run']
 
 function gateNeeds(gate) {
   return [gate.needs ?? []].flat()
@@ -26,32 +38,7 @@ function gateNeedsErrors(jobs, gate) {
   ]
 }
 
-// Why `-e` without pipefail: it is GitHub's command for a step with no `shell:` on Linux.
-async function runWithBash(script, results) {
-  const { code } = await runProcess({
-    program: 'bash',
-    args: ['--noprofile', '--norc', '-e', '-c', script],
-    env: { PATH: process.env.PATH, RESULTS: results }
-  })
-  // Why: 127 is "command not found"; without jq every simulated result would read as a failing gate.
-  if (code === 127) {
-    throw new Error('fork-pr-gate: simulating the verify step needs bash and jq on PATH')
-  }
-  return code
-}
-
-function needsContext(needs, failing, result) {
-  return Object.fromEntries(
-    needs.map((job) => [job, { result: job === failing ? result : 'success', outputs: {} }])
-  )
-}
-
-// Why allowlists: env, shell, if, continue-on-error, defaults and expressions all change what GitHub runs
-// without changing what the simulation below sees.
-const GATE_KEYS = ['name', 'needs', 'if', 'runs-on', 'timeout-minutes', 'steps']
-const STEP_KEYS = ['name', 'env', 'run']
-
-function gateBypassErrors(workflow, gate) {
+function gateStepErrors(workflow, gate) {
   const errors = [
     ...(workflow.defaults === undefined
       ? []
@@ -79,58 +66,26 @@ function gateBypassErrors(workflow, gate) {
       `fork-pr-gate: ${GATE}'s result step env must be exactly \`RESULTS: \${{ toJSON(needs) }}\``
     )
   }
-  if (typeof step.run !== 'string') {
-    errors.push(`fork-pr-gate: ${GATE}'s result step has no \`run\` script`)
-  } else {
-    if (step.run.includes('${{')) {
-      errors.push(`fork-pr-gate: ${GATE}'s result step must not use \`\${{ }}\` expressions`)
-    }
-    const others = [...step.run.matchAll(/\$\{?([A-Za-z_]\w*)/g)]
-      .map(([, name]) => name)
-      .filter((name) => name !== 'RESULTS')
-    if (others.length > 0) {
-      errors.push(
-        `fork-pr-gate: ${GATE}'s result step may read only $RESULTS, not $${[...new Set(others)].join(', $')}`
-      )
-    }
+  if (String(step.run ?? '').replace(/\r\n/g, '\n') !== REQUIRED_SCRIPT) {
+    errors.push(
+      `fork-pr-gate: ${GATE}'s result step script differs from REQUIRED_SCRIPT in config/scripts/fork-pr-gate-needs.mjs`
+    )
   }
   return errors
 }
 
-// Why execute the step instead of matching its text: any rewrite that lets a non-success through must fail here.
-async function gateSuccessErrors(gate, run = runWithBash) {
-  const script = gate.steps[0].run
-  const needs = gateNeeds(gate)
-  const errors = []
-  if ((await run(script, JSON.stringify(needsContext(needs, null)))) !== 0) {
-    errors.push(`fork-pr-gate: ${GATE} fails even when every need succeeded`)
-  }
-  for (const job of needs) {
-    for (const result of UNSUCCESSFUL) {
-      if ((await run(script, JSON.stringify(needsContext(needs, job, result)))) === 0) {
-        errors.push(`fork-pr-gate: ${GATE} passes when \`${job}\` is ${result}`)
-      }
-    }
-  }
-  return errors
-}
-
-export async function forkPrGateErrors(source) {
+export function forkPrGateErrors(source) {
   const workflow = parse(source) ?? {}
   const jobs = workflow.jobs ?? {}
   const gate = jobs[GATE]
   if (!gate) {
     return [`fork-pr-gate: ${WORKFLOW} has no \`${GATE}\` job`]
   }
-  const bypasses = gateBypassErrors(workflow, gate)
-  if (bypasses.length > 0) {
-    return [...gateNeedsErrors(jobs, gate), ...bypasses]
-  }
-  return [...gateNeedsErrors(jobs, gate), ...(await gateSuccessErrors(gate))]
+  return [...gateNeedsErrors(jobs, gate), ...gateStepErrors(workflow, gate)]
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const errors = await forkPrGateErrors(readFileSync(WORKFLOW, 'utf8'))
+  const errors = forkPrGateErrors(readFileSync(WORKFLOW, 'utf8'))
   if (errors.length > 0) {
     console.error(errors.join('\n'))
     process.exit(1)
