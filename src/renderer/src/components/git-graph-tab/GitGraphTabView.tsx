@@ -36,7 +36,8 @@ function GitGraphTabBody({
   hostId,
   switcher,
   toolbarTrailing,
-  savedFilter
+  savedFilter,
+  claimFocusOnOpen
 }: {
   fileId: string
   workspaceId: string
@@ -46,6 +47,7 @@ function GitGraphTabBody({
   switcher: React.ReactNode
   toolbarTrailing: React.ReactNode
   savedFilter: GitHistoryGraphSavedFilter | undefined
+  claimFocusOnOpen: boolean
 }): React.JSX.Element {
   const target = useMemo(() => ipcOrRuntimeTargetForHostId(hostId), [hostId])
   const filterKey = useGitGraphTabFilter(fileId, worktree.id, savedFilter)
@@ -135,6 +137,7 @@ function GitGraphTabBody({
       accentColor={repoColor(repo)}
       filterKey={filterKey}
       selectHeadOnOpen
+      tab={{ selectionScope: fileId, claimFocusOnOpen }}
       reveal={reveal}
     />
   )
@@ -153,6 +156,13 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
     [folderWorkspaces, repoById, workspaceId, worktrees]
   )
   const choice = choices.find((entry) => entry.worktree.id === repoWorktreeId) ?? null
+  const bodyKey = choice ? `${choice.worktree.id}\0${getRepoExecutionHostId(choice.repo)}` : null
+  // Why: opening or returning to the tab is the user's gesture; a later repo change follows a pick
+  // elsewhere (Source Control's repo list), whose keyboard focus must stay put.
+  const [shownBody, setShownBody] = useState({ key: bodyKey, switched: false })
+  if (bodyKey !== null && bodyKey !== shownBody.key) {
+    setShownBody({ key: bodyKey, switched: shownBody.switched || shownBody.key !== null })
+  }
   const setGitGraphTabRepo = useAppStore((s) => s.setGitGraphTabRepo)
   const selectRepo = useCallback(
     (id: string) => setGitGraphTabRepo(file.id, id),
@@ -250,7 +260,7 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
   return (
     <GitGraphTabBody
       // Why remount per repo and host: selection, filters and caches are seeded once per owner.
-      key={`${worktree.id}\0${hostId}`}
+      key={bodyKey}
       fileId={file.id}
       workspaceId={workspaceId}
       worktree={worktree}
@@ -259,6 +269,7 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
       switcher={switcher}
       toolbarTrailing={openInSourceControl}
       savedFilter={file.gitGraph?.filter}
+      claimFocusOnOpen={!shownBody.switched}
     />
   )
 }
