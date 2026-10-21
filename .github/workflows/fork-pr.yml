@@ -165,6 +165,61 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  fork_mobile_web_app:
+    # Why: fork-check's tests skip the mobile bundling checks without mobile/node_modules; this job installs them.
+    # Upstream's mobile_web_app job with its background/wait steps run in order, using its scripts unchanged.
+    name: fork mobile web app bundle
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      - name: Fetch upstream release tags
+        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: none
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mobile/pnpm-lock.yaml
+
+      # The drawer check also runs on WebKit, the engine of the shell's iOS WebView.
+      - name: Install WebKit for the drawer check
+        run: pnpm exec playwright-core install --with-deps webkit
+
+      - uses: ./.github/actions/install-mobile-dependencies
+
+      - name: Prepare mobile route snapshot
+        run: node config/scripts/run-mobile-web-app-checks.mjs --prepare-route-snapshot "$RUNNER_TEMP/mobile-routes.json"
+
+      # Why fail instead of skip: without a browser the render checks skip silently.
+      - name: Resolve Chrome for the render check
+        run: |
+          set -euo pipefail
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || true)"
+          if [ -z "$chrome" ]; then
+            echo "::error::No Google Chrome on the runner; the render check would silently skip."
+            exit 1
+          fi
+          "$chrome" --version
+          echo "ORCA_MOBILE_WEB_RENDER_BROWSER=$chrome" >> "$GITHUB_ENV"
+
+      - name: Build and verify the app bundle
+        run: pnpm run build:mobile-web
+
+      - name: Builder, override census and render checks
+        env:
+          ORCA_MOBILE_WEB_APP_DEPS_REQUIRED: '1'
+          ORCA_MOBILE_WEB_PREPARED_ROUTE_SNAPSHOT: ${{ runner.temp }}/mobile-routes.json
+        run: node config/scripts/run-mobile-web-app-checks.mjs
+
   mac_arm64_build:
     # Same steps as `make build`, the build installed on the fork's only target machine.
     name: fork macOS arm64 build
@@ -191,7 +246,13 @@ jobs:
 
   verify:
     name: Fork PR checks passed
-    needs: [fork_check_static, fork_check_tests, cross_version_wire, fork_e2e, mac_arm64_build]
+    needs:
+      - fork_check_static
+      - fork_check_tests
+      - cross_version_wire
+      - fork_e2e
+      - fork_mobile_web_app
+      - mac_arm64_build
     if: ${{ !cancelled() && github.event.pull_request.draft != true }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
