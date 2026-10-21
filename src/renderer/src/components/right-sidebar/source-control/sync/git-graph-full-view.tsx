@@ -1,12 +1,12 @@
 // Fork-only: full-width Git Graph body. Host-agnostic; the Git Graph editor tab hosts it today.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { PanelLeft, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
-import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import {
   buildDefaultGitHistoryColorMap,
@@ -15,7 +15,6 @@ import {
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import type { GitHistoryPanelState } from './git-history-panel'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
-import type { GitHistoryCommitFilesState } from './git-history-commit-files'
 import { GitHistoryGraphLoadMore } from './git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from './git-history-graph-empty-message'
 import {
@@ -41,9 +40,7 @@ import { getRuntimeTargetHostId } from '@/runtime/runtime-client-target'
 import { useAppStore } from '@/store'
 import { getExecutionHostIdForWorktree } from '@/lib/worktree-runtime-owner'
 import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
-
-// Why bounded: a Shift range can cover hundreds of commits; the runtime RPC queue rejects past 256.
-const FILE_LOAD_CONCURRENCY = 6
+import { useGitGraphCommitFiles } from './use-git-graph-commit-files'
 
 export type GitGraphFullViewProps = {
   worktreeId: string
@@ -71,52 +68,10 @@ export type GitGraphFullViewProps = {
   filterKey?: string
   /** Select the checked-out commit when the first history arrives and nothing is selected yet. */
   selectHeadOnOpen?: boolean
+  /** The hosting tab: whose selection memory this is, and whether opening may take focus. */
+  tab?: { selectionScope: string; claimFocusOnOpen: boolean }
   /** One-shot commit to select and scroll to, ahead of the checked-out pick. */
   reveal?: Pick<GitGraphRevealOptions, 'request' | 'onHandled'>
-}
-
-function useCommitFiles(
-  result: GitHistoryResult | undefined,
-  onLoadCommitFiles: GitGraphFullViewProps['onLoadCommitFiles']
-): {
-  filesByCommit: Record<string, GitHistoryCommitFilesState>
-  ensureFiles: (item: GitHistoryItem) => void
-} {
-  const [filesByCommit, setFilesByCommit] = useState<Record<string, GitHistoryCommitFilesState>>({})
-  const requestedRef = useRef(new Set<string>())
-  // Why: a new result can replace commits; drop cached lists like the sidebar panel does.
-  const [shownResult, setShownResult] = useState(result)
-  if (shownResult !== result) {
-    setShownResult(result)
-    setFilesByCommit({})
-    requestedRef.current = new Set()
-  }
-  const ensureFiles = useCallback(
-    (item: GitHistoryItem): void => {
-      const requested = requestedRef.current
-      if (requested.has(item.id)) {
-        return
-      }
-      requested.add(item.id)
-      setFilesByCommit((prev) => ({ ...prev, [item.id]: { status: 'loading' } }))
-      onLoadCommitFiles(item)
-        .then((entries) => {
-          if (requestedRef.current === requested) {
-            setFilesByCommit((prev) => ({ ...prev, [item.id]: { status: 'ready', entries } }))
-          }
-        })
-        .catch((error: unknown) => {
-          if (requestedRef.current !== requested) {
-            return
-          }
-          requested.delete(item.id)
-          const message = error instanceof Error ? error.message : String(error)
-          setFilesByCommit((prev) => ({ ...prev, [item.id]: { status: 'error', error: message } }))
-        })
-    },
-    [onLoadCommitFiles]
-  )
-  return { filesByCommit, ensureFiles }
 }
 
 export function GitGraphFullView({
@@ -135,6 +90,7 @@ export function GitGraphFullView({
   accentColor,
   filterKey = worktreeId,
   selectHeadOnOpen = false,
+  tab,
   reveal
 }: GitGraphFullViewProps): React.JSX.Element {
   const result = state.result
@@ -168,6 +124,7 @@ export function GitGraphFullView({
   const ownerKey = `${composeWorktreeHostIdentity(executionHostId, worktreeId)}\0${worktreePath}\0${activeRepoTarget ? getRuntimeTargetHostId(activeRepoTarget) : ''}`
   const selection = useGitGraphSelection({
     selectionKey: ownerKey,
+    selectionScope: tab?.selectionScope,
     result,
     viewModels,
     listRef,
@@ -206,7 +163,7 @@ export function GitGraphFullView({
     showRef: (fullName) =>
       updateGitHistoryGraphFilter(filterKey, { scope: 'refs', refs: [fullName] })
   })
-  useGitGraphOpenFocus(listRef, selection.cursorId)
+  useGitGraphOpenFocus(listRef, selection.cursorId, tab?.claimFocusOnOpen)
   // Why containment: React bubbles keydown out of portaled popovers too, and their Escape is theirs.
   const handleRootKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
     if (
@@ -226,17 +183,8 @@ export function GitGraphFullView({
   const selectedTipIds = useMemo(() => new Set(shownItems.map((item) => item.id)), [shownItems])
   const contextItemsFor = (item: GitHistoryItem): readonly GitHistoryItem[] =>
     shownItems.length > 1 && selectedTipIds.has(item.id) ? shownItems : [item]
-  const { filesByCommit, ensureFiles } = useCommitFiles(result, onLoadCommitFiles)
+  const filesByCommit = useGitGraphCommitFiles(result, shownItems, onLoadCommitFiles)
   const loading = state.status === 'loading' || state.status === 'refreshing'
-
-  // Why an effect: a refresh drops the file cache but keeps the selection, so it must refetch too.
-  useEffect(() => {
-    const inFlight = shownItems.filter((item) => filesByCommit[item.id]?.status === 'loading')
-    const missing = shownItems.filter((item) => !filesByCommit[item.id])
-    for (const item of missing.slice(0, Math.max(0, FILE_LOAD_CONCURRENCY - inFlight.length))) {
-      ensureFiles(item)
-    }
-  }, [shownItems, filesByCommit, ensureFiles])
 
   return (
     <div
