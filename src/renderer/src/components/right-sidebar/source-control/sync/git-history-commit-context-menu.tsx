@@ -1,5 +1,5 @@
 import type React from 'react'
-import { ClipboardCopy, Copy, Globe, Hash, Sparkles } from 'lucide-react'
+import { ClipboardCopy, Copy, GitGraph, Globe, Hash, Sparkles } from 'lucide-react'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -19,13 +19,16 @@ export type GitHistoryCommitAction =
 
 export function GitHistoryCommitContextMenu({
   item,
-  onAction,
-  selectedCount = 1
+  selectedCount = 1,
+  onShowInGraph,
+  onAction
 }: {
   item: GitHistoryItem
   onAction: (action: GitHistoryCommitAction, item: GitHistoryItem) => void
   /** Commits a multi-commit action covers; >1 only when the right-clicked row is in the selection. */
   selectedCount?: number
+  /** Fork: opens the commit in the Git Graph tab; the entry shows only when set. */
+  onShowInGraph?: (item: GitHistoryItem) => void
 }): React.JSX.Element {
   const managedBrowserCreationEnabled = useAppStore(
     (state) =>
@@ -82,6 +85,15 @@ export function GitHistoryCommitContextMenu({
               'Copy Full Source'
             )}
       </ContextMenuItem>
+      {onShowInGraph ? (
+        <ContextMenuItem onSelect={() => onShowInGraph(item)}>
+          <GitGraph className="size-3.5" />
+          {translate(
+            'auto.components.right.sidebar.GitHistoryCommitContextMenu.showInGraph',
+            'Show in Git Graph'
+          )}
+        </ContextMenuItem>
+      ) : null}
       <ContextMenuSeparator />
       <ContextMenuItem onSelect={() => onAction('explain', item)}>
         <Sparkles className="size-3.5" />

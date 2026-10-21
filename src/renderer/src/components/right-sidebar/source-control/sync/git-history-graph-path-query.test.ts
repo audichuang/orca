@@ -45,7 +45,17 @@ describe('showGitGraphPathHistory', () => {
     expect(filter).toMatchObject({ scope: 'all', refs: [], query: 'author:ada path:src/a.ts' })
     // Otherwise the toolbar's debounce would commit the stale draft back over it.
     expect(getGitHistoryGraphDraftQuery(tabKey())).toBe(filter.query)
-    expect(openGitGraphTab).toHaveBeenCalledWith('folder:f1', { repoWorktreeId: 'repo-wt' })
+    // The tab saves the same filter, so its mount does not swap it for the one it saved earlier.
+    expect(openGitGraphTab).toHaveBeenCalledWith('folder:f1', {
+      repoWorktreeId: 'repo-wt',
+      filter: {
+        scope: 'all',
+        refs: [],
+        local: true,
+        remotes: 'all',
+        query: 'author:ada path:src/a.ts'
+      }
+    })
     // The sidebar Commits panel of the same repo is left alone.
     expect(getGitHistoryGraphFilter('repo-wt').scope).toBe('head')
   })

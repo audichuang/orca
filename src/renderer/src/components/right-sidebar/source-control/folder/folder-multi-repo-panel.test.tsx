@@ -437,3 +437,87 @@ describe('FolderMultiRepoPanel Git Graph button', () => {
     })
   })
 })
+
+describe('FolderMultiRepoPanel and the Git Graph tab', () => {
+  const currentKey = () => folderWorkspaceKey(`folder-${folderCount}`)
+  const gitGraphFiles = () =>
+    useAppStore.getState().openFiles.filter((file) => file.mode === 'git-graph')
+
+  it('selects the repo the Git Graph tab switched to', () => {
+    renderPanel({ api: 1, core: 1, web: 1 })
+    const id = useAppStore.getState().openGitGraphTab(currentKey())!
+    act(() => useAppStore.getState().setGitGraphTabRepo(id, 'wt-web'))
+    expect(openPanel()).toBe('wt-web')
+    expect(header('web')).toHaveAttribute('aria-current', 'true')
+  })
+
+  it('switches an open Git Graph tab of the folder to the picked repo', () => {
+    renderPanel({ api: 1, core: 1, web: 1 })
+    const id = useAppStore.getState().openGitGraphTab(currentKey(), { repoWorktreeId: 'wt-api' })!
+    fireEvent.click(header('web'))
+    expect(useAppStore.getState().openFiles.find((file) => file.id === id)?.gitGraph).toMatchObject(
+      { repoWorktreeId: 'wt-web' }
+    )
+    vi.useFakeTimers()
+    try {
+      fireEvent.keyDown(header('web'), { key: 'Home' })
+      act(() => vi.advanceTimersByTime(300))
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(useAppStore.getState().openFiles.find((file) => file.id === id)?.gitGraph).toMatchObject(
+      { repoWorktreeId: 'wt-api' }
+    )
+  })
+
+  it('moves the Git Graph tab once after a run of arrow keys, not per key', () => {
+    renderPanel({ api: 1, core: 1, web: 1 })
+    const id = useAppStore.getState().openGitGraphTab(currentKey(), { repoWorktreeId: 'wt-api' })!
+    const tabRepo = () =>
+      useAppStore.getState().openFiles.find((file) => file.id === id)?.gitGraph?.repoWorktreeId
+    const seen: (string | undefined)[] = []
+    const unsubscribe = useAppStore.subscribe(() => {
+      if (seen.at(-1) !== tabRepo()) {
+        seen.push(tabRepo())
+      }
+    })
+    vi.useFakeTimers()
+    try {
+      header('api').focus()
+      fireEvent.keyDown(header('api'), { key: 'ArrowDown' })
+      fireEvent.keyDown(header('core'), { key: 'ArrowDown' })
+      fireEvent.keyDown(header('web'), { key: 'ArrowUp' })
+      // The sidebar follows each key at once; the tab waits for the keys to stop.
+      expect(openPanel()).toBe('wt-core')
+      expect(tabRepo()).toBe('wt-api')
+      act(() => vi.advanceTimersByTime(300))
+      expect(tabRepo()).toBe('wt-core')
+      expect(seen).toEqual(['wt-core'])
+
+      // A click syncs at once and cancels a pending keyboard sync.
+      fireEvent.keyDown(header('core'), { key: 'ArrowDown' })
+      fireEvent.click(header('api'))
+      expect(tabRepo()).toBe('wt-api')
+      act(() => vi.advanceTimersByTime(300))
+      expect(tabRepo()).toBe('wt-api')
+    } finally {
+      vi.useRealTimers()
+      unsubscribe()
+    }
+  })
+
+  it('shares its landing repo with a Git Graph tab opened afterwards', () => {
+    renderPanel({ api: 0, core: 2, web: 1 })
+    expect(openPanel()).toBe('wt-core')
+    const id = useAppStore.getState().openGitGraphTab(currentKey())!
+    expect(useAppStore.getState().openFiles.find((file) => file.id === id)?.gitGraph).toMatchObject(
+      { repoWorktreeId: 'wt-core' }
+    )
+  })
+
+  it('does not open a Git Graph tab when none is open', () => {
+    renderPanel({ api: 1, core: 1, web: 1 })
+    fireEvent.click(header('web'))
+    expect(gitGraphFiles()).toEqual([])
+  })
+})

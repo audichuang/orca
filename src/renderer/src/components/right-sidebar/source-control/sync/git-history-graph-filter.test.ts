@@ -1,12 +1,15 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   DEFAULT_GIT_HISTORY_GRAPH_FILTER,
+  getDefaultGitHistoryGraphFilter,
+  getGitHistoryGraphDraftQuery,
   getGitHistoryGraphFilter,
   gitGraphTabFilterKey,
   isGitHistoryGraphFiltered,
   parseGitHistoryGraphQuery,
   seedGitHistoryGraphFilter,
   resetGitHistoryGraphFiltersForTest,
+  setGitHistoryGraphDraftQuery,
   toGitHistoryGraphRequest,
   updateGitHistoryGraphFilter
 } from './git-history-graph-filter'
@@ -131,13 +134,24 @@ describe('Git Graph tab filter', () => {
     expect(isGitHistoryGraphFiltered(getGitHistoryGraphFilter('wt-a'), 'wt-a')).toBe(true)
   })
 
-  it('seeds a saved filter only when the key has none yet', () => {
+  it("takes the tab's saved filter over an older in-memory one, keeping depth when unchanged", () => {
     const tabKey = gitGraphTabFilterKey('ws::git-graph', 'wt-a')
     const saved = { scope: 'head' as const, refs: [], local: true, remotes: [], query: 'fix' }
     seedGitHistoryGraphFilter(tabKey, saved)
     expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({ ...saved, limit: 50 })
+    updateGitHistoryGraphFilter(tabKey, { limit: 300 })
+    seedGitHistoryGraphFilter(tabKey, saved)
+    expect(getGitHistoryGraphFilter(tabKey).limit).toBe(300)
 
+    setGitHistoryGraphDraftQuery(tabKey, 'fix typed')
     seedGitHistoryGraphFilter(tabKey, { ...saved, query: 'other' })
-    expect(getGitHistoryGraphFilter(tabKey).query).toBe('fix')
+    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({ query: 'other', limit: 50 })
+    expect(getGitHistoryGraphDraftQuery(tabKey)).toBe('other')
+  })
+
+  it('defaults any tab key to all branches without registering it first', () => {
+    resetGitHistoryGraphFiltersForTest()
+    expect(getDefaultGitHistoryGraphFilter('ws::git-graph\0wt-a').scope).toBe('all')
+    expect(getDefaultGitHistoryGraphFilter('wt-a').scope).toBe('head')
   })
 })
