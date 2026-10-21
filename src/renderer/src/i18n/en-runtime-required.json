@@ -813,6 +813,10 @@
           "FileExplorerToolbar": {
             "693cbeadd0": "Search"
           },
+          "GitHistoryGraph": {
+            "branches": "Branches",
+            "remote": "remote"
+          },
           "GitHistoryGraphSvg": {
             "47eff48230": "HEAD"
           },

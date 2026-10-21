@@ -14215,7 +14215,9 @@
                         "addRepos": "このフォルダー内のリポジトリを追加",
                         "filterRepos": "リポジトリを絞り込む",
                         "clearFilter": "絞り込みをクリア",
-                        "filterNoMatch": "一致するリポジトリはありません"
+                        "filterNoMatch": "一致するリポジトリはありません",
+                        "groupChanges": "変更あり",
+                        "groupNoChanges": "変更なし"
                       }
                     }
                   },
@@ -14308,7 +14310,8 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "ソース全体をコピー",
-                      "ce8235a6a4": "横に開く"
+                      "ce8235a6a4": "横に開く",
+                      "showFileHistory": "ファイル履歴を表示"
                     }
                   }
                 },
@@ -14596,7 +14599,8 @@
             "copyFullSource": "完全なソースをコピー",
             "copyFullSourceMany": "完全なソースをコピー（{{value0}} 件のコミット）",
             "copyHashMany": "コミットハッシュをコピー（{{value0}} 件のコミット）",
-            "copyMessageMany": "コミットメッセージをコピー（{{value0}} 件のコミット）"
+            "copyMessageMany": "コミットメッセージをコピー（{{value0}} 件のコミット）",
+            "showInGraph": "Git Graph で表示"
           },
           "pull": {
             "policy": {
@@ -14782,7 +14786,22 @@
             "searchCommits": "コミットを検索（author: path:）",
             "searchCommitsLabel": "コミットを検索",
             "loadMore": "さらにコミットを読み込む",
-            "noMatchingCommits": "このフィルターに一致するコミットはありません"
+            "noMatchingCommits": "このフィルターに一致するコミットはありません",
+            "clearAllFilters": "フィルターをクリア",
+            "local": "ローカル",
+            "showAllBranches": "すべてのブランチを表示",
+            "userFilter": "ユーザー",
+            "pathsFilter": "パス",
+            "clearUserFilter": "ユーザーフィルターをクリア",
+            "searchUsers": "ユーザーを検索...",
+            "noUsers": "読み込まれたコミットにユーザーがいません。",
+            "clearPathFilter": "パスフィルターをクリア",
+            "typePath": "リポジトリ相対のファイルまたはフォルダーのパス",
+            "typePathHint": "パスを入力して Enter を押してください。",
+            "filterByPath": "{{value0}} で絞り込む",
+            "recentPaths": "最近",
+            "clearFilters": "クリア",
+            "searchCommitMessages": "コミットメッセージを検索"
           },
           "GitGraphFullView": {
             "laneContinuesBelow": "{{count}} 行下の {{sha}} {{subject}} に続きます。クリックで移動します。",
@@ -14800,7 +14819,12 @@
             "copyFullSource": "すべての変更ファイルの完全なソースをコピー",
             "filesInCommits": "変更ファイル ({{files}}) · {{commits}} 件のコミット",
             "filesChanged": "変更ファイル ({{files}})",
-            "toggleBranches": "ブランチパネルの切り替え"
+            "toggleBranches": "ブランチパネルの切り替え",
+            "openAllChanges": "すべての変更を開く",
+            "hideDetails": "詳細を隠す",
+            "enterKey": "Enter",
+            "showDetails": "詳細を表示",
+            "detailsStrip": "詳細"
           },
           "GitGraphBranchSidebar": {
             "local": "ローカル",
@@ -18673,7 +18697,9 @@
         "noRepos": "リポジトリが見つかりません。",
         "addRepos": "リポジトリを追加...",
         "addReposMissing": "未追加 {{value0}} 件",
-        "addReposButton": "このフォルダ内のリポジトリを追加"
+        "addReposButton": "このフォルダ内のリポジトリを追加",
+        "openInSourceControl": "ソース管理で開く",
+        "revealNotLoaded": "そのコミットは読み込まれた履歴にありません。"
       }
     },
     "i18n": {

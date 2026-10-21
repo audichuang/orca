@@ -14215,7 +14215,9 @@
                         "addRepos": "添加此文件夹中的仓库",
                         "filterRepos": "筛选仓库",
                         "clearFilter": "清除筛选",
-                        "filterNoMatch": "没有匹配的仓库"
+                        "filterNoMatch": "没有匹配的仓库",
+                        "groupChanges": "有更改",
+                        "groupNoChanges": "无更改"
                       }
                     }
                   },
@@ -14308,7 +14310,8 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "复制完整源码",
-                      "ce8235a6a4": "在侧边打开"
+                      "ce8235a6a4": "在侧边打开",
+                      "showFileHistory": "显示文件历史记录"
                     }
                   }
                 },
@@ -14596,7 +14599,8 @@
             "copyFullSource": "复制完整源码",
             "copyFullSourceMany": "复制完整源码（{{value0}} 个提交）",
             "copyHashMany": "复制提交哈希（{{value0}} 个提交）",
-            "copyMessageMany": "复制提交信息（{{value0}} 个提交）"
+            "copyMessageMany": "复制提交信息（{{value0}} 个提交）",
+            "showInGraph": "在 Git Graph 中显示"
           },
           "pull": {
             "policy": {
@@ -14782,7 +14786,22 @@
             "searchCommits": "搜索提交（author: path:）",
             "searchCommitsLabel": "搜索提交",
             "loadMore": "加载更多提交",
-            "noMatchingCommits": "没有符合此筛选条件的提交"
+            "noMatchingCommits": "没有符合此筛选条件的提交",
+            "clearAllFilters": "清除筛选",
+            "local": "本地",
+            "showAllBranches": "显示所有分支",
+            "userFilter": "用户",
+            "pathsFilter": "路径",
+            "clearUserFilter": "清除用户筛选",
+            "searchUsers": "搜索用户...",
+            "noUsers": "已加载的提交中没有用户。",
+            "clearPathFilter": "清除路径筛选",
+            "typePath": "相对于仓库的文件或文件夹路径",
+            "typePathHint": "输入路径，然后按 Enter。",
+            "filterByPath": "按 {{value0}} 筛选",
+            "recentPaths": "最近",
+            "clearFilters": "清除",
+            "searchCommitMessages": "搜索提交信息"
           },
           "GitGraphFullView": {
             "laneContinuesBelow": "往下 {{count}} 列接到 {{sha}} {{subject}}。點一下跳過去。",
@@ -14800,7 +14819,12 @@
             "copyFullSource": "复制所有变更文件的完整源码",
             "filesInCommits": "变更文件 ({{files}}) · {{commits}} 个提交",
             "filesChanged": "变更文件 ({{files}})",
-            "toggleBranches": "切换分支面板"
+            "toggleBranches": "切换分支面板",
+            "openAllChanges": "打开所有更改",
+            "hideDetails": "隐藏详情",
+            "enterKey": "Enter",
+            "showDetails": "显示详情",
+            "detailsStrip": "详情"
           },
           "GitGraphBranchSidebar": {
             "local": "本地",
@@ -18673,7 +18697,9 @@
         "noRepos": "未找到仓库。",
         "addRepos": "添加仓库...",
         "addReposMissing": "{{value0}} 个未添加",
-        "addReposButton": "添加此文件夹中的仓库"
+        "addReposButton": "添加此文件夹中的仓库",
+        "openInSourceControl": "在源代码管理中打开",
+        "revealNotLoaded": "该提交不在已加载的历史记录中。"
       }
     },
     "i18n": {
