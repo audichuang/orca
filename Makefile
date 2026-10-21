@@ -171,7 +171,7 @@ FORK_MAX_COMMITS ?= 200
 
 # fork-check = fork-check-static + fork-check-tests; CI runs the halves as parallel jobs, tests in FORK_TEST_SHARD slices.
 FORK_TEST_SHARD ?=
-# Empty: tests --changed reaches (fast local pre-check). all: upstream CI's full unit suite, which also runs tests that read source as text.
+# all: upstream CI's full unit suite; empty: the fast local --changed pre-check.
 FORK_TESTS ?=
 
 fork-check: export LC_ALL = C
@@ -200,9 +200,8 @@ fork-check-lint: fork-base-guard
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
 
 fork-check-tests: export LC_ALL = C
-# Why: upstream's CI mode; it applies UNIT_EXCLUDE (live-shell, node-pty, electron probes, the wire job's files) and balances shards by timing.
+# Why: upstream CI's env; it applies UNIT_EXCLUDE, balances shards by timing, and some tests assert background launch.
 fork-check-tests: export ORCA_BALANCE_UNIT_SHARDS = 1
-# Why: upstream CI sets it; browser-manager tests assert it and --changed pulls them in via shared tab types.
 fork-check-tests: export ORCA_BACKGROUND_LAUNCH = 1
 fork-check-tests: fork-base-guard
 	@test -z "$(filter-out all,$(FORK_TESTS))" || { echo "fork-check-tests: FORK_TESTS must be empty or all, not $(FORK_TESTS)"; exit 1; }
@@ -247,7 +246,7 @@ fork-check-e2e: export LC_ALL = C
 fork-check-e2e: export ORCA_BACKGROUND_LAUNCH = 1
 fork-check-e2e: fork-base-guard
 	pnpm run ensure:electron-runtime
-	@# Why the diff alone: piped into sort under /bin/sh, its failure was lost. --no-renames: rename detection fetches blobs in a blob:none clone.
+	@# Why the diff alone: piped into sort its failure was lost; --no-renames avoids blob fetches in a blob:none clone.
 	changed=$$(git diff --name-only --no-renames --diff-filter=d $(FORK_BASE) HEAD -- 'tests/e2e/*.spec.ts') && \
 	  specs=$$(printf '%s\n' tests/e2e/folder-multi-repo-source-control.spec.ts $$changed | sort -u) && \
 	  echo ">> fork e2e specs:" $$specs && \
