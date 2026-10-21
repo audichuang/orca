@@ -106,3 +106,30 @@ export function resetRecentGitHistoryGraphPathsForTest(): void {
   recentPaths.clear()
   seenAuthors.clear()
 }
+
+const TOKEN_KEYS: readonly GitHistoryGraphQueryTokenKey[] = ['author', 'path']
+
+/** The query without its `author:` / `path:` tokens: what the full view's search box shows. */
+export function stripGitHistoryGraphQueryTokens(query: string): string {
+  return TOKEN_KEYS.reduce((rest, key) => setGitHistoryGraphQueryToken(rest, key, null), query)
+}
+
+/**
+ * The query after the search box changed from `previousText` to `text`.
+ * Why carry only tokens the box did not hold: those came from the User / Paths buttons, while a
+ * token typed and then deleted in the box must go away with it.
+ */
+export function mergeGitHistoryGraphFreeText(
+  query: string,
+  previousText: string,
+  text: string
+): string {
+  return TOKEN_KEYS.reduce((next, key) => {
+    const fromButton = readGitHistoryGraphQueryToken(previousText, key)
+      ? null
+      : readGitHistoryGraphQueryToken(query, key)
+    return fromButton && !readGitHistoryGraphQueryToken(next, key)
+      ? setGitHistoryGraphQueryToken(next, key, fromButton)
+      : next
+  }, text)
+}
