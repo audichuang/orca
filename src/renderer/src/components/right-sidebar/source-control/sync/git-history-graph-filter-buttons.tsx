@@ -102,40 +102,41 @@ function FilterButton({
 }
 
 export function GitHistoryGraphFilterButtons({
-  worktreeId,
+  filterKey,
   items
 }: {
-  worktreeId: string
+  /** The filter this row edits (a worktree id, or a Git Graph tab's key). */
+  filterKey: string
   /** Loaded commits; the User picker lists their authors. */
   items: readonly GitHistoryItem[]
 }): React.JSX.Element {
-  const filter = useGitHistoryGraphFilter(worktreeId)
+  const filter = useGitHistoryGraphFilter(filterKey)
   // Why the draft: it is what the search box shows, including text the debounce has not sent yet.
-  const draftQuery = useGitHistoryGraphDraftQuery(worktreeId)
+  const draftQuery = useGitHistoryGraphDraftQuery(filterKey)
   const author = readGitHistoryGraphQueryToken(draftQuery, 'author')
   const path = readGitHistoryGraphQueryToken(draftQuery, 'path')
   const [userOpen, setUserOpen] = useState(false)
   const [pathsOpen, setPathsOpen] = useState(false)
   const [pathDraft, setPathDraft] = useState('')
   const authors = useMemo(() => {
-    const loaded = collectGitHistoryAuthors(worktreeId, items)
+    const loaded = collectGitHistoryAuthors(filterKey, items)
     // Why: keep a typed author tickable even when no loaded commit lists them.
     return author && !loaded.includes(author) ? [author, ...loaded] : loaded
-  }, [worktreeId, items, author])
+  }, [filterKey, items, author])
   const pathNeedle = pathDraft.trim().toLowerCase()
-  const recentPaths = listRecentGitHistoryGraphPaths(worktreeId).filter((entry) =>
+  const recentPaths = listRecentGitHistoryGraphPaths(filterKey).filter((entry) =>
     entry.toLowerCase().includes(pathNeedle)
   )
 
   const setToken = (key: GitHistoryGraphQueryTokenKey, value: string | null): void =>
-    applyGitHistoryGraphQuery(worktreeId, setGitHistoryGraphQueryToken(draftQuery, key, value))
+    applyGitHistoryGraphQuery(filterKey, setGitHistoryGraphQueryToken(draftQuery, key, value))
 
   const applyPath = (value: string): void => {
     const next = value.trim()
     if (!next) {
       return
     }
-    rememberGitHistoryGraphPath(worktreeId, next)
+    rememberGitHistoryGraphPath(filterKey, next)
     setToken('path', next)
     setPathsOpen(false)
     setPathDraft('')
@@ -267,13 +268,13 @@ export function GitHistoryGraphFilterButtons({
           </CommandList>
         </Command>
       </FilterButton>
-      {(isGitHistoryGraphFiltered(filter) || draftQuery.trim() !== '') && (
+      {(isGitHistoryGraphFiltered(filter, filterKey) || draftQuery.trim() !== '') && (
         <Button
           type="button"
           variant="ghost"
           size="xs"
           className="shrink-0"
-          onClick={() => resetGitHistoryGraphFilterToDefault(worktreeId)}
+          onClick={() => resetGitHistoryGraphFilterToDefault(filterKey)}
         >
           {translate('auto.components.right.sidebar.GitHistoryGraph.clearFilters', 'Clear')}
         </Button>

@@ -2,6 +2,7 @@
 import type { EditorGet, EditorSet } from '../types/editor-set-get'
 import type { EditorSlice } from '../types/editor-slice'
 import type { OpenFile } from '../types/open-file'
+import type { OpenGitGraphState } from '../../../../../../shared/editor-tab-view-types'
 import { openWorkspaceEditorItem } from '../tabs/workspace-editor-item'
 import {
   GIT_GRAPH_TAB_LABEL,
@@ -13,7 +14,7 @@ import {
 export function createGitGraphTabActions(
   set: EditorSet,
   get: EditorGet
-): Pick<EditorSlice, 'openGitGraphTab' | 'setGitGraphTabRepo'> {
+): Pick<EditorSlice, 'openGitGraphTab' | 'setGitGraphTabRepo' | 'setGitGraphTabFilter'> {
   return {
     openGitGraphTab: (workspaceId, opts) => {
       const state = get()
@@ -42,7 +43,7 @@ export function createGitGraphTabActions(
           // Why null: undefined lets a Cmd+Shift+T reopen adopt the active runtime and miss this tab.
           runtimeEnvironmentId: null,
           mode: 'git-graph',
-          gitGraph: { repoWorktreeId }
+          gitGraph: withGitGraphRepo(existing?.gitGraph, repoWorktreeId)
         }
         const present = s.openFiles.some((entry) => entry.id === id)
         return {
@@ -81,10 +82,40 @@ export function createGitGraphTabActions(
         }
         return {
           openFiles: s.openFiles.map((file) =>
-            file.id === fileId ? { ...file, gitGraph: { repoWorktreeId } } : file
+            file.id === fileId
+              ? { ...file, gitGraph: withGitGraphRepo(file.gitGraph, repoWorktreeId) }
+              : file
+          )
+        }
+      })
+    },
+
+    setGitGraphTabFilter: (fileId, filter) => {
+      set((s) => {
+        const target = s.openFiles.find((file) => file.id === fileId)
+        if (target?.mode !== 'git-graph' || !target.gitGraph) {
+          return s
+        }
+        const { repoWorktreeId } = target.gitGraph
+        return {
+          openFiles: s.openFiles.map((file) =>
+            file.id === fileId ? { ...file, gitGraph: { repoWorktreeId, filter } } : file
           )
         }
       })
     }
   }
+}
+
+/** Repo switch rule: scope, sources and search carry over; branch picks are per repo and drop. */
+function withGitGraphRepo(
+  previous: OpenGitGraphState | undefined,
+  repoWorktreeId: string
+): OpenGitGraphState {
+  const filter = previous?.filter
+  if (!filter || previous.repoWorktreeId === repoWorktreeId) {
+    return { repoWorktreeId, ...(filter ? { filter } : {}) }
+  }
+  const scope = filter.scope === 'refs' ? 'all' : filter.scope
+  return { repoWorktreeId, filter: { ...filter, scope, refs: [] } }
 }
