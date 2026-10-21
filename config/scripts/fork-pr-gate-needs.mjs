@@ -50,7 +50,11 @@ function gateStepErrors(workflow, gate) {
       .map((name) => `fork-pr-gate: ${WORKFLOW} env \`${name}\` is not in WORKFLOW_ENV`),
     ...Object.keys(gate)
       .filter((key) => !GATE_KEYS.includes(key))
-      .map((key) => `fork-pr-gate: ${GATE} must not set \`${key}\``)
+      .map((key) => `fork-pr-gate: ${GATE} must not set \`${key}\``),
+    // Why: the step relies on the Linux default shell, bash -e.
+    ...(/^ubuntu-[\d.]+$/.test(String(gate['runs-on']))
+      ? []
+      : [`fork-pr-gate: ${GATE} must run on an ubuntu-<version> runner`])
   ]
   const steps = gate.steps ?? []
   if (steps.length !== 1) {
@@ -71,7 +75,7 @@ function gateStepErrors(workflow, gate) {
       `fork-pr-gate: ${GATE}'s result step env must be exactly \`RESULTS: \${{ toJSON(needs) }}\``
     )
   }
-  if (String(step.run ?? '').replace(/\r\n/g, '\n') !== REQUIRED_SCRIPT) {
+  if (step.run !== REQUIRED_SCRIPT) {
     errors.push(
       `fork-pr-gate: ${GATE}'s result step script differs from REQUIRED_SCRIPT in config/scripts/fork-pr-gate-needs.mjs`
     )
@@ -80,12 +84,14 @@ function gateStepErrors(workflow, gate) {
 }
 
 export function forkPrGateErrors(source) {
-  // Why: the `yaml` package and GitHub's parser split lines differently on U+0085/U+2028/U+2029, so a key
-  // hidden from this check could still run on GitHub.
-  const nonAscii = [...source].findIndex((c) => c.charCodeAt(0) > 0x7f)
-  if (nonAscii !== -1) {
-    const line = source.slice(0, nonAscii).split('\n').length
-    return [`fork-pr-gate: ${WORKFLOW} must be ASCII; line ${line} is not`]
+  // Why: the `yaml` package keeps a lone CR or U+0085/U+2028/U+2029 inside a comment, while GitHub's
+  // parser breaks the line there, so a key hidden from this check could still run on GitHub.
+  const unusual = [...source].findIndex((c) => c !== '\n' && (c < ' ' || c > '~'))
+  if (unusual !== -1) {
+    const line = source.slice(0, unusual).split('\n').length
+    return [
+      `fork-pr-gate: ${WORKFLOW} must be printable ASCII with LF line endings; line ${line} is not`
+    ]
   }
   const workflow = parse(source) ?? {}
   const jobs = workflow.jobs ?? {}
