@@ -83,6 +83,32 @@ describe.each([false, true])('folder workspace discard (bulk: %s)', (bulk) => {
     expect(mocks.events.slice(1).sort()).toEqual([...releases].sort())
   })
 
+  it('keeps every hold while git is still running', async () => {
+    let finishGit = (): void => {}
+    const gitMock = bulk ? mocks.bulkDiscard : mocks.discard
+    gitMock.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          mocks.events.push('git')
+          finishGit = resolve
+        })
+    )
+    const { result } = renderFolderMutations()
+
+    let pending: Promise<void> = Promise.resolve()
+    await act(async () => {
+      pending = run(result)
+      await vi.waitFor(() => expect(gitMock).toHaveBeenCalled())
+    })
+    expect(mocks.events).toEqual(['git'])
+
+    await act(async () => {
+      finishGit()
+      await pending
+    })
+    expect(mocks.events.slice(1).sort()).toEqual([...releases].sort())
+  })
+
   it('releases every hold when git fails', async () => {
     const gitMock = bulk ? mocks.bulkDiscard : mocks.discard
     gitMock.mockRejectedValueOnce(new Error('git failed'))
