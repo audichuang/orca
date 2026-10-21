@@ -9,6 +9,7 @@ import { useAppStore } from '@/store'
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { setReposHiddenFromSidebar } from './folder-sidebar-hidden-repos'
 import { useSourceControlWorktreeScope } from './worktree-scope'
 
 // The repo panel is the regular single-repo panel; a stub shows which repo the accordion pinned it to.
@@ -106,8 +107,21 @@ function renderPanel(changeCounts: Record<string, number>, names: readonly strin
   )
 }
 
-const header = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name} `) })
+const rows = () => [...document.querySelectorAll<HTMLElement>('[data-repo-row]')]
+// The row's name span is its first text after the colour mark.
+const rowName = (row: HTMLElement) => row.querySelector('span:not([aria-hidden])')?.textContent
+const header = (name: string) => {
+  const row = rows().find((candidate) => rowName(candidate) === name)
+  if (!row) {
+    throw new Error(`no repo row named ${name}`)
+  }
+  return row
+}
+const openRows = () => rows().filter((row) => row.getAttribute('aria-current') === 'true')
 const openPanel = () => screen.queryByTestId('repo-panel')?.textContent ?? null
+const groupToggle = (name: RegExp) => screen.getByRole('button', { name })
+const MANY = ['api', 'core', 'docs', 'orders-api', 'orders-web', 'payments-api', 'web'] as const
+const filterBox = () => screen.getByRole('textbox', { name: 'Filter repositories' })
 
 beforeEach(() => {
   useAppStore.setState(useAppStore.getInitialState(), true)
@@ -118,7 +132,7 @@ describe('FolderMultiRepoPanel accordion', () => {
   it('opens the first repo with changes and pins the repo panel to it', () => {
     renderPanel({ api: 0, core: 2, web: 1 })
     expect(header('core')).toHaveAttribute('aria-expanded', 'true')
-    expect(header('api')).toHaveAttribute('aria-expanded', 'false')
+    expect(header('web')).toHaveAttribute('aria-expanded', 'false')
     expect(openPanel()).toBe('wt-core')
   })
 
@@ -126,10 +140,10 @@ describe('FolderMultiRepoPanel accordion', () => {
     renderPanel({ api: 1, core: 1, web: 1 })
     fireEvent.click(header('web'))
     expect(openPanel()).toBe('wt-web')
-    expect(screen.getAllByRole('button', { expanded: true })).toHaveLength(1)
+    expect(openRows()).toHaveLength(1)
     fireEvent.click(header('web'))
     expect(openPanel()).toBeNull()
-    expect(screen.queryAllByRole('button', { expanded: true })).toHaveLength(0)
+    expect(openRows()).toHaveLength(0)
     fireEvent.click(header('web'))
     expect(openPanel()).toBe('wt-web')
   })
@@ -146,24 +160,137 @@ describe('FolderMultiRepoPanel accordion', () => {
     expect(header('api')).toHaveAttribute('tabindex', '-1')
   })
 
-  it('keeps focus on a header that moves to the other side of the open panel', () => {
+  it('keeps focus on a row when it opens', () => {
     renderPanel({ api: 1, core: 1, web: 1 })
-    // web sits below the open api panel; opening it moves its header above the panel.
     header('web').focus()
     fireEvent.click(header('web'))
     expect(openPanel()).toBe('wt-web')
     expect(header('web')).toHaveFocus()
   })
 
-  it('shows each repo change count on its header', () => {
+  it('shows a change count only when the repo has changes', () => {
     renderPanel({ api: 3, core: 0, web: 12 })
-    expect(header('api')).toHaveTextContent('3')
-    expect(header('web')).toHaveTextContent('12')
+    fireEvent.click(groupToggle(/^No changes/))
+    expect(header('api')).toHaveTextContent(/3$/)
+    expect(header('web')).toHaveTextContent(/12$/)
+    expect(header('core').textContent).not.toMatch(/\d/)
+  })
+
+  it('shows the repo colour mark and the branch as its own column', () => {
+    renderPanel({ api: 1 })
+    const row = header('api')
+    expect(row.querySelector('[aria-hidden="true"]')).toHaveStyle({ backgroundColor: '#000' })
+    expect(row).toHaveTextContent(/^api main/)
+    expect(row.textContent).not.toContain('(main)')
+  })
+
+  it('lists repos in one scroller with the open repo panel pinned below it', () => {
+    renderPanel({ api: 1, core: 1, web: 1 })
+    fireEvent.click(header('core'))
+    const list = document.querySelector('[data-folder-repo-list]')
+    const detail = document.querySelector('[data-folder-repo-detail]')
+    expect(list?.querySelectorAll('[data-repo-row]')).toHaveLength(3)
+    expect(list?.nextElementSibling).toBe(detail)
+    expect(detail).toContainElement(screen.getByTestId('repo-panel'))
+    expect(detail).toHaveTextContent(/^core/)
   })
 })
 
-const MANY = ['api', 'core', 'docs', 'orders-api', 'orders-web', 'payments-api', 'web'] as const
-const filterBox = () => screen.getByRole('textbox', { name: 'Filter repositories' })
+describe('FolderMultiRepoPanel groups', () => {
+  it('lists repos with changes first and folds the clean ones under No changes', () => {
+    renderPanel({ api: 0, core: 2, web: 1 })
+    expect(groupToggle(/^Changes\s*2/)).toHaveAttribute('aria-expanded', 'true')
+    expect(groupToggle(/^No changes\s*1/)).toHaveAttribute('aria-expanded', 'false')
+    expect(rows().map(rowName)).toEqual(['core', 'web'])
+    fireEvent.click(groupToggle(/^No changes/))
+    expect(rows().map(rowName)).toEqual(['core', 'web', 'api'])
+  })
+
+  it('keeps the open repo visible even when its group is folded', () => {
+    renderPanel({ api: 0, core: 0, web: 0 })
+    expect(openPanel()).toBe('wt-api')
+    expect(rows().map(rowName)).toEqual(['api'])
+  })
+
+  it('shows no row under a folded group once its open repo closes, and keeps focus in the list', () => {
+    renderPanel({ api: 0, core: 0, web: 0 })
+    header('api').focus()
+    fireEvent.click(header('api'))
+    expect(openPanel()).toBeNull()
+    expect(rows()).toHaveLength(0)
+    expect(groupToggle(/^No changes\s*3/)).toHaveAttribute('aria-expanded', 'false')
+    expect(groupToggle(/^No changes\s*3/)).toHaveFocus()
+  })
+
+  it('keeps focus on a picked match that moves once the filter clears', () => {
+    renderPanel({ api: 1, 'orders-api': 0, web: 1 }, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'api' } })
+    expect(rows().map(rowName)).toEqual(['api', 'orders-api', 'payments-api'])
+    header('orders-api').focus()
+    fireEvent.click(header('orders-api'))
+    expect(rows().map(rowName)).toEqual(['api', 'web', 'orders-api'])
+    expect(header('orders-api')).toHaveFocus()
+  })
+
+  it('moves the keyboard in drawn order and skips folded rows', () => {
+    renderPanel({ api: 0, core: 2, web: 1 })
+    header('core').focus()
+    fireEvent.keyDown(header('core'), { key: 'End' })
+    expect(header('web')).toHaveFocus()
+    fireEvent.click(groupToggle(/^No changes/))
+    header('web').focus()
+    fireEvent.keyDown(header('web'), { key: 'ArrowDown' })
+    expect(header('api')).toHaveFocus()
+  })
+
+  it('lists filter matches flat, across both groups', () => {
+    renderPanel({ api: 1 }, MANY)
+    fireEvent.change(filterBox(), { target: { value: 'api' } })
+    expect(screen.queryByRole('button', { name: /^No changes/ })).toBeNull()
+    expect(rows().map(rowName)).toEqual(['api', 'orders-api', 'payments-api'])
+  })
+})
+
+describe('FolderMultiRepoPanel sync and hidden state', () => {
+  const upstream = (ahead: number, behind = 0) => ({
+    hasUpstream: true,
+    upstreamName: 'origin/main',
+    ahead,
+    behind
+  })
+
+  it('names the upstream the open repo tracks', () => {
+    useAppStore.setState({ remoteStatusesByWorktree: { 'wt-core': upstream(0) } })
+    renderPanel({ core: 1 })
+    expect(document.querySelector('[data-folder-repo-header]')).toHaveTextContent(
+      'tracks origin/main'
+    )
+  })
+
+  it('omits the upstream when the branch has none', () => {
+    useAppStore.setState({
+      remoteStatusesByWorktree: { 'wt-core': { hasUpstream: false, ahead: 0, behind: 0 } }
+    })
+    renderPanel({ core: 1 })
+    expect(document.querySelector('[data-folder-repo-header]')).not.toHaveTextContent('tracks')
+  })
+
+  it('lists a clean repo with commits to push under Changes with its count', () => {
+    useAppStore.setState({ remoteStatusesByWorktree: { 'wt-web': upstream(2) } })
+    renderPanel({ core: 1 })
+    expect(groupToggle(/^Changes\s*2/)).toBeInTheDocument()
+    expect(header('web')).toHaveTextContent(/↑2$/)
+    expect(header('web').textContent).not.toMatch(/↑2\s*\d/)
+  })
+
+  it('marks a repo hidden from the sidebar without hovering', () => {
+    renderPanel({ api: 1, core: 1 })
+    expect(header('api').querySelector('[data-sidebar-hidden-marker]')).toBeNull()
+    act(() => setReposHiddenFromSidebar([useAppStore.getState().repos[0]], true))
+    expect(header('api').querySelector('[data-sidebar-hidden-marker]')).not.toBeNull()
+    act(() => setReposHiddenFromSidebar([useAppStore.getState().repos[0]], false))
+  })
+})
 
 describe('FolderMultiRepoPanel filter', () => {
   it('has no filter box for a short repo list', () => {
@@ -176,9 +303,7 @@ describe('FolderMultiRepoPanel filter', () => {
     expect(openPanel()).toBe('wt-api')
     fireEvent.change(filterBox(), { target: { value: 'orders' } })
     expect(openPanel()).toBeNull()
-    expect(
-      screen.getAllByRole('button', { name: / \(main\) / }).map((row) => row.textContent)
-    ).toEqual(['orders-api (main)0', 'orders-web (main)0'])
+    expect(rows().map(rowName)).toEqual(['orders-api', 'orders-web'])
   })
 
   it('opens a clicked match and clears the filter', () => {
@@ -187,7 +312,7 @@ describe('FolderMultiRepoPanel filter', () => {
     fireEvent.click(header('api'))
     expect(openPanel()).toBe('wt-api')
     expect(filterBox()).toHaveValue('')
-    expect(header('web')).toBeInTheDocument()
+    expect(groupToggle(/^No changes\s*6/)).toBeInTheDocument()
   })
 
   it('opens the top match on Enter and clears on Escape', () => {
@@ -217,7 +342,7 @@ describe('FolderMultiRepoPanel filter', () => {
     expect(screen.queryByRole('textbox', { name: 'Filter repositories' })).toBeNull()
     act(() => useAppStore.setState({ repos: allRepos }))
     expect(filterBox()).toHaveValue('')
-    expect(header('web')).toBeInTheDocument()
+    expect(groupToggle(/^No changes\s*7/)).toBeInTheDocument()
   })
 
   it('says so when nothing matches', () => {
