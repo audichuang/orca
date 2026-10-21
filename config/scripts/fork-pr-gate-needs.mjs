@@ -33,6 +33,10 @@ async function runWithBash(script, results) {
     args: ['--noprofile', '--norc', '-eo', 'pipefail', '-c', script],
     env: { ...process.env, RESULTS: results }
   })
+  // Why: 127 is "command not found"; without jq every simulated result would read as a failing gate.
+  if (code === 127) {
+    throw new Error('fork-pr-gate: simulating the verify step needs bash and jq on PATH')
+  }
   return code
 }
 
