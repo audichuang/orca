@@ -112,6 +112,59 @@ jobs:
           pnpm exec vitest run --config config/vitest.config.ts
           $(find tests/e2e/cross-version-wire -name '*.test.ts' ! -name 'cross-version-registered-agents.unit.test.ts' | sort)
 
+  fork_e2e:
+    # Why on every PR: the unattended upstream rebase PRs merge on this gate, and the fork's UI lives in these specs.
+    name: fork e2e specs
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      # Why: FORK_BASE picks which specs the fork changed, and the fork repo has only -fork tags.
+      - name: Fetch upstream release tags
+        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
+
+      # Same packages and mirror workaround as upstream's e2e.yml shards: Xvfb and a window manager for Electron.
+      - name: Install headless UI tools
+        env:
+          ORCA_E2E_APT_PACKAGES: build-essential fonts-noto-cjk openssh-client python3 ripgrep xvfb zsh openbox x11-utils xdotool
+        run: |
+          read -r -a packages <<< "$ORCA_E2E_APT_PACKAGES"
+          for source in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's|https*://azure\.archive\.ubuntu\.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
+            fi
+          done
+          sudo tee /etc/apt/apt.conf.d/99-orca-e2e >/dev/null <<'APTCONF'
+          Acquire::http::Timeout "15";
+          Acquire::https::Timeout "15";
+          Acquire::Retries "1";
+          APTCONF
+          timeout 120 sudo apt-get update
+          timeout 300 sudo apt-get install -y "${packages[@]}" || timeout 300 sudo apt-get install -y --fix-missing "${packages[@]}"
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: electron
+
+      - name: make fork-check-e2e
+        run: xvfb-run --auto-servernum bash .github/scripts/e2e-with-window-manager.sh env ORCA_E2E_FORWARD_APP_LOGS=1 make fork-check-e2e
+
+      - name: Upload Playwright traces
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fork-e2e-playwright-traces
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
   mac_arm64_build:
     # Same steps as `make build`, the build installed on the fork's only target machine.
     name: fork macOS arm64 build
@@ -138,7 +191,7 @@ jobs:
 
   verify:
     name: Fork PR checks passed
-    needs: [fork_check_static, fork_check_tests, cross_version_wire, mac_arm64_build]
+    needs: [fork_check_static, fork_check_tests, cross_version_wire, fork_e2e, mac_arm64_build]
     if: ${{ !cancelled() && github.event.pull_request.draft != true }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
