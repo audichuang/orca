@@ -30,7 +30,6 @@ import {
   type FolderRepoGroupId
 } from './folder-repo-groups'
 import { FolderRepoList } from './folder-repo-list'
-import { FolderSelectedRepoHeader } from './folder-selected-repo-header'
 import { filterFolderRepoIndexes, FOLDER_REPO_FILTER_MIN_REPOS } from './folder-repo-filter'
 import {
   isRepoHiddenFromSidebar,
@@ -55,6 +54,7 @@ import {
 import { useFolderRepoStatusRefresh } from './use-folder-repo-status-refresh'
 import { useFolderRepoRowFocus } from './use-folder-repo-row-focus'
 import { SourceControlWorktreeScopeContext } from './worktree-scope'
+import { useRepoDisplayColor } from '@/lib/repo-display-color'
 
 /**
  * Source Control for a folder workspace: a repo list grouped by whether a repo has changes, with the
@@ -90,6 +90,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   const memberWorktrees = useMemo(() => members.map((member) => member.worktree), [members])
   useFolderSidebarHiddenReposVersion()
   const [addReposOpen, setAddReposOpen] = useState(false)
+  const repoColor = useRepoDisplayColor()
   // Why local only: adding a project from here goes through the local add path; SSH and server folders keep the hint.
   const canAddRepos =
     folderWorkspace !== null && getRepoExecutionHostId(folderWorkspace) === LOCAL_EXECUTION_HOST_ID
@@ -262,7 +263,7 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
       name={names[index]}
       branch={folderRepoSectionBranch(member)}
       title={labels[index]}
-      color={member.repo.badgeColor}
+      color={repoColor(member.repo)}
       changeCount={changeCounts[index] ?? 0}
       focusable={member.worktree.id === rovingId}
       expanded={index === expandedIndex}
@@ -371,17 +372,13 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
             data-folder-repo-detail
             className="relative flex min-h-0 flex-1 flex-col border-t border-border"
           >
-            <FolderSelectedRepoHeader
-              worktreeId={selectedId}
-              name={names[expandedIndex]}
-              path={selectedMember.worktree.path}
-              color={selectedMember.repo.badgeColor}
-            />
             <div className="relative min-h-0 flex-1">
               <ScopedRepoPanel
                 key={selectedId}
                 gitWorktreeId={selectedId}
                 editorWorktreeId={folderWorkspaceKey}
+                label={names[expandedIndex]}
+                color={repoColor(selectedMember.repo)}
               />
             </div>
           </div>
@@ -393,17 +390,20 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   )
 }
 
-// Why no scope label: FolderSelectedRepoHeader names the repo, so the panel toolbar must not repeat it.
 function ScopedRepoPanel({
   gitWorktreeId,
-  editorWorktreeId
+  editorWorktreeId,
+  label,
+  color
 }: {
   gitWorktreeId: string
   editorWorktreeId: string
+  label: string
+  color: string
 }) {
   const scope = useMemo(
-    () => ({ gitWorktreeId, editorWorktreeId }),
-    [editorWorktreeId, gitWorktreeId]
+    () => ({ gitWorktreeId, editorWorktreeId, label, color }),
+    [editorWorktreeId, gitWorktreeId, label, color]
   )
   return (
     <SourceControlWorktreeScopeContext.Provider value={scope}>
