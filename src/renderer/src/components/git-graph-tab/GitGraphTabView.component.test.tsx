@@ -28,7 +28,8 @@ import {
   rememberFolderRepo
 } from '../right-sidebar/source-control/folder/folder-repo-selection'
 import GitGraphTabView from './GitGraphTabView'
-import { pickFolderRepo } from './git-graph-source-control-link'
+import { pickFolderRepo, showCommitInGitGraphSlot } from './git-graph-source-control-link'
+import { GitHistoryPanel } from '../right-sidebar/source-control/sync/git-history-panel'
 
 type ToastOptions = { action?: { label: string; onClick: () => void } }
 const toastInfo = vi.hoisted(() => vi.fn<(message: string, options?: ToastOptions) => void>())
@@ -317,6 +318,12 @@ function renderTab(id: string): void {
     </TooltipProvider>
   )
 }
+
+// The graph's own focused row; sidebar Commits rows carry data-commit-id too.
+const graphFocusedCommit = (): string | null =>
+  document.activeElement?.closest('[data-git-graph-root]')
+    ? document.activeElement.getAttribute('data-commit-id')
+    : null
 
 const lastPageGraph = (): Record<string, unknown> | undefined => pageReads().at(-1)?.[0].graph
 const savedFilter = (id: string): unknown =>
@@ -677,6 +684,58 @@ describe('Git Graph tab and Source Control', () => {
     await screen.findByTestId('git-graph-full-row')
     await act(async () => {})
     expect(repoList).toHaveFocus()
+  })
+
+  it('moves keyboard focus to the commit list when opened while already in front', async () => {
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    render(
+      <TooltipProvider>
+        <button type="button">sidebar</button>
+        <Host fileId={id} />
+      </TooltipProvider>
+    )
+    await waitFor(() => expect(graphFocusedCommit()).toBe(RESULT.items[0]!.id))
+    const sidebar = screen.getByRole('button', { name: 'sidebar' })
+    act(() => sidebar.focus())
+
+    act(() => {
+      useAppStore.getState().openGitGraphTab('wt-api')
+    })
+    await waitFor(() => expect(graphFocusedCommit()).toBe(RESULT.items[0]!.id))
+  })
+
+  it('ends Show in Git Graph with focus on the revealed graph row, after the menu restores it', async () => {
+    const older = { ...RESULT.items[0]!, id: 'b'.repeat(40), subject: 'Older', message: 'Older' }
+    history.mockImplementation(async () => ({ ...RESULT, items: [RESULT.items[0]!, older] }))
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    render(
+      <TooltipProvider>
+        <GitHistoryPanel
+          state={{ status: 'ready', result: { ...RESULT, items: [RESULT.items[0]!, older] } }}
+          collapsed={false}
+          onToggle={vi.fn()}
+          onRefresh={vi.fn()}
+          onOpenCommit={vi.fn()}
+          onCommitAction={vi.fn()}
+          onShowCommitInGraph={showCommitInGitGraphSlot('wt-api', 'wt-api')}
+        />
+        <Host fileId={id} />
+      </TooltipProvider>
+    )
+    await waitFor(() => expect(graphFocusedCommit()).toBe(RESULT.items[0]!.id))
+    const sidebarRow = screen
+      .getAllByTestId('git-history-row')
+      .find((row) => row.textContent?.includes('Older'))!
+    act(() => sidebarRow.focus())
+
+    fireEvent.contextMenu(sidebarRow)
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Show in Git Graph' }))
+    // Radix restores focus to the menu's trigger in a timeout after the menu unmounts.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 20)))
+    await waitFor(() => expect(graphFocusedCommit()).toBe(older.id))
+    // In the app the restore waits out the menu's exit animation, so it can land later still.
+    act(() => sidebarRow.focus())
+    expect(graphFocusedCommit()).toBe(older.id)
   })
 
   it('opens Source Control on the shown repo', async () => {
