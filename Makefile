@@ -205,7 +205,7 @@ fork-check-tests: export ORCA_BALANCE_UNIT_SHARDS = 1
 fork-check-tests: export ORCA_BACKGROUND_LAUNCH = 1
 # Why no guard for all: the full suite needs no FORK_BASE, so CI can use upstream's shallow checkout.
 fork-check-tests: $(if $(filter all,$(FORK_TESTS)),,fork-base-guard)
-	@test -z "$(filter-out all,$(FORK_TESTS))" || { echo "fork-check-tests: FORK_TESTS must be empty or all, not $(FORK_TESTS)"; exit 1; }
+	@test -z "$(FORK_TESTS)" -o "$(FORK_TESTS)" = all || { echo "fork-check-tests: FORK_TESTS must be empty or all, not $(FORK_TESTS)"; exit 1; }
 ifeq ($(FORK_TESTS),all)
 	node config/scripts/run-vitest.mjs run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD))
 else
@@ -250,5 +250,6 @@ fork-check-e2e: fork-base-guard
 	@# Why the diff alone: piped into sort its failure was lost; --no-renames avoids blob fetches in a blob:none clone.
 	changed=$$(git diff --name-only --no-renames --diff-filter=d $(FORK_BASE) HEAD -- 'tests/e2e/*.spec.ts') && \
 	  specs=$$(printf '%s\n' tests/e2e/folder-multi-repo-source-control.spec.ts $$changed | sort -u) && \
+	  for spec in $$specs; do test -f "$$spec" || { echo "fork-check-e2e: $$spec is missing; playwright would skip it silently"; exit 1; }; done && \
 	  echo ">> fork e2e specs:" $$specs && \
 	  npx playwright test $$specs --config tests/playwright.config.ts --project=electron-headless --workers=1
