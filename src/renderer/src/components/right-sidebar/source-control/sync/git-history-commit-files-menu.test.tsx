@@ -153,7 +153,10 @@ describe('GitHistoryCommitFilesMenu', () => {
       query: 'path:src/two.ts'
     })
     expect(getGitHistoryGraphFilter('repo-wt').query).toBe('')
-    expect(openGitGraphTab).toHaveBeenLastCalledWith('folder-1', { repoWorktreeId: 'repo-wt' })
+    expect(openGitGraphTab).toHaveBeenLastCalledWith('folder-1', {
+      repoWorktreeId: 'repo-wt',
+      filter: expect.objectContaining({ scope: 'all', query: 'path:src/two.ts' })
+    })
 
     fireEvent.contextMenu(screen.getByText('src folder'))
     mocks.menuProps?.onShowFileHistory?.()
