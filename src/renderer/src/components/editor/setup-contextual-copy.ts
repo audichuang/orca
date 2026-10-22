@@ -72,7 +72,7 @@ export function setupContextualCopy({
     copyToastTimeoutRef.current = window.setTimeout(() => {
       setCopyToast(null)
       copyToastTimeoutRef.current = null
-    }, 1200)
+    }, 2000)
   }
 
   const getSelectionKey = (): string | null => {
