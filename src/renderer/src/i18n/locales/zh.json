@@ -14142,7 +14142,9 @@
                       "filesUnreadable": "{{value0}} 个文件无法读取。",
                       "noFiles": "没有可复制的文件。",
                       "onlyUnsafeNamesSkipped": "没有可复制的内容：已跳过 {{value0}} 个无法安全还原名称的文件。",
-                      "unsafeNamesSkipped": "（{{value0}} 个文件因名称不安全已跳过）"
+                      "unsafeNamesSkipped": "（{{value0}} 个文件因名称不安全已跳过）",
+                      "tokenCount": "~{{value0}} 个 token",
+                      "payloadDetails": "{{lines}} 行 · {{chars}} 个字符 · {{words}} 个词"
                     }
                   },
                   "restore": {

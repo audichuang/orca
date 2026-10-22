@@ -31,10 +31,23 @@ function ClipcodeCopiedBody({
       <p className="text-popover-foreground/80">
         {/* Why: tokens decide whether the paste fits a model, so they lead and the rest is detail. */}
         <span className="font-medium text-popover-foreground">
-          ~{formatClipcodeCount(stats.tokens)} tokens
+          {translate(
+            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.tokenCount',
+            '~{{value0}} tokens',
+            { value0: formatClipcodeCount(stats.tokens) }
+          )}
         </span>
         <span className="text-xs">
-          {` · ${formatClipcodeCount(stats.lines)} lines · ${formatClipcodeCount(stats.chars)} chars · ${formatClipcodeCount(stats.words)} words`}
+          {' · '}
+          {translate(
+            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.payloadDetails',
+            '{{lines}} lines · {{chars}} chars · {{words}} words',
+            {
+              lines: formatClipcodeCount(stats.lines),
+              chars: formatClipcodeCount(stats.chars),
+              words: formatClipcodeCount(stats.words)
+            }
+          )}
         </span>
       </p>
       {notes.length > 0 && <p className="text-xs text-popover-foreground/80">{notes.join(' ')}</p>}
