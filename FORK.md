@@ -20,6 +20,12 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 - Typecheck (`pnpm tc:web` / `tc:node`) before committing; tests alone pass with type errors.
 - `typecheck:e2e` is not in the gate: upstream's own `tests/tools` fixtures fail it at the release tag.
 
+## Who checks what
+
+- Local checks (`make fork-check-full`, on the macmini) find problems before a push. They report; they never decide that a failure is safe. Don't add automatic exemptions (rerun until it passes, compare against `FORK_BASE`) to a fork-check target: PR #37 built one, and each of five Codex rounds found another way it let a regression exit 0.
+- Fork CI on Linux is the only merge gate. An install step that fails with `Could not reach https://registry.npmjs.org/...` is an npm outage, not the change: check https://status.npmjs.org, curl that exact URL until it answers, then `gh run rerun <run> --failed`. Leave the workflow alone.
+- Codex is the deep backstop after the agent's own review, continuing one thread. Plan on three rounds at most. A blocker still open after round three means the design is the problem: stop, propose a simpler design (preferably one that removes the risky capability), and ask before patching further.
+
 ## Release
 
 - `main` is a pointer, never a merge target: develop is rebased on every upstream release, so main only follows by force-push. Move it yourself when a develop commit is worth installing.
