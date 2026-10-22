@@ -14335,7 +14335,9 @@
                       "filesUnreadable": "No se pudieron leer {{value0}} archivo(s).",
                       "noFiles": "No hay archivos para copiar.",
                       "onlyUnsafeNamesSkipped": "Nada que copiar: se omitieron {{value0}} archivo(s) cuyo nombre no se puede restaurar de forma segura.",
-                      "unsafeNamesSkipped": "({{value0}} omitido(s): nombre de archivo no seguro)"
+                      "unsafeNamesSkipped": "({{value0}} omitido(s): nombre de archivo no seguro)",
+                      "tokenCount": "~{{value0}} tokens",
+                      "payloadDetails": "{{lines}} líneas · {{chars}} caracteres · {{words}} palabras"
                     }
                   },
                   "restore": {
