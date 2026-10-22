@@ -71,6 +71,8 @@ Avoid adding low-value tests. These might be fine for development but offer low 
 
 # Fork Maintenance
 
-This checkout is a personal fork. Before rebasing onto an upstream release, merging into `develop`, or adding tests for fork features, read `FORK.md`.
+This checkout is a personal fork. Before rebasing onto an upstream release, merging into `develop`, releasing, or adding tests for fork features, read `FORK.md`. Where these lines differ from the sections above, they win in this fork:
 
-No `$electron` skill is installed for this fork; for rendered UI checks use the e2e harness (`tests/e2e/helpers/orca-app.ts`) with Playwright CDP.
+- The `$electron` skill named above is not installed here; for rendered UI checks use the e2e harness (`tests/e2e/helpers/orca-app.ts`) with Playwright CDP.
+- Hands-on UI rounds the user asks for (the `orca-lcu-ui-test` skill, or Codex desktop) drive the visible Orca Dev window; automated tests still follow the hidden-window, no-computer-use rules above.
+- Pass the fork base to the quality gate: `pnpm run check:code-quality:changed <tag>` (FORK.md says which tag). The bare form diffs against upstream `main`.
