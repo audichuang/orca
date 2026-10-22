@@ -244,11 +244,13 @@ fork-ci-disable-upstream:
 
 # Everything fork CI runs except the full unit suite and the macOS build, so a push rarely goes red.
 fork-check-full: export LC_ALL = C
-fork-check-full: fork-check
-	@# Why sub-makes: as -j prerequisites, the Electron native rebuild would race the vitest runs.
-	$(MAKE) fork-check-e2e
-	$(MAKE) fork-check-wire
-	$(MAKE) fork-check-mobile
+fork-check-full:
+	@# Why sub-makes in turn: as -j prerequisites, the Electron native rebuild would race the vitest runs.
+	@# Why past failures: macOS fails upstream unit tests, which must not hide what e2e, wire and mobile find.
+	@failed=; for step in fork-check-static fork-check-tests fork-check-e2e fork-check-wire fork-check-mobile; do \
+	  $(MAKE) $$step || failed="$$failed $$step"; \
+	done; \
+	test -z "$$failed" || { echo "fork-check-full: failed:$$failed"; exit 1; }
 
 # CI's cross-version wire journeys: old/new clients and servers talking to each other.
 # Why skip one file: at the fork base this upstream test reads isStructuredTab from a module that no longer exports it.
@@ -257,6 +259,7 @@ fork-check-wire: export LC_ALL = C
 # Why the guard: the journeys pick their baseline from the newest local vX.Y.Z tag.
 fork-check-wire: fork-base-guard
 	node config/scripts/ensure-native-runtime.mjs --runtime=node
+	$(if $(CI),,node config/scripts/fork-wait-for-quiet-machine.mjs)
 	pnpm exec vitest run --config config/vitest.config.ts $$(find tests/e2e/cross-version-wire -name '*.test.ts' ! -name 'cross-version-registered-agents.unit.test.ts' | sort)
 
 # CI's mobile web app checks; fork-check-tests skips these without mobile/node_modules.
@@ -281,6 +284,7 @@ fork-check-e2e: export LC_ALL = C
 fork-check-e2e: export ORCA_BACKGROUND_LAUNCH = 1
 fork-check-e2e: fork-base-guard
 	pnpm run ensure:electron-runtime
+	$(if $(CI),,node config/scripts/fork-wait-for-quiet-machine.mjs)
 	@# Why the diff alone: piped into sort its failure was lost; --no-renames avoids blob fetches in a blob:none clone.
 	changed=$$(git diff --name-only --no-renames --diff-filter=d $(FORK_BASE) HEAD -- 'tests/e2e/*.spec.ts') && \
 	  specs=$$(printf '%s\n' tests/e2e/folder-multi-repo-source-control.spec.ts $$changed | sort -u) && \
