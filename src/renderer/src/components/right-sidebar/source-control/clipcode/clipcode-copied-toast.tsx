@@ -49,18 +49,15 @@ export function notifyClipcodeCopied(
   payload: string
 ): void {
   const stats = payloadStats(payload)
-  const limit =
+  const [show, limit] =
     stats.tokens >= CLIPCODE_TOKEN_DANGER_THRESHOLD
-      ? CLIPCODE_TOKEN_DANGER_THRESHOLD
+      ? [toast.error, CLIPCODE_TOKEN_DANGER_THRESHOLD]
       : stats.tokens >= CLIPCODE_TOKEN_WARN_THRESHOLD
-        ? CLIPCODE_TOKEN_WARN_THRESHOLD
-        : null
-  const description = <ClipcodeCopiedBody stats={stats} limit={limit} notes={notes} />
-  if (limit === CLIPCODE_TOKEN_DANGER_THRESHOLD) {
-    toast.error(title, { description, duration: Infinity })
-  } else if (limit !== null) {
-    toast.warning(title, { description, duration: Infinity })
-  } else {
-    toast.success(title, { description, duration: 4000 })
-  }
+        ? [toast.warning, CLIPCODE_TOKEN_WARN_THRESHOLD]
+        : [toast.success, null]
+  show(title, {
+    description: <ClipcodeCopiedBody stats={stats} limit={limit} notes={notes} />,
+    // Why: an oversized payload stays up until dismissed so the warning cannot be missed.
+    duration: limit === null ? 4000 : Infinity
+  })
 }
