@@ -5,6 +5,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 ## Merge gate
 
 - Fork CI (below) is the merge gate for every rebase and every merge into `develop`; it runs upstream's full unit suite (`FORK_TESTS=all`), like upstream's own PR CI. Locally, `make fork-check` is the fast pre-check: `pnpm tc`, `vitest --changed $(FORK_BASE)`, the changed-code quality gate and `fork-check-lint`.
+- Run the quality gate alone as `pnpm run check:code-quality:changed <tag>`, where `<tag>` is the `>> fork base:` line `make fork-check` prints (`git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' HEAD`). AGENTS.md's bare form diffs against upstream `main` and reports fork files the change never touched.
 - Local `--changed` does not run the tests that read source as text instead of importing it; only CI's full suite does.
 - `make fork-check-e2e` runs the folder multi-repo e2e plus every e2e spec the fork added or changed since `FORK_BASE`, all in the `electron-headless` project, so a fork test tagged `@headful` never runs there.
 - `make fork-check-full` is `fork-check` plus `fork-check-e2e`, `fork-check-wire` (cross-version journeys) and `fork-check-mobile` (mobile web app checks; needs Google Chrome): every fork CI job but the full unit suite and the macOS build, run by the same targets CI calls. Run it before pushing; CI is the gate, not the place to find out. It runs every step even after one fails and names the failed ones at the end. On macOS `fork-check-tests` also fails upstream's own tests (`orca-runtime.test.ts` compares `/var` with `/private/var`), which pass on CI's Linux; judge a local failure against the files the change touched. Two `fork-check-wire` runs at once contend for the shared release-cache lock; give the second `ORCA_DISABLE_SHARED_RELEASE_CACHE=1`.
@@ -22,7 +23,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 
 ## Who checks what
 
-- Local checks (`make fork-check-full`, on the macmini) find problems before a push. They report; they never decide that a failure is safe. Don't add automatic exemptions (rerun until it passes, compare against `FORK_BASE`) to a fork-check target: PR #37 built one, and each of five Codex rounds found another way it let a regression exit 0.
+- Local checks (`make fork-check-full`, on the macmini) find problems before a push. They report; they never decide that a failure is safe. Don't add automatic exemptions (rerun until it passes, compare against `FORK_BASE`) to a fork-check target: every such exemption tried so far let a regression exit 0 in a way the next Codex round found.
 - Fork CI on Linux is the only merge gate. An install step that fails with `Could not reach https://registry.npmjs.org/...` is an npm outage, not the change: check https://status.npmjs.org, curl that exact URL until it answers, then `gh run rerun <run> --failed`. Leave the workflow alone.
 - Codex is the deep backstop after the agent's own review, continuing one thread. Plan on three rounds at most. A blocker still open after round three means the design is the problem: stop, propose a simpler design (preferably one that removes the risky capability), and ask before patching further.
 
