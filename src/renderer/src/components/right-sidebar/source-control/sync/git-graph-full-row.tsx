@@ -127,6 +127,11 @@ function calendarDayOffset(date: Date, now: Date): number {
   return Math.round((day - today) / 86_400_000)
 }
 
+// Why: Intl writes "today" for mid-sentence use; leading a row it reads as a label, like IntelliJ's.
+function capitalize(word: string): string {
+  return word.charAt(0).toLocaleUpperCase() + word.slice(1)
+}
+
 /** Row date: "today"/"yesterday" or the full date, then the time; the tooltip has the zone. */
 export function formatGitGraphCompactDate(
   timestamp: number | undefined,
@@ -139,7 +144,7 @@ export function formatGitGraphCompactDate(
   const offset = calendarDayOffset(date, now)
   const day =
     offset === 0 || offset === -1
-      ? getUiRelativeTimeFormatter().format(offset, 'day')
+      ? capitalize(getUiRelativeTimeFormatter().format(offset, 'day'))
       : paddedDateFormatter.format(date)
   return `${day} ${paddedTimeFormatter.format(date)}`
 }
