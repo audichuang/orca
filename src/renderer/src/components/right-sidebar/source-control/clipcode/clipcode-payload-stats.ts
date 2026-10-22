@@ -54,10 +54,3 @@ export function payloadStats(text: string): ClipcodePayloadStats {
 export function formatClipcodeCount(value: number): string {
   return value.toLocaleString('en-US')
 }
-
-export function formatClipcodeStatsLine(stats: ClipcodePayloadStats): string {
-  return (
-    `${formatClipcodeCount(stats.chars)} chars · ${formatClipcodeCount(stats.lines)} lines · ` +
-    `${formatClipcodeCount(stats.words)} words · ~${formatClipcodeCount(stats.tokens)} tokens.`
-  )
-}
