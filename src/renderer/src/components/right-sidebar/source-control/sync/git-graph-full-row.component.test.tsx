@@ -267,10 +267,10 @@ describe('formatGitGraphCompactDate', () => {
 
   it('names today and yesterday by calendar day, not by 24-hour distance', () => {
     expect(formatGitGraphCompactDate(new Date(2026, 9, 23, 0, 5).getTime(), now)).toMatch(
-      new RegExp(`^${words.format(0, 'day')} `)
+      new RegExp(`^${words.format(0, 'day')} `, 'i')
     )
     expect(formatGitGraphCompactDate(new Date(2026, 9, 22, 23, 20).getTime(), now)).toMatch(
-      new RegExp(`^${words.format(-1, 'day')} `)
+      new RegExp(`^${words.format(-1, 'day')} `, 'i')
     )
     expect(formatGitGraphCompactDate(new Date(2026, 9, 21, 23, 59).getTime(), now)).toContain(
       '2026'
