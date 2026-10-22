@@ -11,7 +11,12 @@ let published = 0
 function publish(): void {
   let highest = 0
   for (const el of docked) {
-    highest = Math.max(highest, window.innerHeight - el.getBoundingClientRect().top + GAP_PX)
+    const rect = el.getBoundingClientRect()
+    // Why: hidden chrome (Suspense re-suspending sets display:none) measures top 0 and would push toasts off-screen.
+    if (rect.height === 0) {
+      continue
+    }
+    highest = Math.max(highest, window.innerHeight - rect.top + GAP_PX)
   }
   const next = Math.ceil(highest)
   // Why: a custom property on <html> restyles the whole page, so skip unchanged writes.
