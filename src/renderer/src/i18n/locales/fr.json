@@ -14250,7 +14250,9 @@
                       "filesUnreadable": "Impossible de lire {{value0}} fichier(s).",
                       "noFiles": "Aucun fichier à copier.",
                       "onlyUnsafeNamesSkipped": "Rien à copier : {{value0}} fichier(s) ignoré(s) car leur nom ne peut pas être restauré en toute sécurité.",
-                      "unsafeNamesSkipped": "({{value0}} ignoré(s) : nom de fichier non sûr)"
+                      "unsafeNamesSkipped": "({{value0}} ignoré(s) : nom de fichier non sûr)",
+                      "tokenCount": "~{{value0}} tokens",
+                      "payloadDetails": "{{lines}} lignes · {{chars}} caractères · {{words}} mots"
                     }
                   },
                   "restore": {

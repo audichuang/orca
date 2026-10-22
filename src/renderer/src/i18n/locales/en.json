@@ -14474,7 +14474,9 @@
                       "filesUnreadable": "{{value0}} file(s) could not be read.",
                       "noFiles": "No files found to copy.",
                       "onlyUnsafeNamesSkipped": "Nothing to copy: {{value0}} file(s) skipped because their names cannot be restored safely.",
-                      "unsafeNamesSkipped": "({{value0}} skipped: unsafe file name)"
+                      "unsafeNamesSkipped": "({{value0}} skipped: unsafe file name)",
+                      "tokenCount": "~{{value0}} tokens",
+                      "payloadDetails": "{{lines}} lines · {{chars}} chars · {{words}} words"
                     }
                   },
                   "restore": {
