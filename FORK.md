@@ -79,7 +79,7 @@ What only UI rounds catch: main↔renderer event plumbing at runtime, state accu
 - `max-lines` cannot be disabled. When fork wiring pushes an upstream file over, move fork code out first. If upstream code has to move, open the new file with a comment naming where it came from, so rebases port upstream edits to it.
 - Keep fork additions to upstream components as typed slots (`GitHistoryPanelSlots`) rather than inline branches.
 - A cast needs its `oxlint-disable-next-line … -- SAFETY:` comment on the line directly above the `as`, or the quality gate flags it.
-- ClipCode format rules live in `src/renderer/src/components/right-sidebar/source-control/clipcode/AGENTS.md`.
+- Every nested `AGENTS.md` has a sibling `CLAUDE.md` containing `@AGENTS.md`. The root `CLAUDE.md` and any `CLAUDE.local.md` make Claude Code skip `AGENTS.md` files, so without the sibling a subdirectory's rules never load for it. When a rebase brings a new nested `AGENTS.md`, add its `CLAUDE.md`.
 
 ## Running tests on another machine
 
