@@ -1,5 +1,6 @@
 import React, { useRef, useState, useCallback } from 'react'
 import type { editor } from 'monaco-editor'
+import { Check } from 'lucide-react'
 import { setupContextualCopy } from './setup-contextual-copy'
 import { useTranslate } from '@/i18n/use-translate'
 
@@ -32,9 +33,10 @@ export function useContextualCopySetup() {
 
   const toastNode = copyToast ? (
     <div
-      className="pointer-events-none fixed z-50 rounded-md bg-foreground px-2 py-1 text-xs text-background shadow-sm"
+      className="pointer-events-none fixed z-50 flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background shadow-floating"
       style={{ left: copyToast.left, top: copyToast.top }}
     >
+      <Check size={14} aria-hidden />
       {t('auto.components.editor.useContextualCopySetup.059bfb0d94', 'Context copied')}
     </div>
   ) : null
