@@ -24,13 +24,7 @@ import {
   type ClipcodeGitCopyResult
 } from './clipcode-git-copy'
 import { buildClipcodeCommitCopy, type ClipcodeCommitCopyCommit } from './clipcode-commit-copy'
-import {
-  CLIPCODE_TOKEN_DANGER_THRESHOLD,
-  CLIPCODE_TOKEN_WARN_THRESHOLD,
-  formatClipcodeCount,
-  formatClipcodeStatsLine,
-  payloadStats
-} from './clipcode-payload-stats'
+import { notifyClipcodeCopied } from './clipcode-copied-toast'
 import { svgPreviewText } from './clipcode-svg-text'
 import { buildClipcodeExplorerCopy, type ClipcodeExplorerTarget } from './clipcode-explorer-copy'
 
@@ -81,32 +75,6 @@ async function readClipcodeFile(
 export const clipcodeRuntimeReaders: ClipcodeContentReaders = {
   readDiff: getRuntimeGitDiff,
   readWorkingFile: readClipcodeFile
-}
-
-function notifyCopied(message: string, payload: string): void {
-  const stats = payloadStats(payload)
-  const note = `${message} ${formatClipcodeStatsLine(stats)}`
-  if (stats.tokens >= CLIPCODE_TOKEN_DANGER_THRESHOLD) {
-    toast.error(
-      `${note} ${translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.e6cdc3a753',
-        'Over {{value0}} tokens.',
-        { value0: formatClipcodeCount(CLIPCODE_TOKEN_DANGER_THRESHOLD) }
-      )}`,
-      { duration: Infinity }
-    )
-  } else if (stats.tokens >= CLIPCODE_TOKEN_WARN_THRESHOLD) {
-    toast.warning(
-      `${note} ${translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.e6cdc3a753',
-        'Over {{value0}} tokens.',
-        { value0: formatClipcodeCount(CLIPCODE_TOKEN_WARN_THRESHOLD) }
-      )}`,
-      { duration: Infinity }
-    )
-  } else {
-    toast(note, { duration: 2000 })
-  }
 }
 
 /** Builds the Snipcode payload for the given repos, puts it on the clipboard and reports its size. */
@@ -181,37 +149,37 @@ async function reportClipcodeCopyResult(
     return
   }
   await window.api.ui.writeClipboardText(result.payload)
-  const skipped =
+  const skippedNote =
     result.skippedFileSizeCount > 0
-      ? ` ${translate(
+      ? translate(
           'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.7828c565da',
           '({{value0}} skipped: size exceeded)',
           { value0: result.skippedFileSizeCount }
-        )}`
+        )
       : ''
-  const unreadable =
+  const unreadableNote =
     result.unreadableFileCount > 0
-      ? ` ${translate(
+      ? translate(
           'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.2749202819',
           '({{value0}} unreadable)',
           { value0: result.unreadableFileCount }
-        )}`
+        )
       : ''
-  const binary =
+  const binaryNote =
     result.skippedBinaryFileCount > 0
-      ? ` ${translate(
+      ? translate(
           'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.binarySkipped',
           '({{value0}} skipped: binary)',
           { value0: result.skippedBinaryFileCount }
-        )}`
+        )
       : ''
-  const unsafe =
+  const unsafeNote =
     result.skippedUnsafePathCount > 0
-      ? ` ${translate(
+      ? translate(
           'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.unsafeNamesSkipped',
           '({{value0}} skipped: unsafe file name)',
           { value0: result.skippedUnsafePathCount }
-        )}`
+        )
       : ''
   const copied =
     source === 'git'
@@ -225,7 +193,11 @@ async function reportClipcodeCopyResult(
           '{{value0}} file(s) copied',
           { value0: result.copiedFileCount }
         )
-  notifyCopied(`${copied}${skipped}${binary}${unsafe}${unreadable}.`, result.payload)
+  notifyClipcodeCopied(
+    copied,
+    [skippedNote, binaryNote, unsafeNote, unreadableNote].filter(Boolean),
+    result.payload
+  )
 }
 
 function notifyCopyFailed(error: unknown): void {
