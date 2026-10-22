@@ -5,8 +5,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TOAST_BOTTOM_CLEARANCE_VAR, toastBottomClearanceRef } from './toast-bottom-clearance'
 
-function DockedChrome({ top }: { top: number }) {
-  return <div ref={toastBottomClearanceRef} data-top={top} />
+function DockedChrome({ top, hidden }: { top: number; hidden?: boolean }) {
+  return <div ref={toastBottomClearanceRef} data-top={top} data-hidden={hidden || undefined} />
 }
 
 const clearance = () => document.documentElement.style.getPropertyValue(TOAST_BOTTOM_CLEARANCE_VAR)
@@ -19,7 +19,11 @@ describe('toastBottomClearanceRef', () => {
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
       this: HTMLElement
     ) {
-      return new DOMRect(0, Number(this.dataset.top ?? 0), 0, 0)
+      if (this.dataset.hidden) {
+        return new DOMRect(0, 0, 0, 0)
+      }
+      const top = Number(this.dataset.top ?? 0)
+      return new DOMRect(0, top, 0, 1000 - top)
     })
     vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1000)
     container = document.createElement('div')
@@ -81,6 +85,18 @@ describe('toastBottomClearanceRef', () => {
     expect(clearance()).toBe('48px')
 
     el!.dispatchEvent(new Event('animationend'))
+    expect(clearance()).toBe('68px')
+  })
+
+  it('ignores chrome that is mounted but hidden', () => {
+    act(() =>
+      root.render(
+        <>
+          <DockedChrome top={940} />
+          <DockedChrome top={0} hidden />
+        </>
+      )
+    )
     expect(clearance()).toBe('68px')
   })
 })
