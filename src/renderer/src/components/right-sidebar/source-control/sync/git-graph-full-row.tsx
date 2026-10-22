@@ -3,7 +3,7 @@ import React from 'react'
 import { Cloud, GitBranch, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { formatUiRelativeTime } from '@/i18n/relative-time-format'
+import { formatUiRelativeTime, getUiRelativeTimeFormatter } from '@/i18n/relative-time-format'
 import { initialsFor } from '@/components/github/github-user-avatar'
 import {
   GIT_HISTORY_LANE_COLORS,
@@ -110,23 +110,43 @@ const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
   timeStyle: 'short'
 })
 
-const compactThisYearFormatter = new Intl.DateTimeFormat(undefined, {
-  month: 'numeric',
-  day: 'numeric',
-  hour: 'numeric',
+// Why: zero-padded parts give every row the same width, so the column reads as one ruler.
+const paddedDateFormatter = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+})
+const paddedTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  hour: '2-digit',
   minute: '2-digit'
 })
-const compactOlderFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'short' })
 
-/** Row date: time only matters this year; the full timestamp lives in the tooltip. */
-export function formatGitGraphCompactDate(timestamp: number | undefined): string {
+function calendarDayOffset(date: Date, now: Date): number {
+  const day = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+  return Math.round((day - today) / 86_400_000)
+}
+
+// Why: Intl writes "today" for mid-sentence use; leading a row it reads as a label, like IntelliJ's.
+function capitalize(word: string): string {
+  return word.charAt(0).toLocaleUpperCase() + word.slice(1)
+}
+
+/** Row date: "today"/"yesterday" or the full date, then the time; the tooltip has the zone. */
+export function formatGitGraphCompactDate(
+  timestamp: number | undefined,
+  now: Date = new Date()
+): string {
   if (timestamp == null || !Number.isFinite(timestamp)) {
     return ''
   }
   const date = new Date(timestamp)
-  return date.getFullYear() === new Date().getFullYear()
-    ? compactThisYearFormatter.format(date)
-    : compactOlderFormatter.format(date)
+  const offset = calendarDayOffset(date, now)
+  const day =
+    offset === 0 || offset === -1
+      ? capitalize(getUiRelativeTimeFormatter().format(offset, 'day'))
+      : paddedDateFormatter.format(date)
+  return `${day} ${paddedTimeFormatter.format(date)}`
 }
 
 export function formatGitGraphShortDate(timestamp: number | undefined): string {
@@ -161,7 +181,7 @@ export function gitGraphGridTemplate(columns: GitGraphColumns): string {
     'auto',
     'minmax(0,1fr)',
     columns.author && 'minmax(0,9rem)',
-    columns.date && '7rem',
+    columns.date && '9.5rem',
     columns.hash && '4.5rem'
   ]
     .filter(Boolean)
@@ -268,7 +288,7 @@ export function GitGraphFullRow({
       {columns.date && (
         <span
           data-col="date"
-          className="truncate text-muted-foreground tabular-nums"
+          className="truncate text-foreground/80 tabular-nums"
           title={[
             formatGitHistoryTimestamp(item.timestamp),
             formatGitGraphRelativeDate(item.timestamp)

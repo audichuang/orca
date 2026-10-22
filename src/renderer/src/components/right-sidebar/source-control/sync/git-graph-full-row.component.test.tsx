@@ -4,7 +4,8 @@ import '@testing-library/jest-dom/vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
-import { GitGraphFullRow } from './git-graph-full-row'
+import { getUiRelativeTimeFormatter } from '@/i18n/relative-time-format'
+import { formatGitGraphCompactDate, GitGraphFullRow } from './git-graph-full-row'
 import type { GitGraphLaneRow } from './git-graph-lane-layout'
 
 const COLUMNS = { refs: true, author: true, date: true, hash: true }
@@ -257,5 +258,31 @@ describe('GitGraphFullRow message room', () => {
     )
     expect(message()).toHaveClass('text-foreground')
     expect(message()).not.toHaveClass('text-foreground/80')
+  })
+})
+
+describe('formatGitGraphCompactDate', () => {
+  const now = new Date(2026, 9, 23, 1, 30)
+  const words = getUiRelativeTimeFormatter()
+
+  it('names today and yesterday by calendar day, not by 24-hour distance', () => {
+    expect(formatGitGraphCompactDate(new Date(2026, 9, 23, 0, 5).getTime(), now)).toMatch(
+      new RegExp(`^${words.format(0, 'day')} `, 'i')
+    )
+    expect(formatGitGraphCompactDate(new Date(2026, 9, 22, 23, 20).getTime(), now)).toMatch(
+      new RegExp(`^${words.format(-1, 'day')} `, 'i')
+    )
+    expect(formatGitGraphCompactDate(new Date(2026, 9, 21, 23, 59).getTime(), now)).toContain(
+      '2026'
+    )
+  })
+
+  it('gives every older row the same width, across months and years', () => {
+    const lengths = [
+      new Date(2026, 9, 5, 7, 41),
+      new Date(2026, 9, 18, 20, 3),
+      new Date(2025, 11, 30, 17, 53)
+    ].map((date) => formatGitGraphCompactDate(date.getTime(), now).length)
+    expect(new Set(lengths).size).toBe(1)
   })
 })
