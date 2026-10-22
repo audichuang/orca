@@ -71,3 +71,5 @@ Avoid adding low-value tests. These might be fine for development but offer nega
 # Fork Maintenance
 
 This checkout is a personal fork. Before rebasing onto an upstream release, merging into `develop`, or adding tests for fork features, read `FORK.md`.
+
+No `$electron` skill is installed for this fork; for rendered UI checks use the e2e harness (`tests/e2e/helpers/orca-app.ts`) with Playwright CDP.
