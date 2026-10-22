@@ -149,38 +149,43 @@ async function reportClipcodeCopyResult(
     return
   }
   await window.api.ui.writeClipboardText(result.payload)
-  const skippedNote =
-    result.skippedFileSizeCount > 0
-      ? translate(
-          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.7828c565da',
-          '({{value0}} skipped: size exceeded)',
-          { value0: result.skippedFileSizeCount }
-        )
-      : ''
-  const unreadableNote =
-    result.unreadableFileCount > 0
-      ? translate(
-          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.2749202819',
-          '({{value0}} unreadable)',
-          { value0: result.unreadableFileCount }
-        )
-      : ''
-  const binaryNote =
-    result.skippedBinaryFileCount > 0
-      ? translate(
-          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.binarySkipped',
-          '({{value0}} skipped: binary)',
-          { value0: result.skippedBinaryFileCount }
-        )
-      : ''
-  const unsafeNote =
-    result.skippedUnsafePathCount > 0
-      ? translate(
-          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.unsafeNamesSkipped',
-          '({{value0}} skipped: unsafe file name)',
-          { value0: result.skippedUnsafePathCount }
-        )
-      : ''
+  const notes: string[] = []
+  if (result.skippedFileSizeCount > 0) {
+    notes.push(
+      translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.7828c565da',
+        '({{value0}} skipped: size exceeded)',
+        { value0: result.skippedFileSizeCount }
+      )
+    )
+  }
+  if (result.skippedBinaryFileCount > 0) {
+    notes.push(
+      translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.binarySkipped',
+        '({{value0}} skipped: binary)',
+        { value0: result.skippedBinaryFileCount }
+      )
+    )
+  }
+  if (result.skippedUnsafePathCount > 0) {
+    notes.push(
+      translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.unsafeNamesSkipped',
+        '({{value0}} skipped: unsafe file name)',
+        { value0: result.skippedUnsafePathCount }
+      )
+    )
+  }
+  if (result.unreadableFileCount > 0) {
+    notes.push(
+      translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.2749202819',
+        '({{value0}} unreadable)',
+        { value0: result.unreadableFileCount }
+      )
+    )
+  }
   const copied =
     source === 'git'
       ? translate(
@@ -193,11 +198,7 @@ async function reportClipcodeCopyResult(
           '{{value0}} file(s) copied',
           { value0: result.copiedFileCount }
         )
-  notifyClipcodeCopied(
-    copied,
-    [skippedNote, binaryNote, unsafeNote, unreadableNote].filter(Boolean),
-    result.payload
-  )
+  notifyClipcodeCopied(copied, notes, result.payload)
 }
 
 function notifyCopyFailed(error: unknown): void {
