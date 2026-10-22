@@ -34,7 +34,7 @@ help:
 	@echo "  make clean      remove dist/ and out/"
 	@echo "  make fork-check       after a rebase: typecheck + tests the fork's changes reach + lint + quality gate"
 	@echo "  make fork-check-e2e   the fork's headless e2e specs (CI runs it on every PR)"
-	@echo "  make fork-check-full  before a release: fork-check + fork-check-e2e"
+	@echo "  make fork-check-full  before pushing: every fork CI job but the full unit suite and the macOS build"
 
 install:
 	pnpm install
