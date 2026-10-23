@@ -23,11 +23,15 @@ const RELOAD_SETTLE_GRACE_MS = 10_000
 type RefusedNavigationWait = {
   outcome: Promise<'unload-vetoed' | 'never-landed'>
   cancel: () => void
+  /** Starts the grace window; deferred callers arm it once navigation was actually requested. */
+  armGrace: () => void
 }
 
-function waitForRefusedNavigation(win: Window): RefusedNavigationWait {
+function waitForRefusedNavigation(win: Window, armGraceNow = true): RefusedNavigationWait {
   let graceTimer: ReturnType<typeof setTimeout> | undefined
   let onUnloadPrevented: () => void = () => undefined
+  let settled = false
+  let armGrace: () => void = () => undefined
   const cancel = (): void => {
     if (graceTimer !== undefined) {
       clearTimeout(graceTimer)
@@ -37,14 +41,22 @@ function waitForRefusedNavigation(win: Window): RefusedNavigationWait {
   }
   const outcome = new Promise<'unload-vetoed' | 'never-landed'>((resolve) => {
     const settle = (result: 'unload-vetoed' | 'never-landed'): void => {
+      settled = true
       cancel()
       resolve(result)
     }
     onUnloadPrevented = () => settle('unload-vetoed')
     win.addEventListener(ORCA_RENDERER_UNLOAD_PREVENTED_EVENT, onUnloadPrevented)
-    graceTimer = setTimeout(() => settle('never-landed'), RELOAD_SETTLE_GRACE_MS)
+    armGrace = () => {
+      if (!settled && graceTimer === undefined) {
+        graceTimer = setTimeout(() => settle('never-landed'), RELOAD_SETTLE_GRACE_MS)
+      }
+    }
   })
-  return { outcome, cancel }
+  if (armGraceNow) {
+    armGrace()
+  }
+  return { outcome, cancel, armGrace }
 }
 
 /** Resolves only if the navigation is refused; a landed reload destroys this document. */
@@ -54,6 +66,10 @@ export async function requestLazyChunkRecoveryReload(
   awaitCheckpoint: () => Promise<void> = () =>
     window.api?.app?.awaitBeforeUnloadCheckpoint?.() ?? Promise.resolve()
 ): Promise<LazyChunkRecoveryReloadOutcome> {
+  if (await isInstalledBundleReplaced()) {
+    // Why: a reload loads the new bundle into the old main process and never bootstraps.
+    return restartIntoReplacedBundle(win)
+  }
   try {
     await prepareRendererForAppRestart(win, {
       startedEventName: ORCA_APP_RESTART_STARTED_EVENT,
@@ -76,6 +92,33 @@ export async function requestLazyChunkRecoveryReload(
   } finally {
     cancelRefusalWait()
     // A surviving document must not retain the restart latch.
+    win.dispatchEvent(new Event(ORCA_APP_RESTART_ABORTED_EVENT))
+  }
+}
+
+async function isInstalledBundleReplaced(): Promise<boolean> {
+  try {
+    return (await window.api?.app?.isBundleReplaced?.()) === true
+  } catch {
+    return false
+  }
+}
+
+async function restartIntoReplacedBundle(win: Window): Promise<LazyChunkRecoveryReloadOutcome> {
+  // Why deferred: restart() waits on a checkpoint that may outlast the grace window.
+  const refused = waitForRefusedNavigation(win, false)
+  try {
+    // restart() runs the same hot-exit backup and checkpoint, then quits through the normal pipeline.
+    await window.api.app.restart()
+  } catch {
+    refused.cancel()
+    return 'checkpoint-refused'
+  }
+  refused.armGrace()
+  try {
+    return await refused.outcome
+  } finally {
+    // Main can veto the quit (e.g. updater preflight); a surviving document must not keep the restart latch.
     win.dispatchEvent(new Event(ORCA_APP_RESTART_ABORTED_EVENT))
   }
 }
