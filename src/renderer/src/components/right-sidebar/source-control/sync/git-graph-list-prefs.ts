@@ -1,5 +1,6 @@
 // Fork-only: the Git Graph list's display choices (which columns show, one or two lines per row).
 import { useSyncExternalStore } from 'react'
+import { z } from 'zod'
 
 export type GitGraphListPrefs = {
   author: boolean
@@ -19,23 +20,19 @@ export const DEFAULT_GIT_GRAPH_LIST_PREFS: GitGraphListPrefs = {
 
 const STORAGE_KEY = 'orca:git-graph-list'
 
+// Why per-field catch: a key added later must not reset the choices already stored.
+const StoredPrefsSchema = z.object({
+  author: z.boolean().catch(DEFAULT_GIT_GRAPH_LIST_PREFS.author),
+  date: z.boolean().catch(DEFAULT_GIT_GRAPH_LIST_PREFS.date),
+  hash: z.boolean().catch(DEFAULT_GIT_GRAPH_LIST_PREFS.hash),
+  twoLine: z.boolean().catch(DEFAULT_GIT_GRAPH_LIST_PREFS.twoLine)
+})
+
 function readStored(): GitGraphListPrefs {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    const parsed: unknown = raw ? JSON.parse(raw) : null
-    if (!parsed || typeof parsed !== 'object') {
-      return DEFAULT_GIT_GRAPH_LIST_PREFS
-    }
-    const flag = (key: keyof GitGraphListPrefs): boolean => {
-      const value: unknown = Reflect.get(parsed, key)
-      return typeof value === 'boolean' ? value : DEFAULT_GIT_GRAPH_LIST_PREFS[key]
-    }
-    return {
-      author: flag('author'),
-      date: flag('date'),
-      hash: flag('hash'),
-      twoLine: flag('twoLine')
-    }
+    const parsed = raw ? StoredPrefsSchema.safeParse(JSON.parse(raw)) : null
+    return parsed?.success ? parsed.data : DEFAULT_GIT_GRAPH_LIST_PREFS
   } catch {
     return DEFAULT_GIT_GRAPH_LIST_PREFS
   }
