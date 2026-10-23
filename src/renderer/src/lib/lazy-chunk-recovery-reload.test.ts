@@ -107,4 +107,31 @@ describe('requestLazyChunkRecoveryReload', () => {
       vi.useRealTimers()
     }
   })
+
+  it('starts the grace window only after a slow restart checkpoint completes', async () => {
+    vi.useFakeTimers()
+    const unregister = registerUpdaterBeforeUnloadBypass()
+    try {
+      // The durable checkpoint may take longer than the grace window before main quits.
+      const restart = vi.fn(async () => {
+        window.dispatchEvent(new Event(ORCA_APP_RESTART_STARTED_EVENT))
+        await new Promise((resolve) => setTimeout(resolve, 12_000))
+      })
+      vi.stubGlobal('api', { app: { isBundleReplaced: async () => true, restart } })
+      let settled = false
+      const outcome = requestLazyChunkRecoveryReload(window).finally(() => {
+        settled = true
+      })
+
+      await vi.advanceTimersByTimeAsync(12_000)
+      expect(settled).toBe(false)
+      expect(isIntentionalAppRestartInProgress()).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(10_000)
+      await expect(outcome).resolves.toBe('never-landed')
+    } finally {
+      unregister()
+      vi.useRealTimers()
+    }
+  })
 })
