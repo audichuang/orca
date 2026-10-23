@@ -16263,6 +16263,11 @@
           "view": "查看插件",
           "notNow": "暂不",
           "never": "不再为 .{{value0}} 建议"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} 个文件",
+          "pressAgainNext": "再按一次前往下一个文件",
+          "pressAgainPrevious": "再按一次前往上一个文件"
         }
       },
       "diff": {

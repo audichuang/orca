@@ -16664,6 +16664,11 @@
           "view": "Ver plugin",
           "notNow": "Ahora no",
           "never": "No sugerir para .{{value0}}"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} archivos",
+          "pressAgainNext": "Pulsa de nuevo para ir al siguiente archivo",
+          "pressAgainPrevious": "Pulsa de nuevo para ir al archivo anterior"
         }
       },
       "diff": {

@@ -16888,6 +16888,11 @@
           "view": "Voir le plugin",
           "notNow": "Pas maintenant",
           "never": "Ne plus suggérer pour .{{value0}}"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} fichiers",
+          "pressAgainNext": "Appuyez à nouveau pour aller au fichier suivant",
+          "pressAgainPrevious": "Appuyez à nouveau pour aller au fichier précédent"
         }
       },
       "diff": {

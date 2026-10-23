@@ -6,9 +6,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useSidebarResize } from '@/hooks/useSidebarResize'
 import { translate } from '@/i18n/i18n'
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
-import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
-import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
+import type { OpenCommitFileHandler } from './commit-file-sequence'
+import { mergeCommitFiles } from './git-graph-merged-commit-files'
 import {
   GitHistoryCommitFiles,
   type GitHistoryCommitFilesLayout,
@@ -88,39 +88,6 @@ function writeFilesLayout(layout: GitHistoryCommitFilesLayout): void {
   } catch {}
 }
 
-export type MergedCommitFiles = {
-  state: GitHistoryCommitFilesState
-  /** Commit whose change a merged row shows: the newest selected commit touching that path. */
-  ownerByPath: ReadonlyMap<string, GitHistoryItem>
-}
-
-/** Union of the commits' files, newest first (graph order); the newest change of a path wins. */
-export function mergeCommitFiles(
-  items: readonly GitHistoryItem[],
-  filesByCommit: Readonly<Record<string, GitHistoryCommitFilesState>>
-): MergedCommitFiles {
-  const ownerByPath = new Map<string, GitHistoryItem>()
-  const entries: GitBranchChangeEntry[] = []
-  let loading = false
-  for (const item of items) {
-    const files = filesByCommit[item.id]
-    if (files?.status === 'error') {
-      return { state: files, ownerByPath }
-    }
-    if (files?.status !== 'ready') {
-      loading = true
-      continue
-    }
-    for (const entry of files.entries) {
-      if (!ownerByPath.has(entry.path)) {
-        ownerByPath.set(entry.path, item)
-        entries.push(entry)
-      }
-    }
-  }
-  return { state: loading ? { status: 'loading' } : { status: 'ready', entries }, ownerByPath }
-}
-
 export function GitGraphDetailsPane({
   items,
   filesByCommit,
@@ -136,11 +103,7 @@ export function GitGraphDetailsPane({
   items: readonly GitHistoryItem[]
   filesByCommit: Readonly<Record<string, GitHistoryCommitFilesState>>
   onOpenCommit: (item: GitHistoryItem) => void
-  onOpenCommitFile: (
-    item: GitHistoryItem,
-    entry: GitBranchChangeEntry,
-    event?: SourceControlRowOpenEvent
-  ) => void
+  onOpenCommitFile: OpenCommitFileHandler
   onCopyFullSource?: (items: readonly GitHistoryItem[]) => void
   renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
   commitContext: GitGraphCommitContext
@@ -389,8 +352,13 @@ export function GitGraphDetailsPane({
               className="border-l-0 bg-transparent"
               state={merged.state}
               layout={filesLayout}
-              onOpenFile={(entry, event) =>
-                onOpenCommitFile(merged.ownerByPath.get(entry.path) ?? first, entry, event)
+              onOpenFile={(entry, event, shownEntries) =>
+                onOpenCommitFile(
+                  merged.targetByPath.get(entry.path)?.head ?? first,
+                  entry,
+                  event,
+                  shownEntries.flatMap((shown) => merged.targetByPath.get(shown.path) ?? [])
+                )
               }
               renderFilesMenu={renderCommitFilesMenu?.bind(null, items)}
             />

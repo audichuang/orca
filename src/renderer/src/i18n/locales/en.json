@@ -17088,6 +17088,11 @@
         },
         "richMarkdownBlobImagePaste": {
           "saveFailed": "Couldn't save a pasted image beside the document. It may not load after Orca restarts."
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} files",
+          "pressAgainNext": "Press again to go to the next file",
+          "pressAgainPrevious": "Press again to go to the previous file"
         }
       },
       "diff": {
