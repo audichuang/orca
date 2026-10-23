@@ -65,4 +65,17 @@ describe('requestLazyChunkRecoveryReload', () => {
     await expect(outcome).resolves.toBe('unload-vetoed')
     expect(order).toEqual(['flushed', 'reload'])
   })
+
+  it('relaunches instead of reloading once the installed bundle was replaced', async () => {
+    const reload = vi.spyOn(window.location, 'reload').mockImplementation(() => undefined)
+    const relaunch = vi.fn(async () => {
+      window.dispatchEvent(new Event(ORCA_RENDERER_UNLOAD_PREVENTED_EVENT))
+    })
+    vi.stubGlobal('api', { app: { isBundleReplaced: async () => true, relaunch } })
+
+    await expect(requestLazyChunkRecoveryReload(window)).resolves.toBe('unload-vetoed')
+
+    expect(relaunch).toHaveBeenCalledTimes(1)
+    expect(reload).not.toHaveBeenCalled()
+  })
 })
