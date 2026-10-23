@@ -12,7 +12,6 @@ import {
   buildDefaultGitHistoryColorMap,
   buildGitHistoryViewModels
 } from '../../../../../../shared/git-history-graph'
-import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import type { GitHistoryPanelState } from './git-history-panel'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import { GitHistoryGraphLoadMore } from './git-history-graph-host-status'
@@ -45,6 +44,7 @@ import { useAppStore } from '@/store'
 import { getExecutionHostIdForWorktree } from '@/lib/worktree-runtime-owner'
 import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
 import { useGitGraphCommitFiles } from './use-git-graph-commit-files'
+import type { OpenCommitFileHandler } from './commit-file-sequence'
 
 export type GitGraphFullViewProps = {
   worktreeId: string
@@ -54,11 +54,7 @@ export type GitGraphFullViewProps = {
   onRefresh: () => void
   onOpenCommit: (item: GitHistoryItem) => void
   onLoadCommitFiles: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
-  onOpenCommitFile: (
-    item: GitHistoryItem,
-    entry: GitBranchChangeEntry,
-    event?: SourceControlRowOpenEvent
-  ) => void
+  onOpenCommitFile: OpenCommitFileHandler
   /** Commit actions (Copy Full Source) over the selected commits. */
   onCommitAction?: GitHistoryCommitActionHandler
   renderCommitFilesMenu?: GitHistoryPanelSlots['renderCommitFilesMenu']
