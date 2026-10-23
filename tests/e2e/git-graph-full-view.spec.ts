@@ -313,6 +313,37 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   expect(await list.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   await shoot('size-600x600-single')
   await expectColumnsAligned('600x600')
+  // A key move onto a long subject wraps it and keeps every line inside the list, even though the
+  // row fits there before it grows (110px list, a ~92px wrapped row starting at 28px).
+  const postMerge = rows.filter({ hasText: 'Post-merge cleanup' })
+  const merge = rows.filter({ hasText: 'Merge branch' })
+  await list.evaluate((el) => {
+    el.scrollTop = 0
+    el.style.flex = 'none'
+    el.style.height = '110px'
+  })
+  await postMerge.click()
+  await postMerge.press('ArrowDown')
+  await expect(merge).toHaveAttribute('data-expanded', 'true')
+  const fit = await merge.evaluate((row) => {
+    const subject = row.querySelector<HTMLElement>('[data-col="message"] [title]')!
+    const rowBox = row.getBoundingClientRect()
+    const listBox = row.closest('[data-git-graph-list]')!.getBoundingClientRect()
+    return {
+      height: rowBox.height,
+      clipped: subject.scrollWidth > subject.clientWidth + 1,
+      below: rowBox.bottom - listBox.bottom,
+      above: listBox.top - rowBox.top
+    }
+  })
+  expect(fit.height, 'the merge subject should wrap at this width').toBeGreaterThan(40)
+  expect(fit.clipped).toBe(false)
+  expect(fit.below).toBeLessThanOrEqual(1)
+  expect(fit.above).toBeLessThanOrEqual(1)
+  await list.evaluate((el) => {
+    el.style.flex = ''
+    el.style.height = ''
+  })
   await orcaPage.evaluate(() => {
     const state = window.__store!.getState()
     state.setSidebarOpen(true)
