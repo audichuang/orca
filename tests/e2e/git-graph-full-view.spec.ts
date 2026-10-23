@@ -250,8 +250,7 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
             `${name}: cells ${cells.map((c) => c.col).join()} vs header ${header.map((c) => c.col).join()}`
           )
         }
-        // Why the cursor row is exempt: it wraps its whole message on purpose.
-        if (!row.hasAttribute('data-expanded') && row.getBoundingClientRect().height > maxHeight) {
+        if (row.getBoundingClientRect().height > maxHeight) {
           problems.push(`${name}: wrapped (${row.getBoundingClientRect().height}px)`)
         }
         for (const cell of cells) {
@@ -304,58 +303,40 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   })
   await orcaPage.setViewportSize({ width: 600, height: 600 })
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
-  const subject = rows.filter({ hasText: 'Post-merge cleanup' }).getByText('Post-merge cleanup', {
-    exact: false
-  })
+  // Why by title: the selected row may also float the same text in its overlay.
+  const subject = rows
+    .filter({ hasText: 'Post-merge cleanup' })
+    .locator('[title^="Post-merge cleanup"]')
   await expect(subject).toBeVisible()
   expect((await subject.boundingBox())!.width).toBeGreaterThan(100)
   const list = graph.locator('[data-git-graph-list]')
   expect(await list.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   await shoot('size-600x600-single')
   await expectColumnsAligned('600x600')
-  // A key move onto a long subject wraps it and keeps every line inside the list, even though the
-  // row fits there before it grows (110px list, a ~92px wrapped row starting at 28px).
+  // A key move onto a long subject floats all of it over the rows below without moving any row,
+  // and a click on a covered row still reaches that row.
   const postMerge = rows.filter({ hasText: 'Post-merge cleanup' })
   const merge = rows.filter({ hasText: 'Merge branch' })
-  await list.evaluate((el) => {
-    el.scrollTop = 0
-    el.style.flex = 'none'
-    el.style.height = '110px'
-  })
   await postMerge.click()
+  const below = rows.nth(2)
+  const belowTop = (await below.boundingBox())!.y
   await postMerge.press('ArrowDown')
   await expect(merge).toHaveAttribute('data-expanded', 'true')
-  const fit = await merge.evaluate((row) => {
-    const subject = row.querySelector<HTMLElement>('[data-col="message"] [title]')!
-    const rowBox = row.getBoundingClientRect()
-    const listBox = row.closest('[data-git-graph-list]')!.getBoundingClientRect()
-    return {
-      height: rowBox.height,
-      clipped: subject.scrollWidth > subject.clientWidth + 1,
-      below: rowBox.bottom - listBox.bottom,
-      above: listBox.top - rowBox.top
-    }
-  })
-  expect(fit.height, 'the merge subject should wrap at this width').toBeGreaterThan(40)
-  expect(fit.clipped).toBe(false)
-  expect(fit.below).toBeLessThanOrEqual(1)
-  expect(fit.above).toBeLessThanOrEqual(1)
-  // Scrolling away while a click settles wins: the late wrap must not pull the list back.
-  await list.evaluate((el) => {
-    el.style.height = '60px'
-    el.scrollTop = 90
-  })
-  const fourth = rows.nth(3)
-  await fourth.click()
-  await list.evaluate((el) => {
-    el.scrollTop = 0
-  })
-  await expect(fourth).toHaveAttribute('data-expanded', 'true')
-  expect(await list.evaluate((el) => el.scrollTop)).toBe(0)
-  await list.evaluate((el) => {
-    el.style.flex = ''
-    el.style.height = ''
-  })
+  const overlay = merge.locator('[data-subject-overlay]')
+  await expect(overlay).toBeVisible()
+  const layer = await overlay.evaluate((el) => ({
+    height: el.getBoundingClientRect().height,
+    clipped: el.scrollWidth > el.clientWidth + 1
+  }))
+  expect(layer.height, 'the merge subject should need more than one line here').toBeGreaterThan(30)
+  expect(layer.clipped).toBe(false)
+  expect((await merge.boundingBox())!.height).toBeLessThanOrEqual(30)
+  expect((await below.boundingBox())!.y).toBe(belowTop)
+  await shoot('size-600x600-overlay')
+  const covered = await below.boundingBox()
+  await orcaPage.mouse.click(covered!.x + covered!.width / 3, covered!.y + covered!.height / 2)
+  await expect(below).toHaveAttribute('data-selected', 'true')
+  await expect(overlay).toHaveCount(0)
   await orcaPage.evaluate(() => {
     const state = window.__store!.getState()
     state.setSidebarOpen(true)
