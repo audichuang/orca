@@ -167,7 +167,8 @@ FORK_BASE ?= $(shell git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude 
 # Why: resolve once; a recursive ?= reruns git describe on every reference.
 FORK_BASE := $(FORK_BASE)
 # Why the guard: a clone without upstream tags resolves an ancient FORK_BASE and silently runs thousands of unrelated tests.
-FORK_MAX_COMMITS ?= 200
+# Why 400: fork work alone passed 200 commits on v1.4.237; an ancient base is thousands behind.
+FORK_MAX_COMMITS ?= 400
 
 # fork-check = fork-check-static + fork-check-tests; CI runs the halves as parallel jobs, tests in FORK_TEST_SHARD slices.
 FORK_TEST_SHARD ?=
