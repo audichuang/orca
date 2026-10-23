@@ -241,8 +241,6 @@ export function useGitHistoryCommitActions({
           })
         return
       }
-      // Why like Copy Full Source: inside a multi-selection the copy covers it, in graph order.
-      const targets = selectedItems && selectedItems.length > 1 ? selectedItems : [item]
       if (action === 'copy-hash') {
         void copyCommitText(
           targets.map((target) => target.id).join('\n'),
