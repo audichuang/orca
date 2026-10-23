@@ -236,7 +236,12 @@ export function GitHistoryCommitFiles({
   layout?: GitHistoryCommitFilesLayout
   author?: string
   timestamp?: number
-  onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
+  /** `shownEntries` is the list in display order, so a diff can step to its neighbours. */
+  onOpenFile: (
+    entry: GitBranchChangeEntry,
+    event: SourceControlRowOpenEvent,
+    shownEntries: readonly GitBranchChangeEntry[]
+  ) => void
   onOpenAll?: () => void
   renderFilesMenu?: GitHistoryCommitFilesMenuRenderer
   className?: string
@@ -257,12 +262,14 @@ export function GitHistoryCommitFiles({
     }
     return state.status === 'ready' ? state.entries : []
   }, [treeRoots, state])
+  const openFile = (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent): void =>
+    onOpenFile(entry, event, menuEntries)
   // Author and date move off the dense commit row and surface here on expand.
   const body = (
     <CommitFilesBody
       state={state}
       treeRoots={treeRoots}
-      onOpenFile={onOpenFile}
+      onOpenFile={openFile}
       onOpenAll={onOpenAll}
     />
   )
@@ -271,13 +278,13 @@ export function GitHistoryCommitFiles({
     <div className={cn('border-l border-border/60 bg-muted/20', className)}>
       {meta && <div className="py-1 pl-9 pr-3 text-[11px] text-muted-foreground">{meta}</div>}
       {renderFilesMenu
-        ? renderFilesMenu(menuEntries, onOpenFile, (selectedPaths) => (
+        ? renderFilesMenu(menuEntries, openFile, (selectedPaths) => (
             <div>
               <CommitFilesBody
                 state={state}
                 treeRoots={treeRoots}
                 selectedPaths={selectedPaths}
-                onOpenFile={onOpenFile}
+                onOpenFile={openFile}
                 onOpenAll={onOpenAll}
               />
             </div>

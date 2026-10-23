@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { RefObject } from 'react'
 import type { editor } from 'monaco-editor'
 import { diffViewStateCache } from '@/lib/scroll-cache'
+import { useDiffEditorRegistration } from './diff-navigation-context'
 
 type DiffViewerFirstChangeAutoScrollInput = {
   diffEditorRef: RefObject<editor.IStandaloneDiffEditor | null>
@@ -22,6 +23,7 @@ export function useDiffViewerFirstChangeAutoScroll({
   modelKey,
   pendingScrollCommentId
 }: DiffViewerFirstChangeAutoScrollInput): void {
+  const { hasFileArrival } = useDiffEditorRegistration()
   const didAutoScrollFirstDiffRef = useRef(false)
   const didAutoScrollModelKeyRef = useRef(modelKey)
   useEffect(() => {
@@ -37,7 +39,7 @@ export function useDiffViewerFirstChangeAutoScroll({
     if (didAutoScrollFirstDiffRef.current) {
       return
     }
-    if (diffViewStateCache.get(modelKey)) {
+    if (diffViewStateCache.get(modelKey) || hasFileArrival()) {
       return
     }
     if (pendingScrollCommentId) {
@@ -61,7 +63,7 @@ export function useDiffViewerFirstChangeAutoScroll({
       }
       rafId = requestAnimationFrame(() => {
         rafId = null
-        if (didAutoScrollFirstDiffRef.current || !modifiedEditor.getModel()) {
+        if (didAutoScrollFirstDiffRef.current || hasFileArrival() || !modifiedEditor.getModel()) {
           return
         }
         const top = modifiedEditor.getTopForLineNumber(line, true)
@@ -82,5 +84,5 @@ export function useDiffViewerFirstChangeAutoScroll({
         cancelAnimationFrame(rafId)
       }
     }
-  }, [diffEditorRef, modifiedEditor, modelKey, pendingScrollCommentId])
+  }, [diffEditorRef, modifiedEditor, modelKey, pendingScrollCommentId, hasFileArrival])
 }
