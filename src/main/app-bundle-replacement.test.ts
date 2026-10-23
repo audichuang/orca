@@ -1,17 +1,28 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as BundleReplacement from './app-bundle-replacement'
 
-const { statSync } = vi.hoisted(() => ({ statSync: vi.fn() }))
-vi.mock('node:fs', () => ({ statSync }))
 vi.mock('electron', () => ({ app: { isPackaged: true } }))
 
 describe('isAppBundleReplaced', () => {
+  const dirs: string[] = []
+  let resources: string
+
   beforeEach(() => {
     vi.resetModules()
+    resources = mkdtempSync(join(tmpdir(), 'orca-bundle-'))
+    dirs.push(resources)
+    writeFileSync(join(resources, 'app.asar'), 'v1')
     // Plain Node has no resourcesPath; Electron always sets it.
-    Object.defineProperty(process, 'resourcesPath', { value: '/app/Resources', configurable: true })
-    statSync.mockReset()
-    statSync.mockReturnValue({ ino: 1, mtimeMs: 100 })
+    Object.defineProperty(process, 'resourcesPath', { value: resources, configurable: true })
+  })
+
+  afterEach(() => {
+    for (const dir of dirs.splice(0)) {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 
   async function launched(): Promise<typeof BundleReplacement> {
@@ -26,15 +37,14 @@ describe('isAppBundleReplaced', () => {
 
   it('detects a bundle swapped in by an in-place upgrade', async () => {
     const mod = await launched()
-    statSync.mockReturnValue({ ino: 2, mtimeMs: 200 })
+    writeFileSync(join(resources, 'app.asar.new'), 'v2')
+    renameSync(join(resources, 'app.asar.new'), join(resources, 'app.asar'))
     expect(mod.isAppBundleReplaced()).toBe(true)
   })
 
   it('treats a bundle missing mid-install as replaced', async () => {
     const mod = await launched()
-    statSync.mockImplementation(() => {
-      throw new Error('ENOENT')
-    })
+    rmSync(join(resources, 'app.asar'))
     expect(mod.isAppBundleReplaced()).toBe(true)
   })
 })
