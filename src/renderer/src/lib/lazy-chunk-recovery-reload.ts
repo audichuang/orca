@@ -54,6 +54,10 @@ export async function requestLazyChunkRecoveryReload(
   awaitCheckpoint: () => Promise<void> = () =>
     window.api?.app?.awaitBeforeUnloadCheckpoint?.() ?? Promise.resolve()
 ): Promise<LazyChunkRecoveryReloadOutcome> {
+  if (await isInstalledBundleReplaced()) {
+    // Why: a reload loads the new bundle into the old main process and never bootstraps.
+    return relaunchIntoReplacedBundle(win)
+  }
   try {
     await prepareRendererForAppRestart(win, {
       startedEventName: ORCA_APP_RESTART_STARTED_EVENT,
@@ -78,4 +82,24 @@ export async function requestLazyChunkRecoveryReload(
     // A surviving document must not retain the restart latch.
     win.dispatchEvent(new Event(ORCA_APP_RESTART_ABORTED_EVENT))
   }
+}
+
+async function isInstalledBundleReplaced(): Promise<boolean> {
+  try {
+    return (await window.api?.app?.isBundleReplaced?.()) === true
+  } catch {
+    return false
+  }
+}
+
+async function relaunchIntoReplacedBundle(win: Window): Promise<LazyChunkRecoveryReloadOutcome> {
+  const refused = waitForRefusedNavigation(win)
+  try {
+    // relaunch() runs the same hot-exit backup and checkpoint as the reload path.
+    await window.api.app.relaunch()
+  } catch {
+    refused.cancel()
+    return 'checkpoint-refused'
+  }
+  return refused.outcome
 }

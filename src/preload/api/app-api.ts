@@ -30,6 +30,8 @@ export type AppApi = {
   getFeatureWallAssetBaseUrl: () => Promise<string>
   /** Drops macOS vibrancy while an opaque theme image covers it; no-op otherwise. */
   setWindowMaterialSuppressed: (suppressed: boolean) => Promise<void>
+  /** Desktop only: the installed bundle changed under this process, so a reload would mix versions. */
+  isBundleReplaced?: () => Promise<boolean>
   /** Uses app.exit(0), bypassing normal quit handling. */
   relaunch: () => Promise<void>
   /** Uses normal quit handling so daemon terminals survive for reattachment. */

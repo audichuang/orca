@@ -11,6 +11,7 @@ import type { FloatingTerminalCwdRequest } from '../../shared/ui-chrome-types'
 import { relaunchApp, runBeforeRelaunchCleanup } from '../app-relaunch'
 import { setWindowMaterialSuppressed } from '../window/window-material-suppression'
 import { isTrustedUIRenderer } from './ui'
+import { captureLaunchedAppBundle, isAppBundleReplaced } from '../app-bundle-replacement'
 import { prepareWindowsAdministratorRestart } from '../windows/windows-administrator-restart'
 import { quitProcess } from '../startup/process-quit-request'
 import type { Store } from '../persistence/loading-store/store'
@@ -122,6 +123,7 @@ function resolveDevFeatureWallAssetDir(): string {
 }
 
 export function registerAppHandlers(store: Store, options: RegisterAppHandlersOptions = {}): void {
+  captureLaunchedAppBundle()
   registerRendererShutdownCheckpointHandler(
     store,
     options.quitResumeRecordsFor,
@@ -195,6 +197,8 @@ export function registerAppHandlers(store: Store, options: RegisterAppHandlersOp
       setWindowMaterialSuppressed(window, suppressed)
     }
   })
+
+  ipcMain.handle('app:isBundleReplaced', (): boolean => isAppBundleReplaced())
 
   ipcMain.handle('app:relaunch', async () => {
     // Delay teardown so the renderer can paint Restarting after cleanup.
