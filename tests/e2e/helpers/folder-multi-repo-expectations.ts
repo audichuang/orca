@@ -125,5 +125,6 @@ export const statsLine = (payload: string) => {
   const wordsArr = payload.split(/[ \t\r\n\f\v]+/).filter(Boolean)
   const tokens = wordsArr.length + (payload.match(/[;,(){}[\]]/g)?.length ?? 0)
   const f = (n: number) => n.toLocaleString('en-US')
-  return `${f(chars)} chars · ${f(lines)} lines · ${f(wordsArr.length)} words · ~${f(tokens)} tokens`
+  // Same order as the copied toast's size line: tokens lead, then lines, chars, words.
+  return `~${f(tokens)} tokens · ${f(lines)} lines · ${f(chars)} chars · ${f(wordsArr.length)} words`
 }
