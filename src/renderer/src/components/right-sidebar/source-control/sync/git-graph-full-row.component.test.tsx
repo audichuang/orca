@@ -72,33 +72,39 @@ describe('GitGraphFullRow hash column', () => {
 })
 
 describe('GitGraphFullRow taller rows', () => {
-  it("wraps only the expanded row's subject; other rows truncate it", () => {
-    const { rerender } = render(
-      <GitGraphFullRow
-        viewModel={viewModel('node', 'abc1234')}
-        lanes={LANES}
-        graphWidth={24}
-        columns={COLUMNS}
-        selected
-        expanded
-        onSelect={() => {}}
-      />
-    )
-    const subject = (): HTMLElement => screen.getByTitle('node subject')
-    expect(subject()).toHaveClass('whitespace-normal')
-    expect(subject()).not.toHaveClass('truncate')
-    rerender(
-      <GitGraphFullRow
-        viewModel={viewModel('node', 'abc1234')}
-        lanes={LANES}
-        graphWidth={24}
-        columns={COLUMNS}
-        selected
-        onSelect={() => {}}
-      />
-    )
-    expect(subject()).toHaveClass('truncate')
-    expect(subject()).not.toHaveClass('whitespace-normal')
+  it('floats the whole subject over the rows below only for an expanded, cut-off row', () => {
+    // Why stub: happy-dom has no layout, so the line never measures as cut off on its own.
+    const scroll = vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(400)
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(200)
+    try {
+      const row = (expanded: boolean): React.JSX.Element => (
+        <GitGraphFullRow
+          viewModel={viewModel('node', 'abc1234')}
+          lanes={LANES}
+          graphWidth={24}
+          columns={COLUMNS}
+          selected
+          expanded={expanded}
+          onSelect={() => {}}
+        />
+      )
+      const { rerender } = render(row(true))
+      const overlay = (): HTMLElement | null =>
+        screen.getByTestId('git-graph-full-row').querySelector('[data-subject-overlay]')
+      expect(overlay()).toHaveTextContent('node subject')
+      // The rows it covers keep taking clicks, and the row itself keeps one truncated line.
+      expect(overlay()).toHaveClass('pointer-events-none', 'whitespace-normal')
+      expect(screen.getByTitle('node subject')).toHaveClass('truncate')
+      rerender(row(false))
+      expect(overlay()).toBeNull()
+
+      client.mockReturnValue(400)
+      rerender(row(true))
+      expect(overlay()).toBeNull()
+    } finally {
+      scroll.mockRestore()
+      client.mockRestore()
+    }
   })
 
   it('runs lanes from the row top into the band and from the band to the row bottom', () => {
