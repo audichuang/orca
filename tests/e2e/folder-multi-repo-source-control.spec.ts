@@ -614,7 +614,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     expect(toast).toContain(statsLine(actual))
   })
 
-  await scenario('S9d Copy: per-repo header and Changes/Untracked sections', async (ev) => {
+  await scenario('S9d Copy: per-repo header and the Changes section', async (ev) => {
     const copyFrom = async (re: RegExp, repoRow = false) => {
       await setClipboard(page, 'sentinel')
       const container = repoRow
@@ -646,21 +646,20 @@ test('folder workspace multi-repo source control, copy and restore', async ({
       expectedPayload({ rootName: 'MultiProduct', files: apiFiles, forceIndexForStaged: false })
     )
     await expandOnly(H.web)
-    for (const [label, area] of [
-      ['Changes', 'unstaged'],
-      ['Untracked', 'untracked']
-    ] as const) {
-      const { actual } = await copyFrom(new RegExp(`^${label}`, 'i'))
-      const files = readStatus(R.webapp)
+    // Why one section: upstream lists untracked files inside Changes, so its copy takes both areas.
+    const { actual } = await copyFrom(/^Changes/i)
+    const webStatus = readStatus(R.webapp)
+    const files = (['unstaged', 'untracked'] as const).flatMap((area) =>
+      webStatus
         .filter((e) => e.area === area)
         .map((e) => ({ repoDir: 'WebApp', repoAbs: R.webapp, entry: e }))
-      compare(
-        ev,
-        `S9d-section-${label}`,
-        actual,
-        expectedPayload({ rootName: 'MultiProduct', files, forceIndexForStaged: true })
-      )
-    }
+    )
+    compare(
+      ev,
+      'S9d-section-Changes',
+      actual,
+      expectedPayload({ rootName: 'MultiProduct', files, forceIndexForStaged: true })
+    )
   })
 
   await scenario('S9a-multi Copy Full Source on a multi-selection', async (ev) => {
