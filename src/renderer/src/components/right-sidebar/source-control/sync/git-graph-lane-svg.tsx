@@ -1,11 +1,13 @@
 // Fork-only: draws one full Git Graph row from the re-laid lanes (git-graph-lane-layout.ts).
 import React from 'react'
+import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
 import type { GitGraphLaneRow, GitGraphLaneSegment } from './git-graph-lane-layout'
 import {
   GitHistoryGraphNodeMarker,
   GraphPath,
+  graphColor,
   SWIMLANE_HEIGHT as H,
   SWIMLANE_WIDTH as W
 } from './git-history-graph-svg'
@@ -14,6 +16,64 @@ import {
 export const GIT_GRAPH_JUMP_ATTRIBUTE = 'data-git-graph-jump'
 
 const x = (column: number): number => W * (column + 1)
+
+/** Lanes leaving the 24px band through its top edge (up) or bottom edge (down). */
+function laneEdges(lanes: GitGraphLaneRow): { up: Edge[]; down: Edge[] } {
+  const up: Edge[] = []
+  const down: Edge[] = []
+  for (const segment of lanes.segments) {
+    switch (segment.kind) {
+      case 'through':
+        up.push({ column: segment.from, color: segment.color })
+        down.push({ column: segment.to, color: segment.color })
+        break
+      case 'into-node':
+        up.push({ column: segment.from, color: segment.color })
+        break
+      case 'out-of-node':
+        down.push({ column: segment.to, color: segment.color })
+        break
+      case 'fold-down':
+        up.push({ column: segment.at, color: segment.color })
+        break
+      case 'fold-up':
+        down.push({ column: segment.at, color: segment.color })
+        break
+    }
+  }
+  return { up, down }
+}
+
+type Edge = { column: number; color: GitGraphLaneSegment['color'] }
+
+/**
+ * Straight lane pieces above and below the band, sized by CSS so a row of any height (two-line,
+ * the wrapped cursor row) stays joined to its neighbours. Lives in a positioned graph cell.
+ */
+export function GitGraphLaneConnectors({
+  lanes,
+  top
+}: {
+  lanes: GitGraphLaneRow
+  /** Where the 24px band starts in the row. */
+  top: number
+}): React.JSX.Element {
+  const { up, down } = laneEdges(lanes)
+  const line = (edge: Edge, place: React.CSSProperties, key: string): React.JSX.Element => (
+    <span
+      key={key}
+      data-lane-connector=""
+      className="absolute w-px"
+      style={{ ...place, left: x(edge.column) - 0.5, background: graphColor(edge.color) }}
+    />
+  )
+  return (
+    <>
+      {up.map((edge, index) => line(edge, { top: 0, height: top }, `up-${index}`))}
+      {down.map((edge, index) => line(edge, { top: top + H, bottom: 0 }, `down-${index}`))}
+    </>
+  )
+}
 
 function throughPath(from: number, to: number): string {
   if (from === to) {
@@ -105,10 +165,14 @@ function FoldArrow({
 export function GitGraphLaneSvg({
   viewModel,
   lanes,
+  className,
+  style,
   onJump
 }: {
   viewModel: GitHistoryItemViewModel
   lanes: GitGraphLaneRow
+  className?: string
+  style?: React.CSSProperties
   /** A click on a fold arrow jumps to the commit at its other end. */
   onJump?: (commitId: string) => void
 }): React.JSX.Element {
@@ -116,7 +180,8 @@ export function GitGraphLaneSvg({
   const width = W * (lanes.laneCount + 1)
   return (
     <svg
-      className="shrink-0 overflow-visible"
+      className={cn('shrink-0 overflow-visible', className)}
+      style={style}
       width={width}
       height={H}
       viewBox={`0 0 ${width} ${H}`}

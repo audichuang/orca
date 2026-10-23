@@ -229,8 +229,8 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
     await orcaPage.screenshot({ path: path.join(SHOTS_DIR, `${name}.png`) })
   }
   // Every row shows exactly the header's columns, each under its header, on one line.
-  const expectColumnsAligned = async (label: string): Promise<void> => {
-    const report = await graph.evaluate((root) => {
+  const expectColumnsAligned = async (label: string, maxRowHeight = 30): Promise<void> => {
+    const report = await graph.evaluate((root, maxHeight) => {
       const shown = (el: Element): boolean =>
         getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0
       const cols = (parent: Element): { col: string; left: number; right: number }[] =>
@@ -250,7 +250,7 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
             `${name}: cells ${cells.map((c) => c.col).join()} vs header ${header.map((c) => c.col).join()}`
           )
         }
-        if (row.getBoundingClientRect().height > 30) {
+        if (row.getBoundingClientRect().height > maxHeight) {
           problems.push(`${name}: wrapped (${row.getBoundingClientRect().height}px)`)
         }
         for (const cell of cells) {
@@ -261,7 +261,7 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
         }
       }
       return { header: header.map((c) => c.col).join(), problems }
-    })
+    }, maxRowHeight)
     expect(report.problems, `${label} (header ${report.header})`).toEqual([])
   }
   const sizes = [
@@ -303,15 +303,62 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   })
   await orcaPage.setViewportSize({ width: 600, height: 600 })
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
-  const subject = rows.filter({ hasText: 'Post-merge cleanup' }).getByText('Post-merge cleanup', {
-    exact: false
-  })
+  // Why by title: the selected row may also float the same text in its overlay.
+  const subject = rows
+    .filter({ hasText: 'Post-merge cleanup' })
+    .locator('[title^="Post-merge cleanup"]')
   await expect(subject).toBeVisible()
   expect((await subject.boundingBox())!.width).toBeGreaterThan(100)
   const list = graph.locator('[data-git-graph-list]')
   expect(await list.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   await shoot('size-600x600-single')
   await expectColumnsAligned('600x600')
+  // A key move onto a long subject floats all of it over the rows below without moving any row,
+  // and a click on a covered row still reaches that row.
+  const postMerge = rows.filter({ hasText: 'Post-merge cleanup' })
+  const merge = rows.filter({ hasText: 'Merge branch' })
+  await postMerge.click()
+  const below = rows.nth(2)
+  const belowTop = (await below.boundingBox())!.y
+  await postMerge.press('ArrowDown')
+  await expect(merge).toHaveAttribute('data-expanded', 'true')
+  const overlay = merge.locator('[data-subject-overlay]')
+  await expect(overlay).toBeVisible()
+  const layer = await overlay.evaluate((el) => ({
+    height: el.getBoundingClientRect().height,
+    clipped: el.scrollWidth > el.clientWidth + 1
+  }))
+  expect(layer.height, 'the merge subject should need more than one line here').toBeGreaterThan(30)
+  expect(layer.clipped).toBe(false)
+  expect((await merge.boundingBox())!.height).toBeLessThanOrEqual(30)
+  expect((await below.boundingBox())!.y).toBe(belowTop)
+  await shoot('size-600x600-overlay')
+  const covered = await below.boundingBox()
+  await orcaPage.mouse.click(covered!.x + covered!.width / 3, covered!.y + covered!.height / 2)
+  await expect(below).toHaveAttribute('data-selected', 'true')
+  await expect(overlay).toHaveCount(0)
+  // At the list's bottom edge the layer opens upward: it never grows the scroll area, so nothing
+  // shifts when it goes away.
+  await postMerge.click()
+  await list.evaluate((el) => {
+    el.style.flex = 'none'
+    el.style.height = '56px'
+    el.scrollTop = 0
+  })
+  const extent = await list.evaluate((el) => el.scrollHeight)
+  await postMerge.press('ArrowDown')
+  await expect(overlay).toBeVisible()
+  const edge = await overlay.evaluate((el) => {
+    const listBox = el.closest('[data-git-graph-list]')!.getBoundingClientRect()
+    const box = el.getBoundingClientRect()
+    return { below: box.bottom - listBox.bottom, top: box.top - listBox.top }
+  })
+  expect(edge.below).toBeLessThanOrEqual(1)
+  expect(await list.evaluate((el) => el.scrollHeight)).toBe(extent)
+  await list.evaluate((el) => {
+    el.style.flex = ''
+    el.style.height = ''
+  })
   await orcaPage.evaluate(() => {
     const state = window.__store!.getState()
     state.setSidebarOpen(true)
@@ -321,6 +368,14 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'dark' }))
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
   await shoot('dark-single')
+  // Two-line rows: the header keeps only graph and message, the rest moves under each subject.
+  await graph.locator('[data-git-graph-header]').click({ button: 'right' })
+  await orcaPage.getByRole('menuitemcheckbox', { name: 'Two-line rows' }).click()
+  await orcaPage.keyboard.press('Escape')
+  await expectColumnsAligned('two-line', 50)
+  await shoot('dark-two-line')
+  await graph.locator('[data-git-graph-header]').click({ button: 'right' })
+  await orcaPage.getByRole('menuitem', { name: 'Reset to defaults' }).click()
   await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'light' }))
 
   // Escape closes the branch tree overlay without leaving the tab.

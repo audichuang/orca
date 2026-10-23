@@ -3,7 +3,6 @@ import React from 'react'
 import { Cloud, GitBranch, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { formatUiRelativeTime, getUiRelativeTimeFormatter } from '@/i18n/relative-time-format'
 import { initialsFor } from '@/components/github/github-user-avatar'
 import {
   GIT_HISTORY_LANE_COLORS,
@@ -12,9 +11,12 @@ import {
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
 import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
 import { graphColor } from './git-history-graph-svg'
-import { GitGraphLaneSvg } from './git-graph-lane-svg'
+import { GitGraphLaneConnectors, GitGraphLaneSvg } from './git-graph-lane-svg'
+import { GitGraphRowSubject } from './git-graph-row-subject'
 import type { GitGraphLaneRow } from './git-graph-lane-layout'
 import { formatGitHistoryTimestamp } from './git-history-format'
+import { formatGitGraphCompactDate, formatGitGraphRelativeDate } from './git-graph-date-format'
+import type { GitGraphListPrefs } from './git-graph-list-prefs'
 
 function RefIcon({
   category
@@ -98,65 +100,10 @@ export function GitGraphAuthorAvatar({
   )
 }
 
-/** "3 days ago" in the UI language; empty for a missing timestamp. */
-export function formatGitGraphRelativeDate(timestamp: number | undefined): string {
-  return timestamp == null || !Number.isFinite(timestamp)
-    ? ''
-    : formatUiRelativeTime(timestamp - Date.now())
-}
-
-const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: 'short',
-  timeStyle: 'short'
-})
-
-// Why: zero-padded parts give every row the same width, so the column reads as one ruler.
-const paddedDateFormatter = new Intl.DateTimeFormat(undefined, {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit'
-})
-const paddedTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  hour: '2-digit',
-  minute: '2-digit'
-})
-
-function calendarDayOffset(date: Date, now: Date): number {
-  const day = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
-  return Math.round((day - today) / 86_400_000)
-}
-
-// Why: Intl writes "today" for mid-sentence use; leading a row it reads as a label, like IntelliJ's.
-function capitalize(word: string): string {
-  return word.charAt(0).toLocaleUpperCase() + word.slice(1)
-}
-
-/** Row date: "today"/"yesterday" or the full date, then the time; the tooltip has the zone. */
-export function formatGitGraphCompactDate(
-  timestamp: number | undefined,
-  now: Date = new Date()
-): string {
-  if (timestamp == null || !Number.isFinite(timestamp)) {
-    return ''
-  }
-  const date = new Date(timestamp)
-  const offset = calendarDayOffset(date, now)
-  const day =
-    offset === 0 || offset === -1
-      ? capitalize(getUiRelativeTimeFormatter().format(offset, 'day'))
-      : paddedDateFormatter.format(date)
-  return `${day} ${paddedTimeFormatter.format(date)}`
-}
-
-export function formatGitGraphShortDate(timestamp: number | undefined): string {
-  if (timestamp == null || !Number.isFinite(timestamp)) {
-    return ''
-  }
-  return shortDateFormatter.format(new Date(timestamp))
-}
-
 export type GitGraphColumns = { refs: boolean; author: boolean; date: boolean; hash: boolean }
+
+/** What a two-line row puts on its muted second line, in place of the columns. */
+export type GitGraphSecondLine = Pick<GitGraphColumns, 'author' | 'date' | 'hash'>
 
 const ALL_GIT_GRAPH_COLUMNS: GitGraphColumns = { refs: true, author: true, date: true, hash: true }
 
@@ -175,13 +122,29 @@ export function gitGraphColumnsForWidth(listWidth: number | null): GitGraphColum
   }
 }
 
+/** The user's column choices within what the width allows; two-line rows move them to line two. */
+export function gitGraphShownColumns(
+  byWidth: GitGraphColumns,
+  prefs: GitGraphListPrefs
+): GitGraphColumns {
+  if (prefs.twoLine) {
+    return { refs: byWidth.refs, author: false, date: false, hash: false }
+  }
+  return {
+    refs: byWidth.refs,
+    author: byWidth.author && prefs.author,
+    date: byWidth.date && prefs.date,
+    hash: byWidth.hash && prefs.hash
+  }
+}
+
 /** The one grid template header and rows share, so their cells always line up. */
 export function gitGraphGridTemplate(columns: GitGraphColumns): string {
   return [
     'auto',
     'minmax(0,1fr)',
     columns.author && 'minmax(0,9rem)',
-    columns.date && '9.5rem',
+    columns.date && '7rem',
     columns.hash && '4.5rem'
   ]
     .filter(Boolean)
@@ -199,12 +162,63 @@ function isPlainEnter(event: React.KeyboardEvent): boolean {
   )
 }
 
+// Why 2: centres the 24px lane band, and so the commit dot, on a 28px row's first line.
+const LANE_TOP = 2
+
+function RowRefs({
+  refs,
+  headRefId,
+  className
+}: {
+  refs: GitHistoryItemRef[]
+  headRefId?: string
+  className?: string
+}): React.JSX.Element | null {
+  // Why one badge plus "+N": several refs squeezed side by side truncate to unreadable fragments.
+  const primaryRef = refs.find((ref) => ref.id === headRefId) ?? refs[0]
+  if (!primaryRef) {
+    return null
+  }
+  const extraRefs = refs.filter((ref) => ref !== primaryRef)
+  return (
+    // Why capped: refs must not squeeze the message to nothing; the details pane lists them all.
+    <span
+      data-row-refs=""
+      className={cn(
+        'flex h-7 max-w-[45%] min-w-0 shrink-0 items-center gap-1 overflow-hidden',
+        className
+      )}
+    >
+      <span className="flex min-w-16 shrink">
+        <GitGraphRefBadge itemRef={primaryRef} isHead={primaryRef.id === headRefId} />
+      </span>
+      {extraRefs.length > 0 && (
+        <span
+          className="shrink-0 rounded-full border border-border px-1.5 py-0.5 text-3xs leading-none text-muted-foreground"
+          title={extraRefs.map((ref) => ref.name).join('\n')}
+        >
+          +{extraRefs.length}
+        </span>
+      )}
+    </span>
+  )
+}
+
+function dateTitle(timestamp: number | undefined): string {
+  return [formatGitHistoryTimestamp(timestamp), formatGitGraphRelativeDate(timestamp)]
+    .filter(Boolean)
+    .join(' · ')
+}
+
 export function GitGraphFullRow({
   viewModel,
   lanes,
   graphWidth,
   columns,
+  secondLine,
   selected,
+  expanded = false,
+  striped = false,
   isTabStop = false,
   headRefId,
   dimmed = false,
@@ -218,9 +232,15 @@ export function GitGraphFullRow({
   lanes: GitGraphLaneRow
   /** Widest graph in the list, so every subject starts in the same column. */
   graphWidth: number
-  /** Shared with the header (gitGraphColumnsForWidth). */
+  /** Shared with the header (gitGraphShownColumns). */
   columns: GitGraphColumns
+  /** Set in two-line mode: these fields and the refs move under the message. */
+  secondLine?: GitGraphSecondLine
   selected: boolean
+  /** The cursor row floats its whole message over the rows below when it is cut off. */
+  expanded?: boolean
+  /** Every other row gets a faint band so the eye keeps its line across a wide list. */
+  striped?: boolean
   /** The list's single roving tab stop; arrow keys move it. */
   isTabStop?: boolean
   /** The checked-out branch, whose badge is filled. */
@@ -239,46 +259,74 @@ export function GitGraphFullRow({
   const item = viewModel.historyItem
   const isBoundaryNode =
     viewModel.kind === 'incoming-changes' || viewModel.kind === 'outgoing-changes'
-  const refs = dedupeRemoteTrackingRefs(item.references ?? [])
-  // Why one badge plus "+N": several refs squeezed side by side truncate to unreadable fragments.
-  const primaryRef = refs.find((ref) => ref.id === headRefId) ?? refs[0]
-  const extraRefs = refs.filter((ref) => ref !== primaryRef)
+  const refs = columns.refs ? dedupeRemoteTrackingRefs(item.references ?? []) : []
+  // Why: boundary markers carry a placeholder id (0000000), not a commit hash.
+  const hash = isBoundaryNode ? null : item.displayId
+  const subject = (
+    <GitGraphRowSubject
+      text={item.subject}
+      expanded={expanded}
+      className={cn(
+        secondLine ? 'pt-1.5' : 'flex-1 py-1.5',
+        // Why /80, not muted: off-branch messages stay readable; selection reads at full strength.
+        dimmed && !selected ? 'text-foreground/80' : 'text-foreground'
+      )}
+    />
+  )
   const cells = (
     <>
-      <div data-col="graph" className="flex h-6 items-center" style={{ width: graphWidth }}>
-        <GitGraphLaneSvg viewModel={viewModel} lanes={lanes} onJump={onJump} />
+      <div
+        data-col="graph"
+        className="relative self-stretch overflow-hidden"
+        style={{ width: graphWidth }}
+      >
+        <GitGraphLaneConnectors lanes={lanes} top={LANE_TOP} />
+        <GitGraphLaneSvg
+          viewModel={viewModel}
+          lanes={lanes}
+          className="absolute left-0"
+          style={{ top: LANE_TOP }}
+          onJump={onJump}
+        />
       </div>
-      <div data-col="message" className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-        {columns.refs && primaryRef && (
-          // Why capped, and gone on a tiny list: refs must not squeeze the message to nothing;
-          // the details pane lists them all.
-          <div className="flex max-w-[45%] min-w-0 shrink-0 items-center gap-1 overflow-hidden">
-            <span className="flex min-w-16 shrink">
-              <GitGraphRefBadge itemRef={primaryRef} isHead={primaryRef.id === headRefId} />
-            </span>
-            {extraRefs.length > 0 && (
-              <span
-                className="shrink-0 rounded-full border border-border px-1.5 py-0.5 text-3xs leading-none text-muted-foreground"
-                title={extraRefs.map((ref) => ref.name).join('\n')}
-              >
-                +{extraRefs.length}
+      {secondLine ? (
+        <div data-col="message" className="relative flex min-w-0 flex-col pb-1.5">
+          {subject}
+          <span className="mt-0.5 flex h-4 min-w-0 items-center gap-1.5 overflow-hidden text-2xs leading-4 text-muted-foreground">
+            {secondLine.author && item.author && (
+              <>
+                <GitGraphAuthorAvatar
+                  name={item.author}
+                  email={item.authorEmail}
+                  className="size-4"
+                />
+                <span className="max-w-40 shrink-0 truncate" title={item.authorEmail}>
+                  {item.author}
+                </span>
+              </>
+            )}
+            {secondLine.date && (
+              <span className="shrink-0 tabular-nums" title={dateTitle(item.timestamp)}>
+                {formatGitGraphCompactDate(item.timestamp)}
               </span>
             )}
-          </div>
-        )}
-        <span
-          className={cn(
-            'min-w-0 flex-1 truncate',
-            // Why /80, not muted: off-branch messages stay readable; selection reads at full strength.
-            dimmed && !selected ? 'text-foreground/80' : 'text-foreground'
-          )}
-          title={item.subject}
-        >
-          {item.subject}
-        </span>
-      </div>
+            {secondLine.hash && hash && <span className="shrink-0 font-mono">{hash}</span>}
+            {refs.length > 0 && (
+              <RowRefs refs={refs} headRefId={headRefId} className="h-4 max-w-full shrink" />
+            )}
+          </span>
+        </div>
+      ) : (
+        <div data-col="message" className="relative flex min-h-7 min-w-0 items-start gap-1.5">
+          {subject}
+          {refs.length > 0 && <RowRefs refs={refs} headRefId={headRefId} />}
+        </div>
+      )}
       {columns.author && (
-        <span data-col="author" className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+        <span
+          data-col="author"
+          className="flex h-7 min-w-0 items-center gap-1.5 text-muted-foreground"
+        >
           {item.author && <GitGraphAuthorAvatar name={item.author} email={item.authorEmail} />}
           <span className="truncate" title={item.authorEmail}>
             {item.author}
@@ -288,33 +336,35 @@ export function GitGraphFullRow({
       {columns.date && (
         <span
           data-col="date"
-          className="truncate text-foreground/80 tabular-nums"
-          title={[
-            formatGitHistoryTimestamp(item.timestamp),
-            formatGitGraphRelativeDate(item.timestamp)
-          ]
-            .filter(Boolean)
-            .join(' · ')}
+          className="truncate leading-7 text-foreground/80 tabular-nums"
+          title={dateTitle(item.timestamp)}
         >
           {formatGitGraphCompactDate(item.timestamp)}
         </span>
       )}
       {columns.hash && (
-        <span data-col="hash" className="truncate font-mono text-muted-foreground">
-          {/* Why: boundary markers carry a placeholder id (0000000), not a commit hash. */}
-          {isBoundaryNode ? null : item.displayId}
+        <span data-col="hash" className="truncate font-mono leading-7 text-muted-foreground">
+          {hash}
         </span>
       )}
     </>
   )
-  const rowClassName = 'grid h-6 w-full min-w-0 items-center gap-x-3 px-3 text-left text-xs'
+  const rowClassName = cn(
+    'grid min-h-7 w-full min-w-0 items-start gap-x-3 px-3 text-left text-xs',
+    striped && !selected && 'bg-muted/40'
+  )
   const gridStyle = { gridTemplateColumns: gitGraphGridTemplate(columns) }
+  const rowData = {
+    'data-expanded': expanded ? 'true' : undefined,
+    'data-striped': striped ? 'true' : undefined
+  }
   if (isBoundaryNode) {
     return (
       <div
         className={cn(rowClassName, 'text-muted-foreground')}
         style={gridStyle}
         data-testid="git-graph-full-row"
+        {...rowData}
       >
         {cells}
       </div>
@@ -337,6 +387,7 @@ export function GitGraphFullRow({
       data-dimmed={dimmed ? 'true' : undefined}
       data-selected={selected ? 'true' : undefined}
       data-testid="git-graph-full-row"
+      {...rowData}
       onClick={onSelect}
       onDoubleClick={onOpen}
       onKeyDown={(event) => {

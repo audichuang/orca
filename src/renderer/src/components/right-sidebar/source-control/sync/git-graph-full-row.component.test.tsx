@@ -5,7 +5,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
 import { getUiRelativeTimeFormatter } from '@/i18n/relative-time-format'
-import { formatGitGraphCompactDate, GitGraphFullRow } from './git-graph-full-row'
+import { formatGitGraphCompactDate } from './git-graph-date-format'
+import { GitGraphFullRow } from './git-graph-full-row'
 import type { GitGraphLaneRow } from './git-graph-lane-layout'
 
 const COLUMNS = { refs: true, author: true, date: true, hash: true }
@@ -67,6 +68,77 @@ describe('GitGraphFullRow hash column', () => {
     expect(
       screen.getByTestId('git-graph-full-row').querySelector('[data-col="hash"]')
     ).toHaveTextContent('abc1234')
+  })
+})
+
+describe('GitGraphFullRow taller rows', () => {
+  it('floats the whole subject over the rows below only for an expanded, cut-off row', () => {
+    // Why stub: happy-dom has no layout, so the line never measures as cut off on its own.
+    const scroll = vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(400)
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(200)
+    try {
+      const row = (expanded: boolean): React.JSX.Element => (
+        <GitGraphFullRow
+          viewModel={viewModel('node', 'abc1234')}
+          lanes={LANES}
+          graphWidth={24}
+          columns={COLUMNS}
+          selected
+          expanded={expanded}
+          onSelect={() => {}}
+        />
+      )
+      const { rerender } = render(row(true))
+      const overlay = (): HTMLElement | null =>
+        screen.getByTestId('git-graph-full-row').querySelector('[data-subject-overlay]')
+      expect(overlay()).toHaveTextContent('node subject')
+      // The rows it covers keep taking clicks, and the row itself keeps one truncated line.
+      expect(overlay()).toHaveClass('pointer-events-none', 'whitespace-normal')
+      expect(screen.getByTitle('node subject')).toHaveClass('truncate')
+      rerender(row(false))
+      expect(overlay()).toBeNull()
+
+      client.mockReturnValue(400)
+      rerender(row(true))
+      expect(overlay()).toBeNull()
+    } finally {
+      scroll.mockRestore()
+      client.mockRestore()
+    }
+  })
+
+  it('runs lanes from the row top into the band and from the band to the row bottom', () => {
+    const lanes: GitGraphLaneRow = {
+      nodeColumn: 0,
+      nodeColor: 'git-graph-ref',
+      laneCount: 2,
+      segments: [
+        { kind: 'into-node', from: 0, color: 'git-graph-ref' },
+        { kind: 'out-of-node', to: 0, color: 'git-graph-ref' },
+        { kind: 'through', from: 1, to: 1, color: 'git-graph-lane-2' }
+      ]
+    }
+    render(
+      <GitGraphFullRow
+        viewModel={viewModel('node', 'abc1234')}
+        lanes={lanes}
+        graphWidth={33}
+        columns={COLUMNS}
+        selected={false}
+        onSelect={() => {}}
+      />
+    )
+    const connectors = Array.from(
+      screen
+        .getByTestId('git-graph-full-row')
+        .querySelectorAll<HTMLElement>('[data-lane-connector]')
+    )
+    // Into the band: the commit's own lane and the passing one; out of it: both again, to the
+    // row's bottom edge whatever height the row ends up with.
+    expect(connectors.filter((line) => line.style.top === '0px')).toHaveLength(2)
+    const down = connectors.filter((line) => line.style.bottom === '0px')
+    expect(down).toHaveLength(2)
+    expect(down.map((line) => line.style.left).sort()).toEqual(['10.5px', '21.5px'])
   })
 })
 
@@ -272,17 +344,23 @@ describe('formatGitGraphCompactDate', () => {
     expect(formatGitGraphCompactDate(new Date(2026, 9, 22, 23, 20).getTime(), now)).toMatch(
       new RegExp(`^${words.format(-1, 'day')} `, 'i')
     )
-    expect(formatGitGraphCompactDate(new Date(2026, 9, 21, 23, 59).getTime(), now)).toContain(
-      '2026'
+    expect(formatGitGraphCompactDate(new Date(2026, 9, 21, 23, 59).getTime(), now)).not.toMatch(
+      new RegExp(`^${words.format(-1, 'day')}`, 'i')
     )
   })
 
-  it('gives every older row the same width, across months and years', () => {
-    const lengths = [
-      new Date(2026, 9, 5, 7, 41),
-      new Date(2026, 9, 18, 20, 3),
-      new Date(2025, 11, 30, 17, 53)
-    ].map((date) => formatGitGraphCompactDate(date.getTime(), now).length)
-    expect(new Set(lengths).size).toBe(1)
+  it('drops the year this year and the time in older years, each at one width', () => {
+    const thisYear = [new Date(2026, 9, 5, 7, 41), new Date(2026, 0, 18, 20, 3)].map((date) =>
+      formatGitGraphCompactDate(date.getTime(), now)
+    )
+    expect(thisYear.every((text) => !text.includes('2026'))).toBe(true)
+    expect(thisYear[1]).toContain('20:03')
+    expect(new Set(thisYear.map((text) => text.length)).size).toBe(1)
+    const older = [new Date(2025, 11, 30, 17, 53), new Date(2024, 2, 4, 9, 7)].map((date) =>
+      formatGitGraphCompactDate(date.getTime(), now)
+    )
+    expect(older[0]).toContain('2025')
+    expect(older[0]).not.toContain('17:53')
+    expect(new Set(older.map((text) => text.length)).size).toBe(1)
   })
 })

@@ -24,6 +24,7 @@ const { resetGitHistoryGraphFiltersForTest } = await import('./git-history-graph
 const { resetRecentGitHistoryGraphPathsForTest } = await import('./git-history-graph-query-tokens')
 const { resetGitGraphRememberedSelectionForTest } = await import('./use-git-graph-full-view-state')
 const { resetGitGraphBranchTreePreferenceForTest } = await import('./use-git-graph-branch-tree')
+const { resetGitGraphListPrefs } = await import('./git-graph-list-prefs')
 
 const WORKTREE = 'wt-1'
 const WORKTREES = new Map<string, unknown>([[WORKTREE, {}]])
@@ -130,6 +131,7 @@ afterEach(() => {
   resetRecentGitHistoryGraphPathsForTest()
   resetGitGraphRememberedSelectionForTest()
   resetGitGraphBranchTreePreferenceForTest()
+  resetGitGraphListPrefs()
   vi.clearAllMocks()
 })
 
@@ -486,9 +488,61 @@ describe('full-width Git Graph', () => {
     fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' })
     expect(rows[1]).toHaveAttribute('data-selected', 'true')
     expect(rows[1]).toHaveFocus()
+    expect(rows[1]).toHaveAttribute('data-expanded', 'true')
     fireEvent.keyDown(rows[1]!, { key: 'ArrowUp', shiftKey: true })
     expect(rows[0]).toHaveAttribute('data-selected', 'true')
     expect(rows[1]).toHaveAttribute('data-selected', 'true')
+    // Only the cursor row shows its whole message, however many rows are selected.
+    expect(rows[0]).toHaveAttribute('data-expanded', 'true')
+    expect(rows[1]).not.toHaveAttribute('data-expanded')
+  })
+
+  it('hides the hash by default; the header menu shows it and moves fields to a second line', async () => {
+    const rect = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue(new DOMRect(0, 0, 900, 24))
+    try {
+      render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+      await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+      fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+      const view = await screen.findByRole('region', { name: 'Git Graph' })
+      await within(view).findAllByTestId('git-graph-full-row')
+      const header = view.querySelector<HTMLElement>('[data-git-graph-header]')!
+      const colsOf = (el: Element): string[] =>
+        Array.from(el.querySelectorAll(':scope > [data-col]')).map(
+          (cell) => cell.getAttribute('data-col') ?? ''
+        )
+      const expectRowsMatchHeader = (expected: string[]): void => {
+        expect(colsOf(header)).toEqual(expected)
+        for (const row of within(view).getAllByTestId('git-graph-full-row')) {
+          expect(colsOf(row)).toEqual(expected)
+          expect(row.style.gridTemplateColumns).toBe(header.style.gridTemplateColumns)
+        }
+      }
+      expectRowsMatchHeader(['graph', 'message', 'author', 'date'])
+      expect(within(view).queryByText('aaaaaaa')).toBeNull()
+
+      const openMenu = (): void => {
+        fireEvent.contextMenu(header)
+      }
+      openMenu()
+      fireEvent.click(await screen.findByRole('menuitemcheckbox', { name: 'Commit' }))
+      expectRowsMatchHeader(['graph', 'message', 'author', 'date', 'hash'])
+      expect(within(view).getByText('aaaaaaa')).toBeTruthy()
+
+      fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Two-line rows' }))
+      expectRowsMatchHeader(['graph', 'message'])
+      // The hash and author now ride on the second line, under the message.
+      const tip = within(view).getAllByTestId('git-graph-full-row')[0]!
+      expect(within(tip).getByText('aaaaaaa')).toBeTruthy()
+      expect(within(tip).getByText('Ada')).toBeTruthy()
+      expect(JSON.parse(window.localStorage.getItem('orca:git-graph-list') ?? '{}')).toMatchObject({
+        hash: true,
+        twoLine: true
+      })
+    } finally {
+      rect.mockRestore()
+    }
   })
 
   it('Escape with the narrow branch overlay open closes the overlay', async () => {

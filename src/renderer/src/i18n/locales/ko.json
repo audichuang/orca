@@ -14689,7 +14689,12 @@
             "hideDetails": "세부 정보 숨기기",
             "enterKey": "Enter",
             "showDetails": "세부 정보 보기",
-            "detailsStrip": "세부 정보"
+            "detailsStrip": "세부 정보",
+            "listOptions": "목록 옵션",
+            "columns": "열",
+            "twoLineRows": "두 줄로 표시",
+            "resetList": "기본값으로 재설정",
+            "columnTooNarrow": "목록이 너무 좁음"
           },
           "GitGraphBranchSidebar": {
             "local": "로컬",
