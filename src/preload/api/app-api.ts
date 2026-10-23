@@ -26,6 +26,8 @@ export type AppApi = {
   /** Returns a URL base for feature-wall assets. In dev this is Vite /@fs;
    *  in packaged builds this is file:// resources. Renderer appends filenames. */
   getFeatureWallAssetBaseUrl: () => Promise<string>
+  /** Desktop only: the installed bundle changed under this process, so a reload would mix versions. */
+  isBundleReplaced?: () => Promise<boolean>
   /** Relaunches the app (app.relaunch() + app.exit(0)) for settings that need a full restart to apply. */
   relaunch: () => Promise<void>
   /** Restarts Orca through the normal quit pipeline so daemon-backed terminal

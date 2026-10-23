@@ -32,6 +32,7 @@ export const appApi = {
     ),
   getFeatureWallAssetBaseUrl: (): Promise<string> =>
     ipcRenderer.invoke('app:getFeatureWallAssetBaseUrl'),
+  isBundleReplaced: (): Promise<boolean> => ipcRenderer.invoke('app:isBundleReplaced'),
   relaunch: (): Promise<void> =>
     prepareAndInvokeAppRestart(
       window,
