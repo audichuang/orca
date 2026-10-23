@@ -9,6 +9,7 @@ import { exportActiveMarkdownToPdf } from './export-active-markdown'
 import type { EditorToggleValue } from './EditorViewToggle'
 import { EditorPanelShell } from './EditorPanelShell'
 import { DiffNavigationProvider } from './diff-navigation-context'
+import { useDiffFilePosition } from './diff-file-sequence'
 import { EditorCommandOwnerContext } from './editor-command-owner-context'
 import { canUseChangesModeForFile } from './editor-panel-file-mode'
 import { getEditorPanelRenderModel } from './editor-panel-render-model'
@@ -58,6 +59,7 @@ function EditorPanelInner({
   )
   const markFileDirty = useAppStore((s) => s.markFileDirty)
   const pendingEditorReveal = useAppStore((s) => s.pendingEditorReveal)
+  const diffFilePosition = useDiffFilePosition(activeFile, activeViewStateId)
   // Git refreshes for other worktrees must not wake every mounted editor pane.
   const gitStatusEntries = useAppStore((s) =>
     selectEditorPanelGitStatusEntries(s, activeGitWorktreeId)
@@ -336,7 +338,7 @@ function EditorPanelInner({
   return (
     <EditorCommandOwnerContext value={isCmdSaveOwner}>
       {/* Split panes need independent bridges between diff editors and header controls. */}
-      <DiffNavigationProvider>
+      <DiffNavigationProvider filePosition={diffFilePosition}>
         <EditorPanelShell
           panelRef={setPanelRef}
           activeFile={activeFile}

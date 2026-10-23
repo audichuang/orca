@@ -6,7 +6,6 @@ import { useAppStore } from '@/store'
 import { getRuntimeGitCommitCompare } from '@/runtime/runtime-git-diff-client'
 import { getRuntimeGitRemoteCommitUrl } from '@/runtime/runtime-git-working-tree-client'
 import { getConnectionId } from '@/lib/connection-context'
-import { detectLanguage } from '@/lib/language-detect'
 import { translate } from '@/i18n/i18n'
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type {
@@ -22,17 +21,18 @@ import { openWorkspaceBrowserTab } from '@/lib/workspace-browser-tab-open'
 import { copyHistoryCommitsFullSource } from './git-history-commit-copy'
 import { explainCommitWithDefaultAgent } from './git-history-commit-explain'
 import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
+import {
+  openCommitFileInSequence,
+  type CommitFileTarget,
+  type OpenCommitFileHandler
+} from './commit-file-sequence'
 
 const EMPTY_BRANCH_CHANGE_ENTRIES: GitBranchChangeEntry[] = []
 
 type GitHistoryCommitActions = {
   loadCommitFiles: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
   openHistoryCommitDiff: (item: GitHistoryItem) => Promise<void>
-  openCommitFile: (
-    item: GitHistoryItem,
-    entry: GitBranchChangeEntry,
-    event?: SourceControlRowOpenEvent
-  ) => void
+  openCommitFile: OpenCommitFileHandler
   handleCommitAction: GitHistoryCommitActionHandler
 }
 
@@ -137,35 +137,25 @@ export function useGitHistoryCommitActions({
     (
       item: GitHistoryItem,
       entry: GitBranchChangeEntry,
-      event?: SourceControlRowOpenEvent
+      event?: SourceControlRowOpenEvent,
+      sequence?: readonly CommitFileTarget[]
     ): void => {
       if (!activeWorktreeId || !worktreePath) {
         return
       }
-      const cached = commitCompareCacheRef.current.get(item.id)
-      if (!cached) {
-        return
-      }
       const targetGroupId = resolveSplitTargetGroupId(event)
-      openCommitDiff(
-        tabOwnerId,
-        worktreePath,
+      openCommitFileInSequence({
+        item,
         entry,
-        {
-          commitOid: cached.summary.commitOid,
-          parentOid: cached.summary.parentOid,
-          compareRef: cached.summary.compareRef,
-          baseRef: cached.summary.baseRef,
-          subject: item.subject,
-          message: item.message
-        },
-        detectLanguage(entry.path),
-        {
-          targetGroupId,
-          preview: shouldOpenSourceControlRowAsPreview(event, targetGroupId),
-          gitWorktreeId: gitOwnerId
-        }
-      )
+        sequence,
+        tabOwnerId,
+        gitWorktreeId: gitOwnerId,
+        worktreePath,
+        summaryFor: (commitId) => commitCompareCacheRef.current.get(commitId)?.summary,
+        openCommitDiff,
+        targetGroupId,
+        preview: shouldOpenSourceControlRowAsPreview(event, targetGroupId)
+      })
     },
     [
       activeWorktreeId,
