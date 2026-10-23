@@ -270,6 +270,7 @@ describe('GitHistoryCommitFilesMenu', () => {
   })
 
   it('is fed by the upstream Commits panel when a commit expands', async () => {
+    const onOpenCommitFile = vi.fn()
     const result: GitHistoryResult = {
       items: [item],
       hasIncomingChanges: false,
@@ -293,7 +294,7 @@ describe('GitHistoryCommitFilesMenu', () => {
           onToggle={vi.fn()}
           onRefresh={vi.fn()}
           onLoadCommitFiles={async () => entries}
-          onOpenCommitFile={vi.fn()}
+          onOpenCommitFile={onOpenCommitFile}
           renderCommitFilesMenu={renderCommitFilesMenu}
         />
       </TooltipProvider>
@@ -311,5 +312,15 @@ describe('GitHistoryCommitFilesMenu', () => {
       document.querySelector('[data-commit-file-path="src/two.ts"][data-selected]')
     ).not.toBeNull()
     expect(document.querySelector('[data-commit-file-path="src/one.ts"][data-selected]')).toBeNull()
+
+    // The shown list rides along so the diff's change arrows can step into the next file.
+    fireEvent.click(screen.getByText('one.ts'))
+    const commit = expect.objectContaining({ id: item.id })
+    expect(onOpenCommitFile).toHaveBeenCalledWith(
+      commit,
+      entries[0],
+      expect.anything(),
+      entries.map((entry) => ({ entry, head: commit, base: commit }))
+    )
   })
 })

@@ -17309,6 +17309,11 @@
           "isolationOff": "{{value0}} runs only in an isolated frame, and isolated plugin frames are turned off.",
           "heading": "This editor needs the Orca desktop app",
           "openSource": "Open Source"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} files",
+          "pressAgainNext": "Press again to go to the next file",
+          "pressAgainPrevious": "Press again to go to the previous file"
         }
       },
       "diff": {

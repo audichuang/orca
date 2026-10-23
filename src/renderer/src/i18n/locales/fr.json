@@ -17013,6 +17013,11 @@
           "tooLarge": "{{value0}} est trop volumineux pour s’ouvrir dans {{value1}} ({{value2}} ; la limite est de {{value3}}).",
           "unsupported": "{{value0}} ne peut pas lire ce fichier depuis son emplacement. Mettez à jour le serveur Orca qui l’héberge ou passez à Source.",
           "readFailed": "Impossible de lire {{value0}} pour {{value1}}. {{value2}}"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} fichiers",
+          "pressAgainNext": "Appuyez à nouveau pour aller au fichier suivant",
+          "pressAgainPrevious": "Appuyez à nouveau pour aller au fichier précédent"
         }
       },
       "diff": {
