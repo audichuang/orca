@@ -19,8 +19,10 @@ import { GitHistoryGraphEmptyMessage } from './git-history-graph-empty-message'
 import {
   GitGraphFullRow,
   gitGraphColumnsForWidth,
-  gitGraphGridTemplate
+  gitGraphShownColumns
 } from './git-graph-full-row'
+import { GitGraphListHeader } from './git-graph-list-header'
+import { useGitGraphListPrefs } from './git-graph-list-prefs'
 import { GitGraphDetailsPane } from './git-graph-full-view-details'
 import { buildGitGraphLaneRows } from './git-graph-lane-layout'
 import { SWIMLANE_WIDTH } from './git-history-graph-svg'
@@ -154,7 +156,12 @@ export function GitGraphFullView({
   const viewWidth = measuredWidth || windowWidth
   const [listWidth, setListWidth] = useState<number | null>(null)
   const listColumnRef = useMeasuredWidth(setListWidth)
-  const columns = useMemo(() => gitGraphColumnsForWidth(listWidth), [listWidth])
+  const listPrefs = useGitGraphListPrefs()
+  const columns = useMemo(
+    () => gitGraphShownColumns(gitGraphColumnsForWidth(listWidth), listPrefs),
+    [listWidth, listPrefs]
+  )
+  const secondLine = listPrefs.twoLine ? listPrefs : undefined
   const tree = useGitGraphBranchTree({
     viewWidth,
     result,
@@ -271,32 +278,7 @@ export function GitGraphFullView({
           </div>
         )}
         <div ref={listColumnRef} className="flex min-w-0 flex-1 flex-col">
-          {/* Why both reserve the gutter: the header must lose the same scrollbar width as the rows. */}
-          <div
-            data-git-graph-header=""
-            className="scrollbar-sleek grid shrink-0 items-center gap-x-3 overflow-hidden border-b border-border px-3 py-1 text-2xs text-muted-foreground [scrollbar-gutter:stable]"
-            style={{ gridTemplateColumns: gitGraphGridTemplate(columns) }}
-          >
-            <span data-col="graph" style={{ width: graphWidth }} />
-            <span data-col="message">
-              {translate('auto.components.right.sidebar.GitGraphFullView.message', 'Message')}
-            </span>
-            {columns.author && (
-              <span data-col="author">
-                {translate('auto.components.right.sidebar.GitGraphFullView.author', 'Author')}
-              </span>
-            )}
-            {columns.date && (
-              <span data-col="date">
-                {translate('auto.components.right.sidebar.GitGraphFullView.date', 'Date')}
-              </span>
-            )}
-            {columns.hash && (
-              <span data-col="hash">
-                {translate('auto.components.right.sidebar.GitGraphFullView.commit', 'Commit')}
-              </span>
-            )}
-          </div>
+          <GitGraphListHeader columns={columns} graphWidth={graphWidth} prefs={listPrefs} />
           <div
             ref={listRef}
             data-git-graph-list=""
@@ -327,7 +309,13 @@ export function GitGraphFullView({
                 lanes={laneRows[index]!}
                 graphWidth={graphWidth}
                 columns={columns}
+                secondLine={secondLine}
                 selected={selection.isRowSelected(viewModel.historyItem.id)}
+                expanded={
+                  viewModel.historyItem.id === selection.cursorId &&
+                  selection.isRowSelected(viewModel.historyItem.id)
+                }
+                striped={index % 2 === 1}
                 isTabStop={viewModel.historyItem.id === selection.cursorId}
                 headRefId={headRefId}
                 dimmed={
