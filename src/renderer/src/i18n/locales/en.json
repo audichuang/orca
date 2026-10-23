@@ -17453,6 +17453,11 @@
         },
         "MarkdownDefaultViewContextMenu": {
           "label": "Default Markdown View"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} files",
+          "pressAgainNext": "Press again to go to the next file",
+          "pressAgainPrevious": "Press again to go to the previous file"
         }
       },
       "diff": {
