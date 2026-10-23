@@ -10,6 +10,11 @@ import {
   FOLDER_NESTED_REPO_SCAN_OPTIONS,
   getNewNestedRepoCandidatesFromState
 } from '../right-sidebar/source-control/folder/folder-nested-repo-candidates'
+import {
+  selectDetectedWorktreesByRepo,
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspace-record-selectors'
 
 type Scanned = { folderPath: string; repos: NestedRepoCandidate[]; partial: boolean }
 
@@ -29,7 +34,7 @@ export function useGitGraphFolderAddRepos(workspaceId: string): GitGraphFolderAd
   const scope = parseWorkspaceKey(workspaceId)
   const folderWorkspaceId = scope?.type === 'folder' ? scope.folderWorkspaceId : null
   const folderWorkspace = useAppStore(
-    (s) => s.folderWorkspaces.find((workspace) => workspace.id === folderWorkspaceId) ?? null
+    (s) => selectFolderWorkspaces(s).find((workspace) => workspace.id === folderWorkspaceId) ?? null
   )
   const local =
     folderWorkspace !== null && getRepoExecutionHostId(folderWorkspace) === LOCAL_EXECUTION_HOST_ID
@@ -55,8 +60,8 @@ export function useGitGraphFolderAddRepos(workspaceId: string): GitGraphFolderAd
       })
   }, [folderPath, local])
   const repos = useAppStore((s) => s.repos)
-  const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
-  const detectedWorktreesByRepo = useAppStore((s) => s.detectedWorktreesByRepo)
+  const worktreesByRepo = useAppStore(selectWorktreesByRepo)
+  const detectedWorktreesByRepo = useAppStore(selectDetectedWorktreesByRepo)
   // Why derived from the live store: repos added through the dialog drop out without a rescan.
   const missing = useMemo(
     () =>
