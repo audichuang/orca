@@ -18,6 +18,7 @@ import { EditorPanelActionsMenu } from './EditorPanelActionsMenu'
 import { EditorFileLocationMenuItems } from './EditorFileLocationMenuItems'
 import { translate } from '@/i18n/i18n'
 import { EditorPanelHeaderPath } from './EditorPanelHeaderPath'
+import { DiffFileSequenceStatus } from './diff-file-sequence-status'
 import { useDiffNavigation } from './diff/review/diff-navigation-context'
 import { useShortcutKeyDetails } from '@/hooks/useShortcutLabel'
 import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
@@ -113,7 +114,10 @@ export function EditorPanelHeader({
     () => diffComments.filter((comment) => comment.filePath === activeFile.relativePath),
     [activeFile.relativePath, diffComments]
   )
-  const { changeCount, goToPreviousDiff, goToNextDiff } = useDiffNavigation()
+  const { changeCount, goToPreviousDiff, goToNextDiff, filePosition, fileBoundaryHint } =
+    useDiffNavigation()
+  // Why: with a file list an unchanged diff still steps to its neighbours.
+  const diffNavigationDisabled = changeCount === 0 && filePosition === null
   const previousChangeShortcut = useShortcutKeyDetails('editor.previousChange')
   const nextChangeShortcut = useShortcutKeyDetails('editor.nextChange')
 
@@ -247,6 +251,9 @@ export function EditorPanelHeader({
                   )}
             </TooltipContent>
           </Tooltip>
+          {filePosition && (
+            <DiffFileSequenceStatus position={filePosition} hint={fileBoundaryHint} />
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -257,7 +264,7 @@ export function EditorPanelHeader({
                   'auto.components.editor.EditorPanelHeader.2076ecfc9c',
                   'Previous change'
                 )}
-                disabled={changeCount === 0}
+                disabled={diffNavigationDisabled}
               >
                 <ArrowUp size={14} />
               </button>
@@ -283,7 +290,7 @@ export function EditorPanelHeader({
                   'auto.components.editor.EditorPanelHeader.631dab0df3',
                   'Next change'
                 )}
-                disabled={changeCount === 0}
+                disabled={diffNavigationDisabled}
               >
                 <ArrowDown size={14} />
               </button>
