@@ -24,8 +24,8 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 - A fork file that an upstream census or ratchet must list (`config/*-baseline.txt`, `src/shared/wsl-move/*-dispositions.ts`) gets its own entry there; on a rebase conflict in those files keep both sides.
 - Keep `git config rerere.enabled true` so a conflict resolved once replays on the next rebase.
 - Rebase with `git rebase --onto vNEW vOLD`: upstream release tags are side commits (`release: vX.Y.Z` on a branch), so the old tag is not an ancestor of the new one and a plain `git rebase vNEW` replays the old release commit into a `package.json` conflict.
-- A new fork UI string goes into all six locale files, not only `en.json`: `fork-locale-parity.mjs` in `fork-check-lint` fails otherwise. This is the one place a fork change grows an upstream file on purpose; don't drop translations to keep the upstream diff small.
-- Locale files (`src/renderer/src/i18n/locales/*`) that conflict: keep both sides, since fork keys are pure additions. Don't take upstream's side and regenerate: `sync:localization-catalog` re-adds only English, so the fork's translations in the other five locales would be lost. Then run `pnpm run verify:localization-catalogs`.
+- A new fork UI string goes into every locale file (seven since v1.4.238 added `pt.json`), not only `en.json`: `fork-locale-parity.mjs` in `fork-check-lint` fails otherwise. This is the one place a fork change grows an upstream file on purpose; don't drop translations to keep the upstream diff small.
+- Locale files (`src/renderer/src/i18n/locales/*`) that conflict: keep both sides, since fork keys are pure additions. Don't take upstream's side and regenerate: `sync:localization-catalog` re-adds only English, so the fork's translations in the other locales would be lost. Then run `pnpm run verify:localization-catalogs`.
 - Typecheck (`pnpm tc:web` / `tc:node`) before committing; tests alone pass with type errors.
 - `typecheck:e2e` is not in the gate: upstream's own `tests/tools` fixtures fail it at the release tag.
 
