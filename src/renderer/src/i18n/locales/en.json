@@ -15178,7 +15178,8 @@
             "listOptions": "List options",
             "columns": "Columns",
             "twoLineRows": "Two-line rows",
-            "resetList": "Reset to defaults"
+            "resetList": "Reset to defaults",
+            "columnTooNarrow": "List too narrow"
           },
           "GitGraphBranchSidebar": {
             "local": "Local",
