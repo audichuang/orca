@@ -14842,7 +14842,11 @@
             "hideDetails": "詳細を隠す",
             "enterKey": "Enter",
             "showDetails": "詳細を表示",
-            "detailsStrip": "詳細"
+            "detailsStrip": "詳細",
+            "listOptions": "リストのオプション",
+            "columns": "列",
+            "twoLineRows": "2 行で表示",
+            "resetList": "既定に戻す"
           },
           "GitGraphBranchSidebar": {
             "local": "ローカル",

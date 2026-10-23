@@ -15174,7 +15174,11 @@
             "hideDetails": "Hide details",
             "enterKey": "Enter",
             "showDetails": "Show details",
-            "detailsStrip": "Details"
+            "detailsStrip": "Details",
+            "listOptions": "List options",
+            "columns": "Columns",
+            "twoLineRows": "Two-line rows",
+            "resetList": "Reset to defaults"
           },
           "GitGraphBranchSidebar": {
             "local": "Local",

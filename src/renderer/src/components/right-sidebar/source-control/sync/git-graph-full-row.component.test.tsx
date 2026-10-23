@@ -5,7 +5,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
 import { getUiRelativeTimeFormatter } from '@/i18n/relative-time-format'
-import { formatGitGraphCompactDate, GitGraphFullRow } from './git-graph-full-row'
+import { formatGitGraphCompactDate } from './git-graph-date-format'
+import { GitGraphFullRow } from './git-graph-full-row'
 import type { GitGraphLaneRow } from './git-graph-lane-layout'
 
 const COLUMNS = { refs: true, author: true, date: true, hash: true }
@@ -272,17 +273,23 @@ describe('formatGitGraphCompactDate', () => {
     expect(formatGitGraphCompactDate(new Date(2026, 9, 22, 23, 20).getTime(), now)).toMatch(
       new RegExp(`^${words.format(-1, 'day')} `, 'i')
     )
-    expect(formatGitGraphCompactDate(new Date(2026, 9, 21, 23, 59).getTime(), now)).toContain(
-      '2026'
+    expect(formatGitGraphCompactDate(new Date(2026, 9, 21, 23, 59).getTime(), now)).not.toMatch(
+      new RegExp(`^${words.format(-1, 'day')}`, 'i')
     )
   })
 
-  it('gives every older row the same width, across months and years', () => {
-    const lengths = [
-      new Date(2026, 9, 5, 7, 41),
-      new Date(2026, 9, 18, 20, 3),
-      new Date(2025, 11, 30, 17, 53)
-    ].map((date) => formatGitGraphCompactDate(date.getTime(), now).length)
-    expect(new Set(lengths).size).toBe(1)
+  it('drops the year this year and the time in older years, each at one width', () => {
+    const thisYear = [new Date(2026, 9, 5, 7, 41), new Date(2026, 0, 18, 20, 3)].map((date) =>
+      formatGitGraphCompactDate(date.getTime(), now)
+    )
+    expect(thisYear.every((text) => !text.includes('2026'))).toBe(true)
+    expect(thisYear[1]).toContain('20:03')
+    expect(new Set(thisYear.map((text) => text.length)).size).toBe(1)
+    const older = [new Date(2025, 11, 30, 17, 53), new Date(2024, 2, 4, 9, 7)].map((date) =>
+      formatGitGraphCompactDate(date.getTime(), now)
+    )
+    expect(older[0]).toContain('2025')
+    expect(older[0]).not.toContain('17:53')
+    expect(new Set(older.map((text) => text.length)).size).toBe(1)
   })
 })

@@ -15002,7 +15002,11 @@
             "hideDetails": "Masquer les détails",
             "enterKey": "Entrée",
             "showDetails": "Afficher les détails",
-            "detailsStrip": "Détails"
+            "detailsStrip": "Détails",
+            "listOptions": "Options de la liste",
+            "columns": "Colonnes",
+            "twoLineRows": "Lignes sur deux lignes",
+            "resetList": "Rétablir les valeurs par défaut"
           },
           "GitGraphBranchSidebar": {
             "local": "Locales",
