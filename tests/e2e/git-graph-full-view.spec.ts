@@ -337,6 +337,28 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   await orcaPage.mouse.click(covered!.x + covered!.width / 3, covered!.y + covered!.height / 2)
   await expect(below).toHaveAttribute('data-selected', 'true')
   await expect(overlay).toHaveCount(0)
+  // At the list's bottom edge the layer opens upward: it never grows the scroll area, so nothing
+  // shifts when it goes away.
+  await postMerge.click()
+  await list.evaluate((el) => {
+    el.style.flex = 'none'
+    el.style.height = '56px'
+    el.scrollTop = 0
+  })
+  const extent = await list.evaluate((el) => el.scrollHeight)
+  await postMerge.press('ArrowDown')
+  await expect(overlay).toBeVisible()
+  const edge = await overlay.evaluate((el) => {
+    const listBox = el.closest('[data-git-graph-list]')!.getBoundingClientRect()
+    const box = el.getBoundingClientRect()
+    return { below: box.bottom - listBox.bottom, top: box.top - listBox.top }
+  })
+  expect(edge.below).toBeLessThanOrEqual(1)
+  expect(await list.evaluate((el) => el.scrollHeight)).toBe(extent)
+  await list.evaluate((el) => {
+    el.style.flex = ''
+    el.style.height = ''
+  })
   await orcaPage.evaluate(() => {
     const state = window.__store!.getState()
     state.setSidebarOpen(true)
