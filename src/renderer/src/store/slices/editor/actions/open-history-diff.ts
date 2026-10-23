@@ -14,6 +14,16 @@ import {
   removeEditorStateForReplacedPreview
 } from '../tabs/workspace-editor-item'
 
+/** Tab id of a commit diff; the cross-file diff navigation looks its file list up by it. */
+export function commitDiffTabId(
+  worktreeId: string,
+  gitWorktreeId: string | undefined,
+  compareVersion: string,
+  relativePath: string
+): string {
+  return `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::diff::commit::${compareVersion}::${relativePath}`
+}
+
 export function createOpenHistoryDiff(
   set: EditorSet,
   get: EditorGet
@@ -117,7 +127,12 @@ export function createOpenHistoryDiff(
       const commitCompare = toCommitCompareSnapshot(compare)
       const gitWorktreeId =
         options?.gitWorktreeId !== worktreeId ? options?.gitWorktreeId : undefined
-      const id = `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::diff::commit::${commitCompare.compareVersion}::${entry.path}`
+      const id = commitDiffTabId(
+        worktreeId,
+        gitWorktreeId,
+        commitCompare.compareVersion,
+        entry.path
+      )
       const isPreview = resolveEditorPreviewIntent(get(), options?.preview)
       let editorItemTargetGroupId = options?.targetGroupId
       set((s) => {
