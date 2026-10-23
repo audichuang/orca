@@ -12,8 +12,8 @@ import {
 } from '../../../../../../shared/git-history-graph'
 import { GitHistoryRow } from './git-history-row'
 import { GitHistoryCommitFiles, type GitHistoryCommitFilesState } from './git-history-commit-files'
+import { commitFileTargets, type OpenCommitFileHandler } from './commit-file-sequence'
 import { GitHistoryCommitContextMenu } from './git-history-commit-context-menu'
-import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import { translate } from '@/i18n/i18n'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import {
@@ -60,11 +60,7 @@ export function GitHistoryPanel({
   onRefresh: () => void
   onOpenCommit?: (item: GitHistoryItem) => void
   onLoadCommitFiles?: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
-  onOpenCommitFile?: (
-    item: GitHistoryItem,
-    entry: GitBranchChangeEntry,
-    event?: SourceControlRowOpenEvent
-  ) => void
+  onOpenCommitFile?: OpenCommitFileHandler
   onCommitAction?: GitHistoryCommitActionHandler
 } & GitHistoryPanelSlots): React.JSX.Element | null {
   const result = state.result
@@ -406,7 +402,9 @@ export function GitHistoryPanel({
                     state={filesByCommit[item.id] ?? { status: 'loading' }}
                     author={item.author}
                     timestamp={item.timestamp}
-                    onOpenFile={(entry, event) => onOpenCommitFile?.(item, entry, event)}
+                    onOpenFile={(entry, event, shownEntries) =>
+                      onOpenCommitFile?.(item, entry, event, commitFileTargets(item, shownEntries))
+                    }
                     onOpenAll={onOpenCommit ? () => onOpenCommit(item) : undefined}
                     renderFilesMenu={slots.renderCommitFilesMenu?.bind(null, [item])}
                   />
