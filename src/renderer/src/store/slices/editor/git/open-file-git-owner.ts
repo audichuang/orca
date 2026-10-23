@@ -8,6 +8,7 @@ import {
   parseExecutionHostId,
   toRuntimeExecutionHostId
 } from '../../../../../../shared/execution-host'
+import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
 
 /** Worktree whose git state backs a tab; differs from the tab owner for folder-workspace repo sections. */
 export function getOpenFileGitWorktreeId(
@@ -25,7 +26,10 @@ export function getOpenFileGitRelativePath(
     return file.relativePath
   }
   // Why: every host's row, since a bare id can name two hosts' worktrees.
-  for (const worktree of getIndexedWorktreesById(state.worktreesByRepo, file.gitWorktreeId)) {
+  for (const worktree of getIndexedWorktreesById(
+    selectWorktreesByRepo(state),
+    file.gitWorktreeId
+  )) {
     const relativePath = relativePathInsideRoot(worktree.path, file.filePath)
     if (relativePath) {
       return relativePath
@@ -55,7 +59,7 @@ export function resolveTabOwnerRelativePath(
     ? toRuntimeExecutionHostId(file.runtimeEnvironmentId)
     : null
   const candidates = new Set<string>()
-  for (const workspace of state.folderWorkspaces ?? []) {
+  for (const workspace of selectFolderWorkspaces(state) ?? []) {
     if (workspace.id !== scope.folderWorkspaceId) {
       continue
     }
