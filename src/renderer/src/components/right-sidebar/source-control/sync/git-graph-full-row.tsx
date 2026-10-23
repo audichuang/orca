@@ -11,7 +11,7 @@ import {
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
 import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
 import { graphColor } from './git-history-graph-svg'
-import { GitGraphLaneSvg } from './git-graph-lane-svg'
+import { GitGraphLaneConnectors, GitGraphLaneSvg } from './git-graph-lane-svg'
 import type { GitGraphLaneRow } from './git-graph-lane-layout'
 import { formatGitHistoryTimestamp } from './git-history-format'
 import { formatGitGraphCompactDate, formatGitGraphRelativeDate } from './git-graph-date-format'
@@ -282,11 +282,12 @@ export function GitGraphFullRow({
         className="relative self-stretch overflow-hidden"
         style={{ width: graphWidth }}
       >
+        <GitGraphLaneConnectors lanes={lanes} top={LANE_TOP} />
         <GitGraphLaneSvg
           viewModel={viewModel}
           lanes={lanes}
-          top={LANE_TOP}
-          className="absolute top-0 left-0"
+          className="absolute left-0"
+          style={{ top: LANE_TOP }}
           onJump={onJump}
         />
       </div>
