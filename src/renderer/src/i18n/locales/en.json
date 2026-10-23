@@ -18060,6 +18060,11 @@
           "open": "Open with default app",
           "downloadOpen": "Download & open with default app",
           "openFailed": "No app on this computer opened this file."
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} files",
+          "pressAgainNext": "Press again to go to the next file",
+          "pressAgainPrevious": "Press again to go to the previous file"
         }
       },
       "diff": {

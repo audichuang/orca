@@ -16776,6 +16776,11 @@
           "remotePathIsDirectory": "远程路径是一个目录",
           "remotePagedReadUnsupported": "远程文件超过了此 Orca 服务器可发送的 512 KB 上限，请更新服务器后再打开",
           "remoteFileTooLarge": "远程文件过大，无法在编辑器中打开（{{bytes}} 字节）"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} 个文件",
+          "pressAgainNext": "再按一次前往下一个文件",
+          "pressAgainPrevious": "再按一次前往上一个文件"
         }
       },
       "diff": {
