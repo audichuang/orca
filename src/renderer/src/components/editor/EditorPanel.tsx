@@ -9,6 +9,7 @@ import { exportActiveMarkdownToPdf } from './export-active-markdown'
 import type { EditorToggleValue } from './EditorViewToggle'
 import { EditorPanelShell } from './EditorPanelShell'
 import { DiffNavigationProvider } from './diff-navigation-context'
+import { useDiffFilePosition } from './diff-file-sequence'
 import { EditorCommandOwnerContext } from './editor-command-owner-context'
 import { canUseChangesModeForFile } from './editor-panel-file-mode'
 import { getEditorPanelRenderModel } from './editor-panel-render-model'
@@ -58,6 +59,7 @@ function EditorPanelInner({
   )
   const markFileDirty = useAppStore((s) => s.markFileDirty)
   const pendingEditorReveal = useAppStore((s) => s.pendingEditorReveal)
+  const diffFilePosition = useDiffFilePosition(activeFile, activeViewStateId)
   // Why: background Git refreshes for other worktrees must not wake every
   // mounted Monaco/rich editor pane.
   const gitStatusEntries = useAppStore((s) =>
@@ -338,7 +340,7 @@ function EditorPanelInner({
   return (
     <EditorCommandOwnerContext value={isCmdSaveOwner}>
       {/* Why: each split pane needs an isolated bridge between its diff editor and header controls. */}
-      <DiffNavigationProvider>
+      <DiffNavigationProvider filePosition={diffFilePosition}>
         <EditorPanelShell
           panelRef={setPanelRef}
           activeFile={activeFile}
