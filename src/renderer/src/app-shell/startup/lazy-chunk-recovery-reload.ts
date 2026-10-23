@@ -101,5 +101,10 @@ async function restartIntoReplacedBundle(win: Window): Promise<LazyChunkRecovery
     refused.cancel()
     return 'checkpoint-refused'
   }
-  return refused.outcome
+  try {
+    return await refused.outcome
+  } finally {
+    // Main can veto the quit (e.g. updater preflight); a surviving document must not keep the restart latch.
+    win.dispatchEvent(new Event(ORCA_APP_RESTART_ABORTED_EVENT))
+  }
 }
