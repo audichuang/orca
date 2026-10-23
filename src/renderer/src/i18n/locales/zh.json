@@ -14693,7 +14693,8 @@
             "listOptions": "列表选项",
             "columns": "栏",
             "twoLineRows": "双行显示",
-            "resetList": "恢复默认"
+            "resetList": "恢复默认",
+            "columnTooNarrow": "列表太窄"
           },
           "GitGraphBranchSidebar": {
             "local": "本地",

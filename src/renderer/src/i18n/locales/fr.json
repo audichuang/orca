@@ -14801,7 +14801,8 @@
             "listOptions": "Options de la liste",
             "columns": "Colonnes",
             "twoLineRows": "Lignes sur deux lignes",
-            "resetList": "Rétablir les valeurs par défaut"
+            "resetList": "Rétablir les valeurs par défaut",
+            "columnTooNarrow": "Liste trop étroite"
           },
           "GitGraphBranchSidebar": {
             "local": "Locales",
