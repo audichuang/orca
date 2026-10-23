@@ -340,6 +340,18 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   expect(fit.clipped).toBe(false)
   expect(fit.below).toBeLessThanOrEqual(1)
   expect(fit.above).toBeLessThanOrEqual(1)
+  // Scrolling away while a click settles wins: the late wrap must not pull the list back.
+  await list.evaluate((el) => {
+    el.style.height = '60px'
+    el.scrollTop = 90
+  })
+  const fourth = rows.nth(3)
+  await fourth.click()
+  await list.evaluate((el) => {
+    el.scrollTop = 0
+  })
+  await expect(fourth).toHaveAttribute('data-expanded', 'true')
+  expect(await list.evaluate((el) => el.scrollTop)).toBe(0)
   await list.evaluate((el) => {
     el.style.flex = ''
     el.style.height = ''
