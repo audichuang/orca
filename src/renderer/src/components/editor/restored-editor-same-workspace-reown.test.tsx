@@ -228,7 +228,9 @@ describe('a restored tab re-owned inside its own workspace, layout-owner build',
     expect(layoutCommands()).toEqual([])
   })
 
-  it("tells main of a re-own that reaches a tab before main's frame draws it", async () => {
+  // Fork: as above, the folder tab is bound to its repo at open, so a read that lands before main's
+  // frame draws the tab re-owns nothing either; main's late frame still shows the window's file.
+  it("leaves a bound folder tab alone when the read reaches it before main's frame draws it", async () => {
     seedNestedLocalWorkspaces()
     main = await drawTabsFromMain(useAppStore)
     // Main holds the open's answer: its frame has yet to draw the tab.
@@ -250,17 +252,15 @@ describe('a restored tab re-owned inside its own workspace, layout-owner build',
     })
 
     const [file] = useAppStore.getState().openFiles
-    expect(file).toMatchObject({ worktreeId: FOLDER, relativePath: 'a.md' })
-    expect(file!.id).not.toBe(id)
-    expect(layoutApplyTestTransport.sentOfType('renameEditorFiles')).toEqual([
-      expect.objectContaining({
-        workspace: FOLDER,
-        renames: [expect.objectContaining({ fileId: id, newFileId: file!.id })]
-      })
-    ])
-    // Main's tab shows the file the window holds, not its old id.
+    expect(file).toMatchObject({
+      worktreeId: FOLDER,
+      gitWorktreeId: REPO,
+      relativePath: 'pkg/a.md'
+    })
+    expect(file!.id).toBe(id)
+    expect(layoutApplyTestTransport.sentOfType('renameEditorFiles')).toEqual([])
     expect(useAppStore.getState().unifiedTabsByWorktree[FOLDER]).toEqual([
-      expect.objectContaining({ entityId: file!.id })
+      expect.objectContaining({ entityId: id })
     ])
   })
 
