@@ -1,5 +1,6 @@
 // Fork-only: draws one full Git Graph row from the re-laid lanes (git-graph-lane-layout.ts).
 import React from 'react'
+import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
 import type { GitGraphLaneRow, GitGraphLaneSegment } from './git-graph-lane-layout'
@@ -14,6 +15,36 @@ import {
 export const GIT_GRAPH_JUMP_ATTRIBUTE = 'data-git-graph-jump'
 
 const x = (column: number): number => W * (column + 1)
+
+// Why so long: rows can grow (two-line, the expanded cursor row); the graph cell clips the excess.
+const LANE_TAIL = 1000
+
+/** Lanes cross the gaps above and below the 24px band, so a taller row keeps them joined. */
+function laneExtensions(
+  lanes: GitGraphLaneRow,
+  top: number
+): { color: GitGraphLaneSegment['color']; d: string }[] {
+  const bottom = top + H
+  const down = (column: number): string => `M ${x(column)} ${bottom} V ${bottom + LANE_TAIL}`
+  const up = (column: number): string => `M ${x(column)} 0 V ${top}`
+  return lanes.segments.flatMap((segment) => {
+    switch (segment.kind) {
+      case 'through':
+        return [
+          { color: segment.color, d: up(segment.from) },
+          { color: segment.color, d: down(segment.to) }
+        ]
+      case 'into-node':
+        return [{ color: segment.color, d: up(segment.from) }]
+      case 'out-of-node':
+        return [{ color: segment.color, d: down(segment.to) }]
+      case 'fold-down':
+        return [{ color: segment.color, d: up(segment.at) }]
+      case 'fold-up':
+        return [{ color: segment.color, d: down(segment.at) }]
+    }
+  })
+}
 
 function throughPath(from: number, to: number): string {
   if (from === to) {
@@ -105,47 +136,59 @@ function FoldArrow({
 export function GitGraphLaneSvg({
   viewModel,
   lanes,
+  top = 0,
+  className,
   onJump
 }: {
   viewModel: GitHistoryItemViewModel
   lanes: GitGraphLaneRow
+  /** Where the 24px band starts; with a top, lanes run on above and below it for taller rows. */
+  top?: number
+  className?: string
   /** A click on a fold arrow jumps to the commit at its other end. */
   onJump?: (commitId: string) => void
 }): React.JSX.Element {
   const node = lanes.nodeColumn
   const width = W * (lanes.laneCount + 1)
+  const height = top > 0 ? top + H + LANE_TAIL : H
   return (
     <svg
-      className="shrink-0 overflow-visible"
+      className={cn('shrink-0 overflow-visible', className)}
       width={width}
-      height={H}
-      viewBox={`0 0 ${width} ${H}`}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
       aria-hidden="true"
     >
-      {lanes.segments.map((segment, index) => {
-        switch (segment.kind) {
-          case 'through':
-            return (
-              <GraphPath
-                key={index}
-                d={throughPath(segment.from, segment.to)}
-                color={segment.color}
-              />
-            )
-          case 'into-node':
-            return (
-              <GraphPath key={index} d={intoNodePath(segment.from, node)} color={segment.color} />
-            )
-          case 'out-of-node':
-            return (
-              <GraphPath key={index} d={outOfNodePath(node, segment.to)} color={segment.color} />
-            )
-          case 'fold-down':
-          case 'fold-up':
-            return <FoldArrow key={index} segment={segment} onJump={onJump} />
-        }
-      })}
-      <GitHistoryGraphNodeMarker viewModel={viewModel} cx={x(node)} color={lanes.nodeColor} />
+      {top > 0 &&
+        laneExtensions(lanes, top).map((extension, index) => (
+          <GraphPath key={`extension-${index}`} d={extension.d} color={extension.color} />
+        ))}
+      <g transform={top > 0 ? `translate(0 ${top})` : undefined}>
+        {lanes.segments.map((segment, index) => {
+          switch (segment.kind) {
+            case 'through':
+              return (
+                <GraphPath
+                  key={index}
+                  d={throughPath(segment.from, segment.to)}
+                  color={segment.color}
+                />
+              )
+            case 'into-node':
+              return (
+                <GraphPath key={index} d={intoNodePath(segment.from, node)} color={segment.color} />
+              )
+            case 'out-of-node':
+              return (
+                <GraphPath key={index} d={outOfNodePath(node, segment.to)} color={segment.color} />
+              )
+            case 'fold-down':
+            case 'fold-up':
+              return <FoldArrow key={index} segment={segment} onJump={onJump} />
+          }
+        })}
+        <GitHistoryGraphNodeMarker viewModel={viewModel} cx={x(node)} color={lanes.nodeColor} />
+      </g>
     </svg>
   )
 }
