@@ -23,6 +23,7 @@ import {
 } from './git-graph-full-row'
 import { GitGraphListHeader } from './git-graph-list-header'
 import { useGitGraphListPrefs } from './git-graph-list-prefs'
+import { useGitGraphExpandedRow } from './use-git-graph-expanded-row'
 import { GitGraphDetailsPane } from './git-graph-full-view-details'
 import { buildGitGraphLaneRows } from './git-graph-lane-layout'
 import { SWIMLANE_WIDTH } from './git-history-graph-svg'
@@ -138,6 +139,10 @@ export function GitGraphFullView({
     }
   })
   const { shownItems, jumpTo } = selection
+  const expandedRow = useGitGraphExpandedRow(
+    listRef,
+    selection.cursorId && selection.isRowSelected(selection.cursorId) ? selection.cursorId : null
+  )
   const branchContext = useGitGraphBranchContext({
     ownerKey,
     worktreeId,
@@ -284,7 +289,10 @@ export function GitGraphFullView({
             data-git-graph-list=""
             tabIndex={-1}
             className="scrollbar-sleek min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
-            onKeyDown={selection.handleListKeyDown}
+            onKeyDown={(event) => {
+              expandedRow.noteKeySelect()
+              selection.handleListKeyDown(event)
+            }}
           >
             {state.status === 'error' && !result && (
               <p className="px-3 py-2 text-xs text-destructive">{state.error}</p>
@@ -311,10 +319,7 @@ export function GitGraphFullView({
                 columns={columns}
                 secondLine={secondLine}
                 selected={selection.isRowSelected(viewModel.historyItem.id)}
-                expanded={
-                  viewModel.historyItem.id === selection.cursorId &&
-                  selection.isRowSelected(viewModel.historyItem.id)
-                }
+                expanded={viewModel.historyItem.id === expandedRow.expandedId}
                 striped={index % 2 === 1}
                 isTabStop={viewModel.historyItem.id === selection.cursorId}
                 headRefId={headRefId}
@@ -334,7 +339,10 @@ export function GitGraphFullView({
                     />
                   )
                 }
-                onSelect={(event) => selection.handleRowSelect(viewModel.historyItem, event)}
+                onSelect={(event) => {
+                  expandedRow.notePointerSelect()
+                  selection.handleRowSelect(viewModel.historyItem, event)
+                }}
                 onJump={(commitId) => jumpTo(commitId, { focus: true })}
                 onOpen={() => onOpenCommit(viewModel.historyItem)}
               />
