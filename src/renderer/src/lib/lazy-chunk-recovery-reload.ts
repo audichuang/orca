@@ -56,7 +56,7 @@ export async function requestLazyChunkRecoveryReload(
 ): Promise<LazyChunkRecoveryReloadOutcome> {
   if (await isInstalledBundleReplaced()) {
     // Why: a reload loads the new bundle into the old main process and never bootstraps.
-    return relaunchIntoReplacedBundle(win)
+    return restartIntoReplacedBundle(win)
   }
   try {
     await prepareRendererForAppRestart(win, {
@@ -92,11 +92,11 @@ async function isInstalledBundleReplaced(): Promise<boolean> {
   }
 }
 
-async function relaunchIntoReplacedBundle(win: Window): Promise<LazyChunkRecoveryReloadOutcome> {
+async function restartIntoReplacedBundle(win: Window): Promise<LazyChunkRecoveryReloadOutcome> {
   const refused = waitForRefusedNavigation(win)
   try {
-    // relaunch() runs the same hot-exit backup and checkpoint as the reload path.
-    await window.api.app.relaunch()
+    // restart() runs the same hot-exit backup and checkpoint, then quits through the normal pipeline.
+    await window.api.app.restart()
   } catch {
     refused.cancel()
     return 'checkpoint-refused'
