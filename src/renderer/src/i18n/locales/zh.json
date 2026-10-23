@@ -16389,6 +16389,11 @@
           "tooLarge": "{{value0}} 过大，无法在 {{value1}} 中打开（{{value2}}；上限为 {{value3}}）。",
           "unsupported": "{{value0}} 无法从此文件的存储位置读取它。请更新托管该文件的 Orca 服务器，或切换到源代码。",
           "readFailed": "无法为 {{value1}} 读取 {{value0}}。{{value2}}"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} 个文件",
+          "pressAgainNext": "再按一次前往下一个文件",
+          "pressAgainPrevious": "再按一次前往上一个文件"
         }
       },
       "diff": {
