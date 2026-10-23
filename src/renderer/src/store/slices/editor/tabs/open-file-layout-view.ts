@@ -35,6 +35,8 @@ function editorTabViewOf(file: OpenFile): EditorTabView | null {
       return { mode: 'git-graph' }
     case 'check-details':
       return { mode: 'check-details', ...pickStoredFields(file, ['checkRunDetails']) }
+    case 'git-graph':
+      return { mode: 'git-graph', ...pickStoredFields(file, ['gitGraph']) }
   }
 }
 
@@ -57,7 +59,12 @@ export function layoutEditorViewOfOpenFile(
       filePath: file.filePath,
       relativePath: file.relativePath,
       language: file.language,
-      ...pickStoredFields(file, ['runtimeEnvironmentId', 'externalSshTargetId', 'readOnly'])
+      ...pickStoredFields(file, [
+        'runtimeEnvironmentId',
+        'externalSshTargetId',
+        'readOnly',
+        'gitWorktreeId'
+      ])
     }
   }
 }
