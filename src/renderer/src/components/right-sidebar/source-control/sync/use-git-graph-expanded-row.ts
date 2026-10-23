@@ -22,7 +22,7 @@ export function useGitGraphExpandedRow(
   const expandedId = held ? held.id : targetId
   const latestRef = useRef({ expandedId, targetId })
   const timerRef = useRef<number | undefined>(undefined)
-  const anchorRef = useRef<{ id: string; top: number } | null>(null)
+  const anchorRef = useRef<{ id: string; top: number; reveal: boolean } | null>(null)
 
   useLayoutEffect(() => {
     latestRef.current = { expandedId, targetId }
@@ -43,7 +43,8 @@ export function useGitGraphExpandedRow(
     const rowBox = row.getBoundingClientRect()
     const listBox = list.getBoundingClientRect()
     const overflowBelow = rowBox.bottom - listBox.bottom
-    if (overflowBelow > 0) {
+    // Why skip without reveal: the user scrolled the clicked row away while the click settled.
+    if (overflowBelow > 0 && (anchor?.reveal ?? true)) {
       // Why capped at the top: a row taller than the list keeps its first line in view.
       list.scrollTop += Math.min(overflowBelow, rowBox.top - listBox.top)
     }
@@ -56,9 +57,16 @@ export function useGitGraphExpandedRow(
     setHeld((current) => current ?? { id: latestRef.current.expandedId })
     timerRef.current = window.setTimeout(() => {
       const target = latestRef.current.targetId
-      const row = rowElement(listRef.current, target)
-      anchorRef.current =
-        target && row ? { id: target, top: row.getBoundingClientRect().top } : null
+      const list = listRef.current
+      const row = rowElement(list, target)
+      if (target && row && list) {
+        const rowBox = row.getBoundingClientRect()
+        const listBox = list.getBoundingClientRect()
+        const reveal = rowBox.bottom > listBox.top && rowBox.top < listBox.bottom
+        anchorRef.current = { id: target, top: rowBox.top, reveal }
+      } else {
+        anchorRef.current = null
+      }
       setHeld(null)
     }, GIT_GRAPH_EXPAND_AFTER_CLICK_MS)
   }, [listRef])
