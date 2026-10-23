@@ -5,6 +5,7 @@ import type { NestedRepoCandidate } from '../../../../../../shared/project-group
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { folderSidebarHiddenRepoKey } from './folder-sidebar-hidden-repos'
+import { selectDetectedWorktreesByRepo } from '@/store/workspace-record-selectors'
 
 type FolderOwner = Pick<Repo, 'connectionId' | 'executionHostId'>
 
@@ -53,7 +54,7 @@ export function getNewNestedRepoCandidatesFromState(
     repos: state.repos,
     worktrees: [
       ...getAllWorktreesFromState(state),
-      ...Object.entries(state.detectedWorktreesByRepo).flatMap(([repoId, detected]) =>
+      ...Object.entries(selectDetectedWorktreesByRepo(state)).flatMap(([repoId, detected]) =>
         (detected?.worktrees ?? []).map((worktree) => ({ repoId, path: worktree.path }))
       )
     ]
