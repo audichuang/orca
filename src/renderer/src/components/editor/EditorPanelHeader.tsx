@@ -18,13 +18,13 @@ import { EditorPanelActionsMenu } from './EditorPanelActionsMenu'
 import { EditorFileLocationMenuItems } from './EditorFileLocationMenuItems'
 import { useTranslate } from '@/i18n/use-translate'
 import { EditorPanelHeaderPath } from './EditorPanelHeaderPath'
+import { DiffFileSequenceStatus } from './diff-file-sequence-status'
 import { useDiffNavigation } from './diff/review/diff-navigation-context'
 import { useShortcutKeyDetails } from '@/hooks/useShortcutLabel'
 import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import type { ArtifactWriteRequest } from '../../../../shared/artifacts/artifacts'
 import { ArtifactPublishButton } from '@/components/artifacts/ArtifactPublishButton'
 import { editorArtifactSourceKey } from './editor-artifact-upload'
-import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 const NO_CUSTOM_EDITOR_TITLES: Readonly<Record<CustomEditorToggleValue, string>> = {}
 
@@ -102,7 +102,7 @@ export function EditorPanelHeader({
 }: EditorPanelHeaderProps): React.JSX.Element {
   const t = useTranslate()
   const { owner: commentOwner, comments: diffComments } = useVisibleWorktreeDiffComments(
-    getOpenFileGitWorktreeId(activeFile),
+    activeFile.worktreeId,
     activeFile
   )
   const activeGroupId = useAppStore((s) => s.activeGroupIdByWorktree[activeFile.worktreeId])
@@ -114,7 +114,10 @@ export function EditorPanelHeader({
     () => diffComments.filter((comment) => comment.filePath === activeFile.relativePath),
     [activeFile.relativePath, diffComments]
   )
-  const { changeCount, goToPreviousDiff, goToNextDiff } = useDiffNavigation()
+  const { changeCount, goToPreviousDiff, goToNextDiff, filePosition, fileBoundaryHint } =
+    useDiffNavigation()
+  // Why: with a file list an unchanged diff still steps to its neighbours.
+  const diffNavigationDisabled = changeCount === 0 && filePosition === null
   const previousChangeShortcut = useShortcutKeyDetails('editor.previousChange')
   const nextChangeShortcut = useShortcutKeyDetails('editor.nextChange')
 
@@ -233,6 +236,9 @@ export function EditorPanelHeader({
                   )}
             </TooltipContent>
           </Tooltip>
+          {filePosition && (
+            <DiffFileSequenceStatus position={filePosition} hint={fileBoundaryHint} />
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -243,7 +249,7 @@ export function EditorPanelHeader({
                   'auto.components.editor.EditorPanelHeader.2076ecfc9c',
                   'Previous change'
                 )}
-                disabled={changeCount === 0}
+                disabled={diffNavigationDisabled}
               >
                 <ArrowUp size={14} />
               </button>
@@ -266,7 +272,7 @@ export function EditorPanelHeader({
                 className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
                 onClick={goToNextDiff}
                 aria-label={t('auto.components.editor.EditorPanelHeader.631dab0df3', 'Next change')}
-                disabled={changeCount === 0}
+                disabled={diffNavigationDisabled}
               >
                 <ArrowDown size={14} />
               </button>
