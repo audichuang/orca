@@ -497,6 +497,24 @@ describe('full-width Git Graph', () => {
     expect(rows[1]).not.toHaveAttribute('data-expanded')
   })
 
+  it('expands a clicked row only after a double-click could have landed, so rows hold still', async () => {
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [FILE])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const view = await screen.findByRole('region', { name: 'Git Graph' })
+    const rows = await within(view).findAllByTestId('git-graph-full-row')
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' })
+    expect(rows[1]).toHaveAttribute('data-expanded', 'true')
+
+    fireEvent.click(rows[0]!)
+    expect(rows[0]).toHaveAttribute('data-selected', 'true')
+    // The previous row keeps its height until the double-click window has passed.
+    expect(rows[1]).toHaveAttribute('data-expanded', 'true')
+    expect(rows[0]).not.toHaveAttribute('data-expanded')
+    await waitFor(() => expect(rows[0]).toHaveAttribute('data-expanded', 'true'))
+    expect(rows[1]).not.toHaveAttribute('data-expanded')
+  })
+
   it('hides the hash by default; the header menu shows it and moves fields to a second line', async () => {
     const rect = vi
       .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
