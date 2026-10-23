@@ -229,8 +229,8 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
     await orcaPage.screenshot({ path: path.join(SHOTS_DIR, `${name}.png`) })
   }
   // Every row shows exactly the header's columns, each under its header, on one line.
-  const expectColumnsAligned = async (label: string): Promise<void> => {
-    const report = await graph.evaluate((root) => {
+  const expectColumnsAligned = async (label: string, maxRowHeight = 30): Promise<void> => {
+    const report = await graph.evaluate((root, maxHeight) => {
       const shown = (el: Element): boolean =>
         getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0
       const cols = (parent: Element): { col: string; left: number; right: number }[] =>
@@ -250,7 +250,8 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
             `${name}: cells ${cells.map((c) => c.col).join()} vs header ${header.map((c) => c.col).join()}`
           )
         }
-        if (row.getBoundingClientRect().height > 30) {
+        // Why the cursor row is exempt: it wraps its whole message on purpose.
+        if (!row.hasAttribute('data-expanded') && row.getBoundingClientRect().height > maxHeight) {
           problems.push(`${name}: wrapped (${row.getBoundingClientRect().height}px)`)
         }
         for (const cell of cells) {
@@ -261,7 +262,7 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
         }
       }
       return { header: header.map((c) => c.col).join(), problems }
-    })
+    }, maxRowHeight)
     expect(report.problems, `${label} (header ${report.header})`).toEqual([])
   }
   const sizes = [
@@ -321,6 +322,14 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'dark' }))
   await rows.filter({ hasText: 'Post-merge cleanup' }).click()
   await shoot('dark-single')
+  // Two-line rows: the header keeps only graph and message, the rest moves under each subject.
+  await graph.locator('[data-git-graph-header]').click({ button: 'right' })
+  await orcaPage.getByRole('menuitemcheckbox', { name: 'Two-line rows' }).click()
+  await orcaPage.keyboard.press('Escape')
+  await expectColumnsAligned('two-line', 50)
+  await shoot('dark-two-line')
+  await graph.locator('[data-git-graph-header]').click({ button: 'right' })
+  await orcaPage.getByRole('menuitem', { name: 'Reset to defaults' }).click()
   await orcaPage.evaluate(() => window.__store!.getState().updateSettings({ theme: 'light' }))
 
   // Escape closes the branch tree overlay without leaving the tab.
