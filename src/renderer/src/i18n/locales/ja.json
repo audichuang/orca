@@ -16624,6 +16624,11 @@
         },
         "useMarkdownDocuments": {
           "listFailed": "Markdown ドキュメントを一覧表示できませんでした。"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} ファイル",
+          "pressAgainNext": "もう一度押すと次のファイルへ移動します",
+          "pressAgainPrevious": "もう一度押すと前のファイルへ移動します"
         }
       },
       "diff": {

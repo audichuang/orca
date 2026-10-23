@@ -16732,6 +16732,11 @@
         },
         "useMarkdownDocuments": {
           "listFailed": "Impossible de lister les documents Markdown."
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} fichiers",
+          "pressAgainNext": "Appuyez à nouveau pour aller au fichier suivant",
+          "pressAgainPrevious": "Appuyez à nouveau pour aller au fichier précédent"
         }
       },
       "diff": {
