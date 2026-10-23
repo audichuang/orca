@@ -205,7 +205,9 @@ describe('full-width Git Graph', () => {
     expect(await within(view).findByText('Longer body text')).toBeInTheDocument()
     fireEvent.click(await within(view).findByTestId('git-history-commit-file'))
 
-    expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything())
+    expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything(), [
+      { entry: FILE, head: TIP, base: TIP }
+    ])
   })
 
   it('hands the selected commit files to the fork menu', async () => {
@@ -230,10 +232,12 @@ describe('full-width Git Graph', () => {
     expect(items).toEqual([TIP])
     expect(entries).toEqual([FILE])
     act(() => openFile(FILE, { altKey: false, ctrlKey: false, metaKey: false, shiftKey: false }))
-    expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything())
+    expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything(), [
+      { entry: FILE, head: TIP, base: TIP }
+    ])
   })
 
-  it('Cmd/Ctrl-click merges the files of both commits; each file opens at its newest commit', async () => {
+  it('Cmd/Ctrl-click merges the files of both commits; each file spans its oldest to newest change', async () => {
     const onOpenCommitFile = vi.fn()
     const OTHER: GitBranchChangeEntry = { path: 'src/other.ts', status: 'added' }
     const filesOf: Record<string, GitBranchChangeEntry[]> = {
@@ -263,7 +267,12 @@ describe('full-width Git Graph', () => {
       'src/other.ts'
     ])
     fireEvent.click(files[0]!)
-    expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, FILE, expect.anything())
+    // Like IntelliJ: added in the older commit, so the merged row diffs from before PARENT to TIP.
+    const merged = { path: FILE.path, status: 'added' }
+    expect(onOpenCommitFile).toHaveBeenCalledWith(TIP, merged, expect.anything(), [
+      { entry: merged, head: TIP, base: PARENT },
+      { entry: OTHER, head: PARENT, base: PARENT }
+    ])
   })
 
   it('emptying a Cmd/Ctrl selection shows nothing instead of an older plain click', async () => {
