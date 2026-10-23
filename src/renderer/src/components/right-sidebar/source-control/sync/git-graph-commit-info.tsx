@@ -11,12 +11,8 @@ import type {
 import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
 import type { GitGraphBranchContainment } from './git-graph-branch-containment'
 import { formatGitHistoryTimestamp } from './git-history-format'
-import {
-  formatGitGraphRelativeDate,
-  formatGitGraphShortDate,
-  GitGraphAuthorAvatar,
-  GitGraphRefBadge
-} from './git-graph-full-row'
+import { formatGitGraphRelativeDate, formatGitGraphShortDate } from './git-graph-date-format'
+import { GitGraphAuthorAvatar, GitGraphRefBadge } from './git-graph-full-row'
 
 // Git's own term, not UI copy.
 const SHA_LABEL = 'SHA'
