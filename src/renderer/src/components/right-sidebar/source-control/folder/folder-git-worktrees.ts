@@ -8,6 +8,8 @@ import { isGitRepoKind } from '../../../../../../shared/repo-kind'
 import type { Repo } from '../../../../../../shared/repo-types'
 import { getHiddenExternalWorktrees } from '../../../../../../shared/external-worktree-inbox'
 import type { DetectedWorktreeListResult, Worktree } from '../../../../../../shared/worktree/types'
+import type { AppState } from '@/store/types'
+import { selectDetectedWorktreesByRepo } from '@/store/workspace-record-selectors'
 
 type FilesystemOwnerFields = Pick<Repo, 'connectionId' | 'executionHostId'>
 
@@ -72,4 +74,15 @@ export function countHiddenFolderWorktrees(
     ).length
   }
   return count
+}
+
+/** The store's hidden worktrees under a folder; 0 while the folder record is missing. */
+export function selectFolderHiddenWorktreeCount(
+  state: Pick<AppState, 'detectedWorktreesByRepo'>,
+  folderWorkspace: Parameters<typeof countHiddenFolderWorktrees>[0] | null,
+  repoById: ReadonlyMap<string, Repo>
+): number {
+  return folderWorkspace
+    ? countHiddenFolderWorktrees(folderWorkspace, selectDetectedWorktreesByRepo(state), repoById)
+    : 0
 }

@@ -4,6 +4,7 @@ import type { AppState } from '../../../types'
 import type { OpenFile } from '../types/open-file'
 import { relativePathInsideRoot } from '../../../../../../shared/cross-platform-path'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
 
 type FolderFileGitOwner = { gitWorktreeId: string; relativePath: string }
 
@@ -18,14 +19,16 @@ export function resolveFolderFileGitOwner(
     return null
   }
   // Why: partial test/mirror states can omit folder workspaces entirely.
-  const folderWorkspace = state.folderWorkspaces?.find((w) => w.id === scope.folderWorkspaceId)
+  const folderWorkspace = selectFolderWorkspaces(state)?.find(
+    (w) => w.id === scope.folderWorkspaceId
+  )
   if (!folderWorkspace) {
     return null
   }
   let best: (FolderFileGitOwner & { depth: number }) | null = null
   const members = getFolderGitWorktrees(
     folderWorkspace,
-    getIndexedAllWorktrees(state.worktreesByRepo),
+    getIndexedAllWorktrees(selectWorktreesByRepo(state)),
     getIndexedRepoMap(state.repos)
   )
   for (const { worktree } of members) {

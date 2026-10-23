@@ -28,6 +28,7 @@ import { useRepoDisplayColor } from '@/lib/repo-display-color'
 import { openSourceControlOnRepo } from './git-graph-source-control-link'
 import { useGitGraphTabReveal } from './use-git-graph-tab-reveal'
 import { consumeGitGraphFocusRequest, useGitGraphFocusRequest } from './git-graph-focus-request'
+import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
 
 function GitGraphTabBody({
   fileId,
@@ -158,7 +159,7 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
   const repoWorktreeId = file.gitGraph?.repoWorktreeId ?? null
   const worktrees = useAllWorktrees()
   const repoById = useRepoMap()
-  const folderWorkspaces = useAppStore((s) => s.folderWorkspaces)
+  const folderWorkspaces = useAppStore(selectFolderWorkspaces)
   // Why from the choices: they are filtered to the workspace's host, so a worktree id another host
   // also publishes cannot resolve there, and a removed repo falls out instead of erroring.
   const choices = useMemo(
