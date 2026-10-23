@@ -14,6 +14,7 @@ import {
   resolveGitGraphDefaultRepoWorktreeId
 } from '../../../git-graph-tab/git-graph-tab-model'
 import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
+import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
 
 function openGitGraphLabel(): string {
   return translate('auto.components.right.sidebar.GitGraphFullView.open', 'Open Git Graph')
@@ -124,8 +125,8 @@ function useWorkspaceHasGitGraphRepo(workspaceId: string): boolean {
   const { repos, worktreesByRepo, folderWorkspaces } = useAppStore(
     useShallow((s) => ({
       repos: s.repos,
-      worktreesByRepo: s.worktreesByRepo,
-      folderWorkspaces: s.folderWorkspaces
+      worktreesByRepo: selectWorktreesByRepo(s),
+      folderWorkspaces: selectFolderWorkspaces(s)
     }))
   )
   return useMemo(() => {
