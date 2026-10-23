@@ -1,6 +1,6 @@
-import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import { app } from 'electron'
+import { statSync } from './asar-transparent-fs'
 
 type BundleIdentity = { ino: number; mtimeMs: number }
 
@@ -8,6 +8,7 @@ let launchedBundle: BundleIdentity | null = null
 
 function readBundleIdentity(): BundleIdentity | null {
   try {
+    // Physical stat: Electron's patched fs returns a fresh virtual directory for app.asar each call.
     const stat = statSync(join(process.resourcesPath, 'app.asar'))
     return { ino: stat.ino, mtimeMs: stat.mtimeMs }
   } catch {
