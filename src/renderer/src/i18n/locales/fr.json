@@ -16972,6 +16972,11 @@
         },
         "EditorPanelActionsMenu": {
           "fileActions": "Actions sur le fichier"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} fichiers",
+          "pressAgainNext": "Appuyez à nouveau pour aller au fichier suivant",
+          "pressAgainPrevious": "Appuyez à nouveau pour aller au fichier précédent"
         }
       },
       "diff": {
