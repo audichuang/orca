@@ -34,10 +34,13 @@ function hashLabel(): string {
 
 function GitGraphListMenu({
   prefs,
+  shown,
   open,
   onOpenChange
 }: {
   prefs: GitGraphListPrefs
+  /** The columns actually on screen; a chosen one can still be dropped for want of width. */
+  shown: GitGraphColumns
   open: boolean
   onOpenChange: (open: boolean) => void
 }): React.JSX.Element {
@@ -54,6 +57,14 @@ function GitGraphListMenu({
       onCheckedChange={(checked) => setGitGraphListPrefs({ [key]: checked })}
     >
       {text}
+      {prefs[key] && !prefs.twoLine && !shown[key] && (
+        <span className="ml-auto pl-3 text-2xs text-muted-foreground">
+          {translate(
+            'auto.components.right.sidebar.GitGraphFullView.columnTooNarrow',
+            'List too narrow'
+          )}
+        </span>
+      )}
     </DropdownMenuCheckboxItem>
   )
   return (
@@ -128,7 +139,7 @@ export function GitGraphListHeader({
         {columns.date && <span data-col="date">{dateLabel()}</span>}
         {columns.hash && <span data-col="hash">{hashLabel()}</span>}
       </div>
-      <GitGraphListMenu prefs={prefs} open={menuOpen} onOpenChange={setMenuOpen} />
+      <GitGraphListMenu prefs={prefs} shown={columns} open={menuOpen} onOpenChange={setMenuOpen} />
     </div>
   )
 }
