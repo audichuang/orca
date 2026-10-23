@@ -9272,7 +9272,9 @@
             "entryDiscardFailed": "Falha ao descartar “{{value0}}”",
             "entryDeleteFailed": "Falha ao excluir “{{value0}}”",
             "entryFailedInWorkspace": "{{value0}} em {{value1}}",
-            "diffCommentNotesCopyFailed": "Falha ao copiar as notas"
+            "diffCommentNotesCopyFailed": "Falha ao copiar as notas",
+            "commitHashes": "Hashes de commit",
+            "commitMessages": "Mensagens de commit"
           },
           "checks": {
             "panel": {
@@ -9716,6 +9718,138 @@
                   "e7876a2bde": "Coloque pelo menos um arquivo em stage para gerar uma mensagem.",
                   "0904be2505": "Limpe a mensagem para gerar novamente.",
                   "1ea9ba37aa": "Escolha um agente em Configurações -> Git -> IA do Controle de Código-Fonte."
+                },
+                "bulk": {
+                  "action": {
+                    "bar": {
+                      "8a434c829f": "Copiar código-fonte completo",
+                      "4139bc5679": "Limpar seleção"
+                    }
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "multi": {
+                    "repo": {
+                      "panel": {
+                        "4c62351467": "Nenhum repositório Git importado nesta pasta. Adicione ao Orca os repositórios dentro dela para ver as alterações aqui.",
+                        "a044a830f1": "Atualizar todos os repositórios",
+                        "c023ba6838": "Esta pasta está dentro de um repositório importado, então as alterações fora da pasta também são listadas.",
+                        "efd34a4169": "A lista de alterações de {{value0}} está truncada; a cópia está incompleta.",
+                        "d98e7b731c": "Copiar todas as alterações",
+                        "da953a696f": "Colar e restaurar",
+                        "5de321918e": "Worktrees ocultas nesta pasta não são incluídas ({{value0}}).",
+                        "ab32287003": "Repositórios",
+                        "addRepos": "Adicionar repositórios desta pasta",
+                        "filterRepos": "Filtrar repositórios",
+                        "clearFilter": "Limpar filtro",
+                        "filterNoMatch": "Nenhum repositório corresponde",
+                        "groupChanges": "Alterações",
+                        "groupNoChanges": "Sem alterações"
+                      }
+                    }
+                  },
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "title": "Adicionar repositórios desta pasta",
+                        "description": "Repositórios Git em {{value0}}, incluindo os aninhados dentro de outros repositórios.",
+                        "scanning": "Procurando repositórios...",
+                        "failed": "Não foi possível examinar esta pasta.",
+                        "none": "Todos os repositórios desta pasta já foram adicionados.",
+                        "truncated": "A busca parou antes do fim, então alguns repositórios podem estar faltando.",
+                        "hide": "Mostrar só nesta pasta, não como projetos da barra lateral",
+                        "cancel": "Cancelar",
+                        "add": "Adicionar ({{value0}})"
+                      }
+                    }
+                  },
+                  "repo": {
+                    "row": {
+                      "showInSidebar": "Oculto na barra lateral. Mostrar como projeto da barra lateral",
+                      "hideFromSidebar": "Exibido na barra lateral. Manter só nesta pasta"
+                    }
+                  }
+                }
+              },
+              "clipcode": {
+                "clipcode": {
+                  "copy": {
+                    "action": {
+                      "2749202819": "({{value0}} ilegíveis)",
+                      "e6cdc3a753": "Mais de {{value0}} tokens.",
+                      "21758e255e": "Nenhuma alteração Git encontrada para copiar.",
+                      "7828c565da": "({{value0}} ignorados: tamanho excedido)",
+                      "65b422bbd1": "{{value0}} arquivo(s) Git copiado(s)",
+                      "7c6daaf4fa": "Falha ao copiar o código-fonte completo",
+                      "9c3f952874": "Não foi possível ler {{value0}} arquivo(s) Git.",
+                      "binarySkipped": "({{value0}} ignorados: binário)",
+                      "onlyBinarySkipped": "Nada para copiar: {{value0}} arquivo(s) binário(s) ignorado(s).",
+                      "filesCopied": "{{value0}} arquivo(s) copiado(s)",
+                      "filesUnreadable": "Não foi possível ler {{value0}} arquivo(s).",
+                      "noFiles": "Nenhum arquivo encontrado para copiar.",
+                      "onlyUnsafeNamesSkipped": "Nada para copiar: {{value0}} arquivo(s) ignorado(s) porque os nomes não podem ser restaurados com segurança.",
+                      "unsafeNamesSkipped": "({{value0}} ignorados: nome de arquivo inseguro)",
+                      "tokenCount": "~{{value0}} tokens",
+                      "payloadDetails": "{{lines}} linhas · {{chars}} caracteres · {{words}} palavras"
+                    }
+                  },
+                  "restore": {
+                    "preview": {
+                      "dialog": {
+                        "2c06a4e179": "Colar e restaurar",
+                        "87832cd30d": "Os arquivos da área de transferência serão gravados nesta pasta.",
+                        "813199296f": "Caminhos ajustados ({{value0}})",
+                        "9a421f14d8": "Criar",
+                        "d469ff3b81": "Sobrescrever",
+                        "9cf3526c1f": "Excluir",
+                        "0d87b3b39d": "Ignorar",
+                        "80224f9095": "Sobrescrever arquivos existentes",
+                        "677bf0ade9": "Cancelar",
+                        "c0b1b53e49": "Restaurar",
+                        "9bd78385ce": "caminho inseguro",
+                        "85d6d805ca": "fora da pasta",
+                        "67e63b0749": "já não existe",
+                        "becf17b643": "é uma pasta",
+                        "4acb11ed21": "o conteúdo foi ignorado na cópia",
+                        "ef509f9991": ".git é protegido",
+                        "1f409f3dd6": "o caminho passa por um link simbólico",
+                        "parentIsFile": "uma pasta pai é um arquivo",
+                        "targetUnreadable": "não foi possível verificar o arquivo existente",
+                        "caseConflict": "mesmo caminho com maiúsculas e minúsculas diferentes",
+                        "nonUtf8Target": "o arquivo existente não é UTF-8"
+                      }
+                    }
+                  }
+                },
+                "use": {
+                  "clipcode": {
+                    "restore": {
+                      "b124e9c64e": "A área de transferência está vazia ou não contém texto.",
+                      "1847420a23": "Nenhum cabeçalho de arquivo Snipcode encontrado na área de transferência.",
+                      "af5c90f593": "Falha ao colar e restaurar",
+                      "ae1ec38ef1": "Criados {{value0}}, sobrescritos {{value1}}, excluídos {{value2}}, ignorados {{value3}}.",
+                      "19a6f378aa": "...e mais {{value0}}",
+                      "c9af35dc2d": "Falharam {{value0}}."
+                    }
+                  }
+                }
+              },
+              "listing": {
+                "entry": {
+                  "context": {
+                    "menu": {
+                      "9137d88b9f": "Copiar código-fonte completo",
+                      "ce8235a6a4": "Abrir ao lado",
+                      "showFileHistory": "Mostrar histórico do arquivo"
+                    }
+                  }
+                },
+                "uncommitted": {
+                  "sections": {
+                    "1a59d5a05b": "Copiar código-fonte completo"
+                  }
                 }
               }
             }
@@ -10436,7 +10570,12 @@
             "7b1c4e9a02": "Abrir commit no navegador",
             "8c2d5fab13": "Copiar hash do commit",
             "9d3e60bc24": "Copiar mensagem do commit",
-            "ae4f71cd35": "Explicar alterações"
+            "ae4f71cd35": "Explicar alterações",
+            "copyFullSource": "Copiar código-fonte completo",
+            "copyFullSourceMany": "Copiar código-fonte completo ({{value0}} commits)",
+            "copyHashMany": "Copiar hashes de commit ({{value0}} commits)",
+            "copyMessageMany": "Copiar mensagens de commit ({{value0}} commits)",
+            "showInGraph": "Mostrar no Git Graph"
           },
           "PluginPanel": {
             "unavailable": "Este painel de plugin não está mais disponível.",
@@ -10601,6 +10740,87 @@
                 }
               }
             }
+          },
+          "GitHistoryGraph": {
+            "allBranches": "Todas as branches",
+            "branchCount": "{{value0}} branches",
+            "currentBranch": "Branch atual",
+            "branchFilter": "Filtro de branch",
+            "searchBranches": "Buscar branches...",
+            "scope": "Mostrar",
+            "sources": "Origens",
+            "localBranches": "Branches locais",
+            "branches": "Branches",
+            "loadingBranches": "Carregando branches...",
+            "hostTooOld": "O host deste repositório usa uma versão antiga do Orca que só mostra a branch atual.",
+            "branchesFailed": "Falha ao carregar branches",
+            "remote": "remota",
+            "searchCommits": "Buscar commits (author: path:)",
+            "searchCommitsLabel": "Buscar commits",
+            "loadMore": "Carregar mais commits",
+            "noMatchingCommits": "Nenhum commit corresponde a este filtro",
+            "clearAllFilters": "Limpar filtros",
+            "local": "Local",
+            "showAllBranches": "Mostrar todas as branches",
+            "userFilter": "Usuário",
+            "pathsFilter": "Caminhos",
+            "clearUserFilter": "Limpar filtro de usuário",
+            "searchUsers": "Buscar usuários...",
+            "noUsers": "Nenhum usuário nos commits carregados.",
+            "clearPathFilter": "Limpar filtro de caminho",
+            "typePath": "Caminho de arquivo ou pasta relativo ao repositório",
+            "typePathHint": "Digite um caminho e pressione Enter.",
+            "filterByPath": "Filtrar por {{value0}}",
+            "recentPaths": "Recentes",
+            "clearFilters": "Limpar",
+            "searchCommitMessages": "Buscar mensagens de commit"
+          },
+          "GitGraphFullView": {
+            "laneContinuesBelow": "Continua {{count}} linhas abaixo em {{sha}} {{subject}}. Clique para ir.",
+            "laneComesFromAbove": "Vem de {{sha}} {{subject}}, {{count}} linhas acima. Clique para ir.",
+            "laneContinuesPastLoaded": "Continua além dos commits carregados. Carregue mais commits para segui-la.",
+            "open": "Abrir Git Graph",
+            "openShort": "Git Graph",
+            "description": "Grafo de commits do repositório atual.",
+            "message": "Mensagem",
+            "author": "Autor",
+            "date": "Data",
+            "commit": "Commit",
+            "selectCommit": "Selecione um commit para ver os detalhes e os arquivos alterados.",
+            "resizeDetails": "Redimensionar detalhes do commit",
+            "copyFullSource": "Copiar código-fonte completo de todos os arquivos alterados",
+            "filesInCommits": "Arquivos alterados ({{files}}) · {{commits}} commits",
+            "filesChanged": "Arquivos alterados ({{files}})",
+            "toggleBranches": "Alternar branches",
+            "openAllChanges": "Abrir todas as alterações",
+            "hideDetails": "Ocultar detalhes",
+            "enterKey": "Enter",
+            "showDetails": "Mostrar detalhes",
+            "detailsStrip": "Detalhes",
+            "listOptions": "Opções da lista",
+            "columns": "Colunas",
+            "twoLineRows": "Linhas de duas linhas",
+            "resetList": "Restaurar padrões",
+            "columnTooNarrow": "Lista estreita demais"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "Local",
+            "tags": "Tags",
+            "label": "Branches e tags",
+            "empty": "Nenhuma branch carregada ainda.",
+            "showRef": "Fora da lista atual — clique para mostrar só esta branch"
+          },
+          "GitGraphCommitInfo": {
+            "author": "Autor",
+            "date": "Data",
+            "copySha": "Copiar SHA do commit",
+            "parents": "Pais",
+            "children": "Filhos",
+            "childrenHint": "Commits da lista carregada cujo pai é este commit.",
+            "refs": "Refs",
+            "containedIn": "Nas branches",
+            "containedInHint": "Branches cujas pontas estão na lista carregada; as que estão fora dela não são contadas.",
+            "moreBranches": "+{{count}} mais"
           }
         }
       },
@@ -12811,6 +13031,11 @@
         },
         "useMarkdownDocuments": {
           "listFailed": "Falha ao listar documentos Markdown."
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} arquivos",
+          "pressAgainNext": "Pressione de novo para ir ao próximo arquivo",
+          "pressAgainPrevious": "Pressione de novo para ir ao arquivo anterior"
         }
       },
       "skills": {
@@ -17759,7 +17984,10 @@
                 "chatPaneRight": "painel de chat à direita",
                 "splitChatDown": "dividir chat para baixo",
                 "newChatBelow": "novo chat abaixo",
-                "chatPaneBelow": "painel de chat abaixo"
+                "chatPaneBelow": "painel de chat abaixo",
+                "openGitGraph": "abrir git graph",
+                "gitLog": "log do git",
+                "commitHistory": "histórico de commits"
               },
               "splitChatRight": "Dividir Chat à Direita",
               "splitChatRightDescription": "Abra um novo chat em um painel dividido à direita.",
@@ -19320,6 +19548,18 @@
         "cancelled": "Este terminal SSH simples foi fechado antes de iniciar.",
         "terminalUnavailable": "O Orca não conseguiu abrir um terminal aqui.",
         "openHint": "Permite continuar trabalhando no host enquanto o Orca não consegue se configurar nele."
+      },
+      "gitGraphTab": {
+        "noRepo": "Nenhum repositório Git disponível para este espaço de trabalho.",
+        "repoSwitcher": "Repositório",
+        "selectRepo": "Selecionar repositório",
+        "searchRepos": "Buscar repositórios...",
+        "noRepos": "Nenhum repositório encontrado.",
+        "addRepos": "Adicionar repositórios...",
+        "addReposMissing": "{{value0}} não adicionado(s)",
+        "addReposButton": "Adicionar repositórios desta pasta",
+        "openInSourceControl": "Abrir no Controle de Versão",
+        "revealNotLoaded": "Esse commit não está no histórico carregado."
       }
     },
     "startup": {
