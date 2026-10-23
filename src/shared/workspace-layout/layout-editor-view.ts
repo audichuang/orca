@@ -14,5 +14,6 @@ export type LayoutEditorView = {
     | 'runtimeEnvironmentId'
     | 'externalSshTargetId'
     | 'readOnly'
+    | 'gitWorktreeId'
   >
 }
