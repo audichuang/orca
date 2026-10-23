@@ -16881,6 +16881,11 @@
         },
         "EditorPanelActionsMenu": {
           "fileActions": "文件操作"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} 个文件",
+          "pressAgainNext": "再按一次前往下一个文件",
+          "pressAgainPrevious": "再按一次前往上一个文件"
         }
       },
       "diff": {
