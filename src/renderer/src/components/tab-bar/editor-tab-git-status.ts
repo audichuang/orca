@@ -5,6 +5,7 @@ import { getIndexedWorktreeById } from '@/store/worktree-repo-index'
 import { normalizeRuntimePathForComparison } from '../../../../shared/cross-platform-path'
 import type { GitFileStatus, GitStatusEntry } from '../../../../shared/git-status-types'
 import { buildStatusMap } from '../right-sidebar/status-display'
+import { selectWorktreesByRepo } from '@/store/workspace-record-selectors'
 
 type EditorTabStatusSource = Pick<OpenFile, 'relativePath'> &
   Partial<Pick<OpenFile, 'worktreeId' | 'gitWorktreeId' | 'filePath'>>
@@ -93,11 +94,12 @@ export function selectEditorTabGitOwnerRoots(
   worktreeId: string
 ): Record<string, string> {
   const result: Record<string, string> = {}
-  if (!state.openFiles || !state.worktreesByRepo) {
+  const worktreesByRepo = selectWorktreesByRepo(state)
+  if (!state.openFiles || !worktreesByRepo) {
     return result
   }
   for (const id of getGitOwnerIds(state.openFiles, worktreeId)) {
-    const root = getIndexedWorktreeById(state.worktreesByRepo, id)?.path
+    const root = getIndexedWorktreeById(worktreesByRepo, id)?.path
     if (root) {
       result[id] = root
     }
