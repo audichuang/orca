@@ -1,7 +1,12 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ORCA_RENDERER_UNLOAD_PREVENTED_EVENT } from '../../../shared/renderer-shutdown-events'
+import { ORCA_APP_RESTART_STARTED_EVENT } from '../../../shared/updater-renderer-events'
 import { requestLazyChunkRecoveryReload } from './lazy-chunk-recovery-reload'
+import {
+  isIntentionalAppRestartInProgress,
+  registerUpdaterBeforeUnloadBypass
+} from './updater-beforeunload'
 
 describe('requestLazyChunkRecoveryReload', () => {
   afterEach(() => {
@@ -79,5 +84,27 @@ describe('requestLazyChunkRecoveryReload', () => {
     expect(restart).toHaveBeenCalledTimes(1)
     expect(relaunch).not.toHaveBeenCalled()
     expect(reload).not.toHaveBeenCalled()
+  })
+
+  it('clears the restart latch when main vetoes the recovery restart', async () => {
+    vi.useFakeTimers()
+    const unregister = registerUpdaterBeforeUnloadBypass()
+    try {
+      // Preload arms the latch, then main declines to quit and the document survives.
+      const restart = vi.fn(async () => {
+        window.dispatchEvent(new Event(ORCA_APP_RESTART_STARTED_EVENT))
+      })
+      vi.stubGlobal('api', { app: { isBundleReplaced: async () => true, restart } })
+
+      const outcome = requestLazyChunkRecoveryReload(window)
+      await vi.waitFor(() => expect(isIntentionalAppRestartInProgress()).toBe(true))
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(outcome).resolves.toBe('never-landed')
+      expect(isIntentionalAppRestartInProgress()).toBe(false)
+    } finally {
+      unregister()
+      vi.useRealTimers()
+    }
   })
 })
