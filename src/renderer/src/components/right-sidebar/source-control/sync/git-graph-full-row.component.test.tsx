@@ -71,6 +71,71 @@ describe('GitGraphFullRow hash column', () => {
   })
 })
 
+describe('GitGraphFullRow taller rows', () => {
+  it("wraps only the expanded row's subject; other rows truncate it", () => {
+    const { rerender } = render(
+      <GitGraphFullRow
+        viewModel={viewModel('node', 'abc1234')}
+        lanes={LANES}
+        graphWidth={24}
+        columns={COLUMNS}
+        selected
+        expanded
+        onSelect={() => {}}
+      />
+    )
+    const subject = (): HTMLElement => screen.getByTitle('node subject')
+    expect(subject()).toHaveClass('whitespace-normal')
+    expect(subject()).not.toHaveClass('truncate')
+    rerender(
+      <GitGraphFullRow
+        viewModel={viewModel('node', 'abc1234')}
+        lanes={LANES}
+        graphWidth={24}
+        columns={COLUMNS}
+        selected
+        onSelect={() => {}}
+      />
+    )
+    expect(subject()).toHaveClass('truncate')
+    expect(subject()).not.toHaveClass('whitespace-normal')
+  })
+
+  it('runs lanes from the row top into the band and from the band to the row bottom', () => {
+    const lanes: GitGraphLaneRow = {
+      nodeColumn: 0,
+      nodeColor: 'git-graph-ref',
+      laneCount: 2,
+      segments: [
+        { kind: 'into-node', from: 0, color: 'git-graph-ref' },
+        { kind: 'out-of-node', to: 0, color: 'git-graph-ref' },
+        { kind: 'through', from: 1, to: 1, color: 'git-graph-lane-2' }
+      ]
+    }
+    render(
+      <GitGraphFullRow
+        viewModel={viewModel('node', 'abc1234')}
+        lanes={lanes}
+        graphWidth={33}
+        columns={COLUMNS}
+        selected={false}
+        onSelect={() => {}}
+      />
+    )
+    const connectors = Array.from(
+      screen
+        .getByTestId('git-graph-full-row')
+        .querySelectorAll<HTMLElement>('[data-lane-connector]')
+    )
+    // Into the band: the commit's own lane and the passing one; out of it: both again, to the
+    // row's bottom edge whatever height the row ends up with.
+    expect(connectors.filter((line) => line.style.top === '0px')).toHaveLength(2)
+    const down = connectors.filter((line) => line.style.bottom === '0px')
+    expect(down).toHaveLength(2)
+    expect(down.map((line) => line.style.left).sort()).toEqual(['10.5px', '21.5px'])
+  })
+})
+
 describe('GitGraphFullRow folded edges', () => {
   const target = {
     id: 'far-parent',
