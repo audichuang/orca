@@ -14690,7 +14690,11 @@
             "hideDetails": "隐藏详情",
             "enterKey": "Enter",
             "showDetails": "显示详情",
-            "detailsStrip": "详情"
+            "detailsStrip": "详情",
+            "listOptions": "列表选项",
+            "columns": "栏",
+            "twoLineRows": "双行显示",
+            "resetList": "恢复默认"
           },
           "GitGraphBranchSidebar": {
             "local": "本地",
