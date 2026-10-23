@@ -17397,6 +17397,11 @@
           "open": "用默认应用打开",
           "downloadOpen": "下载并用默认应用打开",
           "openFailed": "这台计算机上没有能打开此文件的应用"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} 个文件",
+          "pressAgainNext": "再按一次前往下一个文件",
+          "pressAgainPrevious": "再按一次前往上一个文件"
         }
       },
       "diff": {
