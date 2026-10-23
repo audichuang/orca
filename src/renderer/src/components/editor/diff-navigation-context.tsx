@@ -1,16 +1,22 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { editor } from 'monaco-editor'
 import { installMonacoDiffChangeNavigationShortcut } from './editor-shortcuts'
+import type { DiffDirection } from './diff-change-boundary'
+import type { DiffFilePosition } from './diff-file-sequence'
+import { useDiffFileBoundaryNavigation } from './use-diff-file-boundary-navigation'
 
 export type DiffEditorRegistrationContextValue = {
   registerDiffEditor: (editor: editor.IStandaloneDiffEditor) => void
   unregisterDiffEditor: (editor: editor.IStandaloneDiffEditor) => void
+  hasFileArrival: () => boolean
 }
 
 export type DiffNavigationContextValue = {
   goToPreviousDiff: () => void
   goToNextDiff: () => void
   changeCount: number
+  filePosition: DiffFilePosition | null
+  fileBoundaryHint: DiffDirection | null
 }
 
 const noop = (): void => {}
@@ -18,13 +24,16 @@ const noop = (): void => {}
 // Separate registration from counts so diff recomputation rerenders header controls without waking Monaco consumers.
 const DiffEditorRegistrationContext = createContext<DiffEditorRegistrationContextValue>({
   registerDiffEditor: noop,
-  unregisterDiffEditor: noop
+  unregisterDiffEditor: noop,
+  hasFileArrival: () => false
 })
 
 const DiffNavigationContext = createContext<DiffNavigationContextValue>({
   goToPreviousDiff: noop,
   goToNextDiff: noop,
-  changeCount: 0
+  changeCount: 0,
+  filePosition: null,
+  fileBoundaryHint: null
 })
 
 function countChanges(diffEditor: editor.IStandaloneDiffEditor): number {
@@ -32,10 +41,14 @@ function countChanges(diffEditor: editor.IStandaloneDiffEditor): number {
 }
 
 export function DiffNavigationProvider({
-  children
+  children,
+  filePosition = null
 }: {
   children: React.ReactNode
+  filePosition?: DiffFilePosition | null
 }): React.JSX.Element {
+  const fileBoundary = useDiffFileBoundaryNavigation(filePosition)
+  const { navigate, onDiffUpdated, hasFileArrival } = fileBoundary
   const editorRef = useRef<editor.IStandaloneDiffEditor | null>(null)
   const updateSubRef = useRef<{ dispose: () => void } | null>(null)
   // Share the registered editor across header buttons and F7/Shift+F7 shortcuts.
@@ -43,19 +56,26 @@ export function DiffNavigationProvider({
   // Use state so sibling header controls repaint when diff computation changes their enabled state.
   const [changeCount, setChangeCount] = useState(0)
 
-  const registerDiffEditor = useCallback((diffEditor: editor.IStandaloneDiffEditor) => {
-    editorRef.current = diffEditor
-    updateSubRef.current?.dispose()
-    updateSubRef.current = diffEditor.onDidUpdateDiff(() => {
-      // Ignore stale editor callbacks after a fast registration swap.
-      if (editorRef.current === diffEditor) {
-        setChangeCount(countChanges(diffEditor))
-      }
-    })
-    shortcutCleanupRef.current?.()
-    shortcutCleanupRef.current = installMonacoDiffChangeNavigationShortcut(diffEditor)
-    setChangeCount(countChanges(diffEditor))
-  }, [])
+  const registerDiffEditor = useCallback(
+    (diffEditor: editor.IStandaloneDiffEditor) => {
+      editorRef.current = diffEditor
+      updateSubRef.current?.dispose()
+      updateSubRef.current = diffEditor.onDidUpdateDiff(() => {
+        // Ignore stale editor callbacks after a fast registration swap.
+        if (editorRef.current === diffEditor) {
+          setChangeCount(countChanges(diffEditor))
+          onDiffUpdated(diffEditor)
+        }
+      })
+      shortcutCleanupRef.current?.()
+      shortcutCleanupRef.current = installMonacoDiffChangeNavigationShortcut({
+        getContainerDomNode: () => diffEditor.getContainerDomNode(),
+        goToDiff: (direction) => navigate(diffEditor, direction)
+      })
+      setChangeCount(countChanges(diffEditor))
+    },
+    [navigate, onDiffUpdated]
+  )
 
   const unregisterDiffEditor = useCallback((diffEditor: editor.IStandaloneDiffEditor) => {
     // A stale disposal must not clear a newly registered replacement editor.
@@ -71,12 +91,12 @@ export function DiffNavigationProvider({
   }, [])
 
   const goToPreviousDiff = useCallback(() => {
-    editorRef.current?.goToDiff('previous')
-  }, [])
+    navigate(editorRef.current, 'previous')
+  }, [navigate])
 
   const goToNextDiff = useCallback(() => {
-    editorRef.current?.goToDiff('next')
-  }, [])
+    navigate(editorRef.current, 'next')
+  }, [navigate])
 
   useEffect(() => {
     return () => {
@@ -88,16 +108,18 @@ export function DiffNavigationProvider({
   }, [])
 
   const registrationValue = useMemo(
-    () => ({ registerDiffEditor, unregisterDiffEditor }),
-    [registerDiffEditor, unregisterDiffEditor]
+    () => ({ registerDiffEditor, unregisterDiffEditor, hasFileArrival }),
+    [registerDiffEditor, unregisterDiffEditor, hasFileArrival]
   )
   const navigationValue = useMemo(
     () => ({
       goToPreviousDiff,
       goToNextDiff,
-      changeCount
+      changeCount,
+      filePosition,
+      fileBoundaryHint: fileBoundary.armedDirection
     }),
-    [goToPreviousDiff, goToNextDiff, changeCount]
+    [goToPreviousDiff, goToNextDiff, changeCount, filePosition, fileBoundary.armedDirection]
   )
 
   return (

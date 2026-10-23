@@ -16785,6 +16785,11 @@
           "tooLarge": "{{value0}} es demasiado grande para abrirse en {{value1}} ({{value2}}; el límite es {{value3}}).",
           "unsupported": "{{value0}} no puede leer este archivo desde donde está almacenado. Actualiza el servidor de Orca que lo aloja o cambia a Código fuente.",
           "readFailed": "No se pudo leer {{value0}} para {{value1}}. {{value2}}"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} archivos",
+          "pressAgainNext": "Pulsa de nuevo para ir al siguiente archivo",
+          "pressAgainPrevious": "Pulsa de nuevo para ir al archivo anterior"
         }
       },
       "diff": {
