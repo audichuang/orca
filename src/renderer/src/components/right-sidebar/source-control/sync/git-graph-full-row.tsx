@@ -12,6 +12,7 @@ import type { GitHistoryItemViewModel } from '../../../../../../shared/git-histo
 import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
 import { graphColor } from './git-history-graph-svg'
 import { GitGraphLaneConnectors, GitGraphLaneSvg } from './git-graph-lane-svg'
+import { GitGraphRowSubject } from './git-graph-row-subject'
 import type { GitGraphLaneRow } from './git-graph-lane-layout'
 import { formatGitHistoryTimestamp } from './git-history-format'
 import { formatGitGraphCompactDate, formatGitGraphRelativeDate } from './git-graph-date-format'
@@ -236,7 +237,7 @@ export function GitGraphFullRow({
   /** Set in two-line mode: these fields and the refs move under the message. */
   secondLine?: GitGraphSecondLine
   selected: boolean
-  /** The cursor row wraps its whole message instead of truncating it. */
+  /** The cursor row floats its whole message over the rows below when it is cut off. */
   expanded?: boolean
   /** Every other row gets a faint band so the eye keeps its line across a wide list. */
   striped?: boolean
@@ -262,18 +263,15 @@ export function GitGraphFullRow({
   // Why: boundary markers carry a placeholder id (0000000), not a commit hash.
   const hash = isBoundaryNode ? null : item.displayId
   const subject = (
-    <span
+    <GitGraphRowSubject
+      text={item.subject}
+      expanded={expanded}
       className={cn(
-        'min-w-0 leading-4',
         secondLine ? 'pt-1.5' : 'flex-1 py-1.5',
-        expanded ? 'break-words whitespace-normal' : 'truncate',
         // Why /80, not muted: off-branch messages stay readable; selection reads at full strength.
         dimmed && !selected ? 'text-foreground/80' : 'text-foreground'
       )}
-      title={item.subject}
-    >
-      {item.subject}
-    </span>
+    />
   )
   const cells = (
     <>
@@ -292,7 +290,7 @@ export function GitGraphFullRow({
         />
       </div>
       {secondLine ? (
-        <div data-col="message" className="flex min-w-0 flex-col pb-1.5">
+        <div data-col="message" className="relative flex min-w-0 flex-col pb-1.5">
           {subject}
           <span className="mt-0.5 flex h-4 min-w-0 items-center gap-1.5 overflow-hidden text-2xs leading-4 text-muted-foreground">
             {secondLine.author && item.author && (
@@ -319,10 +317,7 @@ export function GitGraphFullRow({
           </span>
         </div>
       ) : (
-        <div
-          data-col="message"
-          className="flex min-h-7 min-w-0 items-start gap-1.5 overflow-hidden"
-        >
+        <div data-col="message" className="relative flex min-h-7 min-w-0 items-start gap-1.5">
           {subject}
           {refs.length > 0 && <RowRefs refs={refs} headRefId={headRefId} />}
         </div>
