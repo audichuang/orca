@@ -27,6 +27,7 @@ import { buildClipcodeCommitCopy, type ClipcodeCommitCopyCommit } from './clipco
 import { notifyClipcodeCopied } from './clipcode-copied-toast'
 import { svgPreviewText } from './clipcode-svg-text'
 import { buildClipcodeExplorerCopy, type ClipcodeExplorerTarget } from './clipcode-explorer-copy'
+import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
 
 export type ClipcodeCopyRequest = {
   worktree: Pick<Worktree, 'id' | 'path'>
@@ -49,9 +50,9 @@ export function getClipcodeRootPath(editorWorktreeId: string | null, worktreePat
   if (scope?.type !== 'folder') {
     return worktreePath
   }
-  const folder = useAppStore
-    .getState()
-    .folderWorkspaces.find((workspace) => workspace.id === scope.folderWorkspaceId)
+  const folder = selectFolderWorkspaces(useAppStore.getState()).find(
+    (workspace) => workspace.id === scope.folderWorkspaceId
+  )
   return folder?.folderPath ?? worktreePath
 }
 
