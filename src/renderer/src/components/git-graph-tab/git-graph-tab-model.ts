@@ -11,6 +11,7 @@ import {
   getFolderGitWorktrees
 } from '../right-sidebar/source-control/folder/folder-git-worktrees'
 import { getRememberedFolderRepo } from '../right-sidebar/source-control/folder/folder-repo-selection'
+import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
 
 export const GIT_GRAPH_TAB_LABEL = 'Git Graph'
 
@@ -65,9 +66,9 @@ export function listGitGraphRepoChoicesFromState(
 ): GitGraphRepoChoice[] {
   return listGitGraphRepoChoices(
     workspaceId,
-    getIndexedAllWorktrees(state.worktreesByRepo),
+    getIndexedAllWorktrees(selectWorktreesByRepo(state)),
     getIndexedRepoMap(state.repos),
-    state.folderWorkspaces ?? []
+    selectFolderWorkspaces(state) ?? []
   )
 }
 
