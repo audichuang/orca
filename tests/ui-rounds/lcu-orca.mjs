@@ -10,6 +10,7 @@ globalThis.UI_RE = map.RE
 globalThis.UI_MAP = map
 globalThis.sectionOf = (re) => (typeof re === 'string' ? re : map.sectionNameOf(re))
 globalThis.openRepoName = async () => map.openRepoName(await lines())
+globalThis.openRepoTitle = async () => map.openRepoTitle(await lines())
 // AX 行一律換成 ui-map 的標準形式(中文角色名、repo 列「name (branch) N」),案例只比對標準形式
 globalThis.lines = async () =>
   (await ax())
@@ -278,6 +279,26 @@ globalThis.pv = async () => {
   }
   return out.join(' | ')
 }
+// Paste & Restore 的結果通知(沒有預覽時直接出現)
+const RESTORE_RESULT = /Created \d|Failed|failed|No Snipcode|Clipboard is empty/
+/** 按 Paste & Restore,等預覽對話框或結果通知;大的 payload 要先讀檔比對,預覽可能晚幾秒才出現。回傳有沒有預覽。 */
+globalThis.openRestorePreview = async () => {
+  // 上一案的結果通知還在會被誤讀
+  for (let k = 0; k < 20 && (await grep(RESTORE_RESULT)); k++) {
+    await sleep(500)
+  }
+  await app.click(await find(/^按鈕 Paste & Restore/))
+  for (let k = 0; k < 8; k++) {
+    await sleep(700)
+    if (await grep(/^標題 Paste & Restore/)) {
+      return true
+    }
+    if (await grep(RESTORE_RESULT)) {
+      return false
+    }
+  }
+  return false
+}
 globalThis.rs = async ({ toggleAdjust = false, overwrite = false, restore = true } = {}) => {
   const cancel = async () => {
     const c = (await lines()).find(([, t]) => /^按鈕 Cancel$/.test(t))
@@ -285,8 +306,7 @@ globalThis.rs = async ({ toggleAdjust = false, overwrite = false, restore = true
       await app.click(c[0])
     }
   }
-  await app.click(await find(/^按鈕 Paste & Restore/))
-  await sleep(1500)
+  await openRestorePreview()
   let r = `PREVIEW: ${await pv()}`
   if (toggleAdjust) {
     const cb = (await lines()).find(([, t]) => t.startsWith('核取方塊 Adjust paths'))
