@@ -16,7 +16,13 @@ describe('getRuntimeGitHistory (fork graph extension)', () => {
   it('forwards graph to window.api.git.history for a local repo', async () => {
     const history = vi.fn().mockResolvedValue({ items: [], hasMore: false })
     vi.stubGlobal('window', { api: { git: { history } } })
-    const graph = { mode: 'head' as const, search: { author: 'ann' }, limit: 100 }
+    const graph = {
+      mode: 'head' as const,
+      search: { author: 'ann' },
+      source: { local: true, remotes: [], tags: true },
+      listTags: true,
+      limit: 100
+    }
 
     await getRuntimeGitHistory(
       { target: { kind: 'local' }, worktreeId: 'wt-1', worktreePath: '/repo' },
@@ -28,7 +34,13 @@ describe('getRuntimeGitHistory (fork graph extension)', () => {
 
   it('sends graph in the git.history RPC for a paired server', async () => {
     callRuntimeRpc.mockResolvedValue({ items: [], hasMore: false })
-    const graph = { mode: 'head' as const, search: { author: 'ann' }, limit: 100 }
+    const graph = {
+      mode: 'head' as const,
+      search: { author: 'ann' },
+      source: { local: true, remotes: [], tags: true },
+      listTags: true,
+      limit: 100
+    }
     const target = { kind: 'environment' as const, environmentId: 'env-1' }
 
     await getRuntimeGitHistory(
