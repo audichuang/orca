@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-check-wire fork-check-mobile fork-base-guard
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-check-wire fork-check-mobile fork-base-guard fork-footprint fork-check-seams fork-canary
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -35,6 +35,9 @@ help:
 	@echo "  make fork-check       after a rebase: typecheck + tests the fork's changes reach + lint + quality gate"
 	@echo "  make fork-check-e2e   the fork's headless e2e specs (CI runs it on every PR)"
 	@echo "  make fork-check-full  before pushing: every fork CI job but the full unit suite and the macOS build"
+	@echo "  make fork-check-seams the fork seam contract tests in config/fork-seam-tests.txt"
+	@echo "  make fork-footprint   the fork's diff on upstream files since FORK_BASE (JSON=1 for --json)"
+	@echo "  make fork-canary      report-only: merge the fork into upstream main, typecheck, run fork tests"
 
 install:
 	pnpm install
@@ -206,6 +209,7 @@ fork-check-lint: fork-base-guard
 	node config/scripts/fork-lint-run.mjs
 	node config/scripts/fork-pr-gate-needs.mjs
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
+	node config/scripts/fork-seam-tests.mjs --check
 	@# Why here too: a branch goes red in CI once upstream releases a daemon protocol bump.
 	pnpm run check:daemon-protocol-crossing
 
@@ -223,6 +227,23 @@ ifeq ($(FORK_TESTS),all)
 else
 	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) --changed $(FORK_BASE)
 endif
+
+fork-footprint:
+	@# Why stderr: the guard's echo would corrupt the --json output.
+	@$(MAKE) --no-print-directory fork-base-guard >&2
+	@node config/scripts/fork-footprint.mjs $(FORK_BASE) $(if $(JSON),--json)
+
+fork-check-seams: export LC_ALL = C
+fork-check-seams: export ORCA_BACKGROUND_LAUNCH = 1
+fork-check-seams:
+	node config/scripts/ensure-native-runtime.mjs --runtime=node
+	@# Why not a pipe: the list check's failure must stop the run instead of running fewer files.
+	files=$$(node config/scripts/fork-seam-tests.mjs) && pnpm exec vitest run --config config/vitest.config.ts $$files
+
+# Report-only early warning against upstream main; exit 0 green, 1 failures, 2 conflicts. See fork-canary.sh for overrides.
+fork-canary: export LC_ALL = C
+fork-canary: fork-base-guard
+	FORK_BASE=$(FORK_BASE) bash config/scripts/fork-canary.sh
 
 FORK_REPO ?= audichuang/orca
 # The fork's remote in this clone, whatever it is named (origin on a plain clone of the fork).
