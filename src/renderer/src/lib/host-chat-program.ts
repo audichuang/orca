@@ -126,10 +126,17 @@ export function readAgentLaunchChoice(
   agent: TuiAgent,
   workspace: ProspectiveWorkspace,
   detected: readonly TuiAgent[] | null,
-  preferredSurface?: 'chat'
+  preferredSurface?: 'chat',
+  /** A start directory below the workspace root only a terminal can apply (folder repo launches). */
+  cwd?: string | null
 ) {
   const context = resolveChatProgramContext(store, workspace)
-  const input = buildAgentLaunchRouteInput(store, { agent, workspace, preferredSurface })
+  const input = buildAgentLaunchRouteInput(store, {
+    agent,
+    workspace,
+    preferredSurface,
+    tuiCustomization: { cwd }
+  })
   const program = readChatProgram(store, agent, context, detected)
   const support = structuredAgentLaunchSupport(input)
   const catalogReady =
@@ -177,7 +184,8 @@ export function agentsOfferedForLaunch(
   store: AgentLaunchRouteStore,
   workspace: ProspectiveWorkspace,
   detected: readonly TuiAgent[] | null,
-  preferredChatAgent?: TuiAgent
+  preferredChatAgent?: TuiAgent,
+  cwd?: string | null
 ): TuiAgent[] {
   const { executionHostId } = resolveChatProgramContext(store, workspace)
   const chats = chatProviderAgents(executionHostId, store.runtimeStatusByEnvironmentId)
@@ -187,7 +195,8 @@ export function agentsOfferedForLaunch(
       agent,
       workspace,
       detected,
-      agent === preferredChatAgent ? 'chat' : undefined
+      agent === preferredChatAgent ? 'chat' : undefined,
+      cwd
     )
   )
   return [...new Set([...(detected ?? []), ...opens])]
