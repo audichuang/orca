@@ -1,6 +1,6 @@
 // Fork-only: the commit context menu with the fork's entries, wrapped around upstream's menu.
 import type React from 'react'
-import { ClipboardCopy, Copy, GitGraph, Globe, Hash, Sparkles } from 'lucide-react'
+import { ClipboardCopy, Copy, GitGraph, Hash, Sparkles } from 'lucide-react'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -8,8 +8,6 @@ import {
 } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
-import { useAppStore } from '@/store'
-import { getClientCreationActionPolicy } from '@/lib/client-creation-action-policy'
 import {
   GitHistoryCommitContextMenu,
   type GitHistoryCommitAction
@@ -83,31 +81,17 @@ function ShowInGraphItem({
   )
 }
 
-// Why a copy: upstream's menu hard-codes one-commit labels. Mirrors git-history-commit-context-menu.tsx;
-// re-sync its entries on each upstream rebase.
+// Why a copy: upstream's menu hard-codes one-commit labels. Mirrors git-history-commit-context-menu.tsx
+// minus Open in browser (one commit only); re-sync its entries on each upstream rebase.
 function MultiCommitMenu({
   item,
   onAction,
   selectedCount,
   onShowInGraph
 }: ForkMenuProps): React.JSX.Element {
-  const managedBrowserCreationEnabled = useAppStore(
-    (state) =>
-      getClientCreationActionPolicy(state, state.activeWorktreeId)['managed-browser'].state ===
-      'enabled'
-  )
   const count = { value0: selectedCount }
   return (
     <ContextMenuContent className="w-64">
-      {managedBrowserCreationEnabled ? (
-        <ContextMenuItem onSelect={() => onAction('open-remote', item)}>
-          <Globe className="size-3.5" />
-          {translate(
-            'auto.components.right.sidebar.GitHistoryCommitContextMenu.7b1c4e9a02',
-            'Open commit in browser'
-          )}
-        </ContextMenuItem>
-      ) : null}
       <ContextMenuItem onSelect={() => onAction('copy-hash', item)}>
         <Hash className="size-3.5" />
         {translate(
