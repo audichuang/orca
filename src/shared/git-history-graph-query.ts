@@ -17,8 +17,8 @@ import { isSafeGitRefName } from './git-status-upstream-ref'
 import { isSafeGitRemoteName } from './git-push-target-validation'
 
 // Why so strict: these become git argv; a glob, rev syntax or leading dash would widen or redirect the walk.
-function isWalkableBranchRef(ref: string): boolean {
-  return /^refs\/(heads|remotes)\//.test(ref) && !ref.includes('/-') && isSafeGitRefName(ref)
+function isWalkableRef(ref: string): boolean {
+  return /^refs\/(heads|remotes|tags)\//.test(ref) && !ref.includes('/-') && isSafeGitRefName(ref)
 }
 
 function clampGraphLimit(limit: number | undefined): number {
@@ -34,7 +34,7 @@ export function buildGitHistoryGraphLogRevisions(
   knownRemotes: readonly string[]
 ): string[] {
   if (request.mode === 'refs') {
-    const refs = (request.refs ?? []).filter(isWalkableBranchRef)
+    const refs = (request.refs ?? []).filter(isWalkableRef)
     return refs.length > 0 ? ['--end-of-options', ...refs] : []
   }
   if (request.mode === 'head') {
@@ -48,6 +48,7 @@ export function buildGitHistoryGraphLogRevisions(
   return [
     ...(source.local ? ['--branches'] : []),
     ...remotes.map((remote) => `--remotes=${remote}`),
+    ...(source.tags ? ['--tags'] : []),
     // Why HEAD: a detached HEAD belongs to no branch but is still the local work.
     ...(source.local ? ['--end-of-options', 'HEAD'] : [])
   ]
@@ -78,16 +79,20 @@ async function listRemotes(git: GitHistoryExecutor, cwd: string): Promise<string
   }
 }
 
-async function listBranchRefLines(git: GitHistoryExecutor, cwd: string): Promise<string[]> {
+async function listRefLines(
+  git: GitHistoryExecutor,
+  cwd: string,
+  sort: string,
+  namespaces: string[]
+): Promise<string[]> {
   try {
     const { stdout } = await git(
       [
         'for-each-ref',
-        '--sort=-committerdate',
+        `--sort=${sort}`,
         `--count=${GIT_HISTORY_GRAPH_REF_LIST_LIMIT}`,
         '--format=%(refname)%00%(refname:short)%00%(symref)',
-        'refs/heads',
-        'refs/remotes'
+        ...namespaces
       ],
       cwd
     )
@@ -95,6 +100,19 @@ async function listBranchRefLines(git: GitHistoryExecutor, cwd: string): Promise
   } catch {
     return []
   }
+}
+
+async function listGraphRefLines(
+  git: GitHistoryExecutor,
+  cwd: string,
+  listTags: boolean
+): Promise<string[]> {
+  // Why apart: tags sort by when they were made, and must not crowd branches out of the count.
+  const [branches, tags] = await Promise.all([
+    listRefLines(git, cwd, '-committerdate', ['refs/heads', 'refs/remotes']),
+    listTags ? listRefLines(git, cwd, '-creatordate', ['refs/tags']) : Promise.resolve([])
+  ])
+  return [...branches, ...tags]
 }
 
 function toBranchRefOptions(
@@ -106,11 +124,15 @@ function toBranchRefOptions(
   const refs: GitHistoryGraphRefOption[] = []
   for (const line of lines) {
     const [fullName, name, symref] = line.split('\0')
-    if (!fullName || !name || symref || !isWalkableBranchRef(fullName)) {
+    if (!fullName || !name || symref || !isWalkableRef(fullName)) {
       continue
     }
     if (fullName.startsWith('refs/heads/')) {
       refs.push({ fullName, name, category: 'branches' })
+      continue
+    }
+    if (fullName.startsWith('refs/tags/')) {
+      refs.push({ fullName, name, category: 'tags' })
       continue
     }
     const remote = remotesLongestFirst.find((candidate) =>
@@ -173,7 +195,7 @@ export async function loadGitHistoryGraphFromExecutor(
   const [meta, remotes, refLines, log] = await Promise.all([
     loadGitHistoryFromExecutor(git, cwd, { limit: 1, baseRef: options.baseRef }),
     remotesPromise,
-    listBranchRefLines(git, cwd),
+    listGraphRefLines(git, cwd, request.listTags === true),
     logPromise
   ])
   return {
