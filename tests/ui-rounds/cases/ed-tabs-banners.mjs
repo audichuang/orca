@@ -282,6 +282,8 @@ defineCase('ED-08.2', {
   title: 'Combined diff 外部改檔後刷新(2/2:計時)',
   pre: 'script',
   mutates: true,
+  // 腳本只能拍圖,判定要人看;run 留給手動輪拍 5/15/30 秒的圖
+  manual: 'Monaco 內容不在 AX 樹,要人看 combined diff 30 秒內是否出現 ext-combined',
   run: async () => {
     // Monaco 內容不在 AX,只能截圖;git 端的對照:SC 列的 +N 何時更新
     const t0 = Date.now()
