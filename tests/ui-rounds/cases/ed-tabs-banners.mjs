@@ -252,7 +252,8 @@ defineCase('ED-07', {
     )
     await edClickTab(/^Changes$/, 0)
     const web = await grep(/changed files/)
-    checkRe(web, /\b5 changed files/, 'WebApp combined')
+    // 6:CHANGES 含未追蹤的 Widget.tsx(10-21 起)
+    checkRe(web, /\b6 changed files/, 'WebApp combined')
     await edRepo('WebApp')
     await edViewAll(/^按鈕 STAGED CHANGES/, 2200)
     check((await edTabNames()).includes('Staged Changes'), '第 4 步沒有 Staged Changes 分頁')
@@ -263,7 +264,7 @@ defineCase('ED-07', {
       r && r.rel === 'server.ts' && edIdOf('api-server').test(r.id),
       `Q1 應有 server.ts | api-server/server.ts | <api-server id>:${rows.map((x) => x.raw).join(' ; ')}`
     )
-    return `Changes×2(WebApp 5 / api-server 2 files 互不混入);Staged Changes 已開;Q1: ${r.raw} [需看截圖:logo.png 二進位、deleted-unstaged 全紅、partial.ts 只有 index-edit]`
+    return `Changes×2(WebApp 6 / api-server 2 files 互不混入);Staged Changes 已開;Q1: ${r.raw} [需看截圖:logo.png 二進位、deleted-unstaged 全紅、partial.ts 只有 index-edit]`
   }
 })
 
