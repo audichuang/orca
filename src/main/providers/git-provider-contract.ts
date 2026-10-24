@@ -31,6 +31,7 @@ import type { GitProviderStatusOptions } from './git-provider-status-options'
 import type { BranchSwitchCreation } from '../../shared/git/branch-switch-target'
 import type { RuntimeGitLocalBranches } from '../../shared/runtime-worktree-contracts'
 import type { GitAdmissionTier } from '../git/command-runner/git-exec-options'
+import type { GitDiffReadOptions } from '../git/source-control/diff-render-limit-options'
 
 export type { GitProviderStatusOptions } from './git-provider-status-options'
 
@@ -68,7 +69,7 @@ export type IGitProvider = {
     staged: boolean,
     compareAgainstHead?: boolean,
     oldPath?: string,
-    skipRenderLimit?: boolean
+    readOptions?: GitDiffReadOptions
   ): Promise<GitDiffResult>
   stageFile(worktreePath: string, filePath: string): Promise<void>
   resolveConflict(
