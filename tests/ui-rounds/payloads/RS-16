@@ -1,0 +1,8 @@
+// clipcode-root: MultiProduct
+// file: [NEW] notes/phantom-a.txt
+line one
+// file: notes/phantom-b.txt
+line two
+// file: [NEW] notes/escaped.txt
+//clipcode-esc: // file: notes/not-a-file.txt
+kept
