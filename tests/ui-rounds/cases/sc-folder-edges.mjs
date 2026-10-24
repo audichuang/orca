@@ -115,7 +115,9 @@ defineCase('SC-27.2', {
       await sleep(1500)
     }
     check(!(await grep(/^text (Active|Inactive) MultiProduct-2$/)), 'MultiProduct-2 沒有被移除')
-    return `重啟後第一個 workspace 選取 ${sel}(設計:記憶只存在記憶體,應回到預設 api-server);MultiProduct-2 已移除`
+    // 選取記憶只存在記憶體,重啟後回到預設;先清理再斷言,失敗也不留下 MultiProduct-2
+    checkEq(sel, 'api-server', '重啟後選取的 repo')
+    return `重啟後選取 ${sel}(預設);MultiProduct-2 已移除`
   }
 })
 
