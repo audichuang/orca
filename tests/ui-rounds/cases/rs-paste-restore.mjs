@@ -321,23 +321,21 @@ defineCase('RS-13', {
 })
 
 // RS-14:預覽後磁碟才變動。.1 開預覽不關;Bash 跑 pre/<ID>.2.sh 動磁碟;.2 按 Restore
-for (const [id, path, _want, verify] of [
-  [
-    'RS-14a',
-    'notes/stale.txt',
-    null,
-    () =>
+for (const { id, path, verify } of [
+  {
+    id: 'RS-14a',
+    path: 'notes/stale.txt',
+    verify: () =>
       check(
         rsRead('notes/stale.txt').trim() === 'external',
         `stale.txt 應仍是 external,實際 ${JSON.stringify(rsRead('notes/stale.txt'))}`
       )
-  ],
-  [
-    'RS-14b',
-    'notes/sub2/x.txt',
-    null,
-    () => check(!rsEx(`${rsTop()}/x.txt`), '<root>/x.txt 不該存在')
-  ]
+  },
+  {
+    id: 'RS-14b',
+    path: 'notes/sub2/x.txt',
+    verify: () => check(!rsEx(`${rsTop()}/x.txt`), '<root>/x.txt 不該存在')
+  }
 ]) {
   defineCase(`${id}.1`, {
     title: `${id} 第 1 段:開預覽`,
