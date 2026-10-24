@@ -1,0 +1,15 @@
+// clipcode-root: MultiProduct
+// file: [NEW] /Users/audichuang/orca-ui-test/MultiProduct/notes/abs-inside.txt
+inside
+// file: [NEW] /home/bob/work/MultiProduct/notes/abs-cross.txt
+cross
+// file: [NEW] C:\Users\Bob\multiproduct\notes\abs-win.txt
+win
+// file: [NEW] /home/bob/work/multiproduct/notes/abs-lower.txt
+lower
+// file: [NEW] /a/MultiProduct/b/MultiProduct/c.txt
+ambiguous
+// file: [NEW] /home/bob/MultiProduct/../etc/abs-dotdot.txt
+dotdot
+// file: [NEW] /tmp/orca-ui-unmatched.txt
+unmatched
