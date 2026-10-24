@@ -6,7 +6,6 @@ import {
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { joinPath } from '@/lib/path'
 import { useAppStore } from '@/store'
-import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 import type {
   DiffContent,
   FileContent,
@@ -135,10 +134,12 @@ export function useEditorPanelActiveTabContentLoad({
         if (view ? needsFileRead(view.id) : needsFileRead(absolutePath)) {
           void (view
             ? loadFileContent(view.filePath, view.id, view.worktreeId, view.relativePath, load)
-            : loadFileContent(absolutePath, absolutePath, activeFile.worktreeId, entry.path, {
-                ...load,
-                gitWorktreeId: getOpenFileGitWorktreeId(activeFile)
-              }))
+            : activeFile.gitWorktreeId
+              ? loadFileContent(absolutePath, absolutePath, activeFile.worktreeId, entry.path, {
+                  ...load,
+                  gitWorktreeId: activeFile.gitWorktreeId
+                })
+              : loadFileContent(absolutePath, absolutePath, activeFile.worktreeId, entry.path, load))
         }
       }
       return
