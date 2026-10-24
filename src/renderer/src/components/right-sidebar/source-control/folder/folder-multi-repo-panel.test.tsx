@@ -357,6 +357,32 @@ describe('FolderMultiRepoPanel sync and hidden state', () => {
     expect(header('web').textContent).not.toMatch(/↑2\s*\d/)
   })
 
+  it('counts hidden linked worktrees under the folder in its notice', () => {
+    const hidden = (path: string) => ({
+      ...worktree('api'),
+      id: `wt-${path}`,
+      path,
+      isMainWorktree: false,
+      visible: false,
+      ownership: 'external' as const,
+      selectedCheckout: false
+    })
+    useAppStore.setState({
+      detectedWorktreesByRepo: {
+        'repo-api': {
+          repoId: 'repo-api',
+          authoritative: true,
+          source: 'git',
+          worktrees: [hidden('/work/api-feature'), hidden('/elsewhere/api-fix')]
+        }
+      }
+    })
+    renderPanel({ core: 1 })
+    expect(
+      screen.getByText('Hidden worktrees under this folder are not included (1).')
+    ).toBeInTheDocument()
+  })
+
   it('marks a repo hidden from the sidebar without hovering', () => {
     renderPanel({ api: 1, core: 1 })
     expect(header('api').querySelector('[data-sidebar-hidden-marker]')).toBeNull()
