@@ -26,4 +26,22 @@ describe('openConflictFile owner isolation', () => {
     expect(useAppStore.getState().activeFileId).toBe(folderFile?.id)
     expect(files.find((f) => f.worktreeId === 'repo-a')?.gitWorktreeId).toBeUndefined()
   })
+
+  it('tracks a folder-owned conflict under its git owner, where status reconciliation reads it', () => {
+    useAppStore
+      .getState()
+      .openConflictFile('folder:f1', '/f/a', entry, 'typescript', { gitWorktreeId: 'repo-a' })
+    const tracked = useAppStore.getState().trackedConflictPathsByWorktree
+    expect(tracked['repo-a']).toEqual({ 'src/x.ts': 'both_modified' })
+    expect(tracked['folder:f1']).toBeUndefined()
+  })
+
+  it('keeps the git owner when the folder tab is reopened without one', () => {
+    const state = useAppStore.getState()
+    state.openConflictFile('folder:f1', '/f/a', entry, 'typescript', { gitWorktreeId: 'repo-a' })
+    state.openConflictFile('folder:f1', '/f/a', entry, 'typescript')
+    const files = useAppStore.getState().openFiles
+    expect(files).toHaveLength(1)
+    expect(files[0]).toMatchObject({ worktreeId: 'folder:f1', gitWorktreeId: 'repo-a' })
+  })
 })
