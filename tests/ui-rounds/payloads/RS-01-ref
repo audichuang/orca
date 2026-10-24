@@ -1,0 +1,26 @@
+// clipcode-root: WebApp
+// file: [DELETED] src/deleted-staged.ts
+deleted-staged
+line2
+line3
+
+
+// file: [MOVED] src/new-name.ts
+old-name
+line2
+line3
+
+
+// file: [MODIFIED] src/partial.ts
+partial
+line2
+line3
+index-edit
+
+
+// file: [MODIFIED] src/staged-mod.ts
+staged-mod
+line2
+line3
+staged-edit
+
