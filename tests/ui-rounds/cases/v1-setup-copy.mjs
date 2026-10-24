@@ -1,14 +1,10 @@
 const {
   V1_EXPECT_COUNTS,
-  v1Start,
   v1Rows,
   v1CountsMap,
-  v1WaitUntil,
-  v1Panel,
   v1Select,
   v1Tree,
   v1Sig,
-  v1RowIn,
   v1BtnAfterId,
   SEC_CH,
   SEC_ST,
@@ -61,7 +57,7 @@ defineCase('V1-P2', {
 defineCase('V1-P3', {
   title: 'Source Control 分頁出現,沒有 Checks',
   run: async () => {
-    await v1Start()
+    await openMP()
     check((await findAll(/^按鈕 Source Control/)).length === 1, '沒有 Source Control 分頁')
     check((await findAll(/^按鈕 Checks$/)).length === 0, '不該出現 Checks 分頁')
     const pr = (await findAll(/^按鈕 PR Checks$/)).length
@@ -79,7 +75,7 @@ defineCase('V1-A1', {
   title: '清單內容',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await ensure5()
     const rows = await v1Rows()
     checkEq(
@@ -96,8 +92,8 @@ defineCase('V1-A2', {
   title: '數字與 ↓↑',
   pre: 'reset',
   run: async () => {
-    await v1Start()
-    let m = await v1WaitUntil(async () => {
+    await openMP()
+    let m = await waitFor(async () => {
       const c = await v1CountsMap()
       return JSON.stringify(c) === JSON.stringify(V1_EXPECT_COUNTS) ? c : null
     }, 12000)
@@ -135,8 +131,8 @@ defineCase('V1-A3', {
   // pre/V1-A3.sh 重啟 Orca,清掉這次啟動記住的選取
   pre: 'script',
   run: async () => {
-    await v1Start()
-    const p = await v1Panel()
+    await openMP()
+    const p = await openRepoTitle()
     checkEq(p, 'api-server (main)', '預設選取的面板標題(選中底色與指示條需眼看)')
     return '面板標題 api-server (main)'
   }
@@ -146,7 +142,7 @@ defineCase('V1-A4', {
   title: '切換 repo 與版面',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await v1Select('WebApp')
     const rows = await v1Rows()
     checkEq(rows.length, 5, '上方清單仍可見的列數')
@@ -160,11 +156,11 @@ defineCase('V1-A5', {
   title: '重新整理不跳選取',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await v1Select('WebApp')
     await clickRe(/^按鈕 Refresh all repositories/)
     await sleep(3500)
-    checkEq(await v1Panel(), 'WebApp (main)', 'Refresh all 後面板標題')
+    checkEq(await openRepoTitle(), 'WebApp (main)', 'Refresh all 後面板標題')
     return 'Refresh all 後仍是 WebApp (main)'
   }
 })
@@ -173,7 +169,7 @@ defineCase('V1-A6', {
   title: '切換 workspace 來回後記住選取',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await v1Select('WebApp')
     await app.click(await v1MainRow('api-server'))
     await sleep(2000)
@@ -181,9 +177,9 @@ defineCase('V1-A6', {
       (await grep(/^按鈕 Refresh all repositories/)) === '',
       '切到 api-server workspace 後仍顯示 folder 面板'
     )
-    await v1Start()
+    await openMP()
     await sleep(1500)
-    checkEq(await v1Panel(), 'WebApp (main)', '切回 MultiProduct 後面板標題')
+    checkEq(await openRepoTitle(), 'WebApp (main)', '切回 MultiProduct 後面板標題')
     return '切到 api-server workspace 再切回,仍選 WebApp (main)'
   }
 })
@@ -193,7 +189,7 @@ defineCase('V1-A7', {
   title: '鍵盤操作(方向鍵/Home/End 換選取,Enter/Space 不收合面板)',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await v1Select('api-server')
     const seq = [
       ['Down', 'core (main)'],
@@ -207,7 +203,7 @@ defineCase('V1-A7', {
     for (const [k, want] of seq) {
       await app.pressKey(k)
       await sleep(600)
-      const p = await v1Panel()
+      const p = await openRepoTitle()
       got.push(`${k}→${p}`)
       checkEq(p, want, `按 ${k} 後選中的 repo`)
     }
@@ -219,7 +215,7 @@ defineCase('V1-A8', {
   title: '複製鈕不被遮擋(逐列點得到)',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     const rows = await v1Rows()
     for (const r of rows) {
       const b = await v1BtnAfterId(r.id, /^按鈕 Copy all changes$/)
@@ -240,7 +236,7 @@ defineCase('V1-B1', {
   title: '三個區段內容(檔名、路徑、狀態字母)',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await v1Select('WebApp')
     const t = await v1Tree()
     // 10-21 起 UNTRACKED FILES 併進 CHANGES,未追蹤檔標 U
@@ -276,7 +272,7 @@ defineCase('V1-B2', {
   title: '部分暫存 partial.ts 同時在 CHANGES 與 STAGED',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await v1Select('WebApp')
     const t = await v1Tree()
     check(
@@ -296,10 +292,10 @@ defineCase('V1-C1', {
   title: '未暫存 diff,分頁開在 folder',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await closeAll()
     await v1Select('WebApp')
-    await app.click(await v1RowIn(SEC_CH, /^text unstaged-mod\.ts src/))
+    await app.click(await rowIn(SEC_CH, /^text unstaged-mod\.ts src/))
     await sleep(1800)
     check(
       (await v1Tabs()).some((x) => x.startsWith('unstaged-mod.ts (diff)')),
@@ -319,10 +315,10 @@ defineCase('V1-C2', {
   title: '已暫存 diff 是 index 版本',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await closeAll()
     await v1Select('WebApp')
-    await app.click(await v1RowIn(SEC_ST, /^text partial\.ts src/))
+    await app.click(await rowIn(SEC_ST, /^text partial\.ts src/))
     await sleep(1800)
     check(
       (await v1Tabs()).some((x) => x.startsWith('partial.ts (staged diff)')),
@@ -337,10 +333,10 @@ defineCase('V1-C3', {
   title: '未暫存 diff 是工作區版本',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await closeAll()
     await v1Select('WebApp')
-    await app.click(await v1RowIn(SEC_CH, /^text partial\.ts src/))
+    await app.click(await rowIn(SEC_CH, /^text partial\.ts src/))
     await sleep(1800)
     check(
       (await v1Tabs()).some((x) => x.startsWith('partial.ts (diff)')),
@@ -355,13 +351,13 @@ defineCase('V1-C4', {
   title: '同名 README 不互相覆蓋(雙擊固定兩個分頁)',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await closeAll()
     await v1Select('WebApp')
-    await app.click(await v1RowIn(SEC_CH, /^text README\.md/), { clickCount: 2 })
+    await app.click(await rowIn(SEC_CH, /^text README\.md/), { clickCount: 2 })
     await sleep(1800)
     await v1Select('api-server')
-    await app.click(await v1RowIn(SEC_CH, /^text README\.md/), { clickCount: 2 })
+    await app.click(await rowIn(SEC_CH, /^text README\.md/), { clickCount: 2 })
     await sleep(1800)
     const readmes = await findAll(/^sortable README\.md/)
     checkEq(readmes.length, 2, 'README.md 分頁數')
@@ -380,13 +376,13 @@ defineCase('V1-C5', {
   title: 'Open to the Side',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await closeAll()
     await v1Select('WebApp')
-    await app.click(await v1RowIn(SEC_CH, /^text partial\.ts src/), { clickCount: 2 })
+    await app.click(await rowIn(SEC_CH, /^text partial\.ts src/), { clickCount: 2 })
     await sleep(1500)
     const before = await v1Panes()
-    await app.click(await v1RowIn(SEC_CH, /^text unstaged-mod\.ts src/), { mouseButton: 'right' })
+    await app.click(await rowIn(SEC_CH, /^text unstaged-mod\.ts src/), { mouseButton: 'right' })
     await sleep(800)
     await app.click(await find(/^Open to the Side/))
     await sleep(1800)
@@ -409,10 +405,10 @@ defineCase('V1-C6', {
   title: 'linked worktree 的 diff',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await closeAll()
     await v1Select('WebApp-feature')
-    await app.click(await v1RowIn(SEC_CH, /^text unstaged-mod\.ts src/))
+    await app.click(await rowIn(SEC_CH, /^text unstaged-mod\.ts src/))
     await sleep(1800)
     check(
       (await v1Tabs()).some((x) => x.startsWith('unstaged-mod.ts (diff)')),
@@ -430,9 +426,9 @@ defineCase('V1-D1', {
   pre: 'reset',
   mutates: true,
   run: async () => {
-    await v1Start()
+    await openMP()
     await v1Select('WebApp')
-    const row = await v1RowIn(SEC_CH, /^text unstaged-mod\.ts src/)
+    const row = await rowIn(SEC_CH, /^text unstaged-mod\.ts src/)
     await app.click(await v1BtnAfterId(row, /^按鈕 Stage$/))
     await sleep(2000)
     const t = await v1Tree()
@@ -451,13 +447,13 @@ defineCase('V1-D2', {
   pre: 'reset',
   mutates: true,
   run: async () => {
-    await v1Start()
+    await openMP()
     await v1Select('WebApp')
-    const row = await v1RowIn(SEC_CH, /^text unstaged-mod\.ts src/)
+    const row = await rowIn(SEC_CH, /^text unstaged-mod\.ts src/)
     await app.click(await v1BtnAfterId(row, /^按鈕 Stage$/))
     await sleep(2000)
     checkEq(await v1TreeNums(), '5/5', 'stage 後 CHANGES/STAGED')
-    const srow = await v1RowIn(SEC_ST, /^text unstaged-mod\.ts src/)
+    const srow = await rowIn(SEC_ST, /^text unstaged-mod\.ts src/)
     await app.click(await v1BtnAfterId(srow, /^按鈕 Unstage$/))
     await sleep(2000)
     checkEq(await v1TreeNums(), '6/4', 'unstage 後 CHANGES/STAGED')
@@ -470,9 +466,9 @@ defineCase('V1-D3', {
   pre: 'reset',
   mutates: true,
   run: async () => {
-    await v1Start()
+    await openMP()
     await v1Select('core')
-    const row = await v1RowIn(SEC_CH, /^text core\.ts/)
+    const row = await rowIn(SEC_CH, /^text core\.ts/)
     await app.click(await v1BtnAfterId(row, /^按鈕 Stage$/))
     await sleep(1500)
     const box = await find(/^文字項目區域 .*Commit message/)
@@ -491,7 +487,7 @@ defineCase('V1-D3', {
       WebApp: 10,
       'WebApp-feature': 1
     })
-    const got = await v1WaitUntil(async () => {
+    const got = await waitFor(async () => {
       const c = await v1CountsMap()
       return JSON.stringify(c) === JSON.stringify(want) ? c : null
     }, 10000)
