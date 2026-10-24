@@ -32,13 +32,19 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 ## Who checks what
 
 - Local checks (`make fork-check-full`, on the macmini) find problems before a push. They report; they never decide that a failure is safe. Don't add automatic exemptions (rerun until it passes, compare against `FORK_BASE`) to a fork-check target: every such exemption tried so far let a regression exit 0 in a way the next Codex round found.
-- Fork CI on Linux is the only merge gate. An install step that fails with `Could not reach https://registry.npmjs.org/...` is an npm outage, not the change: check https://status.npmjs.org, curl that exact URL until it answers, then `gh run rerun <run> --failed`. Leave the workflow alone.
+- Fork CI on Linux is the only merge gate. A red job gets one automatic `gh run rerun <run> --failed`; red again is a real failure. That rerun lives at the CI level only, never inside a `fork-check-*` target. An install step that fails with `Could not reach https://registry.npmjs.org/...` is an npm outage, not the change: check https://status.npmjs.org, curl that exact URL until it answers, then `gh run rerun <run> --failed`. Leave the workflow alone.
 - Codex is the deep backstop after the agent's own review, continuing one thread. Each round's prompt names the head SHA and lists what earlier rounds fixed and what they refuted, with the refuting evidence, so a refuted finding returns only with new evidence. Plan on three rounds at most. After round three, stop and diagnose each open blocker against the evidence: a flawed design, a wrong reviewer or judge assumption, or a broken validation setup. Propose what that diagnosis supports (for a design flaw, preferably a simpler design that removes the risky capability) and ask before patching or reviewing further.
+
+## Unattended merges
+
+- A feature PR merges into `develop` without the user once the finish pipeline is done (simplify, code-review, Codex deep test with no open blocker, an lcu round when it changes UI) and "Fork PR checks passed" is green with `develop` at its current head: `gh pr merge <n> --merge`. A blocker the pipeline could not settle leaves it open for the user.
+- The auto-rebase pipeline (`orca-fork-auto-rebase` skill) moves `develop` when the rebase is CLEAN, or MANUAL with every resolved hunk and fix commit guarded by a test shown to turn red when that hunk is reverted, no confirmed blocker from its four reviewers, and no untested seam among the resolved hunks. It then releases. Anything short of that leaves a verified PR for the user.
+- Closing a seam test gap the reviewers report is what lets the next MANUAL rebase move on its own; treat those gaps as debt.
 
 ## Release
 
 - `main` is a pointer, never a merge target: develop is rebased on every upstream release, so main only follows by force-push. Move it yourself when a develop commit is worth installing.
-- The commit: the merge commit of a feat → `develop` PR whose "Fork PR checks passed" ran with `develop` at its current head, merged with the merge-commit method (squash and rebase create a sha no run tested). After a rebase of `develop` that skipped a PR, it must pass `make fork-check-full` first.
+- The commit: the merge commit of a feat → `develop` PR whose "Fork PR checks passed" ran with `develop` at its current head, merged with the merge-commit method (squash and rebase create a sha no run tested). After a rebase of `develop` that skipped a PR, it must pass `make fork-check-full` first. The auto-rebase release is the exception: its head is the commit Fork CI verified, and on macOS `fork-check-full` always fails upstream's own tests, so it cannot be a machine gate.
 - From the dev clone (remote `fork`): move `main` and push an **annotated** tag (N counts up per upstream X.Y.Z); its message becomes the release notes (Chinese, user-visible changes since the last release):
 
   ```sh
@@ -73,7 +79,7 @@ Upstream changes break fork features silently when they are type-compatible: a r
 
 To measure coverage after a large rebase, run a mutation pass: list the seams, apply plausible upstream edits one at a time in a separate checkout, and record which tests go red.
 
-What only UI rounds catch: main↔renderer event plumbing at runtime, state accumulated over a long session, real clipboard round trips with the ClipCode plugins, focus and hover behaviour. Keep that set small (agent launch cwd, session restore, external-change banner, Paste & Restore, ClipCode copy, accordion) instead of rerunning every case.
+The release UI set (ClipCode copy, Paste & Restore, the folder repo list, session restore, the external-change banner, agent launch cwd) runs as fork e2e in a hidden window: `folder-multi-repo-source-control.spec.ts` and `folder-workspace-tab-restart-restore.spec.ts`. A new fork UI behaviour that ships joins that set as an e2e scenario. What only hands-on UI rounds catch: long-session state, real clipboard round trips with the ClipCode plugins, focus, hover and how the change feels; run them for PRs that add or change UI, not before every release.
 
 ## Upstream-file conventions
 
