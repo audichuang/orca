@@ -78,7 +78,6 @@ describe('conflict review in a folder workspace', () => {
       useEditorPanelActiveTabContentLoad({
         activeFile,
         selectedConflictReviewFile: null,
-        openFiles: useAppStore.getState().openFiles,
         isVisible: true,
         isChangesMode: false,
         gitStatusEntries: [entry],
