@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync } from 'node:fs'
+import { mkdtempSync, readdirSync, utimesSync } from 'node:fs'
 import { rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import * as path from 'node:path'
@@ -7,13 +7,21 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { GitDiffResult, GitDiffTextResult } from '../../../shared/git-diff-compare-types'
 import { createLocalGitProvider } from '../../providers/local-git-provider'
 import { getDiff } from './file-diff'
-import { invalidateGitReadCaches } from './git-read-cache-invalidation'
+import { invalidateGitReadCaches, settledDiffCache } from './git-read-cache-invalidation'
 
 function git(dir: string, args: string[]): void {
   execFileSync('git', args, { cwd: dir, stdio: 'pipe' })
 }
 
 const BIG_INDEX_TEXT = 'i\n'.repeat(130_000)
+
+/** Backdate every file past the stamp's racy-write margin so the settled diff cache stores reads. */
+function settle(dir: string): void {
+  const past = new Date(Date.now() - 60_000)
+  for (const entry of readdirSync(dir, { withFileTypes: true, recursive: true })) {
+    utimesSync(path.join(entry.parentPath, entry.name), past, past)
+  }
+}
 
 describe('staged diff with skipRenderLimit', () => {
   let repo: string
@@ -73,6 +81,20 @@ describe('staged diff with skipRenderLimit', () => {
       const limitedAgain = await diff(host, false)
       expect(limitedAgain.largeDiffRenderLimit?.limited).toBe(true)
       expect(limitedAgain.modifiedContent).toBe('')
+    }
+  )
+
+  // Why: a repo idle past the racy-write margin caches the viewer's limited read; Copy Full Source must not get it.
+  it.each(['native', 'provider'] as const)(
+    'keeps limited and full reads apart in the settled cache on %s',
+    async (host) => {
+      settle(repo)
+      settledDiffCache.resetStatsForTests()
+
+      expect((await diff(host, false)).modifiedContent).toBe('')
+      expect((await diff(host, true)).modifiedContent).toBe(BIG_INDEX_TEXT)
+      expect((await diff(host, false)).modifiedContent).toBe('')
+      expect(settledDiffCache.stats().hits).toBe(1)
     }
   )
 })
