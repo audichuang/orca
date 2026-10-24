@@ -24,16 +24,14 @@ for (const f of fs
   await import(`${DIR}/cases/${f}`)
 }
 
-// --all 也排入 fork e2e 已涵蓋(e2eCovered)的案例;預設跳過,那些由 fork-check-e2e 驗
-const all = process.argv.includes('--all')
-const args = process.argv.slice(2).filter((a) => a !== '--all')
+const args = process.argv.slice(2)
 if (!args.length) {
   console.error('用法:node plan.mjs <組別前綴|ID ...>')
   process.exit(1)
 }
-const ids = args
-  .flatMap((a) => (CASES[a] ? [a] : Object.keys(CASES).filter((id) => id.startsWith(`${a}-`))))
-  .filter((id) => all || !CASES[id].e2eCovered)
+const ids = args.flatMap((a) =>
+  CASES[a] ? [a] : Object.keys(CASES).filter((id) => id.startsWith(`${a}-`))
+)
 // 分段案例(X、X.1、X.2、X.cleanup)排在一起依段數跑,不受案例檔載入順序影響
 const stepOf = (id) => {
   const m = /\.(\d+|cleanup)$/.exec(id)
