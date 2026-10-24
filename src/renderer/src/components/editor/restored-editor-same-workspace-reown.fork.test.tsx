@@ -39,10 +39,9 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 
 const REPO = 'repo-a::/repo-a'
 const FOLDER = 'folder:pkg'
-const FILE_PATH = '/repo-a/pkg/a.md'
 
-/** A local git workspace and a local folder workspace opened on one of its subfolders, or beside it. */
-function seedNestedLocalWorkspaces(folderPath = '/repo-a/pkg'): void {
+/** A local git workspace and a local folder workspace opened at folderPath. */
+function seedNestedLocalWorkspaces(folderPath: string): void {
   useAppStore.setState(useAppStore.getInitialState(), true)
   useAppStore.setState(
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: a partial catalog with only the fields the owner route reads, as restored-editor-owner-save-lifecycle.test.ts uses.
@@ -74,8 +73,8 @@ function seedNestedLocalWorkspaces(folderPath = '/repo-a/pkg'): void {
   )
 }
 
-/** A tab opened by absolute path (a terminal link) for a file inside its own folder workspace. */
-function openAbsoluteTabInFolder(filePath = FILE_PATH): string {
+/** A tab opened by absolute path (a terminal link) for a file inside its folder workspace. */
+function openAbsoluteTabInFolder(filePath: string): string {
   return useAppStore.getState().openFile(
     {
       filePath,
