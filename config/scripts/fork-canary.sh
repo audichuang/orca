@@ -2,6 +2,7 @@
 # Fork canary: merge the fork into upstream main in a throwaway worktree, then typecheck and run the fork's tests.
 # Report-only early warning before the next release tag; never a gate. Never pushes or touches the invoking checkout.
 # Exit: 0 green, 1 install/typecheck/test failures, 2 merge conflicts (no typecheck), 3 setup error.
+# make turns every non-zero exit into 2; call this script directly when the code matters.
 # Env: FORK_BASE (required), CANARY_REF (fork side, default HEAD), UPSTREAM_REMOTE, CANARY_UPSTREAM_REF
 #      (default <upstream>/main), CANARY_DIR (default ../orca-fork-canary), CANARY_REPORT, CANARY_KEEP=1.
 set -uo pipefail
@@ -186,5 +187,5 @@ list_commits() {
   echo "Logs: \`$logs\`"
 } >"$report"
 
-echo ">> report: $report"
+echo ">> report: $report (exit $status)"
 exit $status
