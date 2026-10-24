@@ -5,8 +5,8 @@ import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
 const mocks = vi.hoisted(() => ({
   launchAgentInNewTab: vi.fn(),
   toastError: vi.fn(),
-  // As the route decides: a start directory below the workspace root cannot open as a chat.
-  mayOpenAsChat: vi.fn((_workspace: unknown, cwd?: string | null) => !cwd)
+  // As the route decides: a start directory below the folder root (/work) cannot open as a chat.
+  mayOpenAsChat: vi.fn((_workspace: unknown, cwd?: string | null) => !cwd || cwd === '/work')
 }))
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError, success: vi.fn() } }))
 vi.mock('@/lib/launch-agent-in-new-tab', () => ({ launchAgentInNewTab: mocks.launchAgentInNewTab }))
