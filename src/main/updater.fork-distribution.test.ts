@@ -1,8 +1,8 @@
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { BrowserWindow } from 'electron'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadUpdaterModule, warmUpdaterModule } from './updater-test-module-loader'
 
 const {
@@ -36,11 +36,15 @@ function fakeWindow(send = vi.fn()): BrowserWindow {
 
 // The fork's feed would be upstream's releases, so a packaged fork build must never auto-update.
 describe('updater in a packaged fork distribution', () => {
+  let appPath = ''
   beforeEach(() => {
     resetUpdaterMocks()
-    const appPath = mkdtempSync(join(tmpdir(), 'orca-fork-app-'))
+    appPath = mkdtempSync(join(tmpdir(), 'orca-fork-app-'))
     writeFileSync(join(appPath, 'package.json'), '{"orcaForkDistribution":true}')
     Object.assign(appMock, { isPackaged: true, getAppPath: () => appPath })
+  })
+  afterEach(() => {
+    rmSync(appPath, { recursive: true, force: true })
   })
 
   it('never configures electron-updater at setup', async () => {
