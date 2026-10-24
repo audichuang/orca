@@ -228,20 +228,16 @@ describe('full-width Git Graph', () => {
     )
   })
 
-  it('does not read deeper for a fold arrow while a search is on, and offers to clear it', async () => {
-    const info = vi.spyOn(toast, 'info')
-    const { arrowFor } = await openFoldPastPage({ deepPageHasTarget: true })
-    const arrow = await arrowFor('m30')
-    updateGitHistoryGraphFilter(WORKTREE, { query: 'main' })
-    const readsBefore = mocks.getRuntimeGitHistory.mock.calls.length
-    fireEvent.click(arrow)
-    expect(info).toHaveBeenCalledWith(
-      'That commit is not in the loaded history.',
-      expect.objectContaining({ action: expect.objectContaining({ label: 'Clear filters' }) })
+  it('leaves a fold arrow inert while a search is on, since a deeper read may never list its end', async () => {
+    const { arrowFor, id } = await openFoldPastPage({ deepPageHasTarget: true })
+    await arrowFor('m30')
+    act(() => updateGitHistoryGraphFilter(WORKTREE, { query: 'main' }))
+    await waitFor(() =>
+      expect(document.querySelector(`[data-git-graph-jump="${id('m30')}"]`)).toBeNull()
     )
-    const deeper = mocks.getRuntimeGitHistory.mock.calls
-      .slice(readsBefore)
-      .filter(([, options]) => (options.graph?.limit ?? 0) > 50)
+    const deeper = mocks.getRuntimeGitHistory.mock.calls.filter(
+      ([, options]) => (options.graph?.limit ?? 0) > 50
+    )
     expect(deeper).toEqual([])
   })
 
