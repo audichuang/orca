@@ -86,7 +86,8 @@ export function useSavedSourceControlActionStart() {
         sourceControlLaunchAppliesAgentArgs({
           agent: isTuiAgent(agent) ? agent : null,
           worktreeId,
-          repoId: args.repoId
+          repoId: args.repoId,
+          initialCwd: args.initialCwd
         })
       const detectedAgents = appliesArgs ? [...(choices.detected ?? [])] : choices.offered
       const plan = buildSourceControlAgentDeliveryPlan({
