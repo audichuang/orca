@@ -134,13 +134,22 @@ globalThis.rsClickRestore = async () => {
 }
 /** 開 Paste & Restore → 讀預覽 →(選)切 Adjust 看另一種 →(選)勾覆蓋 → Restore。
  *  回傳 {first, toggled, disabledBefore, disabledAfterOverwrite, result, cancelled}。 */
-globalThis.rsRun = async ({ toggleAdjust = false, overwrite = false, restore = true } = {}) => {
+/** 按 Paste & Restore 並等預覽對話框;大的 payload 要先讀檔比對,對話框可能晚幾秒才出現。 */
+globalThis.rsOpenPreview = async () => {
   for (let k = 0; k < 20 && (await grep(RS_STALE)); k++) {
     await sleep(500)
   } // 等上一案的通知消失,免得誤讀
   await app.click(await find(/^按鈕 Paste & Restore/))
-  await sleep(1500)
-  const first = await rsView()
+  let view = { open: false }
+  for (let k = 0; k < 8 && !view.open && !(await grep(RS_STALE)); k++) {
+    await sleep(700)
+    view = await rsView()
+  }
+  return view
+}
+
+globalThis.rsRun = async ({ toggleAdjust = false, overwrite = false, restore = true } = {}) => {
+  const first = await rsOpenPreview()
   if (!first.open) {
     return { first, note: await note() }
   }
