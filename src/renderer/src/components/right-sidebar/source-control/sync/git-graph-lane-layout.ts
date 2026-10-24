@@ -59,7 +59,9 @@ function lowestFree(...used: ReadonlySet<number>[]): number {
 export function buildGitGraphLaneRows(
   viewModels: readonly GitHistoryItemViewModel[],
   foldAfterRows = GIT_GRAPH_FOLD_AFTER_ROWS,
-  stubRows = GIT_GRAPH_FOLD_STUB_ROWS
+  stubRows = GIT_GRAPH_FOLD_STUB_ROWS,
+  /** Whether a deeper read can bring in a fold's far end; false leaves those arrows inert. */
+  canLoadPast = true
 ): GitGraphLaneRow[] {
   const { tracks, rowSegments, chain } = extractTracks(viewModels)
   foldTracks(tracks, foldAfterRows, stubRows)
@@ -172,7 +174,7 @@ export function buildGitGraphLaneRows(
           color,
           target: itemAt(end),
           rows: end === undefined ? undefined : end - row,
-          unloadedTargetId: end === undefined ? track.targetId : undefined
+          unloadedTargetId: end === undefined && canLoadPast ? track.targetId : undefined
         })
       } else if (segment.kind === 'through' && below !== undefined) {
         const start = realRow(track.startRow, 'start')
