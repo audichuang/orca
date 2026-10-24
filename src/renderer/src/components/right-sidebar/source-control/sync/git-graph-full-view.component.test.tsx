@@ -5,6 +5,7 @@ import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useState } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { toast } from 'sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
@@ -20,7 +21,8 @@ vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => undefined })
 const { GitGraphFullView } = await import('./git-graph-full-view')
 const { GitHistoryGraphToolbar } = await import('./git-history-graph-toolbar')
 const { useSourceControlGitHistory } = await import('./use-git-history')
-const { resetGitHistoryGraphFiltersForTest } = await import('./git-history-graph-filter')
+const { resetGitHistoryGraphFiltersForTest, updateGitHistoryGraphFilter } =
+  await import('./git-history-graph-filter')
 const { resetRecentGitHistoryGraphPathsForTest } = await import('./git-history-graph-query-tokens')
 const { resetGitGraphRememberedSelectionForTest } = await import('./use-git-graph-full-view-state')
 const { resetGitGraphBranchTreePreferenceForTest } = await import('./use-git-graph-branch-tree')
@@ -135,6 +137,46 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
+/** A branch whose edge to m30 runs past a first page that stops at m25. */
+async function openFoldPastPage({ deepPageHasTarget }: { deepPageHasTarget: boolean }): Promise<{
+  arrowFor: (name: string) => Promise<Element>
+  id: (name: string) => string
+}> {
+  const id = (name: string): string => `${name}-`.padEnd(40, 'x')
+  const main = Array.from({ length: 41 }, (_, i): GitHistoryItem => ({
+    id: id(`m${i}`),
+    displayId: `m${i}`,
+    parentIds: i < 40 ? [id(`m${i + 1}`)] : [],
+    subject: `main ${i}`,
+    message: `main ${i}`
+  }))
+  const branch: GitHistoryItem = {
+    id: id('b0'),
+    displayId: 'b0',
+    parentIds: [id('m30')],
+    subject: 'branch',
+    message: 'branch'
+  }
+  const deepItems = deepPageHasTarget ? main : main.slice(0, 26)
+  mocks.getRuntimeGitHistory.mockImplementation(
+    async (_target: unknown, options: { graph?: { limit?: number } }) =>
+      (options.graph?.limit ?? 0) > 50
+        ? { ...RESULT, items: [branch, ...deepItems], limit: options.graph!.limit! }
+        : { ...RESULT, items: [branch, ...main.slice(0, 26)], hasMore: true }
+  )
+  render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [])} />)
+  await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+  fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+  const view = await screen.findByRole('region', { name: 'Git Graph' })
+  const arrowFor = (name: string): Promise<Element> =>
+    waitFor(() => {
+      const found = view.querySelector(`[data-git-graph-jump="${id(name)}"] path`)
+      expect(found).not.toBeNull()
+      return found!
+    })
+  return { arrowFor, id }
+}
+
 describe('full-width Git Graph', () => {
   it('moves focus to the commit a fold arrow jumps to', async () => {
     const id = (name: string): string => `${name}-`.padEnd(40, 'x')
@@ -170,40 +212,37 @@ describe('full-width Git Graph', () => {
   })
 
   it('loads deeper history when a fold arrow points past the loaded commits, then focuses it', async () => {
-    const id = (name: string): string => `${name}-`.padEnd(40, 'x')
-    const main = Array.from({ length: 41 }, (_, i): GitHistoryItem => ({
-      id: id(`m${i}`),
-      displayId: `m${i}`,
-      parentIds: i < 40 ? [id(`m${i + 1}`)] : [],
-      subject: `main ${i}`,
-      message: `main ${i}`
-    }))
-    const branch: GitHistoryItem = {
-      id: id('b0'),
-      displayId: 'b0',
-      parentIds: [id('m30')],
-      subject: 'branch',
-      message: 'branch'
-    }
-    // The first page stops at m25, so b0's edge to m30 runs past it.
-    mocks.getRuntimeGitHistory.mockImplementation(
-      async (_target: unknown, options: { graph?: { limit?: number } }) =>
-        (options.graph?.limit ?? 0) > 50
-          ? { ...RESULT, items: [branch, ...main], limit: options.graph!.limit! }
-          : { ...RESULT, items: [branch, ...main.slice(0, 26)], hasMore: true }
-    )
-    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [])} />)
-    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
-    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
-    const view = await screen.findByRole('region', { name: 'Git Graph' })
-    const arrow = await waitFor(() => {
-      const found = view.querySelector(`[data-git-graph-jump="${id('m30')}"] path`)
-      expect(found).not.toBeNull()
-      return found!
-    })
-    expect(view.querySelector(`[data-commit-id="${id('m30')}"]`)).toBeNull()
+    const { arrowFor, id } = await openFoldPastPage({ deepPageHasTarget: true })
+    const arrow = await arrowFor('m30')
+    expect(document.querySelector(`[data-commit-id="${id('m30')}"]`)).toBeNull()
     fireEvent.click(arrow)
     await waitFor(() => expect(document.activeElement).toHaveAttribute('data-commit-id', id('m30')))
+  })
+
+  it('says so when the deeper read still misses the commit a fold arrow points to', async () => {
+    const info = vi.spyOn(toast, 'info')
+    const { arrowFor } = await openFoldPastPage({ deepPageHasTarget: false })
+    fireEvent.click(await arrowFor('m30'))
+    await waitFor(() =>
+      expect(info).toHaveBeenCalledWith('That commit is not in the loaded history.', undefined)
+    )
+  })
+
+  it('does not read deeper for a fold arrow while a search is on, and offers to clear it', async () => {
+    const info = vi.spyOn(toast, 'info')
+    const { arrowFor } = await openFoldPastPage({ deepPageHasTarget: true })
+    const arrow = await arrowFor('m30')
+    updateGitHistoryGraphFilter(WORKTREE, { query: 'main' })
+    const readsBefore = mocks.getRuntimeGitHistory.mock.calls.length
+    fireEvent.click(arrow)
+    expect(info).toHaveBeenCalledWith(
+      'That commit is not in the loaded history.',
+      expect.objectContaining({ action: expect.objectContaining({ label: 'Clear filters' }) })
+    )
+    const deeper = mocks.getRuntimeGitHistory.mock.calls
+      .slice(readsBefore)
+      .filter(([, options]) => (options.graph?.limit ?? 0) > 50)
+    expect(deeper).toEqual([])
   })
 
   it('centers the commit a jump lands on', async () => {
