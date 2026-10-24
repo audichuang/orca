@@ -26,8 +26,9 @@ vi.mock('@/lib/host-chat-program', async (importOriginal) => ({
     _state: unknown,
     _workspace: unknown,
     detected: readonly TuiAgent[] | null,
-    cwd?: string | null
-  ): TuiAgent[] => (belowRoot(cwd) ? [...(detected ?? [])] : [...(detected ?? []), 'codex'])
+    launchAt?: { cwd?: string | null }
+  ): TuiAgent[] =>
+    belowRoot(launchAt?.cwd) ? [...(detected ?? [])] : [...(detected ?? []), 'codex']
 }))
 vi.mock('@/runtime/runtime-git-status-client', async (importOriginal) => ({
   ...(await importOriginal<object>()),

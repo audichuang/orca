@@ -153,13 +153,9 @@ export async function launchSourceControlRecoveryAgentWithDefault({
   // A saved or default agent may open as a chat without its CLI, judged where it actually launches.
   const launchWorkspace = worktreeLaunchWorkspace(launchWorktreeId)
   const opensAsChat = (agent: TuiAgent): boolean =>
-    agentChoiceMayOpenAsChat(
-      useAppStore.getState(),
-      agent,
-      launchWorkspace,
-      choices.detected,
-      initialCwd
-    )
+    agentChoiceMayOpenAsChat(useAppStore.getState(), agent, launchWorkspace, choices.detected, {
+      cwd: initialCwd
+    })
   const savedAgent = readSourceControlLaunchRecipeAgentId(savedRecipe)
   if (
     savedAgent &&

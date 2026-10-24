@@ -124,7 +124,7 @@ export function useGitHistoryCommitActions({
           cached.entries,
           item.subject,
           item.message,
-          gitOwnerId
+          { gitWorktreeId: gitOwnerId }
         )
       } catch (error) {
         toast.error(
