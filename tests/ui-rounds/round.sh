@@ -26,6 +26,29 @@ json.dump({"owner": owner, "root": root, "src": src, "app": app, "cdp": cdp, "co
            "startedAt": datetime.datetime.now().isoformat(timespec="seconds")}, open(lock, "w"), indent=1)
 PY
 }
+# One holder at a time for check-then-act on the lock (start's reservation, stop, kill). A holder that died is
+# cleared so a crash cannot wedge later rounds.
+MUTEX="$LOCK.mutex"
+mutex_acquire() {
+  local h
+  until mkdir "$MUTEX" 2>/dev/null; do
+    h=$(cat "$MUTEX/pid" 2>/dev/null || true)
+    if [ -n "$h" ] && ! kill -0 "$h" 2>/dev/null; then rm -rf "$MUTEX"; continue; fi
+    sleep 0.2
+  done
+  echo $$ > "$MUTEX/pid"
+  trap mutex_release EXIT
+}
+mutex_release() { [ "$(cat "$MUTEX/pid" 2>/dev/null)" = "$$" ] && rm -rf "$MUTEX"; trap - EXIT; }
+# Ends a round's processes by its lock pid and checkout path (the installed Orca and other checkouts share the bundle id)
+end_app() {
+  local sig=$1 pid=$2 src=$3
+  # The app first: with -KILL it must not get the orderly quit its launcher's TERM would cause
+  pkill "$sig" -f "$src/out/electron-dev/" 2>/dev/null || true
+  [ -n "$pid" ] && kill_tree "$pid"
+  for _ in $(seq 1 15); do app_running "$src" || break; sleep 1; done
+  ! app_running "$src"
+}
 # The active round's root unless one is named, so pre scripts and reset touch the fixture the cases read
 ROOT="${ORCA_UI_ROOT:-$(lock_field root)}"
 ROOT="${ROOT:-$HOME/orca-ui-test}"
@@ -34,20 +57,24 @@ mkdir -p "$ROOT"
 case "${1:-}" in
   start)
     [ -n "$OWNER" ] || { echo "round: set ORCA_UI_OWNER to your session name"; exit 2; }
-    # Check and reserve under one mkdir mutex, before stopping or launching anything
-    until mkdir "$LOCK.mutex" 2>/dev/null; do sleep 0.2; done
+    # Check, reserve and end our previous app under the mutex, before launching anything
+    mutex_acquire
     if held_by_other; then
-      rmdir "$LOCK.mutex"
       echo "round: the screen is held by $(lock_field owner) (src $(lock_field src), since $(lock_field startedAt))"; exit 3
     fi
     prev_pid=$(lock_field pid); prev_src=$(lock_field src)
     write_lock $$
-    rmdir "$LOCK.mutex"
-    trap 'if [ "$(lock_field pid)" = "$$" ]; then rm -f "$LOCK"; fi' EXIT
-    [ -n "$prev_pid" ] && kill_tree "$prev_pid"
-    pkill -f "${prev_src:-$SRC}/out/electron-dev/" 2>/dev/null || true
-    pkill -f "$SRC/out/electron-dev/" 2>/dev/null || true
-    for _ in $(seq 1 15); do app_running "$SRC" || break; sleep 1; done
+    end_app -TERM "$prev_pid" "${prev_src:-$SRC}" && end_app -TERM "" "$SRC" || { echo "round: previous Orca Dev still running"; exit 1; }
+    mutex_release
+    # A failed launch ends its own processes before giving up the reservation
+    pid=
+    failed_start() {
+      end_app -KILL "$pid" "$SRC" || true
+      mutex_acquire
+      [ "$(lock_field pid)" = "$$" ] && rm -f "$LOCK"
+      mutex_release
+    }
+    trap failed_start EXIT
     : > "$ROOT/dev.log"
     UNSETS=$(env | grep -E '^(ORCA_|JCODE_)' | cut -d= -f1 | sed 's/^/-u /' | tr '\n' ' ')
     # shellcheck disable=SC2086
@@ -59,22 +86,21 @@ case "${1:-}" in
     grep -q "DevTools listening" "$ROOT/dev.log" || { echo "round: Orca Dev did not start, see $ROOT/dev.log"; exit 1; }
     app=$(ls -dt "$SRC"/out/electron-dev/*/Orca*.app | head -1)
     cdp=$(grep -o 'ws://127.0.0.1:[0-9]*' "$ROOT/dev.log" | tail -1)
-    write_lock "$pid" "$app" "$cdp" "$(git -C "$SRC" rev-parse --short HEAD)"
     trap - EXIT
+    mutex_acquire
+    write_lock "$pid" "$app" "$cdp" "$(git -C "$SRC" rev-parse --short HEAD)"
+    mutex_release
     cat "$LOCK"
     ;;
   stop)
+    mutex_acquire
     src=$(lock_field src); src=${src:-$SRC}
     if held_by_other; then
       echo "round: not stopping $(lock_field owner)'s round (src $src)"; exit 3
     fi
-    # Why by path: the installed Orca and other checkouts' dev builds share the bundle id.
-    pid=$(lock_field pid)
-    [ -n "$pid" ] && kill_tree "$pid"
-    pkill -f "$src/out/electron-dev/" 2>/dev/null || true
-    for _ in $(seq 1 15); do app_running "$src" || break; sleep 1; done
-    if app_running "$src"; then echo "round: Orca Dev still running"; exit 1; fi
-    [ "$(lock_field owner)" = "$OWNER" ] && rm -f "$LOCK"
+    end_app -TERM "$(lock_field pid)" "$src" || { echo "round: Orca Dev still running"; exit 1; }
+    if [ "$(lock_field owner)" = "$OWNER" ]; then rm -f "$LOCK"; fi
+    mutex_release
     echo stopped
     ;;
   reset)
@@ -83,13 +109,14 @@ case "${1:-}" in
     echo "reset $ROOT/MultiProduct"
     ;;
   kill)
+    mutex_acquire
     if held_by_other; then
       echo "round: not killing $(lock_field owner)'s round (src $(lock_field src))"; exit 3
     fi
-    pid=$(lock_field pid); src=$(lock_field src)
-    pkill -9 -f "${src:-$SRC}/out/electron-dev/" 2>/dev/null || true
-    [ -n "$pid" ] && kill_tree "$pid"
-    sleep 3; echo killed
+    src=$(lock_field src)
+    end_app -KILL "$(lock_field pid)" "${src:-$SRC}" || { echo "round: Orca Dev survived kill"; exit 1; }
+    mutex_release
+    echo killed
     ;;
   owner)
     lock_field owner
