@@ -16,7 +16,9 @@ const {
   v1Tabs,
   v1HeaderRepo,
   v1ContentCheck,
-  v1MainRow
+  v1MainRow,
+  v1TreeNums,
+  v1SortCounts
 } = await import(
   new URL(`./v1-panel-actions.mjs${new URL(import.meta.url).search}`, import.meta.url).href
 )
@@ -46,9 +48,8 @@ defineCase('V1-P1', {
 defineCase('V1-P2', {
   title: 'folder workspace 存在且可選取',
   run: async () => {
-    const id = await find(/^text (Active|Inactive) MultiProduct$/)
-    await app.click(id)
-    await sleep(1500)
+    // openMP 找左側欄的 workspace 列(群組收起時先展開)並點進去
+    await openMP()
     check(
       (await grep(/^按鈕 Source Control/)) !== '',
       '點 MultiProduct workspace 後右側欄沒有 Source Control 分頁'
@@ -83,7 +84,7 @@ defineCase('V1-A1', {
     const rows = await v1Rows()
     checkEq(
       rows.map((r) => `${r.name} (${r.branch})`).join(', '),
-      'api-server (main), core (main), docs-site (main), WebApp (main), WebApp-feature (feature/x)',
+      'api-server (main), core (main), WebApp (main), WebApp-feature (feature/x), docs-site (main)',
       '清單列'
     )
     check((await grep(/^按鈕 notes /)) === '', 'notes 不該在清單')
@@ -115,8 +116,10 @@ defineCase('V1-A2', {
       const to = k + 1 < rows.length ? L.findIndex(([n]) => n === rows[k + 1].id) : from + 8
       arrows[r.name] = L.slice(from, to)
         .map(([, t]) => t)
-        .filter((t) => /[↓↑]/.test(t))
-        .join('')
+        .filter((t) => /^(文字|text) .*[↓↑]/.test(t))
+        // ↓1、↑2 各是一個文字節點
+        .map((t) => t.replace(/^(文字|text) /, ''))
+        .join(' ')
     })
     checkRe(arrows['api-server'], /↓1\s+↑2/, 'api-server 的 ↓↑')
     for (const n of ['core', 'docs-site', 'WebApp', 'WebApp-feature']) {
@@ -129,15 +132,12 @@ defineCase('V1-A2', {
 defineCase('V1-A3', {
   raw: true,
   title: '預設選取(需在本次 Orca 啟動後尚未選過任何 repo)',
-  pre: 'reset',
+  // pre/V1-A3.sh 重啟 Orca,清掉這次啟動記住的選取
+  pre: 'script',
   run: async () => {
     await v1Start()
     const p = await v1Panel()
-    checkEq(
-      p,
-      'api-server (main)',
-      '預設選取的面板標題(若本批前面已選過別的 repo,需重啟 Orca 後單獨跑;選中底色與指示條需眼看)'
-    )
+    checkEq(p, 'api-server (main)', '預設選取的面板標題(選中底色與指示條需眼看)')
     return '面板標題 api-server (main)'
   }
 })
@@ -151,8 +151,8 @@ defineCase('V1-A4', {
     const rows = await v1Rows()
     checkEq(rows.length, 5, '上方清單仍可見的列數')
     const t = await v1Tree()
-    checkEq(t['CHANGES']?.n, 5, 'WebApp 面板 CHANGES')
-    return '面板換成 WebApp (main),清單 5 列仍在,面板有 CHANGES 5(「無大片空白」需眼看)'
+    checkEq(t['CHANGES']?.n, 6, 'WebApp 面板 CHANGES')
+    return '面板換成 WebApp (main),清單 5 列仍在,面板有 CHANGES 6(「無大片空白」需眼看)'
   }
 })
 
@@ -189,18 +189,18 @@ defineCase('V1-A6', {
 })
 
 defineCase('V1-A7', {
-  // 025c91a6f 起 repo 清單是標準手風琴:方向鍵/Home/End 只移焦點,Enter/Space 展開或收合焦點那一列
-  title: '鍵盤操作(手風琴:方向鍵/Home/End 移焦點,Enter/Space 展開或收合)',
+  // d27bb68de6 起方向鍵/Home/End 直接換選中的 repo(Git Graph 分頁跟著換);面板常駐,Enter/Space 不收合
+  title: '鍵盤操作(方向鍵/Home/End 換選取,Enter/Space 不收合面板)',
   pre: 'reset',
   run: async () => {
     await v1Start()
     await v1Select('api-server')
     const seq = [
-      ['Down', 'api-server (main)'],
+      ['Down', 'core (main)'],
       ['Return', 'core (main)'],
-      ['End', 'core (main)'],
-      ['Return', 'WebApp-feature (feature/x)'],
-      ['Home', 'WebApp-feature (feature/x)'],
+      ['End', 'docs-site (main)'],
+      ['space', 'docs-site (main)'],
+      ['Home', 'api-server (main)'],
       ['Return', 'api-server (main)']
     ]
     const got = []
@@ -209,17 +209,9 @@ defineCase('V1-A7', {
       await sleep(600)
       const p = await v1Panel()
       got.push(`${k}→${p}`)
-      checkEq(p, want, `按 ${k} 後展開的 repo`)
+      checkEq(p, want, `按 ${k} 後選中的 repo`)
     }
-    // 再按一次 Space 收合目前展開的那一列,再按一次展開回來
-    await app.pressKey('space')
-    await sleep(600)
-    const closed = await v1Panel()
-    check(closed !== 'api-server (main)', `Space 應收合 api-server,實際仍是 ${closed}`)
-    await app.pressKey('space')
-    await sleep(600)
-    checkEq(await v1Panel(), 'api-server (main)', 'Space 再按一次應展開回 api-server')
-    return `${got.join(' ; ')} ; space→${closed} ; space→api-server(焦點框外觀需眼看)`
+    return `${got.join(' ; ')}(焦點框外觀需眼看)`
   }
 })
 
@@ -251,13 +243,15 @@ defineCase('V1-B1', {
     await v1Start()
     await v1Select('WebApp')
     const t = await v1Tree()
-    checkEq(t['CHANGES']?.n, 5, 'CHANGES 數')
+    // 10-21 起 UNTRACKED FILES 併進 CHANGES,未追蹤檔標 U
+    checkEq(t['CHANGES']?.n, 6, 'CHANGES 數')
     checkEq(t['STAGED CHANGES']?.n, 4, 'STAGED CHANGES 數')
-    checkEq(t['UNTRACKED FILES']?.n, 1, 'UNTRACKED FILES 數')
+    check(!t['UNTRACKED FILES'], '不該再有 UNTRACKED FILES 區段')
     checkEq(
       v1Sig(t['CHANGES'].rows).join(','),
       [
         'README.md||M',
+        'Widget.tsx|src/components/new|U',
         'deleted-unstaged.ts|src|D',
         'logo.png||M',
         'partial.ts|src|M',
@@ -274,12 +268,7 @@ defineCase('V1-B1', {
         .join(','),
       'STAGED 列'
     )
-    checkEq(
-      v1Sig(t['UNTRACKED FILES'].rows).join(','),
-      'Widget.tsx|src/components/new|U',
-      'UNTRACKED 列'
-    )
-    return 'CHANGES 5 / STAGED 4 / UNTRACKED 1,檔名、路徑、狀態字母全對'
+    return 'CHANGES 6(含未追蹤 Widget.tsx U)/ STAGED 4,檔名、路徑、狀態字母全對'
   }
 })
 
@@ -436,11 +425,6 @@ defineCase('V1-C6', {
 })
 
 // ---------- D:Stage / Commit ----------
-const v1TreeNums = async () => {
-  const t = await v1Tree()
-  return `${t['CHANGES']?.n}/${t['STAGED CHANGES']?.n}`
-}
-
 defineCase('V1-D1', {
   title: 'Stage',
   pre: 'reset',
@@ -452,13 +436,13 @@ defineCase('V1-D1', {
     await app.click(await v1BtnAfterId(row, /^按鈕 Stage$/))
     await sleep(2000)
     const t = await v1Tree()
-    checkEq(`${t['CHANGES'].n}/${t['STAGED CHANGES'].n}`, '4/5', 'CHANGES/STAGED')
+    checkEq(`${t['CHANGES'].n}/${t['STAGED CHANGES'].n}`, '5/5', 'CHANGES/STAGED')
     check(
       t['STAGED CHANGES'].rows.some((r) => r.name === 'unstaged-mod.ts'),
       'unstaged-mod.ts 沒移到 STAGED'
     )
     checkEq((await v1CountsMap()).WebApp, 10, '清單 WebApp 數字')
-    return 'unstaged-mod.ts 進 STAGED,4/5,清單 WebApp 仍 10'
+    return 'unstaged-mod.ts 進 STAGED,5/5,清單 WebApp 仍 10'
   }
 })
 
@@ -472,12 +456,12 @@ defineCase('V1-D2', {
     const row = await v1RowIn(SEC_CH, /^text unstaged-mod\.ts src/)
     await app.click(await v1BtnAfterId(row, /^按鈕 Stage$/))
     await sleep(2000)
-    checkEq(await v1TreeNums(), '4/5', 'stage 後 CHANGES/STAGED')
+    checkEq(await v1TreeNums(), '5/5', 'stage 後 CHANGES/STAGED')
     const srow = await v1RowIn(SEC_ST, /^text unstaged-mod\.ts src/)
     await app.click(await v1BtnAfterId(srow, /^按鈕 Unstage$/))
     await sleep(2000)
-    checkEq(await v1TreeNums(), '5/4', 'unstage 後 CHANGES/STAGED')
-    return '先 stage 再 unstage,回到 5/4'
+    checkEq(await v1TreeNums(), '6/4', 'unstage 後 CHANGES/STAGED')
+    return '先 stage 再 unstage,回到 6/4'
   }
 })
 
@@ -500,7 +484,13 @@ defineCase('V1-D3', {
     await sleep(500)
     await app.click(await find(/^按鈕 Commit$/))
     await sleep(3000)
-    const want = { 'api-server': 2, core: 1, 'docs-site': 0, WebApp: 10, 'WebApp-feature': 1 }
+    const want = v1SortCounts({
+      'api-server': 2,
+      core: 1,
+      'docs-site': 0,
+      WebApp: 10,
+      'WebApp-feature': 1
+    })
     const got = await v1WaitUntil(async () => {
       const c = await v1CountsMap()
       return JSON.stringify(c) === JSON.stringify(want) ? c : null
