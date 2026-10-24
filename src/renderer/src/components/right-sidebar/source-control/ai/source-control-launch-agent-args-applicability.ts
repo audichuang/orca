@@ -13,6 +13,8 @@ export type SourceControlLaunchAgentArgsApplicabilityInput = {
   worktreeId?: string | null
   repoId?: string | null
   executionHostId?: ExecutionHostId
+  /** A folder repo launch's start directory; below the root it only runs as a terminal. */
+  initialCwd?: string | null
 }
 
 /** The workspace a source-control launch targets, which may not exist yet. */
@@ -41,7 +43,8 @@ export function sourceControlLaunchAppliesAgentArgs(
     resolveAgentSessionLaunchRoute(useAppStore.getState(), {
       agent: input.agent,
       preferredSurface: input.preferredSurface,
-      workspace: sourceControlLaunchWorkspace(input)
+      workspace: sourceControlLaunchWorkspace(input),
+      tuiCustomization: { cwd: input.initialCwd }
     }) !== 'structured-native-chat'
   )
 }

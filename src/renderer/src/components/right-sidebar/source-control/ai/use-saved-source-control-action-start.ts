@@ -94,7 +94,8 @@ export function useSavedSourceControlActionStart() {
           agent: isTuiAgent(agent) ? agent : null,
           worktreeId,
           repoId: args.repoId,
-          preferredSurface: projection.preferredSurface
+          preferredSurface: projection.preferredSurface,
+          initialCwd: args.initialCwd
         })
       const detectedAgents = appliesArgs
         ? [...(choices.detected ?? [])]
