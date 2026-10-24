@@ -6,10 +6,11 @@ set -euo pipefail
 ed_reset
 : > "$P/WebApp/src/empty-new.ts"; : > "$P/docs-site/index.md"
 sleep 2
-node --input-type=module - "$OT/md04-result.json" <<'JS'
+rm -f "$OT/md04-result.json"
+node --input-type=module - "$OT/md04-result.json" "$CDP_PORT" <<'JS'
 import fs from 'node:fs';
-const out = process.argv[2];
-const targets = await (await fetch('http://127.0.0.1:9466/json/list')).json();
+const [out, port] = process.argv.slice(2);
+const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
 const pages = targets.filter((t) => t.type === 'page' && /^http:\/\/localhost/.test(t.url));
 if (pages.length !== 1) throw new Error('Ambiguous app target: ' + pages.length);
 const ws = new WebSocket(pages[0].webSocketDebuggerUrl);
