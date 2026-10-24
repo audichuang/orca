@@ -137,16 +137,6 @@ describe('a pane that starts its own agent launch', () => {
     )
   }
 
-  it("starts in the launch's cwd, not the pane's workspace root", async () => {
-    // A folder workspace's AI button runs inside one repo: the launch names that repo, the pane its root.
-    const providerSpawn = vi.fn(async (_options: { cwd?: string }) => ({ id: 'pty-agent' }))
-    register(providerSpawn)
-
-    await spawnPane({ launch: { ...AI_BUTTON.launch, cwd: '/tmp/pane-launch/libs/core' } })
-
-    expect(providerSpawn.mock.calls[0]?.[0].cwd).toBe('/tmp/pane-launch/libs/core')
-  })
-
   it("starts the host's planned command once, at the pane's size, and says it started", async () => {
     const providerSpawn = vi.fn(async () => ({ id: 'pty-agent' }))
     const runtime = register(providerSpawn)

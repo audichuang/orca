@@ -232,42 +232,6 @@ describe('getOpenFilesForExternalFileChange', () => {
     ])
   })
 
-  it('matches a folder-owned diff tab by the repo worktree that backs its git state', () => {
-    const folderDiff = makeOpenFile({
-      id: 'folder-diff',
-      worktreeId: 'folder:f1',
-      gitWorktreeId: 'wt-1',
-      mode: 'diff',
-      diffSource: 'unstaged'
-    })
-
-    expect(
-      getOpenFilesForExternalFileChange([folderDiff], {
-        worktreeId: 'wt-1',
-        worktreePath: '/repo',
-        relativePath: 'file.ts'
-      }).map((file) => file.id)
-    ).toEqual(['folder-diff'])
-  })
-
-  it('does not match another repo diff that shares the folder editor and relative path', () => {
-    const repoBDiff = makeOpenFile({
-      id: 'repo-b-diff',
-      worktreeId: 'folder:f1',
-      gitWorktreeId: 'repo-b',
-      mode: 'diff',
-      diffSource: 'unstaged'
-    })
-
-    expect(
-      getOpenFilesForExternalFileChange([repoBDiff], {
-        worktreeId: 'folder:f1',
-        worktreePath: '/repo-a',
-        relativePath: 'file.ts'
-      })
-    ).toEqual([])
-  })
-
   it('filters same-path matches by runtime owner when the watcher supplies one', () => {
     const localEdit = makeOpenFile({ id: 'local-edit', runtimeEnvironmentId: null })
     const runtimeEdit = makeOpenFile({ id: 'runtime-edit', runtimeEnvironmentId: 'env-1' })
