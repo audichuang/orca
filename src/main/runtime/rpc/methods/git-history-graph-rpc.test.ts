@@ -16,7 +16,8 @@ describe('git.history graph extension', () => {
     const getRuntimeGitHistory = vi.fn().mockResolvedValue({ items: [], hasMore: false })
     const graph = {
       mode: 'all',
-      source: { local: true, remotes: ['origin'] },
+      source: { local: true, remotes: ['origin'], tags: true },
+      listTags: true,
       search: { text: 'fix', author: 'ann', path: 'src/a.ts' },
       limit: 600
     }
