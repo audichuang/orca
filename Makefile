@@ -213,7 +213,7 @@ fork-check-lint: fork-base-guard
 	node config/scripts/fork-lint-run.mjs
 	node config/scripts/fork-pr-gate-needs.mjs
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
-	node config/scripts/fork-seam-tests.mjs --check $(FORK_BASE)
+	node config/scripts/fork-test-inventory.mjs check $(FORK_BASE)
 	@# Why here too: a branch goes red in CI once upstream releases a daemon protocol bump.
 	pnpm run check:daemon-protocol-crossing
 
@@ -239,9 +239,13 @@ fork-check-seams: export LC_ALL = C
 fork-check-seams: export ORCA_BACKGROUND_LAUNCH = 1
 fork-check-seams:
 	@# Why not a pipe: the list check's failure must stop the run instead of running fewer files.
-	files=$$(node config/scripts/fork-seam-tests.mjs) && $(FORK_VITEST) $$files
+	@# Why the empty check: vitest with no file filter runs the whole suite.
+	files=$$(node config/scripts/fork-test-inventory.mjs list) && \
+	  { test -n "$$files" || { echo "fork-check-seams: config/fork-seam-tests.txt lists no test"; exit 1; }; } && \
+	  $(FORK_VITEST) $$files
 
-# Report-only early warning against upstream main; exit codes and overrides are in the script header, the outcome in the report's Result line.
+# Report-only early warning against upstream main; exit codes and overrides are in the script header.
+# make reports any failure as its own error; read the report's Result line.
 fork-canary: fork-base-guard
 	@test -n "$(UPSTREAM_REMOTE)" || { echo "fork-canary: no remote points at $(UPSTREAM_REPO); pass UPSTREAM_REMOTE=<name>"; exit 1; }
 	FORK_BASE=$(FORK_BASE) UPSTREAM_REMOTE=$(UPSTREAM_REMOTE) bash config/scripts/fork-canary.sh
