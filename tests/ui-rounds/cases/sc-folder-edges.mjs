@@ -53,14 +53,8 @@ defineCase('SC-26', {
     await sleep(3000)
     const webSc = await grep(/^按鈕 CHANGES \d/)
     need(webSc, 'WebApp main workspace 的 Source Control 沒有載入')
-    await app.click(await find(/^text (Active|Inactive) MultiProduct$/))
-    await sleep(2000)
-    if (!(await grep(/^按鈕 Refresh all repositories/))) {
-      const s2 = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
-      if (s2) {
-        await app.click(s2[0])
-      }
-    }
+    // openMP 點左側欄的 MultiProduct 並確認 folder 面板出來(第一下可能被吞)
+    await openMP()
     await sleep(4000)
     const sel = await scPanelTitle()
     checkRe(sel, /api-server/, '預設選取(應為清單第一個有變更的 api-server;選到 WebApp 即 SC-D6)')
@@ -111,7 +105,9 @@ defineCase('SC-27.2', {
     await sleep(3000)
     const sel = await scPanelTitle()
     // 清理:移除 MultiProduct-2(Remove Workspace 無確認對話框)
-    await app.click(await find(/^text (Active|Inactive) MultiProduct-2$/), { mouseButton: 'right' })
+    // 側欄捲動過一點時第一列會藏在吸頂的群組標題下,右鍵會點到標題
+    await scrollSidebarTop()
+    await app.click(await workspaceRowTarget('MultiProduct-2'), { mouseButton: 'right' })
     await sleep(800)
     const rm = await findAll(/^Remove Workspace/)
     need(rm.length, '右鍵選單找不到 Remove Workspace')
@@ -141,6 +137,8 @@ defineCase('SC-28.1', {
 })
 defineCase('SC-28.2', {
   title: '重開右側欄後 3 秒內恢復刷新',
+  // 右側欄還關著;執行器先開 MultiProduct 的 Source Control 會打掉前置
+  raw: true,
   pre: 'script',
   mutates: true, // pre 改 core/extra.ts 並等 30 秒
   run: async () => {
@@ -353,30 +351,8 @@ defineCase('SC-32', {
 
 defineCase('SC-33', {
   title: 'folder 位於 repo 裡面時的提示',
-  pre: 'reset',
-  run: async () => {
-    await scStart()
-    const r = await importFolder(`${ROUND.root}/MultiProduct/WebApp/src`)
-    const txt = r || (await grep(/already|inside|repository/i))
-    const grp = (await lines()).find(([, t]) => t.startsWith('按鈕 Yes, import as group'))
-    if (!grp) {
-      await app.pressKey('Escape')
-      blocked(
-        `無法建立「位在 repo 裡面」的 folder workspace:${(txt || '').split('\n').slice(0, 3).join(' / ')}`
-      )
-    }
-    // 若能建群組:建 workspace 後檢查提示(上游目前會解析成 WebApp repo,通常走不到這裡)
-    await app.click(grp[0])
-    await sleep(3000)
-    await scCreateWorkspace('src', 'src')
-    const notice = await grep(/This folder sits inside an imported repository/)
-    checkRe(
-      notice,
-      /This folder sits inside an imported repository, so changes outside the folder are listed too\./,
-      '提示文字'
-    )
-    return '能建立 folder workspace 且出現提示(需人工移除 src 專案/workspace)'
-  }
+  // 加 WebApp/src 會被解析成已加入的 WebApp 專案(通知 Project already added),建不出位在 repo 裡的 folder workspace
+  manual: '上游把 repo 裡的資料夾解析成該 repo,提示文字的情境做不出來'
 })
 
 defineCase('SC-34', {
@@ -408,11 +384,13 @@ defineCase('SC-34', {
       checkRe(head, /刷新所有仓库/, '標題列 刷新所有仓库')
       checkRe(head, /复制所有变更/, '標題列 复制所有变更')
       checkRe(head, /粘贴并还原/, '標題列 粘贴并还原')
-      await scSel('WebApp')
+      // selectRepo 用英文的 Filter files by name 確認面板,簡體介面下直接點列
+      await app.click(await find(UI_RE.repoRow('WebApp', 'main')))
+      await sleep(1200)
       await app.click(await find(/^text partial\.ts src/), { key: 'cmd' })
       await app.click(await find(/^text unstaged-mod\.ts src/), { key: 'cmd' })
       await sleep(600)
-      const bar = (await grep(/已选|選取|选择|^按鈕 (暂存|取消暂存|复制|清除)/)) || ''
+      const bar = (await grep(/已选|(?<!未)選取|选择|^按鈕 (暂存|取消暂存|复制|清除)/)) || ''
       check(!/清除選取/.test(bar), `多選操作列仍有繁體「清除選取」:${bar}`)
       await app.click(await find(/^text README\.md/), { mouseButton: 'right' })
       await sleep(800)
