@@ -38,13 +38,17 @@ function walk(dir, keep) {
 function labelsInScripts() {
   const files = walk(ROUNDS, (p) => p.endsWith('.mjs'))
   const found = new Map()
+  // Regex sources (/^按鈕 Close tab$/) and string prefixes (t.startsWith('按鈕 Close tab'))
   const re = new RegExp(
-    `\\^(?:\\((?:${ROLES})\\|?[^)]*\\)|${ROLES}) ((?:[A-Za-z&'][\\w&'’]*(?: |\\\\ )?)+)`,
+    `(?:\\^|['"\`])(?:\\((?:${ROLES})\\|?[^)]*\\)|${ROLES}) ((?:[A-Za-z&'][\\w&'’]*(?: |\\\\ )?)+)`,
     'g'
   )
   for (const file of files) {
     for (const m of readFileSync(file, 'utf8').matchAll(re)) {
-      const label = m[1].replace(/\\ /g, ' ').trim()
+      const label = m[1]
+        .replace(/\\ /g, ' ')
+        .replace(/['’]+$/, '')
+        .trim()
       if (label.length >= 4 && !FIXTURE_WORDS.test(label)) {
         found.set(label, path.relative(ROOT, file))
       }
@@ -60,11 +64,18 @@ function rendererText() {
   )
   // Toasts' close button is labelled by sonner, not by our sources.
   files.push(path.join(ROOT, 'node_modules/sonner/dist/index.mjs'))
+  // Comments mention old labels; only code and strings count
   return files
-    .map((f) => readFileSync(f, 'utf8'))
+    .map((f) => readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\/|(^|[^:])\/\/.*$/gm, '$1'))
     .join('\n')
     .toLowerCase()
 }
+
+/** Whole words only: "Stage" must not pass on "Staged" or "backstage". */
+const hasPhrase = (corpus, phrase) =>
+  new RegExp(
+    `(^|[^a-z0-9])${phrase.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^a-z0-9])`
+  ).test(corpus)
 
 /** Labels may end in a name the app fills in ("Project actions for WebApp"); drop such tails, not lowercase words. */
 function presentIn(corpus, label) {
@@ -73,7 +84,7 @@ function presentIn(corpus, label) {
     .trim()
     .split(' ')
   while (words.length > 1) {
-    if (corpus.includes(words.join(' ').toLowerCase())) {
+    if (hasPhrase(corpus, words.join(' '))) {
       return true
     }
     const last = words.at(-1)
@@ -82,7 +93,7 @@ function presentIn(corpus, label) {
     }
     words.pop()
   }
-  return corpus.includes(words[0].toLowerCase())
+  return hasPhrase(corpus, words[0])
 }
 
 describe('UI round scripts', () => {
@@ -96,9 +107,7 @@ describe('UI round scripts', () => {
   })
 
   it('keep every ui-map label in the renderer', () => {
-    const missing = Object.entries(UI_TEXT).filter(
-      ([, text]) => !corpus.includes(text.toLowerCase())
-    )
+    const missing = Object.entries(UI_TEXT).filter(([, text]) => !hasPhrase(corpus, text))
     expect(missing).toEqual([])
   })
 })
