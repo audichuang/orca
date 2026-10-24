@@ -15,8 +15,6 @@ globalThis.CASES = CASES
 globalThis.defineCase = (id, def) => {
   CASES[id] = { id, ...def }
 }
-// ed.js aliases this at top level; the real one lives in case-runner.js inside lcu.
-globalThis.evidenceShot = async () => {}
 for (const f of fs
   .readdirSync(`${DIR}/cases`)
   .filter((f) => f.endsWith('.mjs') && !f.endsWith('-actions.mjs'))
@@ -60,18 +58,19 @@ const open = ({ afterReset = false, getApp = false, ran = [] } = {}) => {
   flush()
   batch = { afterReset, getApp, ran, ids: [] }
 }
+const current = () => batch ?? (open(), batch)
 
 for (const id of ids) {
   const c = CASES[id]
   if (c.manual) {
-    ;(batch ??= { afterReset: false, getApp: false, ran: [], ids: [] }).ids.push(id)
+    current().ids.push(id)
     continue
   }
   if (c.pre === 'script') {
     const body = fs.existsSync(preFile(id)) ? fs.readFileSync(preFile(id), 'utf8') : ''
     flush()
     steps.push({ bash: `bash ${preFile(id)}`, missing: !body })
-    // 只看實際呼叫:單行函式定義(例如 reset() { … reset-fixture.sh … })不算
+    // 只看實際呼叫:單行函式定義(例如 reset() { reset_fixture; })不算
     const calls = body
       .split('\n')
       .filter((l) => !/^\s*\w+\(\)\s*\{.*\}\s*$/.test(l))
@@ -91,7 +90,7 @@ for (const id of ids) {
     open({ afterReset: true })
     dirty = false
   }
-  ;(batch ??= { afterReset: false, getApp: false, ran: [], ids: [] }).ids.push(id)
+  current().ids.push(id)
   if (c.mutates) {
     dirty = true
   }

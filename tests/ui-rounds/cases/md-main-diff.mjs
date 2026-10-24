@@ -1,4 +1,4 @@
-const { edShot, edTabNames, edNoDiffError, edStart, edRepo, edDbl } = await import(
+const { edTabNames, edNoDiffError, edStart, edDbl } = await import(
   new URL(`./ed-editor-actions.mjs${new URL(import.meta.url).search}`, import.meta.url).href
 )
 
@@ -11,7 +11,7 @@ defineCase('MD-01', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     for (const [re, tab] of [
       [/^text Widget\.tsx/, /^Widget\.tsx \(diff\)/],
       [/^text deleted-unstaged\.ts/, /^deleted-unstaged\.ts \(diff\)/],
@@ -27,7 +27,7 @@ defineCase('MD-01', {
         (await edTabNames()).some((x) => tab.test(x)),
         `沒開出分頁 ${tab}:${(await edTabNames()).join(' / ')}`
       )
-      await edShot()
+      await evidenceShot()
     }
     return '4 個 diff 分頁都開出且無 Error loading diff [需看截圖:Widget 左空右全新增、兩個 deleted 全紅、logo.png 走二進位/圖片 diff]'
   }
@@ -39,15 +39,15 @@ defineCase('MD-02', {
   mutates: true,
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edDbl(/^text empty-new\.ts/, 1800)
     await edNoDiffError('empty-new')
     check(
       (await edTabNames()).some((x) => x.startsWith('empty-new.ts')),
       '沒開出 empty-new.ts 分頁'
     )
-    await edShot()
-    await edRepo('docs-site')
+    await evidenceShot()
+    await selectRepo('docs-site')
     const row = await grep(/^text index\.md/)
     check(row.endsWith('M') && !row.endsWith('D'), `index.md 狀態應為 M(不是 D):${row}`)
     await edDbl(/^text index\.md/, 1800)
@@ -58,7 +58,7 @@ defineCase('MD-02', {
       o && !/disabled/.test(o),
       `index.md 應可開啟編輯(Open file 或 edit 分頁 Changes 模式):${o}`
     )
-    await edShot()
+    await evidenceShot()
     return `index.md 列: ${row.replace(/^\d+ /, '')};Open file: ${o.replace(/^\d+ /, '')} [需看截圖:empty-new 空 diff;index.md diff 為 -docs]`
   }
 })
@@ -69,14 +69,14 @@ defineCase('MD-03', {
   mutates: true,
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     const row = await grep(/^text logo\.png/)
     check(row.endsWith('D'), `logo.png 應為 D:${row}`)
     await edDbl(/^text logo\.png/, 2000)
     await edNoDiffError('logo.png')
     const o = await grep(/Open file/)
     checkRe(o, /disabled/, 'Open file 應停用')
-    await edShot()
+    await evidenceShot()
     return `logo.png 列: ${row.replace(/^\d+ /, '')};Open file 停用 [需看截圖:顯示已刪除的二進位/圖片(Original 側 Failed to load file preview 是 fixture 假 png,可接受),不是讀取錯誤]`
   }
 })

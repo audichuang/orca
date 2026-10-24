@@ -1,8 +1,6 @@
 const {
   need,
-  scWait,
   scStart,
-  scSel,
   scAllCnt,
   scRowId,
   scRowBtn,
@@ -10,7 +8,6 @@ const {
   scDlg,
   scConfirm,
   scMainRow,
-  scGoWs,
   scShell,
   scPorcelain,
   scAgentDialog,
@@ -29,7 +26,7 @@ defineCase('SC-09.1', {
   mutates: true,
   run: async () => {
     await scStart()
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     await app.click(await scRowBtn(CH, /^text unstaged-mod\.ts src/, /^按鈕 Stage$/))
     await sleep(1500)
     const L = await lines()
@@ -61,7 +58,7 @@ defineCase('SC-09.2', {
       await sleep(2000)
     }
     check(
-      await scWait(
+      await waitFor(
         () => /src\/unstaged-mod\.ts/.test(scShell('git -C $P/WebApp diff --cached --name-only')),
         6000
       ),
@@ -87,17 +84,17 @@ defineCase('SC-09.3', {
       await app.click(rt[0])
       await sleep(1500)
     }
-    await scGoWs('MultiProduct')
+    await openMP('MultiProduct')
     checkEq(
       /README\.md/.test(scShell('git -C $P/WebApp diff --cached --name-only')),
       false,
       '第 4 步 Retry 後 cached 不應含 README.md'
     )
-    await scSel('WebApp-feature')
+    await selectRepo('WebApp-feature')
     await app.click(await scRowBtn(CH, /^text unstaged-mod\.ts src/, /^按鈕 Stage$/))
     await sleep(2000)
     check(
-      await scWait(
+      await waitFor(
         () =>
           /src\/unstaged-mod\.ts/.test(
             scShell('git -C $P/WebApp-feature diff --cached --name-only')
@@ -129,7 +126,7 @@ defineCase('SC-10', {
   mutates: true,
   run: async () => {
     await scStart()
-    await scSel('core')
+    await selectRepo('core')
     await app.click(await scRowBtn(CH, /^text core\.ts/, /^按鈕 Stage$/))
     await sleep(1500)
     await app.click(await find(/^文字項目區域 .*Commit message/))
@@ -187,7 +184,7 @@ defineCase('SC-11', {
   pre: 'reset',
   run: async () => {
     await scStart()
-    await scSel('api-server')
+    await selectRepo('api-server')
     await app.click(await find(/^彈出式按鈕 More commit and remote actions/))
     await sleep(800)
     const push = (await lines()).find(([, t]) => /^Push \(\d+\)$/.test(t))
@@ -214,7 +211,7 @@ defineCase('SC-12', {
   pre: 'reset',
   run: async () => {
     await scStart()
-    await scSel('api-server')
+    await selectRepo('api-server')
     const COB = /^按鈕 COMMITTED ON BRANCH/
     need(await grep(COB), '沒有 Committed on Branch 區段(請改看 Change Base Ref… 的目前 base)')
     await app.click(await scRowId(COB, /^text server\.ts \+ 2 M/), { clickCount: 2 })
@@ -245,7 +242,7 @@ defineCase('SC-13', {
   run: async () => {
     await scStart()
     await closeAll()
-    await scSel('api-server')
+    await selectRepo('api-server')
     const SHOWHIDE = /^按鈕 (Show|Hide) files in commit [0-9a-f]+: /
     if (!(await grep(SHOWHIDE))) {
       await clickRe(/^按鈕 COMMITS( \d+)?$/)
@@ -300,7 +297,7 @@ defineCase('SC-13', {
     const nApi = (await findAll(/^sortable README/)).length
     check(nApi >= 1, '第 6 步沒有 README 分頁')
     // 7. WebApp 的 init README
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     if (!(await grep(/^按鈕 (Show|Hide) files in commit [0-9a-f]+: init/))) {
       await clickRe(/^按鈕 COMMITS( \d+)?$/)
       await sleep(1500)
@@ -324,7 +321,7 @@ defineCase('SC-13', {
     )
     await evidenceShot()
     // 8. core
-    await scSel('core')
+    await selectRepo('core')
     if (!(await grep(SHOWHIDE))) {
       await clickRe(/^按鈕 COMMITS( \d+)?$/)
       await sleep(1500)
@@ -344,7 +341,7 @@ defineCase('SC-14', {
   mutates: true, // 會啟動 agent
   run: async () => {
     await scStart()
-    await scSel('api-server')
+    await selectRepo('api-server')
     const row2 = /^按鈕 (Show|Hide) files in commit [0-9a-f]+: local-2/
     if (!(await grep(row2))) {
       await clickRe(/^按鈕 COMMITS( \d+)?$/)
@@ -378,7 +375,7 @@ defineCase('SC-16', {
   run: async () => {
     await scStart()
     const before = await scAllCnt()
-    await scSel('docs-site')
+    await selectRepo('docs-site')
     need(
       await grep(/Resolve with AI/),
       '沒有 Merge conflicts 卡片 / Resolve with AI(pre 腳本是否成功?)'
@@ -399,14 +396,14 @@ defineCase('SC-16', {
       await evidenceShot()
       await scStopAgent()
     }
-    await scSel('docs-site')
+    await selectRepo('docs-site')
     await app.click(await find(/^按鈕 Abort merge/))
     await sleep(1000)
     const d2 = await scDlg()
     need(d2, 'Abort merge 沒有確認對話框')
     await scConfirm(/^按鈕 Abort( merge)?$/, 3000)
     check(
-      await scWait(() => scPorcelain('$P/docs-site').trim() === ''),
+      await waitFor(() => scPorcelain('$P/docs-site').trim() === ''),
       `docs-site status 應為空:${scPorcelain('$P/docs-site')}`
     )
     checkEq(
