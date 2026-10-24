@@ -13,6 +13,7 @@ import type {
 } from '../../../../../../shared/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
 import type { GitHistoryGraphSavedFilter } from '../../../../../../shared/git-history-graph-query-types'
+import type { GitOwnerOpenOptions } from '../git/open-file-git-owner'
 import type { WorkspaceVisibleTabType } from '../../../../../../shared/tab-types'
 import type {
   BranchCompareLike,
@@ -172,7 +173,7 @@ export type EditorFilesSlice = {
     alternate?: CombinedDiffAlternate,
     areaFilter?: string,
     entriesSnapshot?: GitStatusEntry[],
-    gitWorktreeId?: string
+    forkOptions?: GitOwnerOpenOptions
   ) => void
   openConflictFile: (
     worktreeId: string,
@@ -187,14 +188,14 @@ export type EditorFilesSlice = {
     worktreePath: string,
     entry: GitStatusEntry,
     language: string,
-    gitWorktreeId?: string
+    forkOptions?: GitOwnerOpenOptions
   ) => void
   openConflictReview: (
     worktreeId: string,
     worktreePath: string,
     entries: ConflictReviewEntry[],
     source: ConflictReviewState['source'],
-    gitWorktreeId?: string
+    forkOptions?: GitOwnerOpenOptions
   ) => void
   openCheckRunDetails: (
     worktreeId: string,
@@ -227,7 +228,7 @@ export type EditorFilesSlice = {
     worktreePath: string,
     compare: GitBranchCompareSummary,
     alternate?: CombinedDiffAlternate,
-    gitWorktreeId?: string
+    forkOptions?: GitOwnerOpenOptions
   ) => void
   openCommitAllDiffs: (
     worktreeId: string,
@@ -236,6 +237,6 @@ export type EditorFilesSlice = {
     entries: GitBranchChangeEntry[],
     subject?: string,
     message?: string,
-    gitWorktreeId?: string
+    forkOptions?: GitOwnerOpenOptions
   ) => void
 }
