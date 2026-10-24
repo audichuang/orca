@@ -1,5 +1,4 @@
 const {
-  edShot,
   edRead,
   edTabNames,
   edClickTab,
@@ -8,16 +7,13 @@ const {
   edNoDiffError,
   edType,
   edStart,
-  edRepo,
-  edRowIn,
   edDbl,
   edWsRow,
   edExpand,
   edRename,
   edQ1,
   edIdOf,
-  edQ1Row,
-  edAutoSave
+  edQ1Row
 } = await import(
   new URL(`./ed-editor-actions.mjs${new URL(import.meta.url).search}`, import.meta.url).href
 )
@@ -29,9 +25,9 @@ defineCase('ED-12', {
   run: async () => {
     await edStart()
     try {
-      await edAutoSave(true)
+      await setAutoSave(true)
       await openMP()
-      await edRepo('api-server')
+      await selectRepo('api-server')
       await edDbl(/^text README\.md/, 2000)
       if (await edHasMode('Source')) {
         await edMode('Source')
@@ -46,11 +42,11 @@ defineCase('ED-12', {
       if (await edHasMode('Changes')) {
         await edMode('Changes')
       }
-      await edShot()
+      await evidenceShot()
       return `磁碟有 AUTOSAVED、WebApp README 沒變;分頁 ${before} → ${mid} → ${after} [需看截圖:Changes 檢視是否有 +AUTOSAVED、分頁是否不再 dirty;已知 Source 模式輸入後切回 Changes 不刷新是上游行為]`
     } finally {
       try {
-        await edAutoSave(false)
+        await setAutoSave(false)
       } catch {}
     }
   }
@@ -62,7 +58,7 @@ defineCase('ED-13', {
   mutates: true,
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edDbl(/^text unstaged-mod\.ts src/)
     await edDbl(/^text README\.md/)
     await edRename(['WebApp', 'src'], 'unstaged-mod.ts', 'unstaged-renamed.ts')
@@ -83,7 +79,7 @@ defineCase('ED-13', {
       await edMode('Changes')
     }
     await edNoDiffError('README2 Changes')
-    await edShot()
+    await evidenceShot()
     const rows = await edQ1()
     const r = edQ1Row(rows, 'WebApp/README2.md')
     check(
@@ -108,8 +104,8 @@ defineCase('ED-15.1', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
-    await app.click(await edRowIn(/^按鈕 STAGED CHANGES \d/, /^text staged-mod\.ts/), {
+    await selectRepo('WebApp')
+    await app.click(await rowIn(/^按鈕 STAGED CHANGES \d/, /^text staged-mod\.ts/), {
       clickCount: 2
     })
     await sleep(1500)
@@ -138,7 +134,7 @@ defineCase('ED-15.2', {
       `README 分頁應標 deleted:${n.join(' / ')}`
     )
     sh('test ! -e "$P/WebApp/README.md" && test -e "$P/WebApp/README-moved.md"')
-    await edShot()
+    await evidenceShot()
     return `README 分頁:${n.filter((x) => /README/.test(x)).join(',')};原路徑未被寫回 [需看截圖:內容沒被清空]`
   }
 })
@@ -150,7 +146,7 @@ defineCase('ED-15.3', {
     await sleep(3000)
     await edClickTab(/^staged-mod\.ts \(staged diff\)/)
     await edNoDiffError('staged diff')
-    await edShot()
+    await evidenceShot()
     sh('test ! -e "$P/WebApp/src/staged-mod.ts"')
     return 'staged diff 分頁仍在 [需看截圖:仍顯示 +staged-edit]'
   }
@@ -162,7 +158,7 @@ defineCase('ED-16', {
   mutates: true,
   run: async () => {
     await edStart()
-    await edRepo('api-server')
+    await selectRepo('api-server')
     await edDbl(/^text server\.ts/, 1800)
     check(
       (await edTabNames()).some((x) => x.startsWith('server.ts (diff)')),
@@ -190,7 +186,7 @@ defineCase('ED-16', {
       await edMode('Changes')
     }
     await edNoDiffError('server2 Changes')
-    await edShot()
+    await evidenceShot()
     rows = await edQ1()
     const r2 = edQ1Row(rows, 'api-server/server2.ts')
     return `Q1 ${r.raw};改名後 Q1: ${r2 ? r2.raw : '(沒有 api-server/server2.ts 列)'} [需看截圖:第 4 步 Changes 顯示 api-server 的 diff]`
@@ -213,7 +209,7 @@ defineCase('ED-17', {
       await edMode('Changes')
     }
     await edNoDiffError('Changes')
-    await edShot()
+    await evidenceShot()
     const rows = await edQ1()
     const r = edQ1Row(rows, 'WebApp/src/unstaged-mod.ts')
     check(
@@ -229,7 +225,7 @@ defineCase('ED-18', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edDbl(/^text README\.md/, 2000)
     // 10-21 起 Source Control 開 diff 分頁、Explorer 開檔案分頁,兩種各自不應重複
     const readmeCount = async () => {
@@ -253,17 +249,17 @@ defineCase('ED-18', {
       await edMode('Changes')
     }
     await edNoDiffError('第 2 步 Changes')
-    await edShot()
+    await evidenceShot()
     await app.click(await find(/^按鈕 Source Control/))
     await sleep(1500)
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edDbl(/^text README\.md/, 2000)
     checkEq(await readmeCount(), 'diff 1 / file 1', '第 3 步 README 分頁數')
     if (await edHasMode('Changes')) {
       await edMode('Changes')
     }
     await edNoDiffError('第 3 步 Changes')
-    await edShot()
+    await evidenceShot()
     rows = await edQ1()
     const r3 = edQ1Row(rows, 'WebApp/README.md')
     check(
@@ -279,8 +275,8 @@ defineCase('ED-19', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
-    await app.click(await edRowIn(/^按鈕 STAGED CHANGES \d/, /^text staged-mod\.ts/), {
+    await selectRepo('WebApp')
+    await app.click(await rowIn(/^按鈕 STAGED CHANGES \d/, /^text staged-mod\.ts/), {
       clickCount: 2
     })
     await sleep(1300)
@@ -296,7 +292,7 @@ defineCase('ED-19', {
     await edDbl(/^text staged-mod\.ts/, 1300)
     await edDbl(/^text README\.md/, 1300)
     const webapp = mark(await edTabNames())
-    await edShot()
+    await evidenceShot()
     check(
       /staged-mod\.ts \(staged diff\) [MUD]/.test(webapp) &&
         /README\.md( \(diff\))? [MUD]/.test(webapp),
@@ -321,7 +317,7 @@ defineCase('ED-21', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edRepo('core')
+    await selectRepo('core')
     await edDbl(/^text core\.ts/)
     await edDbl(/^text untracked\.txt/)
     // 10-21 起未追蹤檔在 CHANGES 裡,View all 開的是 Changes 分頁,列出 core 自己的 2 個檔
@@ -344,7 +340,7 @@ defineCase('ED-21', {
       /untracked\.txt/.test(copy) && /core\.ts/.test(copy) && !/README|partial/.test(copy),
       `Changes 應只有 core 的 core.ts 與 untracked.txt:${copy}`
     )
-    await edShot()
+    await evidenceShot()
     return `${n.join(' / ')};${info.replace(/^\d+ /, '')} [需看截圖:core.ts +core change、untracked.txt 整段新增]`
   }
 })
