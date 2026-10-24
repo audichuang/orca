@@ -29,7 +29,8 @@ describe('git.history graph through the paired-server chain (fork)', () => {
     const runtime = runtimeMembers as unknown as OrcaRuntimeService
     const graph = {
       mode: 'all',
-      source: { local: true, remotes: 'all' },
+      source: { local: true, remotes: 'all', tags: true },
+      listTags: true,
       search: { text: 'fix' },
       limit: 300
     }
