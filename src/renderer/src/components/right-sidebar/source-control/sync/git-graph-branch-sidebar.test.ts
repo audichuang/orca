@@ -58,4 +58,34 @@ describe('buildBranchTreeSections', () => {
       { id: 'refs/heads/old', name: 'old', tipId: undefined }
     ])
   })
+
+  it('files listed tags under Tags in the host order (newest first), adding those not loaded', () => {
+    const result: GitHistoryResult = {
+      ...base,
+      items: [
+        {
+          id: 'c1',
+          parentIds: [],
+          subject: 's',
+          message: 's',
+          references: [{ id: 'refs/tags/v2', name: 'v2', category: 'tags' }]
+        }
+      ]
+    }
+    const sections = buildBranchTreeSections(result, [
+      { fullName: 'refs/heads/main', name: 'main', category: 'branches' },
+      { fullName: 'refs/tags/v3', name: 'v3', category: 'tags' },
+      { fullName: 'refs/tags/v2', name: 'v2', category: 'tags' }
+    ])
+    expect(sections.map((section) => [section.label, section.entries])).toEqual([
+      ['Local', [{ id: 'refs/heads/main', name: 'main', tipId: undefined }]],
+      [
+        'Tags',
+        [
+          { id: 'refs/tags/v3', name: 'v3', tipId: undefined },
+          { id: 'refs/tags/v2', name: 'v2', tipId: 'c1' }
+        ]
+      ]
+    ])
+  })
 })

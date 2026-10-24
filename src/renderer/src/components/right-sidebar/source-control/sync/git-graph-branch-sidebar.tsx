@@ -47,7 +47,14 @@ export function buildBranchTreeSections(
       }
     }
   }
-  const listed = result?.graph?.refs ?? refOptions ?? []
+  const allListed = result?.graph?.refs ?? refOptions ?? []
+  // Why the host's list first: it is newest first and includes tags whose commit is not loaded.
+  const listedTags: BranchTreeEntry[] = allListed
+    .filter((ref) => ref.category === 'tags')
+    .map((ref) => ({ id: ref.fullName, name: ref.name, tipId: tipByRef.get(ref.fullName) }))
+  const listedTagIds = new Set(listedTags.map((tag) => tag.id))
+  tags.splice(0, tags.length, ...listedTags, ...tags.filter((tag) => !listedTagIds.has(tag.id)))
+  const listed = allListed.filter((ref) => ref.category !== 'tags')
   const listedNames = new Set(listed.map((ref) => ref.fullName))
   const branchRefs = [...listed, ...decorated.filter((ref) => !listedNames.has(ref.fullName))]
   const local: BranchTreeEntry[] = []

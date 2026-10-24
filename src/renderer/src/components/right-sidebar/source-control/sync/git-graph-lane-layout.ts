@@ -28,6 +28,8 @@ export type GitGraphLaneSegment =
       color: GitHistoryGraphColorId
       target?: GitHistoryItem
       rows?: number
+      /** The commit the edge runs to, to load when `target` is past the loaded commits. */
+      unloadedTargetId?: string
     }
   /** The edge resumes here from `target`, `rows` rows above. */
   | {
@@ -57,7 +59,9 @@ function lowestFree(...used: ReadonlySet<number>[]): number {
 export function buildGitGraphLaneRows(
   viewModels: readonly GitHistoryItemViewModel[],
   foldAfterRows = GIT_GRAPH_FOLD_AFTER_ROWS,
-  stubRows = GIT_GRAPH_FOLD_STUB_ROWS
+  stubRows = GIT_GRAPH_FOLD_STUB_ROWS,
+  /** Whether a deeper read can bring in a fold's far end; false leaves those arrows inert. */
+  canLoadPast = true
 ): GitGraphLaneRow[] {
   const { tracks, rowSegments, chain } = extractTracks(viewModels)
   foldTracks(tracks, foldAfterRows, stubRows)
@@ -169,7 +173,8 @@ export function buildGitGraphLaneRows(
           at: above,
           color,
           target: itemAt(end),
-          rows: end === undefined ? undefined : end - row
+          rows: end === undefined ? undefined : end - row,
+          unloadedTargetId: end === undefined && canLoadPast ? track.targetId : undefined
         })
       } else if (segment.kind === 'through' && below !== undefined) {
         const start = realRow(track.startRow, 'start')

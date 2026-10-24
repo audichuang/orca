@@ -1,20 +1,27 @@
-// Fork-only: the branch filter's list, split into local branches and one section per remote.
+// Fork-only: the branch filter's list, split into local branches, one section per remote, and tags.
 import type React from 'react'
-import { Cloud, GitBranch } from 'lucide-react'
+import { Cloud, GitBranch, Tag } from 'lucide-react'
 import { CommandGroup, CommandItem } from '@/components/ui/command'
 import { translate } from '@/i18n/i18n'
 import type { GitHistoryGraphRefOption } from '../../../../../../shared/git-history-graph-query-types'
 
 type BranchSection = {
   key: string
+  kind: 'local' | 'remote' | 'tags'
+  /** The remote a `remote` section belongs to. */
   remote: string | null
   refs: GitHistoryGraphRefOption[]
 }
 
 export function groupRefsBySource(refs: readonly GitHistoryGraphRefOption[]): BranchSection[] {
   const local: GitHistoryGraphRefOption[] = []
+  const tags: GitHistoryGraphRefOption[] = []
   const remotes = new Map<string, GitHistoryGraphRefOption[]>()
   for (const ref of refs) {
+    if (ref.category === 'tags') {
+      tags.push(ref)
+      continue
+    }
     if (ref.category !== 'remote branches') {
       local.push(ref)
       continue
@@ -23,17 +30,28 @@ export function groupRefsBySource(refs: readonly GitHistoryGraphRefOption[]): Br
     remotes.set(remote, [...(remotes.get(remote) ?? []), ref])
   }
   return [
-    ...(local.length ? [{ key: 'local', remote: null, refs: local }] : []),
-    ...[...remotes].map(([remote, list]) => ({ key: `remote:${remote}`, remote, refs: list }))
+    ...(local.length ? [{ key: 'local', kind: 'local' as const, remote: null, refs: local }] : []),
+    ...[...remotes].map(([remote, list]) => ({
+      key: `remote:${remote}`,
+      kind: 'remote' as const,
+      remote,
+      refs: list
+    })),
+    ...(tags.length ? [{ key: 'tags', kind: 'tags' as const, remote: null, refs: tags }] : [])
   ]
 }
 
-function sectionHeading(remote: string | null): React.JSX.Element {
-  const Icon = remote ? Cloud : GitBranch
+function sectionHeading(section: BranchSection): React.JSX.Element {
+  const Icon = { local: GitBranch, remote: Cloud, tags: Tag }[section.kind]
+  const label =
+    section.kind === 'tags'
+      ? translate('auto.components.right.sidebar.GitHistoryGraph.tags', 'Tags')
+      : (section.remote ??
+        translate('auto.components.right.sidebar.GitHistoryGraph.local', 'Local'))
   return (
     <span className="flex items-center gap-1.5">
       <Icon className="size-3" />
-      {remote ?? translate('auto.components.right.sidebar.GitHistoryGraph.local', 'Local')}
+      {label}
     </span>
   )
 }
@@ -52,7 +70,7 @@ export function GitHistoryGraphBranchGroups({
   return (
     <>
       {groupRefsBySource(refs).map((section) => (
-        <CommandGroup key={section.key} heading={sectionHeading(section.remote)}>
+        <CommandGroup key={section.key} heading={sectionHeading(section)}>
           {section.refs.map((ref) => (
             <CommandItem
               key={ref.fullName}
