@@ -95,8 +95,11 @@ globalThis.checkRe = (text, re, label) =>
  *  pre: 'reset'(這批開頭要先重置)或 'script'(Bash 要先跑 scripts/pre/<ID>.sh,runCases 的 ran 沒列到就不跑)。
  *  manual: 字串,需要人看畫面的原因;runner 只記 NOT-RUN。
  *  raw: true 時不先打開 MultiProduct(案例要測「剛啟動、還沒載入面板」的狀態)。 */
-globalThis.defineCase = (id, { title, mutates = false, pre, manual, raw = false, run }) => {
-  CASES[id] = { id, title, mutates, pre, manual, raw, run }
+globalThis.defineCase = (
+  id,
+  { title, mutates = false, pre, manual, raw = false, e2eCovered, run }
+) => {
+  CASES[id] = { id, title, mutates, pre, manual, raw, e2eCovered, run }
 }
 
 /** 重置後的第一步:打開 MultiProduct 並確認 5 個 repo 都在。 */
@@ -119,6 +122,8 @@ globalThis.runCases = async (sel, { ran = [] } = {}) => {
       line = `${id} | NOT-RUN | 沒有這個案例的腳本 | -`
     } else if (c.manual) {
       line = `${id} | NOT-RUN | 需人工:${c.manual} | -`
+    } else if (c.e2eCovered && !globalThis.RUN_E2E_COVERED) {
+      line = `${id} | NOT-RUN | fork e2e 已涵蓋:${c.e2eCovered} | -`
     } else if (c.pre === 'script' && !ran.includes(id)) {
       line = `${id} | NOT-RUN | 需先跑 pre/${id}.sh | -`
     } else {
