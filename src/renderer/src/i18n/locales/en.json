@@ -15199,7 +15199,8 @@
             "filterByPath": "Filter by {{value0}}",
             "recentPaths": "Recent",
             "clearFilters": "Clear",
-            "searchCommitMessages": "Search commit messages"
+            "searchCommitMessages": "Search commit messages",
+            "tags": "Tags"
           },
           "GitGraphFullView": {
             "open": "Open Git Graph",
@@ -15227,7 +15228,10 @@
             "columns": "Columns",
             "twoLineRows": "Two-line rows",
             "resetList": "Reset to defaults",
-            "columnTooNarrow": "List too narrow"
+            "columnTooNarrow": "List too narrow",
+            "laneContinuesPastLoadedJump": "Continues past the loaded commits at {{sha}}. Click to load and jump.",
+            "loadingMore": "Loading more commits...",
+            "loadCapReached": "Showing the first {{count}} commits, the most the graph loads. Narrow it with Branch, User or Paths."
           },
           "GitGraphBranchSidebar": {
             "local": "Local",
