@@ -142,30 +142,7 @@ export const scSettingsBack = async () => {
   await (b.length ? app.click(b[0]) : app.pressKey('Escape'))
   await sleep(1000)
 }
-export const scAutoSave = async (on, delay) => {
-  await scSettings('auto save')
-  const line = await grep(/^切換 Description: Auto Save Files/)
-  const cur = /Value: on/.test(line)
-  if (on && cur !== true) {
-    await app.click(await find(/^切換 Description: Auto Save Files/))
-    await sleep(600)
-  }
-  // setValue 不會送出設定,要點欄位打字再按 Return
-  if (delay) {
-    await app.click(await find(/^步進器/))
-    await app.pressKey('cmd+a')
-    await app.typeText(String(delay))
-    await app.pressKey('Return')
-    await sleep(600)
-  }
-  if (!on && cur) {
-    await app.click(await find(/^切換 Description: Auto Save Files/))
-    await sleep(600)
-  }
-  const after = await grep(/Auto Save Files, Value/)
-  await scSettingsBack()
-  return after
-}
+export const scAutoSave = (on, delay) => setAutoSave(on, delay)
 
 // Choose agent → Customize launch… / Resolve with AI 之後的「Review the prompt」對話框:改成 pwd 提示、不儲存 → 啟動
 export const scAgentDialog = async () => {
