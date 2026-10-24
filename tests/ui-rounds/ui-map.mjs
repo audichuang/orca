@@ -40,7 +40,6 @@ export const UI_TEXT = {
   settings: 'Settings',
   backToApp: 'Back to app',
   autoSaveFiles: 'Auto Save Files',
-  bannerChangedOnDisk: 'changed on disk while you have unsaved edits',
   // Panel and sidebar landmarks the finders read; section titles render upper-case
   notificationsRegion: 'Notifications',
   worktreeList: 'Worktrees',
