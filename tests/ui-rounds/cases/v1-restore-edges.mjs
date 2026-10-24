@@ -19,7 +19,8 @@ const {
   v1Exists,
   v1Read,
   v1PvGroups,
-  v1Has
+  v1Has,
+  v1TreeNums
 } = await import(
   new URL(`./v1-panel-actions.mjs${new URL(import.meta.url).search}`, import.meta.url).href
 )
@@ -458,6 +459,8 @@ const v1EnterWebAppMain = async () => {
 defineCase('V1-J1', {
   title: '單一 repo 面板照舊',
   pre: 'reset',
+  // stage 後才 unstage;中途失敗會留下 staged 的檔
+  mutates: true,
   run: async () => {
     await closeAll() // closeAll 結尾會切回 MultiProduct,要先關再進 WebApp main
     await v1EnterWebAppMain()
@@ -475,12 +478,12 @@ defineCase('V1-J1', {
     const row = await v1RowIn(SEC_CH, /^text unstaged-mod\.ts src/)
     await app.click(await v1BtnAfterId(row, /^按鈕 Stage$/))
     await sleep(1800)
-    checkEq(await v1TreeNums(), '4/5', 'stage 後 CHANGES/STAGED')
+    checkEq(await v1TreeNums(), '5/5', 'stage 後 CHANGES/STAGED')
     const srow = await v1RowIn(SEC_ST, /^text unstaged-mod\.ts src/)
     await app.click(await v1BtnAfterId(srow, /^按鈕 Unstage$/))
     await sleep(1800)
-    checkEq(await v1TreeNums(), '5/4', 'unstage 後 CHANGES/STAGED')
-    return '無 repo 清單;diff 開在 WebApp main;stage/unstage 5/4→4/5→5/4'
+    checkEq(await v1TreeNums(), '6/4', 'unstage 後 CHANGES/STAGED')
+    return '無 repo 清單;diff 開在 WebApp main;stage/unstage 6/4→5/5→6/4'
   }
 })
 
