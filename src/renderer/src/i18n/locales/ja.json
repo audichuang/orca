@@ -14667,7 +14667,8 @@
             "filterByPath": "{{value0}} で絞り込む",
             "recentPaths": "最近",
             "clearFilters": "クリア",
-            "searchCommitMessages": "コミットメッセージを検索"
+            "searchCommitMessages": "コミットメッセージを検索",
+            "tags": "タグ"
           },
           "GitGraphFullView": {
             "laneContinuesBelow": "{{count}} 行下の {{sha}} {{subject}} に続きます。クリックで移動します。",
@@ -14695,7 +14696,10 @@
             "columns": "列",
             "twoLineRows": "2 行で表示",
             "resetList": "既定に戻す",
-            "columnTooNarrow": "リストの幅が足りません"
+            "columnTooNarrow": "リストの幅が足りません",
+            "laneContinuesPastLoadedJump": "読み込まれていないコミット {{sha}} に続きます。クリックで読み込んで移動します。",
+            "loadingMore": "さらにコミットを読み込み中...",
+            "loadCapReached": "グラフが読み込める上限の {{count}} 件を表示しています。Branch、User、Paths で絞り込んでください。"
           },
           "GitGraphBranchSidebar": {
             "local": "ローカル",
