@@ -334,6 +334,12 @@ describe('buildGitGraphLaneRows', () => {
     const before = buildGitGraphLaneRows(buildGitHistoryViewModels(page), 20, 2)
     expect(folds(before, 'fold-down')).toEqual([{ row: 2, target: undefined, rows: undefined }])
     expect(folds(before, 'fold-up')).toEqual([])
+    const unloadedIds = (rows: GitGraphLaneRow[]): (string | undefined)[] =>
+      rows.flatMap((row) =>
+        row.segments.flatMap((s) => (s.kind === 'fold-down' ? [s.unloadedTargetId] : []))
+      )
+    // Why: the arrow loads and jumps to its parent even before that commit is on the page.
+    expect(unloadedIds(before)).toEqual(['m40'])
 
     const after = buildGitGraphLaneRows(
       buildGitHistoryViewModels([...page, ...chain('m', 31, 45, [])]),
@@ -341,6 +347,7 @@ describe('buildGitGraphLaneRows', () => {
       2
     )
     expect(folds(after, 'fold-down')).toEqual([{ row: 2, target: 'm40', rows: 39 }])
+    expect(unloadedIds(after)).toEqual([undefined])
     expect(folds(after, 'fold-up')).toEqual([{ row: 39, target: 't0', rows: 39 }])
   })
 
