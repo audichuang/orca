@@ -75,3 +75,10 @@ it('applies CLI arguments to a chat-default agent launched in a repo below the f
   expect(sourceControlLaunchAppliesAgentArgs(target)).toBe(false)
   expect(sourceControlLaunchAppliesAgentArgs({ ...target, initialCwd: '/work/repo-1' })).toBe(true)
 })
+
+it('refuses a chat-only agent below the folder root before the host catalog is learned', () => {
+  const state = useAppStore.getState()
+  // Unlearned catalog: the root launch is still pending, so it may open as a chat.
+  expect(agentChoiceMayOpenAsChat(state, 'antigravity', folder, [])).toBe(true)
+  expect(agentChoiceMayOpenAsChat(state, 'antigravity', folder, [], '/work/repo-1')).toBe(false)
+})
