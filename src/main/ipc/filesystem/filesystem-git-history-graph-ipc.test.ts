@@ -39,7 +39,12 @@ beforeEach(() => {
 
 describe("'git:history' IPC (fork graph extension)", () => {
   it('forwards graph to getHistory', async () => {
-    const graph = { mode: 'all', source: { local: true, remotes: ['origin'] }, limit: 600 }
+    const graph = {
+      mode: 'all',
+      source: { local: true, remotes: ['origin'], tags: true },
+      listTags: true,
+      limit: 600
+    }
     await mocks.handlers.get('git:history')?.({}, { worktreePath: '/repo', limit: 50, graph })
     expect(mocks.getHistory).toHaveBeenCalledWith('/repo', expect.objectContaining({ graph }))
   })

@@ -15,6 +15,10 @@ import {
 import type { GitHistoryPanelState } from './git-history-panel'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import { GitGraphAutoLoadMore } from './git-graph-auto-load-more'
+import {
+  canGrowGitHistoryGraph,
+  useGitHistoryGraphHostStatus
+} from './git-history-graph-host-status'
 import { GitHistoryGraphEmptyMessage } from './git-history-graph-empty-message'
 import {
   GitGraphFullRow,
@@ -29,7 +33,6 @@ import {
   GIT_GRAPH_FOLD_AFTER_ROWS,
   GIT_GRAPH_FOLD_STUB_ROWS
 } from './git-graph-lane-layout'
-import { GIT_HISTORY_GRAPH_MAX_LIMIT } from '../../../../../../shared/git-history-graph-query-types'
 import { SWIMLANE_WIDTH } from './git-history-graph-svg'
 import { GitHistoryCommitForkMenu } from './git-history-commit-fork-menu'
 import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-graph-branch-sidebar'
@@ -123,10 +126,9 @@ export function GitGraphFullView({
   )
   const filter = useGitHistoryGraphFilter(filterKey)
   // Why: a search drops commits but keeps their parent links, so a deeper read may never list the far end.
+  const { hostTooOld } = useGitHistoryGraphHostStatus(filterKey, state)
   const canLoadPast =
-    Boolean(result?.hasMore) &&
-    filter.limit < GIT_HISTORY_GRAPH_MAX_LIMIT &&
-    !hasGitHistoryGraphSearch(filter)
+    canGrowGitHistoryGraph(result, filter.limit, hostTooOld) && !hasGitHistoryGraphSearch(filter)
   const laneRows = useMemo(
     () =>
       buildGitGraphLaneRows(
