@@ -59,7 +59,7 @@ describe('buildBranchTreeSections', () => {
     ])
   })
 
-  it('files listed tags under Tags, not under a remote, and adds those not loaded', () => {
+  it('files listed tags under Tags in the host order (newest first), adding those not loaded', () => {
     const result: GitHistoryResult = {
       ...base,
       items: [
@@ -74,16 +74,16 @@ describe('buildBranchTreeSections', () => {
     }
     const sections = buildBranchTreeSections(result, [
       { fullName: 'refs/heads/main', name: 'main', category: 'branches' },
-      { fullName: 'refs/tags/v2', name: 'v2', category: 'tags' },
-      { fullName: 'refs/tags/v1', name: 'v1', category: 'tags' }
+      { fullName: 'refs/tags/v3', name: 'v3', category: 'tags' },
+      { fullName: 'refs/tags/v2', name: 'v2', category: 'tags' }
     ])
     expect(sections.map((section) => [section.label, section.entries])).toEqual([
       ['Local', [{ id: 'refs/heads/main', name: 'main', tipId: undefined }]],
       [
         'Tags',
         [
-          { id: 'refs/tags/v2', name: 'v2', tipId: 'c1' },
-          { id: 'refs/tags/v1', name: 'v1' }
+          { id: 'refs/tags/v3', name: 'v3', tipId: undefined },
+          { id: 'refs/tags/v2', name: 'v2', tipId: 'c1' }
         ]
       ]
     ])

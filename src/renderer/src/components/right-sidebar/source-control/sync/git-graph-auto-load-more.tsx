@@ -6,6 +6,7 @@ import { GIT_HISTORY_GRAPH_MAX_LIMIT } from '../../../../../../shared/git-histor
 import type { GitHistoryPanelState } from './git-history-panel'
 import { useGitHistoryGraphFilter } from './git-history-graph-filter'
 import {
+  canGrowGitHistoryGraph,
   GitHistoryGraphLoadMore,
   loadMoreGitHistoryGraph,
   useGitHistoryGraphHostStatus
@@ -32,9 +33,7 @@ export function GitGraphAutoLoadMore({
   // Why `loaded >= limit`: a page that came back short has nothing past it, and a raised limit
   // still being read must not raise it again.
   const canLoad =
-    Boolean(result?.hasMore) &&
-    !hostTooOld &&
-    !atCap &&
+    canGrowGitHistoryGraph(result, filter.limit, hostTooOld) &&
     state.status === 'ready' &&
     loaded >= filter.limit
 
