@@ -92,12 +92,12 @@ export function createLocalGitProvider(options: LocalGitProviderOptions = {}): L
       recoverSequencer(worktreePath, operation, action, interactive),
     completeMerge: (worktreePath) => completeMerge(worktreePath, interactive),
     getStagedCommitContext: (worktreePath) => getStagedCommitContext(worktreePath, interactive),
-    getDiff: (worktreePath, filePath, staged, compareAgainstHead, oldPath, skipRenderLimit) => {
-      const options = { ...interactive, ...(oldPath ? { oldPath } : {}) }
-      return skipRenderLimit
-        ? getDiff(worktreePath, filePath, staged, compareAgainstHead, options, true)
-        : getDiff(worktreePath, filePath, staged, compareAgainstHead, options)
-    },
+    getDiff: (worktreePath, filePath, staged, compareAgainstHead, oldPath, readOptions) =>
+      getDiff(worktreePath, filePath, staged, compareAgainstHead, {
+        ...interactive,
+        ...(oldPath ? { oldPath } : {}),
+        ...readOptions
+      }),
     getBlame: (worktreePath, filePath, knownHeadOid) =>
       getBlame(worktreePath, filePath, base, knownHeadOid),
     stageFile: (worktreePath, filePath) => stageFile(worktreePath, filePath, interactive),
