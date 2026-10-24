@@ -47,7 +47,15 @@ export function buildBranchTreeSections(
       }
     }
   }
-  const listed = result?.graph?.refs ?? refOptions ?? []
+  const allListed = result?.graph?.refs ?? refOptions ?? []
+  // Why: tags already come from the loaded commits; a listed tag adds one whose commit is not loaded.
+  const decoratedTags = new Set(tags.map((tag) => tag.id))
+  for (const ref of allListed) {
+    if (ref.category === 'tags' && !decoratedTags.has(ref.fullName)) {
+      tags.push({ id: ref.fullName, name: ref.name })
+    }
+  }
+  const listed = allListed.filter((ref) => ref.category !== 'tags')
   const listedNames = new Set(listed.map((ref) => ref.fullName))
   const branchRefs = [...listed, ...decorated.filter((ref) => !listedNames.has(ref.fullName))]
   const local: BranchTreeEntry[] = []
