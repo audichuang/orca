@@ -13,7 +13,8 @@ export function classifyUpstreamFile(path) {
   if (/^config\/[^/]*-baseline\.txt$/.test(path) || path.endsWith('-dispositions.ts')) {
     return 'baseline'
   }
-  if (/\.(test|spec)\.[^/]*$/.test(path) || path.startsWith('tests/') || path.includes('/tests/')) {
+  // Why the name token: test-only helpers such as pty-connection-test-environment.ts are test code too.
+  if (/\.(test|spec)\.[^/]*$/.test(path) || /(^|\/)tests\/|(^|[-._/])test[-._][^/]*$/.test(path)) {
     return 'test'
   }
   if (CODE_FILE.test(path) && !path.startsWith('.github/')) {
