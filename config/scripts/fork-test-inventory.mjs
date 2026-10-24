@@ -6,7 +6,8 @@
 //   list --existing              print the listed paths collected here; report problems on stderr, exit 0 (merged tree)
 //   check <fork-base>            validate the list, and that every test the fork added since <fork-base> has a runner
 //   fork-changed <fork-base> <ref>  print unit tests collected here that the fork added or changed up to <ref>
-//   fork-dropped <fork-base> <ref>  print fork-added or changed tests present here that no runner collects
+//   fork-dropped <fork-base> <ref>  print `<reason>\t<path>` for each fork-added or changed test missing here or
+//                                not collected by any runner
 //   wire                         print the cross-version wire tests fork-check-wire runs
 import { execFileSync } from 'node:child_process'
 import { existsSync, globSync, readFileSync } from 'node:fs'
@@ -85,10 +86,17 @@ if (mode === 'fork-changed' || mode === 'fork-dropped') {
   const [base, ref] = rest
   const tests = changedSince(base, ref, 'AM').filter((path) => TEST_FILE.test(path))
   // Why dropped is its own mode: a test the merged tree stops collecting would otherwise vanish from a green run.
+  // Why no rename following: a missing path is a finding for a human to check.
   const selected =
     mode === 'fork-changed'
       ? tests.filter((path) => collected.has(path))
-      : tests.filter((path) => existsSync(path) && !hasRunner(path))
+      : tests.flatMap((path) =>
+          !existsSync(path)
+            ? [`missing in the merged tree\t${path}`]
+            : hasRunner(path)
+              ? []
+              : [`not collected by any runner\t${path}`]
+        )
   console.log(selected.join('\n'))
   process.exit(0)
 }
