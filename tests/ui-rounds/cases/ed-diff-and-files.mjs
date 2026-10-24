@@ -231,8 +231,12 @@ defineCase('ED-18', {
     await edStart()
     await edRepo('WebApp')
     await edDbl(/^text README\.md/, 2000)
-    const readmeCount = async () => (await edTabNames()).filter((x) => /README\.md/.test(x)).length
-    checkEq(await readmeCount(), 1, '第 1 步 README 分頁數')
+    // 10-21 起 Source Control 開 diff 分頁、Explorer 開檔案分頁,兩種各自不應重複
+    const readmeCount = async () => {
+      const n = (await edTabNames()).filter((x) => x.startsWith('README.md'))
+      return `diff ${n.filter((x) => /\(diff\)/.test(x)).length} / file ${n.filter((x) => !/\(diff\)/.test(x)).length}`
+    }
+    checkEq(await readmeCount(), 'diff 1 / file 0', '第 1 步 README 分頁數')
     let rows = await edQ1()
     let r1 = edQ1Row(rows, 'WebApp/README.md')
     check(
@@ -242,7 +246,7 @@ defineCase('ED-18', {
     const id = await edExpand(['WebApp'], /^按鈕 README\.md$/)
     await app.click(id)
     await sleep(2000)
-    checkEq(await readmeCount(), 1, '第 2 步 README 分頁數')
+    checkEq(await readmeCount(), 'diff 1 / file 1', '第 2 步 README 分頁數')
     rows = await edQ1()
     const r2 = edQ1Row(rows, 'WebApp/README.md')
     if (await edHasMode('Changes')) {
@@ -254,7 +258,7 @@ defineCase('ED-18', {
     await sleep(1500)
     await edRepo('WebApp')
     await edDbl(/^text README\.md/, 2000)
-    checkEq(await readmeCount(), 1, '第 3 步 README 分頁數')
+    checkEq(await readmeCount(), 'diff 1 / file 1', '第 3 步 README 分頁數')
     if (await edHasMode('Changes')) {
       await edMode('Changes')
     }
@@ -266,7 +270,7 @@ defineCase('ED-18', {
       r3 && edIdOf('WebApp').test(r3.id),
       `第 3 步 Q1 應帶 WebApp id:${rows.map((x) => x.raw).join(' ; ')}`
     )
-    return `始終 1 個 README 分頁;id 第1步 有 / 第2步 ${r2 ? (edIdOf('WebApp').test(r2.id) ? '有' : `無(${r2.id})`) : '無此列'} / 第3步 有 [需看截圖:第 3 步 Changes 為 +webapp readme change]`
+    return `README 的 diff 與檔案分頁各 1 個、來回不重複;id 第1步 有 / 第2步 ${r2 ? (edIdOf('WebApp').test(r2.id) ? '有' : `無(${r2.id})`) : '無此列'} / 第3步 有 [需看截圖:第 3 步 Changes 為 +webapp readme change]`
   }
 })
 
@@ -294,7 +298,8 @@ defineCase('ED-19', {
     const webapp = mark(await edTabNames())
     await edShot()
     check(
-      /staged-mod\.ts \(staged diff\) [MUD]/.test(webapp) && /README\.md [MUD]/.test(webapp),
+      /staged-mod\.ts \(staged diff\) [MUD]/.test(webapp) &&
+        /README\.md( \(diff\))? [MUD]/.test(webapp),
       `WebApp workspace 分頁列應有 M 標記:${webapp}`
     )
     await closeAll()
@@ -319,7 +324,8 @@ defineCase('ED-21', {
     await edRepo('core')
     await edDbl(/^text core\.ts/)
     await edDbl(/^text untracked\.txt/)
-    await app.click(await sectionButton('UNTRACKED FILES', /^按鈕 View all/))
+    // 10-21 起未追蹤檔在 CHANGES 裡,View all 開的是 Changes 分頁,列出 core 自己的 2 個檔
+    await app.click(await sectionButton('CHANGES', /^按鈕 View all/))
     await sleep(2000)
     const n = await edTabNames()
     check(
@@ -330,13 +336,13 @@ defineCase('ED-21', {
       n.some((x) => x.startsWith('untracked.txt (diff)')),
       '沒有 untracked.txt diff 分頁'
     )
-    check(n.includes('Untracked Files'), '沒有 Untracked Files 分頁')
+    check(n.includes('Changes'), '沒有 Changes 分頁')
     const info = await grep(/changed files/)
-    checkRe(info, /\b1 changed files/, 'Untracked Files 摘要')
+    checkRe(info, /\b2 changed files/, 'Changes 摘要')
     const copy = await grep(/Help: Copy path/)
     check(
-      /untracked\.txt/.test(copy) && !/core\.ts/.test(copy),
-      `Untracked Files 應只有 untracked.txt:${copy}`
+      /untracked\.txt/.test(copy) && /core\.ts/.test(copy) && !/README|partial/.test(copy),
+      `Changes 應只有 core 的 core.ts 與 untracked.txt:${copy}`
     )
     await edShot()
     return `${n.join(' / ')};${info.replace(/^\d+ /, '')} [需看截圖:core.ts +core change、untracked.txt 整段新增]`
