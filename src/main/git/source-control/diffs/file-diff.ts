@@ -6,6 +6,7 @@ import type { GitRuntimeOptions } from '../../command-runner/git-runtime-options
 import { gitRuntimeOptionsKey } from '../git-runtime-options-cache-key'
 import { gitDiffReadDedupe, settledDiffCache } from '../git-read-cache-invalidation'
 import { readWorktreeDiffStamp } from '../input-stamps/worktree-diff-stamp'
+import type { GitDiffReadOptions } from '../diff-render-limit-options'
 import { buildDiffResult } from './diff-result'
 import {
   blobConversion,
@@ -30,16 +31,14 @@ import {
   buildSubmodulePointerDiff
 } from '../submodules/submodule-diff'
 
-type FileDiffOptions = GitRuntimeOptions & { oldPath?: string }
+type FileDiffOptions = GitRuntimeOptions & GitDiffReadOptions & { oldPath?: string }
 
 export async function getDiff(
   worktreePath: string,
   filePath: string,
   staged: boolean,
   compareAgainstHead = false,
-  options: FileDiffOptions = {},
-  // Why: copy-to-clipboard needs full text; the render limit only exists to spare the diff viewer.
-  skipRenderLimit = false
+  options: FileDiffOptions = {}
 ): Promise<GitDiffResult> {
   const readKey = stableInFlightKey([
     'diff',
@@ -48,7 +47,7 @@ export async function getDiff(
     staged,
     compareAgainstHead,
     staged ? (options.oldPath ?? null) : null,
-    skipRenderLimit,
+    options.skipRenderLimit === true,
     ...gitRuntimeOptionsKey(options)
   ])
   // Register before any await so concurrent reads also coalesce settled-cache lookup I/O.
@@ -59,8 +58,7 @@ export async function getDiff(
       filePath,
       staged,
       compareAgainstHead,
-      options,
-      skipRenderLimit
+      options
     )
   )
 }
@@ -72,8 +70,7 @@ async function loadDiffThroughSettledCache(
   filePath: string,
   staged: boolean,
   compareAgainstHead: boolean,
-  options: FileDiffOptions,
-  skipRenderLimit: boolean
+  options: FileDiffOptions
 ): Promise<GitDiffResult> {
   // Start the mutation fence before awaited stats so writes during stamp collection also invalidate the read.
   const readGeneration = settledDiffCache.beginRead()
@@ -83,14 +80,7 @@ async function loadDiffThroughSettledCache(
   if (cached) {
     return cached
   }
-  const loaded = await loadDiff(
-    worktreePath,
-    filePath,
-    staged,
-    compareAgainstHead,
-    options,
-    skipRenderLimit
-  )
+  const loaded = await loadDiff(worktreePath, filePath, staged, compareAgainstHead, options)
   if (loaded.reusable) {
     settledDiffCache.set(readKey, stamp, loaded.result, readGeneration)
   }
@@ -105,8 +95,7 @@ async function loadDiff(
   filePath: string,
   staged: boolean,
   compareAgainstHead: boolean,
-  options: FileDiffOptions,
-  skipRenderLimit: boolean
+  options: FileDiffOptions
 ): Promise<LoadedDiff> {
   // Gitlinks are not blobs: route root paths to pointer diffs and inner paths to submodule reads.
   const submodulePaths = await listSubmodulePaths(worktreePath, options)
@@ -152,14 +141,10 @@ async function loadDiff(
       }
       // The inner read stamps and caches against the submodule's own repo state.
       return notReusable(
-        await getDiff(
-          submoduleWorktreePath,
-          innerPath,
-          staged,
-          compareAgainstHead,
-          { ...options, oldPath: undefined },
-          skipRenderLimit
-        )
+        await getDiff(submoduleWorktreePath, innerPath, staged, compareAgainstHead, {
+          ...options,
+          oldPath: undefined
+        })
       )
     }
   }
@@ -243,7 +228,7 @@ async function loadDiff(
     modifiedIsBinary,
     filePath,
     tooLarge,
-    skipRenderLimit
+    options
   )
   // Why: lets callers tell an empty blob from a side that is absent or failed to read (both come back as '').
   if (originalMissing || modifiedMissing) {
