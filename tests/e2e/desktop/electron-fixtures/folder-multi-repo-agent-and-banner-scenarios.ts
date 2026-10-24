@@ -99,13 +99,20 @@ export async function runAgentAndBannerScenarios(ctx: ExtraScenarioContext): Pro
     writeFileSync(fakeAgent, `#!/bin/sh\npwd -P > '${marker}'\n`)
     chmodSync(fakeAgent, 0o755)
     try {
-      await page.evaluate(
-        (command) =>
-          window.__store!.getState().updateSettings({
-            agentCmdOverrides: { claude: command, codex: command }
-          }),
-        fakeAgent
-      )
+      await page.evaluate(async (command) => {
+        const store = window.__store!
+        await store.getState().updateSettings({
+          defaultTuiAgent: 'claude',
+          agentCmdOverrides: { claude: `'${command}'` }
+        })
+        // Why: CI has no agent CLI on PATH; seed the detection cache so the launch picks claude and runs the override.
+        store.setState((s) => ({
+          detectedAgentIds: ['claude'],
+          localDetectedAgentIdsByContext: Object.fromEntries(
+            Object.keys(s.localDetectedAgentIdsByContext).map((key) => [key, ['claude']])
+          )
+        }))
+      }, fakeAgent)
       await expandOnly(H.api)
       const commitRow = page.getByTestId('git-history-row').filter({ hasText: 'local-2' })
       if ((await commitRow.count()) === 0) {
