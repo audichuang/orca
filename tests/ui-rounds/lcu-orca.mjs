@@ -115,6 +115,20 @@ globalThis.openMP = async (name = 'MultiProduct') => {
   if (!(await ready())) {
     throw new Error(`打不開 ${name} 的 Source Control`)
   }
+  await expandRepoGroups()
+}
+// 收起的 repo 群組(NO CHANGES)展開,案例才看得到每個 repo 列
+globalThis.expandRepoGroups = async () => {
+  const L = await lines()
+  for (const [k, [id, t]] of L.entries()) {
+    if (
+      map.RE.repoGroupHeader.test(t) &&
+      !L.slice(k + 1, k + 5).some(([, u]) => map.RE.anyRepoRow.test(u))
+    ) {
+      await app.click(id)
+      await sleep(500)
+    }
+  }
 }
 // 選右側 repo 清單的一列,確認下方面板換成那個 repo
 globalThis.selectRepo = async (name, branch) => {
@@ -162,6 +176,7 @@ globalThis.sectionButton = async (name, btnRe) => {
 globalThis.ensure5 = async () => {
   await app.click(await find(/^按鈕 Refresh all repositories/))
   await sleep(3500)
+  await expandRepoGroups()
   const c = await counts()
   for (const r of REPOS) {
     if (new RegExp(` ${r} \\(`).test(c)) {
