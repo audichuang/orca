@@ -28,6 +28,8 @@ export type GitGraphLaneSegment =
       color: GitHistoryGraphColorId
       target?: GitHistoryItem
       rows?: number
+      /** The commit the edge runs to, to load when `target` is past the loaded commits. */
+      unloadedTargetId?: string
     }
   /** The edge resumes here from `target`, `rows` rows above. */
   | {
@@ -169,7 +171,8 @@ export function buildGitGraphLaneRows(
           at: above,
           color,
           target: itemAt(end),
-          rows: end === undefined ? undefined : end - row
+          rows: end === undefined ? undefined : end - row,
+          unloadedTargetId: end === undefined ? track.targetId : undefined
         })
       } else if (segment.kind === 'through' && below !== undefined) {
         const start = realRow(track.startRow, 'start')

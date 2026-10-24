@@ -14858,7 +14858,8 @@
             "filterByPath": "按 {{value0}} 筛选",
             "recentPaths": "最近",
             "clearFilters": "清除",
-            "searchCommitMessages": "搜索提交信息"
+            "searchCommitMessages": "搜索提交信息",
+            "tags": "标签"
           },
           "GitGraphFullView": {
             "open": "打开 Git Graph",
@@ -14886,7 +14887,10 @@
             "columns": "栏",
             "twoLineRows": "双行显示",
             "resetList": "恢复默认",
-            "columnTooNarrow": "列表太窄"
+            "columnTooNarrow": "列表太窄",
+            "laneContinuesPastLoadedJump": "接到尚未加载的提交 {{sha}}。点击即可加载并跳过去。",
+            "loadingMore": "正在加载更多提交...",
+            "loadCapReached": "已显示前 {{count}} 个提交，这是图表加载的上限。请用 Branch、User 或 Paths 缩小范围。"
           },
           "GitGraphBranchSidebar": {
             "local": "本地",
