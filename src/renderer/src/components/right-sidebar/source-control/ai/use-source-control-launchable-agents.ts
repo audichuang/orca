@@ -17,8 +17,10 @@ export function useSourceControlLaunchableAgents(args: {
   connectionId: string | null | undefined
   connectionUnavailable: boolean
   active: boolean
+  /** A folder repo launch's start directory; below the root it cannot open as a chat. */
+  initialCwd?: string | null
 }) {
-  const { target, connectionId, connectionUnavailable, active } = args
+  const { target, connectionId, connectionUnavailable, active, initialCwd } = args
   const { worktreeId, repoId, executionHostId } = target
   const [detecting, setDetecting] = useState(false)
   const workspace = sourceControlLaunchWorkspace(target)
@@ -51,11 +53,19 @@ export function useSourceControlLaunchableAgents(args: {
               : state.ensureDetectedAgents()
         }
       )
-      return { detected: [...(choices.detected ?? [])], launchable: choices.offered }
+      const launchable = initialCwd
+        ? agentsOfferedForLaunch(
+            useAppStore.getState(),
+            sourceControlLaunchWorkspace({ worktreeId, repoId, executionHostId }),
+            choices.detected,
+            initialCwd
+          )
+        : choices.offered
+      return { detected: [...(choices.detected ?? [])], launchable }
     } finally {
       setDetecting(false)
     }
-  }, [connectionId, connectionUnavailable, executionHostId, repoId, worktreeId])
+  }, [connectionId, connectionUnavailable, executionHostId, initialCwd, repoId, worktreeId])
   const refreshLaunchableAgents = useCallback(
     async (): Promise<TuiAgent[]> => (await refreshAgents()).launchable,
     [refreshAgents]
@@ -65,7 +75,7 @@ export function useSourceControlLaunchableAgents(args: {
     refreshAgents,
     refreshLaunchableAgents,
     launchableAgents: active
-      ? agentsOfferedForLaunch(useAppStore.getState(), workspace, detected)
+      ? agentsOfferedForLaunch(useAppStore.getState(), workspace, detected, initialCwd)
       : []
   }
 }
