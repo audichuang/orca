@@ -1,12 +1,11 @@
 // ED / SS / MD:編輯器、session 還原、main 端 diff。測案原文見 docs/fork/v2/04-ed.md
 // 分段案例 `ID.n`:段與段之間的資料變更/重啟寫在 pre/<ID.n>.sh(函式庫 pre/ed-lib.sh)。
 // 重啟後的段(SS-*.2、SS-*.cleanup)要先單獨呼叫 `globalThis.app = await cua.getApp("com.stablyai.orca.dev")` 再跑。
-// Monaco 的 diff/編輯內容不在 AX 裡:內容類斷言用磁碟檔/git/Q1/分頁名稱代替,畫面內容以 edShot 截圖附在結果,
+// Monaco 的 diff/編輯內容不在 AX 裡:內容類斷言用磁碟檔/git/Q1/分頁名稱代替,畫面內容以 evidenceShot 截圖附在結果,
 // 回傳字串標 [需看截圖] 的地方要人眼確認。
+import fs from 'node:fs'
 
-export const edEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-export const edShot = evidenceShot
-export const edRead = (rel) => sh(`cat "$P/${rel}"`)
+export const edRead = (rel) => fs.readFileSync(`${P}/${rel}`, 'utf8')
 
 // ---- 分頁 ----
 export const edTabs = async () =>
@@ -48,7 +47,6 @@ export const edStart = async () => {
   await app.click(await find(/^(text (Active|Inactive)|container) MultiProduct$/))
   await sleep(1200)
   await closeAll()
-  await openMP()
   return await ensure5()
 }
 export const edWaitUi = async () => {
@@ -62,8 +60,6 @@ export const edWaitUi = async () => {
   }
   throw new Error('重啟後 UI 沒出現 MultiProduct')
 }
-export const edRepo = async (name) => selectRepo(name)
-export const edRowIn = async (sectionRe, rowRe) => rowIn(sectionOf(sectionRe), rowRe)
 export const edDbl = async (rowRe, waitMs = 1500) => {
   await app.click(await find(rowRe), { clickCount: 2 })
   await sleep(waitMs)
@@ -94,7 +90,7 @@ export const edOpenFile = async (path) => {
   await sleep(1200)
   const base = path.split('/').pop()
   const dir = path.slice(0, -base.length)
-  const sel = await grep(new RegExp(`^\\(selected\\) ${edEsc(base)} ${edEsc(dir)}$`))
+  const sel = await grep(new RegExp(`^\\(selected\\) ${esc(base)} ${esc(dir)}$`))
   check(sel, `Go to file 沒選到 ${path}`)
   await app.pressKey('Return')
   await sleep(1300)
@@ -103,7 +99,7 @@ export const edOpenFile = async (path) => {
 export const edWsRow = async (proj) => {
   const L = await lines()
   const h = L.findIndex(([, t]) =>
-    new RegExp(`^按鈕 ${edEsc(proj)} Project actions for ${edEsc(proj)}`).test(t)
+    new RegExp(`^按鈕 ${esc(proj)} Project actions for ${esc(proj)}`).test(t)
   )
   check(h !== -1, `左側欄找不到專案 ${proj}`)
   const r = L.slice(h + 1).find(([, t]) => /^text (Active|Inactive).* main primary main/.test(t))
@@ -116,7 +112,7 @@ export const edWsRow = async (proj) => {
 export const edExpand = async (dirs, fileRe) => {
   await app.click(await find(/^按鈕 Explorer/))
   await sleep(1000)
-  const steps = [...dirs.map((d) => new RegExp(`^按鈕 ${edEsc(d)}$`)), fileRe]
+  const steps = [...dirs.map((d) => new RegExp(`^按鈕 ${esc(d)}$`)), fileRe]
   let after = -1
   for (let s = 0; s < steps.length; s++) {
     const hit = (await lines()).find(([n, t]) => n > after && steps[s].test(t))
@@ -133,13 +129,13 @@ export const edExpand = async (dirs, fileRe) => {
   }
 }
 export const edRename = async (dirs, oldName, newName) => {
-  const id = await edExpand(dirs, new RegExp(`^按鈕 ${edEsc(oldName)}$`))
+  const id = await edExpand(dirs, new RegExp(`^按鈕 ${esc(oldName)}$`))
   await app.click(id, { mouseButton: 'right' })
   await sleep(700)
   await app.click(await find(/^Rename/))
   await sleep(700)
   const tf = (await lines()).find(([, t]) =>
-    new RegExp(`^文字欄位 \\(settable\\) ${edEsc(oldName)}`).test(t)
+    new RegExp(`^文字欄位 \\(settable\\) ${esc(oldName)}`).test(t)
   )
   if (tf) {
     await app.setValue(tf[0], newName)
@@ -161,11 +157,10 @@ export const edQ1 = async () =>
       const p = l.split(' | ')
       return { owner: p[0], rel: p[1], path: p[2], id: p[3], raw: l }
     })
-export const edIdOf = (repo) => new RegExp(`::.*/${edEsc(repo)}$`)
+export const edIdOf = (repo) => new RegExp(`::.*/${esc(repo)}$`)
 export const edQ1Row = (rows, path) => rows.find((r) => r.path === path)
 
 // ---- 設定 ----
-export const edAutoSave = (on) => setAutoSave(on)
 
 // 衝突前置之後 docs-site 的衝突檔列
 export const edConflictRowRe = /^text index\.md/

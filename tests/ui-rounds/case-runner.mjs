@@ -92,7 +92,7 @@ globalThis.checkRe = (text, re, label) =>
 
 /** 註冊案例。
  *  run 回傳字串(實際看到什麼)即 PASS;check* 斷言失敗 → FAIL;其他例外 → BLOCKED。
- *  pre: 'reset'(這批開頭要先重置)或 'script'(Bash 要先跑 scripts/pre/<ID>.sh,runCases 的 ran 沒列到就不跑)。
+ *  pre: 'reset'(這批開頭要先重置)或 'script'(Bash 要先跑 pre/<ID>.sh,runCases 的 ran 沒列到就不跑)。
  *  manual: 字串,需要人看畫面的原因;runner 只記 NOT-RUN。
  *  raw: true 時不先打開 MultiProduct(案例要測「剛啟動、還沒載入面板」的狀態)。 */
 globalThis.defineCase = (id, { title, mutates = false, pre, manual, raw = false, run }) => {
