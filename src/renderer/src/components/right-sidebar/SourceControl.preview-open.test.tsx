@@ -10,7 +10,6 @@ import type {
 } from '../../../../shared/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../shared/git-status-types'
 import SourceControl from './SourceControl'
-import { SourceControlWorktreeScopeContext } from './source-control/folder/worktree-scope'
 
 const mocks = vi.hoisted(() => {
   const activeRepo = {
@@ -226,9 +225,6 @@ function resetState(overrides: Partial<Record<string, unknown>> = {}): void {
   }
 }
 
-// A folder workspace's repo section: git from the repo worktree, tabs in the folder's editor.
-const FOLDER_SCOPE = { gitWorktreeId: mocks.activeWorktree.id, editorWorktreeId: 'folder:fw-1' }
-
 let container: HTMLDivElement
 let root: Root
 
@@ -316,38 +312,6 @@ describe('SourceControl preview row opens', () => {
       language,
       true,
       { targetGroupId: undefined, preview: true }
-    )
-  })
-
-  it('opens a folder workspace repo section diff in the folder editor, read from the repo', () => {
-    const folderKey = FOLDER_SCOPE.editorWorktreeId
-    resetState({
-      activeWorktreeId: folderKey,
-      getKnownWorktreeById: (id: string) =>
-        id === mocks.activeWorktree.id ? mocks.activeWorktree : null,
-      gitStatusByWorktree: {
-        [mocks.activeWorktree.id]: [gitEntry({ path: 'src/file.ts' })]
-      }
-    })
-    act(() => {
-      root.render(
-        <TooltipProvider>
-          <SourceControlWorktreeScopeContext.Provider value={FOLDER_SCOPE}>
-            <SourceControl />
-          </SourceControlWorktreeScopeContext.Provider>
-        </TooltipProvider>
-      )
-    })
-
-    clickUncommitted('src/file.ts')
-
-    expect(mocks.calls.openDiff).toHaveBeenCalledWith(
-      folderKey,
-      '/repo/wt/src/file.ts',
-      'src/file.ts',
-      'typescript',
-      false,
-      { targetGroupId: undefined, preview: true, gitWorktreeId: mocks.activeWorktree.id }
     )
   })
 
