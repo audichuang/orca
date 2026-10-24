@@ -10,6 +10,7 @@ describe('classifyUpstreamFile', () => {
     ['tests/e2e/folder.spec.ts', 'test'],
     ['src/renderer/src/components/terminal-pane/pty-connection-test-environment.ts', 'test'],
     ['src/main/updater/latest-version.ts', 'production'],
+    ['src/renderer/src/components/editor/__tests__/editor-harness.ts', 'test'],
     ['src/renderer/src/i18n/locales/ja.json', 'locale'],
     ['src/renderer/src/i18n/en-runtime-required.json', 'locale'],
     ['config/renderer-layout-writer-baseline.txt', 'baseline'],
