@@ -1,10 +1,6 @@
 const {
   ROOT,
-  rowInSection,
-  ccNote,
-  ccRowCopy,
   ccSecCopy,
-  ccCtxCopy,
   ccRefresh,
   ccSelect,
   ccStat,
@@ -41,7 +37,7 @@ defineCase('CC-02', {
   run: async () => {
     await clickRe(/^按鈕 WebApp \(main\)/)
     const r1 = await copyAndRead(async () =>
-      ctxCopy(await rowInSection(/^按鈕 CHANGES \d/, /^text partial\.ts src/))
+      ctxCopy(await rowIn(/^按鈕 CHANGES \d/, /^text partial\.ts src/))
     )
     checkEq(
       r1.clip,
@@ -49,7 +45,7 @@ defineCase('CC-02', {
       '第 1 步'
     )
     const r2 = await copyAndRead(async () =>
-      ctxCopy(await rowInSection(/^按鈕 STAGED CHANGES \d/, /^text partial\.ts src/))
+      ctxCopy(await rowIn(/^按鈕 STAGED CHANGES \d/, /^text partial\.ts src/))
     )
     checkEq(
       r2.clip,
@@ -65,17 +61,17 @@ defineCase('CC-03', {
   run: async () => {
     await openMP()
     await ccSelect(/^按鈕 WebApp \(main\)/, /^text partial\.ts src/)
-    await app.click(await rowInSection(/^按鈕 STAGED CHANGES \d/, /^text partial\.ts src/), {
+    await app.click(await rowIn(/^按鈕 STAGED CHANGES \d/, /^text partial\.ts src/), {
       key: 'cmd'
     })
     await sleep(500)
-    await app.click(await rowInSection(/^按鈕 CHANGES \d/, /^text partial\.ts src/), { key: 'cmd' })
+    await app.click(await rowIn(/^按鈕 CHANGES \d/, /^text partial\.ts src/), { key: 'cmd' })
     await sleep(600)
     check(await grep(/^text 2 selected/), '多選後沒有「2 selected」')
     const r = await copyAndRead(async () => {
       await app.click(await btnAfter(/^text \d+ selected/, /^按鈕 Copy Full Source/, 10))
       await sleep(1300)
-      const n = await ccNote()
+      const n = await note()
       const cl = await findAll(/^按鈕 Clear selection/)
       if (cl.length) {
         await app.click(cl[0])
@@ -124,7 +120,7 @@ defineCase('CC-05.1', {
     const r = await copyAndRead(async () => {
       await app.click(await find(/^按鈕 Copy all changes$/))
       await sleep(1300)
-      return await ccNote()
+      return await note()
     })
     checkRe(
       r.note,
@@ -153,7 +149,7 @@ defineCase('CC-05.2', {
     const r = await copyAndRead(async () => {
       await app.click(await find(/^按鈕 Copy all changes$/))
       await sleep(1300)
-      return await ccNote()
+      return await note()
     })
     checkRe(r.note, /not included/, '第 3 步先跳 info')
     checkRe(r.note, /13 Git file\(s\) copied \(1 skipped: binary\)\. 1,031 chars/, '第 3 步通知')
@@ -200,7 +196,7 @@ defineCase('CC-06', {
     await app.click(await ccWorktreeRow('WebApp', /^text (Active|Inactive) feature\/x feature\/x/))
     await sleep(2000)
     await ccEnsureSourceControl(/^按鈕 CHANGES/)
-    const r2 = await copyAndRead(async () => ccCtxCopy(await find(/^text unstaged-mod\.ts src/)))
+    const r2 = await copyAndRead(async () => ctxCopy(await find(/^text unstaged-mod\.ts src/)))
     checkEq(
       r2.clip,
       '// clipcode-root: WebApp-feature\n\n// file: [MODIFIED] src/unstaged-mod.ts\nunstaged-mod\nline2\nline3\nfeature change\n\n\n',
@@ -231,12 +227,12 @@ defineCase('CC-07', {
       clip().trim() === 'sentinel',
       `前置:剪貼簿不是 sentinel(pre/CC-07.sh 沒跑?): ${JSON.stringify(clip().slice(0, 40))}`
     )
-    const r1 = await copyAndRead(() => ccRowCopy(/^按鈕 docs-site \(main\)/, 600))
+    const r1 = await copyAndRead(() => rowCopy(/^按鈕 docs-site \(main\)/, 600))
     checkRe(r1.note, /No Git changes found to copy\./, '第 1 步通知')
     check(r1.clip === null, '第 1 步不應改剪貼簿')
     await app.click(await find(/^按鈕 WebApp \(main\)/))
     await sleep(1000)
-    const r2 = await copyAndRead(async () => ccCtxCopy(await find(/^text logo\.png/)))
+    const r2 = await copyAndRead(async () => ctxCopy(await find(/^text logo\.png/)))
     checkRe(r2.note, /No Git changes found to copy\.|Nothing to copy/, '第 2 步通知')
     check(r2.clip === null, '第 2 步不應改剪貼簿')
     check(clip().trim() === 'sentinel', 'pbpaste 應仍是 sentinel')
@@ -285,7 +281,7 @@ defineCase('CC-09', {
   mutates: true,
   run: async () => {
     await ensure5()
-    const r = await copyAndRead(() => ccRowCopy(/^按鈕 docs-site \(main\)/))
+    const r = await copyAndRead(() => rowCopy(/^按鈕 docs-site \(main\)/))
     checkEq(r.clip, ESC_EXPECT, '第 1 步')
     ccStat(r.clip, '402 chars · 17 lines · 45 words · ~48 tokens.', '第 1 步')
     const out = await rs({ overwrite: true })
@@ -307,7 +303,7 @@ defineCase('CC-10', {
   mutates: true,
   run: async () => {
     await ensure5()
-    const r = await copyAndRead(() => ccRowCopy(/^按鈕 docs-site \(main\)/, 2500), 8000)
+    const r = await copyAndRead(() => rowCopy(/^按鈕 docs-site \(main\)/, 2500), 8000)
     checkRe(
       r.note,
       /1 Git file\(s\) copied \(2 skipped: size exceeded\)\. 512,264 chars · 13 lines · 32 words · ~42 tokens\./,
@@ -328,7 +324,7 @@ defineCase('CC-11.1', {
   mutates: true,
   run: async () => {
     await ensure5()
-    const r = await copyAndRead(() => ccRowCopy(/^按鈕 docs-site \(main\)/, 2500), 10000)
+    const r = await copyAndRead(() => rowCopy(/^按鈕 docs-site \(main\)/, 2500), 10000)
     checkRe(
       r.note,
       /2 Git file\(s\) copied\. 1,024,100 chars · 11 lines · 13 words · ~1,024,015 tokens\./,
@@ -336,7 +332,7 @@ defineCase('CC-11.1', {
     )
     checkRe(r.note, /Over 1,000,000 tokens/, '通知門檻字樣')
     await sleep(3000)
-    checkRe(await ccNote(), /Over 1,000,000 tokens/, '3 秒後通知應仍在(不自動消失)')
+    checkRe(await note(), /Over 1,000,000 tokens/, '3 秒後通知應仍在(不自動消失)')
     return '1,024,100/11/13/1,024,015 Over 1,000,000,3 秒後仍在;黃色外觀需人工確認(上輪判定文件描述與 UI 不符)'
   }
 })
@@ -347,7 +343,7 @@ defineCase('CC-11.2', {
   mutates: true,
   run: async () => {
     await ccRefresh()
-    const r = await copyAndRead(() => ccRowCopy(/^按鈕 docs-site \(main\)/, 3000), 12000)
+    const r = await copyAndRead(() => rowCopy(/^按鈕 docs-site \(main\)/, 3000), 12000)
     checkRe(
       r.note,
       /4 Git file\(s\) copied\. 2,048,168 chars · 19 lines · 23 words · ~2,048,027 tokens\./,
@@ -355,7 +351,7 @@ defineCase('CC-11.2', {
     )
     checkRe(r.note, /Over 2,000,000 tokens/, '通知門檻字樣')
     await sleep(3000)
-    checkRe(await ccNote(), /Over 2,000,000 tokens/, '3 秒後通知應仍在(不自動消失)')
+    checkRe(await note(), /Over 2,000,000 tokens/, '3 秒後通知應仍在(不自動消失)')
     return '2,048,168/19/23/2,048,027 Over 2,000,000,3 秒後仍在;紅色外觀需人工確認'
   }
 })
@@ -380,7 +376,7 @@ defineCase('CC-12.1', {
   mutates: true,
   run: async () => {
     await ensure5()
-    const r = await copyAndRead(() => ccRowCopy(/^按鈕 docs-site \(main\)/, 3500), 8000)
+    const r = await copyAndRead(() => rowCopy(/^按鈕 docs-site \(main\)/, 3500), 8000)
     checkRe(r.note, /2 Git file\(s\) copied/, '通知應複製 ok.txt 與 icon.svg')
     checkRe(r.note, /\(1 unreadable\)/, '通知應計 1 個 unreadable(big50)')
     check(r.clip.includes('// file: [NEW] docs-site/ok.txt\nok\n'), '應含 ok.txt')
@@ -399,7 +395,7 @@ defineCase('CC-12.2', {
   mutates: true,
   run: async () => {
     await ccRefresh(3500)
-    const r = await copyAndRead(() => ccRowCopy(/^按鈕 docs-site \(main\)/, 2500), 8000)
+    const r = await copyAndRead(() => rowCopy(/^按鈕 docs-site \(main\)/, 2500), 8000)
     checkRe(r.note, /1 Git file\(s\) copied/, '通知應只複製 icon.svg')
     check(
       r.clip.includes('docs-site/icon.svg') && !/ok\.txt|nul-late|big50/.test(r.clip),
@@ -423,7 +419,7 @@ defineCase('CC-12.3', {
       `${ROOT}// file: [NEW] docs-site/icon.svg\n<svg xmlns="http://www.w3.org/2000/svg"/>\n\n`,
       'STAGED 區段'
     )
-    const r2 = await copyAndRead(() => ccRowCopy(/^按鈕 docs-site \(main\)/, 2000))
+    const r2 = await copyAndRead(() => rowCopy(/^按鈕 docs-site \(main\)/, 2000))
     check(
       r2.clip !== null && r2.clip.includes('docs-site/icon.svg'),
       `repo 列也應複製 icon.svg(兩入口一致): ${r2.note}`
@@ -433,7 +429,7 @@ defineCase('CC-12.3', {
 })
 
 const ccDocsSiteCopy = async (id, expectBody, stats) => {
-  const r = await copyAndRead(() => ccRowCopy(/^按鈕 docs-site \(main\)/))
+  const r = await copyAndRead(() => rowCopy(/^按鈕 docs-site \(main\)/))
   checkEq(r.clip, `${ROOT}\n// file: [NEW] docs-site/${expectBody}`, `步驟 ${id}`)
   ccStat(r.clip, stats, `步驟 ${id}`)
   return stats
@@ -495,7 +491,7 @@ defineCase('CC-14', {
   run: async () => {
     await ensure5()
     // 9cd98c293 後與外掛一致:非 UTF-8 略過並計數,不再輸出 U+FFFD(cross-check.md IJ-09)
-    const r = await copyAndRead(() => ccRowCopy(/^按鈕 docs-site \(main\)/))
+    const r = await copyAndRead(() => rowCopy(/^按鈕 docs-site \(main\)/))
     checkRe(r.note, /1 Git file\(s\) could not be read\./, '通知')
     check(r.clip === null, `剪貼簿不應改變: ${String(r.clip).slice(0, 80)}`)
     return `${r.note.replace(/^\d+ 文字 /, '')},剪貼簿未改`
@@ -511,7 +507,7 @@ defineCase('CC-15', {
     await app.click(await find(/^按鈕 WebApp \(main\)/))
     await sleep(1200)
     const r1 = await copyAndRead(async () =>
-      ccCtxCopy(await rowInSection(/^按鈕 CHANGES \d/, /^text staged-mod\.ts src/))
+      ctxCopy(await rowIn(/^按鈕 CHANGES \d/, /^text staged-mod\.ts src/))
     )
     checkEq(
       r1.clip,
@@ -520,7 +516,7 @@ defineCase('CC-15', {
     )
     ccStat(r1.clip, '99 chars · 7 lines · 10 words · ~12 tokens.', 'MD')
     const r2 = await copyAndRead(async () =>
-      ccCtxCopy(await rowInSection(/^按鈕 CHANGES \d/, /^text added-then-removed\.ts src/))
+      ctxCopy(await rowIn(/^按鈕 CHANGES \d/, /^text added-then-removed\.ts src/))
     )
     checkEq(
       r2.clip,
@@ -538,7 +534,7 @@ defineCase('CC-16', {
   mutates: true,
   run: async () => {
     await ensure5()
-    const r = await copyAndRead(() => ccRowCopy(/^按鈕 WebApp \(main\)/))
+    const r = await copyAndRead(() => rowCopy(/^按鈕 WebApp \(main\)/))
     const n = r.clip.split('\n').filter((l) => l.includes('new-name'))
     check(
       n.length === 1 && n[0] === '// file: [MODIFIED] WebApp/src/new-name.ts',
