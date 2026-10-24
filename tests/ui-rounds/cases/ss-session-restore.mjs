@@ -119,7 +119,7 @@ defineCase('SS-01.2', {
       `diff 分頁不該還原:${names.join(' / ')}`
     )
     await ssChangesEach('第 2 步(Explorer 模式)')
-    await app.click(await find(/^按鈕 Source Control/))
+    await app.click(await find(UI_RE.buttonStart(UI_TEXT.sourceControlTab)))
     await sleep(1500)
     await ssChangesEach('第 3 步(Source Control)')
     const rows = await edQ1()
@@ -204,7 +204,7 @@ defineCase('SS-03.2', {
     await app.click(await find(/^按鈕 Explorer/))
     await sleep(1000)
     await ssChangesEach('第 2 步')
-    await app.click(await find(/^按鈕 Source Control/))
+    await app.click(await find(UI_RE.buttonStart(UI_TEXT.sourceControlTab)))
     await sleep(1500)
     await selectRepo('WebApp')
     await edDbl(/^text README\.md/, 2000)
@@ -361,8 +361,8 @@ defineCase('SS-06.2', {
     )
     await edClickTab(/^index\.md/)
     const b0 = (await grep(/Unresolved conflict · /)) || '無 banner'
-    if (!(await grep(/^按鈕 Refresh all repositories/))) {
-      await app.click(await find(/^按鈕 Source Control/))
+    if (!(await grep(UI_RE.button(UI_TEXT.refreshAll)))) {
+      await app.click(await find(UI_RE.buttonStart(UI_TEXT.sourceControlTab)))
       await sleep(1500)
     }
     await selectRepo('docs-site')

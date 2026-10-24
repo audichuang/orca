@@ -8,7 +8,7 @@ export const ccSecCopy = async (section) => {
   return await waitNote()
 }
 export const ccRefresh = async (wait = 3000) => {
-  await app.click(await find(/^按鈕 Refresh all repositories/))
+  await app.click(await find(UI_RE.button(UI_TEXT.refreshAll)))
   await sleep(wait)
 }
 export const ccSelect = async (repoRe, markerRe) => {
@@ -38,7 +38,7 @@ export const ccEnsureSourceControl = async (markerRe) => {
   if (await grep(markerRe)) {
     return
   }
-  const sc = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
+  const sc = (await lines()).find(([, t]) => t.startsWith(`按鈕 ${UI_TEXT.sourceControlTab}`))
   if (sc) {
     await app.click(sc[0])
     await sleep(1500)
