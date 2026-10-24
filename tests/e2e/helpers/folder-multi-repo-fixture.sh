@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Builds the MultiProduct fixture tree for folder-multi-repo-source-control.spec.ts.
-# Usage: folder-multi-repo-fixture.sh <fixture-root>   (idempotent: recreates <fixture-root>)
+# Usage: folder-multi-repo-fixture.sh <fixture-root>   (idempotent: recreates the fixture under <fixture-root>)
+# Why only its own dirs: UI rounds keep their Orca profile in the same root (tests/ui-rounds/round.sh reset).
 set -euo pipefail
 ROOT="${1:?fixture root required}"
-rm -rf "$ROOT"; mkdir -p "$ROOT"; ROOT=$(realpath "$ROOT")
+mkdir -p "$ROOT"; rm -rf "$ROOT/MultiProduct" "$ROOT/remotes" "$ROOT/api-side"; ROOT=$(realpath "$ROOT")
 P="$ROOT/MultiProduct"; REM="$ROOT/remotes"; mkdir -p "$P" "$REM"
 
 mk() { mkdir -p "$1"; git -C "$1" init -q -b main

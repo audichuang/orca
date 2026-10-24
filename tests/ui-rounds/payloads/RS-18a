@@ -1,0 +1,10 @@
+file: notes/bare.txt
+bare
+# file: notes/hash.txt
+hash
+/* file: notes/block.txt */
+block
+   // FILE: notes/upper.txt
+upper
+// file:    notes/spaced.txt   
+spaced
