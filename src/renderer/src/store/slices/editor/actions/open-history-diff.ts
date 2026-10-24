@@ -4,7 +4,7 @@ import { joinPath } from '@/lib/path'
 import type { OpenFile } from '../types/open-file'
 import { withDiffContentReloadRequest } from '../file-ids/editor-file-ids'
 import { resolveDiffRuntimeEnvironmentId } from '../git/diff-runtime-owner'
-import { getScopedTabIdOwner } from '../git/open-file-git-owner'
+import { getScopedTabIdOwner, resolveOpenGitWorktreeId } from '../git/open-file-git-owner'
 import { toBranchCompareSnapshot, toCommitCompareSnapshot } from '../git/git-status-reconciliation'
 import { resolveEditorOpenTargetGroupId } from '../tabs/editor-open-target-group'
 import { resolveEditorPreviewIntent } from '../tabs/editor-preview-tab-setting'
@@ -31,8 +31,7 @@ export function createOpenHistoryDiff(
   return {
     openBranchDiff: (worktreeId, worktreePath, entry, compare, language, options) => {
       const branchCompare = toBranchCompareSnapshot(compare)
-      const gitWorktreeId =
-        options?.gitWorktreeId !== worktreeId ? options?.gitWorktreeId : undefined
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, options)
       const id = `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::diff::branch::${compare.baseRef}::${branchCompare.compareVersion}::${entry.path}`
       const isPreview = resolveEditorPreviewIntent(get(), options?.preview)
       let editorItemTargetGroupId = options?.targetGroupId
@@ -125,8 +124,7 @@ export function createOpenHistoryDiff(
 
     openCommitDiff: (worktreeId, worktreePath, entry, compare, language, options) => {
       const commitCompare = toCommitCompareSnapshot(compare)
-      const gitWorktreeId =
-        options?.gitWorktreeId !== worktreeId ? options?.gitWorktreeId : undefined
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, options)
       const id = commitDiffTabId(
         worktreeId,
         gitWorktreeId,

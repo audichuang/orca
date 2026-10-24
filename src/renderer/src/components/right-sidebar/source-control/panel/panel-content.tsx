@@ -112,7 +112,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
             worktreePath,
             unresolvedConflictReviewEntries,
             'live-summary',
-            gitOwnerId
+            { gitWorktreeId: gitOwnerId }
           )
         }}
         repositoryHuge={repositoryHuge}
@@ -150,7 +150,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
                 worktreePath,
                 sectionViewAction.entries,
                 'live-summary',
-                gitOwnerId
+                { gitWorktreeId: gitOwnerId }
               )
             } else {
               openAllDiffs(
@@ -159,7 +159,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
                 undefined,
                 sectionViewAction.area,
                 sectionViewAction.entries,
-                gitOwnerId
+                { gitWorktreeId: gitOwnerId }
               )
             }
           }}
@@ -227,7 +227,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
           activeConnectionId={activeConnectionId}
           openCommittedDiff={openCommittedDiff}
           openBranchAllDiffs={(_worktreeId, path, summary) =>
-            openBranchAllDiffs(tabOwnerId, path, summary, undefined, gitOwnerId)
+            openBranchAllDiffs(tabOwnerId, path, summary, undefined, { gitWorktreeId: gitOwnerId })
           }
           diffCommentCountByPath={diffCommentCountByPath}
         />

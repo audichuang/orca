@@ -2,6 +2,7 @@ import * as path from 'node:path'
 import type { GitDiffResult } from '../../../shared/git-diff-compare-types'
 import { getLargeDiffRenderLimit } from '../../../shared/large-diff-render-limit'
 import { PREVIEWABLE_BINARY_MIME_TYPES } from './previewable-binary-mime-types'
+import type { GitDiffReadOptions } from './diff-render-limit-options'
 
 export function buildDiffResult(
   originalContent: string,
@@ -9,7 +10,7 @@ export function buildDiffResult(
   originalIsBinary: boolean,
   modifiedIsBinary: boolean,
   filePath?: string,
-  skipRenderLimit = false
+  readOptions: GitDiffReadOptions = {}
 ): GitDiffResult {
   if (originalIsBinary || modifiedIsBinary) {
     const mimeType = filePath
@@ -27,7 +28,7 @@ export function buildDiffResult(
   }
 
   // Why: over the render limit, return metadata instead of huge text so the renderer can show fallback UI.
-  const largeDiffRenderLimit = skipRenderLimit
+  const largeDiffRenderLimit = readOptions.skipRenderLimit
     ? null
     : getLargeDiffRenderLimit({ originalContent, modifiedContent })
   if (largeDiffRenderLimit?.limited) {

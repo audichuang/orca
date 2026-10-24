@@ -44,20 +44,19 @@ async function dispatchDiff(extra: Record<string, unknown>): Promise<void> {
 }
 
 describe('git.diff skipRenderLimit through the paired-server chain (fork)', () => {
-  it('reaches getDiff as the skipRenderLimit argument', async () => {
+  it("reaches getDiff's options", async () => {
     await dispatchDiff({ skipRenderLimit: true })
     expect(getDiff).toHaveBeenLastCalledWith(
       '/workspace/feature',
       'a.ts',
       true,
       undefined,
-      expect.anything(),
-      true
+      expect.objectContaining({ admissionTier: 'interactive', skipRenderLimit: true })
     )
   })
 
   it('leaves the limit on when the client does not ask to skip it', async () => {
     await dispatchDiff({})
-    expect(getDiff.mock.lastCall?.[5]).not.toBe(true)
+    expect(getDiff.mock.lastCall?.[4]?.skipRenderLimit).not.toBe(true)
   })
 })

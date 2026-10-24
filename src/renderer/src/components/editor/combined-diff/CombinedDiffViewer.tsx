@@ -259,14 +259,9 @@ export default function CombinedDiffViewer({
     }
 
     if (file.combinedAlternate.source === 'combined-all') {
-      openAllDiffs(
-        file.worktreeId,
-        file.filePath,
-        undefined,
-        undefined,
-        undefined,
-        file.gitWorktreeId
-      )
+      openAllDiffs(file.worktreeId, file.filePath, undefined, undefined, undefined, {
+        gitWorktreeId: file.gitWorktreeId
+      })
       return
     }
 
@@ -276,7 +271,7 @@ export default function CombinedDiffViewer({
         file.filePath,
         branchSummary,
         { source: 'combined-all' },
-        file.gitWorktreeId
+        { gitWorktreeId: file.gitWorktreeId }
       )
     }
   }, [branchSummary, file, openAllDiffs, openBranchAllDiffs])
@@ -305,7 +300,7 @@ export default function CombinedDiffViewer({
         conflictKind: entry.conflictKind
       })),
       'combined-diff-exclusion',
-      file.gitWorktreeId
+      { gitWorktreeId: file.gitWorktreeId }
     )
   }, [file.filePath, file.gitWorktreeId, file.worktreeId, openConflictReview, skippedConflicts])
 
