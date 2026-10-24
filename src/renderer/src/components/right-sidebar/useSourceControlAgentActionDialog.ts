@@ -80,7 +80,8 @@ export function useSourceControlAgentActionDialog({
       target: { worktreeId, repoId, executionHostId },
       connectionId,
       connectionUnavailable,
-      active: open
+      active: open,
+      initialCwd
     })
 
   useEffect(() => {
