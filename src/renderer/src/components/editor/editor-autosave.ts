@@ -79,6 +79,8 @@ export type EditorFileSavedDetail = {
   content: string
   /** Every view of the saved record, read when the write landed: the saving view may close. */
   recordViewIds?: readonly string[]
+  /** The written path; when every view of the file has closed, listeners can't look it up. */
+  filePath?: string
 }
 
 export type EditorRequestFileCloseDetail = {
