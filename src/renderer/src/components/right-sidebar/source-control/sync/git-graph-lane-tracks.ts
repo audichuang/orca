@@ -17,6 +17,8 @@ export type Track = {
   pinned: boolean
   hiddenFrom?: number
   hiddenTo?: number
+  /** The commit the edge runs to, known even when that commit is past the loaded page. */
+  targetId?: string
 }
 
 export type RowSegment =
@@ -81,26 +83,33 @@ export function extractTracks(viewModels: readonly GitHistoryItemViewModel[]): {
         return
       }
       if (outIndex < output.length && lane.id === output[outIndex]!.id) {
+        track.targetId ??= lane.id
         place(track, outIndex)
         segments.push({ kind: 'through', track, color: lane.color })
         outIndex += 1
       }
     })
-    const startAt = (slot: number, color: GitHistoryGraphColorId, firstParent: boolean): void => {
+    const startAt = (
+      slot: number,
+      color: GitHistoryGraphColorId,
+      firstParent: boolean,
+      targetId: string
+    ): void => {
       const track = newTrack(row, slot)
       track.startRow = row
+      track.targetId = targetId
       track.pinned = firstParent && chain.has(historyItem.id)
       tracks.push(track)
       below[slot] = track
       segments.push({ kind: 'out-of-node', track, color, firstParent })
     }
     if (historyItem.parentIds.length > 0) {
-      startAt(circle, getGitHistoryItemColor(vm), true)
+      startAt(circle, getGitHistoryItemColor(vm), true, historyItem.parentIds[0]!)
     }
     for (const parentId of historyItem.parentIds.slice(1)) {
       const slot = getGitHistoryMergeParentLaneIndex(vm, parentId)
       if (slot !== -1) {
-        startAt(slot, output[slot]!.color, false)
+        startAt(slot, output[slot]!.color, false, parentId)
       }
     }
     output.forEach((_, slot) => {
