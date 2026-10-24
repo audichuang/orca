@@ -20,6 +20,8 @@ import {
 import { runLayoutScenarios } from './helpers/folder-multi-repo-layout-scenarios'
 import { runRestoreScenarios } from './helpers/folder-multi-repo-restore-scenarios'
 import { runExternalChangeScenarios } from './helpers/folder-multi-repo-external-change-scenarios'
+import { importMultiProductFolder } from './helpers/folder-multi-repo-import'
+import { runAgentAndBannerScenarios } from './helpers/folder-multi-repo-agent-and-banner-scenarios'
 import {
   changedLines,
   expectedPayload,
@@ -92,49 +94,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   const stopFrameCapture = await startHiddenRendererFrameCapture(page)
 
   // ---- setup: import repos, create folder workspace, open Source Control ----
-  const ids = await page.evaluate(async (parentPath) => {
-    const s = window.__store!
-    const scan = await s
-      .getState()
-      .scanNestedRepos(parentPath, undefined, { runtimeEnvironmentId: null })
-    if (!scan) {
-      throw new Error('scan failed')
-    }
-    const res = await s.getState().importNestedRepos({
-      parentPath,
-      groupName: 'MultiProduct',
-      projectPaths: scan.repos.map((r) => r.path),
-      runtimeEnvironmentId: null,
-      mode: 'group'
-    })
-    if (!res?.group) {
-      throw new Error(`import failed ${JSON.stringify(res)}`)
-    }
-    // Linked worktrees default to hidden; wait until WebApp's listing is authoritative with the hidden one.
-    for (let i = 0; i < 40; i++) {
-      const repos = s.getState().repos
-      for (const repo of repos) {
-        await s.getState().fetchWorktrees(repo.id)
-      }
-      const web = s.getState().repos.find((r) => r.displayName === 'WebApp')
-      const detected = web ? s.getState().detectedWorktreesByRepo[web.id] : undefined
-      if (
-        repos.length >= 4 &&
-        detected?.authoritative &&
-        detected.worktrees.some((w) => !w.visible)
-      ) {
-        break
-      }
-      await new Promise((resolve) => setTimeout(resolve, 300))
-    }
-    const fw = await s
-      .getState()
-      .createFolderWorkspace(
-        { projectGroupId: res.group.id, name: 'MultiProduct', folderPath: parentPath },
-        { runtimeEnvironmentId: null }
-      )
-    return { scanned: scan.repos.map((r) => r.path), folderKey: `folder:${fw!.id}` }
-  }, P)
+  const ids = await importMultiProductFolder(page, P)
   const folderKey = ids.folderKey
   const folderRow = page.locator(
     `[data-worktree-sidebar] [role="option"][data-worktree-id=${JSON.stringify(folderKey)}]`
@@ -811,6 +771,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   await runRestoreScenarios(extra)
   await runLayoutScenarios(extra)
   await runExternalChangeScenarios(extra)
+  await runAgentAndBannerScenarios(extra)
 
   await scenario('S11 Normal repo workspace regression', async (ev) => {
     const webWt = await wtIdByPath(R.webapp)
