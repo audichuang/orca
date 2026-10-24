@@ -15,6 +15,7 @@ const {
   edDbl,
   edViewAll,
   edOpenInEditor,
+  edOpenFile,
   edQ1,
   edIdOf,
   edQ1Row,
@@ -31,10 +32,8 @@ const {
 // 開 4 個 edit 分頁(WebApp/api README、WebApp/feature unstaged-mod)+ 1 個 staged diff,回傳 q1 列
 const ssOpenFour = async () => {
   await edStart()
-  await edRepo('WebApp')
-  await edDbl(/^text README\.md/, 1300)
-  await edRepo('api-server')
-  await edDbl(/^text README\.md/, 1300)
+  await edOpenFile('WebApp/README.md')
+  await edOpenFile('api-server/README.md')
   await edRepo('WebApp')
   await edViewAll(/^按鈕 CHANGES \d/)
   await edOpenInEditor(/unstaged-mod\.ts, Help: Copy path/)
@@ -61,7 +60,8 @@ const ssOpenFour = async () => {
     names.some((x) => x.startsWith('staged-mod.ts (staged diff)')),
     '沒有 staged-mod staged diff 分頁'
   )
-  const rows = await edQ1()
+  // q1 也列 diff 分頁(結尾 | diff),這裡只數 edit 分頁
+  const rows = (await edQ1()).filter((r) => !r.raw.endsWith('| diff'))
   checkEq(rows.length, 4, 'Q1 列數')
   check(
     rows.every((r) => r.id !== '-'),
@@ -86,9 +86,11 @@ const ssChangesEach = async (label) => {
     await edShot()
   }
 }
+// 只比 edit 分頁:diff 分頁(q1 結尾 | diff)重啟後不還原
 const ssSorted = (rows) =>
   rows
     .map((r) => r.raw)
+    .filter((raw) => !raw.endsWith('| diff'))
     .sort()
     .join('\n')
 
@@ -138,8 +140,8 @@ defineCase('SS-02.1', {
     await edStart()
     await edAutoSave(false)
     await openMP()
-    await edRepo('WebApp')
-    await edDbl(/^text README\.md/, 2000)
+    // 草稿要打在 edit 分頁:Source Control 雙擊開的 diff 分頁重啟後不還原
+    await edOpenFile('WebApp/README.md')
     if (await edHasMode('Source')) {
       await edMode('Source')
     }
@@ -211,11 +213,9 @@ defineCase('SS-03.2', {
     await edRepo('WebApp')
     await edDbl(/^text README\.md/, 2000)
     rows = await edQ1()
-    const r = edQ1Row(rows, 'WebApp/README.md')
-    check(
-      r && edIdOf('WebApp').test(r.id),
-      `第 3 步 WebApp README 的 id 應又出現:${rows.map((x) => x.raw).join(' ; ')}`
-    )
+    // 10-21 起雙擊開的是 diff 分頁(帶 WebApp id);舊格式的 edit 分頁維持 -
+    const r = rows.find((x) => x.path === 'WebApp/README.md' && edIdOf('WebApp').test(x.id))
+    check(r, `第 3 步 WebApp README 的 id 應又出現:${rows.map((x) => x.raw).join(' ; ')}`)
     return `無損毀提示;4 分頁在,id 全 -;SC 雙擊後 ${r.raw} [需看截圖:第 2 步本機 Changes 仍正確]`
   }
 })
