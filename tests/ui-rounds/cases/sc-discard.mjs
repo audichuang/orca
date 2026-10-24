@@ -8,6 +8,8 @@ const {
   scSec,
   scRowBtn,
   CH,
+  ST,
+  UT,
   scDlg,
   scConfirm,
   scShell,
@@ -35,8 +37,9 @@ defineCase('SC-01', {
     need(d, '沒有出現確認對話框')
     checkEq(d.title, 'Discard changes to "unstaged-mod.ts"?', '對話框標題')
     await scConfirm(/^按鈕 Discard$/)
-    const chg = await scWait(async () => (await scSec('CHANGES')) === 4)
-    check(chg, `CHANGES 應為 4,實際 ${await scSec('CHANGES')}`)
+    // 6 → 5:CHANGES 含未追蹤的 Widget.tsx(10-21 起)
+    const chg = await scWait(async () => (await scSec('CHANGES')) === 5)
+    check(chg, `CHANGES 應為 5,實際 ${await scSec('CHANGES')}`)
     checkEq(await scCnt('WebApp'), 9, '清單 WebApp')
     checkEq(await scCnt('WebApp-feature'), 1, '清單 WebApp-feature')
     const n = await scWait(() => scLines('$P/WebApp/src/unstaged-mod.ts') === 3)
@@ -54,7 +57,7 @@ defineCase('SC-01', {
       1,
       'feature change 行數'
     )
-    return `標題「${d.title}」;CHANGES 4、WebApp 9、feature 1;檔案 3 行;feature 仍 M`
+    return `標題「${d.title}」;CHANGES 5、WebApp 9、feature 1;檔案 3 行;feature 仍 M`
   }
 })
 
@@ -102,14 +105,15 @@ defineCase('SC-03', {
   run: async () => {
     await scStart()
     await scSel('WebApp')
-    await app.click(await btnAfter(CH, /^按鈕 Discard all/))
+    await app.click(await sectionButton(CH, /^按鈕 Discard all/))
     await sleep(1000)
     const d = await scDlg()
     need(d, '沒有出現確認對話框')
     checkEq(d.title, 'Discard all unstaged changes?', '對話框標題')
     checkRe(
       d.text,
-      /This will revert unstaged changes in 5 files\. This cannot be undone\./,
+      // 10-21 起未追蹤檔在 CHANGES 裡,Discard all 會一起刪掉
+      /This will revert unstaged changes and permanently delete any untracked files among these 6 files\. This cannot be undone\./,
       '對話框說明'
     )
     await scConfirm(/^按鈕 Discard all$/, 3500)
@@ -125,11 +129,16 @@ defineCase('SC-03', {
     checkEq(scGrepC('worktree-edit', '$P/WebApp/src/partial.ts'), 0, 'worktree-edit 行數')
     checkEq(scGrepC("'api readme change'", '$P/api-server/README.md'), 1, 'api-server README')
     checkRe(scPorcelain('$P/WebApp-feature'), /^ M src\/unstaged-mod\.ts/, 'WebApp-feature')
-    check(
-      await scWait(async () => (await scCnt('WebApp')) === 5),
-      `清單 WebApp 應為 5,實際 ${await scCnt('WebApp')}`
+    checkEq(
+      scShell('test -e $P/WebApp/src/components/new/Widget.tsx && echo yes').trim(),
+      '',
+      '未追蹤的 Widget.tsx 應已刪除'
     )
-    return `對話框「${d.title}」「5 files」;diff 空、cached 仍 +index-edit、WebApp 5、feature 仍 1`
+    check(
+      await scWait(async () => (await scCnt('WebApp')) === 4),
+      `清單 WebApp 應為 4,實際 ${await scCnt('WebApp')}`
+    )
+    return `對話框「${d.title}」「6 files」;diff 空、Widget.tsx 已刪、cached 仍 +index-edit、WebApp 4、feature 仍 1`
   }
 })
 
@@ -140,11 +149,14 @@ defineCase('SC-04', {
   run: async () => {
     await scStart()
     await scSel('WebApp')
-    await app.click(await btnAfter(UT, /^按鈕 Delete all untracked/))
+    // 10-21 起沒有 Delete all untracked,未追蹤檔在 CHANGES 裡逐列刪
+    await app.click(
+      await scRowBtn(UT, /^text Widget\.tsx src\/components\/new/, /^按鈕 Delete untracked file/)
+    )
     await sleep(1000)
     const d1 = await scDlg()
     need(d1, '第 1 步沒有對話框')
-    checkEq(d1.title, 'Delete 1 untracked file?', '第 1 步標題')
+    checkEq(d1.title, 'Delete "Widget.tsx"?', '第 1 步標題')
     await scConfirm(/^按鈕 Delete$/)
     check(
       await scWait(
@@ -196,7 +208,7 @@ defineCase('SC-05', {
     const feat0 = scPorcelain('$P/WebApp-feature'),
       api0 = scPorcelain('$P/api-server')
     await scSel('WebApp')
-    await app.click(await btnAfter(ST, /^按鈕 Discard all/))
+    await app.click(await sectionButton(ST, /^按鈕 Discard all/))
     await sleep(1000)
     const d = await scDlg()
     need(d, '沒有出現確認對話框')
@@ -250,11 +262,7 @@ defineCase('SC-06', {
         ),
         `第 2 步後 diff --name-only 應只剩 README.md、logo.png,實際 ${scShell('git -C $P/WebApp diff --name-only').trim().replace(/\n/g, ',')}`
       )
-      await app.click(await scRowBtn(UT, /^按鈕 .*new$/, /^按鈕 Delete untracked in folder/))
-      await sleep(1000)
-      const d3 = await scDlg()
-      need(d3, '第 3 步沒有對話框')
-      await scConfirm(/^按鈕 (Delete|Delete all)$/, 3000)
+      // 10-21 起未追蹤檔也在 CHANGES 的 src 底下,資料夾 discard 一起刪掉
       check(
         await scWait(
           () =>
@@ -262,11 +270,11 @@ defineCase('SC-06', {
             'gone',
           6000
         ),
-        '第 3 步後 Widget.tsx 還在'
+        '第 2 步後 Widget.tsx 還在'
       )
       checkEq(scPorcelain('$P/WebApp-feature'), others0.feat, 'WebApp-feature')
       checkEq(scPorcelain('$P/api-server'), others0.api, 'api-server')
-      return `第 2 步對話框「${d.title}」(${d.text.split(' | ').pop()});diff 只剩 README.md/logo.png;第 3 步「${d3.title}」Widget 刪除;其他 repo 不變`
+      return `第 2 步對話框「${d.title}」(${d.text.split(' | ').pop()});diff 只剩 README.md/logo.png,未追蹤的 Widget 一起刪除;其他 repo 不變`
     } finally {
       try {
         await app.click(await find(/^彈出式按鈕 More source control actions/))
@@ -377,15 +385,16 @@ defineCase('SC-08', {
       1,
       'WebApp README 磁碟不受影響'
     )
-    const tabs = (await lines())
-      .filter(([, t]) => /^sortable (server\.ts|README\.md)/.test(t))
-      .map((x) => x[0])
+    const tabs = (await lines()).filter(([, t]) => /^sortable (server\.ts|README\.md)/.test(t))
     need(tabs.length >= 3, `分頁數不足:${tabs.length}`)
     const seen = []
-    for (const tb of tabs) {
+    for (const [tb] of tabs) {
       await app.click(tb)
       await sleep(1200)
-      seen.push((await grep(/No uncommitted changes/)) ? 'clean' : 'diff')
+      // diff 分頁的標籤帶狀態字母(README.md (diff) M);乾淨了字母消失、內文改顯示檔案本身(10-21 前是 No uncommitted changes)
+      const label = (await lines()).find(([n]) => n === tb)?.[1] ?? ''
+      const clean = (await grep(/No uncommitted changes/)) || /\(diff\) Close tab/.test(label)
+      seen.push(!/\(diff\)/.test(label) ? 'file' : clean ? 'clean' : 'diff')
       await evidenceShot()
     }
     // 兩個 README 分頁:一個 clean(api-server)、一個仍有 diff(WebApp)
