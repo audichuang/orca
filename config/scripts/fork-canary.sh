@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # Fork canary: merge the fork into upstream main in a throwaway worktree, then typecheck and run the fork's tests.
 # Report-only early warning before the next release tag; never a gate. Never pushes or touches the invoking checkout.
-# Exit: 0 green, 1 install/typecheck/test failures, 2 merge conflicts only, 3 setup error, 4 conflicts and failures.
-# Conflicted files are provisionally resolved to the upstream side so typecheck and tests still run.
-# make turns every non-zero exit into 2; call this script directly when the code matters.
-# Env: FORK_BASE (required), CANARY_REF (fork side, default HEAD), UPSTREAM_REMOTE, CANARY_UPSTREAM_REF
-#      (default <upstream>/main), CANARY_DIR (default ../orca-fork-canary), CANARY_REPORT, CANARY_KEEP=1.
+# Conflicted files are reset to upstream's side so typecheck and tests still run; the report marks them.
+# Exit: 0 green; 1 not green (conflicts and/or failures, the report's Result line says which); 3 setup error.
+# Env: FORK_BASE and UPSTREAM_REMOTE (both set by make fork-canary), CANARY_REF (fork side, default HEAD),
+#      CANARY_UPSTREAM_REF (default <upstream>/main), CANARY_DIR (default ../orca-fork-canary), CANARY_REPORT, CANARY_KEEP=1.
 set -uo pipefail
 export LC_ALL=C ORCA_BACKGROUND_LAUNCH=1
 
@@ -18,10 +17,10 @@ root=$(git rev-parse --show-toplevel) || die "not in a git checkout"
 cd "$root" || die "cannot cd to $root"
 base=${FORK_BASE:-}
 test -n "$base" || die "FORK_BASE is empty; run via make fork-canary or pass FORK_BASE=vX.Y.Z"
+remote=${UPSTREAM_REMOTE:-}
+test -n "$remote" || die "UPSTREAM_REMOTE is empty; run via make fork-canary or pass UPSTREAM_REMOTE=<name>"
 fork_sha=$(git rev-parse --verify "${CANARY_REF:-HEAD}^{commit}") || die "bad CANARY_REF"
 
-remote=${UPSTREAM_REMOTE:-$(git remote -v | awk '$3 == "(fetch)" && $2 ~ /[:\/]stablyai\/orca(\.git)?$/ {print $1; exit}')}
-test -n "$remote" || die "no remote points at stablyai/orca; pass UPSTREAM_REMOTE=<name>"
 echo ">> fetching ${remote} main and tags"
 git fetch --quiet --tags "$remote" "+refs/heads/main:refs/remotes/${remote}/main" || die "fetch from ${remote} failed"
 upstream_sha=$(git rev-parse --verify "${CANARY_UPSTREAM_REF:-refs/remotes/${remote}/main}^{commit}") || die "bad upstream ref"
@@ -37,15 +36,12 @@ logs="$(dirname "$report")/fork-canary"
 mkdir -p "$logs" || die "cannot create $logs"
 rm -f "$logs"/*
 
-registered=$(git worktree list --porcelain | grep -qxF "worktree $wt" && echo 1)
-if [ -e "$wt" ]; then
-  # Why refuse an unregistered dir: removing it with rm could delete someone's work.
-  test -n "$registered" || die "$wt exists and is not a git worktree; remove it or pass CANARY_DIR"
+if git worktree list --porcelain | grep -qxF "worktree $wt"; then
   echo ">> removing stale canary worktree $wt"
   git worktree remove --force "$wt" || die "cannot remove stale $wt"
-elif [ -n "$registered" ]; then
-  # Why not a bare prune: it would drop other sessions' worktree registrations too.
-  git worktree remove --force "$wt" 2>/dev/null || git worktree prune
+elif [ -e "$wt" ]; then
+  # Why refuse an unregistered dir: removing it with rm could delete someone's work.
+  die "$wt exists and is not a git worktree; remove it or pass CANARY_DIR"
 fi
 cleanup() {
   if [ "${CANARY_KEEP:-}" = 1 ]; then
@@ -65,6 +61,7 @@ merge_status=$?
 conflicts=$(git -C "$wt" diff --name-only --diff-filter=U)
 git -C "$wt" rev-parse -q --verify MERGE_HEAD >/dev/null || [ "$merge_status" -eq 0 ] || die "merge failed without conflicts; see $logs/merge.log"
 replayed=$(sed -nE "s/^(Resolved|Staged) '(.*)' using previous resolution\.$/\2/p" "$logs/merge.log" | sort -u)
+n_conflicts=$(printf '%s\n' $conflicts | grep -c .)
 
 # Why upstream's side: upstream conflicts most days, and stopping here would leave the canary testing almost nothing.
 for f in $conflicts; do
@@ -74,72 +71,49 @@ for f in $conflicts; do
     git -C "$wt" rm -q -f -- "$f" || die "cannot take upstream's deletion of $f"
   fi
 done
-n_conflicts=$(printf '%s\n' $conflicts | grep -c .)
 
-failed=
-tc_failed=
 install_failed=
+tc_failed=
 tests_failed=
 echo ">> pnpm install"
 if ! (cd "$wt" && pnpm install --frozen-lockfile) >"$logs/install.log" 2>&1; then
   install_failed=1
-  failed=1
 else
   echo ">> pnpm tc"
-  (cd "$wt" && pnpm tc) >"$logs/tc.log" 2>&1 || {
-    tc_failed=1
-    failed=1
-  }
-  seams=$(cd "$wt" && node config/scripts/fork-seam-tests.mjs --existing 2>"$logs/seams-missing.log")
-  changed=$(git diff --name-only --no-renames --diff-filter=AM "$base" "$fork_sha" -- '*.test.ts' '*.test.tsx' | grep -v '^tests/e2e/')
-  tests=$(printf '%s\n' $seams $changed | sort -u | while read -r f; do test -n "$f" && test -f "$wt/$f" && echo "$f"; done)
+  (cd "$wt" && pnpm tc) >"$logs/tc.log" 2>&1 || tc_failed=1
+  (cd "$wt" && node config/scripts/fork-seam-tests.mjs --existing >/dev/null 2>"$logs/seams-missing.log")
+  # Why the merged tree's script: it collects with the merged tree's runner config and skips files the merge removed.
+  tests=$(cd "$wt" && node config/scripts/fork-seam-tests.mjs --fork-changed "$base" "$fork_sha") || die "cannot list the fork's tests"
   echo ">> vitest on $(printf '%s\n' $tests | grep -c .) files"
   # Why the guard: vitest with no file filter runs the whole suite.
   test -n "$tests" || die "no test files selected"
   (cd "$wt" && node config/scripts/ensure-native-runtime.mjs --runtime=node &&
     pnpm exec vitest run --config config/vitest.config.ts --reporter=default --reporter=json \
-      --outputFile.json="$logs/vitest.json" $tests) >"$logs/vitest.log" 2>&1 || {
-    tests_failed=1
-    failed=1
-  }
-fi
-if [ -n "$conflicts" ] && [ -n "$failed" ]; then
-  status=4
-elif [ -n "$conflicts" ]; then
-  status=2
-elif [ -n "$failed" ]; then
-  status=1
-else
-  status=0
+      --outputFile.json="$logs/vitest.json" $tests) >"$logs/vitest.log" 2>&1 || tests_failed=1
 fi
 
-# Why path match plus a basename import grep: best effort to tell expected fallout of the provisional resolution from new breaks.
+findings=
+[ -n "$conflicts" ] && findings="$findings, $n_conflicts merge conflicts"
+[ -n "$install_failed" ] && findings="$findings, pnpm install failed"
+[ -n "$tc_failed" ] && findings="$findings, typecheck errors"
+[ -n "$tests_failed" ] && findings="$findings, failing tests"
+status=$([ -z "$findings" ] && echo 0 || echo 1)
+
 conflict_note() {
-  local file=$1 c stem
-  for c in $conflicts; do
-    if [ "$file" = "$c" ]; then
-      echo " (conflicted file)"
-      return
-    fi
-  done
-  test -f "$wt/$file" || return
-  for c in $conflicts; do
-    stem=$(basename "$c")
-    stem=${stem%.*}
-    if grep -qE "from ['\"][^'\"]*/${stem}(\.[a-z]+)?['\"]" "$wt/$file"; then
-      echo " (imports conflicted \`$c\`)"
-      return
-    fi
-  done
+  printf '%s\n' "$conflicts" | grep -qxF "$1" && echo " (conflicted file)"
+}
+
+log_tail() {
+  echo '```'
+  tail -n 30 "$1"
+  echo '```'
 }
 
 list_commits() {
-  local out
-  out=$(git log --format='%h %s' "$1" -- "$2")
-  printf '%s\n' "$out" | head -n 15 | sed 's/^/    - /'
+  git log -n 15 --format='    - %h %s' "$1" -- "$2"
   local n
-  n=$(printf '%s\n' "$out" | grep -c .)
-  [ "$n" -gt 15 ] && echo "    - ... $((n - 15)) more"
+  n=$(git rev-list --count "$1" -- "$2")
+  [ "$n" -le 15 ] || echo "    - ... $((n - 15)) more"
 }
 
 {
@@ -147,15 +121,10 @@ list_commits() {
   echo
   echo "- Fork: \`$(git rev-parse --short "$fork_sha")\` on \`$base\`"
   echo "- Upstream: \`$(git rev-parse --short "$upstream_sha")\` (${CANARY_UPSTREAM_REF:-${remote}/main}), $upstream_count commits past the merge-base \`$(git rev-parse --short "$merge_base")\` with \`$base\`"
-  case $status in
-    0) echo "- Result: green (exit 0)" ;;
-    1) echo "- Result: failures (exit 1)" ;;
-    2) echo "- Result: merge conflicts, typecheck and tests green (exit 2)" ;;
-    4) echo "- Result: merge conflicts and failures (exit 4)" ;;
-  esac
-  if [ -n "$conflicts" ]; then
-    echo
-    echo "**Provisional: upstream side taken for $n_conflicts conflicted files, the fork's changes in them are absent; tc/test failures in or caused by those files are expected.**"
+  if [ -z "$findings" ]; then
+    echo "- Result: green (exit 0)"
+  else
+    echo "- Result: not green (exit 1): ${findings#, }"
   fi
   if [ -n "$replayed" ]; then
     echo
@@ -165,7 +134,7 @@ list_commits() {
   fi
   if [ -n "$conflicts" ]; then
     echo
-    echo "## Conflicts ($(printf '%s\n' "$conflicts" | grep -c .))"
+    echo "## Conflicts ($n_conflicts)"
     for f in $conflicts; do
       echo
       echo "- \`$f\`"
@@ -175,13 +144,15 @@ list_commits() {
       list_commits "${base}..${fork_sha}" "$f"
     done
   fi
+  if [ -n "$conflicts" ] && { [ -n "$tc_failed" ] || [ -n "$tests_failed" ]; }; then
+    echo
+    echo "Conflicted files were reset to upstream; failures in them or their dependents may come from that, or may be real."
+  fi
   if [ -n "$install_failed" ]; then
     echo
     echo "## pnpm install failed"
     echo
-    echo '```'
-    tail -n 30 "$logs/install.log"
-    echo '```'
+    log_tail "$logs/install.log"
   fi
   if [ -n "$tc_failed" ]; then
     echo
@@ -194,9 +165,7 @@ list_commits() {
         printf '%s\n' "$errors" | grep -F "$file(" | sed -E 's/^[^ ]+\(([0-9]+),[0-9]+\): error (TS[0-9]+): (.*)/  - \1 \2 \3/'
       done
     else
-      echo '```'
-      tail -n 30 "$logs/tc.log"
-      echo '```'
+      log_tail "$logs/tc.log"
     fi
   fi
   if [ -s "$logs/seams-missing.log" ]; then
@@ -227,9 +196,7 @@ list_commits() {
         fi
       done
     else
-      echo '```'
-      tail -n 30 "$logs/vitest.log"
-      echo '```'
+      log_tail "$logs/vitest.log"
     fi
   fi
   echo
