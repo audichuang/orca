@@ -5,9 +5,7 @@ const RE_REPO = /^下拉式方塊 \(settable\) Description: Repository, Value: /
 const RE_FILTER = /^下拉式方塊 \(settable\) Description: Branch filter, Value: /
 
 const graphTabs = async () => (await findAll(RE_TAB)).length
-// 「WebApp main」;10-21 前寫成「WebApp · main」
-const repoValue = async () =>
-  (await grep(RE_REPO)).replace(/^\d+ .*Value: /, '').replace(' · ', ' ')
+const repoValue = async () => (await grep(RE_REPO)).replace(/^\d+ .*Value: /, '')
 const filterValue = async () => (await grep(RE_FILTER)).replace(/^\d+ .*Value: /, '')
 // 列文字依欄寬可能帶日期、hash 與 ", Value: 0"
 const row = async (msgRe) => await find(new RegExp(`^切換鈕 (.* )?${msgRe.source}( |,|$)`))
@@ -20,19 +18,13 @@ const pick = async (re) => {
   await app.click(ids.at(-1))
   await sleep(900)
 }
-// Repository 下拉:每個 worktree 一列「<repo> <branch>」(選中的前面帶 (selected));10-21 前是 repo 標題底下列 worktree
+// Repository 下拉:每個 worktree 一列「<repo> <branch>」,選中的前面帶 (selected)
 const pickRepo = async (repo, worktree) => {
   await app.click(await find(RE_REPO))
   await sleep(900)
-  const L = await lines()
-  const flat = L.findLast(([, t]) => t.replace(/^\(selected\) /, '') === `${repo} ${worktree}`)
-  const g = L.findIndex(([, t]) => t === `container ${repo}`)
-  let hit = flat
-  for (let k = g + 1; !hit && g !== -1 && k < L.length && !L[k][1].startsWith('container '); k++) {
-    if (L[k][1].replace(/^\(selected\) /, '') === worktree) {
-      hit = L[k]
-    }
-  }
+  const hit = (await lines()).findLast(
+    ([, t]) => t.replace(/^\(selected\) /, '') === `${repo} ${worktree}`
+  )
   check(hit, `下拉沒有 ${repo} · ${worktree}`)
   await app.click(hit[0])
   await sleep(1800)
