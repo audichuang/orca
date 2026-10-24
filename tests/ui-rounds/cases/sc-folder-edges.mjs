@@ -109,7 +109,7 @@ defineCase('SC-27.2', {
     await scrollSidebarTop()
     await app.click(await workspaceRowTarget('MultiProduct-2'), { mouseButton: 'right' })
     await sleep(800)
-    const rm = await findAll(/^Remove Workspace/)
+    const rm = await findAll(new RegExp(`^${UI_MAP.UI_TEXT.removeWorkspace}`))
     need(rm.length, '右鍵選單找不到 Remove Workspace')
     await app.click(rm.at(-1))
     await sleep(1500)
