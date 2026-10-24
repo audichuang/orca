@@ -13,6 +13,7 @@ import { resolveAgentLaunchRoute, structuredAgentLaunchSupport } from './agent-l
 import {
   buildAgentLaunchRouteInput,
   resolveAgentLaunchHost,
+  type AgentLaunchRouteArgs,
   type AgentLaunchRouteStore,
   type ProspectiveWorkspace
 } from './agent-launch-route-input'
@@ -127,10 +128,10 @@ export function readAgentLaunchChoice(
   workspace: ProspectiveWorkspace,
   detected: readonly TuiAgent[] | null,
   /** A start directory below the workspace root only a terminal can apply (folder repo launches). */
-  cwd?: string | null
+  tuiCustomization?: AgentLaunchRouteArgs['tuiCustomization']
 ) {
   const context = resolveChatProgramContext(store, workspace)
-  const input = buildAgentLaunchRouteInput(store, { agent, workspace, tuiCustomization: { cwd } })
+  const input = buildAgentLaunchRouteInput(store, { agent, workspace, tuiCustomization })
   const program = readChatProgram(store, agent, context, detected)
   const support = structuredAgentLaunchSupport(input)
   const catalogReady =
@@ -180,12 +181,12 @@ export function agentsOfferedForLaunch(
   store: AgentLaunchRouteStore,
   workspace: ProspectiveWorkspace,
   detected: readonly TuiAgent[] | null,
-  cwd?: string | null
+  tuiCustomization?: AgentLaunchRouteArgs['tuiCustomization']
 ): TuiAgent[] {
   const { executionHostId } = resolveChatProgramContext(store, workspace)
   const chats = chatProviderAgents(executionHostId, store.runtimeStatusByEnvironmentId)
   const opens = chats.filter((agent) =>
-    agentChoiceOpensAsChat(store, agent, workspace, detected, cwd)
+    agentChoiceOpensAsChat(store, agent, workspace, detected, tuiCustomization)
   )
   return [...new Set([...(detected ?? []), ...opens])]
 }

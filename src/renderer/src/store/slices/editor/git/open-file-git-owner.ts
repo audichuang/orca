@@ -1,5 +1,5 @@
 import type { AppState } from '../../../types'
-import type { OpenFile } from '../types/open-file'
+import type { EditorOpenTargetOptions, OpenFile } from '../types/open-file'
 import { getIndexedWorktreesById } from '../../../worktree-repo-index'
 import { relativePathInsideRoot } from '../../../../../../shared/cross-platform-path'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
@@ -83,3 +83,25 @@ export function getScopedTabIdOwner(worktreeId: string, gitWorktreeId?: string):
     ? `${worktreeId}@${gitWorktreeId}`
     : worktreeId
 }
+
+/** Fork options of an editor open: the repo whose git state backs a folder workspace's tab. */
+export type GitOwnerOpenOptions = Pick<EditorOpenTargetOptions, 'gitWorktreeId'>
+
+/** The tab's git owner, or undefined when it is the tab's own workspace. */
+export function resolveOpenGitWorktreeId(
+  worktreeId: string,
+  options: GitOwnerOpenOptions | undefined
+): string | undefined {
+  return options?.gitWorktreeId !== worktreeId ? options?.gitWorktreeId : undefined
+}
+
+/** How a restored folder tab's git owner is checked. */
+export type HydratedGitOwnerOptions = {
+  /** Repos a folder tab's git owner may name; omitted where repos are unknown, so the owner is kept. */
+  validGitOwnerIds?: ReadonlySet<string>
+  /** Folder roots, to re-anchor relativePath when a dropped git owner leaves it repo-relative. */
+  ownerRoots?: Pick<AppState, 'folderWorkspaces'>
+}
+
+/** The status path of a tab whose relativePath is not its git owner's. */
+export type StatusReconcileGitOptions = { gitRelativePathOf?: (file: OpenFile) => string }

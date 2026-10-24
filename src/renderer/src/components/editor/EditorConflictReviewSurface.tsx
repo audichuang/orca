@@ -62,7 +62,7 @@ export function EditorConflictReviewSurface({
         activeFile.filePath,
         entry,
         detectLanguage(entry.path),
-        activeFile.gitWorktreeId
+        { gitWorktreeId: activeFile.gitWorktreeId }
       )
     },
     [
@@ -312,7 +312,7 @@ export function EditorConflictReviewSurface({
             .filter((entry) => entry.conflictStatus === 'unresolved' && entry.conflictKind)
             .map((entry) => ({ path: entry.path, conflictKind: entry.conflictKind! })),
           'live-summary',
-          activeFile.gitWorktreeId
+          { gitWorktreeId: activeFile.gitWorktreeId }
         )
       }
       onReturnToSourceControl={() => setRightSidebarTab('source-control')}

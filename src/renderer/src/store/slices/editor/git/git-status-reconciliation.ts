@@ -1,5 +1,5 @@
 import { translate } from '@/i18n/i18n'
-import { getOpenFileGitWorktreeId } from './open-file-git-owner'
+import { getOpenFileGitWorktreeId, type StatusReconcileGitOptions } from './open-file-git-owner'
 import type {
   GitConflictKind,
   GitStatusEntry,
@@ -130,7 +130,7 @@ export function reconcileOpenFilesForStatus(
   worktreeId: string,
   nextEntries: GitStatusEntry[],
   statusIsComplete: boolean,
-  gitRelativePathOf: (file: OpenFile) => string = (file) => file.relativePath
+  { gitRelativePathOf = (file) => file.relativePath }: StatusReconcileGitOptions = {}
 ): OpenFile[] {
   let entriesByPath: Map<string, GitStatusEntry> | undefined
   let changed = false

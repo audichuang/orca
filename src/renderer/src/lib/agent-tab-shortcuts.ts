@@ -73,13 +73,9 @@ export function resolveDefaultAgentForWorkspace(args: {
   const { chatIn } = args
   const chosenUsable = (agent: TuiAgent): boolean =>
     !!chatIn &&
-    agentChoiceMayOpenAsChat(
-      chatIn.store,
-      agent,
-      chatIn.workspace,
-      args.detectedAgentIds ?? null,
-      chatIn.cwd
-    )
+    agentChoiceMayOpenAsChat(chatIn.store, agent, chatIn.workspace, args.detectedAgentIds ?? null, {
+      cwd: chatIn.cwd
+    })
   return pickTuiAgent(
     args.defaultTuiAgent,
     args.detectedAgentIds ?? [],
