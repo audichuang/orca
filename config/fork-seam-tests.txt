@@ -1,0 +1,71 @@
+# Fork seam contract tests: each turns red when an upstream change silently drops a fork wiring.
+# One repo-relative path per line; `make fork-check-seams` runs them, and fork-check-lint fails on a missing path.
+# A new fork seam test joins its group here.
+
+# skipRenderLimit: IPC, web preload, runtime client, RPC + zod, provider
+src/main/git/source-control/file-diff.skip-render-limit-real-git.test.ts
+src/main/ipc/filesystem/filesystem-git-diff-skip-render-limit-ipc.test.ts
+src/main/runtime/rpc/methods/git-diff-skip-render-limit.test.ts
+src/main/runtime/runtime-git-diff-skip-render-limit-chain.test.ts
+src/renderer/src/runtime/runtime-git-diff-skip-render-limit-client.test.ts
+src/renderer/src/web/preload-api/web-git-diff-skip-render-limit.test.ts
+
+# git.history graph option: IPC, web preload, RPC, runtime chain, dispatch
+src/main/git/history-graph-dispatch.real-git.test.ts
+src/main/ipc/filesystem/filesystem-git-history-graph-ipc.test.ts
+src/main/runtime/rpc/methods/git-history-graph-rpc.test.ts
+src/main/runtime/runtime-git-history-graph-chain.test.ts
+src/renderer/src/web/preload-api/web-git-history-graph.test.ts
+
+# missingSides and blob absence feeding ClipCode copy
+src/main/git/source-control/blob-absence-real-git.test.ts
+src/main/git/source-control/commit-diff-missing-sides.real-git.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-commit-copy.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-explorer-copy.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-git-copy.test.ts
+
+# ClipCode clipboard and preview contracts
+src/main/ipc/filesystem/filesystem-svg-preview-clipcode-contract.test.ts
+src/renderer/src/components/right-sidebar/file-explorer-clipcode-copy.wiring.test.tsx
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-format.contract.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-restore.contract.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-target-state.ipc-edge.test.ts
+
+# gitWorktreeId persistence: save, reload, restore
+src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts
+src/shared/workspace-layout/layout-editor-view-fork.test.ts
+src/shared/workspace-layout/workspace-layout-fact-locations.test.ts
+
+# git-graph tab type: hydration, editor tabs, layout, runtime graph sync
+src/renderer/src/runtime/sync-runtime-graph-git-graph-tab.test.ts
+src/renderer/src/store/slices/editor-git-graph-tabs.test.ts
+src/renderer/src/store/slices/editor/tabs/open-file-layout-view-fork.test.ts
+src/renderer/src/store/slices/tabs-hydration-git-graph.test.ts
+src/renderer/src/components/tab-group/TabGroupPanel.git-graph-button.test.tsx
+
+# Upstream component slots and folder routing
+src/renderer/src/components/right-sidebar/source-control/panel/panel-content-fork-slots.test.ts
+src/renderer/src/components/right-sidebar/source-control/panel/panel-folder-routing.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/git-graph-full-view.component.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph.component.test.tsx
+src/renderer/src/components/right-sidebar/source-control/folder/folder-multi-repo-panel.test.tsx
+
+# Editor save event
+src/renderer/src/components/editor/editor-file-saved-event.contract.test.ts
+
+# Keybinding
+src/renderer/src/app-shell/git-graph-command-handler.test.ts
+
+# Updater: fork distribution
+src/main/updater.fork-distribution.test.ts
+src/main/updater/fork-distribution.test.ts
+
+# Hidden folder repos
+src/renderer/src/components/right-sidebar/source-control/folder/folder-sidebar-hidden-repos.test.ts
+src/renderer/src/components/sidebar/visible-worktrees-folder-hidden-repos.test.ts
+
+# Toast clearance
+src/renderer/src/lib/toast-bottom-clearance.test.tsx
+
+# App bundle replaced while running
+src/main/app-bundle-replacement.test.ts
