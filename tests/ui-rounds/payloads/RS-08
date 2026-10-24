@@ -1,0 +1,19 @@
+// clipcode-root: MultiProduct
+// file: [NEW] .GIT/hooks/pre-commit
+x
+// file: [NEW] WebApp/.Git/config
+x
+// file: [NEW] docs-site/.gitignore
+ok-gitignore
+// file: [NEW] notes/a:b.txt
+x
+// file: [NEW] notes/what?.txt
+x
+// file: [NEW] notes/sub/../../../escape2.txt
+x
+// file: [NEW] ./notes/./dot.txt
+dot
+// file: [NEW] notes\back\slash.txt
+back
+// file: [NEW] notes//double//slash.txt
+double
