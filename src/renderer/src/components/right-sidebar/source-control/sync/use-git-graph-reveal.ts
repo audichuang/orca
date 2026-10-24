@@ -1,5 +1,5 @@
 // Fork-only: a one-shot "select this commit" request for the full Git Graph (Show in Git Graph).
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { GitHistoryResult } from '../../../../../../shared/git-history'
 import { GIT_HISTORY_GRAPH_MAX_LIMIT } from '../../../../../../shared/git-history-graph-query-types'
 import { getGitHistoryGraphFilter, updateGitHistoryGraphFilter } from './git-history-graph-filter'
@@ -9,6 +9,8 @@ export type GitGraphRevealTarget = {
   nonce: number
   /** The loaded page predates a pending reload, so a miss there is not judged. */
   afterReload?: boolean
+  /** Move keyboard focus to the row once selected. */
+  focus?: boolean
 }
 
 export type GitGraphRevealOptions = {
@@ -37,7 +39,7 @@ function deepenGitGraphForReveal(filterKey: string): boolean {
 export function useGitGraphReveal(
   reveal: GitGraphRevealOptions | undefined,
   result: GitHistoryResult | undefined,
-  jumpTo: (commitId: string) => void
+  jumpTo: (commitId: string, options?: { focus?: boolean }) => void
 ): boolean {
   const request = reveal?.request ?? null
   const settled = reveal?.settled ?? true
@@ -75,9 +77,41 @@ export function useGitGraphReveal(
     deepeningRef.current = null
     handledNonceRef.current = request.nonce
     if (found) {
-      jumpTo(request.commitId)
+      jumpTo(request.commitId, request.focus ? { focus: true } : undefined)
     }
     onHandled(request.nonce, found)
   }, [filterKey, jumpTo, onHandled, request, result, settled])
   return request !== null
+}
+
+type GitGraphHostReveal = Pick<GitGraphRevealOptions, 'request' | 'onHandled'>
+
+/**
+ * Adds the view's own reveals (a fold arrow toward a commit past the loaded page) to the host's.
+ * The host's request goes first; the view's waits behind it.
+ */
+export function useGitGraphViewReveal(host: GitGraphHostReveal | undefined): {
+  reveal: GitGraphHostReveal
+  revealCommit: (commitId: string) => void
+} {
+  const [local, setLocal] = useState<GitGraphRevealTarget | null>(null)
+  // Why negative: host nonces count up from 1, and the reveal hook skips a nonce it already handled.
+  const nextNonceRef = useRef(-1)
+  const revealCommit = useCallback((commitId: string) => {
+    setLocal({ commitId, nonce: nextNonceRef.current--, focus: true })
+  }, [])
+  const hostOnHandled = host?.onHandled
+  const onHandled = useCallback(
+    (nonce: number, found: boolean) => {
+      if (nonce < 0) {
+        setLocal((current) => (current?.nonce === nonce ? null : current))
+        return
+      }
+      hostOnHandled?.(nonce, found)
+    },
+    [hostOnHandled]
+  )
+  const request = host?.request ?? local
+  const reveal = useMemo(() => ({ request, onHandled }), [request, onHandled])
+  return { reveal, revealCommit }
 }
