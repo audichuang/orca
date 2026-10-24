@@ -103,6 +103,13 @@ function foldLabel(
   segment: Extract<GitGraphLaneSegment, { kind: 'fold-down' | 'fold-up' }>
 ): string {
   const target = segment.target
+  if (!target && segment.kind === 'fold-down' && segment.unloadedTargetId) {
+    return translate(
+      'auto.components.right.sidebar.GitGraphFullView.laneContinuesPastLoadedJump',
+      'Continues past the loaded commits at {{sha}}. Click to load and jump.',
+      { sha: segment.unloadedTargetId.slice(0, 7) }
+    )
+  }
   if (!target) {
     return translate(
       'auto.components.right.sidebar.GitGraphFullView.laneContinuesPastLoaded',
@@ -135,6 +142,8 @@ function FoldArrow({
   onJump?: (commitId: string) => void
 }): React.JSX.Element {
   const cx = x(segment.at)
+  const jumpId =
+    segment.target?.id ?? (segment.kind === 'fold-down' ? segment.unloadedTargetId : undefined)
   // Why clear of y=12: connectors run horizontally through the middle of the row.
   const d =
     segment.kind === 'fold-down'
@@ -142,14 +151,14 @@ function FoldArrow({
       : `M ${cx - 3} 18 L ${cx} 14.5 L ${cx + 3} 18 M ${cx} 15 V ${H}`
   return (
     <g
-      {...{ [GIT_GRAPH_JUMP_ATTRIBUTE]: segment.target?.id ?? '' }}
-      className={segment.target ? 'cursor-pointer' : undefined}
+      {...{ [GIT_GRAPH_JUMP_ATTRIBUTE]: jumpId ?? '' }}
+      className={jumpId ? 'cursor-pointer' : undefined}
       data-fold={segment.kind}
       // Why stop here: the arrow sits inside a row button (or a boundary row) that must not also select.
       onClick={(event) => {
         event.stopPropagation()
-        if (segment.target) {
-          onJump?.(segment.target.id)
+        if (jumpId) {
+          onJump?.(jumpId)
         }
       }}
       // Why: a double-click on the arrow must not open the row's commit as well.
