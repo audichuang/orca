@@ -1,4 +1,4 @@
-// Fork-only: the commit context menu with the fork's entries, wrapped around upstream's menu.
+// Fork-only: the commit context menu — upstream's with the fork's entries, or the fork's own for a multi-selection.
 import type React from 'react'
 import { ClipboardCopy, Copy, GitGraph, Hash, Sparkles } from 'lucide-react'
 import {
@@ -24,10 +24,6 @@ type ForkMenuProps = {
   onShowInGraph?: (item: GitHistoryItem) => void
 }
 
-/**
- * One commit: upstream's menu with the fork's entries in its slot.
- * Several: the fork's own menu, since only the fork selects more than one commit.
- */
 export function GitHistoryCommitForkMenu(props: ForkMenuProps): React.JSX.Element {
   const { item, onAction, onShowInGraph } = props
   if ((props.selectedCount ?? 1) > 1) {
@@ -91,6 +87,7 @@ function MultiCommitMenu({
 }: ForkMenuProps): React.JSX.Element {
   const count = { value0: selectedCount }
   return (
+    // Why wider than upstream's w-56: the counted labels run longer.
     <ContextMenuContent className="w-64">
       <ContextMenuItem onSelect={() => onAction('copy-hash', item)}>
         <Hash className="size-3.5" />
