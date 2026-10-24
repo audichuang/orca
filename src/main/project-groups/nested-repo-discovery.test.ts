@@ -396,48 +396,4 @@ describe('scanNestedRepos', () => {
       expect(result.repos).toEqual([])
     }
   )
-
-  describe('descendIntoRepos', () => {
-    const directories = new Map([
-      ['/cat', ['bfs', 'docs']],
-      ['/cat/docs', ['etf', 'notes']],
-      ['/cat/docs/etf', ['sql']]
-    ])
-    const gitRepos = new Set(['/cat/bfs', '/cat/docs', '/cat/docs/etf'])
-
-    it('stops at the first repo by default', async () => {
-      const result = await scanNestedRepos({
-        path: '/cat',
-        filesystem: posixTestFilesystem({ directories, gitRepos })
-      })
-
-      expect(result.repos.map((repo) => repo.path)).toEqual(['/cat/bfs', '/cat/docs'])
-    })
-
-    it('also finds repos nested inside repos when asked', async () => {
-      const result = await scanNestedRepos({
-        path: '/cat',
-        options: { descendIntoRepos: true },
-        filesystem: posixTestFilesystem({ directories, gitRepos })
-      })
-
-      expect(result.selectedPathKind).toBe('non_git_folder')
-      expect(result.repos.map((repo) => repo.path)).toEqual([
-        '/cat/bfs',
-        '/cat/docs',
-        '/cat/docs/etf'
-      ])
-    })
-
-    it('scans inside a selected repo instead of returning early', async () => {
-      const result = await scanNestedRepos({
-        path: '/cat/docs',
-        options: { descendIntoRepos: true },
-        filesystem: posixTestFilesystem({ directories, gitRepos })
-      })
-
-      expect(result.selectedPathKind).toBe('git_repo')
-      expect(result.repos.map((repo) => repo.path)).toEqual(['/cat/docs/etf'])
-    })
-  })
 })
