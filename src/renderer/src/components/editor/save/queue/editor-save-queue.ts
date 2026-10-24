@@ -237,6 +237,7 @@ export function createEditorSaveQueue(store: AppStoreApi): EditorSaveQueue {
         detail: {
           fileId: settledViewIds.includes(fileId) ? fileId : settledViewIds[0],
           content: contentToSave,
+          filePath: liveFile.filePath,
           recordViewIds: settledViewIds
         }
       })
