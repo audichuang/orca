@@ -19,6 +19,7 @@ import {
 } from './helpers/folder-multi-repo-scenario-context'
 import { runLayoutScenarios } from './helpers/folder-multi-repo-layout-scenarios'
 import { runRestoreScenarios } from './helpers/folder-multi-repo-restore-scenarios'
+import { runExternalChangeScenarios } from './helpers/folder-multi-repo-external-change-scenarios'
 import {
   changedLines,
   expectedPayload,
@@ -809,6 +810,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   }
   await runRestoreScenarios(extra)
   await runLayoutScenarios(extra)
+  await runExternalChangeScenarios(extra)
 
   await scenario('S11 Normal repo workspace regression', async (ev) => {
     const webWt = await wtIdByPath(R.webapp)
