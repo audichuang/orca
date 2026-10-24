@@ -67,7 +67,7 @@ export function sectionNameOf(re) {
   return SECTION_ALIASES[m[1]] ?? m[1]
 }
 
-const esc = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')
+export const esc = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')
 
 /** "按鈕 api-server main ↓1 ↑2 2, Help: api-server (main)" → "按鈕 api-server (main) 2"; no count reads 0. */
 export function canonicalRepoRow(text) {

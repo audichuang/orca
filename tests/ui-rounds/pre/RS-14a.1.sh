@@ -5,4 +5,4 @@ T=$ROOT
 P=$T/MultiProduct
 reset() { reset_fixture; }
 reset
-pbcopy < "$T/payloads/RS-14a"
+pbcopy < "$UIR/payloads/RS-14a"
