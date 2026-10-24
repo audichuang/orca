@@ -46,7 +46,7 @@ defineCase('V1-E1.2', {
       check(lat <= 33, `docs-site 約 ${lat} 秒後才變 1(超過 30 秒)`)
       return `docs-site 0→1,距改檔約 ${lat} 秒(起始讀到 ${first})`
     }
-    await clickRe(/^按鈕 Refresh all repositories/)
+    await clickRe(UI_RE.button(UI_TEXT.refreshAll))
     await sleep(3500)
     const after = (await v1CountsMap())['docs-site']
     check(after === 1, `35 秒沒變,手動 Refresh all 後 docs-site=${after}`)
@@ -165,7 +165,7 @@ defineCase('V1-F4', {
     checkEq(await v1Sel(), 2, '選取數')
     check((await grep(/^按鈕 Stage \(2\)$/)) !== '', '操作列沒有 Stage (2)')
     check((await grep(/^按鈕 Clear selection/)) !== '', '操作列沒有 Clear selection')
-    const b = await btnAfter(/^(text|文字) \d+ selected$/, /^按鈕 Copy Full Source$/, 8)
+    const b = await btnAfter(/^(text|文字) \d+ selected$/, UI_RE.button(UI_TEXT.copyFullSource), 8)
     const r = await copyAndRead(async () => {
       await app.click(b)
       await sleep(1500)
@@ -193,7 +193,7 @@ defineCase('V1-G1', {
     await openMP()
     await v1Select('WebApp')
     await v1ClearSel()
-    const btn = await btnAfter(SEC_ST, /^按鈕 Copy Full Source$/)
+    const btn = await btnAfter(SEC_ST, UI_RE.button(UI_TEXT.copyFullSource))
     const r = await copyAndRead(async () => {
       await app.click(btn)
       await sleep(1500)
@@ -248,7 +248,7 @@ defineCase('V1-G4', {
   pre: 'reset',
   run: async () => {
     await openMP()
-    const btn = await find(/^按鈕 Copy all changes$/)
+    const btn = await find(UI_RE.button(UI_TEXT.copyAllChanges))
     const r = await copyAndRead(async () => {
       await app.click(btn)
       await sleep(2000)
@@ -418,7 +418,7 @@ defineCase('V1-H6', {
   run: async () => {
     await openMP()
     const snap0 = v1Snap()
-    await app.click(await find(/^按鈕 Paste & Restore/))
+    await app.click(await find(UI_RE.button(UI_TEXT.pasteRestore)))
     await sleep(1500)
     const n = await note()
     checkRe(n, /No Snipcode file headers found in clipboard\./, '提示')
@@ -443,11 +443,11 @@ const v1EnterWebAppMain = async () => {
   await app.click(await v1MainRow('WebApp'))
   await sleep(2000)
   if (!(await grep(/^按鈕 CHANGES \d/))) {
-    await clickRe(/^按鈕 Source Control/)
+    await clickRe(UI_RE.buttonStart(UI_TEXT.sourceControlTab))
     await sleep(1500)
   }
   check(
-    (await grep(/^按鈕 Refresh all repositories/)) === '',
+    (await grep(UI_RE.button(UI_TEXT.refreshAll))) === '',
     'WebApp main workspace 不該有 folder 面板'
   )
   check((await grep(/^按鈕 CHANGES \d/)) !== '', 'WebApp main workspace 沒有 CHANGES 區段')
@@ -469,7 +469,7 @@ defineCase('V1-J1', {
       `沒有 unstaged-mod.ts (diff),實際 ${(await v1Tabs()).join(' / ')}`
     )
     check(
-      (await grep(/^按鈕 Refresh all repositories/)) === '',
+      (await grep(UI_RE.button(UI_TEXT.refreshAll))) === '',
       'diff 開啟後跳出了 folder 面板(workspace 可能切走)'
     )
     const row = await rowIn(SEC_CH, /^text unstaged-mod\.ts src/)

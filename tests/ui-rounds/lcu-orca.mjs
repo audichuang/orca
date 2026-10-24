@@ -8,6 +8,7 @@ globalThis.ax = async () => await app.getAXState({ disableDiffing: true, emit: f
 const map = await import(`${new URL('./ui-map.mjs', import.meta.url).href}?t=${Date.now()}`)
 globalThis.UI_RE = map.RE
 globalThis.UI_MAP = map
+globalThis.UI_TEXT = map.UI_TEXT
 globalThis.esc = map.esc
 globalThis.sectionOf = (re) => (typeof re === 'string' ? re : map.sectionNameOf(re))
 globalThis.openRepoName = async () => map.openRepoName(await lines())
