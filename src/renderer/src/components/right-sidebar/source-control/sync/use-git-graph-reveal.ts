@@ -2,7 +2,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { GitHistoryResult } from '../../../../../../shared/git-history'
 import { GIT_HISTORY_GRAPH_MAX_LIMIT } from '../../../../../../shared/git-history-graph-query-types'
-import { getGitHistoryGraphFilter, updateGitHistoryGraphFilter } from './git-history-graph-filter'
+import { toast } from 'sonner'
+import { translate } from '@/i18n/i18n'
+import {
+  getGitHistoryGraphFilter,
+  isGitHistoryGraphFiltered,
+  parseGitHistoryGraphQuery,
+  updateGitHistoryGraphFilter
+} from './git-history-graph-filter'
+import { resetGitHistoryGraphFilterToDefault } from './git-history-graph-query-tokens'
 
 export type GitGraphRevealTarget = {
   commitId: string
@@ -90,28 +98,75 @@ type GitGraphHostReveal = Pick<GitGraphRevealOptions, 'request' | 'onHandled'>
  * Adds the view's own reveals (a fold arrow toward a commit past the loaded page) to the host's.
  * The host's request goes first; the view's waits behind it.
  */
-export function useGitGraphViewReveal(host: GitGraphHostReveal | undefined): {
+export function useGitGraphViewReveal(
+  host: GitGraphHostReveal | undefined,
+  filterKey: string
+): {
   reveal: GitGraphHostReveal
   revealCommit: (commitId: string) => void
 } {
   const [local, setLocal] = useState<GitGraphRevealTarget | null>(null)
   // Why negative: host nonces count up from 1, and the reveal hook skips a nonce it already handled.
   const nextNonceRef = useRef(-1)
-  const revealCommit = useCallback((commitId: string) => {
-    setLocal({ commitId, nonce: nextNonceRef.current--, focus: true })
+  const request = useCallback((commitId: string, afterReload: boolean) => {
+    setLocal({ commitId, nonce: nextNonceRef.current--, focus: true, afterReload })
   }, [])
+  const notifyMissing = useCallback(
+    (commitId: string) => {
+      const filtered = isGitHistoryGraphFiltered(getGitHistoryGraphFilter(filterKey), filterKey)
+      toast.info(
+        translate(
+          'auto.components.gitGraphTab.revealNotLoaded',
+          'That commit is not in the loaded history.'
+        ),
+        filtered
+          ? {
+              action: {
+                label: translate(
+                  'auto.components.right.sidebar.GitHistoryGraph.clearAllFilters',
+                  'Clear filters'
+                ),
+                onClick: () => {
+                  resetGitHistoryGraphFilterToDefault(filterKey)
+                  request(commitId, true)
+                }
+              }
+            }
+          : undefined
+      )
+    },
+    [filterKey, request]
+  )
+  const revealCommit = useCallback(
+    (commitId: string) => {
+      // Why not load: a search drops commits but not their parent links, so the far end may never list.
+      const search = parseGitHistoryGraphQuery(getGitHistoryGraphFilter(filterKey).query)
+      if (Object.keys(search).length > 0) {
+        notifyMissing(commitId)
+        return
+      }
+      request(commitId, false)
+    },
+    [filterKey, notifyMissing, request]
+  )
   const hostOnHandled = host?.onHandled
   const onHandled = useCallback(
     (nonce: number, found: boolean) => {
-      if (nonce < 0) {
-        setLocal((current) => (current?.nonce === nonce ? null : current))
+      if (nonce >= 0) {
+        hostOnHandled?.(nonce, found)
         return
       }
-      hostOnHandled?.(nonce, found)
+      if (local?.nonce !== nonce) {
+        return
+      }
+      setLocal(null)
+      if (!found) {
+        notifyMissing(local.commitId)
+      }
     },
-    [hostOnHandled]
+    [hostOnHandled, local, notifyMissing]
   )
-  const request = host?.request ?? local
-  const reveal = useMemo(() => ({ request, onHandled }), [request, onHandled])
+  const shown = host?.request ?? local
+  const reveal = useMemo(() => ({ request: shown, onHandled }), [shown, onHandled])
   return { reveal, revealCommit }
 }
