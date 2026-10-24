@@ -16,7 +16,7 @@ import {
   shouldOpenSourceControlRowAsPreview,
   type SourceControlRowOpenEvent
 } from '../listing/split-open'
-import type { GitHistoryCommitAction } from './git-history-commit-context-menu'
+import type { GitHistoryForkCommitAction } from './git-history-commit-fork-menu'
 import { openWorkspaceBrowserTab } from '@/lib/workspace-browser-tab-open'
 import { copyHistoryCommitsFullSource } from './git-history-commit-copy'
 import { explainCommitWithDefaultAgent } from './git-history-commit-explain'
@@ -187,7 +187,7 @@ export function useGitHistoryCommitActions({
   }, [])
 
   const handleCommitAction = useCallback(
-    (action: GitHistoryCommitAction, item: GitHistoryItem, selectedItems): void => {
+    (action: GitHistoryForkCommitAction, item: GitHistoryItem, selectedItems): void => {
       if (action === 'copy-full-source') {
         if (activeWorktreeId && worktreePath) {
           void copyHistoryCommitsFullSource({
