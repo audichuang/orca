@@ -13,7 +13,7 @@ import {
 import { GitHistoryRow } from './git-history-row'
 import { GitHistoryCommitFiles, type GitHistoryCommitFilesState } from './git-history-commit-files'
 import { commitFileTargets, type OpenCommitFileHandler } from './commit-file-sequence'
-import { GitHistoryCommitContextMenu } from './git-history-commit-context-menu'
+import { GitHistoryCommitForkMenu } from './git-history-commit-fork-menu'
 import { translate } from '@/i18n/i18n'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import {
@@ -382,7 +382,7 @@ export function GitHistoryPanel({
                 {onCommitAction && !isBoundaryNode ? (
                   <ContextMenu>
                     <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
-                    <GitHistoryCommitContextMenu
+                    <GitHistoryCommitForkMenu
                       item={item}
                       selectedCount={selection.itemsFor(item).length}
                       onShowInGraph={slots.onShowCommitInGraph}
