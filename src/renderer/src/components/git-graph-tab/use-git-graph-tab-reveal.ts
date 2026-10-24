@@ -1,12 +1,6 @@
 // Fork-only: feeds a Git Graph tab's pending Show in Git Graph request to the graph for its repo.
 import { useCallback, useMemo } from 'react'
-import { toast } from 'sonner'
-import { translate } from '@/i18n/i18n'
-import {
-  getGitHistoryGraphFilter,
-  isGitHistoryGraphFiltered
-} from '../right-sidebar/source-control/sync/git-history-graph-filter'
-import { resetGitHistoryGraphFilterToDefault } from '../right-sidebar/source-control/sync/git-history-graph-query-tokens'
+import { notifyGitGraphRevealMissing } from '../right-sidebar/source-control/sync/use-git-graph-reveal'
 import {
   consumeGitGraphRevealRequest,
   peekGitGraphRevealRequest,
@@ -32,26 +26,10 @@ export function useGitGraphTabReveal(
         return
       }
       const commitId = request?.nonce === nonce ? request.commitId : null
-      // Why offer Clear: a branch, author or path filter is the usual reason a commit is missing.
-      const filtered = isGitHistoryGraphFiltered(getGitHistoryGraphFilter(filterKey), filterKey)
-      toast.info(
-        translate(
-          'auto.components.gitGraphTab.revealNotLoaded',
-          'That commit is not in the loaded history.'
-        ),
-        filtered && commitId
-          ? {
-              action: {
-                label: translate(
-                  'auto.components.right.sidebar.GitHistoryGraph.clearAllFilters',
-                  'Clear filters'
-                ),
-                onClick: () => {
-                  resetGitHistoryGraphFilterToDefault(filterKey)
-                  requestGitGraphReveal(fileId, repoWorktreeId, commitId, { afterReload: true })
-                }
-              }
-            }
+      notifyGitGraphRevealMissing(
+        filterKey,
+        commitId
+          ? () => requestGitGraphReveal(fileId, repoWorktreeId, commitId, { afterReload: true })
           : undefined
       )
     },
