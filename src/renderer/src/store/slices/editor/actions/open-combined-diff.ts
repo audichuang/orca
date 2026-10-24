@@ -3,7 +3,7 @@ import type { EditorSlice } from '../types/editor-slice'
 import type { OpenFile } from '../types/open-file'
 import { resolveDiffRuntimeEnvironmentId } from '../git/diff-runtime-owner'
 import { toBranchCompareSnapshot, toCommitCompareSnapshot } from '../git/git-status-reconciliation'
-import { getScopedTabIdOwner } from '../git/open-file-git-owner'
+import { getScopedTabIdOwner, resolveOpenGitWorktreeId } from '../git/open-file-git-owner'
 import { openWorkspaceEditorItem } from '../tabs/workspace-editor-item'
 
 export function createOpenCombinedDiff(
@@ -17,9 +17,9 @@ export function createOpenCombinedDiff(
       alternate,
       areaFilter,
       entriesSnapshot,
-      gitWorktreeIdArg
+      forkOptions
     ) => {
-      const gitWorktreeId = gitWorktreeIdArg !== worktreeId ? gitWorktreeIdArg : undefined
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, forkOptions)
       const gitId = gitWorktreeId ?? worktreeId
       const idOwner = getScopedTabIdOwner(worktreeId, gitWorktreeId)
       const id = areaFilter
@@ -115,8 +115,8 @@ export function createOpenCombinedDiff(
       })
       void openWorkspaceEditorItem(get(), id, worktreeId, label, 'diff')
     },
-    openBranchAllDiffs: (worktreeId, worktreePath, compare, alternate, gitWorktreeIdArg) => {
-      const gitWorktreeId = gitWorktreeIdArg !== worktreeId ? gitWorktreeIdArg : undefined
+    openBranchAllDiffs: (worktreeId, worktreePath, compare, alternate, forkOptions) => {
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, forkOptions)
       const gitId = gitWorktreeId ?? worktreeId
       const branchCompare = toBranchCompareSnapshot(compare)
       const id = `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::all-diffs::branch::${compare.baseRef}::${branchCompare.compareVersion}`
@@ -188,9 +188,9 @@ export function createOpenCombinedDiff(
       entries,
       subject,
       message,
-      gitWorktreeIdArg
+      forkOptions
     ) => {
-      const gitWorktreeId = gitWorktreeIdArg !== worktreeId ? gitWorktreeIdArg : undefined
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, forkOptions)
       const gitId = gitWorktreeId ?? worktreeId
       const commitCompare = toCommitCompareSnapshot(compare, subject, message)
       const id = `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::all-diffs::commit::${commitCompare.commitOid}`
