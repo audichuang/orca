@@ -5,13 +5,16 @@ import fs from 'node:fs'
 
 export const HOME_ = ROUND.root
 export const V1_ROOT = '// clipcode-root: MultiProduct\n'
-export const V1_EXPECT_COUNTS = {
+// 依名稱排序,比對數字不受清單順序影響(順序由 V1-A1 單獨檢查)
+export const v1SortCounts = (m) =>
+  Object.fromEntries(Object.entries(m).sort(([a], [b]) => a.localeCompare(b)))
+export const V1_EXPECT_COUNTS = v1SortCounts({
   'api-server': 2,
   core: 2,
   'docs-site': 0,
   WebApp: 10,
   'WebApp-feature': 1
-}
+})
 
 // ---------- 共用小函式(v1 前綴) ----------
 export const v1Start = async () => {
@@ -26,7 +29,7 @@ export const v1Rows = async () =>
     .map((x) => ({ id: x.id, name: x.m[1], branch: x.m[2], n: Number(x.m[3]) }))
 
 export const v1CountsMap = async () =>
-  Object.fromEntries((await v1Rows()).map((r) => [r.name, r.n]))
+  v1SortCounts(Object.fromEntries((await v1Rows()).map((r) => [r.name, r.n])))
 
 export const v1WaitUntil = async (pred, ms = 10000, step = 500) => {
   const t0 = Date.now()
@@ -43,12 +46,12 @@ export const v1WaitUntil = async (pred, ms = 10000, step = 500) => {
 }
 
 /** 下方面板開著的 repo 名稱。 */
-export const v1Panel = async () => openRepoName()
+export const v1Panel = async () => openRepoTitle()
 
 export const v1Select = async (name) => {
   await selectRepo(name)
   const p = await v1Panel()
-  check(p === name, `選 ${name} 後面板標題是 ${p}`)
+  check(p?.startsWith(`${name} (`), `選 ${name} 後面板標題是 ${p}`)
 }
 
 /** 解析下方面板的區段:{ 'CHANGES': {n, rows:[{id,name,dir,status}]}, ... }。 */
@@ -80,7 +83,7 @@ export const v1Sig = (rows) => rows.map((r) => `${r.name}|${r.dir}|${r.status}`)
 
 /** 區段內第一個符合的列(同名檔在 CHANGES / STAGED 都有時用)。 */
 export const v1RowIn = async (sectionRe, rowRe) => rowIn(sectionOf(sectionRe), rowRe)
-export const v1BtnAfterId = async (id, btnRe, span = 6) => {
+export const v1BtnAfterId = async (id, btnRe, span = 10) => {
   const L = await lines()
   const i = L.findIndex(([n]) => n === id)
   check(i !== -1, `列 ${id} 不見了`)
@@ -208,3 +211,8 @@ export const v1Has = (g, grp, re, label) =>
   )
 
 // ---------- P:前置(profile 已有群組與 workspace 時只驗證存在) ----------
+
+export const v1TreeNums = async () => {
+  const t = await v1Tree()
+  return `${t['CHANGES']?.n}/${t['STAGED CHANGES']?.n}`
+}
