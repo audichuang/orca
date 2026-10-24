@@ -3,11 +3,11 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { UI_TEXT } from '../../tests/ui-rounds/ui-map.mjs'
+import { ROLE_ALIASES, UI_TEXT } from '../../tests/ui-rounds/ui-map.mjs'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const ROUNDS = path.join(ROOT, 'tests/ui-rounds')
-const ROLES = '按鈕|彈出式按鈕|核取方塊|圓形按鈕|標題|切換鈕|下拉式方塊|文字欄位|文字項目區域'
+const ROLES = [...new Set(Object.values(ROLE_ALIASES))].join('|')
 // Names the fixture creates (repos, branches, files), not app strings.
 const FIXTURE_NAMES = [
   'MultiProduct',

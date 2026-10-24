@@ -1,11 +1,10 @@
 // SC:Source Control 面板。測案原文見 docs/fork/v2/01-sc.md
-// 約定:需要寫檔/git/重啟 Orca 的步驟放在 scripts/pre/<ID>.sh;中途要改資料的案例拆成 SC-xx.1、.2…
+// 約定:需要寫檔/git/重啟 Orca 的步驟放在 pre/<ID>.sh;中途要改資料的案例拆成 SC-xx.1、.2…
 // 斷言的是測案文件寫的成功條件(commit 7c5edf3e8 修正後的行為),不是舊的錯誤行為。
 export const AGENT_PROMPT =
   'Reply only with the output of pwd. Do not run any other command and do not modify anything.'
 
-// ---------- 共用小工具(建議提升:scWait / scCnt / scSec / scRowId / scRowBtn / scDlg / scConfirm) ----------
-export const esc = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')
+// ---------- 共用小工具 ----------
 export const blocked = (msg) => {
   throw new Error(msg)
 } // 非 CaseFail → runner 記 BLOCKED
@@ -15,25 +14,10 @@ export const need = (v, msg) => {
   }
   return v
 }
-export const scWait = async (fn, ms = 8000, step = 300) => {
-  const t0 = Date.now()
-  for (;;) {
-    const v = await fn()
-    if (v) {
-      return v
-    }
-    if (Date.now() - t0 > ms) {
-      return null
-    }
-    await sleep(step)
-  }
-}
 export const scStart = async () => {
   await closeAll()
-  await openMP()
   return await ensure5()
 }
-export const scSel = async (name) => selectRepo(name)
 export const scCnt = async (name) => {
   const m = (await counts()).match(new RegExp(`按鈕 ${esc(name)} \\([^)]*\\) (\\d+)`))
   return m ? Number(m[1]) : null
@@ -121,7 +105,6 @@ export const scMainRow = async (project) => {
   throw new Error(`左側欄 ${project} 底下找不到 main 工作區`)
 }
 export const scPanelTitle = async () => (await openRepoName()) ?? '?'
-export const scGoWs = async (name) => openMP(name)
 export const scShell = (cmd) => sh(cmd, { allowFail: true })
 export const scGrepC = (pat, file) =>
   Number(scShell(`grep -c ${pat} ${file}`).trim().split('\n')[0] || 0) // grep -c 沒命中時印 0
@@ -142,7 +125,6 @@ export const scSettingsBack = async () => {
   await (b.length ? app.click(b[0]) : app.pressKey('Escape'))
   await sleep(1000)
 }
-export const scAutoSave = (on, delay) => setAutoSave(on, delay)
 
 // Choose agent → Customize launch… / Resolve with AI 之後的「Review the prompt」對話框:改成 pwd 提示、不儲存 → 啟動
 export const scAgentDialog = async () => {
