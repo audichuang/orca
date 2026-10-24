@@ -44,17 +44,30 @@ export function useSourceControlActionAgentChoice(args: {
   /** This open's deliberate pick; absent replays the saved recipe. */
   livePick: AgentLaunchSurface | undefined
   settings: GlobalSettings | null
+  // A folder repo's launch directory; chat rows are judged there, not at the folder root.
+  initialCwd?: string | null
 }) {
   const { recipe, settings } = args
   const worktreeDetectionTarget = useAgentDetectionTargetForWorktree(args.worktreeId ?? null)
   const rows = useMemo(
     () =>
       args.worktreeId
-        ? { target: args.worktreeId, detectionTarget: worktreeDetectionTarget }
+        ? {
+            target: args.initialCwd
+              ? {
+                  workspace: {
+                    worktreeId: args.worktreeId,
+                    kind: workspaceKindForWorktreeId(args.worktreeId)
+                  },
+                  launchCwd: args.initialCwd
+                }
+              : args.worktreeId,
+            detectionTarget: worktreeDetectionTarget
+          }
         : args.repoId
           ? sourceControlRepoAgentRows(args.repo)
           : NO_PROJECT_ROWS,
-    [args.worktreeId, args.repoId, args.repo, worktreeDetectionTarget]
+    [args.worktreeId, args.initialCwd, args.repoId, args.repo, worktreeDetectionTarget]
   )
   const observation = useAgentMenuObservation(rows.target, args.open, rows.detectionTarget)
   const { detectedIds, detectionFailed, needsServerUpdate } = observation.detection
