@@ -5,10 +5,7 @@ export const ROOT = '// clipcode-root: MultiProduct\n'
 export const rowInSection = async (sectionRe, rowRe) => rowIn(sectionOf(sectionRe), rowRe)
 
 // ---- CC-03 起 ----
-export const ccNote = async () =>
-  (await grep(
-    /Git file\(s\)|No Git changes|Nothing to copy|could not be read|Over \d|Created \d|failed|No Snipcode|Clipboard is empty|not included/
-  )) || 'none'
+export const ccNote = async () => note()
 // 大檔複製要好幾秒才出通知,輪詢到出現為止
 export const ccWaitNote = async (ms = 8000) => {
   for (let t = 0; t < ms; t += 300) {

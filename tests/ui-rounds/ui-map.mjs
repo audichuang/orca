@@ -120,3 +120,36 @@ export function rowIndexIn(lines, name, rowRe) {
   const i = lines.slice(r[0] + 1, r[1]).findIndex(([, t]) => rowRe.test(t))
   return i === -1 ? -1 : r[0] + 1 + i
 }
+
+const NOTE_TITLE =
+  /Git file\(s\)|No Git changes|Nothing to copy|could not be read|Over \d|Created \d|failed|No Snipcode|Clipboard is empty|not included/
+
+/**
+ * A toast as one line in the form stats.py prints: "<title>. 181 chars · 16 lines · 24 words · ~28 tokens."
+ * The toast shows the same numbers on separate lines, tokens first; extra lines (skipped files) follow.
+ */
+export function toastNote(lines) {
+  const at = lines.findIndex(([, t]) => /^(文字|text) /.test(t) && NOTE_TITLE.test(t))
+  if (at === -1) {
+    return null
+  }
+  const title = lines[at][1].replace(/^(文字|text) /, '')
+  const rest = []
+  for (const [, t] of lines.slice(at + 1)) {
+    if (!/^(文字|text) /.test(t)) {
+      break
+    }
+    rest.push(t.replace(/^(文字|text) /, '').trim())
+  }
+  const joined = rest.join(' ')
+  const num = (re) => re.exec(joined)?.[1]
+  const tokens = num(/~([\d,]+) tokens/)
+  const stats = tokens
+    ? ` ${num(/([\d,]+) chars/)} chars · ${num(/([\d,]+) lines/)} lines · ${num(/([\d,]+) words/)} words · ~${tokens} tokens.`
+    : ''
+  const extra = joined
+    .replace(/~?[\d,]+ (tokens|lines|chars|words)/g, '')
+    .replace(/[·\s]+/g, ' ')
+    .trim()
+  return `${title}${stats ? `.${stats}` : ''}${extra ? ` ${extra}` : ''}`
+}
