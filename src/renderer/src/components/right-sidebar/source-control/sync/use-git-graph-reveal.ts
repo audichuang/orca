@@ -7,7 +7,6 @@ import { translate } from '@/i18n/i18n'
 import {
   getGitHistoryGraphFilter,
   isGitHistoryGraphFiltered,
-  parseGitHistoryGraphQuery,
   updateGitHistoryGraphFilter
 } from './git-history-graph-filter'
 import { resetGitHistoryGraphFilterToDefault } from './git-history-graph-query-tokens'
@@ -92,6 +91,32 @@ export function useGitGraphReveal(
   return request !== null
 }
 
+/** Tells the user a revealed commit is not in the loaded history; offers Clear filters when a retry can follow. */
+export function notifyGitGraphRevealMissing(filterKey: string, retry?: () => void): void {
+  // Why offer Clear: a branch, author or path filter is the usual reason a commit is missing.
+  const filtered = isGitHistoryGraphFiltered(getGitHistoryGraphFilter(filterKey), filterKey)
+  toast.info(
+    translate(
+      'auto.components.gitGraphTab.revealNotLoaded',
+      'That commit is not in the loaded history.'
+    ),
+    filtered && retry
+      ? {
+          action: {
+            label: translate(
+              'auto.components.right.sidebar.GitHistoryGraph.clearAllFilters',
+              'Clear filters'
+            ),
+            onClick: () => {
+              resetGitHistoryGraphFilterToDefault(filterKey)
+              retry()
+            }
+          }
+        }
+      : undefined
+  )
+}
+
 type GitGraphHostReveal = Pick<GitGraphRevealOptions, 'request' | 'onHandled'>
 
 /**
@@ -112,43 +137,10 @@ export function useGitGraphViewReveal(
     setLocal({ commitId, nonce: nextNonceRef.current--, focus: true, afterReload })
   }, [])
   const notifyMissing = useCallback(
-    (commitId: string) => {
-      const filtered = isGitHistoryGraphFiltered(getGitHistoryGraphFilter(filterKey), filterKey)
-      toast.info(
-        translate(
-          'auto.components.gitGraphTab.revealNotLoaded',
-          'That commit is not in the loaded history.'
-        ),
-        filtered
-          ? {
-              action: {
-                label: translate(
-                  'auto.components.right.sidebar.GitHistoryGraph.clearAllFilters',
-                  'Clear filters'
-                ),
-                onClick: () => {
-                  resetGitHistoryGraphFilterToDefault(filterKey)
-                  request(commitId, true)
-                }
-              }
-            }
-          : undefined
-      )
-    },
+    (commitId: string) => notifyGitGraphRevealMissing(filterKey, () => request(commitId, true)),
     [filterKey, request]
   )
-  const revealCommit = useCallback(
-    (commitId: string) => {
-      // Why not load: a search drops commits but not their parent links, so the far end may never list.
-      const search = parseGitHistoryGraphQuery(getGitHistoryGraphFilter(filterKey).query)
-      if (Object.keys(search).length > 0) {
-        notifyMissing(commitId)
-        return
-      }
-      request(commitId, false)
-    },
-    [filterKey, notifyMissing, request]
-  )
+  const revealCommit = useCallback((commitId: string) => request(commitId, false), [request])
   const hostOnHandled = host?.onHandled
   const onHandled = useCallback(
     (nonce: number, found: boolean) => {
