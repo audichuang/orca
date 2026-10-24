@@ -51,8 +51,7 @@ describe("'git:diff' IPC (fork skipRenderLimit)", () => {
       'a.ts',
       true,
       undefined,
-      expect.anything(),
-      true
+      expect.objectContaining({ admissionTier: 'interactive', skipRenderLimit: true })
     )
   })
 
@@ -61,6 +60,6 @@ describe("'git:diff' IPC (fork skipRenderLimit)", () => {
       {},
       { worktreePath: '/repo', filePath: 'a.ts', staged: true }
     )
-    expect(mocks.getDiff.mock.lastCall?.[5]).not.toBe(true)
+    expect(mocks.getDiff.mock.lastCall?.[4]?.skipRenderLimit).not.toBe(true)
   })
 })
