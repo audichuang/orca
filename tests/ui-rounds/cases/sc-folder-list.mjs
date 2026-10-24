@@ -1,14 +1,10 @@
 const {
-  esc,
   need,
-  scWait,
   scStart,
-  scSel,
   scCnt,
   scRowBtn,
   scDlg,
   scPanelTitle,
-  scGoWs,
   scShell,
   scCloseOtherLocations,
   scOtherLocations,
@@ -124,7 +120,7 @@ defineCase('SC-20', {
       await sleep(1500)
       await openMP()
       await sleep(1500)
-      const c = await scWait(async () => {
+      const c = await waitFor(async () => {
         const x = await counts()
         return /unimported \(main\) 1/.test(x) ? x : null
       }, 8000)
@@ -180,18 +176,18 @@ defineCase('SC-21', {
       checkRe(c2, /solo \(main\) 1/, '第 2 步 solo')
       check(c2.split('\n').length === 2, `第 2 步應 2 列:${c2}`)
       checkRe(await scPanelTitle(), /solo/, '預設選取應為 solo')
-      await scGoWs('MultiProduct')
+      await openMP('MultiProduct')
       await app.click(await find(/^按鈕 Refresh all repositories/))
       await sleep(3500)
       const mp = await counts()
       checkRe(mp, /duo \(main\) 0/, 'MultiProduct 清單 duo')
       checkRe(mp, /solo \(main\) 1/, 'MultiProduct 清單 solo')
       // 3. 移除 duo
-      await scGoWs('zero')
-      await scSel('duo')
+      await openMP('zero')
+      await selectRepo('duo')
       await removeProj('duo')
       await sleep(1000)
-      await scGoWs('zero')
+      await openMP('zero')
       const c3 = await counts()
       check(c3.split('\n').length === 1 && /solo/.test(c3), `第 3 步後應只剩 solo:${c3}`)
       checkRe(await scPanelTitle(), /solo/, '第 3 步選取應落到 solo')
@@ -304,17 +300,17 @@ defineCase('SC-23', {
       checkEq(await scCnt('docs-site'), 2, '第 1 步 docs-site')
       checkEq(await scCnt('inner'), 1, '第 1 步 inner')
       // 2. 選 inner,點 index.md
-      await scSel('inner')
+      await selectRepo('inner')
       await app.click(await find(/^text index\.md/), { clickCount: 2 })
       await sleep(1800)
       check(await grep(/^sortable index\.md/), '第 2 步沒有 index.md 分頁')
       await evidenceShot() // 內容應為 +inner change
       // 3. 切到 docs-site 看 index.md 列(「目前開啟」高亮只是 CSS class,AX 讀不到)
-      await scSel('docs-site')
+      await selectRepo('docs-site')
       await sleep(600)
       await evidenceShot()
       // 4. 在編輯分頁(Source 模式)刪掉 inner change 並存檔
-      await scSel('inner')
+      await selectRepo('inner')
       const src = (await lines()).find(([, t]) => t.startsWith('圓形按鈕 Description: Source'))
       need(src, '找不到 Source 模式切換')
       await app.click(src[0])
@@ -326,12 +322,12 @@ defineCase('SC-23', {
       await app.typeText('inner\n')
       await app.pressKey('cmd+s')
       const t0 = Date.now()
-      const ok = await scWait(async () => /inner \(main\) 0/.test(await counts()), 20000, 300)
+      const ok = await waitFor(async () => /inner \(main\) 0/.test(await counts()), 20000, 300)
       check(ok, `存檔後 inner 沒有在 20 秒內變 0:${await counts()}`)
       const sec = (Date.now() - t0) / 1000
       checkEq(await scCnt('docs-site'), 2, '第 4 步後 docs-site')
       // 5. docs-site 的 plugins/ 列刪除對話框(只看、Cancel)
-      await scSel('docs-site')
+      await selectRepo('docs-site')
       await app.click(await scRowBtn(UT, /^text inner plugins/, /^按鈕 Delete untracked file/))
       await sleep(1000)
       const d = await scDlg()
@@ -378,7 +374,7 @@ defineCase('SC-24.2', {
   mutates: true,
   run: async () => {
     const t0 = Date.now()
-    const ok = await scWait(async () => (await scCnt('core')) === 3, 30000, 500)
+    const ok = await waitFor(async () => (await scCnt('core')) === 3, 30000, 500)
     check(ok, `core 沒有在 30 秒內 2→3:${await counts()}`)
     return `core 2→3 用了 ${(Date.now() - t0) / 1000}s(本步驟開始前已過 pre 的等待)`
   }
@@ -409,14 +405,14 @@ defineCase('SC-25', {
       need(y, '沒有「Yes, import as group」')
       await app.click(y[0])
       await sleep(5000)
-      await scGoWs('MultiProduct')
+      await openMP('MultiProduct')
       await app.click(await find(/^按鈕 Refresh all repositories/))
       const t0 = Date.now()
       const all = async () => {
         const c = (await lines()).filter(([, t]) => /^按鈕 r\d\d \(main\) \d/.test(t))
         return c.length === 20 && c.every(([, t]) => t.endsWith(' 1'))
       }
-      const ok = await scWait(all, 60000, 500)
+      const ok = await waitFor(all, 60000, 500)
       const secs = (Date.now() - t0) / 1000
       check(ok, `20 個 r?? 沒有在 60 秒內都變 1`)
       await evidenceShot() // 清單高度(最多約 40%)、下方面板與 commit 按鈕需看截圖

@@ -1,5 +1,4 @@
 const {
-  edShot,
   edRead,
   edTabNames,
   edClickTab,
@@ -7,15 +6,12 @@ const {
   edHasMode,
   edType,
   edStart,
-  edRepo,
-  edRowIn,
   edDbl,
   edViewAll,
   edOpenInEditor,
   edQ1,
   edIdOf,
   edQ1Row,
-  edAutoSave,
   edConflictRowRe
 } = await import(
   new URL(`./ed-editor-actions.mjs${new URL(import.meta.url).search}`, import.meta.url).href
@@ -30,18 +26,18 @@ defineCase('ED-01', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edDbl(/^text unstaged-mod\.ts src/)
-    await edRepo('WebApp-feature')
+    await selectRepo('WebApp-feature')
     await edDbl(/^text unstaged-mod\.ts src/)
     let n = (await edTabNames()).filter((x) => x.startsWith('unstaged-mod.ts (diff)'))
     checkEq(n.length, 2, '第 2 步後 unstaged-mod.ts diff 分頁數')
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await app.click(await find(/^text unstaged-mod\.ts src/))
     await sleep(1500)
     n = (await edTabNames()).filter((x) => x.startsWith('unstaged-mod.ts (diff)'))
     checkEq(n.length, 2, '第 3 步(單擊回 WebApp)後 unstaged-mod.ts diff 分頁數')
-    await edShot()
+    await evidenceShot()
     return '2 個 unstaged-mod.ts (diff) 分頁,第 3 步沒有新增 [需看截圖:WebApp 分頁 +unstaged-edit、feature 分頁 +feature change]'
   }
 })
@@ -51,9 +47,9 @@ defineCase('ED-02.1', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edDbl(/^text unstaged-mod\.ts src/)
-    await edRepo('WebApp-feature')
+    await selectRepo('WebApp-feature')
     await edDbl(/^text unstaged-mod\.ts src/)
     checkEq(
       (await edTabNames()).filter((x) => x.startsWith('unstaged-mod.ts (diff)')).length,
@@ -73,7 +69,7 @@ defineCase('ED-02.2', {
     const t0 = Date.now()
     await edClickTab(/^unstaged-mod\.ts \(diff\)/, 1)
     await sleep(1500)
-    await edShot()
+    await evidenceShot()
     const feat = edRead('WebApp-feature/src/unstaged-mod.ts')
     check(/ext-feature/.test(feat), '磁碟上 feature 檔沒有 ext-feature(pre 沒跑?)')
     return `已切到 feature 分頁(${((Date.now() - t0) / 1000).toFixed(1)}s) [需看截圖:feature 分頁要有 +ext-feature]`
@@ -86,10 +82,10 @@ defineCase('ED-02.3', {
   run: async () => {
     const t0 = Date.now()
     await sleep(4000)
-    await edShot() // 還在 feature 分頁:不應有 ext-webapp
+    await evidenceShot() // 還在 feature 分頁:不應有 ext-webapp
     await edClickTab(/^unstaged-mod\.ts \(diff\)/, 0)
     await sleep(1500)
-    await edShot() // WebApp 分頁:要有 ext-webapp,不需重開
+    await evidenceShot() // WebApp 分頁:要有 ext-webapp,不需重開
     check(
       /ext-webapp/.test(edRead('WebApp/src/unstaged-mod.ts')),
       '磁碟上 WebApp 檔沒有 ext-webapp'
@@ -112,12 +108,12 @@ defineCase('ED-04', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edDbl(/^text deleted-unstaged\.ts/, 1800)
     const d = await grep(/Open file/)
     checkRe(d, /disabled/, 'deleted-unstaged 的 Open file 應停用')
-    await edShot()
-    await app.click(await edRowIn(/^按鈕 STAGED CHANGES \d/, /^text staged-mod\.ts/), {
+    await evidenceShot()
+    await app.click(await rowIn(/^按鈕 STAGED CHANGES \d/, /^text staged-mod\.ts/), {
       clickCount: 2
     })
     await sleep(1800)
@@ -133,7 +129,7 @@ defineCase('ED-05.1', {
   mutates: true,
   run: async () => {
     await edStart()
-    await edRepo('docs-site')
+    await selectRepo('docs-site')
     checkRe(await grep(/Merge conflicts/), /2 unresolved|unresolved/i, 'docs-site 應有未解決衝突')
     await edDbl(edConflictRowRe, 2000)
     checkRe(await grep(/^sortable index/), /index\.md/, '第 1 步 edit 分頁')
@@ -181,7 +177,7 @@ defineCase('ED-06.1', {
   mutates: true,
   run: async () => {
     await edStart()
-    await edRepo('docs-site')
+    await selectRepo('docs-site')
     await app.click(await find(/^按鈕 Review conflicts/))
     await sleep(2500)
     check((await edTabNames()).includes('Conflict Review'), '分頁標題 Conflict Review')
@@ -200,7 +196,7 @@ defineCase('ED-06.1', {
     await sleep(2500)
     check(!(await grep(/Loading conflict contents/)), '第 4 步 Refresh 後卡在 Loading')
     check(await grep(/^按鈕 README\.md Unresolved/), '第 4 步 Refresh 後清單不見 README.md')
-    await edShot()
+    await evidenceShot()
     return `清單 README.md(Both added)/index.md 皆在,內容載完,可編輯;banner: ${b.replace(/^\d+ /, '')}`
   }
 })
@@ -234,9 +230,9 @@ defineCase('ED-07', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edViewAll(/^按鈕 CHANGES \d/, 2000)
-    await edRepo('api-server')
+    await selectRepo('api-server')
     await edViewAll(/^按鈕 CHANGES \d/, 2500)
     checkEq((await edTabNames()).filter((x) => x === 'Changes').length, 2, '標題 Changes 的分頁數')
     const api = await grep(/changed files/)
@@ -254,10 +250,10 @@ defineCase('ED-07', {
     const web = await grep(/changed files/)
     // 6:CHANGES 含未追蹤的 Widget.tsx(10-21 起)
     checkRe(web, /\b6 changed files/, 'WebApp combined')
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edViewAll(/^按鈕 STAGED CHANGES/, 2200)
     check((await edTabNames()).includes('Staged Changes'), '第 4 步沒有 Staged Changes 分頁')
-    await edShot()
+    await evidenceShot()
     const rows = await edQ1()
     const r = edQ1Row(rows, 'api-server/server.ts')
     check(
@@ -273,12 +269,12 @@ defineCase('ED-08.1', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edViewAll(/^按鈕 CHANGES \d/, 2500)
     check((await edTabNames()).includes('Changes'), '沒有 Changes 分頁')
     await app.scroll([900, 600], 'down', 10)
     await sleep(1000)
-    await edShot()
+    await evidenceShot()
     return 'WebApp Changes 已開並捲到 unstaged-mod 區段附近(截圖);下一段 pre 會 append ext-combined 並記時間'
   }
 })
@@ -292,7 +288,7 @@ defineCase('ED-08.2', {
     const shots = []
     for (const at of [5, 15, 30]) {
       await sleep(Math.max(0, at * 1000 - (Date.now() - t0)))
-      await edShot()
+      await evidenceShot()
       shots.push(at)
     }
     check(
@@ -309,14 +305,14 @@ defineCase('ED-10', {
   mutates: true,
   run: async () => {
     await edStart()
-    await edRepo('WebApp-feature')
+    await selectRepo('WebApp-feature')
     if (!(await grep(/^按鈕 COMMITTED ON BRANCH/))) {
       if (await grep(/unavailable/i)) {
         throw new Error('CompareUnavailable(BLOCKED)')
       }
       check(false, 'WebApp-feature 沒有 COMMITTED ON BRANCH 區段')
     }
-    await app.click(await edRowIn(/^按鈕 COMMITTED ON BRANCH/, /^text staged-mod\.ts/), {
+    await app.click(await rowIn(/^按鈕 COMMITTED ON BRANCH/, /^text staged-mod\.ts/), {
       clickCount: 2
     })
     await sleep(1800)
@@ -324,7 +320,7 @@ defineCase('ED-10', {
       (await edTabNames()).some((x) => x.startsWith('staged-mod.ts (branch diff)')),
       '沒有 staged-mod.ts (branch diff) 分頁'
     )
-    await edShot()
+    await evidenceShot()
     await edViewAll(/^按鈕 COMMITTED ON BRANCH/, 2200)
     const info = await grep(/changed files/)
     checkRe(info, /\b1 changed files\s+vs \S+/, '區段摘要')
@@ -332,8 +328,8 @@ defineCase('ED-10', {
       (await edTabNames()).some((x) => /^Branch Changes \(\S+\)/.test(x)),
       'View all 標題應為 Branch Changes (<base>)'
     )
-    await edShot()
-    await edRepo('WebApp')
+    await evidenceShot()
+    await selectRepo('WebApp')
     check(
       !(await grep(/^按鈕 COMMITTED ON BRANCH/)),
       'WebApp (main) 不該有 COMMITTED ON BRANCH 區段'
@@ -347,9 +343,9 @@ defineCase('ED-11.1', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edAutoSave(false)
+    await setAutoSave(false)
     await openMP()
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edDbl(/^text README\.md/, 2000)
     if (await edHasMode('Source')) {
       await edMode('Source')
@@ -383,7 +379,7 @@ defineCase('ED-11.2', {
       /Disk version on the left, your unsaved edits on the right/,
       '對話框說明'
     )
-    await edShot()
+    await evidenceShot()
     const ks = await findAll(/^按鈕 Keep My Edits/)
     await app.click(ks.at(-1))
     await sleep(800)
