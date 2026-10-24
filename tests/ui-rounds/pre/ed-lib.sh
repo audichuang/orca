@@ -22,7 +22,8 @@ ed_kill() { app_kill; }
 # 之後 lcu 要先重新 getApp
 ed_start() { app_start; }
 
-ed_q1_snapshot() { sleep 6; bash "$UIR/q1.sh" > "$1"; }
+# 只記 edit 分頁:diff 分頁重啟後不還原
+ed_q1_snapshot() { sleep 6; bash "$UIR/q1.sh" | grep -v ' | diff$' > "$1" || true; }
 
 # 改 session:mode = strip(剝掉 gitWorktreeId)或 invalid(指到不存在的 repo);先備份到 ed-ss-backup.db。要在 Orca 停止後呼叫
 ed_session_edit() {
