@@ -26,7 +26,7 @@ describe('git.diff skipRenderLimit (fork: ClipCode full index text)', () => {
     expect(parsed.skipRenderLimit).toBe(true)
   })
 
-  it('forwards it to runtime.getRuntimeGitDiff as the 6th argument', async () => {
+  it("forwards it in runtime.getRuntimeGitDiff's read options", async () => {
     const getRuntimeGitDiff = vi.fn().mockResolvedValue(diffResult)
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: only the two methods the handler calls.
     const runtime = { getRuntimeId: () => 'rt', getRuntimeGitDiff } as unknown as OrcaRuntimeService
@@ -37,13 +37,8 @@ describe('git.diff skipRenderLimit (fork: ClipCode full index text)', () => {
       method: 'git.diff',
       params: { worktree: 'id:wt-1', filePath: 'a.ts', staged: true, skipRenderLimit: true }
     })
-    expect(getRuntimeGitDiff).toHaveBeenCalledWith(
-      'id:wt-1',
-      'a.ts',
-      true,
-      undefined,
-      undefined,
-      true
-    )
+    expect(getRuntimeGitDiff).toHaveBeenCalledWith('id:wt-1', 'a.ts', true, undefined, undefined, {
+      skipRenderLimit: true
+    })
   })
 })
