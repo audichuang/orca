@@ -133,7 +133,8 @@ defineCase('ED-15.2', {
     await edClickTab(/^README\.md/)
     const n = await edTabNames()
     check(
-      n.some((x) => /^README\.md.* deleted/.test(x)),
+      // 10-21 起分頁以狀態字母 D 標示,之前是文字 deleted
+      n.some((x) => /^README\.md.*( deleted| D$)/.test(x)),
       `README 分頁應標 deleted:${n.join(' / ')}`
     )
     sh('test ! -e "$P/WebApp/README.md" && test -e "$P/WebApp/README-moved.md"')
