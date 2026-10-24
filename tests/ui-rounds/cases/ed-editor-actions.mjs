@@ -85,6 +85,20 @@ export const edOpenInEditor = async (fileRe) => {
   }
   throw new Error(`區段 ${fileRe} 附近沒有 Open in editor`)
 }
+// 用 Go to file(Cmd+P)依路徑開檔案(edit)分頁;10-21 起 Source Control 雙擊開的是 diff 分頁,
+// Explorer 樹裡同名檔多時又分不清屬於哪個資料夾
+export const edOpenFile = async (path) => {
+  await app.pressKey('cmd+p')
+  await sleep(800)
+  await app.typeText(path)
+  await sleep(1200)
+  const base = path.split('/').pop()
+  const dir = path.slice(0, -base.length)
+  const sel = await grep(new RegExp(`^\\(selected\\) ${edEsc(base)} ${edEsc(dir)}$`))
+  check(sel, `Go to file 沒選到 ${path}`)
+  await app.pressKey('Return')
+  await sleep(1300)
+}
 // 左側欄某專案的 main workspace 列
 export const edWsRow = async (proj) => {
   const L = await lines()
