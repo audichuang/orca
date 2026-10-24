@@ -32,24 +32,33 @@ cleanup() {
       git -C "$root" worktree remove --force "$wt" >/dev/null 2>&1 || echo "fork-canary: could not remove $wt; run git worktree remove --force $wt" >&2
     fi
   fi
-  [ -z "$lock_owned" ] || rm -rf "$lock"
+  [ -z "$lock_owned" ] || [ "$(readlink "$lock")" != $$ ] || rm -f "$lock"
 }
 trap cleanup EXIT
 
 root=$(git rev-parse --show-toplevel) || die "not in a git checkout"
 cd "$root" || die "cannot cd to $root"
 # Why a lock in the common git dir: every checkout of this repo shares the default CANARY_DIR.
-lock="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)/fork-canary.lock"
-if ! mkdir "$lock" 2>/dev/null; then
-  holder=$(cat "$lock/pid" 2>/dev/null)
+# Why a symlink: its target is the holder's pid, created atomically, so no reader sees a lock without a pid.
+common="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)" || die "cannot resolve the common git dir"
+lock="$common/fork-canary.lock"
+if ! ln -s $$ "$lock" 2>/dev/null; then
+  holder=$(readlink "$lock")
   if [ -n "$holder" ] && kill -0 "$holder" 2>/dev/null; then
     die "another fork-canary (pid $holder) is running; lock $lock"
   fi
-  echo ">> taking over stale lock $lock (pid ${holder:-unknown})"
-  rm -rf "$lock" && mkdir "$lock" || die "cannot take over lock $lock"
+  # Why a second lock for takeover: two runs that both saw the stale pid must not both remove and recreate the lock.
+  mkdir "$lock.takeover" 2>/dev/null || die "another fork-canary is taking over $lock; if none runs, remove $lock.takeover"
+  if [ "$(readlink "$lock")" = "$holder" ]; then
+    echo ">> taking over stale lock $lock (pid ${holder:-none})"
+    rm -f "$lock"
+  fi
+  ln -s $$ "$lock" 2>/dev/null
+  taken=$?
+  rmdir "$lock.takeover"
+  [ "$taken" -eq 0 ] || die "another fork-canary (pid $(readlink "$lock")) took the lock $lock"
 fi
 lock_owned=1
-echo $$ >"$lock/pid"
 
 # Why after the lock: a run refused by the lock must not delete the running one's report.
 report_path=${CANARY_REPORT:-$root/out/fork-canary-report.md}
@@ -77,7 +86,23 @@ wt="$(cd "$(dirname "$wt")" && pwd -P)/$(basename "$wt")"
 mkdir -p "$logs" || die "cannot create $logs"
 rm -f "$logs"/*
 
-if git worktree list --porcelain | grep -qxF "worktree $wt"; then
+# Why the marker: the canary removes only a worktree it created, never someone's work or the invoking checkout.
+owner_marker() {
+  local dir
+  dir=$(git -C "$1" rev-parse --absolute-git-dir 2>/dev/null) && [ -f "$dir/fork-canary-owner" ]
+}
+stale=
+while IFS= read -r other; do
+  if [ "$other" = "$wt" ]; then
+    owner_marker "$other" || die "$wt is a worktree the canary did not create; pass another CANARY_DIR"
+    stale=1
+    continue
+  fi
+  case "$wt/" in "$other/"*) die "$wt is inside the worktree $other; pass another CANARY_DIR" ;; esac
+  case "$other/" in "$wt/"*) die "$wt contains the worktree $other; pass another CANARY_DIR" ;; esac
+done < <(git worktree list --porcelain | sed -n 's/^worktree //p')
+case "$wt/" in "$root/" | "$root/"* | "$common/"*) die "$wt overlaps the invoking checkout or its git dir; pass another CANARY_DIR" ;; esac
+if [ -n "$stale" ]; then
   echo ">> removing stale canary worktree $wt"
   git worktree remove --force "$wt" || die "cannot remove stale $wt"
 elif [ -e "$wt" ]; then
@@ -86,6 +111,7 @@ elif [ -e "$wt" ]; then
 fi
 git worktree add --quiet --detach "$wt" "$upstream_sha" || die "cannot create worktree $wt"
 wt_created=1
+touch "$(git -C "$wt" rev-parse --absolute-git-dir)/fork-canary-owner" || die "cannot mark $wt as the canary's"
 
 echo ">> merging fork $(git rev-parse --short "$fork_sha") into upstream $(git rev-parse --short "$upstream_sha")"
 # Why rerere on: replaying recorded resolutions keeps old conflicts out of the report; nothing is committed, so no new resolution is recorded.
@@ -111,6 +137,7 @@ install_failed=
 install_note=
 tc_failed=
 listing_failed=
+dropped=
 tests_failed=
 # Why HUSKY=0: husky's prepare script would write hooksPath into the shared .git/config.
 pnpm_install() {
@@ -129,7 +156,8 @@ if [ -z "$install_failed" ]; then
   (cd "$wt" && pnpm tc) >"$logs/tc.log" 2>&1 || tc_failed=1
   (cd "$wt" && node config/scripts/fork-test-inventory.mjs list --existing >/dev/null 2>"$logs/seam-list.log")
   # Why the merged tree's script: it collects with the merged tree's runner config and skips files the merge removed.
-  if ! tests=$(cd "$wt" && node config/scripts/fork-test-inventory.mjs fork-changed "$base" "$fork_sha" 2>"$logs/listing.log"); then
+  if ! tests=$(cd "$wt" && node config/scripts/fork-test-inventory.mjs fork-changed "$base" "$fork_sha" 2>"$logs/listing.log") ||
+    ! dropped=$(cd "$wt" && node config/scripts/fork-test-inventory.mjs fork-dropped "$base" "$fork_sha" 2>>"$logs/listing.log"); then
     listing_failed=1
   elif [ -z "$tests" ]; then
     # Why: vitest with no file filter runs the whole suite.
@@ -150,6 +178,7 @@ findings=
 [ -z "$tc_failed" ] || findings="$findings, typecheck errors"
 [ -z "$listing_failed" ] || findings="$findings, test listing failed in the merged tree"
 [ -z "$tests_failed" ] || findings="$findings, failing tests"
+[ -z "$dropped" ] || findings="$findings, fork tests the merged tree no longer runs"
 status=$([ -z "$findings" ] && echo 0 || echo 1)
 
 conflict_note() {
@@ -233,6 +262,12 @@ list_commits() {
     echo "## Test listing failed in the merged tree"
     echo
     log_tail "$logs/listing.log"
+  fi
+  if [ -n "$dropped" ]; then
+    echo
+    echo "## Fork tests the merged tree no longer runs"
+    echo
+    printf '%s\n' "$dropped" | sed 's/^/- `/; s/$/`/'
   fi
   if [ -n "$tests_failed" ]; then
     echo
