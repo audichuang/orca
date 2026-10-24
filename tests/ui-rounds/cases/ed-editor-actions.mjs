@@ -151,23 +151,7 @@ export const edIdOf = (repo) => new RegExp(`::.*/${edEsc(repo)}$`)
 export const edQ1Row = (rows, path) => rows.find((r) => r.path === path)
 
 // ---- 設定 ----
-export const edAutoSave = async (on) => {
-  await app.click(await find(/^按鈕 Settings$/))
-  await sleep(1800)
-  const f = (await lines()).find(([, t]) => /^文字欄位 \(settable\).*Search settings/.test(t))
-  check(f, '設定頁找不到搜尋欄')
-  await app.setValue(f[0], 'auto save')
-  await sleep(1200)
-  let v = await grep(/Auto Save Files, Value/)
-  if (/Value: on/.test(v) !== on) {
-    await app.click(await find(/^切換 Description: Auto Save Files/))
-    await sleep(700)
-    v = await grep(/Auto Save Files, Value/)
-  }
-  check(/Value: on/.test(v) === on, `Auto Save 沒切成 ${on ? 'on' : 'off'}:${v}`)
-  await app.click(await find(/^按鈕 Back to app/))
-  await sleep(1000)
-}
+export const edAutoSave = (on) => setAutoSave(on)
 
 // 衝突前置之後 docs-site 的衝突檔列
 export const edConflictRowRe = /^text index\.md/
