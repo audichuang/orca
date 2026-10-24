@@ -8,6 +8,7 @@ globalThis.ax = async () => await app.getAXState({ disableDiffing: true, emit: f
 const map = await import(`${new URL('./ui-map.mjs', import.meta.url).href}?t=${Date.now()}`)
 globalThis.UI_RE = map.RE
 globalThis.UI_MAP = map
+globalThis.esc = map.esc
 globalThis.sectionOf = (re) => (typeof re === 'string' ? re : map.sectionNameOf(re))
 globalThis.openRepoName = async () => map.openRepoName(await lines())
 globalThis.openRepoTitle = async () => map.openRepoTitle(await lines())
@@ -56,6 +57,20 @@ globalThis.dblOpen = async (rowRe, tabRe, wait = 1800) => {
   }
   return false
 }
+/** 輪詢 fn 到回傳 truthy 或逾時(回傳 null) */
+globalThis.waitFor = async (fn, ms = 8000, step = 300) => {
+  const t0 = Date.now()
+  for (;;) {
+    const v = await fn()
+    if (v) {
+      return v
+    }
+    if (Date.now() - t0 > ms) {
+      return null
+    }
+    await sleep(step)
+  }
+}
 globalThis.clickRe = async (re, opts) => {
   await app.click(await find(re), opts)
   await sleep(800)
@@ -78,10 +93,16 @@ globalThis.note = async () => {
   const id = L.find(([, t]) => t.endsWith(text.split('.')[0]))?.[0] ?? 0
   return `${id} 文字 ${text}`
 }
+// 大檔複製要好幾秒才出通知,輪詢到出現為止
+globalThis.waitNote = async (ms = 8000) =>
+  (await waitFor(async () => {
+    const n = await note()
+    return n === 'none' ? null : n
+  }, ms)) ?? 'none'
 // 持續顯示的通知(例如 token 門檻警告)會讓後面的 note() 讀到舊文字
 globalThis.dismissToasts = async () => {
   for (let k = 0; k < 10; k++) {
-    const b = (await lines()).find(([, t]) => /^按鈕 Close toast$/.test(t))
+    const b = (await lines()).find(([, t]) => t === `按鈕 ${map.UI_TEXT.closeToast}`)
     if (!b) {
       return
     }
@@ -92,7 +113,6 @@ globalThis.dismissToasts = async () => {
     await sleep(300)
   }
 }
-// 打開 MultiProduct 的 Source Control;點了沒切過去就重試(視窗剛拿到焦點時第一下常被吞)
 /** 左側欄捲回頂端:列不在畫面上(或藏在吸頂的群組標題下)時點不到 */
 globalThis.scrollSidebarTop = async () => {
   const list = (await lines()).find(([, t]) => t === `清單方塊 ${map.UI_TEXT.worktreeList}`)
@@ -119,9 +139,7 @@ globalThis.switchWorkspace = async (name) => {
   await app.typeText(name)
   await sleep(1000)
   // 選項像「(selected) Active MultiProduct Last active 24m ago」;要整個名稱相符,MultiProduct-2 不算
-  const opt = new RegExp(
-    `^(\\(selected\\) )?((Active|Inactive) )?${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( Last|$)`
-  )
+  const opt = new RegExp(`^(\\(selected\\) )?((Active|Inactive) )?${map.esc(name)}( Last|$)`)
   const hit = (await lines()).find(([, t]) => opt.test(t))
   if (!hit) {
     await app.pressKey('Escape')
@@ -131,29 +149,32 @@ globalThis.switchWorkspace = async (name) => {
   await sleep(1500)
   return true
 }
+// 打開 MultiProduct 的 Source Control;點了沒切過去就重試(視窗剛拿到焦點時第一下常被吞)
 globalThis.openMP = async (name = 'MultiProduct') => {
   // 左側欄群組標題也叫 MultiProduct,要看 folder 面板標題列的名稱
   const ready = async () => map.folderPanelName(await lines()) === name
-  for (let k = 0; k < 3 && !(await ready()); k++) {
+  let ok = await ready()
+  for (let k = 0; k < 3 && !ok; k++) {
     await switchWorkspace(name)
-    if (!(await grep(map.RE.button(map.UI_TEXT.refreshAll)))) {
-      let sc = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
-      const toggle = (await lines()).find(([, t]) =>
-        t.startsWith(`按鈕 ${map.UI_TEXT.toggleRightSidebar}`)
-      )
+    const L = await lines()
+    const has = (label) => L.find(([, t]) => t.startsWith(`按鈕 ${label}`))
+    if (!has(map.UI_TEXT.refreshAll)) {
+      let sc = has(map.UI_TEXT.sourceControlTab)
+      const toggle = has(map.UI_TEXT.toggleRightSidebar)
       // 右側欄關著(例:SC-28 關掉後)時先打開
       if (!sc && toggle) {
         await app.click(toggle[0])
         await sleep(1000)
-        sc = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
+        sc = (await lines()).find(([, t]) => t.startsWith(`按鈕 ${map.UI_TEXT.sourceControlTab}`))
       }
       if (sc) {
         await app.click(sc[0])
         await sleep(1500)
       }
     }
+    ok = await ready()
   }
-  if (!(await ready())) {
+  if (!ok) {
     throw new Error(`打不開 ${name} 的 Source Control`)
   }
   await expandRepoGroups()
@@ -184,15 +205,7 @@ globalThis.selectRepo = async (name, branch) => {
     throw new Error(`選不到 repo ${name}`)
   }
 }
-// 目前開著的 repo 面板裡,某區段(CHANGES、STAGED CHANGES…)的標題、列、列上的按鈕
-globalThis.sectionHeader = async (name) => {
-  const L = await lines()
-  const r = map.sectionRange(L, sectionOf(name))
-  if (!r) {
-    throw new Error(`面板裡找不到區段 ${name}`)
-  }
-  return L[r[0]][0]
-}
+// 目前開著的 repo 面板裡,某區段(CHANGES、STAGED CHANGES…)的列、列上的按鈕
 globalThis.rowIn = async (name, rowRe) => {
   const L = await lines()
   const k = map.rowIndexIn(L, sectionOf(name), rowRe)
@@ -213,16 +226,17 @@ globalThis.sectionButton = async (name, btnRe) => {
   }
   return hit[0]
 }
-// reset-fixture 後 repo 可能從清單消失:開 Show hidden worktrees 再關掉觸發重掃
+// 重置 fixture 後 repo 可能從清單消失:開 Show hidden worktrees 再關掉觸發重掃
 globalThis.ensure5 = async () => {
-  await app.click(await find(/^按鈕 Refresh all repositories/))
+  const refresh = map.RE.button(map.UI_TEXT.refreshAll)
+  await app.click(await find(refresh))
   await sleep(3500)
-  await expandRepoGroups()
   const c = await counts()
-  for (const r of REPOS) {
-    if (new RegExp(` ${r} \\(`).test(c)) {
-      continue
-    }
+  const missing = REPOS.filter((r) => !new RegExp(` ${map.esc(r)} \\(`).test(c))
+  if (!missing.length) {
+    return c
+  }
+  for (const r of missing) {
     const proj = r === 'WebApp-feature' ? 'WebApp' : r
     try {
       await app.click(await find(new RegExp(`^彈出式按鈕 Project actions for ${proj}$`)))
@@ -233,19 +247,20 @@ globalThis.ensure5 = async () => {
       await sleep(800)
     } catch {}
   }
-  await app.click(await find(/^按鈕 Refresh all repositories/))
+  await app.click(await find(refresh))
   await sleep(3000)
   return await counts()
 }
 globalThis.rowCopy = async (repoRe) => {
-  await app.click(await btnAfter(repoRe, /^按鈕 Copy all changes$/, 10))
-  await sleep(1500)
-  return await note()
+  await app.click(await btnAfter(repoRe, map.RE.button(map.UI_TEXT.copyAllChanges), 10))
+  await sleep(500)
+  return await waitNote()
 }
 globalThis.ctxCopy = async (rowId) => {
   await app.click(rowId, { mouseButton: 'right' })
   await sleep(700)
-  const c = await findAll(/^Copy Full Source/)
+  const c = await findAll(new RegExp(`^${map.UI_TEXT.copyFullSource}`))
+  check(c.length > 0, `右鍵選單沒有 ${map.UI_TEXT.copyFullSource}`)
   await app.click(c.at(-1))
   await sleep(1300)
   const n = await note()
@@ -259,7 +274,7 @@ globalThis.ctxCopy = async (rowId) => {
 // 關掉最後一個分頁會讓 workspace 失去選取,關完重新打開 MultiProduct
 globalThis.closeAll = async () => {
   for (let k = 0; k < 20; k++) {
-    const ids = await findAll(/^按鈕 Close tab$/)
+    const ids = await findAll(map.RE.button(map.UI_TEXT.closeTab))
     if (!ids.length) {
       break
     }
