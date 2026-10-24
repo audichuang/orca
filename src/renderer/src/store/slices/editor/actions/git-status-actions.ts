@@ -118,7 +118,7 @@ export function createGitStatusActions(
           worktreeId,
           nextEntries,
           statusIsComplete,
-          (file) => getOpenFileGitRelativePath(s, file)
+          { gitRelativePathOf: (file) => getOpenFileGitRelativePath(s, file) }
         )
         const statusUnchanged = hadStatusEntry && areGitStatusEntriesEqual(prevEntries, nextEntries)
         const trackedUnchanged = areTrackedConflictMapsEqual(
