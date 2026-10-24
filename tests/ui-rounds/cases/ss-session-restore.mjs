@@ -1,5 +1,4 @@
 const {
-  edShot,
   edRead,
   edTabs,
   edTabNames,
@@ -10,8 +9,6 @@ const {
   edType,
   edStart,
   edWaitUi,
-  edRepo,
-  edRowIn,
   edDbl,
   edViewAll,
   edOpenInEditor,
@@ -19,7 +16,6 @@ const {
   edQ1,
   edIdOf,
   edQ1Row,
-  edAutoSave,
   edConflictRowRe
 } = await import(
   new URL(`./ed-editor-actions.mjs${new URL(import.meta.url).search}`, import.meta.url).href
@@ -34,14 +30,14 @@ const ssOpenFour = async () => {
   await edStart()
   await edOpenFile('WebApp/README.md')
   await edOpenFile('api-server/README.md')
-  await edRepo('WebApp')
+  await selectRepo('WebApp')
   await edViewAll(/^按鈕 CHANGES \d/)
   await edOpenInEditor(/unstaged-mod\.ts, Help: Copy path/)
-  await edRepo('WebApp-feature')
+  await selectRepo('WebApp-feature')
   await edViewAll(/^按鈕 CHANGES \d/)
   await edOpenInEditor(/unstaged-mod\.ts, Help: Copy path/)
-  await edRepo('WebApp')
-  await app.click(await edRowIn(/^按鈕 STAGED CHANGES \d/, /^text staged-mod\.ts/), {
+  await selectRepo('WebApp')
+  await app.click(await rowIn(/^按鈕 STAGED CHANGES \d/, /^text staged-mod\.ts/), {
     clickCount: 2
   })
   await sleep(1300)
@@ -83,7 +79,7 @@ const ssChangesEach = async (label) => {
     }
     await sleep(700)
     await edNoDiffError(`${label} ${t.name}`)
-    await edShot()
+    await evidenceShot()
   }
 }
 // 只比 edit 分頁:diff 分頁(q1 結尾 | diff)重啟後不還原
@@ -138,7 +134,7 @@ defineCase('SS-02.1', {
   pre: 'reset',
   run: async () => {
     await edStart()
-    await edAutoSave(false)
+    await setAutoSave(false)
     await openMP()
     // 草稿要打在 edit 分頁:Source Control 雙擊開的 diff 分頁重啟後不還原
     await edOpenFile('WebApp/README.md')
@@ -172,7 +168,7 @@ defineCase('SS-02.2', {
     await app.click(await find(/^按鈕 Compare$/))
     await sleep(1800)
     checkRe(await grep(/File changed on disk/), /File changed on disk/, 'Compare 對話框')
-    await edShot()
+    await evidenceShot()
     await app.pressKey('Escape')
     await sleep(500)
     check(/offline/.test(edRead('WebApp/README.md')), '看完 Compare 磁碟仍應有 offline')
@@ -210,7 +206,7 @@ defineCase('SS-03.2', {
     await ssChangesEach('第 2 步')
     await app.click(await find(/^按鈕 Source Control/))
     await sleep(1500)
-    await edRepo('WebApp')
+    await selectRepo('WebApp')
     await edDbl(/^text README\.md/, 2000)
     rows = await edQ1()
     // 10-21 起雙擊開的是 diff 分頁(帶 WebApp id);舊格式的 edit 分頁維持 -
@@ -308,7 +304,7 @@ defineCase('SS-05.2', {
       await sleep(1500)
       feat_note =
         (await grep(/ENOENT|Unable to load|not found|不存在|Retry/)) || '(分頁在但無錯誤文字)'
-      await edShot()
+      await evidenceShot()
     }
     check(
       names.filter((x) => x.startsWith('README.md')).length === 2,
@@ -337,7 +333,7 @@ defineCase('SS-06.1', {
   mutates: true,
   run: async () => {
     await edStart()
-    await edRepo('docs-site')
+    await selectRepo('docs-site')
     await edDbl(edConflictRowRe, 2000)
     const b = await grep(/Unresolved conflict · /)
     checkRe(b, /Unresolved conflict/, 'banner')
@@ -369,7 +365,7 @@ defineCase('SS-06.2', {
       await app.click(await find(/^按鈕 Source Control/))
       await sleep(1500)
     }
-    await edRepo('docs-site')
+    await selectRepo('docs-site')
     const b1 = (await grep(/Unresolved conflict · /)) || '無 banner'
     await edDbl(edConflictRowRe, 2000)
     const b2 = (await grep(/Unresolved conflict · /)) || '無 banner'

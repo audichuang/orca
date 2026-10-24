@@ -1,9 +1,7 @@
 const {
   blocked,
   need,
-  scWait,
   scStart,
-  scSel,
   scCnt,
   scSec,
   scRowBtn,
@@ -13,11 +11,9 @@ const {
   scSelected,
   scMainRow,
   scPanelTitle,
-  scGoWs,
   scShell,
   scSettings,
   scSettingsBack,
-  scAutoSave,
   scDeleteGroup,
   scCreateWorkspace
 } = await import(
@@ -70,28 +66,28 @@ defineCase('SC-27.1', {
     await scStart()
     await scCreateWorkspace('MultiProduct', 'MultiProduct-2')
     check(await grep(/^text (Active|Inactive) MultiProduct-2$/), '沒有建出 MultiProduct-2')
-    await scGoWs('MultiProduct')
-    await scSel('WebApp')
-    await scGoWs('MultiProduct-2')
+    await openMP('MultiProduct')
+    await selectRepo('WebApp')
+    await openMP('MultiProduct-2')
     await sleep(1500)
-    await scSel('docs-site')
+    await selectRepo('docs-site')
     const out = []
     for (let k = 0; k < 3; k++) {
-      await scGoWs('MultiProduct')
+      await openMP('MultiProduct')
       const a = await scPanelTitle()
       checkRe(a, /WebApp/, `第 ${k + 1} 輪 MultiProduct 選取`)
-      await scGoWs('MultiProduct-2')
+      await openMP('MultiProduct-2')
       const b = await scPanelTitle()
       checkRe(b, /docs-site/, `第 ${k + 1} 輪 MultiProduct-2 選取`)
       out.push(`${a}|${b}`)
     }
     // 2. 在第二個雙擊開 diff,分頁不應出現在第一個
-    await scGoWs('MultiProduct-2')
-    await scSel('api-server')
+    await openMP('MultiProduct-2')
+    await selectRepo('api-server')
     await app.click(await find(/^text server\.ts \+ 1 M/), { clickCount: 2 })
     await sleep(1500)
     check(await grep(/^sortable server\.ts/), 'MultiProduct-2 沒有開出 server.ts 分頁')
-    await scGoWs('MultiProduct')
+    await openMP('MultiProduct')
     check(!(await grep(/^sortable server\.ts/)), 'MultiProduct-2 開的分頁出現在 MultiProduct')
     return `3 輪來回各自保留(${out[0]});MultiProduct-2 的 server.ts 分頁不出現在 MultiProduct`
   }
@@ -101,7 +97,7 @@ defineCase('SC-27.2', {
   pre: 'script',
   mutates: true, // 重啟 Orca Dev
   run: async () => {
-    await scGoWs('MultiProduct')
+    await openMP('MultiProduct')
     await sleep(3000)
     const sel = await scPanelTitle()
     // 清理:移除 MultiProduct-2(Remove Workspace 無確認對話框)
@@ -144,7 +140,7 @@ defineCase('SC-28.2', {
   run: async () => {
     await app.click(await find(/^按鈕 Toggle right sidebar/))
     const t0 = Date.now()
-    const ok = await scWait(async () => (await scCnt('core')) === 3, 10000, 250)
+    const ok = await waitFor(async () => (await scCnt('core')) === 3, 10000, 250)
     const secs = (Date.now() - t0) / 1000
     check(ok, `重開後 10 秒內 core 仍不是 3:${await counts()}`)
     check(secs <= 3.5, `core 2→3 花了 ${secs}s,超過 3 秒`)
@@ -157,7 +153,7 @@ defineCase('SC-29', {
   pre: 'reset',
   run: async () => {
     await scStart()
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     const ACT = /^按鈕 (Copy Full Source|Discard all|Stage all|Unstage all)$/
     const n0 = (await findAll(ACT)).length
     check(n0 > 0, '過濾前應有區段動作按鈕')
@@ -184,16 +180,16 @@ defineCase('SC-30.1', {
   mutates: true,
   run: async () => {
     await scStart()
-    await scSel('core')
+    await selectRepo('core')
     await app.click(await scRowBtn(CH, /^text core\.ts/, /^按鈕 Stage$/))
     await sleep(1500)
     await app.setValue(await find(/^文字項目區域.*Commit message/), 'draft core')
     await sleep(500)
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     await sleep(600)
     const web = await grep(/^文字項目區域.*Commit message/)
     check(!/Value: draft core/.test(web), `WebApp 的 message 應為空:${web}`)
-    await scSel('core')
+    await selectRepo('core')
     await sleep(600)
     checkRe(await grep(/^文字項目區域.*Commit message/), /Value: draft core/, '回 core 的 message')
     return 'WebApp 的 message 空;回 core 仍 draft core(core.ts 已 stage,留給下一段)'
@@ -204,13 +200,13 @@ defineCase('SC-30.2', {
   pre: 'script',
   mutates: true, // 只裝 hook,不重置
   run: async () => {
-    await scSel('core')
+    await selectRepo('core')
     await app.click(await find(/^按鈕 Commit$/))
     await sleep(3500)
     const c0 = await grep(/Commit blocked/)
     checkRe(c0, /Commit blocked.*blocked by ui test hook/, '卡片')
-    await scSel('WebApp')
-    await scSel('core')
+    await selectRepo('WebApp')
+    await selectRepo('core')
     await sleep(1200)
     checkRe(
       await grep(/Commit blocked|blocked by ui test hook/),
@@ -245,7 +241,7 @@ defineCase('SC-31', {
   mutates: true,
   run: async () => {
     await scStart()
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     const cmdClick = async (re) => {
       await app.click(await find(re), { key: 'cmd' })
     }
@@ -432,7 +428,7 @@ defineCase('SC-35', {
   pre: 'reset',
   run: async () => {
     await scStart()
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     await app.click(await find(/^text partial\.ts src/))
     await sleep(700)
     await app.click(await find(/^text deleted-unstaged\.ts/), { key: 'cmd' })
@@ -469,4 +465,4 @@ defineCase('SC-36', {
 // $HOME 在 lcu 裡取不到 process.env,用 sh 讀
 
 // 除錯時可在 REPL 直接呼叫
-Object.assign(globalThis, { scAutoSave, scDeleteGroup })
+Object.assign(globalThis, { scDeleteGroup })
