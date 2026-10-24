@@ -101,7 +101,9 @@ export const RE = {
   ),
   detailStart: new RegExp(`^按鈕 ${esc(UI_TEXT.detailStart)}$`),
   workspaceRow: (name) => new RegExp(`^(text (Active|Inactive)|container) ${esc(name)}$`),
-  button: (name) => new RegExp(`^按鈕 ${esc(name)}$`)
+  button: (name) => new RegExp(`^按鈕 ${esc(name)}$`),
+  // Labels with a shortcut suffix: "Source Control (⌘⇧G)"
+  buttonStart: (name) => new RegExp(`^按鈕 ${esc(name)}`)
 }
 
 /** Index of the open repo's panel in `lines`: the line after its "Filter files by name" button. */
