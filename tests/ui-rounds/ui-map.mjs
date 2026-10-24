@@ -99,6 +99,14 @@ export function openRepoName(lines) {
   return i > 1 ? lines[i - 2][1].replace(/^文字 /, '') : null
 }
 
+/** "WebApp (main)": the open repo's name and the branch its panel shows ("Current branch: main"). */
+export function openRepoTitle(lines) {
+  const name = openRepoName(lines)
+  const from = detailStartIndex(lines)
+  const b = lines.find(([, t], i) => i >= from && t.startsWith('container Current branch: '))
+  return name && b ? `${name} (${b[1].replace(/^container Current branch: /, '')})` : name
+}
+
 /** [start, end) of a section of the open repo; the repo list above has its own CHANGES group. */
 export function sectionRange(lines, name) {
   const from = detailStartIndex(lines)
