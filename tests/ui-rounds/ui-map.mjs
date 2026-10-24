@@ -77,6 +77,8 @@ export const RE = {
   repoRow: (name, branch) =>
     new RegExp(`^按鈕 ${esc(name)} \\(${branch ? esc(branch) : '[^)]*'}\\) \\d+$`),
   anyRepoRow: /^按鈕 [\w./-]+ \([^)]*\) \d+$/,
+  // Repos without changes sit in their own group, collapsed by default
+  repoGroupHeader: /^按鈕 NO CHANGES \d+$/,
   sectionHeader: (name) => new RegExp(`^按鈕 ${esc(name)} \\d+$`),
   anySectionHeader: /^按鈕 (CHANGES|STAGED CHANGES|COMMITTED ON BRANCH|COMMITS|Notes)( \d+)?$/,
   detailStart: new RegExp(`^按鈕 ${esc(UI_TEXT.detailStart)}$`),
@@ -125,31 +127,53 @@ const NOTE_TITLE =
   /Git file\(s\)|No Git changes|Nothing to copy|could not be read|Over \d|Created \d|failed|No Snipcode|Clipboard is empty|not included/
 
 /**
- * A toast as one line in the form stats.py prints: "<title>. 181 chars · 16 lines · 24 words · ~28 tokens."
- * The toast shows the same numbers on separate lines, tokens first; extra lines (skipped files) follow.
+ * The toasts on screen as one line each, in the form stats.py prints: "<title>. 181 chars · 16 lines · 24 words · ~28 tokens."
+ * A toast shows the same numbers on separate lines, tokens first; extra lines (skipped files) follow.
+ * Several toasts (an info note beside the copy result) join with " / ".
  */
 export function toastNote(lines) {
-  const at = lines.findIndex(([, t]) => /^(文字|text) /.test(t) && NOTE_TITLE.test(t))
-  if (at === -1) {
-    return null
-  }
+  // Toasts live under the Notifications region; panel hints use the same words.
+  const from = lines.findIndex(([, t]) => /^container Notifications\b/.test(t))
+  const notes = []
+  let end = from
+  lines.forEach(([, t], at) => {
+    if (at > end && isText(t) && NOTE_TITLE.test(t)) {
+      const toast = oneToast(lines, at)
+      notes.push(toast.text)
+      end = toast.end
+    }
+  })
+  return notes.length ? notes.join(' / ') : null
+}
+
+const isText = (t) => /^(文字|text) /.test(t)
+
+function oneToast(lines, at) {
   const title = lines[at][1].replace(/^(文字|text) /, '')
   const rest = []
+  let end = at
   for (const [, t] of lines.slice(at + 1)) {
-    if (!/^(文字|text) /.test(t)) {
+    if (!isText(t)) {
       break
     }
     rest.push(t.replace(/^(文字|text) /, '').trim())
+    end++
   }
-  const joined = rest.join(' ')
+  // Stats lines hold only counts and separators; anything else (skipped files, a token warning) is extra
+  const isStats = (t) => /^[·\s]*$|^(~?[\d,]+ (tokens|lines|chars|words)[·\s]*)+$/.test(t)
+  const joined = rest.filter(isStats).join(' ')
   const num = (re) => re.exec(joined)?.[1]
   const tokens = num(/~([\d,]+) tokens/)
   const stats = tokens
     ? ` ${num(/([\d,]+) chars/)} chars · ${num(/([\d,]+) lines/)} lines · ${num(/([\d,]+) words/)} words · ~${tokens} tokens.`
     : ''
-  const extra = joined
-    .replace(/~?[\d,]+ (tokens|lines|chars|words)/g, '')
-    .replace(/[·\s]+/g, ' ')
+  let extra = rest
+    .filter((t) => !isStats(t))
+    .join(' ')
     .trim()
-  return `${title}${stats ? `.${stats}` : ''}${extra ? ` ${extra}` : ''}`
+  // The skipped-files note sat inside the title before 10-21: "13 Git file(s) copied (1 skipped: binary)."
+  const skipped = /^\(\d+ skipped[^)]*\)/.exec(extra)
+  const head = skipped ? `${title.replace(/\.$/, '')} ${skipped[0]}` : title
+  extra = skipped ? extra.slice(skipped[0].length).trim() : extra
+  return { text: `${head}${stats ? `.${stats}` : ''}${extra ? ` ${extra}` : ''}`, end }
 }

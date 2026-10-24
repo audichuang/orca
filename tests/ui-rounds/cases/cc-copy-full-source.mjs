@@ -93,31 +93,25 @@ defineCase('CC-03', {
 })
 
 defineCase('CC-04', {
-  title: 'CHANGES 與 UNTRACKED 區段標題',
+  title: 'CHANGES 區段複製,未追蹤檔排在最後',
   pre: 'reset',
   run: async () => {
     await openMP()
     await ccSelect(/^按鈕 WebApp \(main\)/, /^text partial\.ts src/)
+    // 10-21 起 UNTRACKED FILES 併進 CHANGES,區段複製把未追蹤檔接在已追蹤檔之後
     const r1 = await copyAndRead(() => ccSecCopy(/^按鈕 CHANGES \d/))
     checkEq(
       r1.clip,
-      `${ROOT}// file: [MODIFIED] WebApp/README.md\n# WebApp\nbase readme\nwebapp readme change\n\n\n// file: [DELETED] WebApp/src/deleted-unstaged.ts\ndeleted-unstaged\nline2\nline3\n\n\n// file: [MODIFIED] WebApp/src/partial.ts\npartial\nline2\nline3\nindex-edit\nworktree-edit\n\n\n// file: [MODIFIED] WebApp/src/unstaged-mod.ts\nunstaged-mod\nline2\nline3\nunstaged-edit\n\n`,
+      `${ROOT}// file: [MODIFIED] WebApp/README.md\n# WebApp\nbase readme\nwebapp readme change\n\n\n// file: [DELETED] WebApp/src/deleted-unstaged.ts\ndeleted-unstaged\nline2\nline3\n\n\n// file: [MODIFIED] WebApp/src/partial.ts\npartial\nline2\nline3\nindex-edit\nworktree-edit\n\n\n// file: [MODIFIED] WebApp/src/unstaged-mod.ts\nunstaged-mod\nline2\nline3\nunstaged-edit\n\n\n// file: [NEW] WebApp/src/components/new/Widget.tsx\nexport const N = 1\n\n`,
       '第 1 步'
     )
     check(!r1.clip.includes('logo.png'), '第 1 步不應有 logo.png')
     checkRe(
       r1.note,
-      /4 Git file\(s\) copied \(1 skipped: binary\)\. 369 chars · 28 lines · 38 words · ~46 tokens\./,
+      /5 Git file\(s\) copied \(1 skipped: binary\)\. 442 chars · 32 lines · 47 words · ~57 tokens\./,
       '第 1 步通知'
     )
-    const r2 = await copyAndRead(() => ccSecCopy(/^按鈕 UNTRACKED FILES/))
-    checkEq(
-      r2.clip,
-      `${ROOT}\n// file: [NEW] WebApp/src/components/new/Widget.tsx\nexport const N = 1\n\n\n`,
-      '第 2 步'
-    )
-    ccStat(r2.clip, '105 chars · 7 lines · 12 words · ~14 tokens.', '第 2 步')
-    return '369/28/38/46 與 105/7/12/14,逐字相同,無 logo.png'
+    return '442/32/47/57,逐字相同,未追蹤檔在最後,無 logo.png'
   }
 })
 
