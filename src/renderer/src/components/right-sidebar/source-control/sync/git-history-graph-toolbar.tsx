@@ -51,7 +51,7 @@ function scopeLabel(filter: GitHistoryGraphFilter, applied: GitHistoryGraphAppli
   if (filter.scope === 'refs') {
     if (filter.refs.length === 1) {
       const ref = applied?.refs.find((option) => option.fullName === filter.refs[0])
-      return ref?.name ?? filter.refs[0].replace(/^refs\/(heads|remotes)\//, '')
+      return ref?.name ?? filter.refs[0].replace(/^refs\/(heads|remotes|tags)\//, '')
     }
     return translate(
       'auto.components.right.sidebar.GitHistoryGraph.branchCount',
@@ -82,7 +82,7 @@ export async function loadRefOptions(args: {
       worktreePath: args.worktreePath,
       connectionId: getConnectionId(args.worktreeId) ?? undefined
     },
-    { limit: 1, graph: { mode: 'head', limit: 1 } }
+    { limit: 1, graph: { mode: 'head', limit: 1, listTags: true } }
   )
   return result.graph ?? null
 }
@@ -311,6 +311,18 @@ export function GitHistoryGraphToolbar({
                         <span className="truncate">{remote}</span>
                       </CommandItem>
                     ))}
+                    {/* Why only when listed: an older host neither lists nor walks tags. */}
+                    {applied.refs.some((ref) => ref.category === 'tags') && (
+                      <CommandItem
+                        value="source-tags"
+                        onSelect={() =>
+                          updateGitHistoryGraphFilter(filterKey, { tags: !filter.tags })
+                        }
+                      >
+                        {check(Boolean(filter.tags))}
+                        {translate('auto.components.right.sidebar.GitHistoryGraph.tags', 'Tags')}
+                      </CommandItem>
+                    )}
                   </CommandGroup>
                 )}
                 {refOptions.status !== 'ready' && refOptions.status !== 'idle' && (
