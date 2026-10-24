@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Fork canary: merge the fork into upstream main in a throwaway worktree, then typecheck and run the fork's tests.
 # Report-only early warning before the next release tag; never a gate. Never pushes or touches the invoking checkout.
-# Exit: 0 green, 1 install/typecheck/test failures, 2 merge conflicts (no typecheck), 3 setup error.
+# Exit: 0 green, 1 install/typecheck/test failures, 2 merge conflicts only, 3 setup error, 4 conflicts and failures.
+# Conflicted files are provisionally resolved to the upstream side so typecheck and tests still run.
 # make turns every non-zero exit into 2; call this script directly when the code matters.
 # Env: FORK_BASE (required), CANARY_REF (fork side, default HEAD), UPSTREAM_REMOTE, CANARY_UPSTREAM_REF
 #      (default <upstream>/main), CANARY_DIR (default ../orca-fork-canary), CANARY_REPORT, CANARY_KEEP=1.
@@ -65,37 +66,72 @@ conflicts=$(git -C "$wt" diff --name-only --diff-filter=U)
 git -C "$wt" rev-parse -q --verify MERGE_HEAD >/dev/null || [ "$merge_status" -eq 0 ] || die "merge failed without conflicts; see $logs/merge.log"
 replayed=$(sed -nE "s/^(Resolved|Staged) '(.*)' using previous resolution\.$/\2/p" "$logs/merge.log" | sort -u)
 
-status=0
+# Why upstream's side: upstream conflicts most days, and stopping here would leave the canary testing almost nothing.
+for f in $conflicts; do
+  if git -C "$wt" cat-file -e "HEAD:$f" 2>/dev/null; then
+    git -C "$wt" checkout HEAD -- "$f" || die "cannot take upstream's side of $f"
+  else
+    git -C "$wt" rm -q -f -- "$f" || die "cannot take upstream's deletion of $f"
+  fi
+done
+n_conflicts=$(printf '%s\n' $conflicts | grep -c .)
+
+failed=
 tc_failed=
 install_failed=
 tests_failed=
-if [ -n "$conflicts" ]; then
-  status=2
+echo ">> pnpm install"
+if ! (cd "$wt" && pnpm install --frozen-lockfile) >"$logs/install.log" 2>&1; then
+  install_failed=1
+  failed=1
 else
-  echo ">> pnpm install"
-  if ! (cd "$wt" && pnpm install --frozen-lockfile) >"$logs/install.log" 2>&1; then
-    install_failed=1
-    status=1
-  else
-    echo ">> pnpm tc"
-    (cd "$wt" && pnpm tc) >"$logs/tc.log" 2>&1 || {
-      tc_failed=1
-      status=1
-    }
-    seams=$(cd "$wt" && node config/scripts/fork-seam-tests.mjs --existing 2>"$logs/seams-missing.log")
-    changed=$(git diff --name-only --no-renames --diff-filter=AM "$base" "$fork_sha" -- '*.test.ts' '*.test.tsx' | grep -v '^tests/e2e/')
-    tests=$(printf '%s\n' $seams $changed | sort -u | while read -r f; do test -n "$f" && test -f "$wt/$f" && echo "$f"; done)
-    echo ">> vitest on $(printf '%s\n' $tests | grep -c .) files"
-    # Why the guard: vitest with no file filter runs the whole suite.
-    test -n "$tests" || die "no test files selected"
-    (cd "$wt" && node config/scripts/ensure-native-runtime.mjs --runtime=node &&
-      pnpm exec vitest run --config config/vitest.config.ts --reporter=default --reporter=json \
-        --outputFile.json="$logs/vitest.json" $tests) >"$logs/vitest.log" 2>&1 || {
-      tests_failed=1
-      status=1
-    }
-  fi
+  echo ">> pnpm tc"
+  (cd "$wt" && pnpm tc) >"$logs/tc.log" 2>&1 || {
+    tc_failed=1
+    failed=1
+  }
+  seams=$(cd "$wt" && node config/scripts/fork-seam-tests.mjs --existing 2>"$logs/seams-missing.log")
+  changed=$(git diff --name-only --no-renames --diff-filter=AM "$base" "$fork_sha" -- '*.test.ts' '*.test.tsx' | grep -v '^tests/e2e/')
+  tests=$(printf '%s\n' $seams $changed | sort -u | while read -r f; do test -n "$f" && test -f "$wt/$f" && echo "$f"; done)
+  echo ">> vitest on $(printf '%s\n' $tests | grep -c .) files"
+  # Why the guard: vitest with no file filter runs the whole suite.
+  test -n "$tests" || die "no test files selected"
+  (cd "$wt" && node config/scripts/ensure-native-runtime.mjs --runtime=node &&
+    pnpm exec vitest run --config config/vitest.config.ts --reporter=default --reporter=json \
+      --outputFile.json="$logs/vitest.json" $tests) >"$logs/vitest.log" 2>&1 || {
+    tests_failed=1
+    failed=1
+  }
 fi
+if [ -n "$conflicts" ] && [ -n "$failed" ]; then
+  status=4
+elif [ -n "$conflicts" ]; then
+  status=2
+elif [ -n "$failed" ]; then
+  status=1
+else
+  status=0
+fi
+
+# Why path match plus a basename import grep: best effort to tell expected fallout of the provisional resolution from new breaks.
+conflict_note() {
+  local file=$1 c stem
+  for c in $conflicts; do
+    if [ "$file" = "$c" ]; then
+      echo " (conflicted file)"
+      return
+    fi
+  done
+  test -f "$wt/$file" || return
+  for c in $conflicts; do
+    stem=$(basename "$c")
+    stem=${stem%.*}
+    if grep -qE "from ['\"][^'\"]*/${stem}(\.[a-z]+)?['\"]" "$wt/$file"; then
+      echo " (imports conflicted \`$c\`)"
+      return
+    fi
+  done
+}
 
 list_commits() {
   local out
@@ -114,8 +150,13 @@ list_commits() {
   case $status in
     0) echo "- Result: green (exit 0)" ;;
     1) echo "- Result: failures (exit 1)" ;;
-    2) echo "- Result: merge conflicts (exit 2); typecheck and tests not run" ;;
+    2) echo "- Result: merge conflicts, typecheck and tests green (exit 2)" ;;
+    4) echo "- Result: merge conflicts and failures (exit 4)" ;;
   esac
+  if [ -n "$conflicts" ]; then
+    echo
+    echo "**Provisional: upstream side taken for $n_conflicts conflicted files, the fork's changes in them are absent; tc/test failures in or caused by those files are expected.**"
+  fi
   if [ -n "$replayed" ]; then
     echo
     echo "## Resolved by rerere"
@@ -148,8 +189,10 @@ list_commits() {
     echo
     errors=$(grep -E '^[^ ]+\([0-9]+,[0-9]+\): error TS[0-9]+' "$logs/tc.log" | sort -u)
     if [ -n "$errors" ]; then
-      printf '%s\n' "$errors" | sed -E 's/\(([0-9]+),[0-9]+\): error (TS[0-9]+): (.*)/	\1 \2 \3/' |
-        awk -F'\t' '$1 != last {print "- `" $1 "`"; last = $1} {print "  - " $2}'
+      for file in $(printf '%s\n' "$errors" | sed -E 's/\([0-9]+,[0-9]+\): error .*//' | uniq); do
+        echo "- \`$file\`$(conflict_note "$file")"
+        printf '%s\n' "$errors" | grep -F "$file(" | sed -E 's/^[^ ]+\(([0-9]+),[0-9]+\): error (TS[0-9]+): (.*)/  - \1 \2 \3/'
+      done
     else
       echo '```'
       tail -n 30 "$logs/tc.log"
@@ -173,10 +216,16 @@ list_commits() {
         for (const file of r.testResults) {
           const failed = file.assertionResults.filter((t) => t.status === "failed")
           if (file.status !== "failed" && failed.length === 0) continue
-          console.log("- `" + file.name.replace(root, "") + "`")
-          for (const t of failed) console.log("  - " + t.fullName)
-          if (failed.length === 0) console.log("  - " + (file.message || "suite failed").split("\n")[0])
-        }' "$logs/vitest.json" "$wt"
+          console.log("FILE\t" + file.name.replace(root, ""))
+          for (const t of failed) console.log("TEST\t" + t.fullName)
+          if (failed.length === 0) console.log("TEST\t" + (file.message || "suite failed").split("\n")[0])
+        }' "$logs/vitest.json" "$wt" | while IFS=$'\t' read -r kind text; do
+        if [ "$kind" = FILE ]; then
+          echo "- \`$text\`$(conflict_note "$text")"
+        else
+          echo "  - $text"
+        fi
+      done
     else
       echo '```'
       tail -n 30 "$logs/vitest.log"
