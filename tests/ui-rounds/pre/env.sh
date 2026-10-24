@@ -10,5 +10,3 @@ app_stop() { bash "$UIR/round.sh" stop; }
 app_start() { bash "$UIR/round.sh" start >/dev/null; sleep 8; }
 # A crash: no orderly quit, so unsaved drafts stay in the session instead of prompting.
 app_kill() { bash "$UIR/round.sh" kill; }
-# The round's DevTools port (round.sh records the ws URL), for pre scripts that call the renderer over CDP.
-CDP_PORT=$(python3 -I -c 'import json,os,re,sys; print(re.search(r":(\d+)", json.load(open(sys.argv[1]))["cdp"]).group(1))' "$HOME/.cache/orca-ui-rounds/round.json")
