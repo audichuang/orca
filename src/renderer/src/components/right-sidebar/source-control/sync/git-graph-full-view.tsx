@@ -118,7 +118,7 @@ export function GitGraphFullView({
     [laneRows]
   )
   const listRef = useRef<HTMLDivElement>(null)
-  const viewReveal = useGitGraphViewReveal(reveal)
+  const viewReveal = useGitGraphViewReveal(reveal, filterKey)
   // Why the worktree's execution host, not the runtime target: a direct SSH repo uses the local
   // target, and two hosts can publish the same worktree id and path.
   const executionHostId = useAppStore((state) => getExecutionHostIdForWorktree(state, worktreeId))
