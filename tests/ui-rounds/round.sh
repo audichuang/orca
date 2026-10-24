@@ -26,20 +26,13 @@ json.dump({"owner": owner, "root": root, "src": src, "app": app, "cdp": cdp, "co
            "startedAt": datetime.datetime.now().isoformat(timespec="seconds")}, open(lock, "w"), indent=1)
 PY
 }
-# One holder at a time for check-then-act on the lock (start's reservation, stop, kill). A holder that died is
-# cleared so a crash cannot wedge later rounds.
-MUTEX="$LOCK.mutex"
+# One holder at a time for check-then-act on the lock (start's reservation, stop, kill): an flock on fd 9, which
+# the OS drops when the holder exits, so a crash at any point cannot wedge later rounds.
 mutex_acquire() {
-  local h
-  until mkdir "$MUTEX" 2>/dev/null; do
-    h=$(cat "$MUTEX/pid" 2>/dev/null || true)
-    if [ -n "$h" ] && ! kill -0 "$h" 2>/dev/null; then rm -rf "$MUTEX"; continue; fi
-    sleep 0.2
-  done
-  echo $$ > "$MUTEX/pid"
-  trap mutex_release EXIT
+  exec 9>"$LOCK.flock"
+  perl -MFcntl=:flock -e 'open(my $f, ">&=9") or die "round: fd 9: $!"; flock($f, LOCK_EX) or die "round: flock: $!"'
 }
-mutex_release() { [ "$(cat "$MUTEX/pid" 2>/dev/null)" = "$$" ] && rm -rf "$MUTEX"; trap - EXIT; }
+mutex_release() { exec 9>&-; }
 # Ends a round's processes by its lock pid and checkout path (the installed Orca and other checkouts share the bundle id)
 end_app() {
   local sig=$1 pid=$2 src=$3
