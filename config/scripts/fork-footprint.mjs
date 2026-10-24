@@ -2,6 +2,7 @@
 // Usage: node config/scripts/fork-footprint.mjs <fork-base> [--json]
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
+import { isTestOnlySourcePath } from './test-only-source-path.mjs'
 
 const CATEGORIES = ['production', 'test', 'locale', 'baseline', 'other']
 const CODE_FILE = /\.(c|m)?(j|t)sx?$/
@@ -13,8 +14,7 @@ export function classifyUpstreamFile(path) {
   if (/^config\/[^/]*-baseline\.txt$/.test(path) || path.endsWith('-dispositions.ts')) {
     return 'baseline'
   }
-  // Why the name token: test-only helpers such as pty-connection-test-environment.ts are test code too.
-  if (/\.(test|spec)\.[^/]*$/.test(path) || /(^|\/)tests\/|(^|[-._/])test[-._][^/]*$/.test(path)) {
+  if (isTestOnlySourcePath(path)) {
     return 'test'
   }
   if (CODE_FILE.test(path) && !path.startsWith('.github/')) {
@@ -28,28 +28,34 @@ function git(args) {
 }
 
 function footprint(base) {
-  const added = git(['diff', '--name-only', '--no-renames', '--diff-filter=A', base, 'HEAD'])
+  // Why --raw with --numstat: one diff gives each file's status (raw lines) and its line counts.
+  const lines = git(['diff', '--raw', '--numstat', '--no-renames', base, 'HEAD'])
     .split('\n')
-    .filter(Boolean).length
+    .filter(Boolean)
+  const status = new Map()
+  for (const line of lines.filter((entry) => entry.startsWith(':'))) {
+    const [meta, path] = line.split('\t')
+    status.set(path, meta.split(' ').at(-1))
+  }
   const modified = Object.fromEntries(
     CATEGORIES.map((name) => [name, { files: 0, added: 0, removed: 0 }])
   )
-  let modifiedFiles = 0
-  const numstat = git(['diff', '--numstat', '--no-renames', '--diff-filter=MD', base, 'HEAD'])
-  for (const line of numstat.split('\n').filter(Boolean)) {
+  for (const line of lines.filter((entry) => !entry.startsWith(':'))) {
     const [plus, minus, path] = line.split('\t')
+    if (status.get(path) === 'A') {
+      continue
+    }
     const bucket = modified[classifyUpstreamFile(path)]
     bucket.files += 1
     // Why: binary files report "-" instead of line counts.
     bucket.added += Number(plus) || 0
     bucket.removed += Number(minus) || 0
-    modifiedFiles += 1
   }
   return {
     base,
     head: git(['rev-parse', '--short', 'HEAD']).trim(),
-    added,
-    modifiedFiles,
+    added: [...status.values()].filter((code) => code === 'A').length,
+    modifiedFiles: Object.values(modified).reduce((sum, bucket) => sum + bucket.files, 0),
     modified
   }
 }

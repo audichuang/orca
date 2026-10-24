@@ -1,6 +1,6 @@
-# Fork seam contract tests: each turns red when an upstream change silently drops a fork wiring.
-# One repo-relative path per line; `make fork-check-seams` runs them, and fork-check-lint fails on a missing path.
-# A new fork seam test joins its group here.
+# Fork seam contract tests, grouped by seam: each turns red when an upstream change silently drops a fork wiring.
+# The groups are the seam map for the auto-rebase reviewer's mutation pass; `make fork-check-seams` runs them.
+# One repo-relative path per line; fork-check-lint fails on a missing or duplicate entry. A new seam test joins its group.
 
 # skipRenderLimit: IPC, web preload, runtime client, RPC + zod, provider
 src/main/git/source-control/file-diff.skip-render-limit-real-git.test.ts
