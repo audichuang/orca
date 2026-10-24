@@ -8,7 +8,7 @@ import { ROLE_ALIASES, UI_TEXT } from '../../tests/ui-rounds/ui-map.mjs'
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const ROUNDS = path.join(ROOT, 'tests/ui-rounds')
 const ROLES = [...new Set(Object.values(ROLE_ALIASES))].join('|')
-// Names the fixture creates (repos, branches, files), not app strings.
+// Names the fixture or the app fills in (repos, branches, files, default tab titles), not fixed app strings.
 const FIXTURE_NAMES = [
   'MultiProduct',
   'api-server',
@@ -21,7 +21,8 @@ const FIXTURE_NAMES = [
   'main',
   'LaneRepo',
   'pr13',
-  'hidden'
+  'hidden',
+  'Terminal'
 ]
 const FIXTURE_WORDS = new RegExp(`^(${FIXTURE_NAMES.join('|')})\\b|\\.\\w+$`)
 
@@ -85,7 +86,7 @@ const hasLabel = (corpus, label, exact = false) =>
     label === label.toUpperCase() ? 'i' : ''
   ).test(corpus)
 
-/** Labels may end in a name the app fills in ("Project actions for WebApp"); drop such tails, not lowercase words. */
+/** Labels may end in a fixture name the app fills in ("Project actions for WebApp"); drop only such tails. */
 function presentIn(corpus, label, exact) {
   const words = label
     .replace(/['’]+$/, '')
@@ -95,8 +96,8 @@ function presentIn(corpus, label, exact) {
     if (hasLabel(corpus, words.join(' '), exact)) {
       return true
     }
-    const last = words.at(-1)
-    if (last === last.toLowerCase() && !FIXTURE_NAMES.includes(last)) {
+    // Only a fixture name is a tail the app fills in; "Keep My Edits" must not shrink to "Keep"
+    if (!FIXTURE_NAMES.includes(words.at(-1))) {
       return false
     }
     words.pop()
