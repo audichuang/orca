@@ -53,10 +53,10 @@ describe('staged diff with skipRenderLimit', () => {
     skipRenderLimit: boolean
   ): Promise<GitDiffResult> {
     if (host === 'native') {
-      return getDiff(repo, 'big.txt', true, false, {}, skipRenderLimit)
+      return getDiff(repo, 'big.txt', true, false, { skipRenderLimit })
     }
     // Why: runtime RPC and IPC diffs reach git through the provider, so it must forward the flag.
-    return createLocalGitProvider().getDiff(repo, 'big.txt', true, false, skipRenderLimit)
+    return createLocalGitProvider().getDiff(repo, 'big.txt', true, false, { skipRenderLimit })
   }
 
   it.each(['native', 'provider'] as const)(
