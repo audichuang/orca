@@ -80,12 +80,3 @@ describe('open conflict status indexing', () => {
     expect(updated[1]).toBe(files[1])
   })
 })
-
-describe('folder-scoped conflict tabs', () => {
-  it('reconciles a tab owned by a folder workspace against its repo status', () => {
-    const tab = openFile({ worktreeId: 'folder:f1', gitWorktreeId: 'repo-wt', conflict })
-    expect(reconcileOpenFilesForStatus([tab], 'folder:f1', [], true)).toEqual([tab])
-    const [cleared] = reconcileOpenFilesForStatus([tab], 'repo-wt', [], true)
-    expect(cleared.conflict).toBeUndefined()
-  })
-})

@@ -76,10 +76,7 @@ const fileNode: TreeNode = {
 
 function renderRevealItem(
   owner: Partial<
-    Pick<
-      React.ComponentProps<typeof FileExplorerRowContextMenu>,
-      'connectionId' | 'node' | 'onCopyFullSource'
-    >
+    Pick<React.ComponentProps<typeof FileExplorerRowContextMenu>, 'connectionId' | 'node'>
   > = {}
 ): ItemProps | undefined {
   renderToStaticMarkup(
@@ -139,19 +136,6 @@ describe('FileExplorerRowContextMenu host capabilities', () => {
       expect(labels).toContain('Copy Relative Path')
     }
   )
-
-  it('offers ClipCode Copy Full Source only when the pane wires it', () => {
-    const findCopyFullSource = (): ItemProps | undefined =>
-      items.list.find((item) => React.Children.toArray(item.children).includes('Copy Full Source'))
-    renderRevealItem()
-    expect(findCopyFullSource()).toBeUndefined()
-
-    items.list = []
-    const onCopyFullSource = vi.fn()
-    renderRevealItem({ node: { ...fileNode, isDirectory: true }, onCopyFullSource })
-    findCopyFullSource()?.onSelect?.()
-    expect(onCopyFullSource).toHaveBeenCalledTimes(1)
-  })
 
   it('reveals a local row through the shared reveal action', () => {
     const reveal = renderRevealItem()

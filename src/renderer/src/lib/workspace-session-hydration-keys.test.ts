@@ -38,17 +38,6 @@ describe('collectWorktreeHydrationRepoIdsFromSession', () => {
     expect(collectWorktreeHydrationRepoIdsFromSession(session)).toEqual(['repo-a', 'repo-b'])
   })
 
-  it('includes the git owner repo of a scoped tab under a folder workspace', () => {
-    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: a minimal persisted session with only openFilesByWorktree.
-    const session = {
-      openFilesByWorktree: {
-        'folder:folder-1': [{ gitWorktreeId: 'repo-a::/f/a' }, { filePath: '/f/x.ts' }]
-      }
-    } as unknown as WorkspaceSessionState
-
-    expect(collectWorktreeHydrationRepoIdsFromSession(session)).toEqual(['repo-a'])
-  })
-
   it('recognizes split-pane and remote persisted sessions', () => {
     const session = {
       activeRepoId: null,

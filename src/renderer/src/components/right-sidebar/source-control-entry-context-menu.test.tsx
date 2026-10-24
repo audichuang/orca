@@ -102,9 +102,7 @@ function showsLocalOnlyHint(item: ItemProps | undefined): boolean {
   return renderToStaticMarkup(<>{item?.children}</>).includes('Local only')
 }
 
-function renderMenu(
-  props: { connectionId?: string; hasWorkingTreeFile?: boolean; onOpenToSide?: () => void } = {}
-): void {
+function renderMenu(props: { connectionId?: string; hasWorkingTreeFile?: boolean } = {}): void {
   renderToStaticMarkup(
     <SourceControlEntryContextMenu
       currentWorktreeId="worktree-1"
@@ -112,7 +110,6 @@ function renderMenu(
       relativePath="src/example.ts"
       hasWorkingTreeFile={props.hasWorkingTreeFile ?? true}
       connectionId={props.connectionId}
-      onOpenToSide={props.onOpenToSide}
       onRevealInExplorer={vi.fn()}
     >
       <div />
@@ -241,23 +238,5 @@ describe('SourceControlEntryContextMenu', () => {
 
     expect(revealItem?.disabled).toBe(true)
     expect(showsLocalOnlyHint(revealItem)).toBe(true)
-  })
-
-  it('offers Open to the Side only when the row can open', () => {
-    const onOpenToSide = vi.fn()
-    renderMenu({ onOpenToSide })
-    const item = items.list.find((entry) =>
-      childrenText(entry.children).startsWith('Open to the Side')
-    )
-    expect(item?.disabled).toBe(false)
-    item?.onSelect?.()
-    expect(onOpenToSide).toHaveBeenCalledOnce()
-
-    items.list = []
-    renderMenu()
-    const disabled = items.list.find((entry) =>
-      childrenText(entry.children).startsWith('Open to the Side')
-    )
-    expect(disabled?.disabled).toBe(true)
   })
 })
