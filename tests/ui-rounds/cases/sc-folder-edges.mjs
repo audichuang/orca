@@ -26,7 +26,7 @@ defineCase('SC-25.2', {
   mutates: true,
   run: async () => {
     await openMP()
-    await app.click(await find(/^按鈕 Refresh all repositories/))
+    await app.click(await find(UI_RE.button(UI_TEXT.refreshAll)))
     await sleep(3500)
     const c = await counts()
     check(!/按鈕 r\d\d /.test(c), `仍有 r?? 專案沒移除:${c}`)
@@ -41,7 +41,7 @@ defineCase('SC-26', {
   run: async () => {
     await app.click(await scMainRow('WebApp'))
     await sleep(2000)
-    const sc = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
+    const sc = (await lines()).find(([, t]) => t.startsWith(`按鈕 ${UI_TEXT.sourceControlTab}`))
     if (sc && !(await grep(/^按鈕 CHANGES \d/))) {
       await app.click(sc[0])
       await sleep(2000)
@@ -127,7 +127,7 @@ defineCase('SC-28.1', {
     await scStart()
     await app.click(await find(/^按鈕 Toggle right sidebar/))
     await sleep(800)
-    check(!(await grep(/^按鈕 Refresh all repositories/)), '右側欄沒有關閉')
+    check(!(await grep(UI_RE.button(UI_TEXT.refreshAll))), '右側欄沒有關閉')
     return '右側欄已關閉(下一段改檔並等 30 秒)'
   }
 })
@@ -316,7 +316,7 @@ defineCase('SC-32', {
     await app.pressKey('cmd+shift+g')
     await sleep(1200)
     check(
-      await grep(/^按鈕 Refresh all repositories/),
+      await grep(UI_RE.button(UI_TEXT.refreshAll)),
       '第 1 步:Cmd+Shift+G 後右側欄沒有開在 Source Control'
     )
     try {
