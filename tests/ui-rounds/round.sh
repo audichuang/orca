@@ -22,7 +22,7 @@ case "${1:-}" in
     if [ -n "$held" ] && [ "$held" != "$OWNER" ] && app_running "$(lock_field src)"; then
       echo "round: the screen is held by $held (src $(lock_field src), since $(lock_field startedAt))"; exit 3
     fi
-    "$0" stop >/dev/null
+    bash "$HERE/round.sh" stop >/dev/null
     : > "$ROOT/dev.log"
     UNSETS=$(env | grep -E '^(ORCA_|JCODE_)' | cut -d= -f1 | sed 's/^/-u /' | tr '\n' ' ')
     # shellcheck disable=SC2086
