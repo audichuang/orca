@@ -59,7 +59,7 @@ export function useSourceControlLaunchableAgents(args: {
             useAppStore.getState(),
             sourceControlLaunchWorkspace({ worktreeId, repoId, executionHostId }),
             choices.detected,
-            initialCwd
+            { cwd: initialCwd }
           )
         : choices.offered
       return { detected: [...(choices.detected ?? [])], launchable }
@@ -76,7 +76,7 @@ export function useSourceControlLaunchableAgents(args: {
     refreshAgents,
     refreshLaunchableAgents,
     launchableAgents: active
-      ? agentsOfferedForLaunch(useAppStore.getState(), workspace, detected, initialCwd)
+      ? agentsOfferedForLaunch(useAppStore.getState(), workspace, detected, { cwd: initialCwd })
       : []
   }
 }
