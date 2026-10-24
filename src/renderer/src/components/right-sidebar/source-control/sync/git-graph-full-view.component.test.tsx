@@ -169,6 +169,43 @@ describe('full-width Git Graph', () => {
     await waitFor(() => expect(document.activeElement).toHaveAttribute('data-commit-id', id('m30')))
   })
 
+  it('loads deeper history when a fold arrow points past the loaded commits, then focuses it', async () => {
+    const id = (name: string): string => `${name}-`.padEnd(40, 'x')
+    const main = Array.from({ length: 41 }, (_, i): GitHistoryItem => ({
+      id: id(`m${i}`),
+      displayId: `m${i}`,
+      parentIds: i < 40 ? [id(`m${i + 1}`)] : [],
+      subject: `main ${i}`,
+      message: `main ${i}`
+    }))
+    const branch: GitHistoryItem = {
+      id: id('b0'),
+      displayId: 'b0',
+      parentIds: [id('m30')],
+      subject: 'branch',
+      message: 'branch'
+    }
+    // The first page stops at m25, so b0's edge to m30 runs past it.
+    mocks.getRuntimeGitHistory.mockImplementation(
+      async (_target: unknown, options: { graph?: { limit?: number } }) =>
+        (options.graph?.limit ?? 0) > 50
+          ? { ...RESULT, items: [branch, ...main], limit: options.graph!.limit! }
+          : { ...RESULT, items: [branch, ...main.slice(0, 26)], hasMore: true }
+    )
+    render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [])} />)
+    await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
+    const view = await screen.findByRole('region', { name: 'Git Graph' })
+    const arrow = await waitFor(() => {
+      const found = view.querySelector(`[data-git-graph-jump="${id('m30')}"] path`)
+      expect(found).not.toBeNull()
+      return found!
+    })
+    expect(view.querySelector(`[data-commit-id="${id('m30')}"]`)).toBeNull()
+    fireEvent.click(arrow)
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('data-commit-id', id('m30')))
+  })
+
   it('centers the commit a jump lands on', async () => {
     const scroll = vi.fn()
     Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {

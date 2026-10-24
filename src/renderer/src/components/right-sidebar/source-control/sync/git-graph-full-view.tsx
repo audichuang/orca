@@ -14,7 +14,7 @@ import {
 } from '../../../../../../shared/git-history-graph'
 import type { GitHistoryPanelState } from './git-history-panel'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
-import { GitHistoryGraphLoadMore } from './git-history-graph-host-status'
+import { GitGraphAutoLoadMore } from './git-graph-auto-load-more'
 import { GitHistoryGraphEmptyMessage } from './git-history-graph-empty-message'
 import {
   GitGraphFullRow,
@@ -31,7 +31,7 @@ import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-gra
 import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
 import { useGitGraphBranchContext, useGitGraphSelection } from './use-git-graph-full-view-state'
-import type { GitGraphRevealOptions } from './use-git-graph-reveal'
+import { type GitGraphRevealOptions, useGitGraphViewReveal } from './use-git-graph-reveal'
 import { useGitGraphBranchTree } from './use-git-graph-branch-tree'
 import { useWindowWidth } from '../../use-window-width'
 import { useMeasuredWidth } from '../../right-sidebar-measured-width'
@@ -118,6 +118,7 @@ export function GitGraphFullView({
     [laneRows]
   )
   const listRef = useRef<HTMLDivElement>(null)
+  const viewReveal = useGitGraphViewReveal(reveal)
   // Why the worktree's execution host, not the runtime target: a direct SSH repo uses the local
   // target, and two hosts can publish the same worktree id and path.
   const executionHostId = useAppStore((state) => getExecutionHostIdForWorktree(state, worktreeId))
@@ -131,8 +132,8 @@ export function GitGraphFullView({
     viewModels,
     listRef,
     selectHeadOnOpen,
-    reveal: reveal && {
-      ...reveal,
+    reveal: {
+      ...viewReveal.reveal,
       settled: state.status === 'ready' || state.status === 'error',
       filterKey
     }
@@ -172,7 +173,7 @@ export function GitGraphFullView({
   })
   useGitGraphOpenFocus(listRef, selection.cursorId, tab?.claimFocusOnOpen)
   useGitGraphRequestedFocus(listRef, selection.cursorId, tab?.focusRequest, {
-    revealPending: Boolean(reveal?.request),
+    revealPending: Boolean(viewReveal.reveal.request),
     settled: state.status === 'ready' || state.status === 'error'
   })
   // Why containment: React bubbles keydown out of portaled popovers too, and their Escape is theirs.
@@ -335,11 +336,15 @@ export function GitGraphFullView({
                   )
                 }
                 onSelect={(event) => selection.handleRowSelect(viewModel.historyItem, event)}
-                onJump={(commitId) => jumpTo(commitId, { focus: true })}
+                onJump={(commitId) =>
+                  result?.items.some((item) => item.id === commitId)
+                    ? jumpTo(commitId, { focus: true })
+                    : viewReveal.revealCommit(commitId)
+                }
                 onOpen={() => onOpenCommit(viewModel.historyItem)}
               />
             ))}
-            {result && <GitHistoryGraphLoadMore worktreeId={filterKey} state={state} />}
+            <GitGraphAutoLoadMore worktreeId={filterKey} state={state} scrollRootRef={listRef} />
           </div>
         </div>
         <GitGraphDetailsPane
