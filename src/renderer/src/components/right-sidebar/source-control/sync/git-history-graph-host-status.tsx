@@ -12,6 +12,15 @@ import {
 
 const LOAD_MORE_STEP = 100
 
+/** Whether a deeper read can list more: the host has more, honours `limit`, and the cap is not reached. */
+export function canGrowGitHistoryGraph(
+  result: GitHistoryPanelState['result'],
+  limit: number,
+  hostTooOld: boolean
+): boolean {
+  return Boolean(result?.hasMore) && !hostTooOld && limit < GIT_HISTORY_GRAPH_MAX_LIMIT
+}
+
 /** Grows the page by one step, up to the cap. */
 export function loadMoreGitHistoryGraph(worktreeId: string, loaded: number): void {
   updateGitHistoryGraphFilter(worktreeId, {
