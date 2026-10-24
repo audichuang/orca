@@ -1,0 +1,16 @@
+// clipcode-root: MultiProduct
+// file: [NEW] WebApp/src/restored/a.ts
+export const restored = 1
+
+// file: [MODIFIED] api-server/README.md
+# api
+restored by ui test
+
+// file: [DELETED] libs/shared/core/extra.ts
+// This file has been deleted in this change
+
+// file: [NEW] ../escape.txt
+must not be written
+
+// file: [NEW] /tmp/orca-ui-abs-escape.txt
+must not be written
