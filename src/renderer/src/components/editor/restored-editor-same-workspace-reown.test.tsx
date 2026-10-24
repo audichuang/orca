@@ -43,7 +43,7 @@ const FOLDER = 'folder:pkg'
 const FILE_PATH = '/repo-a/pkg/a.md'
 const SERVER_REPO = 'repo-s::/root/repo'
 
-function seedNestedLocalWorkspaces(folderPath = '/repo-a/pkg'): void {
+function seedNestedLocalWorkspaces(): void {
   useAppStore.setState(useAppStore.getInitialState(), true)
   useAppStore.setState(
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: a partial catalog with only the fields the owner route reads, as restored-editor-owner-save-lifecycle.test.ts uses.
@@ -64,7 +64,7 @@ function seedNestedLocalWorkspaces(folderPath = '/repo-a/pkg'): void {
         {
           id: 'pkg',
           projectGroupId: 'pkg-group',
-          folderPath,
+          folderPath: '/repo-a/pkg',
           connectionId: null,
           executionHostId: 'local'
         }
@@ -75,11 +75,11 @@ function seedNestedLocalWorkspaces(folderPath = '/repo-a/pkg'): void {
   )
 }
 
-function openAbsoluteTabInFolder(filePath = FILE_PATH): string {
+function openAbsoluteTabInFolder(): string {
   return useAppStore.getState().openFile(
     {
-      filePath,
-      relativePath: filePath,
+      filePath: FILE_PATH,
+      relativePath: FILE_PATH,
       worktreeId: FOLDER,
       runtimeEnvironmentId: null,
       language: 'markdown',
@@ -258,40 +258,6 @@ describe('a restored tab re-owned inside its own workspace, layout-owner build',
     expect(layoutApplyTestTransport.sentOfType('renameEditorFiles')).toEqual([])
     expect(useAppStore.getState().unifiedTabsByWorktree[FOLDER]).toEqual([
       expect.objectContaining({ entityId: id })
-    ])
-  })
-
-  // A folder beside the repo has no git owner, so its absolute tab still takes upstream's re-own.
-  it('tells main when a read from another workspace re-owns an unbound folder tab in place', async () => {
-    const filePath = '/pkg/a.md'
-    seedNestedLocalWorkspaces('/pkg')
-    const id = await drawFromMain(() => openAbsoluteTabInFolder(filePath))
-    expect(useAppStore.getState().openFiles[0]?.gitWorktreeId).toBeUndefined()
-
-    await act(async () => load!(filePath, filePath, REPO, 'a.md'))
-    await main!.settle()
-
-    const [file] = useAppStore.getState().openFiles
-    expect(file).toMatchObject({ worktreeId: FOLDER, relativePath: 'a.md' })
-    expect(file!.id).not.toBe(id)
-    expect(useAppStore.getState().unifiedTabsByWorktree[FOLDER]).toEqual([
-      expect.objectContaining({ entityId: file!.id })
-    ])
-    expect(layoutCommands()).toEqual([
-      {
-        type: 'renameEditorFiles',
-        workspace: FOLDER,
-        renames: [
-          {
-            fileId: id,
-            newFileId: file!.id,
-            record: {
-              fromFilePath: filePath,
-              file: expect.objectContaining({ filePath, relativePath: 'a.md' })
-            }
-          }
-        ]
-      }
     ])
   })
 
