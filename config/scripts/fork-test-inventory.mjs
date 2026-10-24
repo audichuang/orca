@@ -3,11 +3,10 @@
 // reviewer's mutation pass; a renamed entry would drop out silently, since vitest skips an unmatched filter.
 // Usage: node config/scripts/fork-test-inventory.mjs <mode>
 //   list                         print the listed paths; fail on a missing, duplicate or uncollected entry
-//   list --existing              print the listed paths collected here; report problems on stderr, exit 0 (merged tree)
 //   check <fork-base>            validate the list, and that every test the fork added since <fork-base> has a runner
-//   fork-changed <fork-base> <ref>  print unit tests collected here that the fork added or changed up to <ref>
-//   fork-dropped <fork-base> <ref>  print `<reason>\t<path>` for each fork-added or changed test missing here or
-//                                not collected by any runner
+//   fork-changed <fork-base> <ref>  print the canary's tests: unit tests collected here that the fork added or changed
+//                                up to <ref>, plus every collected seam-list entry
+//   fork-dropped <fork-base> <ref>  print `<reason>\t<path>` for each of those tests missing here or not collected
 //   wire                         print the cross-version wire tests fork-check-wire runs
 import { execFileSync } from 'node:child_process'
 import { existsSync, globSync, readFileSync } from 'node:fs'
@@ -29,7 +28,7 @@ function wireTests() {
 
 function usage() {
   console.error(
-    'usage: fork-test-inventory.mjs list [--existing] | check <fork-base> | fork-changed|fork-dropped <fork-base> <ref> | wire'
+    'usage: fork-test-inventory.mjs list | check <fork-base> | fork-changed|fork-dropped <fork-base> <ref> | wire'
   )
   process.exit(2)
 }
@@ -63,13 +62,12 @@ function listProblems(paths, collected) {
 }
 
 const [mode, ...rest] = process.argv.slice(2)
-const existing = mode === 'list' && rest.length === 1 && rest[0] === '--existing'
 const valid =
-  (mode === 'list' && (rest.length === 0 || existing)) ||
+  (mode === 'list' && rest.length === 0) ||
   (mode === 'check' && rest.length === 1) ||
   (mode === 'wire' && rest.length === 0) ||
   ((mode === 'fork-changed' || mode === 'fork-dropped') && rest.length === 2)
-if (!valid || rest.some((arg, index) => arg.startsWith('-') && !(existing && index === 0))) {
+if (!valid || rest.some((arg) => arg.startsWith('-'))) {
   usage()
 }
 
@@ -82,29 +80,34 @@ const collected = new Set(discoverUnitFiles())
 const wire = new Set(wireTests())
 const hasRunner = (path) => collected.has(path) || wire.has(path) || E2E_SPEC.test(path)
 
+const paths = readFileSync(LIST, 'utf8')
+  .split('\n')
+  .map((line) => line.trim())
+  .filter((line) => line !== '' && !line.startsWith('#'))
+
 if (mode === 'fork-changed' || mode === 'fork-dropped') {
   const [base, ref] = rest
-  const tests = changedSince(base, ref, 'AM').filter((path) => TEST_FILE.test(path))
+  // Why the seam list too: a seam test the fork no longer edits (fork cases moved to a sibling) still guards a seam.
+  const seams = new Set(paths)
+  const tests = [
+    ...new Set([...changedSince(base, ref, 'AM').filter((path) => TEST_FILE.test(path)), ...seams])
+  ]
   // Why dropped is its own mode: a test the merged tree stops collecting would otherwise vanish from a green run.
   // Why no rename following: a missing path is a finding for a human to check.
+  const runs = (path) => (seams.has(path) ? collected.has(path) : hasRunner(path))
   const selected =
     mode === 'fork-changed'
       ? tests.filter((path) => collected.has(path))
       : tests.flatMap((path) =>
           !existsSync(path)
             ? [`missing in the merged tree\t${path}`]
-            : hasRunner(path)
+            : runs(path)
               ? []
-              : [`not collected by any runner\t${path}`]
+              : [`not collected by ${seams.has(path) ? 'the unit runner' : 'any runner'}\t${path}`]
         )
-  console.log(selected.join('\n'))
+  console.log(selected.sort().join('\n'))
   process.exit(0)
 }
-
-const paths = readFileSync(LIST, 'utf8')
-  .split('\n')
-  .map((line) => line.trim())
-  .filter((line) => line !== '' && !line.startsWith('#'))
 const problems = listProblems(paths, collected)
 
 if (mode === 'check') {
@@ -118,9 +121,7 @@ if (mode === 'check') {
 for (const problem of problems) {
   console.error(`fork-test-inventory: ${problem}`)
 }
-if (existing) {
-  console.log([...new Set(paths)].filter((path) => collected.has(path)).join('\n'))
-} else if (problems.length > 0) {
+if (problems.length > 0) {
   process.exit(1)
 } else if (mode === 'list') {
   console.log(paths.join('\n'))
