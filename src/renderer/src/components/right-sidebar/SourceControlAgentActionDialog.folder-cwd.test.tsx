@@ -12,7 +12,14 @@ const mocks = vi.hoisted(() => ({
   ensureDetectedAgents: vi.fn(),
   onStart: vi.fn()
 }))
-// As the route decides: codex opens as a chat without its CLI, except below the workspace root.
+// As the route decides: codex is chat-by-default and opens as a chat without its CLI, except
+// below the folder root (/work), where the launch is a terminal.
+const belowRoot = (cwd?: string | null): boolean => !!cwd && cwd !== '/work'
+vi.mock('./source-control-launch-agent-args-applicability', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  sourceControlLaunchAppliesAgentArgs: (input: { initialCwd?: string | null }) =>
+    belowRoot(input.initialCwd)
+}))
 vi.mock('@/lib/host-chat-program', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   agentsOfferedForLaunch: (
@@ -20,7 +27,7 @@ vi.mock('@/lib/host-chat-program', async (importOriginal) => ({
     _workspace: unknown,
     detected: readonly TuiAgent[] | null,
     cwd?: string | null
-  ): TuiAgent[] => (cwd ? [...(detected ?? [])] : [...(detected ?? []), 'codex'])
+  ): TuiAgent[] => (belowRoot(cwd) ? [...(detected ?? [])] : [...(detected ?? []), 'codex'])
 }))
 vi.mock('@/runtime/runtime-git-status-client', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -139,6 +146,8 @@ describe('SourceControlAgentActionDialog in a folder workspace', () => {
     await vi.waitFor(() =>
       expect(container.textContent?.toLowerCase()).toContain('not enabled or was not detected')
     )
+    // The launch is a terminal there, so the saved CLI arguments apply.
+    expect(container.textContent).toContain('CLI arguments')
     expect(mocks.onStart).not.toHaveBeenCalled()
   })
 
