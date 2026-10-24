@@ -95,7 +95,7 @@ globalThis.dismissToasts = async () => {
 // 打開 MultiProduct 的 Source Control;點了沒切過去就重試(視窗剛拿到焦點時第一下常被吞)
 /** 左側欄捲回頂端:列不在畫面上(或藏在吸頂的群組標題下)時點不到 */
 globalThis.scrollSidebarTop = async () => {
-  const list = (await lines()).find(([, t]) => t === '清單方塊 Worktrees')
+  const list = (await lines()).find(([, t]) => t === `清單方塊 ${map.UI_TEXT.worktreeList}`)
   if (list) {
     await app.scroll(list[0], 'up', 5)
     // 捲動後 AX 的座標要過一會、再觀察一次畫面才更新
@@ -114,7 +114,7 @@ globalThis.workspaceRowTarget = async (name) => {
 }
 // 用頂部的 Search worktrees 切換 workspace:左側欄是虛擬清單,捲動後 AX 回報的列座標會偏掉,點列不可靠
 globalThis.switchWorkspace = async (name) => {
-  await app.click(await find(/^按鈕 Search worktrees/))
+  await app.click(await find(map.RE.button(map.UI_TEXT.searchWorktrees)))
   await sleep(800)
   await app.typeText(name)
   await sleep(1000)
@@ -138,7 +138,9 @@ globalThis.openMP = async (name = 'MultiProduct') => {
     await switchWorkspace(name)
     if (!(await grep(map.RE.button(map.UI_TEXT.refreshAll)))) {
       let sc = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
-      const toggle = (await lines()).find(([, t]) => t.startsWith('按鈕 Toggle right sidebar'))
+      const toggle = (await lines()).find(([, t]) =>
+        t.startsWith(`按鈕 ${map.UI_TEXT.toggleRightSidebar}`)
+      )
       // 右側欄關著(例:SC-28 關掉後)時先打開
       if (!sc && toggle) {
         await app.click(toggle[0])
@@ -430,8 +432,9 @@ globalThis.setAutoSave = async (on, delay) => {
   await sleep(1800)
   await app.setValue(await find(/^文字欄位 \(settable\).*Search settings/), 'auto save')
   await sleep(1200)
-  const toggle = /^切換 Description: Auto Save Files/
-  const isOn = async () => /Value: on/.test(await grep(/Auto Save Files, Value/))
+  const toggle = new RegExp(`^切換 Description: ${map.UI_TEXT.autoSaveFiles}`)
+  const value = new RegExp(`${map.UI_TEXT.autoSaveFiles}, Value`)
+  const isOn = async () => /Value: on/.test(await grep(value))
   if (on && !(await isOn())) {
     await app.click(await find(toggle))
     await sleep(600)
@@ -448,7 +451,7 @@ globalThis.setAutoSave = async (on, delay) => {
     await app.click(await find(toggle))
     await sleep(600)
   }
-  const after = await grep(/Auto Save Files, Value/)
+  const after = await grep(value)
   if (/Value: on/.test(after) !== on) {
     throw new Error(`Auto Save 沒切成 ${on ? 'on' : 'off'}:${after}`)
   }
