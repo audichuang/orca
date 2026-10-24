@@ -1,11 +1,13 @@
-// GG:Git Graph 編輯器分頁(feat/git-graph-tab-entry)。fixture 要先跑過 graph-fixture.sh。
+// GG:Git Graph 編輯器分頁(feat/git-graph-tab-entry)。pre/GG-01.sh 重置 fixture 並跑 graph-fixture.sh,之後的 GG 案例共用那份歷史。
 const WEB = `${P}/WebApp`
 const RE_TAB = /^sortable Git Graph Close tab$/
 const RE_REPO = /^下拉式方塊 \(settable\) Description: Repository, Value: /
 const RE_FILTER = /^下拉式方塊 \(settable\) Description: Branch filter, Value: /
 
 const graphTabs = async () => (await findAll(RE_TAB)).length
-const repoValue = async () => (await grep(RE_REPO)).replace(/^\d+ .*Value: /, '')
+// 「WebApp main」;10-21 前寫成「WebApp · main」
+const repoValue = async () =>
+  (await grep(RE_REPO)).replace(/^\d+ .*Value: /, '').replace(' · ', ' ')
 const filterValue = async () => (await grep(RE_FILTER)).replace(/^\d+ .*Value: /, '')
 // 列文字依欄寬可能帶日期、hash 與 ", Value: 0"
 const row = async (msgRe) => await find(new RegExp(`^切換鈕 (.* )?${msgRe.source}( |,|$)`))
@@ -18,21 +20,22 @@ const pick = async (re) => {
   await app.click(ids.at(-1))
   await sleep(900)
 }
-// Repository 下拉:每個 repo 是一個 container 標題,底下列 worktree(例:container WebApp → main / feature/x)
+// Repository 下拉:每個 worktree 一列「<repo> <branch>」(選中的前面帶 (selected));10-21 前是 repo 標題底下列 worktree
 const pickRepo = async (repo, worktree) => {
   await app.click(await find(RE_REPO))
   await sleep(900)
   const L = await lines()
+  const flat = L.findLast(([, t]) => t.replace(/^\(selected\) /, '') === `${repo} ${worktree}`)
   const g = L.findIndex(([, t]) => t === `container ${repo}`)
-  check(g !== -1, `下拉沒有 ${repo} 群組`)
-  for (let k = g + 1; k < L.length && !L[k][1].startsWith('container '); k++) {
+  let hit = flat
+  for (let k = g + 1; !hit && g !== -1 && k < L.length && !L[k][1].startsWith('container '); k++) {
     if (L[k][1].replace(/^\(selected\) /, '') === worktree) {
-      await app.click(L[k][0])
-      await sleep(1800)
-      return
+      hit = L[k]
     }
   }
-  throw new Error(`${repo} 群組下沒有 ${worktree}`)
+  check(hit, `下拉沒有 ${repo} · ${worktree}`)
+  await app.click(hit[0])
+  await sleep(1800)
 }
 const noCrash = async () =>
   check(!(await grep(/recoverable UI error/)), '出現 recoverable UI error')
@@ -43,7 +46,7 @@ const freshGraph = async () => {
   await app.pressKey('cmd+shift+h')
   await sleep(2500)
   check((await graphTabs()) === 1, `快捷鍵後 Git Graph 分頁數 ${await graphTabs()}`)
-  if (!/^WebApp · main$/.test(await repoValue())) {
+  if ((await repoValue()) !== 'WebApp main') {
     await pickRepo('WebApp', 'main')
   }
   if (!/feature\/login/.test(await filterValue())) {
@@ -57,6 +60,7 @@ const freshGraph = async () => {
 
 defineCase('GG-01', {
   title: 'Cmd+Shift+H 開成編輯器分頁,再按一次不重複',
+  pre: 'script',
   run: async () => {
     await closeAll()
     check((await graphTabs()) === 0, '關閉後仍有 Git Graph 分頁')
@@ -103,18 +107,21 @@ defineCase('GG-03', {
     const go = async (repo, wt, rowRe) => {
       await pickRepo(repo, wt)
       const v = await repoValue()
-      check(v === `${repo} · ${wt}`, `切換後 Repository=${v}`)
+      check(v === `${repo} ${wt}`, `切換後 Repository=${v}`)
       if (rowRe) {
         check(Boolean(await grep(rowRe)), `${v} 的 commit 列找不到 ${rowRe}`)
       }
       seen.push(v)
     }
-    const apiHead = sh(`git -C ${P}/api-server log -1 --format=%s`)
-      .trim()
-      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    await go('api-server', 'main', new RegExp(`^切換鈕 (.* )?${apiHead}( |,|$)`))
+    // 換 repo 後篩選回到 All branches,最上面一列是全部 ref 裡最新的 commit
+    const newest = (repo) =>
+      sh(`git -C ${P}/${repo} log --all --date-order -1 --format=%s`)
+        .trim()
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const rowOf = (subject) => new RegExp(`^切換鈕 (.* )?${subject}( |,|$)`)
+    await go('api-server', 'main', rowOf(newest('api-server')))
     await go('WebApp', 'feature/x')
-    await go('WebApp', 'main', /^切換鈕 (.* )?init/)
+    await go('WebApp', 'main', rowOf(newest('WebApp')))
     return seen.join(' → ')
   }
 })
@@ -187,7 +194,7 @@ defineCase('GG-06', {
 })
 
 defineCase('GG-07', {
-  title: 'B1:檔案 diff 來回後,init commit 的 Open all changes together 不 crash',
+  title: 'B1:檔案 diff 來回後,init commit 的 Open all changes 不 crash',
   run: async () => {
     await freshGraph()
     await app.click(await row(/fix\(auth\): login redirect loop/))
@@ -205,7 +212,7 @@ defineCase('GG-07', {
     await app.click(await row(/init/))
     await sleep(1500)
     checkRe(await filesHeader(), /^Changed files \(8\)/, 'init 的檔案數')
-    await app.click(await find(/Open all changes together/))
+    await app.click(await find(UI_RE.button(UI_MAP.UI_TEXT.openAllCommitChanges)))
     await sleep(6000)
     await noCrash()
     const editors = (await findAll(/^editor/)).length
