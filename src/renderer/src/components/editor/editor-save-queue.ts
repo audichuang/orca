@@ -218,6 +218,7 @@ export function createEditorSaveQueue(store: AppStoreApi): EditorSaveQueue {
         detail: {
           fileId,
           content: contentToSave,
+          filePath: liveFile.filePath,
           recordViewIds: savedView
             ? editorBufferSiblingViewIds(store.getState(), savedView.id)
             : [fileId]
