@@ -14,7 +14,7 @@ afterEach(async () => {
   await Promise.all(repos.splice(0).map((repo) => rm(repo, { recursive: true, force: true })))
 })
 
-async function repoWithSideBranch(): Promise<string> {
+async function repoWithSideBranch(options: { tagOnly?: boolean } = {}): Promise<string> {
   if (!gitBinary) {
     throw new Error('Git is required')
   }
@@ -53,6 +53,12 @@ async function repoWithSideBranch(): Promise<string> {
   await git('commit', '--quiet', '--allow-empty', '-m', 'side only')
   await git('checkout', '--quiet', 'main')
   await git('commit', '--quiet', '--allow-empty', '-m', 'main only')
+  if (options.tagOnly) {
+    await git('checkout', '--quiet', '--detach')
+    await git('commit', '--quiet', '--allow-empty', '-m', 'tag only')
+    await git('tag', 'v-tag-only')
+    await git('checkout', '--quiet', 'main')
+  }
   return repo
 }
 
@@ -80,5 +86,21 @@ describe('getHistory graph dispatch (fork)', () => {
     expect(
       all.items.find((item) => item.subject === 'side only')?.references?.map((r) => r.name)
     ).toContain('side')
+  })
+
+  it('walks and lists tags only when the request asks for them', async () => {
+    const repo = await repoWithSideBranch({ tagOnly: true })
+    const source = { local: true, remotes: [] }
+
+    const branches = await getHistory(repo, { limit: 50, graph: { mode: 'all', source } })
+    expect(branches.items.map((item) => item.subject)).not.toContain('tag only')
+    expect(branches.graph?.refs.map((ref) => ref.name)).not.toContain('v-tag-only')
+
+    const tagged = await getHistory(repo, {
+      limit: 50,
+      graph: { mode: 'all', source: { ...source, tags: true }, listTags: true }
+    })
+    expect(tagged.items.map((item) => item.subject)).toContain('tag only')
+    expect(tagged.graph?.refs.find((ref) => ref.name === 'v-tag-only')?.category).toBe('tags')
   })
 })
