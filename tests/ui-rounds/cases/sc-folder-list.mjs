@@ -130,10 +130,11 @@ defineCase('SC-20', {
       }, 8000)
       check(c, `匯入後清單沒有 unimported (main) 1:${await counts()}`)
       const order = c.split('\n').map((l) => (l.match(/按鈕 (\S+) \(/) || [])[1])
-      const iD = order.indexOf('docs-site'),
+      // 有變更的 repo 依名稱排序(docs-site 在 NO CHANGES 群組):unimported 落在 core 與 WebApp 之間
+      const iC = order.indexOf('core'),
         iU = order.indexOf('unimported'),
         iW = order.indexOf('WebApp')
-      check(iD < iU && iU < iW, `unimported 應排在 docs-site 與 WebApp 之間:${order.join(',')}`)
+      check(iC < iU && iU < iW, `unimported 應排在 core 與 WebApp 之間:${order.join(',')}`)
       return `匯入前 5 列、無 unimported;匯入後 unimported (main) 1,順序 ${order.join(' > ')}。註:匯入會自動切 workspace,「不切換就出現」無法驗證`
     } finally {
       try {
@@ -426,7 +427,7 @@ defineCase('SC-25', {
       check(commitBtn, '下方面板的 commit 主按鈕不見了')
       await app.click(await find(/^按鈕 api-server \(main\)/))
       await sleep(500)
-      // 025c91a6f 起是標準手風琴:Home/End 只移焦點,Enter 才展開
+      // d27bb68de6 起 Home/End 直接換選取(Return 不影響);最後一列是 NO CHANGES 群組的 docs-site
       await app.pressKey('End')
       await app.pressKey('Return')
       await sleep(1000)
@@ -438,7 +439,7 @@ defineCase('SC-25', {
       await app.click(await find(/^按鈕 r20 \(main\)/))
       await sleep(1000)
       const r = await scPanelTitle()
-      checkRe(e, /WebApp-feature|r20/, 'End 後選取')
+      checkRe(e, /docs-site/, 'End 後選取')
       checkRe(h, /api-server/, 'Home 後選取')
       checkRe(r, /r20/, '點 r20 後選取')
       return `20 列都是 1,約 ${secs}s;End→${e}、Home→${h}、點 r20→${r};清單 40% 高度與可捲動需看截圖`
