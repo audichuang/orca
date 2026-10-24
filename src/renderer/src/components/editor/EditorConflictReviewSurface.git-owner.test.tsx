@@ -72,7 +72,7 @@ function renderReview(reloadContent: (file: OpenFile) => void): StoreApi<AppStat
       '/f/a',
       [{ path: ENTRY.path, conflictKind: 'both_modified' }],
       'live-summary',
-      'repo-a'
+      { gitWorktreeId: 'repo-a' }
     )
   const review = store.getState().openFiles.find((file) => file.mode === 'conflict-review')!
   expect(review).toMatchObject({ worktreeId: FOLDER, gitWorktreeId: 'repo-a' })
@@ -120,7 +120,7 @@ describe('conflict review surface in a folder workspace', () => {
       '/f/a',
       ENTRY,
       'typescript',
-      'repo-a'
+      { gitWorktreeId: 'repo-a' }
     )
   })
 
@@ -132,7 +132,7 @@ describe('conflict review surface in a folder workspace', () => {
       '/f/a',
       [{ path: ENTRY.path, conflictKind: 'both_modified' }],
       'live-summary',
-      'repo-a'
+      { gitWorktreeId: 'repo-a' }
     )
   })
 

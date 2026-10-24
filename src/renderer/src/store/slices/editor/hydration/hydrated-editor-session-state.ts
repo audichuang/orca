@@ -10,7 +10,10 @@ import type { OpenFile } from '../types/open-file'
 import { reconcileEditorBufferMembership } from '../buffers/editor-buffer-record'
 import { buildEditorBufferViewIndex } from '../buffers/editor-buffer-views'
 import { buildOwnedEditorFileId } from '../file-ids/editor-file-ids'
-import { resolveTabOwnerRelativePath } from '../git/open-file-git-owner'
+import {
+  resolveTabOwnerRelativePath,
+  type HydratedGitOwnerOptions
+} from '../git/open-file-git-owner'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { resolveHydratedEditorFileSelection } from '../file-ids/hydrated-editor-file-selection'
 import { resolveHydratedEditorFrontmatter } from '../file-ids/hydrated-editor-frontmatter'
@@ -43,10 +46,7 @@ export function buildHydratedEditorSessionState(
   activeWorktreeId: string | null,
   /** Owners whose editors moved to another host: not stranded here. */
   movedOwnerKeys: ReadonlySet<string> = new Set(),
-  /** Repos a folder tab's git owner may name; omitted where repos are unknown, so the owner is kept. */
-  validGitOwnerIds?: ReadonlySet<string>,
-  /** Folder roots, to re-anchor relativePath when a dropped git owner leaves it repo-relative. */
-  ownerRoots?: Pick<AppState, 'folderWorkspaces'>
+  { validGitOwnerIds, ownerRoots }: HydratedGitOwnerOptions = {}
 ): {
   state: HydratedEditorSessionState
   editorFileIdMigrationsByWorktree: Record<string, Map<string, string>>
