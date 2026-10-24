@@ -163,6 +163,7 @@ export function useSourceControlAgentActionDialog({
     agent: selectedAgent,
     worktreeId,
     repoId,
+    initialCwd,
     ...(repo ? { executionHostId: getRepoExecutionHostId(repo) } : {})
   })
 
