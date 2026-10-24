@@ -6,18 +6,29 @@
 //   list --existing              print the listed paths collected here; report problems on stderr, exit 0 (merged tree)
 //   check <fork-base>            validate the list, and that every test the fork added since <fork-base> has a runner
 //   fork-changed <fork-base> <ref>  print unit tests collected here that the fork added or changed up to <ref>
+//   fork-dropped <fork-base> <ref>  print fork-added or changed tests present here that no runner collects
+//   wire                         print the cross-version wire tests fork-check-wire runs
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, globSync, readFileSync } from 'node:fs'
 import { CROSS_VERSION_WIRE_DIR, discoverUnitFiles } from './ci-unit-files.mjs'
 
 const LIST = 'config/fork-seam-tests.txt'
 const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/
-// Why these count as run: fork-check-e2e selects e2e specs by its own diff, fork-check-wire runs the wire dir.
+// Why: fork-check-e2e selects e2e specs by its own diff (`tests/e2e/*.spec.ts` pathspec, which spans directories).
 const E2E_SPEC = /^tests\/e2e\/.+\.spec\.ts$/
+// Why skipped: at the fork base this upstream test reads isStructuredTab from a module that no longer exports it.
+const WIRE_SKIPPED = 'cross-version-registered-agents.unit.test.ts'
+
+function wireTests() {
+  return globSync(`${CROSS_VERSION_WIRE_DIR}**/*.test.ts`)
+    .map((file) => file.replaceAll('\\', '/'))
+    .filter((file) => file.split('/').at(-1) !== WIRE_SKIPPED)
+    .sort()
+}
 
 function usage() {
   console.error(
-    'usage: fork-test-inventory.mjs list [--existing] | check <fork-base> | fork-changed <fork-base> <ref>'
+    'usage: fork-test-inventory.mjs list [--existing] | check <fork-base> | fork-changed|fork-dropped <fork-base> <ref> | wire'
   )
   process.exit(2)
 }
@@ -55,20 +66,30 @@ const existing = mode === 'list' && rest.length === 1 && rest[0] === '--existing
 const valid =
   (mode === 'list' && (rest.length === 0 || existing)) ||
   (mode === 'check' && rest.length === 1) ||
-  (mode === 'fork-changed' && rest.length === 2)
+  (mode === 'wire' && rest.length === 0) ||
+  ((mode === 'fork-changed' || mode === 'fork-dropped') && rest.length === 2)
 if (!valid || rest.some((arg, index) => arg.startsWith('-') && !(existing && index === 0))) {
   usage()
 }
 
-const collected = new Set(discoverUnitFiles())
+if (mode === 'wire') {
+  console.log(wireTests().join('\n'))
+  process.exit(0)
+}
 
-if (mode === 'fork-changed') {
+const collected = new Set(discoverUnitFiles())
+const wire = new Set(wireTests())
+const hasRunner = (path) => collected.has(path) || wire.has(path) || E2E_SPEC.test(path)
+
+if (mode === 'fork-changed' || mode === 'fork-dropped') {
   const [base, ref] = rest
-  console.log(
-    changedSince(base, ref, 'AM')
-      .filter((path) => collected.has(path))
-      .join('\n')
-  )
+  const tests = changedSince(base, ref, 'AM').filter((path) => TEST_FILE.test(path))
+  // Why dropped is its own mode: a test the merged tree stops collecting would otherwise vanish from a green run.
+  const selected =
+    mode === 'fork-changed'
+      ? tests.filter((path) => collected.has(path))
+      : tests.filter((path) => existsSync(path) && !hasRunner(path))
+  console.log(selected.join('\n'))
   process.exit(0)
 }
 
@@ -80,9 +101,7 @@ const problems = listProblems(paths, collected)
 
 if (mode === 'check') {
   for (const path of changedSince(rest[0], 'HEAD', 'A')) {
-    const runs =
-      collected.has(path) || E2E_SPEC.test(path) || path.startsWith(CROSS_VERSION_WIRE_DIR)
-    if (TEST_FILE.test(path) && !runs) {
+    if (TEST_FILE.test(path) && !hasRunner(path)) {
       problems.push(`${path}: fork-added test that no runner collects (see ci-unit-files.mjs)`)
     }
   }

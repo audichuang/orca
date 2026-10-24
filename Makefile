@@ -290,14 +290,15 @@ fork-check-full:
 	test -z "$$failed" || { echo "fork-check-full: failed:$$failed"; exit 1; }
 
 # CI's cross-version wire journeys: old/new clients and servers talking to each other.
-# Why skip one file: at the fork base this upstream test reads isStructuredTab from a module that no longer exports it.
-# Explicit paths, because a directory filter overrides --exclude; find keeps new files in.
+# Explicit paths, because a directory filter overrides --exclude; the inventory's wire mode globs new files in and
+# skips the one upstream file its WIRE_SKIPPED names, so fork-check-lint and this target agree on what runs.
 fork-check-wire: export LC_ALL = C
 # Why the guard: the journeys pick their baseline from the newest local vX.Y.Z tag.
 fork-check-wire: fork-base-guard
 	node config/scripts/ensure-native-runtime.mjs --runtime=node
 	$(if $(CI),,node config/scripts/fork-wait-for-quiet-machine.mjs)
-	pnpm exec vitest run --config config/vitest.config.ts $$(find tests/e2e/cross-version-wire -name '*.test.ts' ! -name 'cross-version-registered-agents.unit.test.ts' | sort)
+	files=$$(node config/scripts/fork-test-inventory.mjs wire) && test -n "$$files" && \
+	  pnpm exec vitest run --config config/vitest.config.ts $$files
 
 # CI's mobile web app checks; fork-check-tests skips these without mobile/node_modules.
 fork-check-mobile: export LC_ALL = C
