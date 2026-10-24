@@ -162,14 +162,19 @@ export async function launchSourceControlRecoveryAgentWithDefault({
     return false
   }
 
-  // A saved or default agent may open as a chat without its CLI.
+  const launchWorktreeId = editorWorktreeId ?? activeWorktreeId
+  // Why: the folder root is not the repo, so the agent must start inside it.
+  const initialCwd = launchWorktreeId !== activeWorktreeId ? worktreePath : undefined
+  // A saved or default agent may open as a chat without its CLI, judged where it actually launches.
+  const launchWorkspace = worktreeLaunchWorkspace(launchWorktreeId)
   const opensAsChat = (agent: TuiAgent): boolean =>
     agentChoiceMayOpenAsChat(
       useAppStore.getState(),
       agent,
-      workspace,
+      launchWorkspace,
       choices.detected,
-      resolveSourceControlActionPreferredSurface(savedRecipe, agent)
+      resolveSourceControlActionPreferredSurface(savedRecipe, agent),
+      initialCwd
     )
   const savedAgent = readSourceControlLaunchRecipeAgentId(savedRecipe)
   if (
@@ -199,14 +204,12 @@ export async function launchSourceControlRecoveryAgentWithDefault({
       settings: store.settings
     }
   )
-  const launchWorktreeId = editorWorktreeId ?? activeWorktreeId
   const result = launchAgentInNewTab({
     requestId: newAgentLaunchRequestId(),
     agent,
     worktreeId: launchWorktreeId,
     groupId: activeGroupId ?? launchWorktreeId,
-    // Why: the folder root is not the repo, so the agent must start inside it.
-    initialCwd: launchWorktreeId !== activeWorktreeId ? worktreePath : undefined,
+    initialCwd,
     prompt: commandInput,
     ...projection,
     promptDelivery: 'submit-after-ready',
