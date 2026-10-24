@@ -6,4 +6,4 @@ P=$T/MultiProduct
 reset() { reset_fixture; }
 reset
 mkdir "$P/notes/locked" && chmod 555 "$P/notes/locked"
-pbcopy < "$T/payloads/RS-20"
+pbcopy < "$UIR/payloads/RS-20"
