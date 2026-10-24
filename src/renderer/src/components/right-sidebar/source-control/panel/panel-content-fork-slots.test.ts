@@ -1,4 +1,4 @@
-// Fork seam guard: nothing renders SourceControlPanelContent in tests, so pin that it still plugs the
+// Fork seam guard: no test renders the panel's history dock, so pin that it still plugs the
 // fork's Commits toolbar / load-more / no-match message into upstream's GitHistoryPanel slots.
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
