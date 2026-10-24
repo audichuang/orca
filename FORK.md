@@ -75,6 +75,7 @@ Upstream changes break fork features silently when they are type-compatible: a r
 - **Persistence**: every fork field written to disk gets a save → reload → restore round trip (`workspace-layout-git-owner-roundtrip.test.ts` is the pattern).
 - **UI interaction**: component tests with the real store (`folder-multi-repo-panel.test.tsx`, `git-history-graph.component.test.tsx`).
 - **Prove the test bites**: remove the fix or mutate the seam and watch it fail before trusting a green run.
+- **Fork cases go in a sibling** `<basename>.fork.test.ts(x)` next to the upstream test, never appended to the upstream file, so rebases do not conflict there. Edit an upstream test only where the fork deliberately changed upstream behavior, and keep that edit minimal.
 - Keep a contract test inside one layer; a main test importing renderer code (or the reverse) breaks the tsconfig projects. Write one contract per side of the seam instead.
 
 To measure coverage after a large rebase, run a mutation pass: list the seams, apply plausible upstream edits one at a time in a separate checkout, and record which tests go red.
