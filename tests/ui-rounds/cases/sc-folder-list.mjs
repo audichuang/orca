@@ -13,7 +13,8 @@ const {
   scCloseOtherLocations,
   scOtherLocations,
   scDeleteGroup,
-  scCreateWorkspace
+  scCreateWorkspace,
+  UT
 } = await import(
   new URL(`./sc-panel-actions.mjs${new URL(import.meta.url).search}`, import.meta.url).href
 )
