@@ -63,7 +63,11 @@ globalThis.clickRe = async (re, opts) => {
 
 // ---- MultiProduct fixture ----
 globalThis.REPOS = ['api-server', 'core', 'docs-site', 'WebApp', 'WebApp-feature']
-globalThis.counts = async () => await grep(map.RE.anyRepoRow)
+// 收起的 NO CHANGES 群組先展開,沒有變更的 repo 才會列出
+globalThis.counts = async () => {
+  await expandRepoGroups()
+  return await grep(map.RE.anyRepoRow)
+}
 // 通知的標準形式(ui-map 的 toastNote),前面保留元素編號與角色,跟舊的 grep 輸出同形
 globalThis.note = async () => {
   const L = await lines()
@@ -89,24 +93,58 @@ globalThis.dismissToasts = async () => {
   }
 }
 // 打開 MultiProduct 的 Source Control;點了沒切過去就重試(視窗剛拿到焦點時第一下常被吞)
+/** 左側欄捲回頂端:列不在畫面上(或藏在吸頂的群組標題下)時點不到 */
+globalThis.scrollSidebarTop = async () => {
+  const list = (await lines()).find(([, t]) => t === '清單方塊 Worktrees')
+  if (list) {
+    await app.scroll(list[0], 'up', 5)
+    // 捲動後 AX 的座標要過一會、再觀察一次畫面才更新
+    await sleep(1000)
+    await app.getScreenshot({ emit: false })
+  }
+}
+/** 左側欄某 workspace 列可點的位置:列標籤的 AX 框不一定在畫面上的那一列,改點緊接的可見文字 */
+globalThis.workspaceRowTarget = async (name) => {
+  const L = await lines()
+  const k = L.findIndex(([, t]) => map.RE.workspaceRow(name).test(t))
+  if (k === -1) {
+    return null
+  }
+  return L[k + 1]?.[1].startsWith('文字 ') ? L[k + 1][0] : L[k][0]
+}
+// 用頂部的 Search worktrees 切換 workspace:左側欄是虛擬清單,捲動後 AX 回報的列座標會偏掉,點列不可靠
+globalThis.switchWorkspace = async (name) => {
+  await app.click(await find(/^按鈕 Search worktrees/))
+  await sleep(800)
+  await app.typeText(name)
+  await sleep(1000)
+  // 選項像「(selected) Active MultiProduct Last active 24m ago」;要整個名稱相符,MultiProduct-2 不算
+  const opt = new RegExp(
+    `^(\\(selected\\) )?((Active|Inactive) )?${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( Last|$)`
+  )
+  const hit = (await lines()).find(([, t]) => opt.test(t))
+  if (!hit) {
+    await app.pressKey('Escape')
+    return false
+  }
+  await app.click(hit[0])
+  await sleep(1500)
+  return true
+}
 globalThis.openMP = async (name = 'MultiProduct') => {
-  const ready = async () =>
-    (await grep(map.RE.button(map.UI_TEXT.refreshAll))) &&
-    (await grep(new RegExp(`^文字 ${name}$`)))
+  // 左側欄群組標題也叫 MultiProduct,要看 folder 面板標題列的名稱
+  const ready = async () => map.folderPanelName(await lines()) === name
   for (let k = 0; k < 3 && !(await ready()); k++) {
-    let row = (await lines()).find(([, t]) => map.RE.workspaceRow(name).test(t))
-    // 群組收起時只看得到群組標題
-    if (!row) {
-      await app.click(await find(new RegExp(`^按鈕 ${name} Group actions`)))
-      await sleep(800)
-      row = (await lines()).find(([, t]) => map.RE.workspaceRow(name).test(t))
-    }
-    if (row) {
-      await app.click(row[0])
-      await sleep(1500)
-    }
+    await switchWorkspace(name)
     if (!(await grep(map.RE.button(map.UI_TEXT.refreshAll)))) {
-      const sc = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
+      let sc = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
+      const toggle = (await lines()).find(([, t]) => t.startsWith('按鈕 Toggle right sidebar'))
+      // 右側欄關著(例:SC-28 關掉後)時先打開
+      if (!sc && toggle) {
+        await app.click(toggle[0])
+        await sleep(1000)
+        sc = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
+      }
       if (sc) {
         await app.click(sc[0])
         await sleep(1500)
