@@ -5,6 +5,6 @@ T=$ROOT
 P=$T/MultiProduct
 reset() { reset_fixture; }
 reset
-pbcopy < "$T/payloads/RS-08"
+pbcopy < "$UIR/payloads/RS-08"
 rm -f "$T/escape2.txt"
 shasum "$P/WebApp/.git/config" > "$T/RS-08.sha"
