@@ -6,4 +6,4 @@ P=$T/MultiProduct
 reset() { reset_fixture; }
 reset
 rm -f "$T/x.txt"
-pbcopy < "$T/payloads/RS-14b"
+pbcopy < "$UIR/payloads/RS-14b"
