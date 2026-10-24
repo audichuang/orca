@@ -14,7 +14,10 @@ export async function explainCommitWithDefaultAgent(
   launch: { tabOwnerId: string; initialCwd: string | undefined }
 ): Promise<void> {
   const detectionTarget = getDetectionTargetIdentityForWorktree(useAppStore.getState(), worktreeId)
-  const agent = await resolveDefaultAgentForWorktreeNewTab(useAppStore.getState, worktreeId)
+  const agent = await resolveDefaultAgentForWorktreeNewTab(useAppStore.getState, worktreeId, {
+    worktreeId: launch.tabOwnerId,
+    cwd: launch.initialCwd
+  })
   // The agent belongs to the detected host; abort if the workspace moved.
   if (
     getDetectionTargetIdentityForWorktree(useAppStore.getState(), worktreeId) !== detectionTarget
