@@ -4,4 +4,4 @@
 set -euo pipefail
 reset_fixture
 rm -f "$ROOT/escape.txt" /tmp/orca-ui-abs-escape.txt
-pbcopy < "$ROOT/payloads/H1"
+pbcopy < "$UIR/payloads/H1"

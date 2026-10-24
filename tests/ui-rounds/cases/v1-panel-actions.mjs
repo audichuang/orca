@@ -17,9 +17,6 @@ export const V1_EXPECT_COUNTS = v1SortCounts({
 })
 
 // ---------- 共用小函式(v1 前綴) ----------
-export const v1Start = async () => {
-  await openMP()
-}
 
 /** repo 清單列:{id,name,branch,n}。 */
 export const v1Rows = async () =>
@@ -31,26 +28,11 @@ export const v1Rows = async () =>
 export const v1CountsMap = async () =>
   v1SortCounts(Object.fromEntries((await v1Rows()).map((r) => [r.name, r.n])))
 
-export const v1WaitUntil = async (pred, ms = 10000, step = 500) => {
-  const t0 = Date.now()
-  for (;;) {
-    const v = await pred()
-    if (v) {
-      return v
-    }
-    if (Date.now() - t0 > ms) {
-      return null
-    }
-    await sleep(step)
-  }
-}
-
 /** 下方面板開著的 repo 名稱。 */
-export const v1Panel = async () => openRepoTitle()
 
 export const v1Select = async (name) => {
   await selectRepo(name)
-  const p = await v1Panel()
+  const p = await openRepoTitle()
   check(p?.startsWith(`${name} (`), `選 ${name} 後面板標題是 ${p}`)
 }
 
@@ -82,7 +64,6 @@ export const v1Tree = async () => {
 export const v1Sig = (rows) => rows.map((r) => `${r.name}|${r.dir}|${r.status}`).sort()
 
 /** 區段內第一個符合的列(同名檔在 CHANGES / STAGED 都有時用)。 */
-export const v1RowIn = async (sectionRe, rowRe) => rowIn(sectionOf(sectionRe), rowRe)
 export const v1BtnAfterId = async (id, btnRe, span = 10) => {
   const L = await lines()
   const i = L.findIndex(([n]) => n === id)

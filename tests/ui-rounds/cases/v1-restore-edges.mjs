@@ -1,12 +1,9 @@
 const {
   HOME_,
   V1_ROOT,
-  v1Start,
   v1CountsMap,
-  v1WaitUntil,
   v1Select,
   v1Tree,
-  v1RowIn,
   v1BtnAfterId,
   SEC_CH,
   SEC_ST,
@@ -29,7 +26,7 @@ defineCase('V1-E1.1', {
   title: 'E1 第 1 段:基準,docs-site 為 0',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     checkEq((await v1CountsMap())['docs-site'], 0, '外部改檔前 docs-site 數字')
     return 'docs-site=0(接著跑 V1-E1.2)'
   }
@@ -40,10 +37,10 @@ defineCase('V1-E1.2', {
   pre: 'script',
   mutates: true,
   run: async () => {
-    await v1Start()
+    await openMP()
     const mt = Number(sh('stat -f %m "$P/docs-site/index.md"').trim())
     const first = (await v1CountsMap())['docs-site']
-    const hit = await v1WaitUntil(async () => (await v1CountsMap())['docs-site'] === 1, 35000, 1000)
+    const hit = await waitFor(async () => (await v1CountsMap())['docs-site'] === 1, 35000, 1000)
     const lat = Math.round(Date.now() / 1000 - mt)
     if (hit) {
       check(lat <= 33, `docs-site 約 ${lat} 秒後才變 1(超過 30 秒)`)
@@ -62,10 +59,10 @@ defineCase('V1-E2', {
   pre: 'reset',
   mutates: true,
   run: async () => {
-    await v1Start()
+    await openMP()
     await closeAll()
     await v1Select('api-server')
-    await app.click(await v1RowIn(SEC_CH, /^text server\.ts \+ 1 M/), { clickCount: 2 })
+    await app.click(await rowIn(SEC_CH, /^text server\.ts \+ 1 M/), { clickCount: 2 })
     await sleep(2000)
     const eds = await findAll(/^editor/)
     check(eds.length, '開出 diff 分頁後找不到 editor')
@@ -77,7 +74,7 @@ defineCase('V1-E2', {
     await sleep(300)
     await app.pressKey('cmd+s')
     const t0 = Date.now()
-    const hit = await v1WaitUntil(
+    const hit = await waitFor(
       async () => (await grep(/^text server\.ts \+ 2 M/)) !== '',
       15000,
       400
@@ -93,9 +90,9 @@ defineCase('V1-E2', {
 const v1CmdSelectTwo = async () => {
   await v1Select('WebApp')
   await v1ClearSel()
-  await app.click(await v1RowIn(SEC_CH, /^text partial\.ts src/), { key: 'cmd' })
+  await app.click(await rowIn(SEC_CH, /^text partial\.ts src/), { key: 'cmd' })
   await sleep(900)
-  await app.click(await v1RowIn(SEC_CH, /^text deleted-unstaged\.ts/), { key: 'cmd' })
+  await app.click(await rowIn(SEC_CH, /^text deleted-unstaged\.ts/), { key: 'cmd' })
   await sleep(900)
 }
 
@@ -103,7 +100,7 @@ defineCase('V1-F1', {
   title: 'Cmd+點擊多選(兩列都 Cmd+點擊)',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await closeAll()
     const panes0 = await v1Panes()
     await v1CmdSelectTwo()
@@ -121,7 +118,7 @@ defineCase('V1-F2', {
   title: 'Shift+點擊範圍選取',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await closeAll()
     await v1Select('WebApp')
     await v1ClearSel()
@@ -140,12 +137,12 @@ defineCase('V1-F3', {
   title: 'Option+點擊開分割,不變成選取',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await closeAll()
     await v1Select('WebApp')
     await v1ClearSel()
     const before = await v1Panes()
-    await app.click(await v1RowIn(SEC_ST, /^text staged-mod\.ts/), { key: 'alt' })
+    await app.click(await rowIn(SEC_ST, /^text staged-mod\.ts/), { key: 'alt' })
     await sleep(1800)
     const after = await v1Panes()
     check(after > before, `Option+點擊後窗格數 ${before} → ${after},沒開分割`)
@@ -162,7 +159,7 @@ defineCase('V1-F4', {
   title: '多選操作列按鈕都點得到',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await closeAll()
     await v1CmdSelectTwo()
     checkEq(await v1Sel(), 2, '選取數')
@@ -193,7 +190,7 @@ defineCase('V1-G1', {
   title: 'STAGED CHANGES 區段標題複製',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await v1Select('WebApp')
     await v1ClearSel()
     const btn = await btnAfter(SEC_ST, /^按鈕 Copy Full Source$/)
@@ -216,10 +213,10 @@ defineCase('V1-G2', {
   title: '右鍵複製多選(兩列都 Cmd+點擊;結尾多一個空行)',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     await v1CmdSelectTwo()
     const r = await copyAndRead(async () =>
-      ctxCopy(await v1RowIn(SEC_CH, /^text deleted-unstaged\.ts/))
+      ctxCopy(await rowIn(SEC_CH, /^text deleted-unstaged\.ts/))
     )
     checkRe(
       r.note,
@@ -235,7 +232,7 @@ defineCase('V1-G3', {
   title: 'api-server repo 列複製(同 CC-01)',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     const r = await copyAndRead(() => rowCopy(/^按鈕 api-server \(main\)/))
     checkEq(
       r.clip,
@@ -250,7 +247,7 @@ defineCase('V1-G4', {
   title: 'folder 全部複製',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     const btn = await find(/^按鈕 Copy all changes$/)
     const r = await copyAndRead(async () => {
       await app.click(btn)
@@ -287,7 +284,7 @@ defineCase('V1-G5', {
   title: '通知格式含四個數字',
   pre: 'reset',
   run: async () => {
-    await v1Start()
+    await openMP()
     const n = await rowCopy(/^按鈕 WebApp-feature \(feature\/x\)/)
     checkRe(
       n,
@@ -393,7 +390,7 @@ defineCase('V1-H5', {
     await afterReset()
     await closeAll()
     await v1Select('api-server')
-    await app.click(await v1RowIn(SEC_CH, /^text server\.ts \+ 1 M/), { clickCount: 2 })
+    await app.click(await rowIn(SEC_CH, /^text server\.ts \+ 1 M/), { clickCount: 2 })
     await sleep(2000)
     const eds = await findAll(/^editor/)
     check(eds.length, '開出 diff 分頁後找不到 editor')
@@ -419,7 +416,7 @@ defineCase('V1-H6', {
   title: '非 ClipCode 內容(剪貼簿 hello)',
   pre: 'script',
   run: async () => {
-    await v1Start()
+    await openMP()
     const snap0 = v1Snap()
     await app.click(await find(/^按鈕 Paste & Restore/))
     await sleep(1500)
@@ -442,7 +439,7 @@ for (const [id, v] of [
 
 // ---------- J:一般 repo workspace 回歸 ----------
 const v1EnterWebAppMain = async () => {
-  await v1Start()
+  await openMP()
   await app.click(await v1MainRow('WebApp'))
   await sleep(2000)
   if (!(await grep(/^按鈕 CHANGES \d/))) {
@@ -465,7 +462,7 @@ defineCase('V1-J1', {
     await closeAll() // closeAll 結尾會切回 MultiProduct,要先關再進 WebApp main
     await v1EnterWebAppMain()
     check((await grep(/^container Repositories$/)) === '', '單一 repo 面板不該有 repo 清單')
-    await app.click(await v1RowIn(SEC_CH, /^text unstaged-mod\.ts src/))
+    await app.click(await rowIn(SEC_CH, /^text unstaged-mod\.ts src/))
     await sleep(1800)
     check(
       (await v1Tabs()).some((x) => x.startsWith('unstaged-mod.ts (diff)')),
@@ -475,11 +472,11 @@ defineCase('V1-J1', {
       (await grep(/^按鈕 Refresh all repositories/)) === '',
       'diff 開啟後跳出了 folder 面板(workspace 可能切走)'
     )
-    const row = await v1RowIn(SEC_CH, /^text unstaged-mod\.ts src/)
+    const row = await rowIn(SEC_CH, /^text unstaged-mod\.ts src/)
     await app.click(await v1BtnAfterId(row, /^按鈕 Stage$/))
     await sleep(1800)
     checkEq(await v1TreeNums(), '5/5', 'stage 後 CHANGES/STAGED')
-    const srow = await v1RowIn(SEC_ST, /^text unstaged-mod\.ts src/)
+    const srow = await rowIn(SEC_ST, /^text unstaged-mod\.ts src/)
     await app.click(await v1BtnAfterId(srow, /^按鈕 Unstage$/))
     await sleep(1800)
     checkEq(await v1TreeNums(), '6/4', 'unstage 後 CHANGES/STAGED')
@@ -495,13 +492,13 @@ defineCase('V1-J2', {
     await v1EnterWebAppMain()
     await v1ClearSel()
     const panes0 = await v1Panes()
-    await app.click(await v1RowIn(SEC_CH, /^text README\.md/), { key: 'cmd' })
+    await app.click(await rowIn(SEC_CH, /^text README\.md/), { key: 'cmd' })
     await sleep(600)
-    await app.click(await v1RowIn(SEC_ST, /^text staged-mod\.ts/), { key: 'cmd' })
+    await app.click(await rowIn(SEC_ST, /^text staged-mod\.ts/), { key: 'cmd' })
     await sleep(900)
     checkEq(await v1Sel(), 2, '選取數')
     checkEq(await v1Panes(), panes0, '窗格數(Cmd+點擊不該開分割)')
-    await app.click(await v1RowIn(SEC_ST, /^text staged-mod\.ts/), { mouseButton: 'right' })
+    await app.click(await rowIn(SEC_ST, /^text staged-mod\.ts/), { mouseButton: 'right' })
     await sleep(900)
     check((await findAll(/^Open to the Side/)).length > 0, '右鍵選單沒有 Open to the Side')
     check((await findAll(/^Copy Full Source/)).length > 0, '右鍵選單沒有 Copy Full Source')
