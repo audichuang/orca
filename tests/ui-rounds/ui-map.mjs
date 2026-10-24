@@ -77,7 +77,8 @@ export function canonicalLine(text) {
 export const RE = {
   repoRow: (name, branch) =>
     new RegExp(`^按鈕 ${esc(name)} \\(${branch ? esc(branch) : '[^)]*'}\\) \\d+$`),
-  anyRepoRow: /^按鈕 [\w./-]+ \([^)]*\) \d+$/,
+  // A path (an editor tab's "/Users/… (diff) 0" button) is not a repo row
+  anyRepoRow: /^按鈕 (?!\/)[\w./-]+ \([^)]*\) \d+$/,
   // Repos without changes sit in their own group, collapsed by default
   repoGroupHeader: /^按鈕 NO CHANGES \d+$/,
   sectionHeader: (name) => new RegExp(`^按鈕 ${esc(name)} \\d+$`),
@@ -96,7 +97,19 @@ export function detailStartIndex(lines) {
 /** The open repo's name: the text line right before "Filter files by name". */
 export function openRepoName(lines) {
   const i = detailStartIndex(lines)
-  return i > 1 ? lines[i - 2][1].replace(/^文字 /, '') : null
+  // A single-repo workspace's panel has no name line there
+  const t = i > 1 ? lines[i - 2][1] : ''
+  return t.startsWith('文字 ') ? t.slice(3) : null
+}
+
+/** The folder workspace whose Source Control is showing: the name heading the row of Open Git Graph … Refresh all. */
+export function folderPanelName(lines) {
+  const refresh = lines.findIndex(([, t]) => t === `按鈕 ${UI_TEXT.refreshAll}`)
+  const graph = lines.findLastIndex(
+    ([, t], i) => i < refresh && i > refresh - 8 && t === `按鈕 ${UI_TEXT.openGitGraph}`
+  )
+  const t = graph > 0 ? lines[graph - 1][1] : ''
+  return t.startsWith('文字 ') ? t.slice(3) : null
 }
 
 /** "WebApp (main)": the open repo's name and the branch its panel shows ("Current branch: main"). */
