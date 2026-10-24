@@ -14,13 +14,13 @@ defineCase('RS-01', {
     check(rows.length >= 2, `找不到 WebApp main workspace 列(${rows.length})`)
     await app.click(rows[1])
     await sleep(2000)
-    const sc = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
+    const sc = (await lines()).find(([, t]) => t.startsWith(`按鈕 ${UI_TEXT.sourceControlTab}`))
     if (sc && !(await grep(/^按鈕 STAGED CHANGES/))) {
       await app.click(sc[0])
       await sleep(1500)
     }
     const c = await copyAndRead(async () => {
-      await app.click(await btnAfter(/^按鈕 STAGED CHANGES/, /^按鈕 Copy Full Source/))
+      await app.click(await btnAfter(/^按鈕 STAGED CHANGES/, UI_RE.button(UI_TEXT.copyFullSource)))
       await sleep(1200)
       return await note()
     })
@@ -530,7 +530,7 @@ defineCase('RS-21', {
     const rows = async () => await findAll(/^text (Active|Inactive) main primary main/)
     await app.click((await rows())[1])
     await sleep(2000)
-    const sc = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
+    const sc = (await lines()).find(([, t]) => t.startsWith(`按鈕 ${UI_TEXT.sourceControlTab}`))
     if (sc && !(await grep(/^按鈕 CHANGES/))) {
       await app.click(sc[0])
       await sleep(1500)
