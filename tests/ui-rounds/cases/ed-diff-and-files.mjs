@@ -250,7 +250,7 @@ defineCase('ED-18', {
     }
     await edNoDiffError('第 2 步 Changes')
     await evidenceShot()
-    await app.click(await find(/^按鈕 Source Control/))
+    await app.click(await find(UI_RE.buttonStart(UI_TEXT.sourceControlTab)))
     await sleep(1500)
     await selectRepo('WebApp')
     await edDbl(/^text README\.md/, 2000)
@@ -286,7 +286,7 @@ defineCase('ED-19', {
     await app.click(await edWsRow('WebApp'))
     await sleep(2000)
     if (!(await grep(/^按鈕 CHANGES/))) {
-      await app.click(await find(/^按鈕 Source Control/))
+      await app.click(await find(UI_RE.buttonStart(UI_TEXT.sourceControlTab)))
       await sleep(1500)
     }
     await edDbl(/^text staged-mod\.ts/, 1300)
