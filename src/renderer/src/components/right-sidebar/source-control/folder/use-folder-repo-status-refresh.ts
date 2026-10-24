@@ -134,7 +134,9 @@ export function useFolderRepoStatusRefresh(
       const detail: Partial<EditorFileSavedDetail> | undefined =
         event instanceof CustomEvent ? event.detail : undefined
       const fileId = detail?.fileId
-      const filePath = useAppStore.getState().openFiles.find((file) => file.id === fileId)?.filePath
+      const filePath =
+        detail?.filePath ??
+        useAppStore.getState().openFiles.find((file) => file.id === fileId)?.filePath
       if (!filePath) {
         return
       }
