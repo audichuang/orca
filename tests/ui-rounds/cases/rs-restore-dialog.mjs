@@ -4,7 +4,6 @@
 import fs from 'node:fs'
 
 export const RS_GROUPS = ['Create', 'Overwrite', 'Delete', 'Skip']
-export const RS_STALE = /Created \d|Failed|failed|No Snipcode|Clipboard is empty/
 export const rsTop = () => P.replace(/\/MultiProduct$/, '')
 
 globalThis.rsEx = (p) => {
@@ -134,18 +133,9 @@ globalThis.rsClickRestore = async () => {
 }
 /** 開 Paste & Restore → 讀預覽 →(選)切 Adjust 看另一種 →(選)勾覆蓋 → Restore。
  *  回傳 {first, toggled, disabledBefore, disabledAfterOverwrite, result, cancelled}。 */
-/** 按 Paste & Restore 並等預覽對話框;大的 payload 要先讀檔比對,對話框可能晚幾秒才出現。 */
 globalThis.rsOpenPreview = async () => {
-  for (let k = 0; k < 20 && (await grep(RS_STALE)); k++) {
-    await sleep(500)
-  } // 等上一案的通知消失,免得誤讀
-  await app.click(await find(/^按鈕 Paste & Restore/))
-  let view = { open: false }
-  for (let k = 0; k < 8 && !view.open && !(await grep(RS_STALE)); k++) {
-    await sleep(700)
-    view = await rsView()
-  }
-  return view
+  await openRestorePreview()
+  return await rsView()
 }
 
 globalThis.rsRun = async ({ toggleAdjust = false, overwrite = false, restore = true } = {}) => {
