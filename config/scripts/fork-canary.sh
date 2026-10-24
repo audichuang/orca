@@ -6,24 +6,25 @@
 # Exit: 0 green; 1 not green (conflicts and/or failures, the report's Result line says which); 3 setup error.
 # Env: FORK_BASE and UPSTREAM_REMOTE (both set by make fork-canary), CANARY_REF (fork side, default HEAD),
 #      CANARY_UPSTREAM_REF (default <upstream>/main), CANARY_DIR (must not exist; default a fresh ../orca-fork-canary.XXXXXX),
-#      CANARY_REPORT (logs go to <report>.logs), CANARY_KEEP=1.
+#      CANARY_OUT (default out/fork-canary), CANARY_KEEP=1.
+# Output: each run writes <CANARY_OUT>/<UTC time>-<pid>/report.md and logs/; <CANARY_OUT>/latest.txt names the newest.
+# Nothing is deleted automatically: the canary removes only the worktree it created; old run dirs stay until rm -rf.
 set -uo pipefail
 export LC_ALL=C ORCA_BACKGROUND_LAUNCH=1
 
 report=
 tmp_report=
 logs=
-tmp_logs=
 wt=
 wt_created=
 
-# Why temp then mv: a concurrent run, or a reader, never sees a half-written report or a mix of two runs' logs.
+# Why temp then mv, and latest.txt over a symlink: mv -f onto a symlink to a directory moves into it on macOS.
 publish() {
-  [ -z "$tmp_logs" ] || { rm -rf "$logs" && mv "$tmp_logs" "$logs" && tmp_logs=; }
-  mv "$tmp_report" "$report"
+  mv "$tmp_report" "$report" && tmp_report=
+  printf '%s\n' "$(basename "$run_dir")" >"$out_root/latest.txt.$$" && mv -f "$out_root/latest.txt.$$" "$out_root/latest.txt"
 }
 
-# Why a report on every setup error: a stale green report must never outlive a failed run.
+# Why a report on every setup error: latest.txt must never keep pointing at an older green run.
 die() {
   echo "fork-canary: $*" >&2
   if [ -n "$tmp_report" ]; then
@@ -35,26 +36,25 @@ die() {
 cleanup() {
   if [ -n "$wt_created" ]; then
     if [ "${CANARY_KEEP:-}" = 1 ]; then
-      echo ">> kept canary worktree $wt (the next run removes it)"
+      echo ">> kept canary worktree $wt; remove it with git worktree remove --force $wt"
     else
       git -C "$root" worktree remove --force "$wt" >/dev/null 2>&1 || echo "fork-canary: could not remove $wt; run git worktree remove --force $wt" >&2
     fi
   fi
-  [ -z "$tmp_logs" ] || rm -rf "$tmp_logs"
   [ -z "$tmp_report" ] || rm -f "$tmp_report"
 }
 trap cleanup EXIT
 
 root=$(git rev-parse --show-toplevel) || die "not in a git checkout"
 cd "$root" || die "cannot cd to $root"
-common="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)" || die "cannot resolve the common git dir"
 
-report=${CANARY_REPORT:-$root/out/fork-canary-report.md}
-mkdir -p "$(dirname "$report")" || die "cannot create the directory of $report"
-tmp_report=$(mktemp "$report.XXXXXX") || die "cannot create a temp report next to $report"
-rm -f "$report"
-logs="${report%.md}.logs"
-tmp_logs=$(mktemp -d "$logs.XXXXXX") || die "cannot create a logs dir next to $report"
+# Why a directory per run: concurrent runs never share a report or logs.
+out_root=${CANARY_OUT:-$root/out/fork-canary}
+run_dir="$out_root/$(date -u +%Y%m%dT%H%M%SZ)-$$"
+logs="$run_dir/logs"
+mkdir -p "$logs" || die "cannot create $logs"
+report="$run_dir/report.md"
+tmp_report=$(mktemp "$run_dir/report.XXXXXX") || die "cannot create a temp report in $run_dir"
 
 base=${FORK_BASE:-}
 test -n "$base" || die "FORK_BASE is empty; run via make fork-canary or pass FORK_BASE=vX.Y.Z"
@@ -68,38 +68,29 @@ upstream_sha=$(git rev-parse --verify "${CANARY_UPSTREAM_REF:-refs/remotes/${rem
 merge_base=$(git merge-base "$base" "$upstream_sha") || die "no merge-base between ${base} and upstream"
 upstream_count=$(git rev-list --count "${merge_base}..${upstream_sha}")
 
-# Why only marked worktrees of dead runs: anything else may be someone's work or a canary still running.
-for marker in "$common"/worktrees/*/fork-canary-owner; do
-  [ -f "$marker" ] || continue
-  owner=$(cat "$marker")
-  ps -p "$owner" >/dev/null 2>&1 && continue
-  stale=$(dirname "$(cat "$(dirname "$marker")/gitdir")")
-  echo ">> removing stale canary worktree $stale (pid $owner gone)"
-  git worktree remove --force "$stale" || echo "fork-canary: could not remove $stale" >&2
-done
-
 # Why a fresh directory per run: concurrent canaries then never share a tree, so no lock is needed.
 if [ -n "${CANARY_DIR:-}" ]; then
   wt=$CANARY_DIR
   [ ! -e "$wt" ] && [ ! -L "$wt" ] || die "CANARY_DIR $wt already exists; pass a path that does not"
   mkdir -p "$(dirname "$wt")" || die "cannot create the parent of $wt"
   wt="$(cd "$(dirname "$wt")" && pwd -P)/$(basename "$wt")"
-  case "$wt/" in "$root/"*) die "CANARY_DIR $wt is inside the invoking checkout" ;; esac
+  while IFS= read -r other; do
+    case "$wt/" in "$other/"*) die "CANARY_DIR $wt is inside the worktree $other" ;; esac
+  done < <(git worktree list --porcelain | sed -n 's/^worktree //p')
 else
   wt=$(mktemp -d "$(dirname "$root")/orca-fork-canary.XXXXXX") || die "cannot create a canary directory"
 fi
 git worktree add --quiet --detach "$wt" "$upstream_sha" || die "cannot create worktree $wt"
 wt_created=1
-echo $$ >"$(git -C "$wt" rev-parse --absolute-git-dir)/fork-canary-owner" || die "cannot mark $wt as the canary's"
 
 echo ">> merging fork $(git rev-parse --short "$fork_sha") into upstream $(git rev-parse --short "$upstream_sha")"
 # Why rerere on: replaying recorded resolutions keeps old conflicts out of the report; nothing is committed, so no new resolution is recorded.
 git -C "$wt" -c rerere.enabled=true -c rerere.autoupdate=true -c user.name=fork-canary -c user.email=fork-canary@invalid \
-  merge --no-ff --no-commit "$fork_sha" >"$tmp_logs/merge.log" 2>&1
+  merge --no-ff --no-commit "$fork_sha" >"$logs/merge.log" 2>&1
 merge_status=$?
 conflicts=$(git -C "$wt" diff --name-only --diff-filter=U)
-git -C "$wt" rev-parse -q --verify MERGE_HEAD >/dev/null || [ "$merge_status" -eq 0 ] || die "merge failed without conflicts; see $tmp_logs/merge.log"
-replayed=$(sed -nE "s/^(Resolved|Staged) '(.*)' using previous resolution\.$/\2/p" "$tmp_logs/merge.log" | sort -u)
+git -C "$wt" rev-parse -q --verify MERGE_HEAD >/dev/null || [ "$merge_status" -eq 0 ] || die "merge failed without conflicts; see $logs/merge.log"
+replayed=$(sed -nE "s/^(Resolved|Staged) '(.*)' using previous resolution\.$/\2/p" "$logs/merge.log" | sort -u)
 n_conflicts=$(printf '%s\n' "$conflicts" | grep -c .)
 
 # Why upstream's side: upstream conflicts most days, and stopping here would leave the canary testing almost nothing.
@@ -120,7 +111,7 @@ dropped=
 tests_failed=
 # Why HUSKY=0: husky's prepare script would write hooksPath into the shared .git/config.
 pnpm_install() {
-  (cd "$wt" && HUSKY=0 pnpm install "$1") >>"$tmp_logs/install.log" 2>&1
+  (cd "$wt" && HUSKY=0 pnpm install "$1") >>"$logs/install.log" 2>&1
 }
 echo ">> pnpm install"
 if printf '%s\n' "$conflicts" | grep -qxE 'pnpm-lock\.yaml|package\.json'; then
@@ -132,22 +123,21 @@ elif ! pnpm_install --frozen-lockfile; then
 fi
 if [ -z "$install_failed" ]; then
   echo ">> pnpm tc"
-  (cd "$wt" && pnpm tc) >"$tmp_logs/tc.log" 2>&1 || tc_failed=1
-  (cd "$wt" && node config/scripts/fork-test-inventory.mjs list --existing >/dev/null 2>"$tmp_logs/seam-list.log")
+  (cd "$wt" && pnpm tc) >"$logs/tc.log" 2>&1 || tc_failed=1
   # Why the merged tree's script: it collects with the merged tree's runner config and skips files the merge removed.
-  if ! tests=$(cd "$wt" && node config/scripts/fork-test-inventory.mjs fork-changed "$base" "$fork_sha" 2>"$tmp_logs/listing.log") ||
-    ! dropped=$(cd "$wt" && node config/scripts/fork-test-inventory.mjs fork-dropped "$base" "$fork_sha" 2>>"$tmp_logs/listing.log"); then
+  if ! tests=$(cd "$wt" && node config/scripts/fork-test-inventory.mjs fork-changed "$base" "$fork_sha" 2>"$logs/listing.log") ||
+    ! dropped=$(cd "$wt" && node config/scripts/fork-test-inventory.mjs fork-dropped "$base" "$fork_sha" 2>>"$logs/listing.log"); then
     listing_failed=1
   elif [ -z "$tests" ]; then
     # Why: vitest with no file filter runs the whole suite.
-    echo "no fork test selected" >"$tmp_logs/listing.log"
+    echo "no fork test selected" >"$logs/listing.log"
     listing_failed=1
   else
     echo ">> vitest on $(printf '%s\n' "$tests" | grep -c .) files"
     # Why unquoted: each path is one argument; repo paths contain no whitespace.
     (cd "$wt" && node config/scripts/ensure-native-runtime.mjs --runtime=node &&
       pnpm exec vitest run --config config/vitest.config.ts --reporter=default --reporter=json \
-        --outputFile.json="$tmp_logs/vitest.json" $tests) >"$tmp_logs/vitest.log" 2>&1 || tests_failed=1
+        --outputFile.json="$logs/vitest.json" $tests) >"$logs/vitest.log" 2>&1 || tests_failed=1
   fi
 fi
 
@@ -214,33 +204,27 @@ list_commits() {
     echo
     echo "## pnpm install failed"
     echo
-    log_tail "$tmp_logs/install.log"
+    log_tail "$logs/install.log"
   fi
   if [ -n "$tc_failed" ]; then
     echo
     echo "## Typecheck errors"
     echo
-    errors=$(grep -E '^[^ ]+\([0-9]+,[0-9]+\): error TS[0-9]+' "$tmp_logs/tc.log" | sort -u)
+    errors=$(grep -E '^[^ ]+\([0-9]+,[0-9]+\): error TS[0-9]+' "$logs/tc.log" | sort -u)
     if [ -n "$errors" ]; then
       printf '%s\n' "$errors" | sed -E 's/\([0-9]+,[0-9]+\): error .*//' | uniq | while IFS= read -r file; do
         echo "- \`$file\`$(conflict_note "$file")"
         printf '%s\n' "$errors" | grep -F "$file(" | sed -E 's/^[^ ]+\(([0-9]+),[0-9]+\): error (TS[0-9]+): (.*)/  - \1 \2 \3/'
       done
     else
-      log_tail "$tmp_logs/tc.log"
+      log_tail "$logs/tc.log"
     fi
-  fi
-  if [ -s "$tmp_logs/seam-list.log" ]; then
-    echo
-    echo "## Seam list problems in the merged tree"
-    echo
-    sed 's/^fork-test-inventory: /- /' "$tmp_logs/seam-list.log"
   fi
   if [ -n "$listing_failed" ]; then
     echo
     echo "## Test listing failed in the merged tree"
     echo
-    log_tail "$tmp_logs/listing.log"
+    log_tail "$logs/listing.log"
   fi
   if [ -n "$dropped" ]; then
     echo
@@ -252,7 +236,7 @@ list_commits() {
     echo
     echo "## Failing tests"
     echo
-    if [ -s "$tmp_logs/vitest.json" ]; then
+    if [ -s "$logs/vitest.json" ]; then
       node -e '
         const r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))
         const root = process.argv[2] + "/"
@@ -262,7 +246,7 @@ list_commits() {
           console.log("FILE\t" + file.name.replace(root, ""))
           for (const t of failed) console.log("TEST\t" + t.fullName)
           if (failed.length === 0) console.log("TEST\t" + (file.message || "suite failed").split("\n")[0])
-        }' "$tmp_logs/vitest.json" "$wt" | while IFS=$'\t' read -r kind text; do
+        }' "$logs/vitest.json" "$wt" | while IFS=$'\t' read -r kind text; do
         if [ "$kind" = FILE ]; then
           echo "- \`$text\`$(conflict_note "$text")"
         else
@@ -270,8 +254,20 @@ list_commits() {
         fi
       done
     else
-      log_tail "$tmp_logs/vitest.log"
+      log_tail "$logs/vitest.log"
     fi
+  fi
+  # Why only listed: a leftover may belong to a canary still running, so a human removes it.
+  leftovers=$(git worktree list --porcelain | sed -n 's/^worktree //p' | while IFS= read -r other; do
+    case "$(basename "$other")" in (orca-fork-canary.*) [ "$other" = "$wt" ] || echo "$other" ;; esac
+  done)
+  if [ -n "$leftovers" ]; then
+    echo
+    echo "## Leftover canary worktrees"
+    echo
+    echo "From killed or concurrent runs; remove each once no canary uses it:"
+    echo
+    printf '%s\n' "$leftovers" | while IFS= read -r other; do echo "- \`git worktree remove --force $other\`"; done
   fi
   echo
   echo "Logs: \`$logs\`"
