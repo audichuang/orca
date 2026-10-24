@@ -178,27 +178,6 @@ describe('buildWorkspaceSessionPayload', () => {
     expect(payload.browserTabsByWorktree?.['wt-1'][0].loading).toBe(false)
   })
 
-  it('persists the git owner of a scoped edit tab only when it differs from the tab owner', () => {
-    const file = (id: string, gitWorktreeId: string) => ({
-      id,
-      filePath: id,
-      relativePath: 'a.ts',
-      worktreeId: 'wt-1',
-      gitWorktreeId,
-      language: 'typescript',
-      mode: 'edit' as const,
-      isDirty: false,
-      content: '',
-      originalContent: ''
-    })
-    const payload = buildWorkspaceSessionPayload(
-      createSnapshot({ openFiles: [file('/f/a/a.ts', 'repo-a'), file('/f/b.ts', 'wt-1')] })
-    )
-    const saved = payload.openFilesByWorktree?.['wt-1']
-    expect(saved?.[0]?.gitWorktreeId).toBe('repo-a')
-    expect(saved?.[1]?.gitWorktreeId).toBeUndefined()
-  })
-
   it('persists front-matter hide overrides only for restored editor files', () => {
     const payload = buildWorkspaceSessionPayload(
       createSnapshot({

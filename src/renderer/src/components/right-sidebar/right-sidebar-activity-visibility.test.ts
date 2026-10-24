@@ -24,10 +24,8 @@ const items: ActivityBarItem[] = [
     icon: Files,
     title: 'Source Control',
     shortcut: '',
-    gitOnly: true,
-    inFolderWorkspace: true
+    gitOnly: true
   },
-  { id: 'checks', icon: Files, title: 'Checks', shortcut: '', gitOnly: true },
   { id: 'ports', icon: Files, title: 'Ports', shortcut: '', sshOnly: true },
   // Plugin panels carry no visibility flags, so they show in every context.
   {
@@ -46,7 +44,7 @@ describe('getVisibleRightSidebarActivityItems', () => {
         isFolderWorkspace: false,
         hasSshHost: false
       }).map((item) => item.id)
-    ).toEqual(['explorer', 'source-control', 'checks', 'plugin:orca-samples.my-plugin/dashboard'])
+    ).toEqual(['explorer', 'source-control', 'plugin:orca-samples.my-plugin/dashboard'])
 
     expect(
       getVisibleRightSidebarActivityItems(items, {
@@ -54,16 +52,10 @@ describe('getVisibleRightSidebarActivityItems', () => {
         isFolderWorkspace: false,
         hasSshHost: true
       }).map((item) => item.id)
-    ).toEqual([
-      'explorer',
-      'source-control',
-      'checks',
-      'ports',
-      'plugin:orca-samples.my-plugin/dashboard'
-    ])
+    ).toEqual(['explorer', 'source-control', 'ports', 'plugin:orca-samples.my-plugin/dashboard'])
   })
 
-  it('shows Workspaces only for folder workspaces and hides git tabs for folder scopes', () => {
+  it('shows Workspaces only for folder workspaces and hides git tabs for all folder scopes', () => {
     expect(
       getVisibleRightSidebarActivityItems(items, {
         isFolder: true,
@@ -74,8 +66,6 @@ describe('getVisibleRightSidebarActivityItems', () => {
       'explorer',
       'workspaces',
       'pr-checks',
-      // Folder workspaces keep Source Control: it lists the git repos under the folder.
-      'source-control',
       'ports',
       'plugin:orca-samples.my-plugin/dashboard'
     ])
