@@ -24,11 +24,20 @@ import {
 import { GitGraphListHeader } from './git-graph-list-header'
 import { useGitGraphListPrefs } from './git-graph-list-prefs'
 import { GitGraphDetailsPane } from './git-graph-full-view-details'
-import { buildGitGraphLaneRows } from './git-graph-lane-layout'
+import {
+  buildGitGraphLaneRows,
+  GIT_GRAPH_FOLD_AFTER_ROWS,
+  GIT_GRAPH_FOLD_STUB_ROWS
+} from './git-graph-lane-layout'
+import { GIT_HISTORY_GRAPH_MAX_LIMIT } from '../../../../../../shared/git-history-graph-query-types'
 import { SWIMLANE_WIDTH } from './git-history-graph-svg'
 import { GitHistoryCommitForkMenu } from './git-history-commit-fork-menu'
 import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-graph-branch-sidebar'
-import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
+import {
+  hasGitHistoryGraphSearch,
+  updateGitHistoryGraphFilter,
+  useGitHistoryGraphFilter
+} from './git-history-graph-filter'
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
 import { useGitGraphBranchContext, useGitGraphSelection } from './use-git-graph-full-view-state'
 import { type GitGraphRevealOptions, useGitGraphViewReveal } from './use-git-graph-reveal'
@@ -112,7 +121,22 @@ export function GitGraphFullView({
         : [],
     [result]
   )
-  const laneRows = useMemo(() => buildGitGraphLaneRows(viewModels), [viewModels])
+  const filter = useGitHistoryGraphFilter(filterKey)
+  // Why: a search drops commits but keeps their parent links, so a deeper read may never list the far end.
+  const canLoadPast =
+    Boolean(result?.hasMore) &&
+    filter.limit < GIT_HISTORY_GRAPH_MAX_LIMIT &&
+    !hasGitHistoryGraphSearch(filter)
+  const laneRows = useMemo(
+    () =>
+      buildGitGraphLaneRows(
+        viewModels,
+        GIT_GRAPH_FOLD_AFTER_ROWS,
+        GIT_GRAPH_FOLD_STUB_ROWS,
+        canLoadPast
+      ),
+    [viewModels, canLoadPast]
+  )
   const graphWidth = useMemo(
     () => SWIMLANE_WIDTH * (Math.max(1, ...laneRows.map((row) => row.laneCount)) + 1),
     [laneRows]
@@ -337,7 +361,7 @@ export function GitGraphFullView({
                 }
                 onSelect={(event) => selection.handleRowSelect(viewModel.historyItem, event)}
                 onJump={(commitId) =>
-                  result?.items.some((item) => item.id === commitId)
+                  branchContext.commitContext.itemsById.has(commitId)
                     ? jumpTo(commitId, { focus: true })
                     : viewReveal.revealCommit(commitId)
                 }
