@@ -250,3 +250,8 @@ export function isGitHistoryGraphFiltered(
 function hasGraphSearch(search: GitHistoryGraphSearch): boolean {
   return Object.keys(search).length > 0
 }
+
+/** True when a message, author or path search narrows the list. */
+export function hasGitHistoryGraphSearch(filter: Pick<GitHistoryGraphFilter, 'query'>): boolean {
+  return hasGraphSearch(parseGitHistoryGraphQuery(filter.query))
+}

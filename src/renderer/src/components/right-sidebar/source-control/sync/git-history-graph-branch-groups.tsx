@@ -7,9 +7,9 @@ import type { GitHistoryGraphRefOption } from '../../../../../../shared/git-hist
 
 type BranchSection = {
   key: string
-  /** The remote a remote-branch section belongs to; 'tags' for the tag section. */
+  kind: 'local' | 'remote' | 'tags'
+  /** The remote a `remote` section belongs to. */
   remote: string | null
-  tags?: boolean
   refs: GitHistoryGraphRefOption[]
 }
 
@@ -30,21 +30,28 @@ export function groupRefsBySource(refs: readonly GitHistoryGraphRefOption[]): Br
     remotes.set(remote, [...(remotes.get(remote) ?? []), ref])
   }
   return [
-    ...(local.length ? [{ key: 'local', remote: null, refs: local }] : []),
-    ...[...remotes].map(([remote, list]) => ({ key: `remote:${remote}`, remote, refs: list })),
-    ...(tags.length ? [{ key: 'tags', remote: null, tags: true, refs: tags }] : [])
+    ...(local.length ? [{ key: 'local', kind: 'local' as const, remote: null, refs: local }] : []),
+    ...[...remotes].map(([remote, list]) => ({
+      key: `remote:${remote}`,
+      kind: 'remote' as const,
+      remote,
+      refs: list
+    })),
+    ...(tags.length ? [{ key: 'tags', kind: 'tags' as const, remote: null, refs: tags }] : [])
   ]
 }
 
 function sectionHeading(section: BranchSection): React.JSX.Element {
-  const Icon = section.tags ? Tag : section.remote ? Cloud : GitBranch
+  const Icon = { local: GitBranch, remote: Cloud, tags: Tag }[section.kind]
+  const label =
+    section.kind === 'tags'
+      ? translate('auto.components.right.sidebar.GitHistoryGraph.tags', 'Tags')
+      : (section.remote ??
+        translate('auto.components.right.sidebar.GitHistoryGraph.local', 'Local'))
   return (
     <span className="flex items-center gap-1.5">
       <Icon className="size-3" />
-      {section.tags
-        ? translate('auto.components.right.sidebar.GitHistoryGraph.tags', 'Tags')
-        : (section.remote ??
-          translate('auto.components.right.sidebar.GitHistoryGraph.local', 'Local'))}
+      {label}
     </span>
   )
 }
