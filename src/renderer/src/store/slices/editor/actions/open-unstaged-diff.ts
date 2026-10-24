@@ -4,7 +4,7 @@ import type { OpenFile } from '../types/open-file'
 import type { DiffSource } from '../../../../../../shared/editor-tab-view-types'
 import { buildDiffEditorFileId, withDiffContentReloadRequest } from '../file-ids/editor-file-ids'
 import { resolveDiffRuntimeEnvironmentId } from '../git/diff-runtime-owner'
-import { getScopedTabIdOwner } from '../git/open-file-git-owner'
+import { getScopedTabIdOwner, resolveOpenGitWorktreeId } from '../git/open-file-git-owner'
 import {
   buildEditorActiveResult,
   resolveEditorOpenTargetGroupId
@@ -24,8 +24,7 @@ export function createOpenUnstagedDiff(
     openDiff: (worktreeId, filePath, relativePath, language, staged, options) => {
       const isPreview = resolveEditorPreviewIntent(get(), options?.preview)
       const selection = options?.selection
-      const gitWorktreeId =
-        options?.gitWorktreeId !== worktreeId ? options?.gitWorktreeId : undefined
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, options)
       let editorItemTargetGroupId = options?.targetGroupId
       let editorItemFileId = ''
       set((s) => {

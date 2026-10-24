@@ -174,7 +174,7 @@ export async function launchSourceControlRecoveryAgentWithDefault({
       launchWorkspace,
       choices.detected,
       resolveSourceControlActionPreferredSurface(savedRecipe, agent),
-      initialCwd
+      { cwd: initialCwd }
     )
   const savedAgent = readSourceControlLaunchRecipeAgentId(savedRecipe)
   if (
