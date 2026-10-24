@@ -20,6 +20,7 @@ src/renderer/src/web/preload-api/web-git-history-graph.test.ts
 
 # missingSides and blob absence feeding ClipCode copy
 src/main/git/source-control/blob-absence-real-git.test.ts
+src/main/git/source-control/blob-absence-real-git.fork.test.ts
 src/main/git/source-control/commit-diff-missing-sides.real-git.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-commit-copy.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-explorer-copy.test.ts
@@ -32,19 +33,24 @@ src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipb
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-restore.contract.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-target-state.ipc-edge.test.ts
 
-# gitWorktreeId persistence: save, reload, restore
+# gitWorktreeId persistence: save, reload, restore (layout and session)
+src/renderer/src/lib/workspace-session-hydration-keys.fork.test.ts
+src/renderer/src/lib/workspace-session.fork.test.ts
+src/renderer/src/store/slices/editor-read-only-tabs.fork.test.ts
 src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts
-src/shared/workspace-layout/layout-editor-view-fork.test.ts
+src/shared/workspace-layout/layout-editor-view.fork.test.ts
 src/shared/workspace-layout/workspace-layout-fact-locations.test.ts
 
 # git-graph tab type: hydration, editor tabs, layout, runtime graph sync
 src/renderer/src/runtime/sync-runtime-graph-git-graph-tab.test.ts
 src/renderer/src/store/slices/editor-git-graph-tabs.test.ts
-src/renderer/src/store/slices/editor/tabs/open-file-layout-view-fork.test.ts
+src/renderer/src/store/slices/editor/tabs/open-file-layout-view.fork.test.ts
 src/renderer/src/store/slices/tabs-hydration-git-graph.test.ts
 src/renderer/src/components/tab-group/TabGroupPanel.git-graph-button.test.tsx
 
 # Upstream component slots and folder routing
+src/main/project-groups/nested-repo-discovery.fork.test.ts
+src/renderer/src/components/right-sidebar/right-sidebar-activity-visibility.fork.test.ts
 src/renderer/src/components/right-sidebar/source-control/panel/panel-content-fork-slots.test.ts
 src/renderer/src/components/right-sidebar/source-control/panel/panel-folder-routing.test.tsx
 src/renderer/src/components/right-sidebar/source-control/sync/git-graph-full-view.component.test.tsx
