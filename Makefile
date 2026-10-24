@@ -240,7 +240,7 @@ fork-check-seams:
 	@# Why not a pipe: the list check's failure must stop the run instead of running fewer files.
 	files=$$(node config/scripts/fork-seam-tests.mjs) && pnpm exec vitest run --config config/vitest.config.ts $$files
 
-# Report-only early warning against upstream main; the script exits 0 green, 1 failures, 2 conflicts (make reports any failure as 2).
+# Report-only early warning against upstream main; the script exits 0 green, 1 failures, 2 conflicts only, 4 both (make reports any failure as 2).
 # Overrides are listed in fork-canary.sh.
 fork-canary: export LC_ALL = C
 fork-canary: fork-base-guard
