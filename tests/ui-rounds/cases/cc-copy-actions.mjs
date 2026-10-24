@@ -1,46 +1,11 @@
 // CC:Copy Full Source。測案原文見 docs/fork/v2/02-cc.md
 export const ROOT = '// clipcode-root: MultiProduct\n'
 
-// 依區段找列:回傳 section 標題之後、下一個區段標題之前,符合 rowRe 的第一個元素編號
-export const rowInSection = async (sectionRe, rowRe) => rowIn(sectionOf(sectionRe), rowRe)
-
 // ---- CC-03 起 ----
-export const ccNote = async () => note()
-// 大檔複製要好幾秒才出通知,輪詢到出現為止
-export const ccWaitNote = async (ms = 8000) => {
-  for (let t = 0; t < ms; t += 300) {
-    const n = await ccNote()
-    if (n !== 'none') {
-      return n
-    }
-    await sleep(300)
-  }
-  return 'none'
-}
-export const ccRowCopy = async (repoRe) => {
-  await app.click(await btnAfter(repoRe, /^按鈕 Copy all changes$/, 10))
+export const ccSecCopy = async (section) => {
+  await app.click(await sectionButton(section, UI_RE.button(UI_MAP.UI_TEXT.copyFullSource)))
   await sleep(500)
-  return await ccWaitNote()
-}
-export const ccSecCopy = async (sectionRe) => {
-  await app.click(await sectionButton(sectionOf(sectionRe), /^按鈕 Copy Full Source/))
-  await sleep(500)
-  return await ccWaitNote()
-}
-export const ccCtxCopy = async (rowId) => {
-  await app.click(rowId, { mouseButton: 'right' })
-  await sleep(700)
-  const c = await findAll(/^Copy Full Source/)
-  check(c.length > 0, '右鍵選單沒有 Copy Full Source')
-  await app.click(c.at(-1))
-  await sleep(1300)
-  const n = await ccNote()
-  const cl = await findAll(/^按鈕 Clear selection/)
-  if (cl.length) {
-    await app.click(cl[0])
-    await sleep(300)
-  }
-  return n
+  return await waitNote()
 }
 export const ccRefresh = async (wait = 3000) => {
   await app.click(await find(/^按鈕 Refresh all repositories/))
