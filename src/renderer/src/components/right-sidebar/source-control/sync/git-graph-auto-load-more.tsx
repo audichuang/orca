@@ -4,10 +4,10 @@ import { RefreshCw } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { GIT_HISTORY_GRAPH_MAX_LIMIT } from '../../../../../../shared/git-history-graph-query-types'
 import type { GitHistoryPanelState } from './git-history-panel'
-import { updateGitHistoryGraphFilter, useGitHistoryGraphFilter } from './git-history-graph-filter'
+import { useGitHistoryGraphFilter } from './git-history-graph-filter'
 import {
   GitHistoryGraphLoadMore,
-  LOAD_MORE_STEP,
+  loadMoreGitHistoryGraph,
   useGitHistoryGraphHostStatus
 } from './git-history-graph-host-status'
 
@@ -47,9 +47,7 @@ export function GitGraphAutoLoadMore({
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
           observer.disconnect()
-          updateGitHistoryGraphFilter(worktreeId, {
-            limit: Math.min(GIT_HISTORY_GRAPH_MAX_LIMIT, loaded + LOAD_MORE_STEP)
-          })
+          loadMoreGitHistoryGraph(worktreeId, loaded)
         }
       },
       { root: scrollRootRef.current, rootMargin: `0px 0px ${AUTO_LOAD_MARGIN_PX}px 0px` }
