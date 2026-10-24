@@ -20,7 +20,7 @@ export type ExtraScenarioContext = {
   R: { webapp: string; docs: string; api: string; core: string; feature: string }
   folderKey: string
   refreshBtn: Locator
-  H: { web: RegExp; docs: RegExp; feature: RegExp }
+  H: { api: RegExp; web: RegExp; docs: RegExp; feature: RegExp }
   scenario: (name: string, fn: (ev: string[]) => Promise<void>) => Promise<void>
   shot: (name: string) => Promise<string>
   header: (re: RegExp) => Locator
