@@ -47,7 +47,7 @@ defineCase('V1-P2', {
     // openMP 找左側欄的 workspace 列(群組收起時先展開)並點進去
     await openMP()
     check(
-      (await grep(/^按鈕 Source Control/)) !== '',
+      (await grep(UI_RE.buttonStart(UI_TEXT.sourceControlTab))) !== '',
       '點 MultiProduct workspace 後右側欄沒有 Source Control 分頁'
     )
     return '左側欄有 MultiProduct folder workspace,點進去後右側欄正常'
@@ -58,12 +58,15 @@ defineCase('V1-P3', {
   title: 'Source Control 分頁出現,沒有 Checks',
   run: async () => {
     await openMP()
-    check((await findAll(/^按鈕 Source Control/)).length === 1, '沒有 Source Control 分頁')
+    check(
+      (await findAll(UI_RE.buttonStart(UI_TEXT.sourceControlTab))).length === 1,
+      '沒有 Source Control 分頁'
+    )
     check((await findAll(/^按鈕 Checks$/)).length === 0, '不該出現 Checks 分頁')
     const pr = (await findAll(/^按鈕 PR Checks$/)).length
-    await clickRe(/^按鈕 Source Control/)
+    await clickRe(UI_RE.buttonStart(UI_TEXT.sourceControlTab))
     check(
-      (await grep(/^按鈕 Refresh all repositories/)) !== '',
+      (await grep(UI_RE.button(UI_TEXT.refreshAll))) !== '',
       '點 Source Control 後沒有 folder 面板(Refresh all repositories)'
     )
     return `有 Source Control、沒有 Checks;PR Checks 分頁 ${pr ? '存在(上游 folder 專用,不算 Checks)' : '不存在'}`
@@ -98,7 +101,7 @@ defineCase('V1-A2', {
       return JSON.stringify(c) === JSON.stringify(V1_EXPECT_COUNTS) ? c : null
     }, 12000)
     if (!m) {
-      await clickRe(/^按鈕 Refresh all repositories/)
+      await clickRe(UI_RE.button(UI_TEXT.refreshAll))
       await sleep(3500)
       m = await v1CountsMap()
     }
@@ -158,7 +161,7 @@ defineCase('V1-A5', {
   run: async () => {
     await openMP()
     await v1Select('WebApp')
-    await clickRe(/^按鈕 Refresh all repositories/)
+    await clickRe(UI_RE.button(UI_TEXT.refreshAll))
     await sleep(3500)
     checkEq(await openRepoTitle(), 'WebApp (main)', 'Refresh all 後面板標題')
     return 'Refresh all 後仍是 WebApp (main)'
@@ -174,7 +177,7 @@ defineCase('V1-A6', {
     await app.click(await v1MainRow('api-server'))
     await sleep(2000)
     check(
-      (await grep(/^按鈕 Refresh all repositories/)) === '',
+      (await grep(UI_RE.button(UI_TEXT.refreshAll))) === '',
       '切到 api-server workspace 後仍顯示 folder 面板'
     )
     await openMP()
@@ -218,7 +221,7 @@ defineCase('V1-A8', {
     await openMP()
     const rows = await v1Rows()
     for (const r of rows) {
-      const b = await v1BtnAfterId(r.id, /^按鈕 Copy all changes$/)
+      const b = await v1BtnAfterId(r.id, UI_RE.button(UI_TEXT.copyAllChanges))
       check(b, `${r.name} 列沒有複製鈕`)
     }
     const n = await rowCopy(/^按鈕 WebApp-feature \(feature\/x\)/)
@@ -303,7 +306,7 @@ defineCase('V1-C1', {
     )
     checkEq(await v1HeaderRepo(), 'WebApp', 'diff 標頭路徑的 repo')
     check(
-      (await grep(/^按鈕 Refresh all repositories/)) !== '',
+      (await grep(UI_RE.button(UI_TEXT.refreshAll))) !== '',
       '右側欄不再是 folder 面板(workspace 可能跳走了)'
     )
     const c = await v1ContentCheck(['unstaged-edit'], [], 'C1')

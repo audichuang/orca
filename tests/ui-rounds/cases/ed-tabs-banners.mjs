@@ -220,7 +220,7 @@ defineCase('ED-06.2', {
     }
     check(ok, '第 5 步沒有顯示 All conflicts resolved')
     check(await grep(/^按鈕 Dismiss/), '沒有 Dismiss 按鈕')
-    check(await grep(/^按鈕 Source Control/), '沒有 Source Control 按鈕')
+    check(await grep(UI_RE.buttonStart(UI_TEXT.sourceControlTab)), '沒有 Source Control 按鈕')
     return 'All conflicts resolved + Source Control + Dismiss'
   }
 })
