@@ -31,21 +31,37 @@ type ForkMenuProps = {
  * Several: the fork's own menu, since only the fork selects more than one commit.
  */
 export function GitHistoryCommitForkMenu(props: ForkMenuProps): React.JSX.Element {
-  const { item, onAction, selectedCount = 1, onShowInGraph } = props
-  if (selectedCount > 1) {
-    return <MultiCommitMenu {...props} selectedCount={selectedCount} />
+  const { item, onAction, onShowInGraph } = props
+  if ((props.selectedCount ?? 1) > 1) {
+    return <MultiCommitMenu {...props} />
   }
   return (
     <GitHistoryCommitContextMenu item={item} onAction={onAction}>
-      <ContextMenuItem onSelect={() => onAction('copy-full-source', item)}>
-        <ClipboardCopy className="size-3.5" />
-        {translate(
-          'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyFullSource',
-          'Copy Full Source'
-        )}
-      </ContextMenuItem>
+      <CopyFullSourceItem item={item} onAction={onAction} />
       <ShowInGraphItem item={item} onShowInGraph={onShowInGraph} />
     </GitHistoryCommitContextMenu>
+  )
+}
+
+function CopyFullSourceItem({
+  item,
+  onAction,
+  selectedCount = 1
+}: Pick<ForkMenuProps, 'item' | 'onAction' | 'selectedCount'>): React.JSX.Element {
+  return (
+    <ContextMenuItem onSelect={() => onAction('copy-full-source', item)}>
+      <ClipboardCopy className="size-3.5" />
+      {selectedCount > 1
+        ? translate(
+            'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyFullSourceMany',
+            'Copy Full Source ({{value0}} commits)',
+            { value0: selectedCount }
+          )
+        : translate(
+            'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyFullSource',
+            'Copy Full Source'
+          )}
+    </ContextMenuItem>
   )
 }
 
@@ -67,12 +83,14 @@ function ShowInGraphItem({
   )
 }
 
+// Why a copy: upstream's menu hard-codes one-commit labels. Mirrors git-history-commit-context-menu.tsx;
+// re-sync its entries on each upstream rebase.
 function MultiCommitMenu({
   item,
   onAction,
   selectedCount,
   onShowInGraph
-}: ForkMenuProps & { selectedCount: number }): React.JSX.Element {
+}: ForkMenuProps): React.JSX.Element {
   const managedBrowserCreationEnabled = useAppStore(
     (state) =>
       getClientCreationActionPolicy(state, state.activeWorktreeId)['managed-browser'].state ===
@@ -106,14 +124,7 @@ function MultiCommitMenu({
           count
         )}
       </ContextMenuItem>
-      <ContextMenuItem onSelect={() => onAction('copy-full-source', item)}>
-        <ClipboardCopy className="size-3.5" />
-        {translate(
-          'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyFullSourceMany',
-          'Copy Full Source ({{value0}} commits)',
-          count
-        )}
-      </ContextMenuItem>
+      <CopyFullSourceItem item={item} onAction={onAction} selectedCount={selectedCount} />
       <ShowInGraphItem item={item} onShowInGraph={onShowInGraph} />
       <ContextMenuSeparator />
       <ContextMenuItem onSelect={() => onAction('explain', item)}>
