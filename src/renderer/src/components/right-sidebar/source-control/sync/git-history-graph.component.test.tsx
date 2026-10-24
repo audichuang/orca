@@ -159,6 +159,50 @@ describe('Commits graph filter, end to end through the history hook', () => {
     expect(screen.getByRole('combobox', { name: 'Branch filter' })).toHaveTextContent('2 branches')
   })
 
+  it('offers tags from a host that lists them: walk them all, or pick one', async () => {
+    const TAG = { fullName: 'refs/tags/v1', name: 'v1', category: 'tags' } as const
+    mocks.getRuntimeGitHistory.mockImplementation(async (_context, options) =>
+      options.graph
+        ? result({
+            graph: {
+              ...APPLIED,
+              mode: options.graph.mode,
+              refs: options.graph.listTags ? [...APPLIED.refs, TAG] : APPLIED.refs
+            }
+          })
+        : result()
+    )
+    render(<Harness />)
+    await screen.findByText('Alpha')
+    fireEvent.click(screen.getByRole('combobox', { name: 'Branch filter' }))
+    fireEvent.click(await screen.findByText('All branches', { selector: '[cmdk-item]' }))
+
+    const tagsSource = await screen.findByText('Tags', { selector: '[cmdk-item]' })
+    fireEvent.click(tagsSource)
+    await waitFor(() =>
+      expect(lastRequest()).toMatchObject({
+        graph: { mode: 'all', source: { local: true, tags: true } }
+      })
+    )
+
+    const tagRow = screen.getByTitle('v1')
+    expect(tagRow.closest('[cmdk-group]')).toHaveTextContent(/^Tags/)
+    fireEvent.click(tagRow)
+    await waitFor(() =>
+      expect(lastRequest()).toMatchObject({ graph: { mode: 'refs', refs: ['refs/tags/v1'] } })
+    )
+    expect(screen.getByRole('combobox', { name: 'Branch filter' })).toHaveTextContent('v1')
+  })
+
+  it('hides the Tags source when the host lists no tags', async () => {
+    render(<Harness />)
+    await screen.findByText('Alpha')
+    fireEvent.click(screen.getByRole('combobox', { name: 'Branch filter' }))
+    fireEvent.click(await screen.findByText('All branches', { selector: '[cmdk-item]' }))
+    await screen.findByText('origin', { selector: '[cmdk-item] *' })
+    expect(screen.queryByText('Tags', { selector: '[cmdk-item]' })).toBeNull()
+  })
+
   it('debounces search text into a git-side search with author and path', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
