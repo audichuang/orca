@@ -79,8 +79,8 @@ export function seedGitHistoryGraphFilter(key: string, saved: GitHistoryGraphSav
 export function toSavedGitHistoryGraphFilter(
   filter: GitHistoryGraphFilter
 ): GitHistoryGraphSavedFilter {
-  const { scope, refs, local, remotes, query } = filter
-  return { scope, refs, local, remotes, query }
+  const { scope, refs, local, remotes, tags, query } = filter
+  return { scope, refs, local, remotes, ...(tags ? { tags } : {}), query }
 }
 
 export function updateGitHistoryGraphFilter(
@@ -96,6 +96,7 @@ export function updateGitHistoryGraphFilter(
       next.query !== previous.query ||
       next.local !== previous.local ||
       next.remotes !== previous.remotes ||
+      Boolean(next.tags) !== Boolean(previous.tags) ||
       next.refs !== previous.refs)
   ) {
     next.limit = GIT_HISTORY_GRAPH_PAGE_SIZE
@@ -209,8 +210,17 @@ export function toGitHistoryGraphRequest(
   }
   return {
     mode: filter.scope,
-    ...(filter.scope === 'all' ? { source: { local: filter.local, remotes: filter.remotes } } : {}),
+    ...(filter.scope === 'all'
+      ? {
+          source: {
+            local: filter.local,
+            remotes: filter.remotes,
+            ...(filter.tags ? { tags: true } : {})
+          }
+        }
+      : {}),
     ...(filter.scope === 'refs' ? { refs: filter.refs } : {}),
+    listTags: true,
     ...(hasSearch ? { search } : {}),
     limit: filter.limit
   }
@@ -227,7 +237,9 @@ export function isGitHistoryGraphFiltered(
   const base = getDefaultGitHistoryGraphFilter(key)
   const sourcesChanged =
     filter.scope === 'all' &&
-    (filter.local !== base.local || JSON.stringify(filter.remotes) !== JSON.stringify(base.remotes))
+    (filter.local !== base.local ||
+      JSON.stringify(filter.remotes) !== JSON.stringify(base.remotes) ||
+      Boolean(filter.tags) !== Boolean(base.tags))
   return (
     filter.scope !== base.scope ||
     sourcesChanged ||
