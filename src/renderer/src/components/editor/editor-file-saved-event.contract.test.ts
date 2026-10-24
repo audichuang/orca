@@ -7,9 +7,10 @@ import {
   stubEditorWindowWithDisk,
   withLoadedBaselines
 } from './editor-autosave-controller-test-fixture'
+import { CLOSED_VIEW_PATH, createClosedViewHarness } from './editor-save-closed-view.test-fixture'
 
-// Fork contract: folder Source Control (use-folder-repo-status-refresh) resolves the saved file via
-// openFiles.find(f => f.id === detail.fileId). Pins the upstream producer to that shape.
+// Fork contract: folder Source Control (use-folder-repo-status-refresh) resolves the saved file from
+// detail.filePath, falling back to openFiles.find(f => f.id === detail.fileId). Pins the producer.
 afterEach(() => vi.unstubAllGlobals())
 
 describe('ORCA_EDITOR_FILE_SAVED_EVENT producer', () => {
@@ -42,6 +43,34 @@ describe('ORCA_EDITOR_FILE_SAVED_EVENT producer', () => {
     )
     expect(seen).toHaveLength(1)
     expect(store.getState().openFiles.some((f) => f.id === seen[0]?.fileId)).toBe(true)
+    expect(seen[0]?.filePath).toBe('/work/core/a.ts')
     queue.dispose()
+  })
+
+  it('names the written path when every view of the file closed before the write landed', async () => {
+    const h = createClosedViewHarness()
+    try {
+      const seen: Partial<EditorFileSavedDetail>[] = []
+      const onSaved = (event: Event): void => {
+        if (event instanceof CustomEvent) {
+          seen.push(event.detail)
+        }
+      }
+      window.addEventListener(ORCA_EDITOR_FILE_SAVED_EVENT, onSaved)
+      h.type('A', 'edit')
+      h.holdNextWrite()
+      const saved = h.queue.queueSave(h.view('A'), 'edit')
+      await vi.advanceTimersByTimeAsync(0)
+      h.closeView('A')
+      h.closeView('B')
+      h.release()
+      await expect(saved).resolves.toBe('written')
+      window.removeEventListener(ORCA_EDITOR_FILE_SAVED_EVENT, onSaved)
+      expect(seen).toHaveLength(1)
+      expect(h.store.getState().openFiles.some((f) => f.id === seen[0]?.fileId)).toBe(false)
+      expect(seen[0]?.filePath).toBe(CLOSED_VIEW_PATH)
+    } finally {
+      h.dispose()
+    }
   })
 })
