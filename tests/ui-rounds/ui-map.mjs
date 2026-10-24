@@ -28,6 +28,7 @@ export const UI_TEXT = {
   pasteRestore: 'Paste & Restore',
   addReposInFolder: 'Add repositories in this folder',
   openGitGraph: 'Open Git Graph',
+  openAllCommitChanges: 'Open all changes',
   detailStart: 'Filter files by name',
   copyFullSource: 'Copy Full Source',
   viewAll: 'View all',
