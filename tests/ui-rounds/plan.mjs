@@ -34,6 +34,15 @@ if (!args.length) {
 const ids = args
   .flatMap((a) => (CASES[a] ? [a] : Object.keys(CASES).filter((id) => id.startsWith(`${a}-`))))
   .filter((id) => all || !CASES[id].e2eCovered)
+// 分段案例(X、X.1、X.2、X.cleanup)排在一起依段數跑,不受案例檔載入順序影響
+const stepOf = (id) => {
+  const m = /\.(\d+|cleanup)$/.exec(id)
+  return m ? (m[1] === 'cleanup' ? Infinity : Number(m[1])) : 0
+}
+const baseOf = (id) => id.replace(/\.(\d+|cleanup)$/, '')
+const firstAt = new Map()
+ids.forEach((id, i) => firstAt.has(baseOf(id)) || firstAt.set(baseOf(id), i))
+ids.sort((a, b) => firstAt.get(baseOf(a)) - firstAt.get(baseOf(b)) || stepOf(a) - stepOf(b))
 if (!ids.length) {
   console.error('沒有符合的案例')
   process.exit(1)
