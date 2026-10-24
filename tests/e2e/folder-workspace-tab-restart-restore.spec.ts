@@ -102,9 +102,11 @@ test('a folder edit tab keeps its repo across a restart', async (// oxlint-disab
     // User-visible proof: the Changes view diffs against api-server's HEAD, which only the git owner names.
     const modified = page.locator('.modified-in-monaco-diff-editor .view-lines').first()
     await expect(modified).toContainText('unstaged api', { timeout: 25_000 })
-    await expect(
-      page.locator('.original-in-monaco-diff-editor .view-lines').first()
-    ).not.toContainText('unstaged api')
+    const original = page.locator('.original-in-monaco-diff-editor .view-lines').first()
+    // HEAD holds both local commits; a diff against the index-less folder or a stale blob would not.
+    await expect(original).toContainText('local 2')
+    await expect(original).toContainText('local 1')
+    await expect(original).not.toContainText('unstaged api')
   } finally {
     for (const app of [secondApp, firstApp]) {
       if (!app) {
