@@ -7,6 +7,8 @@ export type GitHistoryGraphMode = (typeof GIT_HISTORY_GRAPH_MODES)[number]
 export type GitHistoryGraphSource = {
   local: boolean
   remotes: 'all' | string[]
+  /** Also walk every tag; absent on filters saved before tags were offered. */
+  tags?: boolean
 }
 
 /** A Git Graph filter as an editor tab saves it: the page depth is not kept. */
@@ -30,8 +32,13 @@ export type GitHistoryGraphRequest = {
   mode: GitHistoryGraphMode
   /** Used when mode is `all`. */
   source?: GitHistoryGraphSource
-  /** Full ref names (`refs/heads/…`, `refs/remotes/…`) used when mode is `refs`. */
+  /** Full ref names (`refs/heads/…`, `refs/remotes/…`, `refs/tags/…`) used when mode is `refs`. */
   refs?: string[]
+  /**
+   * Include tags in the returned ref list. Why opt-in: an older client files every ref that is not
+   * a remote branch under Local, so a host lists tags only for a client that asks.
+   */
+  listTags?: boolean
   search?: GitHistoryGraphSearch
   /** Overrides the upstream 200-commit cap; old hosts ignore it with the rest of `graph`. */
   limit?: number
@@ -40,7 +47,7 @@ export type GitHistoryGraphRequest = {
 export type GitHistoryGraphRefOption = {
   fullName: string
   name: string
-  category: 'branches' | 'remote branches'
+  category: 'branches' | 'remote branches' | 'tags'
   remote?: string
 }
 
