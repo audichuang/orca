@@ -125,10 +125,12 @@ export function readAgentLaunchChoice(
   store: AgentLaunchRouteStore,
   agent: TuiAgent,
   workspace: ProspectiveWorkspace,
-  detected: readonly TuiAgent[] | null
+  detected: readonly TuiAgent[] | null,
+  /** A start directory below the workspace root only a terminal can apply (folder repo launches). */
+  cwd?: string | null
 ) {
   const context = resolveChatProgramContext(store, workspace)
-  const input = buildAgentLaunchRouteInput(store, { agent, workspace })
+  const input = buildAgentLaunchRouteInput(store, { agent, workspace, tuiCustomization: { cwd } })
   const program = readChatProgram(store, agent, context, detected)
   const support = structuredAgentLaunchSupport(input)
   const catalogReady =
@@ -143,6 +145,8 @@ export function readAgentLaunchChoice(
       (support.blocker === 'agent-without-structured-session' && !catalogReady))
   const chatEligibility =
     !isNativeChatDefaultFor(store.settings, agent) ||
+    // Why: a start directory below the root is a terminal whatever the host's catalog says.
+    input.startsOutsideWorkspaceRoot === true ||
     (!support.supported && !routePending) ||
     program === 'missing'
       ? 'no'
@@ -175,11 +179,14 @@ export function chosenAgentChatUnlearned(
 export function agentsOfferedForLaunch(
   store: AgentLaunchRouteStore,
   workspace: ProspectiveWorkspace,
-  detected: readonly TuiAgent[] | null
+  detected: readonly TuiAgent[] | null,
+  cwd?: string | null
 ): TuiAgent[] {
   const { executionHostId } = resolveChatProgramContext(store, workspace)
   const chats = chatProviderAgents(executionHostId, store.runtimeStatusByEnvironmentId)
-  const opens = chats.filter((agent) => agentChoiceOpensAsChat(store, agent, workspace, detected))
+  const opens = chats.filter((agent) =>
+    agentChoiceOpensAsChat(store, agent, workspace, detected, cwd)
+  )
   return [...new Set([...(detected ?? []), ...opens])]
 }
 
