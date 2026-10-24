@@ -1,0 +1,7 @@
+// clipcode-root: MultiProduct
+// file: [NEW] notes/dup.txt
+first
+// file: [NEW] notes//./dup.txt
+second
+// file: [MOVED] WebApp/src/moved-here.ts
+moved content
