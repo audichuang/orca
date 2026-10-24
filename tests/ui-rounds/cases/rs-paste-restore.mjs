@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 
-const { RS_STALE, rsTop, rsResultIs, rsSimple } = await import(
+const { rsTop, rsResultIs, rsSimple } = await import(
   new URL(`./rs-restore-dialog.mjs${new URL(import.meta.url).search}`, import.meta.url).href
 )
 
@@ -345,12 +345,7 @@ for (const [id, path, _want, verify] of [
     mutates: true,
     run: async () => {
       await afterReset()
-      for (let k = 0; k < 20 && (await grep(RS_STALE)); k++) {
-        await sleep(500)
-      }
-      await app.click(await find(/^按鈕 Paste & Restore/))
-      await sleep(1500)
-      const v = await rsView()
+      const v = await rsOpenPreview()
       rsExpect(`${id}.1`, v, { Create: [path] })
       return `預覽 Create (1) ${path},對話框保持開啟(接著跑 pre/${id}.2.sh 再跑 ${id}.2)`
     }
@@ -457,14 +452,10 @@ defineCase('RS-18a', {
 // 18b/18c 沒有預覽對話框,只有錯誤通知
 const rsNoDialog = async (re, label) => {
   await afterReset()
-  for (let k = 0; k < 20 && (await grep(RS_STALE)); k++) {
-    await sleep(500)
-  }
-  await app.click(await find(/^按鈕 Paste & Restore/))
-  await sleep(600)
+  const v = await rsOpenPreview()
   const n = await note()
   checkRe(n, re, label)
-  check(!(await grep(/^標題 Paste & Restore/)), `${label}: 不該開出預覽對話框`)
+  check(!v.open, `${label}: 不該開出預覽對話框`)
   return n.replace(/^\d+ (文字|text) /, '')
 }
 defineCase('RS-18b', {
@@ -534,6 +525,8 @@ defineCase('RS-21', {
   mutates: true,
   run: async () => {
     await afterReset()
+    // 橫幅只在有未存檔編輯時出現;profile 可能留著上一輪開的 Auto Save
+    await setAutoSave(false)
     const rows = async () => await findAll(/^text (Active|Inactive) main primary main/)
     await app.click((await rows())[1])
     await sleep(2000)
@@ -542,9 +535,12 @@ defineCase('RS-21', {
       await app.click(sc[0])
       await sleep(1500)
     }
+    // 雙擊變更列開的是 diff 分頁,Open file 才是可編輯的檔案分頁
     await app.click(await find(/^text README\.md/), { clickCount: 2 })
     await sleep(2000)
-    const ed = (await lines()).find(([, t]) => t.startsWith('圓形按鈕 Description: Source'))
+    await app.click(await find(UI_RE.button(UI_MAP.UI_TEXT.openFile)))
+    await sleep(1500)
+    const ed = (await lines()).find(([, t]) => /^圓形按鈕 (Description: )?Source/.test(t))
     if (ed) {
       await app.click(ed[0])
       await sleep(1000)
