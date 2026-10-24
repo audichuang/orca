@@ -4,7 +4,7 @@ import { joinPath } from '@/lib/path'
 import type { OpenFile } from '../types/open-file'
 import type { ConflictReviewState } from '../../../../../../shared/editor-tab-view-types'
 import { toOpenConflictMetadata } from '../git/git-status-reconciliation'
-import { getScopedTabIdOwner } from '../git/open-file-git-owner'
+import { getScopedTabIdOwner, resolveOpenGitWorktreeId } from '../git/open-file-git-owner'
 import { resolveEditorFileIdForOwner } from '../file-ids/editor-file-ids'
 import { openWorkspaceEditorItem } from '../tabs/workspace-editor-item'
 import { captureEditorFileOperationProvenance } from '@/lib/editor-file-operation-owner'
@@ -31,9 +31,9 @@ export function createOpenConflictReview(
       worktreePath,
       entry,
       language,
-      gitWorktreeIdArg
+      forkOptions
     ) => {
-      const gitWorktreeId = gitWorktreeIdArg !== worktreeId ? gitWorktreeIdArg : undefined
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, forkOptions)
       const trackedKey = gitWorktreeId ?? worktreeId
       const absolutePath = joinPath(worktreePath, entry.path)
       const reviewTab = (get().unifiedTabsByWorktree?.[worktreeId] ?? []).find(
@@ -150,8 +150,8 @@ export function createOpenConflictReview(
     },
 
     // Why: renders from a stored snapshot (entries + timestamp), not live status, so the list stays stable across polls while reviewing.
-    openConflictReview: (worktreeId, worktreePath, entries, source, gitWorktreeIdArg) => {
-      const gitWorktreeId = gitWorktreeIdArg !== worktreeId ? gitWorktreeIdArg : undefined
+    openConflictReview: (worktreeId, worktreePath, entries, source, forkOptions) => {
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, forkOptions)
       const id = `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::conflict-review`
       set((s) => {
         const conflictReview: ConflictReviewState = {
