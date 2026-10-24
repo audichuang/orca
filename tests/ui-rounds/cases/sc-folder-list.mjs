@@ -48,7 +48,7 @@ defineCase('SC-19.2', {
     const N = scShell('cat $ROOT/sc19-n.txt').trim()
     need(/^\d+$/.test(N), 'pre 沒有寫出 sc19-n.txt')
     await openMP()
-    await app.click(await find(/^按鈕 Refresh all repositories/))
+    await app.click(await find(UI_RE.button(UI_TEXT.refreshAll)))
     await sleep(3500)
     const notice = 'Hidden worktrees under this folder are not included (1).'
     const g1 = (await grep(/Hidden worktrees under this folder are not included/)) || ''
@@ -56,7 +56,7 @@ defineCase('SC-19.2', {
     check(!/WebApp-hidden/.test(await counts()), '清單不應有 WebApp-hidden')
     // 2. 複製全部變更
     const r = await copyAndRead(async () => {
-      await app.click(await find(/^按鈕 Copy all changes$/))
+      await app.click(await find(UI_RE.button(UI_TEXT.copyAllChanges)))
       await sleep(250)
       const n1 = await grep(/not included|Git file\(s\)/)
       await sleep(1300)
@@ -82,7 +82,7 @@ defineCase('SC-19.2', {
     await sleep(1200)
     await scCloseOtherLocations()
     await openMP()
-    await app.click(await find(/^按鈕 Refresh all repositories/))
+    await app.click(await find(UI_RE.button(UI_TEXT.refreshAll)))
     await sleep(3500)
     const c = await counts()
     checkRe(
@@ -165,8 +165,8 @@ defineCase('SC-21', {
       await sleep(3000)
       // 2. 群組列 Create workspace for zero
       await scCreateWorkspace('zero', 'zero')
-      const sc = (await lines()).find(([, t]) => t.startsWith('按鈕 Source Control'))
-      if (sc && !(await grep(/^按鈕 Refresh all repositories/))) {
+      const sc = (await lines()).find(([, t]) => t.startsWith(`按鈕 ${UI_TEXT.sourceControlTab}`))
+      if (sc && !(await grep(UI_RE.button(UI_TEXT.refreshAll)))) {
         await app.click(sc[0])
         await sleep(1500)
       }
@@ -177,7 +177,7 @@ defineCase('SC-21', {
       check(c2.split('\n').length === 2, `第 2 步應 2 列:${c2}`)
       checkRe(await scPanelTitle(), /solo/, '預設選取應為 solo')
       await openMP('MultiProduct')
-      await app.click(await find(/^按鈕 Refresh all repositories/))
+      await app.click(await find(UI_RE.button(UI_TEXT.refreshAll)))
       await sleep(3500)
       const mp = await counts()
       checkRe(mp, /duo \(main\) 0/, 'MultiProduct 清單 duo')
@@ -236,7 +236,7 @@ defineCase('SC-22', {
     await importFolder(`${ROUND.root}/MultiProduct/libs/other/core`)
     await openMP()
     await sleep(1500)
-    await app.click(await find(/^按鈕 Refresh all repositories/))
+    await app.click(await find(UI_RE.button(UI_TEXT.refreshAll)))
     await sleep(3500)
     const c = await counts()
     checkRe(c, /other\/core \(main\)/, '清單 other/core')
@@ -273,7 +273,7 @@ defineCase('SC-22.2', {
       await sleep(1500)
     }
     await openMP()
-    await app.click(await find(/^按鈕 Refresh all repositories/))
+    await app.click(await find(UI_RE.button(UI_TEXT.refreshAll)))
     await sleep(3500)
     const cnt = await counts()
     check(!/other\/core/.test(cnt), `other/core 仍在清單:${cnt}`)
@@ -295,7 +295,7 @@ defineCase('SC-23', {
     try {
       await openMP()
       await sleep(1500)
-      await app.click(await find(/^按鈕 Refresh all repositories/))
+      await app.click(await find(UI_RE.button(UI_TEXT.refreshAll)))
       await sleep(3500)
       checkEq(await scCnt('docs-site'), 2, '第 1 步 docs-site')
       checkEq(await scCnt('inner'), 1, '第 1 步 inner')
@@ -350,7 +350,7 @@ defineCase('SC-24.1', {
   mutates: true,
   run: async () => {
     await openMP()
-    await app.click(await find(/^按鈕 Refresh all repositories/))
+    await app.click(await find(UI_RE.button(UI_TEXT.refreshAll)))
     await sleep(3500)
     const c = await counts()
     const d = (await lines()).find(([, t]) => t.startsWith('按鈕 docs-site ('))
@@ -360,7 +360,7 @@ defineCase('SC-24.1', {
       await sleep(1500)
       doc = `docs-site 列仍在:${d[1]}`
     }
-    check(await grep(/^按鈕 Refresh all repositories/), '面板不見了(空白/當掉)')
+    check(await grep(UI_RE.button(UI_TEXT.refreshAll)), '面板不見了(空白/當掉)')
     await evidenceShot()
     return `面板正常;${doc};清單 ${c
       .split('\n')
@@ -406,7 +406,7 @@ defineCase('SC-25', {
       await app.click(y[0])
       await sleep(5000)
       await openMP('MultiProduct')
-      await app.click(await find(/^按鈕 Refresh all repositories/))
+      await app.click(await find(UI_RE.button(UI_TEXT.refreshAll)))
       const t0 = Date.now()
       const all = async () => {
         const c = (await lines()).filter(([, t]) => /^按鈕 r\d\d \(main\) \d/.test(t))

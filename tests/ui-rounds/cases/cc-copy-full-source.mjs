@@ -69,7 +69,9 @@ defineCase('CC-03', {
     await sleep(600)
     check(await grep(/^text 2 selected/), '多選後沒有「2 selected」')
     const r = await copyAndRead(async () => {
-      await app.click(await btnAfter(/^text \d+ selected/, /^按鈕 Copy Full Source/, 10))
+      await app.click(
+        await btnAfter(/^text \d+ selected/, UI_RE.button(UI_TEXT.copyFullSource), 10)
+      )
       await sleep(1300)
       const n = await note()
       const cl = await findAll(/^按鈕 Clear selection/)
@@ -118,7 +120,7 @@ defineCase('CC-05.1', {
   run: async () => {
     await openMP()
     const r = await copyAndRead(async () => {
-      await app.click(await find(/^按鈕 Copy all changes$/))
+      await app.click(await find(UI_RE.button(UI_TEXT.copyAllChanges)))
       await sleep(1300)
       return await note()
     })
@@ -147,7 +149,7 @@ defineCase('CC-05.2', {
     check(hint, '第 2 步面板沒有 Hidden worktrees … not included (1)')
     check(!(await grep(/WebApp-cc05/)), '第 2 步清單不應有 WebApp-cc05')
     const r = await copyAndRead(async () => {
-      await app.click(await find(/^按鈕 Copy all changes$/))
+      await app.click(await find(UI_RE.button(UI_TEXT.copyAllChanges)))
       await sleep(1300)
       return await note()
     })
@@ -256,17 +258,17 @@ defineCase('CC-08', {
       await app.click(await find(/^按鈕 Clear and close filter/))
       await sleep(1000)
     }
-    const before = (await findAll(/^按鈕 Copy Full Source$/)).length
+    const before = (await findAll(UI_RE.button(UI_TEXT.copyFullSource))).length
     check(before > 0, '篩選前區段應有 Copy Full Source')
     await app.click(await find(/^按鈕 Filter files by name/))
     await sleep(700)
     await app.typeText('partial')
     await sleep(1200)
-    const during = (await findAll(/^按鈕 Copy Full Source$/)).length
+    const during = (await findAll(UI_RE.button(UI_TEXT.copyFullSource))).length
     // 輸入中是「文字欄位 … Description: Filter files…, Value: partial」,旁邊有 Clear and close filter
     await app.click(await find(/^按鈕 Clear and close filter/))
     await sleep(1200)
-    const after = (await findAll(/^按鈕 Copy Full Source$/)).length
+    const after = (await findAll(UI_RE.button(UI_TEXT.copyFullSource))).length
     check(during === 0, `篩選 partial 時仍有 ${during} 個 Copy Full Source`)
     check(after === before, `清空後 Copy Full Source 數量 ${after},篩選前 ${before}`)
     return `篩選前 ${before} 個 → 篩選中 0 → 清空後 ${after}`
