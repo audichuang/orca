@@ -58,7 +58,8 @@ defineCase('SC-19.2', {
     const r = await copyAndRead(async () => {
       await app.click(await find(UI_RE.button(UI_TEXT.copyAllChanges)))
       await sleep(250)
-      const n1 = await grep(/not included|Git file\(s\)/)
+      // 只讀通知區:面板上常駐同一句提示,全畫面 grep 會被它滿足
+      const n1 = await note()
       await sleep(1300)
       return n1
     })
