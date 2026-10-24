@@ -63,10 +63,16 @@ globalThis.clickRe = async (re, opts) => {
 // ---- MultiProduct fixture ----
 globalThis.REPOS = ['api-server', 'core', 'docs-site', 'WebApp', 'WebApp-feature']
 globalThis.counts = async () => await grep(map.RE.anyRepoRow)
-globalThis.note = async () =>
-  (await grep(
-    /Git file\(s\)|No Git changes|could not be read|Over \d|Created \d|failed|No Snipcode|Clipboard is empty/
-  )) || 'none'
+// 通知的標準形式(ui-map 的 toastNote),前面保留元素編號與角色,跟舊的 grep 輸出同形
+globalThis.note = async () => {
+  const L = await lines()
+  const text = map.toastNote(L)
+  if (!text) {
+    return 'none'
+  }
+  const id = L.find(([, t]) => t.endsWith(text.split('.')[0]))?.[0] ?? 0
+  return `${id} 文字 ${text}`
+}
 // 持續顯示的通知(例如 token 門檻警告)會讓後面的 note() 讀到舊文字
 globalThis.dismissToasts = async () => {
   for (let k = 0; k < 10; k++) {
