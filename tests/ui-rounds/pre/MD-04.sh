@@ -4,6 +4,8 @@ set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/ed-lib.sh"
 # MD-02 的狀態 + 從 Bash 端用 CDP 呼叫 window.api.git.diff,結果寫到 md04-result.json 給 lcu 讀
 ed_reset
+# The round's DevTools port (round.sh records the ws URL), for pre scripts that call the renderer over CDP.
+CDP_PORT=$(python3 -I -c 'import json,os,re,sys; print(re.search(r":(\d+)", json.load(open(sys.argv[1]))["cdp"]).group(1))' "$HOME/.cache/orca-ui-rounds/round.json")
 : > "$P/WebApp/src/empty-new.ts"; : > "$P/docs-site/index.md"
 sleep 2
 rm -f "$OT/md04-result.json"

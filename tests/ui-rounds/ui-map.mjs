@@ -40,7 +40,19 @@ export const UI_TEXT = {
   settings: 'Settings',
   backToApp: 'Back to app',
   autoSaveFiles: 'Auto Save Files',
-  bannerChangedOnDisk: 'changed on disk while you have unsaved edits'
+  bannerChangedOnDisk: 'changed on disk while you have unsaved edits',
+  // Panel and sidebar landmarks the finders read; section titles render upper-case
+  notificationsRegion: 'Notifications',
+  worktreeList: 'Worktrees',
+  currentBranch: 'Current branch:',
+  searchWorktrees: 'Search worktrees and browser tabs',
+  removeWorkspace: 'Remove Workspace',
+  toggleRightSidebar: 'Toggle right sidebar',
+  sectionChanges: 'Changes',
+  sectionStaged: 'Staged Changes',
+  sectionCommitted: 'Committed on Branch',
+  sectionCommits: 'Commits',
+  groupNoChanges: 'No changes'
 }
 
 /** Sections that no longer exist on their own; v1.4.238 lists untracked files inside CHANGES. */
@@ -80,9 +92,13 @@ export const RE = {
   // A path (an editor tab's "/Users/… (diff) 0" button) is not a repo row
   anyRepoRow: /^按鈕 (?!\/)[\w./-]+ \([^)]*\) \d+$/,
   // Repos without changes sit in their own group, collapsed by default
-  repoGroupHeader: /^按鈕 NO CHANGES \d+$/,
+  repoGroupHeader: new RegExp(`^按鈕 ${esc(UI_TEXT.groupNoChanges.toUpperCase())} \\d+$`),
   sectionHeader: (name) => new RegExp(`^按鈕 ${esc(name)} \\d+$`),
-  anySectionHeader: /^按鈕 (CHANGES|STAGED CHANGES|COMMITTED ON BRANCH|COMMITS|Notes)( \d+)?$/,
+  anySectionHeader: new RegExp(
+    `^按鈕 (${['sectionChanges', 'sectionStaged', 'sectionCommitted', 'sectionCommits']
+      .map((k) => esc(UI_TEXT[k].toUpperCase()))
+      .join('|')}|Notes)( \\d+)?$`
+  ),
   detailStart: new RegExp(`^按鈕 ${esc(UI_TEXT.detailStart)}$`),
   workspaceRow: (name) => new RegExp(`^(text (Active|Inactive)|container) ${esc(name)}$`),
   button: (name) => new RegExp(`^按鈕 ${esc(name)}$`)
@@ -116,8 +132,9 @@ export function folderPanelName(lines) {
 export function openRepoTitle(lines) {
   const name = openRepoName(lines)
   const from = detailStartIndex(lines)
-  const b = lines.find(([, t], i) => i >= from && t.startsWith('container Current branch: '))
-  return name && b ? `${name} (${b[1].replace(/^container Current branch: /, '')})` : name
+  const label = `container ${UI_TEXT.currentBranch} `
+  const b = lines.find(([, t], i) => i >= from && t.startsWith(label))
+  return name && b ? `${name} (${b[1].slice(label.length)})` : name
 }
 
 /** [start, end) of a section of the open repo; the repo list above has its own CHANGES group. */
@@ -155,7 +172,7 @@ const NOTE_TITLE =
  */
 export function toastNote(lines) {
   // Toasts live under the Notifications region; panel hints use the same words.
-  const from = lines.findIndex(([, t]) => /^container Notifications\b/.test(t))
+  const from = lines.findIndex(([, t]) => t.startsWith(`container ${UI_TEXT.notificationsRegion}`))
   const notes = []
   let end = from
   lines.forEach(([, t], at) => {
