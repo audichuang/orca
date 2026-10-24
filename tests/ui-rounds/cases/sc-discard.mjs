@@ -1,8 +1,6 @@
 const {
   need,
-  scWait,
   scStart,
-  scSel,
   scCnt,
   scAllCnt,
   scSec,
@@ -15,8 +13,7 @@ const {
   scShell,
   scGrepC,
   scLines,
-  scPorcelain,
-  scAutoSave
+  scPorcelain
 } = await import(
   new URL(`./sc-panel-actions.mjs${new URL(import.meta.url).search}`, import.meta.url).href
 )
@@ -30,7 +27,7 @@ defineCase('SC-01', {
   mutates: true,
   run: async () => {
     await scStart()
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     await app.click(await scRowBtn(CH, /^text unstaged-mod\.ts src/, /^按鈕 Discard changes/))
     await sleep(1000)
     const d = await scDlg()
@@ -38,11 +35,11 @@ defineCase('SC-01', {
     checkEq(d.title, 'Discard changes to "unstaged-mod.ts"?', '對話框標題')
     await scConfirm(/^按鈕 Discard$/)
     // 6 → 5:CHANGES 含未追蹤的 Widget.tsx(10-21 起)
-    const chg = await scWait(async () => (await scSec('CHANGES')) === 5)
+    const chg = await waitFor(async () => (await scSec('CHANGES')) === 5)
     check(chg, `CHANGES 應為 5,實際 ${await scSec('CHANGES')}`)
     checkEq(await scCnt('WebApp'), 9, '清單 WebApp')
     checkEq(await scCnt('WebApp-feature'), 1, '清單 WebApp-feature')
-    const n = await scWait(() => scLines('$P/WebApp/src/unstaged-mod.ts') === 3)
+    const n = await waitFor(() => scLines('$P/WebApp/src/unstaged-mod.ts') === 3)
     check(
       n,
       `WebApp/src/unstaged-mod.ts 應剩 3 行,實際 ${scLines('$P/WebApp/src/unstaged-mod.ts')}`
@@ -67,7 +64,7 @@ defineCase('SC-02', {
   mutates: true, // 原文接續 SC-01;獨立執行時 CHANGES 5→4(接續則 4→3)
   run: async () => {
     await scStart()
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     const before = await scAllCnt()
     const chg0 = await scSec('CHANGES')
     await app.click(await scRowBtn(CH, /^text deleted-unstaged\.ts/, /^按鈕 Restore file/))
@@ -76,7 +73,7 @@ defineCase('SC-02', {
     need(d, '沒有出現確認對話框')
     checkEq(d.title, 'Restore "deleted-unstaged.ts"?', '對話框標題')
     await scConfirm(/^按鈕 Restore$/)
-    const ok = await scWait(
+    const ok = await waitFor(
       () => scShell('cat $P/WebApp/src/deleted-unstaged.ts') === 'deleted-unstaged\nline2\nline3\n',
       6000
     )
@@ -85,7 +82,7 @@ defineCase('SC-02', {
       `deleted-unstaged.ts 內容不對:${JSON.stringify(scShell('cat $P/WebApp/src/deleted-unstaged.ts'))}`
     )
     check(
-      await scWait(async () => (await scSec('CHANGES')) === chg0 - 1),
+      await waitFor(async () => (await scSec('CHANGES')) === chg0 - 1),
       `CHANGES 應由 ${chg0} 變 ${chg0 - 1},實際 ${await scSec('CHANGES')}`
     )
     const after = await scAllCnt()
@@ -104,7 +101,7 @@ defineCase('SC-03', {
   mutates: true,
   run: async () => {
     await scStart()
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     await app.click(await sectionButton(CH, /^按鈕 Discard all/))
     await sleep(1000)
     const d = await scDlg()
@@ -118,7 +115,7 @@ defineCase('SC-03', {
     )
     await scConfirm(/^按鈕 Discard all$/, 3500)
     check(
-      await scWait(() => scShell('git -C $P/WebApp diff --name-only').trim() === ''),
+      await waitFor(() => scShell('git -C $P/WebApp diff --name-only').trim() === ''),
       `diff --name-only 應為空:${scShell('git -C $P/WebApp diff --name-only')}`
     )
     checkRe(
@@ -135,7 +132,7 @@ defineCase('SC-03', {
       '未追蹤的 Widget.tsx 應已刪除'
     )
     check(
-      await scWait(async () => (await scCnt('WebApp')) === 4),
+      await waitFor(async () => (await scCnt('WebApp')) === 4),
       `清單 WebApp 應為 4,實際 ${await scCnt('WebApp')}`
     )
     return `對話框「${d.title}」「6 files」;diff 空、Widget.tsx 已刪、cached 仍 +index-edit、WebApp 4、feature 仍 1`
@@ -148,7 +145,7 @@ defineCase('SC-04', {
   mutates: true,
   run: async () => {
     await scStart()
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     // 10-21 起沒有 Delete all untracked,未追蹤檔在 CHANGES 裡逐列刪
     await app.click(
       await scRowBtn(UT, /^text Widget\.tsx src\/components\/new/, /^按鈕 Delete untracked file/)
@@ -159,7 +156,7 @@ defineCase('SC-04', {
     checkEq(d1.title, 'Delete "Widget.tsx"?', '第 1 步標題')
     await scConfirm(/^按鈕 Delete$/)
     check(
-      await scWait(
+      await waitFor(
         () =>
           scShell('test ! -e $P/WebApp/src/components/new/Widget.tsx && echo gone').trim() ===
           'gone',
@@ -177,7 +174,7 @@ defineCase('SC-04', {
       'yes',
       '第 1 步後 core untracked.txt 應仍在'
     )
-    await scSel('core')
+    await selectRepo('core')
     await app.click(await scRowBtn(UT, /^text untracked\.txt/, /^按鈕 Delete untracked file/))
     await sleep(1000)
     const d2 = await scDlg()
@@ -185,14 +182,14 @@ defineCase('SC-04', {
     checkEq(d2.title, 'Delete "untracked.txt"?', '第 2 步標題')
     await scConfirm(/^按鈕 Delete$/)
     check(
-      await scWait(
+      await waitFor(
         () => scShell('test ! -e $P/libs/shared/core/untracked.txt && echo gone').trim() === 'gone',
         6000
       ),
       '第 2 步後 core untracked.txt 還在'
     )
     check(
-      await scWait(async () => (await scCnt('core')) === 1),
+      await waitFor(async () => (await scCnt('core')) === 1),
       `core 應為 1,實際 ${await scCnt('core')}`
     )
     return `「${d1.title}」「${d2.title}」;Widget 刪除、兩 symlink 在;core untracked 第 2 步才刪;core 1`
@@ -207,7 +204,7 @@ defineCase('SC-05', {
     await scStart()
     const feat0 = scPorcelain('$P/WebApp-feature'),
       api0 = scPorcelain('$P/api-server')
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     await app.click(await sectionButton(ST, /^按鈕 Discard all/))
     await sleep(1000)
     const d = await scDlg()
@@ -215,11 +212,11 @@ defineCase('SC-05', {
     checkEq(d.title, 'Discard all staged changes?', '對話框標題')
     await scConfirm(/^按鈕 Discard all$/, 4000)
     check(
-      await scWait(() => scShell('git -C $P/WebApp diff --cached --name-only').trim() === ''),
+      await waitFor(() => scShell('git -C $P/WebApp diff --cached --name-only').trim() === ''),
       'cached 應為空'
     )
     check(
-      await scWait(() => scLines('$P/WebApp/src/staged-mod.ts') === 3),
+      await waitFor(() => scLines('$P/WebApp/src/staged-mod.ts') === 3),
       `staged-mod.ts 應 3 行,實際 ${scLines('$P/WebApp/src/staged-mod.ts')}`
     )
     checkEq(
@@ -243,7 +240,7 @@ defineCase('SC-06', {
   run: async () => {
     await scStart()
     const others0 = { feat: scPorcelain('$P/WebApp-feature'), api: scPorcelain('$P/api-server') }
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     await app.click(await find(/^彈出式按鈕 More source control actions/))
     await sleep(800)
     await app.click(await find(/^View as tree/))
@@ -255,7 +252,7 @@ defineCase('SC-06', {
       need(d, '第 2 步沒有對話框')
       await scConfirm(/^按鈕 (Discard|Discard all|Discard folder)$/, 3500)
       check(
-        await scWait(
+        await waitFor(
           () =>
             scShell('git -C $P/WebApp diff --name-only').trim().split('\n').sort().join(',') ===
             'README.md,logo.png'
@@ -264,7 +261,7 @@ defineCase('SC-06', {
       )
       // 10-21 起未追蹤檔也在 CHANGES 的 src 底下,資料夾 discard 一起刪掉
       check(
-        await scWait(
+        await waitFor(
           () =>
             scShell('test ! -e $P/WebApp/src/components/new/Widget.tsx && echo gone').trim() ===
             'gone',
@@ -293,7 +290,7 @@ defineCase('SC-07', {
   mutates: true,
   run: async () => {
     await scStart()
-    await scAutoSave(true, 10000)
+    await setAutoSave(true, 10000)
     try {
       await app.click(await find(/^按鈕 Explorer/))
       await sleep(1000)
@@ -314,7 +311,7 @@ defineCase('SC-07', {
       const t0 = Date.now()
       await app.click(await find(/^按鈕 Source Control/))
       await sleep(1000)
-      await scSel('api-server')
+      await selectRepo('api-server')
       await sleep(400)
       await app.click(await scRowBtn(CH, /^text server\.ts \+ 1 M/, /^按鈕 Discard changes/))
       await sleep(700)
@@ -336,7 +333,7 @@ defineCase('SC-07', {
         }
       } catch {}
       try {
-        await scAutoSave(false, 1000)
+        await setAutoSave(false, 1000)
       } catch {}
     }
   }
@@ -361,10 +358,10 @@ defineCase('SC-08', {
     await sleep(1500)
     await app.click(await find(/^按鈕 Source Control/))
     await sleep(1000)
-    await scSel('WebApp')
+    await selectRepo('WebApp')
     await app.click(await find(/^text README\.md/), { clickCount: 2 })
     await sleep(1500)
-    await scSel('api-server')
+    await selectRepo('api-server')
     await app.click(await find(/^text README\.md/), { clickCount: 2 })
     await sleep(1500)
     check((await findAll(/^sortable README\.md/)).length >= 2, '前置:應有兩個 README.md 分頁')
@@ -376,7 +373,7 @@ defineCase('SC-08', {
     await sleep(700)
     await scConfirm(/^按鈕 Discard$/, 2500)
     check(
-      await scWait(() => scGrepC("'unstaged api'", '$P/api-server/server.ts') === 0, 5000),
+      await waitFor(() => scGrepC("'unstaged api'", '$P/api-server/server.ts') === 0, 5000),
       '磁碟 server.ts 仍有 unstaged api'
     )
     checkEq(scGrepC("'api readme change'", '$P/api-server/README.md'), 0, 'api README 磁碟')
