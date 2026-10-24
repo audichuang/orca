@@ -26,7 +26,7 @@ import { useGitGraphListPrefs } from './git-graph-list-prefs'
 import { GitGraphDetailsPane } from './git-graph-full-view-details'
 import { buildGitGraphLaneRows } from './git-graph-lane-layout'
 import { SWIMLANE_WIDTH } from './git-history-graph-svg'
-import { GitHistoryCommitContextMenu } from './git-history-commit-context-menu'
+import { GitHistoryCommitForkMenu } from './git-history-commit-fork-menu'
 import { GIT_GRAPH_BRANCH_SIDEBAR_WIDTH, GitGraphBranchSidebar } from './git-graph-branch-sidebar'
 import { updateGitHistoryGraphFilter } from './git-history-graph-filter'
 import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
@@ -325,7 +325,7 @@ export function GitGraphFullView({
                 }
                 contextMenu={
                   onCommitAction && (
-                    <GitHistoryCommitContextMenu
+                    <GitHistoryCommitForkMenu
                       item={viewModel.historyItem}
                       selectedCount={contextItemsFor(viewModel.historyItem).length}
                       onAction={(action, target) =>
