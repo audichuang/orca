@@ -393,6 +393,30 @@ describe('Git Graph tab filters', () => {
     })
   })
 
+  it('saves the Tags source on the tab and walks tags again on a fresh mount', async () => {
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    renderTab(id)
+    act(() => updateGitHistoryGraphFilter(gitGraphTabFilterKey(id, 'wt-api'), { tags: true }))
+    await waitFor(() => expect(savedFilter(id)).toMatchObject({ scope: 'all', tags: true }))
+    const saved = useAppStore.getState().openFiles.find((file) => file.id === id)?.gitGraph?.filter
+    cleanup()
+    resetGitHistoryGraphFiltersForTest()
+    history.mockClear()
+    useAppStore.setState((s) => ({
+      openFiles: s.openFiles.map((file) =>
+        file.id === id
+          ? {
+              ...file,
+              gitGraph: { repoWorktreeId: 'wt-api', filter: saved }
+            }
+          : file
+      )
+    }))
+    renderTab(id)
+    await waitFor(() => expect(pageReads()).toHaveLength(1))
+    expect(lastPageGraph()).toMatchObject({ source: { tags: true } })
+  })
+
   it('carries scope and search to another repo but drops its branch picks', async () => {
     const id = useAppStore.getState().openGitGraphTab('wt-api')!
     renderTab(id)
