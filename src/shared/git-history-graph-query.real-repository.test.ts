@@ -184,6 +184,41 @@ describe('loadGitHistoryGraphFromExecutor on a real repository', () => {
     expect(subjects(result.items)).toEqual(['main work', 'root'])
   })
 
+  it('lists, walks and filters by tags, including one on no branch', async () => {
+    const { repo, git } = await createRepository()
+    await git(['tag', 'light', 'main'], repo)
+    await git(['checkout', '--quiet', '--detach', 'main'], repo)
+    await git(['commit', '--quiet', '--allow-empty', '-m', 'release only'], repo)
+    await git(['tag', '-a', 'v1', '-m', 'v1'], repo)
+    await git(['checkout', '--quiet', 'main'], repo)
+
+    const plain = await loadGitHistoryGraphFromExecutor(git, repo, { graph: { mode: 'head' } })
+    expect(plain.graph?.refs.some((ref) => ref.category === 'tags')).toBe(false)
+
+    const listed = await loadGitHistoryGraphFromExecutor(git, repo, {
+      graph: { mode: 'head', listTags: true }
+    })
+    const tags = listed.graph?.refs.filter((ref) => ref.category === 'tags')
+    expect(tags?.map((ref) => [ref.fullName, ref.name])).toEqual([
+      ['refs/tags/v1', 'v1'],
+      ['refs/tags/light', 'light']
+    ])
+
+    const byTag = await loadGitHistoryGraphFromExecutor(git, repo, {
+      graph: { mode: 'refs', refs: ['refs/tags/v1'] }
+    })
+    expect(subjects(byTag.items)).toEqual(['release only', 'main work', 'root'])
+
+    const branchesOnly = await loadGitHistoryGraphFromExecutor(git, repo, {
+      graph: { mode: 'all', source: { local: true, remotes: [] } }
+    })
+    expect(subjects(branchesOnly.items)).not.toContain('release only')
+    const withTags = await loadGitHistoryGraphFromExecutor(git, repo, {
+      graph: { mode: 'all', source: { local: true, remotes: [], tags: true } }
+    })
+    expect(subjects(withTags.items)).toContain('release only')
+  })
+
   it('skips a picked branch that was deleted since instead of failing', async () => {
     const { repo, git } = await createRepository()
     await git(['branch', '--quiet', '-D', 'feature'], repo)
