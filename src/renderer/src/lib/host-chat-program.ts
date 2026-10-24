@@ -151,6 +151,8 @@ export function readAgentLaunchChoice(
       (support.blocker === 'agent-without-structured-session' && !catalogReady))
   const chatEligibility =
     (preferredSurface !== 'chat' && !nativeChatPreferenceFor(store.settings, agent)) ||
+    // Why: a start directory below the root is a terminal whatever the host's catalog says.
+    input.startsOutsideWorkspaceRoot === true ||
     (!support.supported && !routePending) ||
     program === 'missing'
       ? 'no'
