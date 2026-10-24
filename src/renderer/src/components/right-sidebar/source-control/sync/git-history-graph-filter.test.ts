@@ -60,6 +60,7 @@ describe('toGitHistoryGraphRequest', () => {
   it('keeps HEAD-only history when only the page size grew', () => {
     expect(toGitHistoryGraphRequest({ ...DEFAULT_GIT_HISTORY_GRAPH_FILTER, limit: 150 })).toEqual({
       mode: 'head',
+      listTags: true,
       limit: 150
     })
   })
@@ -77,6 +78,7 @@ describe('toGitHistoryGraphRequest', () => {
       mode: 'all',
       source: { local: true, remotes: ['origin'] },
       search: { text: 'bug', author: 'bob' },
+      listTags: true,
       limit: 50
     })
   })
@@ -88,7 +90,7 @@ describe('toGitHistoryGraphRequest', () => {
         scope: 'refs',
         refs: ['refs/heads/a']
       })
-    ).toEqual({ mode: 'refs', refs: ['refs/heads/a'], limit: 50 })
+    ).toEqual({ mode: 'refs', refs: ['refs/heads/a'], listTags: true, limit: 50 })
   })
 })
 

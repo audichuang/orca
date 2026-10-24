@@ -230,6 +230,30 @@ describe('GitGraphFullRow folded edges', () => {
     expect(onJump).not.toHaveBeenCalled()
   })
 
+  it('loads toward an arrow whose far end is past the loaded commits', () => {
+    const onJump = vi.fn()
+    render(
+      <GitGraphFullRow
+        viewModel={viewModel('node', 'abc1234')}
+        lanes={{
+          ...lanes,
+          segments: [
+            { kind: 'fold-down', at: 1, color: 'git-graph-lane-1', unloadedTargetId: 'deep123' }
+          ]
+        }}
+        graphWidth={33}
+        columns={COLUMNS}
+        selected={false}
+        onSelect={vi.fn()}
+        onJump={onJump}
+      />
+    )
+    const row = screen.getByTestId('git-graph-full-row')
+    expect(row.querySelector('[data-fold="fold-down"] title')).toHaveTextContent('deep123')
+    fireEvent.click(row.querySelector('[data-git-graph-jump="deep123"] path')!)
+    expect(onJump).toHaveBeenCalledWith('deep123')
+  })
+
   it('jumps from an arrow drawn on a boundary row', () => {
     const onJump = vi.fn()
     render(

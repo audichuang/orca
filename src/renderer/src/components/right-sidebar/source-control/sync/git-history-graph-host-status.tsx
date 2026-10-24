@@ -10,7 +10,7 @@ import {
   useGitHistoryGraphFilter
 } from './git-history-graph-filter'
 
-const LOAD_MORE_STEP = 100
+export const LOAD_MORE_STEP = 100
 
 export function hostTooOldText(): string {
   return translate(

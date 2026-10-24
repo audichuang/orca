@@ -385,7 +385,12 @@ describe('Git Graph tab filters', () => {
     }))
     renderTab(id)
     await waitFor(() => expect(pageReads()).toHaveLength(1))
-    expect(lastPageGraph()).toEqual({ mode: 'head', search: { text: 'fix' }, limit: 50 })
+    expect(lastPageGraph()).toEqual({
+      mode: 'head',
+      search: { text: 'fix' },
+      listTags: true,
+      limit: 50
+    })
   })
 
   it('carries scope and search to another repo but drops its branch picks', async () => {
