@@ -34,8 +34,7 @@ export function createHydrateEditorSession(
           validWorktreeIds,
           // Why: use the store's activeWorktreeId — hydrateWorkspaceSession may have nulled an invalid ID, and we must respect that.
           s.activeWorktreeId,
-          validWorktreeIds,
-          s
+          { validGitOwnerIds: validWorktreeIds, ownerRoots: s }
         )
         return {
           ...state,
