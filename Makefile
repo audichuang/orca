@@ -38,6 +38,7 @@ help:
 	@echo "  make fork-check-seams the fork seam contract tests in config/fork-seam-tests.txt"
 	@echo "  make fork-footprint   the fork's diff on upstream files since FORK_BASE (JSON=1 for --json)"
 	@echo "  make fork-canary      report-only: merge the fork into upstream main, typecheck, run fork tests"
+	@echo "                       (report: out/fork-canary/<run>/report.md, newest named in out/fork-canary/latest.txt)"
 
 install:
 	pnpm install
