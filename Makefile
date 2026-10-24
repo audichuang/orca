@@ -179,6 +179,9 @@ FORK_BASE := $(FORK_BASE)
 # Why 400: fork work alone passed 200 commits on v1.4.237; an ancient base is thousands behind.
 FORK_MAX_COMMITS ?= 400
 
+# Vitest on the unit config after restoring Node-built native modules; append the files.
+FORK_VITEST = node config/scripts/ensure-native-runtime.mjs --runtime=node && pnpm exec vitest run --config config/vitest.config.ts
+
 # fork-check = fork-check-static + fork-check-tests; CI runs the halves as parallel jobs, tests in FORK_TEST_SHARD slices.
 FORK_TEST_SHARD ?=
 # all: upstream CI's full unit suite; empty: the fast local --changed pre-check.
@@ -191,7 +194,8 @@ fork-check-static: export LC_ALL = C
 fork-check-static: fork-check-static-types fork-check-quality fork-check-lint
 
 fork-base-guard:
-	@echo ">> fork base: $(FORK_BASE)"
+	@# Why stderr: fork-footprint --json shares stdout.
+	@echo ">> fork base: $(FORK_BASE)" >&2
 	@# Why: an empty FORK_BASE makes the count below `..HEAD`, which is 0 and passes.
 	@test -n "$(FORK_BASE)" || { echo "fork-check: FORK_BASE is empty (no upstream vX.Y.Z tag reachable from HEAD); fetch upstream tags (git fetch <upstream-remote> --tags) or pass FORK_BASE=vX.Y.Z"; exit 1; }
 	@case '$(FORK_BASE)' in -*|*[!A-Za-z0-9._/~^-]*) echo "fork-check: FORK_BASE must be one tag or commit, not '$(FORK_BASE)'"; exit 1;; esac
@@ -209,7 +213,7 @@ fork-check-lint: fork-base-guard
 	node config/scripts/fork-lint-run.mjs
 	node config/scripts/fork-pr-gate-needs.mjs
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
-	node config/scripts/fork-seam-tests.mjs --check
+	node config/scripts/fork-seam-tests.mjs --check $(FORK_BASE)
 	@# Why here too: a branch goes red in CI once upstream releases a daemon protocol bump.
 	pnpm run check:daemon-protocol-crossing
 
@@ -228,27 +232,27 @@ else
 	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) --changed $(FORK_BASE)
 endif
 
-fork-footprint:
-	@# Why stderr: the guard's echo would corrupt the --json output.
-	@$(MAKE) --no-print-directory fork-base-guard >&2
+fork-footprint: fork-base-guard
 	@node config/scripts/fork-footprint.mjs $(FORK_BASE) $(if $(JSON),--json)
 
 fork-check-seams: export LC_ALL = C
 fork-check-seams: export ORCA_BACKGROUND_LAUNCH = 1
 fork-check-seams:
-	node config/scripts/ensure-native-runtime.mjs --runtime=node
 	@# Why not a pipe: the list check's failure must stop the run instead of running fewer files.
-	files=$$(node config/scripts/fork-seam-tests.mjs) && pnpm exec vitest run --config config/vitest.config.ts $$files
+	files=$$(node config/scripts/fork-seam-tests.mjs) && $(FORK_VITEST) $$files
 
-# Report-only early warning against upstream main; the script exits 0 green, 1 failures, 2 conflicts only, 4 both (make reports any failure as 2).
-# Overrides are listed in fork-canary.sh.
-fork-canary: export LC_ALL = C
+# Report-only early warning against upstream main; exit codes and overrides are in the script header, the outcome in the report's Result line.
 fork-canary: fork-base-guard
-	FORK_BASE=$(FORK_BASE) bash config/scripts/fork-canary.sh
+	@test -n "$(UPSTREAM_REMOTE)" || { echo "fork-canary: no remote points at $(UPSTREAM_REPO); pass UPSTREAM_REMOTE=<name>"; exit 1; }
+	FORK_BASE=$(FORK_BASE) UPSTREAM_REMOTE=$(UPSTREAM_REMOTE) bash config/scripts/fork-canary.sh
 
+# The remote in this clone whose fetch URL is GitHub repo $(1), whatever it is named.
+remote_for = $(shell git remote -v | awk -v r="$(1)" '$$3 == "(fetch)" && $$2 ~ ("[:/]" r "(\\.git)?$$") {print $$1; exit}')
 FORK_REPO ?= audichuang/orca
-# The fork's remote in this clone, whatever it is named (origin on a plain clone of the fork).
-FORK_REMOTE ?= $(shell git remote -v | awk -v r="$(FORK_REPO)" '$$3 == "(fetch)" && $$2 ~ ("[:/]" r "(\\.git)?$$") {print $$1; exit}')
+# origin on a plain clone of the fork.
+FORK_REMOTE ?= $(call remote_for,$(FORK_REPO))
+UPSTREAM_REPO ?= stablyai/orca
+UPSTREAM_REMOTE ?= $(call remote_for,$(UPSTREAM_REPO))
 
 # main is force-moved on release, so git pull would merge two histories; local main must be a value the fork's main once had (clone writes no reflog, so the pre-fetch value counts too).
 sync:
