@@ -1,6 +1,7 @@
 import { defineMethod } from '../core'
 import { remoteRpcContentBudget } from '../../../../shared/remote-rpc-content-budget'
 import { GitBranchDiff, GitCommitDiff, GitDiff } from '../../../../shared/rpc-contract/git-params'
+import { gitDiffReadArgs } from '../../../git/source-control/diff-render-limit-options'
 
 // Only WebSocket callers set clientKind; local/in-process diffs retain uncapped fidelity.
 function remoteDiffContentBudget(
@@ -16,24 +17,14 @@ export const GIT_DIFF_METHODS = [
     permission: 'workspace',
     params: GitDiff,
     handler: async (params, { runtime, clientKind, requestId }) =>
-      params.skipRenderLimit
-        ? runtime.getRuntimeGitDiff(
-            params.worktree,
-            params.filePath,
-            params.staged,
-            params.compareAgainstHead,
-            remoteDiffContentBudget(clientKind, requestId),
-            params.oldPath,
-            true
-          )
-        : runtime.getRuntimeGitDiff(
-            params.worktree,
-            params.filePath,
-            params.staged,
-            params.compareAgainstHead,
-            remoteDiffContentBudget(clientKind, requestId),
-            ...(params.oldPath ? ([params.oldPath] as const) : [])
-          )
+      runtime.getRuntimeGitDiff(
+        params.worktree,
+        params.filePath,
+        params.staged,
+        params.compareAgainstHead,
+        remoteDiffContentBudget(clientKind, requestId),
+        ...gitDiffReadArgs(params)
+      )
   }),
   defineMethod({
     name: 'git.branchDiff',

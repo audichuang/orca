@@ -4,6 +4,7 @@ import {
   IMAGE_AND_PDF_PREVIEW_MIME_TYPES,
   filePreviewExtension
 } from '../../../shared/file-preview-kind'
+import type { GitDiffReadOptions } from './diff-render-limit-options'
 
 export function buildDiffResult(
   originalContent: string,
@@ -13,7 +14,7 @@ export function buildDiffResult(
   filePath?: string,
   /** A side was over the read cap rather than proven binary. */
   tooLarge = false,
-  skipRenderLimit = false
+  readOptions: GitDiffReadOptions = {}
 ): GitDiffResult {
   if (originalIsBinary || modifiedIsBinary) {
     const mimeType = filePath
@@ -34,7 +35,7 @@ export function buildDiffResult(
   }
 
   // Why: over the render limit, return metadata instead of huge text so the renderer can show fallback UI.
-  const largeDiffRenderLimit = skipRenderLimit
+  const largeDiffRenderLimit = readOptions.skipRenderLimit
     ? null
     : getLargeDiffRenderLimit({ originalContent, modifiedContent })
   if (largeDiffRenderLimit?.limited) {
