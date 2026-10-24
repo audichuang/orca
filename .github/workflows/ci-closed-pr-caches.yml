@@ -21,8 +21,8 @@ jobs:
             const pr = context.payload.pull_request
             const superseded = context.payload.action === 'synchronize'
             const targets = [
-              ['fork-pr-checks', 'fork-pr.yml'],
               ['pr-checks', 'pr.yml'],
+              ['fork-pr-checks', 'fork-pr.yml'],
               ['dependency-security', 'dependency-security.yml'],
               ['node-server', 'node-server-tests.yml'],
               ['ssh-windows-hosts', 'ssh-windows-hosts.yml'],
