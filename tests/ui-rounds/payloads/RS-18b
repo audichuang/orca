@@ -1,0 +1,2 @@
+file: hello
+const file: string = "a.ts"
