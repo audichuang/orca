@@ -40,8 +40,12 @@ describe('conflict review in a folder workspace', () => {
 
   it('keeps one review tab per repo, each bound to its repo', () => {
     const state = useAppStore.getState()
-    state.openConflictReview(FOLDER, '/f/a', reviewEntries, 'live-summary', 'repo-a')
-    state.openConflictReview(FOLDER, '/f/b', reviewEntries, 'live-summary', 'repo-b')
+    state.openConflictReview(FOLDER, '/f/a', reviewEntries, 'live-summary', {
+      gitWorktreeId: 'repo-a'
+    })
+    state.openConflictReview(FOLDER, '/f/b', reviewEntries, 'live-summary', {
+      gitWorktreeId: 'repo-b'
+    })
 
     const reviews = useAppStore.getState().openFiles.filter((f) => f.mode === 'conflict-review')
     expect(reviews).toHaveLength(2)
@@ -51,9 +55,13 @@ describe('conflict review in a folder workspace', () => {
 
   it('tracks the opened conflict under the repo and binds the file to it', () => {
     const state = useAppStore.getState()
-    state.openConflictReview(FOLDER, '/f/a', reviewEntries, 'live-summary', 'repo-a')
+    state.openConflictReview(FOLDER, '/f/a', reviewEntries, 'live-summary', {
+      gitWorktreeId: 'repo-a'
+    })
     const reviewId = reviewTab('repo-a').id
-    state.openConflictReviewFile(reviewId, FOLDER, '/f/a', entry, 'typescript', 'repo-a')
+    state.openConflictReviewFile(reviewId, FOLDER, '/f/a', entry, 'typescript', {
+      gitWorktreeId: 'repo-a'
+    })
 
     const next = useAppStore.getState()
     expect(next.trackedConflictPathsByWorktree['repo-a']).toEqual({ 'src/x.ts': 'both_modified' })
@@ -65,9 +73,9 @@ describe('conflict review in a folder workspace', () => {
   })
 
   it('reads the overview files through the repo, not the folder', () => {
-    useAppStore
-      .getState()
-      .openConflictReview(FOLDER, '/f/a', reviewEntries, 'live-summary', 'repo-a')
+    useAppStore.getState().openConflictReview(FOLDER, '/f/a', reviewEntries, 'live-summary', {
+      gitWorktreeId: 'repo-a'
+    })
     const activeFile = reviewTab('repo-a')
     const loadFileContent = vi.fn(async () => {})
     const ref = (): { current: Record<string, number> } => ({ current: {} })

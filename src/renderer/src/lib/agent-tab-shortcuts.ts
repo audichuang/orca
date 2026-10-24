@@ -53,13 +53,9 @@ export function resolveDefaultAgentForNewTab(args: {
   const chosenUsable = (agent: TuiAgent): boolean =>
     !!chatIn &&
     !!workspace &&
-    agentChoiceMayOpenAsChat(
-      chatIn.store,
-      agent,
-      workspace,
-      args.detectedAgentIds ?? null,
-      chatIn.cwd
-    )
+    agentChoiceMayOpenAsChat(chatIn.store, agent, workspace, args.detectedAgentIds ?? null, {
+      cwd: chatIn.cwd
+    })
   return pickTuiAgent(preferred, args.detectedAgentIds ?? [], args.disabledTuiAgents, chosenUsable)
 }
 

@@ -21,8 +21,8 @@ vi.mock('@/lib/host-chat-program', () => ({
     _agent: unknown,
     workspace: unknown,
     _detected: unknown,
-    cwd?: string | null
-  ) => mocks.mayOpenAsChat(workspace, cwd)
+    launchAt?: { cwd?: string | null }
+  ) => mocks.mayOpenAsChat(workspace, launchAt?.cwd)
 }))
 
 const { launchSourceControlRecoveryAgentWithDefault, getDefaultSourceControlRecoveryLaunchCopy } =

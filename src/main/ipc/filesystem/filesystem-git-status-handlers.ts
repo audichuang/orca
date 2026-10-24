@@ -295,10 +295,11 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         args.worktreePath,
         worktreePath
       )
-      const diffOptions = { ...gitOptions, admissionTier: 'interactive' as const }
-      return args.skipRenderLimit
-        ? getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, diffOptions, true)
-        : getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, diffOptions)
+      return getDiff(worktreePath, filePath, args.staged, args.compareAgainstHead, {
+        ...gitOptions,
+        admissionTier: 'interactive',
+        skipRenderLimit: args.skipRenderLimit
+      })
     }
   )
 }

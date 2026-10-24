@@ -2,6 +2,7 @@ import type { EditorGet, EditorSet } from '../types/editor-set-get'
 import type { EditorSlice } from '../types/editor-slice'
 import { joinPath } from '@/lib/path'
 import { resolveEditorFileIdForOwner } from '../file-ids/editor-file-ids'
+import { resolveOpenGitWorktreeId } from '../git/open-file-git-owner'
 import type { OpenFile } from '../types/open-file'
 import { toOpenConflictMetadata } from '../git/git-status-reconciliation'
 import { resolveEditorOpenTargetGroupId } from '../tabs/editor-open-target-group'
@@ -21,8 +22,7 @@ export function createOpenConflictFile(
       const absolutePath = joinPath(worktreePath, entry.path)
       const isPreview = resolveEditorPreviewIntent(get(), options?.preview)
       let editorItemTargetGroupId = options?.targetGroupId
-      const gitWorktreeId =
-        options?.gitWorktreeId !== worktreeId ? options?.gitWorktreeId : undefined
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, options)
       const trackedKey = gitWorktreeId ?? worktreeId
       let openedConflictFile = true
       let editorFileId = absolutePath
