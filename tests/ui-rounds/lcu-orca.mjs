@@ -366,4 +366,37 @@ globalThis.preflight = async () => {
   return stale.length ? `STALE: ${stale.join(', ')}` : 'preflight ok'
 }
 
+// Settings 的 Auto Save Files;profile 會留著上一輪的值,依賴存檔行為的案例先明確設定。delay(ms)選填
+globalThis.setAutoSave = async (on, delay) => {
+  await app.click(await find(map.RE.button(map.UI_TEXT.settings)))
+  await sleep(1800)
+  await app.setValue(await find(/^文字欄位 \(settable\).*Search settings/), 'auto save')
+  await sleep(1200)
+  const toggle = /^切換 Description: Auto Save Files/
+  const isOn = async () => /Value: on/.test(await grep(/Auto Save Files, Value/))
+  if (on && !(await isOn())) {
+    await app.click(await find(toggle))
+    await sleep(600)
+  }
+  // setValue 不會送出設定,要點欄位打字再按 Return
+  if (delay) {
+    await app.click(await find(/^步進器/))
+    await app.pressKey('cmd+a')
+    await app.typeText(String(delay))
+    await app.pressKey('Return')
+    await sleep(600)
+  }
+  if (!on && (await isOn())) {
+    await app.click(await find(toggle))
+    await sleep(600)
+  }
+  const after = await grep(/Auto Save Files, Value/)
+  if (/Value: on/.test(after) !== on) {
+    throw new Error(`Auto Save 沒切成 ${on ? 'on' : 'off'}:${after}`)
+  }
+  const back = await findAll(map.RE.button(map.UI_TEXT.backToApp))
+  await (back.length ? app.click(back[0]) : app.pressKey('Escape'))
+  await sleep(1000)
+  return after
+}
 nodeRepl.write('lcu-orca helpers loaded')
