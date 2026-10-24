@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Fork canary: merge the fork into upstream main in a throwaway worktree, then typecheck and run the fork's tests.
 # Report-only early warning before the next release tag; never a gate. Never pushes or touches the invoking checkout.
+# Shared side effects: the fetch updates remote refs and tags, and rerere writes preimages to the common git dir.
 # Conflicted files are reset to upstream's side so typecheck and tests still run; the report marks them.
 # Exit: 0 green; 1 not green (conflicts and/or failures, the report's Result line says which); 3 setup error.
 # Env: FORK_BASE and UPSTREAM_REMOTE (both set by make fork-canary), CANARY_REF (fork side, default HEAD),
@@ -8,13 +9,55 @@
 set -uo pipefail
 export LC_ALL=C ORCA_BACKGROUND_LAUNCH=1
 
+report=
+wt=
+wt_created=
+lock=
+lock_owned=
+
+# Why a report on every setup error: a stale green report must never outlive a failed run.
 die() {
   echo "fork-canary: $*" >&2
+  if [ -n "$report" ]; then
+    printf '# Fork canary report\n\n- Result: setup error (exit 3): %s\n' "$*" >"$report"
+  fi
   exit 3
 }
 
+cleanup() {
+  if [ -n "$wt_created" ]; then
+    if [ "${CANARY_KEEP:-}" = 1 ]; then
+      echo ">> kept canary worktree $wt"
+    else
+      git -C "$root" worktree remove --force "$wt" >/dev/null 2>&1 || echo "fork-canary: could not remove $wt; run git worktree remove --force $wt" >&2
+    fi
+  fi
+  [ -z "$lock_owned" ] || rm -rf "$lock"
+}
+trap cleanup EXIT
+
 root=$(git rev-parse --show-toplevel) || die "not in a git checkout"
 cd "$root" || die "cannot cd to $root"
+# Why a lock in the common git dir: every checkout of this repo shares the default CANARY_DIR.
+lock="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)/fork-canary.lock"
+if ! mkdir "$lock" 2>/dev/null; then
+  holder=$(cat "$lock/pid" 2>/dev/null)
+  if [ -n "$holder" ] && kill -0 "$holder" 2>/dev/null; then
+    die "another fork-canary (pid $holder) is running; lock $lock"
+  fi
+  echo ">> taking over stale lock $lock (pid ${holder:-unknown})"
+  rm -rf "$lock" && mkdir "$lock" || die "cannot take over lock $lock"
+fi
+lock_owned=1
+echo $$ >"$lock/pid"
+
+# Why after the lock: a run refused by the lock must not delete the running one's report.
+report_path=${CANARY_REPORT:-$root/out/fork-canary-report.md}
+mkdir -p "$(dirname "$report_path")" || die "cannot create the directory of $report_path"
+report=$report_path
+rm -f "$report"
+logs="$(dirname "$report")/fork-canary"
+
 base=${FORK_BASE:-}
 test -n "$base" || die "FORK_BASE is empty; run via make fork-canary or pass FORK_BASE=vX.Y.Z"
 remote=${UPSTREAM_REMOTE:-}
@@ -31,8 +74,6 @@ wt=${CANARY_DIR:-$(dirname "$root")/orca-fork-canary}
 # Why absolute: git worktree list prints absolute paths, so a relative override would never match.
 mkdir -p "$(dirname "$wt")" || die "cannot create the parent of $wt"
 wt="$(cd "$(dirname "$wt")" && pwd -P)/$(basename "$wt")"
-report=${CANARY_REPORT:-$root/out/fork-canary-report.md}
-logs="$(dirname "$report")/fork-canary"
 mkdir -p "$logs" || die "cannot create $logs"
 rm -f "$logs"/*
 
@@ -43,60 +84,72 @@ elif [ -e "$wt" ]; then
   # Why refuse an unregistered dir: removing it with rm could delete someone's work.
   die "$wt exists and is not a git worktree; remove it or pass CANARY_DIR"
 fi
-cleanup() {
-  if [ "${CANARY_KEEP:-}" = 1 ]; then
-    echo ">> kept canary worktree $wt"
-  else
-    git -C "$root" worktree remove --force "$wt" >/dev/null 2>&1 || echo "fork-canary: could not remove $wt; run git worktree remove --force $wt" >&2
-  fi
-}
-trap cleanup EXIT
 git worktree add --quiet --detach "$wt" "$upstream_sha" || die "cannot create worktree $wt"
+wt_created=1
 
 echo ">> merging fork $(git rev-parse --short "$fork_sha") into upstream $(git rev-parse --short "$upstream_sha")"
-# Why rerere stays on: replaying recorded resolutions keeps old conflicts out of the report; nothing is committed, so no new resolution is recorded.
-git -C "$wt" -c rerere.autoupdate=true -c user.name=fork-canary -c user.email=fork-canary@invalid \
+# Why rerere on: replaying recorded resolutions keeps old conflicts out of the report; nothing is committed, so no new resolution is recorded.
+git -C "$wt" -c rerere.enabled=true -c rerere.autoupdate=true -c user.name=fork-canary -c user.email=fork-canary@invalid \
   merge --no-ff --no-commit "$fork_sha" >"$logs/merge.log" 2>&1
 merge_status=$?
 conflicts=$(git -C "$wt" diff --name-only --diff-filter=U)
 git -C "$wt" rev-parse -q --verify MERGE_HEAD >/dev/null || [ "$merge_status" -eq 0 ] || die "merge failed without conflicts; see $logs/merge.log"
 replayed=$(sed -nE "s/^(Resolved|Staged) '(.*)' using previous resolution\.$/\2/p" "$logs/merge.log" | sort -u)
-n_conflicts=$(printf '%s\n' $conflicts | grep -c .)
+n_conflicts=$(printf '%s\n' "$conflicts" | grep -c .)
 
 # Why upstream's side: upstream conflicts most days, and stopping here would leave the canary testing almost nothing.
-for f in $conflicts; do
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
   if git -C "$wt" cat-file -e "HEAD:$f" 2>/dev/null; then
     git -C "$wt" checkout HEAD -- "$f" || die "cannot take upstream's side of $f"
   else
     git -C "$wt" rm -q -f -- "$f" || die "cannot take upstream's deletion of $f"
   fi
-done
+done <<<"$conflicts"
 
 install_failed=
+install_note=
 tc_failed=
+listing_failed=
 tests_failed=
+# Why HUSKY=0: husky's prepare script would write hooksPath into the shared .git/config.
+pnpm_install() {
+  (cd "$wt" && HUSKY=0 pnpm install "$1") >>"$logs/install.log" 2>&1
+}
 echo ">> pnpm install"
-if ! (cd "$wt" && pnpm install --frozen-lockfile) >"$logs/install.log" 2>&1; then
-  install_failed=1
-else
+if printf '%s\n' "$conflicts" | grep -qxE 'pnpm-lock\.yaml|package\.json'; then
+  install_note="the lockfile or package.json conflicted, so install ran with --no-frozen-lockfile"
+  pnpm_install --no-frozen-lockfile || install_failed=1
+elif ! pnpm_install --frozen-lockfile; then
+  install_note="install --frozen-lockfile failed (lockfile drift), so it was retried with --no-frozen-lockfile"
+  pnpm_install --no-frozen-lockfile || install_failed=1
+fi
+if [ -z "$install_failed" ]; then
   echo ">> pnpm tc"
   (cd "$wt" && pnpm tc) >"$logs/tc.log" 2>&1 || tc_failed=1
-  (cd "$wt" && node config/scripts/fork-seam-tests.mjs --existing >/dev/null 2>"$logs/seams-missing.log")
+  (cd "$wt" && node config/scripts/fork-test-inventory.mjs list --existing >/dev/null 2>"$logs/seam-list.log")
   # Why the merged tree's script: it collects with the merged tree's runner config and skips files the merge removed.
-  tests=$(cd "$wt" && node config/scripts/fork-seam-tests.mjs --fork-changed "$base" "$fork_sha") || die "cannot list the fork's tests"
-  echo ">> vitest on $(printf '%s\n' $tests | grep -c .) files"
-  # Why the guard: vitest with no file filter runs the whole suite.
-  test -n "$tests" || die "no test files selected"
-  (cd "$wt" && node config/scripts/ensure-native-runtime.mjs --runtime=node &&
-    pnpm exec vitest run --config config/vitest.config.ts --reporter=default --reporter=json \
-      --outputFile.json="$logs/vitest.json" $tests) >"$logs/vitest.log" 2>&1 || tests_failed=1
+  if ! tests=$(cd "$wt" && node config/scripts/fork-test-inventory.mjs fork-changed "$base" "$fork_sha" 2>"$logs/listing.log"); then
+    listing_failed=1
+  elif [ -z "$tests" ]; then
+    # Why: vitest with no file filter runs the whole suite.
+    echo "no fork test selected" >"$logs/listing.log"
+    listing_failed=1
+  else
+    echo ">> vitest on $(printf '%s\n' "$tests" | grep -c .) files"
+    # Why unquoted: each path is one argument; repo paths contain no whitespace.
+    (cd "$wt" && node config/scripts/ensure-native-runtime.mjs --runtime=node &&
+      pnpm exec vitest run --config config/vitest.config.ts --reporter=default --reporter=json \
+        --outputFile.json="$logs/vitest.json" $tests) >"$logs/vitest.log" 2>&1 || tests_failed=1
+  fi
 fi
 
 findings=
-[ -n "$conflicts" ] && findings="$findings, $n_conflicts merge conflicts"
-[ -n "$install_failed" ] && findings="$findings, pnpm install failed"
-[ -n "$tc_failed" ] && findings="$findings, typecheck errors"
-[ -n "$tests_failed" ] && findings="$findings, failing tests"
+[ -z "$conflicts" ] || findings="$findings, $n_conflicts merge conflicts"
+[ -z "$install_failed" ] || findings="$findings, pnpm install failed"
+[ -z "$tc_failed" ] || findings="$findings, typecheck errors"
+[ -z "$listing_failed" ] || findings="$findings, test listing failed in the merged tree"
+[ -z "$tests_failed" ] || findings="$findings, failing tests"
 status=$([ -z "$findings" ] && echo 0 || echo 1)
 
 conflict_note() {
@@ -126,6 +179,7 @@ list_commits() {
   else
     echo "- Result: not green (exit 1): ${findings#, }"
   fi
+  [ -z "$install_note" ] || echo "- Install: $install_note"
   if [ -n "$replayed" ]; then
     echo
     echo "## Resolved by rerere"
@@ -135,14 +189,14 @@ list_commits() {
   if [ -n "$conflicts" ]; then
     echo
     echo "## Conflicts ($n_conflicts)"
-    for f in $conflicts; do
+    while IFS= read -r f; do
       echo
       echo "- \`$f\`"
       echo "  - upstream:"
       list_commits "${merge_base}..${upstream_sha}" "$f"
       echo "  - fork:"
       list_commits "${base}..${fork_sha}" "$f"
-    done
+    done <<<"$conflicts"
   fi
   if [ -n "$conflicts" ] && { [ -n "$tc_failed" ] || [ -n "$tests_failed" ]; }; then
     echo
@@ -160,7 +214,7 @@ list_commits() {
     echo
     errors=$(grep -E '^[^ ]+\([0-9]+,[0-9]+\): error TS[0-9]+' "$logs/tc.log" | sort -u)
     if [ -n "$errors" ]; then
-      for file in $(printf '%s\n' "$errors" | sed -E 's/\([0-9]+,[0-9]+\): error .*//' | uniq); do
+      printf '%s\n' "$errors" | sed -E 's/\([0-9]+,[0-9]+\): error .*//' | uniq | while IFS= read -r file; do
         echo "- \`$file\`$(conflict_note "$file")"
         printf '%s\n' "$errors" | grep -F "$file(" | sed -E 's/^[^ ]+\(([0-9]+),[0-9]+\): error (TS[0-9]+): (.*)/  - \1 \2 \3/'
       done
@@ -168,11 +222,17 @@ list_commits() {
       log_tail "$logs/tc.log"
     fi
   fi
-  if [ -s "$logs/seams-missing.log" ]; then
+  if [ -s "$logs/seam-list.log" ]; then
     echo
-    echo "## Seam tests missing in the merged tree"
+    echo "## Seam list problems in the merged tree"
     echo
-    sed 's/^fork-seam-tests: /- /' "$logs/seams-missing.log"
+    sed 's/^fork-test-inventory: /- /' "$logs/seam-list.log"
+  fi
+  if [ -n "$listing_failed" ]; then
+    echo
+    echo "## Test listing failed in the merged tree"
+    echo
+    log_tail "$logs/listing.log"
   fi
   if [ -n "$tests_failed" ]; then
     echo
