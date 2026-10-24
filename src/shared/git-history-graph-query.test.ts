@@ -33,14 +33,33 @@ describe('buildGitHistoryGraphLogRevisions', () => {
     ).toEqual([])
   })
 
-  it('keeps only branch refs in refs mode', () => {
+  it('keeps only branch and tag refs in refs mode', () => {
     const args = buildGitHistoryGraphLogRevisions(
       {
         mode: 'refs',
-        refs: ['refs/heads/a', 'refs/remotes/o/b', 'refs/tags/t', '--all', 'refs/heads/-x']
+        refs: [
+          'refs/heads/a',
+          'refs/remotes/o/b',
+          'refs/tags/t',
+          '--all',
+          'refs/heads/-x',
+          'HEAD~1'
+        ]
       },
       []
     )
-    expect(args).toEqual(['--end-of-options', 'refs/heads/a', 'refs/remotes/o/b'])
+    expect(args).toEqual(['--end-of-options', 'refs/heads/a', 'refs/remotes/o/b', 'refs/tags/t'])
+  })
+
+  it('walks every tag only when the all-branches source asks for them', () => {
+    expect(
+      buildGitHistoryGraphLogRevisions(
+        { mode: 'all', source: { local: true, remotes: [], tags: true } },
+        []
+      )
+    ).toEqual(['--branches', '--tags', '--end-of-options', 'HEAD'])
+    expect(
+      buildGitHistoryGraphLogRevisions({ mode: 'all', source: { local: true, remotes: [] } }, [])
+    ).toEqual(['--branches', '--end-of-options', 'HEAD'])
   })
 })

@@ -12,10 +12,12 @@ export const GitHistoryGraphParams = z.object({
   source: z
     .object({
       local: z.boolean(),
-      remotes: z.union([z.literal('all'), z.array(z.string().max(255)).max(100)])
+      remotes: z.union([z.literal('all'), z.array(z.string().max(255)).max(100)]),
+      tags: z.boolean().optional()
     })
     .optional(),
   refs: z.array(z.string().max(1024)).max(200).optional(),
+  listTags: z.boolean().optional(),
   search: z
     .object({ text: shortText, author: shortText, path: z.string().max(4096).optional() })
     .optional(),
