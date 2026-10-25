@@ -1,23 +1,20 @@
 // Fork-only git merge driver for the locale catalogs (node fork-locale-json-merge.mjs %O %A %B): both sides add keys at one spot.
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 
-/**
- * Three-way merge of two catalogs; `undefined` stands for a key a side never had or deleted.
- * A key both sides changed differently is recorded in `conflicts` and takes the `pick` side's value.
- */
-export function mergeLocaleJson(base, ours, theirs, pick = 'ours', conflicts = [], path = '') {
+// `undefined` stands for a key a side never had or deleted; a key both sides changed takes `pick`'s value.
+function mergeValue(base, ours, theirs, pick, conflicts, path) {
   if (isObject(ours) && isObject(theirs)) {
     const baseObject = isObject(base) ? base : {}
     const merged = {}
     // Ours first so upstream's key order survives; keys only theirs added follow.
     for (const key of [...Object.keys(ours), ...Object.keys(theirs).filter((k) => !(k in ours))]) {
-      const value = mergeLocaleJson(
+      const value = mergeValue(
         baseObject[key],
         ours[key],
         theirs[key],
@@ -44,6 +41,13 @@ export function mergeLocaleJson(base, ours, theirs, pick = 'ours', conflicts = [
   return { ours, base, theirs }[pick]
 }
 
+/** Three-way merge of locale catalogs; `conflicts` lists the keys both sides changed differently. */
+export function mergeLocaleJson(base, ours, theirs, { pick = 'ours' } = {}) {
+  const conflicts = []
+  const merged = mergeValue(base, ours, theirs, pick, conflicts, '')
+  return { merged, conflicts }
+}
+
 // Same layout as the catalogs upstream writes, so an untouched file stays byte-identical.
 const format = (catalog) => `${JSON.stringify(catalog, null, 2)}\n`
 
@@ -61,8 +65,7 @@ function main([basePath, oursPath, theirsPath]) {
     console.error(`fork-locale-json-merge: ${error.message}; falling back to a line merge`)
     return spawnSync('git', ['merge-file', oursPath, basePath, theirsPath]).status === 0 ? 0 : 1
   }
-  const conflicts = []
-  const merged = mergeLocaleJson(...sides, 'ours', conflicts)
+  const { merged, conflicts } = mergeLocaleJson(...sides)
   if (conflicts.length === 0) {
     writeFileSync(oursPath, format(merged))
     return 0
@@ -73,7 +76,7 @@ function main([basePath, oursPath, theirsPath]) {
   try {
     const files = ['ours', 'base', 'theirs'].map((pick) => {
       const file = join(dir, pick)
-      writeFileSync(file, format(mergeLocaleJson(...sides, pick)))
+      writeFileSync(file, format(mergeLocaleJson(...sides, { pick }).merged))
       return file
     })
     const result = spawnSync(
@@ -84,6 +87,9 @@ function main([basePath, oursPath, theirsPath]) {
         maxBuffer: 1 << 28
       }
     )
+    if (result.error) {
+      throw result.error
+    }
     writeFileSync(oursPath, result.stdout)
   } finally {
     rmSync(dir, { recursive: true, force: true })
@@ -91,6 +97,7 @@ function main([basePath, oursPath, theirsPath]) {
   return 1
 }
 
-if (process.argv[1] === import.meta.filename) {
+// Why realpath: a symlinked path would skip main and exit 0, which git reads as a clean merge of ours alone.
+if (process.argv[1] && realpathSync(process.argv[1]) === import.meta.filename) {
   process.exit(main(process.argv.slice(2)))
 }
