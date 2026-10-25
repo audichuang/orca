@@ -13,14 +13,14 @@ echo "upstream=$newest develop-base=$base"
 lock=$(git ls-remote fork 'refs/heads/rebase/*' | head -1)
 if [ -n "$lock" ]; then
   branch=${lock#*refs/heads/}
-  # Why stale after 4 h: a healthy run pushes or comments well within that; a dead one never resumes on its own.
+  # Why stale after 6 h: a healthy run pushes or comments at every stage (longest gap ~3 h: Codex, a fix, CI); a dead one never resumes on its own.
   when=$(gh api "repos/audichuang/orca/commits/${lock%%[[:space:]]*}" --jq .commit.committer.date)
   pr=$(gh pr list -R audichuang/orca --head "$branch" --state open --json number,updatedAt --jq '.[0] // empty | "\(.number) \(.updatedAt)"')
   [ -n "$pr" ] && when=$(printf '%s\n%s\n' "$when" "${pr#* }" | sort | tail -1)
   age=$(( $(date +%s) - $(date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$when" +%s) ))
   verified=0
   [ -n "$pr" ] && verified=$(gh pr view "${pr%% *}" -R audichuang/orca --json comments --jq '[.comments[].body | select(startswith("<!-- auto-rebase:verified -->"))] | length')
-  if [ "$verified" = 0 ] && [ "$age" -gt 14400 ]; then
+  if [ "$verified" = 0 ] && [ "$age" -gt 21600 ]; then
     echo "stale lock: $branch (${age}s since last activity)"
     exit 0
   fi
