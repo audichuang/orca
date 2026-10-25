@@ -22,27 +22,20 @@ export function useSourceControlWorktreeScope(): SourceControlWorktreeScope | nu
 }
 
 /** Tab owner (the editor that shows a tab) and git owner (the repo backing it, or undefined when it is the tab owner). */
-export type TabOwners<T extends string | null | undefined> = {
-  tabOwnerId: string | T
-  gitOwnerId: string | undefined
-}
+export type TabOwners = { tabOwnerId: string; gitOwnerId: string | undefined }
 
-/** Owners of tabs opened for repoWorktreeId from a panel whose editor may be a folder workspace's. */
-export function resolveTabOwners<T extends string | null | undefined>(
+/** Owners of tabs opened for a repo ('' when none) from a panel whose editor may be a folder workspace's. */
+export function resolveTabOwners(
   editorWorktreeId: string | null | undefined,
-  repoWorktreeId: T
-): TabOwners<T> {
-  const tabOwnerId = editorWorktreeId != null ? editorWorktreeId : repoWorktreeId
+  repoWorktreeId: string
+): TabOwners {
+  const tabOwnerId = editorWorktreeId ?? repoWorktreeId
   return {
     tabOwnerId,
-    gitOwnerId: tabOwnerId
-      ? resolveOpenGitWorktreeId(tabOwnerId, { gitWorktreeId: repoWorktreeId || undefined })
-      : undefined
+    gitOwnerId: resolveOpenGitWorktreeId(tabOwnerId, { gitWorktreeId: repoWorktreeId || undefined })
   }
 }
 
-export function useSourceControlOwners<T extends string | null | undefined>(
-  repoWorktreeId: T
-): TabOwners<T> {
+export function useSourceControlOwners(repoWorktreeId: string): TabOwners {
   return resolveTabOwners(useSourceControlWorktreeScope()?.editorWorktreeId, repoWorktreeId)
 }
