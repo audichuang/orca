@@ -94,9 +94,9 @@ function isExistsError(error: unknown): boolean {
   return /\bEEXIST\b|already exists|file exists/i.test(message)
 }
 
-export async function createParentDirectoriesForNewFile(args: {
+async function createParentDirectoriesForNewFile(args: {
   context: RuntimeFileOperationArgs
-  operations: Pick<TabEntryOperations, 'createRuntimePath' | 'statRuntimePath'>
+  operations: TabEntryOperations
   relativePath: string
   worktreePath: string
 }): Promise<void> {
