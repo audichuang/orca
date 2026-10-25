@@ -1,4 +1,4 @@
-// Fork-only: ClipCode Copy Full Source entries upstream menus, section headers and the bulk bar render in one line.
+// Fork-only: ClipCode Copy Full Source items that upstream menus, section headers and the bulk bar each render in one line.
 import type React from 'react'
 import { Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
