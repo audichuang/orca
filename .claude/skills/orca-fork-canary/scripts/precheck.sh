@@ -11,7 +11,7 @@ while read -r _ ref; do
   branch=${ref#refs/heads/}
   pr=$(gh pr list -R audichuang/orca --head "$branch" --state open --json number --jq '.[0].number // empty')
   verified=0
-  [ -n "$pr" ] && verified=$(gh pr view "$pr" -R audichuang/orca --json comments --jq '[.comments[].body | select(startswith("<!-- auto-rebase:verified -->"))] | length')
+  [ -n "$pr" ] && verified=$(gh pr view "$pr" -R audichuang/orca --json comments --jq '[.comments[].body | select(startswith("<!-- auto-rebase:verified -->") or startswith("<!-- auto-rebase:needs-human -->"))] | length')
   if [ "$verified" = 0 ]; then
     echo "auto-rebase in flight on $branch; canary skipped"
     exit 1
