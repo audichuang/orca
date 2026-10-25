@@ -2,7 +2,7 @@ import * as path from 'node:path'
 import type { GitDiffResult } from '../../../shared/git-diff-compare-types'
 import { getLargeDiffRenderLimit } from '../../../shared/large-diff-render-limit'
 import { PREVIEWABLE_BINARY_MIME_TYPES } from './previewable-binary-mime-types'
-import type { GitDiffReadOptions } from './diff-render-limit-options'
+import type { GitDiffReadOptions } from './git-diff-read-options'
 
 export function buildDiffResult(
   originalContent: string,

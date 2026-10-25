@@ -25,15 +25,8 @@ export function createOpenConflictReview(
   get: EditorGet
 ): Pick<EditorSlice, 'openConflictReviewFile' | 'openConflictReview'> {
   return {
-    openConflictReviewFile: (
-      reviewFileId,
-      worktreeId,
-      worktreePath,
-      entry,
-      language,
-      forkOptions
-    ) => {
-      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, forkOptions)
+    openConflictReviewFile: (reviewFileId, worktreeId, worktreePath, entry, language, gitOwner) => {
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, gitOwner)
       const trackedKey = gitWorktreeId ?? worktreeId
       const absolutePath = joinPath(worktreePath, entry.path)
       const reviewTab = (get().unifiedTabsByWorktree?.[worktreeId] ?? []).find(
@@ -150,8 +143,8 @@ export function createOpenConflictReview(
     },
 
     // Snapshot entries/time keeps conflict review stable across status polls.
-    openConflictReview: (worktreeId, worktreePath, entries, source, forkOptions) => {
-      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, forkOptions)
+    openConflictReview: (worktreeId, worktreePath, entries, source, gitOwner) => {
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, gitOwner)
       const id = `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::conflict-review`
       set((s) => {
         const conflictReview: ConflictReviewState = {
