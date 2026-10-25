@@ -1,11 +1,15 @@
-import { useCallback } from 'react'
+// Fork-only: provides Copy Full Source to the source control panel's menu items, bulk bar and section headers.
+import { useCallback, useMemo } from 'react'
+import type React from 'react'
 import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
 import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 import type { FlatEntry } from '../listing/use-selection'
+import type { SourceControlPanelModel } from '../panel/use-panel-model'
 import { copyClipcodeGitChanges, getClipcodeRootPath } from './clipcode-copy-action'
+import { ClipcodeSourceControlActionsContext } from './clipcode-actions-context'
 
 /** Copy Full Source handlers for the single-repo panel: selection, one row's menu, or a whole section. */
-export function useClipcodeFullSourceCopy({
+function useClipcodeFullSourceCopy({
   worktreeId,
   worktreePath,
   selectedKeys,
@@ -64,4 +68,39 @@ export function useClipcodeFullSourceCopy({
   )
 
   return { copyRowFullSource, copySelectionFullSource, copySectionFullSource }
+}
+
+/** Mounted once around a repo's panel; the items it serves render nothing without it. */
+export function ClipcodeSourceControlActionsProvider({
+  model,
+  children
+}: {
+  model: Pick<
+    SourceControlPanelModel,
+    'activeWorktreeId' | 'worktreePath' | 'selectedKeys' | 'flatEntriesByKey' | 'repositoryHuge'
+  >
+  children: React.ReactNode
+}): React.JSX.Element {
+  const { copyRowFullSource, copySelectionFullSource, copySectionFullSource } =
+    useClipcodeFullSourceCopy({
+      worktreeId: model.activeWorktreeId,
+      worktreePath: model.worktreePath,
+      selectedKeys: model.selectedKeys,
+      flatEntriesByKey: model.flatEntriesByKey
+    })
+  const isStatusTruncated = model.repositoryHuge !== undefined
+  const value = useMemo(
+    () => ({
+      copyRowFullSource,
+      copySelectionFullSource,
+      copySectionFullSource,
+      isStatusTruncated
+    }),
+    [copyRowFullSource, copySelectionFullSource, copySectionFullSource, isStatusTruncated]
+  )
+  return (
+    <ClipcodeSourceControlActionsContext.Provider value={value}>
+      {children}
+    </ClipcodeSourceControlActionsContext.Provider>
+  )
 }
