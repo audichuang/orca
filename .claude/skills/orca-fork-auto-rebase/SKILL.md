@@ -157,7 +157,7 @@ git push fork "OLD_DEVELOP:refs/heads/backup/develop-vOLD-$RUN" && \
    ```
 4. 找這個 tag 的 release run：`gh run list -R audichuang/orca --workflow fork-release.yml --event push --limit 5 --json databaseId,headBranch --jq '.[] | select(.headBranch=="vNEW-fork.N") | .databaseId'`。剛推完可能還沒出現，查不到就先寫第 8 步的通知草稿再查，查三次都沒有就當 release 沒觸發，第 8 步回報。找到後 `gh-wait run <id> -R audichuang/orca`。「Bump the Homebrew cask」紅多半是 API 配額，`gh run rerun <id> --failed -R audichuang/orca` 一次。確認 `gh api repos/audichuang/homebrew-tap/contents/Casks/orca-fork.rb --jq .content | base64 -d` 的 version 是新版。release 紅兩次 → 不升級，第 8 步回報（tag 已推不刪；修好後重跑 workflow 即可）。
 5. MacBook：`ssh macbookpro "bash -lc 'export PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH; pgrep -f \"Orca Fork.app\" >/dev/null && echo RUNNING || { brew update >/dev/null; brew upgrade --cask orca-fork; }'"`。印 RUNNING 就不升級（不幫使用者關 app），通知裡請使用者自己升級。
-6. 收尾：`git worktree remove --force` 這次的 `../ar-$RUN-*`（先確認沒有你要留給使用者看的東西）；fork 上的 `rebase/vNEW`、`ci-base/vNEW` 第 6 步已刪；`MAIN` 由 Orca 管理，留給下一次 run 清。回滾：把上一個好的 commit 打成 `vNEW-fork.(N+1)` 照第 3 點推。
+6. 收尾：`git worktree remove --force` 這次的 `../ar-$RUN-*`（先確認沒有你要留給使用者看的東西）；fork 上的 `rebase/vNEW`、`ci-base/vNEW` 第 6 步已刪；`MAIN` 由 Orca 管理，留給下一次 run 清。回滾不由這個技能做（develop 這時還指著壞的 commit，第 3 點的檢查會擋下）：在通知裡寫出上一個好的 commit，讓使用者照 FORK.md「Release」把它打成 `vNEW-fork.(N+1)` 推上去。
 
 ## 8. Bark 通知（不論結果都推）
 
