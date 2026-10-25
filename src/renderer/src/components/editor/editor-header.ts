@@ -4,7 +4,7 @@ import type { GitStatusEntry } from '../../../../shared/git-status-types'
 import { getEditorDisplayLabel } from './editor-labels'
 import { translate } from '@/i18n/i18n'
 import { isVirtualEditorFile } from '@/store/slices/editor/tabs/editor-tab-content-type'
-import { forkEditorHeaderCopyState } from '../git-graph-tab/fork-editor-tab-kinds'
+import { forkEditorHeaderCopyState } from '../git-graph-tab/git-graph-editor-surfaces'
 
 export type EditorHeaderCopyState = {
   copyText: string | null
