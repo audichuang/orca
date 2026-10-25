@@ -28,7 +28,7 @@ export type OpenCommitFileHandler = (
   item: GitHistoryItem,
   entry: GitBranchChangeEntry,
   event?: SourceControlRowOpenEvent,
-  sequence?: readonly CommitFileTarget[]
+  shown?: { sequence: readonly CommitFileTarget[] }
 ) => void
 
 type CommitFileCompare = CommitCompareLike
