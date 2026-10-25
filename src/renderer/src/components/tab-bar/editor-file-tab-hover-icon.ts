@@ -8,7 +8,7 @@ import {
   type LucideIcon
 } from 'lucide-react'
 import type { OpenFile } from '../../store/slices/editor'
-import { forkEditorTabIcon } from '@/components/git-graph-tab/fork-editor-tab-kinds'
+import { forkEditorTabIcon } from '@/components/git-graph-tab/git-graph-editor-surfaces'
 
 /** A mode's fixed icon, or null for the file-type (icon theme) icon. */
 export function editorFileTabModeIcon(
