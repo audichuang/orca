@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fork-only: registers fork-locale-json-merge.mjs for the locale catalogs in this clone (all its worktrees). Idempotent.
-# Why a copy in the git dir: a rebase onto an upstream tag checks out trees without config/scripts' fork files.
-# Why info/attributes: it needs no upstream .gitattributes edit and outranks it.
+# Why a copy in the git dir: a rebase replays old locale commits before the tree has the driver.
+# Why info/attributes: it outranks .gitattributes without an upstream edit.
 set -euo pipefail
 
 root=$(git rev-parse --show-toplevel)
