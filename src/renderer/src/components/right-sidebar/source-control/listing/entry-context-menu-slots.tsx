@@ -3,11 +3,11 @@ import type React from 'react'
 import { History, PanelRight } from 'lucide-react'
 import { ContextMenuItem, ContextMenuShortcut } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
+import type { SourceControlRowOpenEvent } from './split-open'
 import {
   getSourceControlSplitOpenShortcutLabel,
-  SOURCE_CONTROL_OPEN_TO_SIDE_EVENT,
-  type SourceControlRowOpenEvent
-} from './split-open'
+  SOURCE_CONTROL_OPEN_TO_SIDE_EVENT
+} from './split-open-to-side'
 
 export type SourceControlEntryContextMenuSlots = {
   /** After View: Open to the Side, Show File History. */
