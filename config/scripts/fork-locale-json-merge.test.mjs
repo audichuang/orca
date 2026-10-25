@@ -28,6 +28,14 @@ describe('mergeLocaleJson', () => {
     })
   })
 
+  it('keeps keys named like Object.prototype members', () => {
+    const base = JSON.parse('{"a":{}}')
+    const theirs = JSON.parse('{"a":{"toString":"T","__proto__":"P","constructor":"C"}}')
+    expect(JSON.stringify(mergeLocaleJson(base, base, theirs).merged)).toBe(
+      '{"a":{"toString":"T","__proto__":"P","constructor":"C"}}'
+    )
+  })
+
   it('records a key both sides changed differently and takes the picked side', () => {
     const base = { k: 'base', gone: 'G' }
     const ours = { k: 'up', gone: 'G2' }
@@ -48,9 +56,10 @@ describe('fork locale merge driver in a real rebase', () => {
   })
 
   function setup() {
-    const root = mkdtempSync(join(tmpdir(), 'fork-locale-merge-'))
+    const root = mkdtempSync(join(tmpdir(), "fork-locale-merge O'Reilly-"))
     roots.push(root)
     const repo = join(root, 'repo')
+    // Why the quote and space in the path: the driver command git stores must survive any checkout path.
     // Why the isolated env: a developer's global attributes or merge config must not decide the result.
     const env = {
       ...process.env,
