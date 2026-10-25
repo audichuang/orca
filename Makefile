@@ -53,7 +53,7 @@ computer-use:
 		echo ">> reusing existing computer-use helper"; \
 	fi
 	@# Small Swift helpers packaging copies into Contents/MacOS (swift build is incremental).
-	@# Why --single-arch: every target here packages arm64 only; the x86_64 slice was never shipped.
+	@# Why --single-arch: every target here packages arm64 only, so the x86_64 slice was dead weight.
 	pnpm run build:keyboard-layout-macos -- --single-arch
 	pnpm run build:notification-status-macos -- --single-arch
 
