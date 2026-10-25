@@ -30,8 +30,6 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
     collapsedSections,
     collapsedTreeDirs,
     conflictOperation,
-    copyRowFullSource,
-    copySectionFullSource,
     diffCommentCountByPath,
     displaySections,
     expandedSubmoduleKeys,
@@ -165,9 +163,6 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
           requestDiscardAllInArea={requestDiscardAllInArea}
           handleStageAllPaths={handleStageAllPaths}
           handleStageSectionPaths={handleStageSectionPaths}
-          onCopyRowFullSource={copyRowFullSource}
-          onCopySectionFullSource={copySectionFullSource}
-          isStatusTruncated={repositoryHuge !== undefined}
           handleUnstagePaths={handleUnstagePaths}
           sourceControlViewMode={sourceControlViewMode}
           visibleTreeRowsBySection={visibleTreeRowsBySection}

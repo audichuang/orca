@@ -1,5 +1,5 @@
 import React from 'react'
-import { Copy, Minus, Plus, Undo2 } from 'lucide-react'
+import { Minus, Plus, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
@@ -25,6 +25,7 @@ import type {
   RenderableSubmoduleListItem
 } from './submodule-expansion'
 import type { SourceControlRowOpenEvent } from './split-open'
+import { ClipcodeSectionCopyButton } from '../clipcode/clipcode-menu-items'
 
 const SECTION_LABELS: Record<SourceControlDisplaySectionArea, { key: string; fallback: string }> = {
   staged: {
@@ -59,8 +60,6 @@ export function SourceControlUncommittedSections(props: {
     sectionId: SourceControlDisplaySectionId,
     paths: readonly string[]
   ) => Promise<void>
-  /** A capped listing cannot name every file, so Copy Full Source would copy a partial set. */
-  isStatusTruncated?: boolean
   handleUnstagePaths: (paths: readonly string[]) => Promise<void>
   sourceControlViewMode: SourceControlViewMode
   visibleTreeRowsBySection: Partial<
@@ -88,11 +87,6 @@ export function SourceControlUncommittedSections(props: {
   handleUnstage: (path: string, oldPath?: string) => Promise<void>
   requestDiscardEntry: (entry: GitStatusEntry) => void
   diffCommentCountByPath: Map<string, number>
-  onCopyRowFullSource?: (rowKey: string) => void
-  onCopySectionFullSource?: (
-    entries: readonly GitStatusEntry[],
-    area: GitStatusEntry['area']
-  ) => void
 }): React.JSX.Element {
   return (
     <>
@@ -107,11 +101,6 @@ export function SourceControlUncommittedSections(props: {
         const discardAllPaths = getDiscardAllPaths(actionItems, area)
         const canStageAll = !props.normalizedFilter && stageAllPaths.length > 0
         const canUnstageAll = !props.normalizedFilter && unstageAllPaths.length > 0
-        const canCopyFullSource =
-          Boolean(props.onCopySectionFullSource) &&
-          !props.normalizedFilter &&
-          !props.isStatusTruncated &&
-          actionItems.length > 0
         const canRevertAll = !props.normalizedFilter && discardAllPaths.length > 0
         const sectionLabel = id === 'conflicts' ? CONFLICTS_SECTION_LABEL : SECTION_LABELS[area]
         const sectionViewAction = getSourceControlSectionViewAction(actionSection)
@@ -125,19 +114,10 @@ export function SourceControlUncommittedSections(props: {
               onToggle={() => props.toggleSection(id)}
               actions={
                 <div className="flex items-center">
-                  {canCopyFullSource && (
-                    <ActionButton
-                      icon={Copy}
-                      title={translate(
-                        'auto.components.right.sidebar.source.control.listing.uncommitted.sections.1a59d5a05b',
-                        'Copy Full Source'
-                      )}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        props.onCopySectionFullSource?.(actionItems, area)
-                      }}
-                    />
-                  )}
+                  <ClipcodeSectionCopyButton
+                    section={actionSection}
+                    filter={props.normalizedFilter}
+                  />
                   {canRevertAll && (
                     <ActionButton
                       icon={Undo2}
@@ -228,7 +208,6 @@ export function SourceControlUncommittedSections(props: {
                 handleUnstage={props.handleUnstage}
                 requestDiscardEntry={props.requestDiscardEntry}
                 diffCommentCountByPath={props.diffCommentCountByPath}
-                onCopyRowFullSource={props.onCopyRowFullSource}
               />
             )}
           </div>
