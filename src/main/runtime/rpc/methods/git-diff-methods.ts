@@ -1,7 +1,7 @@
 import { defineMethod } from '../core'
 import { remoteRpcContentBudget } from '../../../../shared/remote-rpc-content-budget'
 import { GitBranchDiff, GitCommitDiff, GitDiff } from '../../../../shared/rpc-contract/git-params'
-import { gitDiffReadArgs } from '../../../git/source-control/diff-render-limit-options'
+import { gitDiffReadArgs } from '../../../git/source-control/git-diff-read-options'
 
 // Only WebSocket callers set clientKind; local/in-process diffs retain uncapped fidelity.
 function remoteDiffContentBudget(

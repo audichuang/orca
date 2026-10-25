@@ -114,8 +114,7 @@ export function useSourceControlRowOpening({
         activeWorktreeId,
         worktreePath,
         entry,
-        { targetGroupId, preview: openAsPreview, gitWorktreeId },
-        tabWorktreeId
+        { targetGroupId, preview: openAsPreview, gitWorktreeId, tabWorktreeId }
       )
     },
     [
