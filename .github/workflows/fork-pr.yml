@@ -193,13 +193,15 @@ jobs:
         run: make fork-check-mobile
 
   mac_arm64_build:
-    # Same steps as `make build`, the build installed on the fork's only target machine.
+    # Same `make fork-dmg` as fork-release.yml, ad-hoc signed: fork builder config, dmg and the app.asar leak check.
     name: fork macOS arm64 build
     if: github.event.pull_request.draft != true
     runs-on: macos-15
     timeout-minutes: 60
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # Why: matches fork-release.yml, whose packaging PTY check timed out under the runner's default login shell.
+      SHELL: /bin/zsh
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -213,8 +215,9 @@ jobs:
       # Why: build:desktop bundles the mobile web app, which resolves from mobile/node_modules.
       - uses: ./.github/actions/install-mobile-dependencies
 
-      - name: make build
-        run: make build
+      # Why not `make build`: it packages with the upstream config, so fork-only packaging broke only at release.
+      - name: make fork-dmg (ad-hoc)
+        run: make fork-dmg FORK_SIGN_IDENTITY=- FORK_VERSION=0.0.0-fork.0
 
   verify:
     name: Fork PR checks passed
