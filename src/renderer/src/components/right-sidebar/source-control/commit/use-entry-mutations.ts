@@ -111,12 +111,10 @@ export function useSourceControlEntryMutations({
       const runtimeEnvironmentId =
         activeRepoTarget?.kind === 'environment' ? activeRepoTarget.environmentId : null
       // Why: quiesce pending editor autosaves first so a delayed save can't recreate the discarded edits after git restores the file.
-      const releaseAutoSave = await requestEditorSaveQuiesceForOwners(editorWorktreeId, {
-        worktreeId: activeWorktreeId,
-        worktreePath,
-        relativePath: filePath,
-        runtimeEnvironmentId
-      })
+      const targets = [
+        { worktreeId: activeWorktreeId, worktreePath, relativePath: filePath, runtimeEnvironmentId }
+      ]
+      const releaseAutoSave = await requestEditorSaveQuiesceForOwners(editorWorktreeId, targets)
       // Why finally: autosave of this file stays held, in every workspace, until git has finished.
       try {
         const connectionId = getConnectionId(activeWorktreeId) ?? undefined
@@ -130,12 +128,7 @@ export function useSourceControlEntryMutations({
           },
           filePath
         )
-        notifyEditorExternalFileChangeForOwners(editorWorktreeId, {
-          worktreeId: activeWorktreeId,
-          worktreePath,
-          relativePath: filePath,
-          runtimeEnvironmentId
-        })
+        notifyEditorExternalFileChangeForOwners(editorWorktreeId, targets)
       } finally {
         releaseAutoSave()
       }
