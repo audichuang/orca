@@ -9,7 +9,7 @@ import type { RuntimeFileListState } from '@/components/quick-open-file-list'
 import type { Repo } from '../../../../shared/repo-types'
 import type { RightSidebarExplorerView } from '../../../../shared/ui-chrome-types'
 import { FileExplorerTreeStatus } from './FileExplorerTreeStatus'
-import { FileExplorerVirtualRows } from './FileExplorerVirtualRows'
+import { ClipcodeExplorerVirtualRows } from './source-control/clipcode/clipcode-explorer-rows'
 import { canShowAddAsProjectAction } from './file-explorer-add-project-action'
 import type { FileExplorerNameFilterProjectionSource } from './file-explorer-name-filter-projection'
 import type { FileExplorerRowProjection } from './file-explorer-row-projection'
@@ -17,8 +17,6 @@ import type { useFileExplorerSelection } from './useFileExplorerSelection'
 import type { useFileExplorerTree } from './useFileExplorerTree'
 import type { useFileExplorerTreePaneState } from './use-file-explorer-tree-pane-state'
 import type { WslHostUnavailableReason } from '../terminal-pane/use-wsl-host-unavailable-reason'
-import type { TreeNode } from './file-explorer-types'
-import { copyClipcodeExplorerTargets } from './source-control/clipcode/clipcode-copy-action'
 
 type FileExplorerFilesTreePaneProps = {
   activeRepo: Repo | null
@@ -66,18 +64,6 @@ export function FileExplorerFilesTreePane({
   const { loadingDirPaths, rootError } = tree
   const rootCache = displayRootPath ? tree.dirCache[displayRootPath] : undefined
   const { selectedPaths, preserveSelectionForContextMenu, copyPathsForNode } = selection
-  // Why: same target set as Copy Paths — the multi-selection when the row is in it, else the row.
-  const copyFullSourceForNode = worktreePath
-    ? (node: TreeNode) => {
-        const selected = selectedPaths.has(node.path)
-          ? rowProjection.getRowsByPaths(selectedPaths)
-          : []
-        void copyClipcodeExplorerTargets({
-          worktreePath,
-          targets: selected.length > 0 ? selected : [node]
-        })
-      }
-    : undefined
   const {
     scrollRef,
     runtimeDownloadContext,
@@ -199,7 +185,8 @@ export function FileExplorerFilesTreePane({
         />
       )}
       {showTree && (
-        <FileExplorerVirtualRows
+        <ClipcodeExplorerVirtualRows
+          clipcodeWorktreePath={worktreePath}
           displayDepthOffset={getExplorerDisplayDepth(worktreePath, displayRootPath)}
           virtualizer={virtualizer}
           inlineInputIndex={inlineInputIndex}
@@ -228,7 +215,6 @@ export function FileExplorerFilesTreePane({
           onViewFile={handleClick}
           onContextMenuSelect={preserveSelectionForContextMenu}
           onCopyPaths={copyPathsForNode}
-          onCopyFullSource={copyFullSourceForNode}
           onStartNew={startNew}
           onStartRename={handleStartRename}
           onDuplicate={handleDuplicate}
