@@ -11,15 +11,8 @@ export function createOpenCombinedDiff(
   get: EditorGet
 ): Pick<EditorSlice, 'openAllDiffs' | 'openBranchAllDiffs' | 'openCommitAllDiffs'> {
   return {
-    openAllDiffs: (
-      worktreeId,
-      worktreePath,
-      alternate,
-      areaFilter,
-      entriesSnapshot,
-      forkOptions
-    ) => {
-      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, forkOptions)
+    openAllDiffs: (worktreeId, worktreePath, alternate, areaFilter, entriesSnapshot, gitOwner) => {
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, gitOwner)
       const gitId = gitWorktreeId ?? worktreeId
       const idOwner = getScopedTabIdOwner(worktreeId, gitWorktreeId)
       const id = areaFilter
@@ -115,8 +108,8 @@ export function createOpenCombinedDiff(
       })
       void openWorkspaceEditorItem(get(), id, worktreeId, label, 'diff')
     },
-    openBranchAllDiffs: (worktreeId, worktreePath, compare, alternate, forkOptions) => {
-      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, forkOptions)
+    openBranchAllDiffs: (worktreeId, worktreePath, compare, alternate, gitOwner) => {
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, gitOwner)
       const gitId = gitWorktreeId ?? worktreeId
       const branchCompare = toBranchCompareSnapshot(compare)
       const id = `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::all-diffs::branch::${compare.baseRef}::${branchCompare.compareVersion}`
@@ -188,9 +181,9 @@ export function createOpenCombinedDiff(
       entries,
       subject,
       message,
-      forkOptions
+      gitOwner
     ) => {
-      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, forkOptions)
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, gitOwner)
       const gitId = gitWorktreeId ?? worktreeId
       const commitCompare = toCommitCompareSnapshot(compare, subject, message)
       const id = `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::all-diffs::commit::${commitCompare.commitOid}`

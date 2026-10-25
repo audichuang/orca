@@ -3,7 +3,7 @@ import type { GitDiffResult } from '../../../shared/git/diff/git-diff-compare-ty
 import { resolveWorktreeHostPath } from '../../../shared/git/metadata/git-metadata-path'
 import { stableInFlightKey } from '../../../shared/in-flight-promise-dedupe'
 import type { GitRuntimeOptions } from '../git-runtime-options'
-import type { GitDiffReadOptions } from './diff-render-limit-options'
+import type { GitDiffReadOptions } from './git-diff-read-options'
 import { gitRuntimeOptionsKey } from './git-runtime-options-cache-key'
 import { gitDiffReadDedupe, settledDiffCache } from './git-read-cache-invalidation'
 import { readWorktreeDiffStamp } from './worktree-diff-stamp'
