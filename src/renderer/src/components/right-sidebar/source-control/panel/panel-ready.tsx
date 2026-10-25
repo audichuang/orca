@@ -17,7 +17,6 @@ export function SourceControlPanelReady(props: SourceControlPanelReadyProps) {
     bulkUnstagePaths,
     clearSelection,
     compareBaseRef,
-    copySelectionFullSource,
     deleteDiffComment,
     diffCommentCount,
     diffCommentsCopied,
@@ -125,7 +124,6 @@ export function SourceControlPanelReady(props: SourceControlPanelReadyProps) {
             unstageableCount={bulkUnstagePaths.length}
             onStage={handleBulkStage}
             onUnstage={handleBulkUnstage}
-            onCopyFullSource={copySelectionFullSource}
             onClear={clearSelection}
             isExecuting={isExecutingBulk}
           />

@@ -45,6 +45,7 @@ import {
   shouldShowViewFileAction
 } from './file-explorer-row-action-visibility'
 import { copyFileToOsClipboard, downloadRemoteFile } from './file-explorer-row-file-transfer'
+import { ClipcodeExplorerCopyItem } from './source-control/clipcode/clipcode-menu-items'
 
 const isMac = navigator.userAgent.includes('Mac')
 
@@ -73,7 +74,6 @@ type FileExplorerRowContextMenuProps = Pick<
   | 'selectionSize'
   | 'onViewFile'
   | 'onCopyPaths'
-  | 'onCopyFullSource'
   | 'onStartNew'
   | 'onStartRename'
   | 'onDuplicate'
@@ -99,7 +99,6 @@ export function FileExplorerRowContextMenu({
   selectionSize,
   onViewFile,
   onCopyPaths,
-  onCopyFullSource,
   onStartNew,
   onStartRename,
   onDuplicate,
@@ -194,15 +193,7 @@ export function FileExplorerRowContextMenu({
           <ContextMenuShortcut>{copyRelativePathShortcutLabel}</ContextMenuShortcut>
         ) : null}
       </ContextMenuItem>
-      {onCopyFullSource && (
-        <ContextMenuItem onSelect={onCopyFullSource}>
-          <Copy />
-          {translate(
-            'auto.components.right.sidebar.source.control.listing.entry.context.menu.9137d88b9f',
-            'Copy Full Source'
-          )}
-        </ContextMenuItem>
-      )}
+      <ClipcodeExplorerCopyItem node={node} />
       {!node.isDirectory && (
         <ContextMenuItem onSelect={() => onDuplicate(node)}>
           <Files />
