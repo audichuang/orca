@@ -316,11 +316,8 @@ describe('GitHistoryCommitFilesMenu', () => {
     // The shown list rides along so the diff's change arrows can step into the next file.
     fireEvent.click(screen.getByText('one.ts'))
     const commit = expect.objectContaining({ id: item.id })
-    expect(onOpenCommitFile).toHaveBeenCalledWith(
-      commit,
-      entries[0],
-      expect.anything(),
-      entries.map((entry) => ({ entry, head: commit, base: commit }))
-    )
+    expect(onOpenCommitFile).toHaveBeenCalledWith(commit, entries[0], expect.anything(), {
+      sequence: entries.map((entry) => ({ entry, head: commit, base: commit }))
+    })
   })
 })

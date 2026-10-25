@@ -352,13 +352,10 @@ export function GitGraphDetailsPane({
               className="border-l-0 bg-transparent"
               state={merged.state}
               layout={filesLayout}
-              onOpenFile={(entry, event, shownEntries) =>
-                onOpenCommitFile(
-                  merged.targetByPath.get(entry.path)?.head ?? first,
-                  entry,
-                  event,
-                  shownEntries.flatMap((shown) => merged.targetByPath.get(shown.path) ?? [])
-                )
+              onOpenFile={(entry, event, shown) =>
+                onOpenCommitFile(merged.targetByPath.get(entry.path)?.head ?? first, entry, event, {
+                  sequence: shown.entries.flatMap((row) => merged.targetByPath.get(row.path) ?? [])
+                })
               }
               renderFilesMenu={renderCommitFilesMenu?.bind(null, items)}
             />
