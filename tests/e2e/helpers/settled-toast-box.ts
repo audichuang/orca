@@ -23,3 +23,12 @@ export async function settledToastBox(page: Page): Promise<{ top: number; bottom
     .toBe(true)
   return box()
 }
+
+/** Fork layout check: Copy Full Source shows one toast at a time; a stack covers the rows copied next. */
+export async function expectOneCopyToast(page: Page): Promise<void> {
+  const live = page
+    .locator('[data-sonner-toast][data-removed="false"]')
+    .filter({ hasText: /file\(s\) copied/ })
+  // Why 2s: a replaced toast leaves after sonner's 200ms exit; a stacked one stays its 4s lifetime.
+  await expect(live, 'Copy Full Source toasts on screen').toHaveCount(1, { timeout: 2_000 })
+}

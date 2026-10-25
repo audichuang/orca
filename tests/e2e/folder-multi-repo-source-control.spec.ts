@@ -10,6 +10,7 @@ import {
 import os from 'node:os'
 import path from 'node:path'
 import { test, expect } from './helpers/orca-app'
+import { expectOneCopyToast } from './helpers/settled-toast-box'
 import { startHiddenRendererFrameCapture } from './helpers/hidden-renderer-frame-capture'
 import { waitForSessionReady } from './helpers/store'
 import {
@@ -518,6 +519,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
       expect(toast).toContain(statsLine(actual))
       ev.push(`toast: ${toast}`)
       await expect(page.getByRole('menuitem', { name: 'Copy Full Source' })).toHaveCount(0)
+      await expectOneCopyToast(page)
     }
   })
 
