@@ -11,10 +11,15 @@ mkdir -p "$dest" "$common/info"
 cp "$root/config/scripts/fork-locale-json-merge.mjs" "$dest/fork-locale-json-merge.mjs"
 
 git config merge.fork-locale-json.name 'fork locale JSON deep merge'
-git config merge.fork-locale-json.driver "node '$dest/fork-locale-json-merge.mjs' %O %A %B"
+node=$(command -v node) || { echo "fork-merge-driver: node is not on PATH" >&2; exit 1; }
+# Why the 127 branch: a driver that cannot start would leave ours unmarked, and git add would drop theirs silently.
+git config merge.fork-locale-json.driver \
+  "'$node' '$dest/fork-locale-json-merge.mjs' %O %A %B; s=\$?; [ \$s -ne 127 ] || { git merge-file -L ours -L base -L theirs %A %O %B; s=1; }; exit \$s"
 
 line='src/renderer/src/i18n/locales/*.json merge=fork-locale-json'
 attributes="$common/info/attributes"
 touch "$attributes"
+# Why: appending to a file without a final newline would join the two lines.
+[ ! -s "$attributes" ] || [ -z "$(tail -c1 "$attributes")" ] || echo >>"$attributes"
 grep -qxF "$line" "$attributes" || printf '%s\n' "$line" >>"$attributes"
 echo "fork-merge-driver: locale catalogs merge with $dest/fork-locale-json-merge.mjs"
