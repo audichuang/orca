@@ -11,7 +11,7 @@ import { EditorDiffFileSurface } from './panel/EditorDiffFileSurface'
 import { EditorEditFileSurface } from './panel/EditorEditFileSurface'
 import { EditorFileLoadErrorView } from './loading/EditorFileLoadErrorView'
 import { CombinedDiffViewer, MarkdownPreview } from './editor-lazy-views'
-import { forkEditorTabView } from '../git-graph-tab/fork-editor-tab-kinds'
+import { forkEditorTabView } from '../git-graph-tab/git-graph-editor-surfaces'
 import { MarkdownPreviewSizeGate } from './markdown-preview/render-tree/MarkdownPreviewSizeGate'
 import {
   HOST_STARTED,
