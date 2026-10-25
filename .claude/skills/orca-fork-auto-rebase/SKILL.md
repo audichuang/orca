@@ -51,7 +51,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
    d=$(git rev-parse --short <要丟的 fork commit>)
    GIT_SEQUENCE_EDITOR="sed -i '' -e '/^pick ${d} /s/^pick/drop/'" git rebase -i --onto vNEW vOLD
    ```
-   要丟的 commit 必須在這次的 develop 上：`git merge-base --is-ancestor <條目的 sha> OLD_DEVELOP`。不在（條目是在上一次 rebase 前寫的，sha 已被改寫）就用條目寫的 commit 標題在 `git log --format='%h %s' vOLD..OLD_DEVELOP` 找，剛好一個符合才用它；找不到或不只一個 → 不丟，這個條目當「待人判斷」，照第 8 步留給人。todo 清單用 `git rev-parse --short` 的長度，所以先轉換。rebase 完用 `git range-diff vOLD..OLD_DEVELOP vNEW..HEAD` 確認那個 commit 是 `<`（被丟掉）；不是就 `git rebase --abort` 重做一次，第二次還不是就當失敗（下一點）。
+   要丟的 commit 必須在這次的 develop 上：`git merge-base --is-ancestor <條目的 sha> OLD_DEVELOP`。不在（條目是在上一次 rebase 前寫的，sha 已被改寫）就用條目寫的 commit 標題在 `git log --format='%h %s' vOLD..OLD_DEVELOP` 找，標題完全相同的剛好一個才用它；找不到或不只一個 → 不 rebase，鎖留著，跳到第 8 步交給人（筆記說要丟的 commit 沒丟，後面的閘門都綠也不能發）。todo 清單用 `git rev-parse --short` 的長度，所以先轉換。rebase 完用 `git range-diff vOLD..OLD_DEVELOP vNEW..HEAD` 確認那個 commit 是 `<`（被丟掉）；不是就 `git checkout --detach OLD_DEVELOP` 回到起點重做一次（rebase 已經結束，`--abort` 沒有作用），第二次還不是就當失敗（第 5 點）。
    rerere 已開；重放後仍要 `git add` 才能 continue。適用的條目照它處理、在 PR 說明裡逐條列出；它跟眼前的衝突對不上就以眼前為準，並在通知裡註明。
 4. CLEAN = 完全沒衝突、也沒丟 commit；MANUAL = 有任何衝突（**rerere 自動重放的也算**：那是對舊上游錄下的解法，要跟自己解的一樣過 mutation 證明）、丟掉了 commit、或有額外修正 commit。
 5. 自己解：保留 fork 功能、採上游新結構（FORK.md 的 seam 原則）；locale 兩邊 key 都保留，之後 `pnpm run verify:localization-catalogs`。沒把握就 `git rebase --abort`，鎖留著，跳到第 8 步：那裡會開 PR 並標 `needs-human`。放掉鎖的話，下一次排程會重跑同一個註定失敗的 rebase，每小時推一次失敗通知。
@@ -161,7 +161,7 @@ git push fork "OLD_DEVELOP:refs/heads/backup/develop-vOLD-$RUN" && \
 
 ## 8. Bark 通知（不論結果都推）
 
-先處理鎖：凡是保留 `rebase/vNEW` 給人看或接手的結局（第 1 步 rebase 放棄、第 2、3、5 步的失敗、第 4 步素材產生失敗、不移動 develop），還沒有 PR 就照第 3 步開 PR，然後留言 `<!-- auto-rebase:needs-human -->`（第 6 步「其他情況不移動」已留 verified 的不用再留）。沒有這兩種留言，precheck 六小時後會判定鎖過期，把分支刪掉重跑，使用者接手的東西就沒了。
+先處理鎖：凡是保留 `rebase/vNEW` 給人看或接手的結局（第 1 步 rebase 放棄、第 2、3、5 步的失敗、第 4 步素材產生失敗、不移動 develop），還沒有 PR 就開：fork 上沒有 `ci-base/vNEW` 就先 `git push fork "vNEW^{commit}:refs/heads/ci-base/vNEW"`，然後照第 3 步的 `gh pr create`（第 1 步放棄的不要把 HEAD 推上去蓋掉鎖，PR 說明寫明失敗在哪、卡在哪個檔），再留言 `<!-- auto-rebase:needs-human -->`（第 6 步「其他情況不移動」已留 verified 的不用再留）。沒有這兩種留言，precheck 六小時後會判定鎖過期，把分支刪掉重跑，使用者接手的東西就沒了。
 
 組內容與送出**在同一個 Bash 指令裡**（每次 Bash 是新 shell；送空內容 Bark 也回 200）：
 ```
