@@ -98,3 +98,44 @@ describe('staged diff with skipRenderLimit', () => {
     }
   )
 })
+
+describe('a moved submodule gitlink with skipRenderLimit', () => {
+  let root: string
+
+  beforeEach(async () => {
+    root = mkdtempSync(path.join(tmpdir(), 'orca-skip-render-limit-submodule-'))
+    const inner = path.join(root, 'inner')
+    const outer = path.join(root, 'outer')
+    for (const dir of [inner, outer]) {
+      git(root, ['init', dir])
+      git(dir, ['config', 'user.email', 'test@example.com'])
+      git(dir, ['config', 'user.name', 'Test User'])
+    }
+    invalidateGitReadCaches()
+    await writeFile(path.join(inner, 'big.txt'), 'base\n')
+    git(inner, ['add', '.'])
+    git(inner, ['commit', '-m', 'initial'])
+    git(outer, ['-c', 'protocol.file.allow=always', 'submodule', 'add', inner, 'sub'])
+    git(outer, ['commit', '-m', 'add submodule'])
+    // Commit inside the submodule only: the working gitlink moves while its worktree stays clean.
+    const sub = path.join(outer, 'sub')
+    git(sub, ['config', 'user.email', 'test@example.com'])
+    git(sub, ['config', 'user.name', 'Test User'])
+    await writeFile(path.join(sub, 'big.txt'), BIG_INDEX_TEXT)
+    git(sub, ['commit', '-am', 'grow'])
+  })
+
+  afterEach(async () => {
+    invalidateGitReadCaches()
+    await rm(root, { recursive: true, force: true })
+  })
+
+  it("returns the inner file's full committed text", async () => {
+    const outer = path.join(root, 'outer')
+    const limited = await getDiff(outer, 'sub/big.txt', false)
+    expect(limited.kind === 'text' && limited.largeDiffRenderLimit?.limited).toBe(true)
+
+    const full = await getDiff(outer, 'sub/big.txt', false, false, { skipRenderLimit: true })
+    expect(full).toMatchObject({ kind: 'text', modifiedContent: BIG_INDEX_TEXT })
+  })
+})

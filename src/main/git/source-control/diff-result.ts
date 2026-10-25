@@ -4,7 +4,7 @@ import {
   IMAGE_AND_PDF_PREVIEW_MIME_TYPES,
   filePreviewExtension
 } from '../../../shared/file-preview-kind'
-import type { GitDiffReadOptions } from './diff-render-limit-options'
+import type { GitDiffReadOptions } from './git-diff-read-options'
 
 export function buildDiffResult(
   originalContent: string,
