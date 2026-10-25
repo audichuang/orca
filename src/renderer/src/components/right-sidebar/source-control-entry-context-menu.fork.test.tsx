@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { OpenInApplication } from '../../../../shared/ui-chrome-types'
 import { SourceControlEntryContextMenu } from './source-control/listing/entry-context-menu'
 import { OpenToSideMenuItem } from './source-control/listing/entry-context-menu-slots'
+import { BranchEntryRow } from './source-control/listing/branch-entry-row'
 
 type ItemProps = { onSelect?: () => void; disabled?: boolean; children?: React.ReactNode }
 
@@ -135,5 +136,25 @@ describe('SourceControlEntryContextMenu Open to the Side', () => {
       childrenText(entry.children).startsWith('Open to the Side')
     )
     expect(disabled?.disabled).toBe(true)
+  })
+
+  it('a branch compare row opens to the side with the Alt-click event', () => {
+    const onOpen = vi.fn()
+    renderToStaticMarkup(
+      <BranchEntryRow
+        entry={{ path: 'src/example.ts', status: 'modified' }}
+        currentWorktreeId="worktree-1"
+        worktreePath="/repo"
+        onRevealInExplorer={vi.fn()}
+        onOpen={onOpen}
+        commentCount={0}
+      />
+    )
+    const item = items.list.find((entry) =>
+      childrenText(entry.children).startsWith('Open to the Side')
+    )
+    expect(item?.disabled).toBe(false)
+    item?.onSelect?.()
+    expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ altKey: true }))
   })
 })
