@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FileText, GitCompare, GitGraph, Globe2, TerminalSquare } from 'lucide-react'
+import { FileText, GitCompare, Globe2, TerminalSquare } from 'lucide-react'
 import { useAppStore } from '../../store'
 import { activateCyclableTab } from '../../hooks/ipc-tab-switch'
 import { getShortcutPlatform } from '../../hooks/useShortcutLabel'
@@ -17,6 +17,7 @@ import {
 import { translate } from '@/i18n/i18n'
 import { addAppKeyListener, removeAppKeyListener } from '@/lib/app-keyboard-router'
 import { cn } from '@/lib/utils'
+import { forkEditorTabIconElement } from '@/components/git-graph-tab/git-graph-editor-surfaces'
 
 type SwitcherState = {
   items: RecentTabSwitcherItem[]
@@ -36,9 +37,6 @@ function TabIcon({ item }: { item: RecentTabSwitcherItem }): React.JSX.Element {
   if (item.type === 'browser') {
     return <Globe2 className={className} />
   }
-  if (item.contentType === 'git-graph') {
-    return <GitGraph className={className} />
-  }
   if (
     item.contentType === 'diff' ||
     item.contentType === 'conflict-review' ||
@@ -46,7 +44,7 @@ function TabIcon({ item }: { item: RecentTabSwitcherItem }): React.JSX.Element {
   ) {
     return <GitCompare className={className} />
   }
-  return <FileText className={className} />
+  return forkEditorTabIconElement(item.contentType, className) ?? <FileText className={className} />
 }
 
 export default function RecentTabSwitcher(): React.JSX.Element | null {

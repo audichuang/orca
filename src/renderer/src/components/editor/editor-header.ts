@@ -3,6 +3,7 @@ import type { GitBranchChangeEntry } from '../../../../shared/git-diff-compare-t
 import type { GitStatusEntry } from '../../../../shared/git-status-types'
 import { getEditorDisplayLabel } from './editor-labels'
 import { isVirtualEditorFile } from '@/store/slices/editor/tabs/editor-tab-content-type'
+import { forkEditorHeaderCopyState } from '../git-graph-tab/git-graph-editor-surfaces'
 
 export type EditorHeaderCopyState = {
   copyText: string | null
@@ -40,13 +41,9 @@ export function getEditorHeaderCopyState(file: OpenFile): EditorHeaderCopyState 
     }
   }
 
-  if (file.mode === 'git-graph') {
-    return {
-      copyText: null,
-      copyToastLabel: file.relativePath,
-      pathLabel: file.relativePath,
-      pathTitle: file.relativePath
-    }
+  const forkCopyState = forkEditorHeaderCopyState(file)
+  if (forkCopyState) {
+    return forkCopyState
   }
 
   const isCombinedDiff =

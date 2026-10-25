@@ -2,14 +2,15 @@
 // main's layout load, so both drop the same tabs and neither holds a tab the other cannot draw.
 
 import type { Tab, TabContentType } from '../tab-types'
+import { isForkEditorTabKind } from '../fork-editor-tab-kinds'
 
 /** Diff, conflict and check tabs: their documents live in memory only and are never saved. */
 export function isTransientEditorContentType(contentType: TabContentType): boolean {
+  if (isForkEditorTabKind(contentType)) {
+    return true
+  }
   return (
-    contentType === 'diff' ||
-    contentType === 'conflict-review' ||
-    contentType === 'check-details' ||
-    contentType === 'git-graph'
+    contentType === 'diff' || contentType === 'conflict-review' || contentType === 'check-details'
   )
 }
 

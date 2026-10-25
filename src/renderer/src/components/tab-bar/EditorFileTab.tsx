@@ -1,6 +1,6 @@
 import { createElement, useCallback, useEffect, useRef, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
-import { GitCompareArrows, Eye, ShieldAlert, Pin, ListChecks, GitGraph } from 'lucide-react'
+import { GitCompareArrows, Eye, ShieldAlert, Pin, ListChecks } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { TabHoverCard } from './TabHoverCard'
 import { basename } from '@/lib/path'
@@ -9,6 +9,7 @@ import { renameFileOnDisk } from '@/lib/rename-file'
 import { isImeCompositionKeyDown } from '@/lib/ime-composition-keyboard-event'
 import { detectLanguage } from '@/lib/language-detect'
 import { getFileTypeIcon } from '@/lib/file-type-icons'
+import { forkEditorTabIcon } from '@/components/git-graph-tab/git-graph-editor-surfaces'
 import { useRepoById, useWorktreeById } from '@/store/selectors'
 import { useAppStore } from '@/store'
 import { STATUS_COLORS, STATUS_LABELS } from '../right-sidebar/status-display'
@@ -96,13 +97,11 @@ export default function EditorFileTab({
     ? ShieldAlert
     : isCheckDetails
       ? ListChecks
-      : file.mode === 'git-graph'
-        ? GitGraph
-        : isDiff
-          ? GitCompareArrows
-          : isMarkdownPreviewTab
-            ? Eye
-            : FileIcon
+      : isDiff
+        ? GitCompareArrows
+        : isMarkdownPreviewTab
+          ? Eye
+          : (forkEditorTabIcon(file.mode) ?? FileIcon)
   // Why: only deleted/renamed mean the file is gone from its path, which is
   // what strikethrough conveys. 'changed' keeps a normal label — its surface
   // is the changed-on-disk banner inside the editor.
