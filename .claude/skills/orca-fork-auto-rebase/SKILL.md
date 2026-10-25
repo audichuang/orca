@@ -33,7 +33,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
 
 開始前清掉之前 run 留下的 worktree（狀態都在 fork 上）：
 - `git worktree list` 裡路徑含 `auto-orca-fork-rebase-run-` 而且不是 `MAIN` 的，逐一 `orca worktree rm --worktree "id:622b02e4-f394-4c0d-a683-b027f426796b::<路徑>" --force --json`；目錄名以 `ar-` 開頭、`$RUN` 不是這次的暫時 worktree，用 `git worktree remove --force`。
-- 例外（不刪，列進第 8 步通知）：`git -C <路徑> status --porcelain --untracked-files=no` 有輸出，或 `git -C <路徑> rev-parse -q --verify REBASE_HEAD` 成功的。那是另一個還活著的 run 正在解衝突，或使用者接手的分支（第 2 步「分支照推讓使用者接手」）。
+- 只刪「刪了也不會丟東西」的：`git -C <路徑> status --porcelain` 沒有任何輸出（含未追蹤檔；`.rebase-review/` 已在 exclude 裡，不算）、`git -C <路徑> rev-parse -q --verify REBASE_HEAD` 失敗（不在 rebase 中），而且 `git -C <路徑> branch -r --contains HEAD` 列得出 `fork/` 開頭的分支（commit 都在 fork 上）。其他的不刪，列進第 8 步通知：可能是使用者接手的分支（第 2 步「分支照推讓使用者接手」），或還沒推上去的修正。同時跑兩個 run 只會發生在鎖過期時，那時前一個 run 已經停止心跳六小時。
 
 一律在 `MAIN` 做，不要動 `~/Project/orca` 主 checkout。**全程用 detached HEAD，推送寫明目的地**（`git push fork HEAD:refs/heads/rebase/vNEW`）：本機沒有 `rebase/vNEW` 這條分支，前一次 run 的 worktree 也可能 checkout 著同名分支。
 
