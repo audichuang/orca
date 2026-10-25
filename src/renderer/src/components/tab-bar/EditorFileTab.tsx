@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
-import { GitCompareArrows, Eye, ShieldAlert, Pin, ListChecks, GitGraph } from 'lucide-react'
+import { Eye, ShieldAlert, Pin } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { TabHoverCard } from './TabHoverCard'
 import { basename } from '@/lib/path'
@@ -35,6 +35,7 @@ import { useTabStripPointerActivation } from './tab-strip-pointer-activation'
 import { editorTabDocumentFolderAccess } from '@/lib/local-file-access'
 import { useTabCustomEditor } from '@/store/plugin-custom-editors'
 import { PluginContributionIcon } from '../plugins/PluginContributionIcon'
+import { editorFileTabHoverIcon } from './editor-file-tab-hover-icon'
 
 export default function EditorFileTab({
   file,
@@ -87,22 +88,10 @@ export default function EditorFileTab({
     data: dragData
   })
 
-  const isDiff = file.mode === 'diff'
   const isConflictReview = file.mode === 'conflict-review'
-  const isCheckDetails = file.mode === 'check-details'
   const isMarkdownPreviewTab = file.mode === 'markdown-preview'
   const customEditor = useTabCustomEditor(file)
-  const HoverIcon = isConflictReview
-    ? ShieldAlert
-    : isCheckDetails
-      ? ListChecks
-      : file.mode === 'git-graph'
-        ? GitGraph
-        : isDiff
-          ? GitCompareArrows
-          : isMarkdownPreviewTab
-            ? Eye
-            : FileIcon
+  const HoverIcon = editorFileTabHoverIcon(file.mode, FileIcon)
   const tabIcon = (className: string): React.ReactNode => (
     <PluginContributionIcon
       url={customEditor?.iconUrl}
