@@ -41,6 +41,12 @@ src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts
 src/shared/workspace-layout/layout-editor-view.fork.test.ts
 src/shared/workspace-layout/workspace-layout-fact-locations.test.ts
 
+# gitWorktreeId on editor open actions: panel, combined view, history, status reconcile
+src/renderer/src/components/editor/combined-diff/CombinedDiffViewer.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/panel/panel-content.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.fork.test.tsx
+src/renderer/src/store/slices/editor/actions/git-status-actions.fork.test.ts
+
 # git-graph tab type: hydration, editor tabs, layout, runtime graph sync
 src/renderer/src/runtime/sync-runtime-graph-git-graph-tab.test.ts
 src/renderer/src/store/slices/editor-git-graph-tabs.test.ts
