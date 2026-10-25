@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FileExplorerRowContextMenu } from './file-explorer-row-context-menu'
 import type { TreeNode } from './file-explorer-types'
+import { ClipcodeExplorerActionsContext } from './source-control/clipcode/clipcode-actions-context'
 
 type ItemProps = { onSelect?: () => void; disabled?: boolean; children?: React.ReactNode }
 
@@ -74,34 +75,39 @@ const fileNode: TreeNode = {
   depth: 1
 }
 
+const explorerActions = (copyNodeFullSource?: (node: TreeNode) => void) =>
+  copyNodeFullSource ? { copyNodeFullSource } : null
+
 function renderMenu(
-  owner: Partial<
-    Pick<React.ComponentProps<typeof FileExplorerRowContextMenu>, 'node' | 'onCopyFullSource'>
-  > = {}
+  owner: Partial<Pick<React.ComponentProps<typeof FileExplorerRowContextMenu>, 'node'>> = {},
+  copyNodeFullSource?: (node: TreeNode) => void
 ): void {
+  const actions = explorerActions(copyNodeFullSource)
   renderToStaticMarkup(
-    <FileExplorerRowContextMenu
-      node={fileNode}
-      isExpanded={false}
-      deleteShortcutLabel=""
-      targetDir="/repo/src"
-      targetDepth={1}
-      selectionSize={1}
-      onViewFile={vi.fn()}
-      onCopyPaths={vi.fn()}
-      onStartNew={vi.fn()}
-      onStartRename={vi.fn()}
-      onDuplicate={vi.fn()}
-      onRequestDelete={vi.fn()}
-      canOpenInOrcaBrowser={false}
-      canCollapseFolderSubtree={false}
-      canAddAsProject={false}
-      onAddFolderAsProject={vi.fn()}
-      onOpenInTerminal={vi.fn()}
-      onCollapseFolderSubtree={vi.fn()}
-      onFindInFolder={vi.fn()}
-      {...owner}
-    />
+    <ClipcodeExplorerActionsContext.Provider value={actions}>
+      <FileExplorerRowContextMenu
+        node={fileNode}
+        isExpanded={false}
+        deleteShortcutLabel=""
+        targetDir="/repo/src"
+        targetDepth={1}
+        selectionSize={1}
+        onViewFile={vi.fn()}
+        onCopyPaths={vi.fn()}
+        onStartNew={vi.fn()}
+        onStartRename={vi.fn()}
+        onDuplicate={vi.fn()}
+        onRequestDelete={vi.fn()}
+        canOpenInOrcaBrowser={false}
+        canCollapseFolderSubtree={false}
+        canAddAsProject={false}
+        onAddFolderAsProject={vi.fn()}
+        onOpenInTerminal={vi.fn()}
+        onCollapseFolderSubtree={vi.fn()}
+        onFindInFolder={vi.fn()}
+        {...owner}
+      />
+    </ClipcodeExplorerActionsContext.Provider>
   )
 }
 
@@ -110,16 +116,17 @@ describe('FileExplorerRowContextMenu ClipCode actions', () => {
     items.list = []
   })
 
-  it('offers ClipCode Copy Full Source only when the pane wires it', () => {
+  it('offers ClipCode Copy Full Source only under the rows ClipCode actions', () => {
     const findCopyFullSource = (): ItemProps | undefined =>
       items.list.find((item) => React.Children.toArray(item.children).includes('Copy Full Source'))
     renderMenu()
     expect(findCopyFullSource()).toBeUndefined()
 
     items.list = []
-    const onCopyFullSource = vi.fn()
-    renderMenu({ node: { ...fileNode, isDirectory: true }, onCopyFullSource })
+    const copyNodeFullSource = vi.fn()
+    const folder = { ...fileNode, isDirectory: true }
+    renderMenu({ node: folder }, copyNodeFullSource)
     findCopyFullSource()?.onSelect?.()
-    expect(onCopyFullSource).toHaveBeenCalledTimes(1)
+    expect(copyNodeFullSource).toHaveBeenCalledWith(folder)
   })
 })
