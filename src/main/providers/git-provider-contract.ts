@@ -17,7 +17,7 @@ import type { GitHistoryOptions, GitHistoryResult } from '../../shared/git-histo
 import type { CommitMessageDraftContext } from '../../shared/commit-message-generation'
 import type { GitProviderStatusOptions } from './git-provider-status-options'
 import type { GitAdmissionTier } from '../git/command-runner/git-exec-options'
-import type { GitDiffReadOptions } from '../git/source-control/diff-render-limit-options'
+import type { GitDiffReadOptions } from '../git/source-control/git-diff-read-options'
 
 export type { GitProviderStatusOptions } from './git-provider-status-options'
 
