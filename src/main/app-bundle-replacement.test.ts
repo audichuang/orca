@@ -50,7 +50,7 @@ describe('isAppBundleReplaced', () => {
   })
 
   it("reads app.asar's physical identity, not the virtual directory Electron's fs returns", async () => {
-    // Why: Electron's patched fs.statSync gives app.asar a new inode on every call, so reading it would always say replaced.
+    // Stands in for Electron's patched fs, which gives app.asar a new inode per call.
     let virtualIno = 0
     vi.doMock('node:fs', async (importOriginal) => ({
       ...(await importOriginal<typeof NodeFs>()),
