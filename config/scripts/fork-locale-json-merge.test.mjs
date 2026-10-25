@@ -56,10 +56,10 @@ describe('fork locale merge driver in a real rebase', () => {
   })
 
   function setup() {
-    const root = mkdtempSync(join(tmpdir(), "fork-locale-merge O'Reilly-"))
+    const root = mkdtempSync(join(tmpdir(), "fork-locale-merge O'Reilly %A-"))
     roots.push(root)
     const repo = join(root, 'repo')
-    // Why the quote and space in the path: the driver command git stores must survive any checkout path.
+    // Why the quote, space and %A in the path: the driver command git stores must survive any checkout path.
     // Why the isolated env: a developer's global attributes or merge config must not decide the result.
     const env = {
       ...process.env,
@@ -88,25 +88,25 @@ describe('fork locale merge driver in a real rebase', () => {
   }
 
   // The driver lands after the fork's locale commits, so the rebase replays those before it exists in the tree.
-  function rebaseOntoUp({ wt, env, git }, { breakNode = false } = {}) {
+  function rebaseOntoUp({ wt, env, git }, { breakDriver = false } = {}) {
     mkdirSync(join(wt, 'config/scripts'), { recursive: true })
-    for (const name of ['fork-locale-json-merge.mjs', 'fork-merge-driver-install.sh']) {
+    for (const name of ['fork-locale-json-merge.mjs', 'fork-merge-driver-install.mjs']) {
       copyFileSync(join(scriptsDir, name), join(wt, 'config/scripts', name))
     }
     git(wt, 'add', 'config')
     git(wt, 'commit', '-qm', 'fork scripts')
-    execFileSync('bash', ['config/scripts/fork-merge-driver-install.sh'], {
+    execFileSync(process.execPath, ['config/scripts/fork-merge-driver-install.mjs'], {
       cwd: wt,
       env,
       stdio: 'pipe'
     })
-    if (breakNode) {
+    if (breakDriver) {
       const driver = git(wt, 'config', 'merge.fork-locale-json.driver').trim()
       git(
         wt,
         'config',
         'merge.fork-locale-json.driver',
-        driver.replace(/^'[^']*'/, "'/nonexistent/node'")
+        driver.replace("fork-locale-json-merge.mjs' %O", "missing.mjs' %O")
       )
     }
     return spawnSync('git', ['rebase', 'up'], { cwd: wt, env, encoding: 'utf8' })
@@ -144,12 +144,12 @@ describe('fork locale merge driver in a real rebase', () => {
     expect(text).toContain('"row": "Row"')
   })
 
-  it('leaves conflict markers when the driver cannot start', () => {
+  it('leaves conflict markers when the driver cannot run', () => {
     const ctx = setup()
     ctx.writeLocale(ctx.wt, { auto: { a: 'A', GitHistoryGraph: 'Git Graph' } })
     ctx.git(ctx.wt, 'commit', '-qam', 'fork adds graph')
 
-    const result = rebaseOntoUp(ctx, { breakNode: true })
+    const result = rebaseOntoUp(ctx, { breakDriver: true })
 
     expect(result.status).not.toBe(0)
     expect(readFileSync(join(ctx.wt, LOCALE), 'utf8')).toContain('<<<<<<< ours')
