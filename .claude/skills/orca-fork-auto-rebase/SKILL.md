@@ -10,6 +10,7 @@ description: Unattended pipeline that rebases the Orca fork's develop onto the n
 本技能覆寫兩個預設：codex 技能的「找到問題不自動修、停下來問」在這裡不適用（第 5 步規定怎麼修）；`orca-lcu-ui-test` 與 Codex desktop 的真實 UI 測試輪**不在這裡跑**——它們會占用螢幕鍵盤剪貼簿，排程隨時會觸發。發版前要驗的 UI 情境（ClipCode 複製、Paste & Restore、資料夾 repo 清單、session restore、external-change banner、agent launch cwd）由 fork e2e 在隱藏視窗驗（`folder-multi-repo-source-control.spec.ts`、`folder-workspace-tab-restart-restore.spec.ts`），第 3 步的 `fork-check-e2e` 與 CI 都會跑；lcu 實機輪只留給新增或改了 UI 的功能 PR。
 
 本文的變數：
+
 - `SKILL_DIR`：這個 SKILL.md 所在目錄。
 - `MAIN`：Orca 為這次 run 開的 worktree 的絕對路徑（`pwd -P`，開頭先記下）。
 - `RUN`：`date -u +%Y%m%dT%H%M%SZ`，開頭記一次。這次 run 自己的暫時 worktree 一律叫 `../ar-$RUN-<名字>`，名字不會跟別的 run 撞，第 0 步也靠這個前綴認出殘留。
@@ -22,6 +23,7 @@ description: Unattended pipeline that rebases the Orca fork's develop onto the n
 ```sh
 git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
 ```
+
 - vNEW = 上游最新**已發布的 GitHub Release**：`gh api repos/stablyai/orca/releases/latest --jq .tag_name`（須符合 `^v[0-9]+\.[0-9]+\.[0-9]+$`）。上游也會推從沒發布成 Release 的 tag（例如 v1.4.236），那些不算，不要用 `git ls-remote` 取最大 tag。
 - vOLD = `git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' --exclude '*-fork*' fork/develop`。
 - 有沒有進行中的 rebase，用 `git ls-remote fork 'refs/heads/rebase/*'` 判斷（remote-tracking ref 可能是 GitHub 上已刪掉的殘影）。有 `rebase/vX`：
@@ -32,6 +34,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
 - 否則 **NEW**：OLD_DEVELOP = `git rev-parse fork/develop`，從第 1 步開始。
 
 開始前清掉之前 run 留下的 worktree（狀態都在 fork 上）：
+
 - `git worktree list` 裡路徑含 `auto-orca-fork-rebase-run-` 而且不是 `MAIN` 的，逐一 `orca worktree rm --worktree "id:622b02e4-f394-4c0d-a683-b027f426796b::<路徑>" --force --json`；目錄名以 `ar-` 開頭、`$RUN` 不是這次的暫時 worktree，用 `git worktree remove --force`。
 - 只刪「刪了也不會丟東西」的：`git -C <路徑> status --porcelain` 沒有任何輸出（含未追蹤檔；`.rebase-review/` 已在 exclude 裡，不算）、`git -C <路徑> rev-parse -q --verify REBASE_HEAD` 失敗（不在 rebase 中），而且 `git -C <路徑> branch -r --contains HEAD` 列得出 `fork/` 開頭的分支（commit 都在 fork 上）。其他的不刪，列進第 8 步通知：可能是使用者接手的分支（第 2 步「分支照推讓使用者接手」），或還沒推上去的修正。同時跑兩個 run 只會發生在鎖過期時，那時前一個 run 已經停止心跳六小時。
 
@@ -46,7 +49,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
    ```
    這個 commit 的時間是現在，precheck 拿它判斷鎖是否過期。之後每次推 `rebase/vNEW` 都是 `--force`。
 2. `git checkout --detach OLD_DEVELOP`，讀筆記：`tip=$(config/scripts/fork-notes.sh tip) && mkdir -p "$MAIN/.rebase-review" && git show "$tip":known-resolutions.md > "$MAIN/.rebase-review/known-resolutions.md"`（`fork-notes.sh` 是 fork 自己的檔案，rebase 中途可能不在工作樹，所以先讀）。每日 canary 對上游 main 試合時看過的衝突與「該丟掉的 fork commit」記在這裡。條目適用於這次的條件是 `git merge-base --is-ancestor <條目的上游 commit> vNEW`。`fork-notes.sh` 回非 0 → 沒有筆記也能做，照常 rebase，在通知裡註明。
-3. Rebase：`git rebase --onto vNEW vOLD`（FORK.md 說明為何要 --onto）。條目要丟掉某個 fork commit 時，改用：
+3. Rebase：先 `node config/scripts/fork-merge-driver-install.mjs`（讓 locale JSON 由 driver 合併；driver 複製進 git 目錄，rebase 中途工作樹沒有它也能用），再 `git rebase --onto vNEW vOLD`（FORK.md 說明為何要 --onto）。條目要丟掉某個 fork commit 時，改用：
    ```sh
    d=$(git rev-parse --short <要丟的 fork commit>)
    GIT_SEQUENCE_EDITOR="sed -i '' -e '/^pick ${d} /s/^pick/drop/'" git rebase -i --onto vNEW vOLD
@@ -54,7 +57,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
    要丟的 commit 必須在這次的 develop 上：`git merge-base --is-ancestor <條目的 sha> OLD_DEVELOP`。不在（條目是在上一次 rebase 前寫的，sha 已被改寫）就用條目寫的 commit 標題在 `git log --format='%h %s' vOLD..OLD_DEVELOP` 找，標題完全相同的剛好一個才用它；找不到或不只一個 → 不 rebase，鎖留著，跳到第 8 步交給人（筆記說要丟的 commit 沒丟，後面的閘門都綠也不能發）。todo 清單用 `git rev-parse --short` 的長度，所以先轉換。rebase 完用 `git range-diff vOLD..OLD_DEVELOP vNEW..HEAD` 確認那個 commit 是 `<`（被丟掉）；不是就 `git checkout --detach OLD_DEVELOP` 回到起點重做一次（rebase 已經結束，`--abort` 沒有作用），第二次還不是就當失敗（第 5 點）。
    rerere 已開；重放後仍要 `git add` 才能 continue。適用的條目照它處理、在 PR 說明裡逐條列出；它跟眼前的衝突對不上就以眼前為準，並在通知裡註明。
 4. CLEAN = 完全沒衝突、也沒丟 commit；MANUAL = 有任何衝突（**rerere 自動重放的也算**：那是對舊上游錄下的解法，要跟自己解的一樣過 mutation 證明）、丟掉了 commit、或有額外修正 commit。
-5. 自己解：保留 fork 功能、採上游新結構（FORK.md 的 seam 原則）；locale 兩邊 key 都保留，之後 `pnpm run verify:localization-catalogs`。沒把握就 `git rebase --abort`，鎖留著，跳到第 8 步：那裡會開 PR 並標 `needs-human`。放掉鎖的話，下一次排程會重跑同一個註定失敗的 rebase，每小時推一次失敗通知。
+5. 自己解：保留 fork 功能、採上游新結構（FORK.md 的 seam 原則）；locale 兩邊只新增 key 時 driver 已合好、不算衝突；還停在 locale 檔，代表兩邊改了同一個字串（driver 留下衝突標記），兩邊 key 都保留、字串照筆記條目或上游新文案決定，之後 `pnpm run verify:localization-catalogs`。沒把握就 `git rebase --abort`，鎖留著，跳到第 8 步：那裡會開 PR 並標 `needs-human`。放掉鎖的話，下一次排程會重跑同一個註定失敗的 rebase，每小時推一次失敗通知。
 6. rebase 完成後 `git push --force fork HEAD:refs/heads/rebase/vNEW`。
 7. `make fork-check-lint` 直接讀 `package.json` 的 `"lint"` 逐項執行（`config/scripts/fork-lint-run.mjs`），上游增減 lint 項目不用手動同步。只有兩種情況要動它，另外 commit（算 MANUAL）：上游拿掉了 `EXCLUDED` 裡的項目（腳本會報錯要你刪掉那筆排除），或 `lint` script 出現它拒絕的寫法（換行、管線等 shell 語法）。
 
@@ -67,11 +70,13 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
 macOS 上 `fork-check-tests` 會連上游自己的測試一起報紅（`orca-runtime.test.ts` 的 `/var` 對 `/private/var`，CI 的 Linux 上會過）；只有這種的不算回歸，失敗清單照貼進 PR。其他 vitest 失敗照下面處理。
 
 **失敗處理（新的 vitest 失敗、第 3 步的 e2e）**：在乾淨的上游 worktree 重現同一個檔案。上游 tag 沒有 `Makefile` 和 fork 的 config，所以用 make 底下的原始指令：
+
 ```sh
 git worktree add --detach ../ar-$RUN-base vNEW && cd ../ar-$RUN-base && pnpm install --frozen-lockfile
 LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 pnpm exec vitest run --config config/vitest.config.ts <測試檔>
 pnpm run ensure:electron-runtime && LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 npx playwright test <spec> --config tests/playwright.config.ts --project=electron-headless --workers=1
 ```
+
 只有「fork 失敗、上游通過」才算回歸，要修（修正 commit 算 MANUAL）。兩邊都失敗才可排除，而且**兩份輸出的尾段都要貼進 PR**，沒貼不准排除。同一個問題修兩輪還不過 → 第 8 步回報，分支照推讓使用者接手。
 
 ## 3. 推上去：fork CI 與 e2e 並行
@@ -88,9 +93,11 @@ pnpm run ensure:electron-runtime && LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 npx playwr
 ## 4. 盲審（本機、CI、e2e、wire、mobile 都綠才做；不審紅的 build）
 
 產生審查素材：
+
 ```sh
 bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.rebase-review"
 ```
+
 （`.rebase-review/` 不要 commit。）腳本回非 0 就沒有完整素材可審：當成審查沒通過，不移動 develop，照第 8 步留給人。裡面有 `range-diff.txt`、`extra-commits.diff`、`upstream-touching.diff`、`importer-sweep.txt`、`seam-upstream.diff`、`README.txt`。`seam-upstream.diff` 是上游 vOLD..vNEW 對「fork 改過的上游檔、fork 新檔 import 的上游模組、含 fork seam 關鍵字的檔」的改動，**CLEAN 時它就是審查的主體**：沒有文字衝突不代表上游沒有新增一條繞過 fork seam 的平行路徑（新的 content type switch 沒有 `'git-graph'`、新的 updater 入口沒有 `isForkDistribution()`、重組參數時丟了 `skipRenderLimit`、slot 不再被渲染）。
 
 **會改檔的審查者（C 與 Codex）各用一個自己的 worktree**：`git worktree add --detach ../ar-$RUN-review-<名字> HEAD && (cd ../ar-$RUN-review-<名字> && pnpm install --frozen-lockfile)`，否則改回上游那一側的實驗會污染其他人正在讀的樹；A、B 用 `MAIN` 唯讀。
@@ -122,6 +129,7 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 ## 6. 移動 develop
 
 **自動移動**的條件，全部都要成立：
+
 - (CLEAN、沒有任何修正 commit，且審查者 C 對 `seam-upstream.diff` 碰到的 seam 沒有列出「沒有測試會紅」的項目) 或 **合格的 MANUAL**（見下）；
 - 本機 fork-check 與 fork-check-seams 綠（或只有附了雙邊輸出的上游既有失敗）；e2e、wire、mobile 綠（或只有第 3 步判定的 develop 既有紅測試）；
 - CI 綠：「Fork PR checks passed」在目前 head 的 conclusion 是 SUCCESS，且它來自 `.github/workflows/fork-pr.yml` 的 job `verify`（`gh run list -R audichuang/orca --workflow fork-pr.yml --commit <head>` 對得上；SKIPPED、沒有這個 check、或同名 check 來自別的 workflow 都不算）；
@@ -131,11 +139,13 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 **合格的 MANUAL**：range-diff 每個 `!` 項目與每個修正 commit 都有審查者 C（或你自己）做過的 mutation 證明——把那個 hunk 改回上游那一側或拿掉修正，指定的測試會變紅，證據（指令與紅的那一行）寫進審查留言；審查者 C 列出的「沒有測試會紅的 seam」裡，沒有一個落在這次解過衝突、rerere 重放或修正的 hunk 上，也沒有一個落在 `seam-upstream.diff` 碰到的 seam 上（不相關的既有缺口不擋，但要列進通知）。任何一項做不到就不移動。
 
 推的是 CI 驗過的那個 sha，不是分支名：
+
 ```sh
 head=$(git rev-parse HEAD); [ "$head" = "$(git ls-remote fork refs/heads/rebase/vNEW | cut -f1)" ] || { echo "HEAD 不是 CI 驗過的 rebase/vNEW"; exit 1; }
 git push fork "OLD_DEVELOP:refs/heads/backup/develop-vOLD-$RUN" && \
   git push --force-with-lease="develop:OLD_DEVELOP" fork "${head}:refs/heads/develop"
 ```
+
 - lease 失敗 = 期間有 PR 合進 develop，這次的 rebase 不含它。不重試、不 force：`gh pr close PR -R audichuang/orca -c "develop 在驗證期間移動了，下一次排程重新 rebase"`，刪掉 fork 的 `rebase/vNEW` 與 `ci-base/vNEW`（下一次排程就會從新的 develop 重來），第 8 步回報。
 - 成功後：`gh pr close PR -R audichuang/orca -c "全部驗證通過，develop 已移到這個分支"`、刪除 fork 的 `ci-base/vNEW` 與 `rebase/vNEW`、`make fork-ci-disable-upstream`。再把筆記裡這次用掉的條目刪掉：重新 `tip=$(config/scripts/fork-notes.sh tip)`、`git show "$tip":known-resolutions.md` 存成副本、刪掉第 1 步判定適用的條目、`config/scripts/fork-notes.sh write "$tip" "auto-rebase vNEW: drop consumed entries" known-resolutions.md=<副本>`。exit 2 表示 canary 剛寫過：重新 `tip`、在新版上刪同樣的條目再寫一次；還是 exit 2 或其他非 0 就不再試，在通知裡註明哪幾條該刪。條目等 develop 真的移動了才刪：沒移動的話，下一次 rebase 還用得到。
 
@@ -164,6 +174,7 @@ git push fork "OLD_DEVELOP:refs/heads/backup/develop-vOLD-$RUN" && \
 先處理鎖：凡是保留 `rebase/vNEW` 給人看或接手的結局（第 1 步 rebase 放棄、第 2、3、5 步的失敗、第 4 步素材產生失敗、不移動 develop），還沒有 PR 就開：fork 上沒有 `ci-base/vNEW` 就先 `git push fork "vNEW^{commit}:refs/heads/ci-base/vNEW"`，然後照第 3 步的 `gh pr create`（第 1 步放棄的不要把 HEAD 推上去蓋掉鎖，PR 說明寫明失敗在哪、卡在哪個檔），再留言 `<!-- auto-rebase:needs-human -->`（第 6 步「其他情況不移動」已留 verified 的不用再留）。沒有這兩種留言，precheck 六小時後會判定鎖過期，把分支刪掉重跑，使用者接手的東西就沒了。
 
 組內容與送出**在同一個 Bash 指令裡**（每次 Bash 是新 shell；送空內容 Bark 也回 200）：
+
 ```
 doppler run -p shioaji -c dev -- uv run --no-project python - <<'PY'
 import json, os, sys, urllib.request
@@ -178,7 +189,9 @@ print("bark:", resp)
 sys.exit(0 if resp.get("code") == 200 else 1)
 PY
 ```
+
 body 控制在約 1,200 字內：vOLD → vNEW、CLEAN/MANUAL、衝突與修正各一句、本機 / CI / e2e 結果、每個審查者的 VERDICT 與確認為真的發現數、PR 連結、develop 有沒有移動（沒移動就寫原因，例如 lease 失敗）。再加：
+
 - 發版結果：tag、release 連結、MacBook 有沒有升級（Orca 開著就寫「請自己 `brew upgrade --cask orca-fork` 後重開」）；沒發版就寫原因。
 - CI 有自動重跑的 job 寫出名稱；審查者 C 列出、但不擋這次的既有測試缺口列出來；第 0 步沒刪的 worktree；筆記沒寫成的話寫該刪哪幾條。
 - develop 有移動時列出對 develop 開著的 PR（`gh pr list -R audichuang/orca --base develop`），它們要重跑 CI 才能合。

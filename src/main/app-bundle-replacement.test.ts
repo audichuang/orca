@@ -2,6 +2,7 @@ import { mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as NodeFs from 'node:fs'
 import type * as BundleReplacement from './app-bundle-replacement'
 
 vi.mock('electron', () => ({ app: { isPackaged: true } }))
@@ -46,5 +47,21 @@ describe('isAppBundleReplaced', () => {
     const mod = await launched()
     rmSync(join(resources, 'app.asar'))
     expect(mod.isAppBundleReplaced()).toBe(true)
+  })
+
+  it("reads app.asar's physical identity, not the virtual directory Electron's fs returns", async () => {
+    // Stands in for Electron's patched fs, which gives app.asar a new inode per call.
+    let virtualIno = 0
+    vi.doMock('node:fs', async (importOriginal) => ({
+      ...(await importOriginal<typeof NodeFs>()),
+      statSync: () => ({ ino: ++virtualIno, mtimeMs: 1 })
+    }))
+    vi.doMock('./asar-transparent-stat', () => ({ statSync: () => ({ ino: 7, mtimeMs: 1 }) }))
+    try {
+      expect((await launched()).isAppBundleReplaced()).toBe(false)
+    } finally {
+      vi.doUnmock('node:fs')
+      vi.doUnmock('./asar-transparent-stat')
+    }
   })
 })

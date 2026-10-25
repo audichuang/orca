@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-check-wire fork-check-mobile fork-base-guard fork-footprint fork-check-seams fork-canary
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-check-wire fork-check-mobile fork-base-guard fork-footprint fork-check-seams fork-canary fork-merge-driver
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -279,6 +279,10 @@ sync:
 	echo ">> main was $$(git rev-parse --short main 2>/dev/null) (git reflog keeps it)"; \
 	git checkout --no-overwrite-ignore -B main "refs/remotes/$$r/main" && \
 	echo ">> main is now $$(git rev-parse --short HEAD). next: make update"
+# Registers the locale JSON merge driver in this clone so rebases and merges keep both sides' added keys; rerun after it changes.
+fork-merge-driver:
+	node config/scripts/fork-merge-driver-install.mjs
+
 # Fork CI is the fork-*.yml workflows only (macOS arm64 is the only target); rerun after a rebase brings new upstream workflows.
 fork-ci-disable-upstream:
 	gh workflow list -R $(FORK_REPO) --all --limit 500 --json path,state \
