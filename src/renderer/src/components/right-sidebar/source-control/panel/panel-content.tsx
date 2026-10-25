@@ -13,7 +13,7 @@ import { SourceControlUncommittedSections } from '../listing/uncommitted-section
 import { CompareUnavailable } from '../sync/compare-summary'
 import { SourceControlCommitSurface } from './commit-surface'
 import { SourceControlForkPushNotice } from './fork-push-notice'
-import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
+import { useSourceControlOwners } from '../folder/worktree-scope'
 import type { SourceControlPanelReadyProps } from './panel-props'
 import { toastBottomClearanceRef } from '@/lib/toast-bottom-clearance'
 
@@ -21,9 +21,7 @@ import { toastBottomClearanceRef } from '@/lib/toast-bottom-clearance'
 export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
   const { activeWorktree, currentWorktreeId, model, worktreePath } = props
   // Why: in a folder repo section, combined diffs open in the folder's editor but read this repo's git state.
-  const scope = useSourceControlWorktreeScope()
-  const tabOwnerId = scope?.editorWorktreeId ?? currentWorktreeId
-  const gitOwnerId = scope ? currentWorktreeId : undefined
+  const { tabOwnerId, gitOwnerId } = useSourceControlOwners(currentWorktreeId)
   const {
     activeConnectionId,
     activeRepoTarget,
