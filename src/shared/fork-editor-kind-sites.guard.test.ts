@@ -1,13 +1,14 @@
+// Discovery heuristic: catches a new file that switches on editor kinds without the fork case; misses an omission inside an already wired file.
 // Fork guard: an upstream site that lists editor tab kinds must handle the fork's Git Graph kind too.
 // 'check-details' is upstream's newest virtual editor kind and every site that enumerates editor
-// kinds names it, so a file naming it must name 'git-graph' or import a fork-editor-tab-kinds module.
+// kinds names it, so a file naming it must name 'git-graph' or import a fork editor-kind module.
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const SRC_ROOT = path.resolve(__dirname, '..')
 const ANCHOR = "'check-details'"
-const FORK_REFERENCE = /'git-graph'|fork-editor-tab-kinds/
+const FORK_REFERENCE = /'git-graph'|fork-editor-tab-kinds|git-graph-editor-surfaces/
 
 /** Files that name check-details only for its own behavior, where the default path is right for git-graph. */
 const ALLOWED = new Map<string, string>([
