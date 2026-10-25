@@ -2,11 +2,11 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
+import type { GitHistoryGraphColorId } from '../../../../../../shared/git-history'
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
 import type { GitGraphLaneRow, GitGraphLaneSegment } from './git-graph-lane-layout'
 import {
   GitHistoryGraphNodeMarker,
-  GraphPath,
   graphColor,
   SWIMLANE_HEIGHT as H,
   SWIMLANE_WIDTH as W
@@ -16,6 +16,27 @@ import {
 export const GIT_GRAPH_JUMP_ATTRIBUTE = 'data-git-graph-jump'
 
 const x = (column: number): number => W * (column + 1)
+
+// Copied from upstream git-history-graph-svg.tsx GraphPath (module-private there); re-sync on rebase.
+function GraphPath({
+  d,
+  color,
+  strokeWidth = 1
+}: {
+  d: string
+  color: GitHistoryGraphColorId
+  strokeWidth?: number
+}): React.JSX.Element {
+  return (
+    <path
+      d={d}
+      fill="none"
+      stroke={graphColor(color)}
+      strokeLinecap="round"
+      strokeWidth={strokeWidth}
+    />
+  )
+}
 
 /** Lanes leaving the 24px band through its top edge (up) or bottom edge (down). */
 function laneEdges(lanes: GitGraphLaneRow): { up: Edge[]; down: Edge[] } {
