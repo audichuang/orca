@@ -5,6 +5,7 @@ import { getEditorDisplayLabel } from './editor-labels'
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
 import { isVirtualEditorFile } from '@/store/slices/editor/tabs/editor-tab-content-type'
+import { forkEditorHeaderCopyState } from '../git-graph-tab/fork-editor-tab-kinds'
 
 export type EditorHeaderCopyState = {
   copyText: string | null
@@ -61,13 +62,9 @@ export function getEditorHeaderCopyState(
     }
   }
 
-  if (file.mode === 'git-graph') {
-    return {
-      copyText: null,
-      copyToastLabel: file.relativePath,
-      pathLabel: file.relativePath,
-      pathTitle: file.relativePath
-    }
+  const forkCopyState = forkEditorHeaderCopyState(file)
+  if (forkCopyState) {
+    return forkCopyState
   }
 
   const isCombinedDiff =
