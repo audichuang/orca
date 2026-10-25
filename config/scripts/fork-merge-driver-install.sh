@@ -5,16 +5,21 @@
 set -euo pipefail
 
 root=$(git rev-parse --show-toplevel)
-common=$(git rev-parse --path-format=absolute --git-common-dir)
+# Why cd + pwd: --path-format=absolute needs git 2.31.
+common=$(cd "$(git rev-parse --git-common-dir)" && pwd -P)
 dest="$common/fork-merge-driver"
 mkdir -p "$dest" "$common/info"
-cp "$root/config/scripts/fork-locale-json-merge.mjs" "$dest/fork-locale-json-merge.mjs"
+# Why a rename: a merge in another worktree may run the driver mid-copy, and an empty script exits 0 unmerged.
+tmp=$(mktemp "$dest/.fork-locale-json-merge.XXXXXX")
+cp "$root/config/scripts/fork-locale-json-merge.mjs" "$tmp"
+mv -f "$tmp" "$dest/fork-locale-json-merge.mjs"
 
 git config merge.fork-locale-json.name 'fork locale JSON deep merge'
 node=$(command -v node) || { echo "fork-merge-driver: node is not on PATH" >&2; exit 1; }
+quote() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
 # Why the 127 branch: a driver that cannot start would leave ours unmarked, and git add would drop theirs silently.
 git config merge.fork-locale-json.driver \
-  "'$node' '$dest/fork-locale-json-merge.mjs' %O %A %B; s=\$?; [ \$s -ne 127 ] || { git merge-file -L ours -L base -L theirs %A %O %B; s=1; }; exit \$s"
+  "$(quote "$node") $(quote "$dest/fork-locale-json-merge.mjs") %O %A %B; s=\$?; [ \$s -ne 127 ] || { git merge-file -L ours -L base -L theirs %A %O %B; s=1; }; exit \$s"
 
 line='src/renderer/src/i18n/locales/*.json merge=fork-locale-json'
 attributes="$common/info/attributes"
