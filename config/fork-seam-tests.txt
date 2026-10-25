@@ -30,6 +30,7 @@ src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-git-c
 src/main/ipc/filesystem/filesystem-svg-preview-clipcode-contract.test.ts
 src/renderer/src/components/right-sidebar/file-explorer-clipcode-copy.wiring.test.tsx
 src/renderer/src/components/right-sidebar/source-control/panel/panel-clipcode-actions.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/commit/bulk-action-bar.fork.test.tsx
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-format.contract.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-restore.contract.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-target-state.ipc-edge.test.ts
