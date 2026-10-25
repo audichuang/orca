@@ -3,7 +3,8 @@ import type { MarkdownViewMode, OpenFile, PendingEditorReveal } from '@/store/sl
 import type { GitDiffResult } from '../../../../shared/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../shared/git-status-types'
 import { CheckRunDetailsPanel } from './CheckRunDetailsPanel'
-import { CombinedDiffViewer, GitGraphTabView, MarkdownPreview } from './editor-lazy-views'
+import { CombinedDiffViewer, MarkdownPreview } from './editor-lazy-views'
+import { forkEditorTabView } from '../git-graph-tab/fork-editor-tab-kinds'
 import { EditorConflictReviewSurface } from './EditorConflictReviewSurface'
 import { EditorDiffFileSurface } from './EditorDiffFileSurface'
 import { EditorEditFileSurface } from './EditorEditFileSurface'
@@ -155,8 +156,9 @@ export function EditorContent({
     )
   }
 
-  if (activeFile.mode === 'git-graph') {
-    return <GitGraphTabView file={activeFile} />
+  const forkView = forkEditorTabView(activeFile)
+  if (forkView) {
+    return forkView
   }
 
   if (activeFile.mode === 'conflict-review') {
