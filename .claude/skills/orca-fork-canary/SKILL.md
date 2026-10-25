@@ -54,7 +54,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
      | xargs env LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 pnpm exec vitest run --config config/vitest.config.ts
    ```
 
-   locale 檔兩邊只新增 key 時由 `fork-merge-driver-install.sh` 登記的 driver 合好，不會出現在衝突清單；出現就代表兩邊改了同一個字串。有 locale 衝突時再跑 `pnpm run verify:localization-catalogs` 與 `node config/scripts/fork-locale-parity.mjs HEAD`。parity 的基底要用 `HEAD`（`K` 的 HEAD 是上游 main），不要用 `FORK_BASE` 或 `make fork-check-lint`：舊 tag 當基底時，上游 main 新加、只放進 en.json 的 key 也會被算成 fork key，報出其他 locale「缺 key」的誤報。
+   locale 檔兩邊只新增 key 時由 `fork-merge-driver-install.mjs` 登記的 driver 合好，不會出現在衝突清單；出現就代表兩邊改了同一個字串。有 locale 衝突時再跑 `pnpm run verify:localization-catalogs` 與 `node config/scripts/fork-locale-parity.mjs HEAD`。parity 的基底要用 `HEAD`（`K` 的 HEAD 是上游 main），不要用 `FORK_BASE` 或 `make fork-check-lint`：舊 tag 當基底時，上游 main 新加、只放進 en.json 的 key 也會被算成 fork key，報出其他 locale「缺 key」的誤報。
    `$R/logs/vitest.json` 不存在（報告寫 install 或 test listing 失敗，測試根本沒跑）→ 只跑 `pnpm tc`，測試那部分在通知裡寫「未驗證」。
 
 3. 套上解法就消失的 typecheck 錯誤和失敗測試，歸到那個衝突的條目。剩下的才是獨立問題，各自是一個根因。

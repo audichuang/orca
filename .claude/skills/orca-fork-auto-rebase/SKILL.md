@@ -49,7 +49,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
    ```
    這個 commit 的時間是現在，precheck 拿它判斷鎖是否過期。之後每次推 `rebase/vNEW` 都是 `--force`。
 2. `git checkout --detach OLD_DEVELOP`，讀筆記：`tip=$(config/scripts/fork-notes.sh tip) && mkdir -p "$MAIN/.rebase-review" && git show "$tip":known-resolutions.md > "$MAIN/.rebase-review/known-resolutions.md"`（`fork-notes.sh` 是 fork 自己的檔案，rebase 中途可能不在工作樹，所以先讀）。每日 canary 對上游 main 試合時看過的衝突與「該丟掉的 fork commit」記在這裡。條目適用於這次的條件是 `git merge-base --is-ancestor <條目的上游 commit> vNEW`。`fork-notes.sh` 回非 0 → 沒有筆記也能做，照常 rebase，在通知裡註明。
-3. Rebase：先 `bash config/scripts/fork-merge-driver-install.sh`（讓 locale JSON 由 driver 合併；driver 複製進 git 目錄，rebase 中途工作樹沒有它也能用），再 `git rebase --onto vNEW vOLD`（FORK.md 說明為何要 --onto）。條目要丟掉某個 fork commit 時，改用：
+3. Rebase：先 `node config/scripts/fork-merge-driver-install.mjs`（讓 locale JSON 由 driver 合併；driver 複製進 git 目錄，rebase 中途工作樹沒有它也能用），再 `git rebase --onto vNEW vOLD`（FORK.md 說明為何要 --onto）。條目要丟掉某個 fork commit 時，改用：
    ```sh
    d=$(git rev-parse --short <要丟的 fork commit>)
    GIT_SEQUENCE_EDITOR="sed -i '' -e '/^pick ${d} /s/^pick/drop/'" git rebase -i --onto vNEW vOLD
