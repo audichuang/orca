@@ -49,16 +49,22 @@ jobs:
               exit 1
             }
             # Why: Fork CI gates develop, not main; a main moved to a commit develop never had shipped untested.
-            # A rebase rewrites develop, so a rerun of an already published tag may no longer find it there.
+            # A rebase rewrites develop, so a commit an earlier published release shipped also passes: a rerun, or
+            # a rollback re-tagging the last good release. Drafts are not published (releases/tags omits them).
             status=$(gh api "repos/$GITHUB_REPOSITORY/compare/develop...$GITHUB_SHA" --jq .status)
             case "$status" in
               identical|behind) ;;
               *)
-                gh release view "$TAG" > /dev/null 2>&1 || {
-                  echo "::error::$TAG ($GITHUB_SHA) is not on fork develop (compare: $status)."
+                shipped=""
+                for t in $(git ls-remote --tags origin 'refs/tags/v*-fork.*' |
+                  awk -v sha="$GITHUB_SHA" '$1 == sha { sub("refs/tags/", "", $2); sub(/\^\{\}$/, "", $2); print $2 }' | sort -u); do
+                  if gh api "repos/$GITHUB_REPOSITORY/releases/tags/$t" > /dev/null 2>&1; then shipped=$t; break; fi
+                done
+                [ -n "$shipped" ] || {
+                  echo "::error::$TAG ($GITHUB_SHA) is not on fork develop (compare: $status) and no published fork release shipped it."
                   exit 1
                 }
-                echo "::notice::$TAG is no longer on develop; re-running its published release."
+                echo "::notice::$GITHUB_SHA is not on develop; published release $shipped already shipped it."
                 ;;
             esac
           fi
