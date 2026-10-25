@@ -10,7 +10,6 @@ import { useSourceControlGitHistory } from '../sync/use-git-history'
 import type { SourceControlStatusRefresh } from '../sync/use-status-refresh'
 import { useSourceControlFileProjection } from './use-file-projection'
 import { useSourceControlRowOpening } from './use-row-opening'
-import { useClipcodeFullSourceCopy } from '../clipcode/use-clipcode-full-source-copy'
 import type { SourceControlWorktreeContext } from './use-worktree-context'
 
 export function useSourceControlFileListing({
@@ -160,13 +159,6 @@ export function useSourceControlFileListing({
     clearSelection,
     refreshActiveGitStatusAfterMutation
   })
-  const { copyRowFullSource, copySelectionFullSource, copySectionFullSource } =
-    useClipcodeFullSourceCopy({
-      worktreeId: activeWorktreeId,
-      worktreePath,
-      selectedKeys,
-      flatEntriesByKey
-    })
   const unresolvedConflicts = useMemo(
     () => entries.filter((entry) => entry.conflictStatus === 'unresolved' && entry.conflictKind),
     [entries]
@@ -194,9 +186,6 @@ export function useSourceControlFileListing({
     bulkStagePaths,
     bulkUnstagePaths,
     clearSelection,
-    copyRowFullSource,
-    copySectionFullSource,
-    copySelectionFullSource,
     displaySections,
     expandedSubmoduleKeys,
     fileFilterState,
