@@ -5,7 +5,7 @@ import type { GitDiffResult } from '../../../../shared/git/diff/git-diff-compare
 import type { GitStatusEntry } from '../../../../shared/git/status/git-status-types'
 import { CheckRunDetailsPanel } from './check-details/panel/CheckRunDetailsPanel'
 import { CombinedDiffViewer, MarkdownPreview } from './editor-lazy-views'
-import { forkEditorTabView } from '../git-graph-tab/fork-editor-tab-kinds'
+import { forkEditorTabView } from '../git-graph-tab/git-graph-editor-surfaces'
 import { EditorConflictReviewSurface } from './EditorConflictReviewSurface'
 import { EditorDiffFileSurface } from './EditorDiffFileSurface'
 import { EditorEditFileSurface } from './EditorEditFileSurface'
