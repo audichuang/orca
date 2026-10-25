@@ -1,7 +1,7 @@
 import { defineMethod } from '../core'
 import { remoteRpcContentBudget } from '../../../../shared/remote-rpc-content-budget'
 import { GitBranchDiff, GitCommitDiff, GitDiff } from '../../../../shared/rpc-contract/git-params'
-import { gitDiffReadArgs } from '../../../git/source-control/diff-render-limit-options'
+import { gitDiffReadArgs } from '../../../git/source-control/git-diff-read-options'
 
 // Why: clientKind is set only for WebSocket-transported requests, so desktop-local and in-process
 // callers keep uncapped full-fidelity diffs.

@@ -145,7 +145,7 @@ export function useGitHistoryCommitActions({
       item: GitHistoryItem,
       entry: GitBranchChangeEntry,
       event?: SourceControlRowOpenEvent,
-      sequence?: readonly CommitFileTarget[]
+      shown?: { sequence: readonly CommitFileTarget[] }
     ): void => {
       if (!activeWorktreeId || !worktreePath) {
         return
@@ -156,7 +156,7 @@ export function useGitHistoryCommitActions({
       openCommitFileInSequence({
         item,
         entry,
-        sequence,
+        sequence: shown?.sequence,
         tabOwnerId,
         gitWorktreeId: gitOwnerId,
         worktreePath,
