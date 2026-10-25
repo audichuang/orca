@@ -173,7 +173,7 @@ export type EditorFilesSlice = {
     alternate?: CombinedDiffAlternate,
     areaFilter?: string,
     entriesSnapshot?: GitStatusEntry[],
-    forkOptions?: GitOwnerOpenOptions
+    gitOwner?: GitOwnerOpenOptions
   ) => void
   openConflictFile: (
     worktreeId: string,
@@ -188,14 +188,14 @@ export type EditorFilesSlice = {
     worktreePath: string,
     entry: GitStatusEntry,
     language: string,
-    forkOptions?: GitOwnerOpenOptions
+    gitOwner?: GitOwnerOpenOptions
   ) => void
   openConflictReview: (
     worktreeId: string,
     worktreePath: string,
     entries: ConflictReviewEntry[],
     source: ConflictReviewState['source'],
-    forkOptions?: GitOwnerOpenOptions
+    gitOwner?: GitOwnerOpenOptions
   ) => void
   openCheckRunDetails: (
     worktreeId: string,
@@ -228,7 +228,7 @@ export type EditorFilesSlice = {
     worktreePath: string,
     compare: GitBranchCompareSummary,
     alternate?: CombinedDiffAlternate,
-    forkOptions?: GitOwnerOpenOptions
+    gitOwner?: GitOwnerOpenOptions
   ) => void
   openCommitAllDiffs: (
     worktreeId: string,
@@ -237,6 +237,6 @@ export type EditorFilesSlice = {
     entries: GitBranchChangeEntry[],
     subject?: string,
     message?: string,
-    forkOptions?: GitOwnerOpenOptions
+    gitOwner?: GitOwnerOpenOptions
   ) => void
 }
