@@ -112,10 +112,12 @@ jobs:
           rm -f "$RUNNER_TEMP/signing.p12"
           security find-identity -v -p codesigning "$keychain"
           # Why: notarization rejects an expired cert, and its replacement needs Apple's portal plus new secrets.
-          security find-certificate -c "Developer ID Application:" -p "$keychain" > "$RUNNER_TEMP/signing.pem"
-          openssl x509 -in "$RUNNER_TEMP/signing.pem" -noout -checkend $((60 * 86400)) > /dev/null ||
-            echo "::warning::The Developer ID cert expires within 60 days ($(openssl x509 -in "$RUNNER_TEMP/signing.pem" -noout -enddate)); renew it and update APPLE_CERTIFICATE."
-          rm -f "$RUNNER_TEMP/signing.pem"
+          pem="$RUNNER_TEMP/signing.pem"
+          if security find-certificate -c "Developer ID Application:" -p "$keychain" > "$pem" 2> /dev/null; then
+            openssl x509 -in "$pem" -noout -checkend $((60 * 86400)) > /dev/null ||
+              echo "::warning::The Developer ID cert expires within 60 days ($(openssl x509 -in "$pem" -noout -enddate)); renew it and update APPLE_CERTIFICATE."
+          fi
+          rm -f "$pem"
 
       # Why a file: electron-builder's notarize reads APPLE_API_KEY as a path to the .p8.
       - name: Stage the notarization API key
