@@ -2,6 +2,7 @@ import type { GitDiffResult } from '../../../../shared/git/diff/git-diff-compare
 import type { GitRuntimeOptions } from '../../command-runner/git-runtime-options'
 import { buildDiffResult } from '../diffs/diff-result'
 import { type BlobConversion, blobConversion, readGitBlobAtOidPath } from '../diffs/git-blob-read'
+import type { GitDiffReadOptions } from '../git-diff-read-options'
 import { resolveSubmoduleWorktreePath } from './submodule-paths'
 import {
   readGitlinkOidFromIndex,
@@ -48,7 +49,7 @@ export async function buildSubmoduleInnerCommitRangeDiff(
   innerPath: string,
   fromOid: string,
   toOid: string,
-  options: GitRuntimeOptions,
+  options: GitRuntimeOptions & GitDiffReadOptions,
   mode: BlobConversion['mode']
 ): Promise<GitDiffResult> {
   const conversion = blobConversion(submoduleWorktreePath, innerPath, options, mode)
@@ -84,6 +85,7 @@ export async function buildSubmoduleInnerCommitRangeDiff(
     originalIsBinary,
     modifiedIsBinary,
     innerPath,
-    tooLarge
+    tooLarge,
+    options
   )
 }
