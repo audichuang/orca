@@ -7,10 +7,9 @@ import { useAppStore } from '@/store'
 import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import { SourceControlEntryContextMenu } from '../listing/entry-context-menu'
-import {
-  SOURCE_CONTROL_OPEN_TO_SIDE_EVENT,
-  type SourceControlRowOpenEvent
-} from '../listing/split-open'
+import { OpenToSideMenuItem, ShowFileHistoryMenuItem } from '../listing/entry-context-menu-slots'
+import type { SourceControlRowOpenEvent } from '../listing/split-open'
+import { ClipcodeCopyFullSourceMenuItem } from '../clipcode/clipcode-menu-items'
 import type { SourceControlPanelModel } from '../panel/use-panel-model'
 import { copyHistoryCommitsFullSource } from './git-history-commit-copy'
 import { showGitGraphPathHistory } from './git-history-graph-path-query'
@@ -99,7 +98,7 @@ export function GitHistoryCommitFilesMenu({
     setEntry(target ?? null)
   }
   // Why: the right-clicked row acts on the whole selection when it is part of it.
-  const copyTargets = (target: GitBranchChangeEntry): GitBranchChangeEntry[] =>
+  const targetsFor = (target: GitBranchChangeEntry): GitBranchChangeEntry[] =>
     selection.selected.has(target.path)
       ? entries.filter((e) => selection.selected.has(e.path))
       : [target]
@@ -118,6 +117,7 @@ export function GitHistoryCommitFilesMenu({
   }
   const dirEntries = dirPath === null ? [] : entries.filter((e) => e.path.startsWith(`${dirPath}/`))
   const targetPath = entry?.path ?? dirPath ?? undefined
+  const copyTargets = entry ? targetsFor(entry) : dirEntries.length > 0 ? dirEntries : null
   return (
     <SourceControlEntryContextMenu
       currentWorktreeId={worktreeId}
@@ -128,24 +128,30 @@ export function GitHistoryCommitFilesMenu({
       }
       connectionId={model.activeConnectionId}
       onView={entry ? () => onOpenFile(entry, PLAIN_OPEN_EVENT) : undefined}
-      onOpenToSide={entry ? () => onOpenFile(entry, SOURCE_CONTROL_OPEN_TO_SIDE_EVENT) : undefined}
-      onCopyFullSource={
-        entry
-          ? () => copyFullSource(copyTargets(entry))
-          : dirEntries.length > 0
-            ? () => copyFullSource(dirEntries)
-            : undefined
+      viewItems={
+        <>
+          <OpenToSideMenuItem onOpen={entry ? (event) => onOpenFile(entry, event) : undefined} />
+          {targetPath !== undefined && (
+            <ShowFileHistoryMenuItem
+              onSelect={() =>
+                showGitGraphPathHistory({
+                  workspaceId: model.editorWorktreeId ?? worktreeId,
+                  repoWorktreeId: worktreeId,
+                  path: targetPath,
+                  openGitGraphTab: useAppStore.getState().openGitGraphTab
+                })
+              }
+            />
+          )}
+        </>
       }
-      onShowFileHistory={
-        targetPath === undefined
-          ? undefined
-          : () =>
-              showGitGraphPathHistory({
-                workspaceId: model.editorWorktreeId ?? worktreeId,
-                repoWorktreeId: worktreeId,
-                path: targetPath,
-                openGitGraphTab: useAppStore.getState().openGitGraphTab
-              })
+      copyItems={
+        copyTargets && (
+          <ClipcodeCopyFullSourceMenuItem
+            iconClassName="size-3.5"
+            onSelect={() => copyFullSource(copyTargets)}
+          />
+        )
       }
       // Why: in a folder workspace the explorer belongs to the folder, not this child repo.
       onRevealInExplorer={(_repoId, path) =>

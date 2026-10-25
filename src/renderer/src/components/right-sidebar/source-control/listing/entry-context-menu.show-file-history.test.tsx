@@ -3,6 +3,7 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SourceControlEntryContextMenu } from './entry-context-menu'
+import { ShowFileHistoryMenuItem } from './entry-context-menu-slots'
 
 type ItemProps = { onSelect?: () => void; disabled?: boolean; children?: React.ReactNode }
 
@@ -61,7 +62,7 @@ function renderMenu(onShowFileHistory?: () => void): void {
       absolutePath="/repo/src/example.ts"
       relativePath="src/example.ts"
       hasWorkingTreeFile
-      onShowFileHistory={onShowFileHistory}
+      viewItems={onShowFileHistory && <ShowFileHistoryMenuItem onSelect={onShowFileHistory} />}
       onRevealInExplorer={vi.fn()}
     >
       <div />
