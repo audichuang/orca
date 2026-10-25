@@ -1,3 +1,15 @@
 # 已知的上游衝突與處理方式
 
-每日 canary（`make fork-canary`）對上游 main 試合時看過的衝突。第 1 步照這裡處理；vNEW 已含的條目處理完就刪掉。每條寫：上游 commit、fork commit、怎麼處理、守它的測試。
+每日 canary（`make fork-canary`）對上游 main 試合時看過的衝突，一個根因一條。auto-rebase 用 `git merge-base --is-ancestor <上游 commit> vNEW` 判斷條目適用，照它處理；develop 移動後刪掉用過的條目。只經 `config/scripts/fork-notes.sh` 寫。
+
+範本（複製後填寫，不要留這段以外的範例）：
+
+```
+## <上游 commit 完整 sha>（#PR 號、標題）× fork <短 sha>（標題）— canary <YYYY-MM-DD>
+- 類型：上游修了同一件事｜兩邊各改各的｜上游改了 fork 依賴的 API｜待人判斷
+- 衝突檔：<路徑>…
+- 連帶症狀：typecheck 錯誤 <檔>…；失敗測試 <檔>…
+- 處理：<丟掉 fork commit X 並刪哪些測試｜採上游結構後把 fork 的哪幾行加回｜fork 這邊怎麼跟上>
+- 守它的測試：<config/fork-seam-tests.txt 的組名或測試檔>
+- 驗證（<YYYY-MM-DD>，上游 <sha>）：<跑了什麼、結果>｜未驗證
+```
