@@ -149,16 +149,20 @@ clean:
 # First-time full path: deps + native helper + dmg + open.
 all: setup dmg
 
-# Fork release dmg (arm64, self-signed, auto-update off). Usage: make fork-dmg FORK_VERSION=1.4.227-fork.1
-# The identity's p12 is in 1Password (Agent vault, "Orca Fork Code Signing"); FORK_SIGN_IDENTITY=- builds ad-hoc.
+# Fork release dmg (arm64, auto-update off). Usage: make fork-dmg FORK_VERSION=1.4.227-fork.1
+# Local default is the self-signed identity (1Password Agent vault, "Orca Fork Code Signing"); FORK_SIGN_IDENTITY=- builds ad-hoc.
+# A "Developer ID Application:" identity (fork-release.yml) turns on hardened runtime + notarization,
+# which needs APPLE_API_KEY / APPLE_API_KEY_ID / APPLE_API_ISSUER.
 FORK_SIGN_IDENTITY ?= Orca Fork Code Signing
+FORK_TEAM_ID ?= 37HFR5V2JJ
+FORK_RELEASE_ENV = $(if $(findstring Developer ID Application:,$(FORK_SIGN_IDENTITY)),ORCA_MAC_RELEASE=1 ORCA_MAC_TEAM_ID=$(FORK_TEAM_ID))
 fork-dmg: computer-use
 	@test -n "$(FORK_VERSION)" || (echo "FORK_VERSION is required, e.g. 1.4.227-fork.1" && exit 1)
 	@test "$(FORK_SIGN_IDENTITY)" = "-" || security find-identity -v -p codesigning | grep -q "\"$(FORK_SIGN_IDENTITY)\"" || \
 		(echo "Signing identity '$(FORK_SIGN_IDENTITY)' not in keychain; import it from 1Password or pass FORK_SIGN_IDENTITY=-" && exit 1)
 	eval "$$(node -p "require('./package.json').scripts['build:desktop'].replace('pnpm run typecheck && ', '')")"
 	pnpm run ensure:electron-runtime
-	ORCA_FORK_VERSION=$(FORK_VERSION) ORCA_FORK_SIGN_IDENTITY="$(FORK_SIGN_IDENTITY)" \
+	ORCA_FORK_VERSION=$(FORK_VERSION) ORCA_FORK_SIGN_IDENTITY="$(FORK_SIGN_IDENTITY)" $(FORK_RELEASE_ENV) \
 		$(if $(filter -,$(FORK_SIGN_IDENTITY)),,CSC_NAME="$(FORK_SIGN_IDENTITY)") pnpm exec electron-builder --config config/electron-builder.fork.config.cjs --mac --arm64
 	node config/scripts/fork-verify-packaged-files.cjs dist/mac-arm64/Orca.app/Contents/Resources/app.asar
 
