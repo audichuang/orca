@@ -31,7 +31,7 @@ import type { GitProviderStatusOptions } from './git-provider-status-options'
 import type { BranchSwitchCreation } from '../../shared/git/branch-switch-target'
 import type { RuntimeGitLocalBranches } from '../../shared/runtime-worktree-contracts'
 import type { GitAdmissionTier } from '../git/command-runner/git-exec-options'
-import type { GitDiffReadOptions } from '../git/source-control/diff-render-limit-options'
+import type { GitDiffReadOptions } from '../git/source-control/git-diff-read-options'
 
 export type { GitProviderStatusOptions } from './git-provider-status-options'
 

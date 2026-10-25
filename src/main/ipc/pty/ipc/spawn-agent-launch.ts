@@ -27,7 +27,7 @@ function closedInSession(store: Store | undefined, paneKey: string): boolean {
 function withPlannedLaunch(
   args: PtySpawnIpcArgs,
   planned: Awaited<ReturnType<OrcaRuntimeService['planAgentPaneLaunch']>>,
-  launchCwd: string | undefined
+  { launchCwd }: { launchCwd?: string } = {}
 ): PtySpawnIpcArgs {
   const {
     agentLaunch: _launch,
@@ -150,5 +150,5 @@ export async function planPaneAgentLaunch(ctx: PtyIpcSpawnState): Promise<void> 
     intent.sessionOptions
   )
   ctx.paneAgentLaunch.launchRuntime = planned.launchRuntime
-  ctx.args = withPlannedLaunch(args, planned, intent.cwd)
+  ctx.args = withPlannedLaunch(args, planned, { launchCwd: intent.cwd })
 }
