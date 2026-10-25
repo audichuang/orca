@@ -1,17 +1,17 @@
 ---
 name: orca-fork-canary
-description: Unattended daily early warning for the Orca fork. Merges fork develop into upstream main with `make fork-canary`, diagnoses each new conflict or failing fork test, records how to resolve it in the auto-rebase skill's known-resolutions.md, and sends a Bark notice only when something changed. Use when the "Orca fork canary" Orca automation fires, or when the user asks to run it.
+description: Daily unattended trial merge of the Orca fork's develop into upstream main (`make fork-canary`) that diagnoses new conflicts and failing fork tests, records their resolutions on the fork-canary-notes branch for the auto-rebase, and sends a Bark notice only when something changed. Use when the "Orca fork canary" Orca automation fires or the user asks to run the canary.
 ---
 
 # Orca fork canary
 
-無人值守：沒有人會回答問題，不要停下來問。repo 是 audichuang/orca（remote `fork`），上游 stablyai/orca（remote `origin`）。這個技能**只寫報告與筆記**：唯一會 push 的是筆記分支 `fork-canary-notes`，而且只透過 `config/scripts/fork-notes.sh`；不推其他分支、不開 PR，也不改 Orca 開的這個 run worktree 裡的檔案。canary 自己建的暫時 worktree 可以改，第 3 步就在那裡驗證，用完就刪。
+無人值守：沒有人會回答問題，不要停下來問。repo 是 audichuang/orca（remote `fork`），上游 stablyai/orca（remote `origin`）。這個技能只產出報告與筆記，能動什麼見文末「限制」。
 
 目的：上游幾乎每天發一版。canary 先對上游 `main` 試合，讓下一次 `orca-fork-auto-rebase` 開跑時，衝突與該丟的 fork commit 已經查清楚、寫在筆記分支 `fork-canary-notes` 的 `known-resolutions.md`（跟 develop 沒有共同歷史，不跑 CI、不會被 rebase 改寫）。
 
 ## 1. 跑 canary
 
-先清掉之前 run 留下的 worktree：`git worktree list` 裡路徑含 `auto-orca-fork-canary-run-` 而且不是目前這個的，逐一 `orca worktree rm --worktree "id:622b02e4-f394-4c0d-a683-b027f426796b::<路徑>" --force --json`（只刪這種）。
+先清掉之前 run 留下的 worktree：`git worktree list` 裡路徑含 `auto-orca-fork-canary-run-` 而且不是目前這個的，逐一 `orca worktree rm --worktree "id:622b02e4-f394-4c0d-a683-b027f426796b::<路徑>" --force --json`（只刪這種）。canary 從不改 run worktree，所以 `git -C <路徑> status --porcelain --untracked-files=no` 有輸出的，是有人接手在用：不刪，列進通知。
 
 在 Orca 為這次 run 開的 worktree 裡做（不要動 `~/Project/orca` 主 checkout）：
 
@@ -58,24 +58,24 @@ CANARY_KEEP=1 make fork-canary
 - 寫進 `known-resolutions.md` 的本機副本，格式照檔案開頭說明與現有條目：**一個根因一條**，標題寫上游 commit、fork commit、canary 日期；內容列出衝突檔，以及連帶出現的 typecheck 錯誤檔和失敗測試。這樣 auto-rebase 看到同樣的症狀，就知道是同一件事。
 - 已經有條目的根因：這次也驗證過的話，在條目上更新「驗證（日期，上游 sha）」那行，不要另開一條。上游還沒發版的條目留著；auto-rebase 處理完會自己刪。
 
-## 4. 存摘要、通知、收尾
+## 4. 通知、存摘要、收尾
 
-- 摘要寫進 `canary-last.json` 的本機副本：
+- **先決定要不要推 Bark**，拿這次的結果跟 `<scratch>/canary-last.json`（上一次的摘要，還沒覆寫）比：有出現新的檔案、有項目消失、setup error，或是沒有上一次的摘要，就推；跟上一次一樣就不推。推的方式照 `.claude/skills/orca-fork-auto-rebase/SKILL.md` 第 8 步（同一個 Bash 指令裡組內容並送出，group `orca`）。
+  - title：「Orca fork canary：<N 個新問題｜setup error｜全綠>」，N 是**新的根因條數**，不是檔案數。「新」指上一次的摘要裡沒有它的檔案，known-resolutions 也沒有它的條目。條目被 auto-rebase 清掉才重寫的根因，使用者之前已經收過通知，算在「已知」那段（註明重寫幾條）。沒有新根因但有變化（例如有項目消失），就寫「沒有新問題」。
+  - body：上游 main sha 與距 develop 基底幾個 commit；然後分三段：新的根因（每項一句建議，加上驗證結果）、已知的根因（條目名稱）、消失的項目；報告「Leftover canary worktrees」與第 1 步沒刪的 run worktree；最後是報告路徑。
+- 再把這次的摘要寫進 `<scratch>/canary-last.json`（五個清單照報告原樣列還沒歸因的檔案路徑，下一次就拿它來比對）：
 
   ```json
   {"upstream": "<sha>", "date": "<YYYY-MM-DD>", "report": "<報告路徑>",
    "conflicts": [...], "tcErrorFiles": [...], "failingTests": [...], "droppedTests": [...]}
   ```
 
-  五個清單照報告原樣列檔案路徑（還沒歸因的），下一次就拿它來比對。
-- 兩份一起寫回：`config/scripts/fork-notes.sh write "$tip" "canary <日期> <上游 sha>" known-resolutions.md=<scratch>/known-resolutions.md canary-last.json=<scratch>/canary-last.json`。exit 2 表示這段時間 auto-rebase 改過筆記：重新 `tip`、`git show` 出新版，把這次的改動重新套上（不要蓋掉對方刪掉或新增的條目），再寫一次。
-- **要不要推 Bark，才跟上一次的摘要比**：有出現新的檔案、有項目消失、setup error，或是沒有上一次的摘要，就推；跟上一次一樣就不推。推的方式照 `orca-fork-auto-rebase` 第 8 步（同一個 Bash 指令裡組內容並送出，group `orca`）。
-  - title：「Orca fork canary：<N 個新問題｜setup error｜全綠>」，N 是**新的根因條數**，不是檔案數。「新」指上一次的摘要裡沒有它的檔案，known-resolutions 也沒有它的條目。條目被 auto-rebase 清掉才重寫的根因，使用者之前已經收過通知，算在「已知」那段（註明重寫幾條）。沒有新根因但有變化（例如有項目消失），就寫「沒有新問題」。
-  - body：上游 main sha 與距 develop 基底幾個 commit；然後分三段：新的根因（每項一句建議，加上驗證結果）、已知的根因（條目名稱）、消失的項目；最後是報告路徑。
-- 只刪第 1 步留下的那一個 worktree：`git worktree remove --force <kept canary worktree 那行的路徑>`。其他 `orca-fork-canary.` 開頭的 worktree 不刪：可能是另一個 canary 正在跑，或使用者用 `CANARY_KEEP=1` 留著手動解衝突（腳本與 FORK.md 都規定只列不刪）。報告的「Leftover canary worktrees」有列的，照抄進通知。
+- 兩份一起寫回：`config/scripts/fork-notes.sh write "$tip" "canary <日期> <上游 sha>" known-resolutions.md=<scratch>/known-resolutions.md canary-last.json=<scratch>/canary-last.json`。exit 2 表示這段時間 auto-rebase 改過筆記：重新 `tip`、`git show` 出新版，把這次的改動重新套上（不要蓋掉對方刪掉或新增的條目），再寫一次；第二次還是 exit 2 就停，寫進通知。
+- 只刪第 1 步留下的那一個 worktree：`git worktree remove --force <kept canary worktree 那行的路徑>`。其他 `orca-fork-canary.` 開頭的不刪：可能是另一個 canary 正在跑，或使用者用 `CANARY_KEEP=1` 留著手動解衝突（腳本與 FORK.md 都規定只列不刪）。
 - 最後在對話裡印出和 Bark 一樣的摘要，再加上沒推 Bark 的原因（如果沒推）。使用者事後打開這個 session，看到的應該是結果，而不是一句沒頭沒尾的話。
 
 ## 限制
 
-- 只 push `fork-canary-notes`（經 `fork-notes.sh`，不 force）；不 commit、不改 run worktree 的檔案；會寫的只有筆記分支、`out/fork-canary/`，以及 canary 自己的暫時 worktree（收尾時刪掉）。
+- 唯一會 push 的是 `fork-canary-notes`，只經 `config/scripts/fork-notes.sh`（不 force）；不推其他分支、不開 PR。
+- 不改 Orca 開的 run worktree 裡的檔案。會寫的只有筆記分支、`out/fork-canary/`，以及 canary 自己的暫時 worktree（第 3 步在那裡驗證，收尾時刪掉）。
 - 不開看得見的 Orca 視窗、不搶焦點（`ORCA_BACKGROUND_LAUNCH=1`）。
