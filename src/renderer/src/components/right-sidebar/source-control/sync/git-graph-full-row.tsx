@@ -3,7 +3,7 @@ import React from 'react'
 import { Cloud, GitBranch, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { initialsFor } from '@/components/github/github-user-avatar'
+import { initialsFor } from './git-graph-author-initials'
 import {
   GIT_HISTORY_LANE_COLORS,
   type GitHistoryItemRef

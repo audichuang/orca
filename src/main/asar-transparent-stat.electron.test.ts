@@ -33,7 +33,7 @@ async function bundleHelper(outFile: string): Promise<void> {
       minify: false,
       ssr: true,
       rollupOptions: {
-        input: 'src/main/asar-transparent-fs.ts',
+        input: 'src/main/asar-transparent-stat.ts',
         // Mirror the shipped main bundle: CJS, `original-fs` not externalized.
         output: { format: 'cjs' },
         external: (id: string) => isBuiltin(id) || id === 'electron' || id.startsWith('electron/')
@@ -49,7 +49,7 @@ async function bundleHelper(outFile: string): Promise<void> {
   writeFileSync(outFile, code, 'utf8')
 }
 
-describe('asar-transparent-fs statSync under real Electron', () => {
+describe('asar-transparent-stat statSync under real Electron', () => {
   it.runIf(FIXTURE_ASAR)(
     'stats an asar as a stable physical file while plain fs sees a virtual directory',
     async () => {
@@ -58,7 +58,7 @@ describe('asar-transparent-fs statSync under real Electron', () => {
       if (typeof electronBinary !== 'string' || !FIXTURE_ASAR) {
         throw new Error('electron binary or fixture missing')
       }
-      const bundlePath = join(root, 'asar-transparent-fs.cjs')
+      const bundlePath = join(root, 'asar-transparent-stat.cjs')
       const resultPath = join(root, 'result.json')
       const driverPath = join(root, 'driver.cjs')
       await bundleHelper(bundlePath)

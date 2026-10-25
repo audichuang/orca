@@ -219,6 +219,7 @@ fork-check-lint: fork-base-guard
 	node config/scripts/fork-pr-gate-needs.mjs
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
 	node config/scripts/fork-test-inventory.mjs check $(FORK_BASE)
+	node config/scripts/fork-upstream-api.mjs
 	@# Why here too: a branch goes red in CI once upstream releases a daemon protocol bump.
 	pnpm run check:daemon-protocol-crossing
 

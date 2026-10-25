@@ -32,8 +32,6 @@ export type GitHistoryCommitFilesState =
   | { status: 'error'; error: string }
   | { status: 'ready'; entries: GitBranchChangeEntry[] }
 
-export type GitHistoryCommitFilesLayout = 'list' | 'tree'
-
 function CommitFileRow({
   entry,
   selected,
@@ -231,7 +229,7 @@ export function GitHistoryCommitFiles({
   className
 }: {
   state: GitHistoryCommitFilesState
-  layout?: GitHistoryCommitFilesLayout
+  layout?: 'list' | 'tree'
   author?: string
   timestamp?: number
   /** `shown.entries` is the list in display order, so a diff can step to its neighbours. */
