@@ -19,9 +19,18 @@ wt=
 wt_created=
 
 # Why temp then mv, and latest.txt over a symlink: mv -f onto a symlink to a directory moves into it on macOS.
+# Why exit 3 on a failed step: latest.txt must only ever name a run whose report.md exists.
 publish() {
-  mv "$tmp_report" "$report" && tmp_report=
-  printf '%s\n' "$(basename "$run_dir")" >"$out_root/latest.txt.$$" && mv -f "$out_root/latest.txt.$$" "$out_root/latest.txt"
+  if ! mv "$tmp_report" "$report"; then
+    echo "fork-canary: cannot write $report; latest.txt left unchanged" >&2
+    exit 3
+  fi
+  tmp_report=
+  if ! { printf '%s\n' "$(basename "$run_dir")" >"$out_root/latest.txt.$$" && mv -f "$out_root/latest.txt.$$" "$out_root/latest.txt"; }; then
+    rm -f "$out_root/latest.txt.$$"
+    echo "fork-canary: wrote $report but cannot update $out_root/latest.txt" >&2
+    exit 3
+  fi
 }
 
 # Why a report on every setup error: latest.txt must never keep pointing at an older green run.
@@ -48,8 +57,13 @@ trap cleanup EXIT
 root=$(git rev-parse --show-toplevel) || die "not in a git checkout"
 cd "$root" || die "cannot cd to $root"
 
+# Why absolute: the steps run inside the canary worktree, where a relative path means something else.
+absolute() {
+  case "$1" in /*) echo "$1" ;; *) echo "$root/$1" ;; esac
+}
+
 # Why a directory per run: concurrent runs never share a report or logs.
-out_root=${CANARY_OUT:-$root/out/fork-canary}
+out_root=$(absolute "${CANARY_OUT:-out/fork-canary}")
 run_dir="$out_root/$(date -u +%Y%m%dT%H%M%SZ)-$$"
 logs="$run_dir/logs"
 mkdir -p "$logs" || die "cannot create $logs"
@@ -70,7 +84,7 @@ upstream_count=$(git rev-list --count "${merge_base}..${upstream_sha}")
 
 # Why a fresh directory per run: concurrent canaries then never share a tree, so no lock is needed.
 if [ -n "${CANARY_DIR:-}" ]; then
-  wt=$CANARY_DIR
+  wt=$(absolute "$CANARY_DIR")
   [ ! -e "$wt" ] && [ ! -L "$wt" ] || die "CANARY_DIR $wt already exists; pass a path that does not"
   mkdir -p "$(dirname "$wt")" || die "cannot create the parent of $wt"
   wt="$(cd "$(dirname "$wt")" && pwd -P)/$(basename "$wt")"
@@ -271,7 +285,7 @@ list_commits() {
   fi
   echo
   echo "Logs: \`$logs\`"
-} >"$tmp_report"
+} >"$tmp_report" || { echo "fork-canary: cannot write $tmp_report; latest.txt left unchanged" >&2; exit 3; }
 publish
 
 echo ">> report: $report (exit $status)"
