@@ -4,7 +4,11 @@ import { joinPath } from '@/lib/path'
 import type { OpenFile } from '../types/open-file'
 import { withDiffContentReloadRequest } from '../file-ids/editor-file-ids'
 import { resolveDiffRuntimeEnvironmentId } from '../git/diff-runtime-owner'
-import { getScopedTabIdOwner, resolveOpenGitWorktreeId } from '../git/open-file-git-owner'
+import {
+  commitDiffTabId,
+  getScopedTabIdOwner,
+  resolveOpenGitWorktreeId
+} from '../git/open-file-git-owner'
 import { toBranchCompareSnapshot, toCommitCompareSnapshot } from '../git/git-status-reconciliation'
 import { resolveEditorOpenTargetGroupId } from '../tabs/editor-open-target-group'
 import { resolveEditorPreviewIntent } from '../tabs/editor-preview-tab-setting'
@@ -13,16 +17,6 @@ import {
   openWorkspaceEditorItem,
   removeEditorStateForReplacedPreview
 } from '../tabs/workspace-editor-item'
-
-/** Tab id of a commit diff; the cross-file diff navigation looks its file list up by it. */
-export function commitDiffTabId(
-  worktreeId: string,
-  gitWorktreeId: string | undefined,
-  compareVersion: string,
-  relativePath: string
-): string {
-  return `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::diff::commit::${compareVersion}::${relativePath}`
-}
 
 export function createOpenHistoryDiff(
   set: EditorSet,
