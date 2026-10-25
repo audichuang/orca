@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { ConfirmationDialogProvider } from '@/components/confirmation-dialog'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
@@ -69,13 +69,18 @@ describe('ClipCode Copy Full Source in the source control panel', () => {
   it('sits after Copy Relative Path in a changed row menu and copies that row', async () => {
     renderPanel()
     fireEvent.contextMenu(screen.getByText('a.ts'))
-    const labels = (await screen.findAllByRole('menuitem')).map((item) => item.textContent)
-    expect(labels.slice(0, 5)).toEqual([
+    const menu = await screen.findByRole('menu')
+    const layout = [...menu.querySelectorAll('[role="menuitem"], [role="separator"]')].map(
+      (node) => (node.getAttribute('role') === 'separator' ? '---' : node.textContent)
+    )
+    expect(layout.slice(0, 7)).toEqual([
       'View',
       expect.stringMatching(/^Open to the Side/),
+      '---',
       'Copy Path',
       'Copy Relative Path',
-      'Copy Full Source'
+      'Copy Full Source',
+      '---'
     ])
 
     fireEvent.click(screen.getByRole('menuitem', { name: 'Copy Full Source' }))
@@ -96,14 +101,16 @@ describe('ClipCode Copy Full Source in the source control panel', () => {
 
   it('copies the multi-selection from the bulk bar', async () => {
     renderPanel()
+    const headerCopies = screen.getAllByRole('button', { name: 'Copy Full Source' })
     fireEvent.click(screen.getByText('b.ts'), { metaKey: true, ctrlKey: true })
-    const clear = await screen.findByRole('button', { name: 'Clear selection' })
-    const bar = clear.parentElement
-    if (!bar) {
-      throw new Error('bulk bar not rendered')
-    }
+    await screen.findByRole('button', { name: 'Clear selection' })
+    // Why: the bar has no role of its own; its button is the Copy Full Source the selection added.
+    const barCopy = screen
+      .getAllByRole('button', { name: 'Copy Full Source' })
+      .filter((button) => !headerCopies.includes(button))
+    expect(barCopy).toHaveLength(1)
 
-    fireEvent.click(within(bar).getByRole('button', { name: 'Copy Full Source' }))
+    fireEvent.click(barCopy[0])
 
     const payload = await copiedPayload()
     expect(payload).toContain('content of b.ts')
