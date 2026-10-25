@@ -23,7 +23,6 @@ function shellArg(path) {
   return `'${portable.replaceAll("'", "'\\''").replaceAll('%', '%%')}'`
 }
 
-const root = git('rev-parse', '--show-toplevel')
 const common = realpathSync(resolve(git('rev-parse', '--git-common-dir')))
 const dest = join(common, 'fork-merge-driver')
 const driver = join(dest, 'fork-locale-json-merge.mjs')
@@ -31,7 +30,7 @@ mkdirSync(dest, { recursive: true })
 mkdirSync(join(common, 'info'), { recursive: true })
 // Why a rename: a merge in another worktree may run the driver mid-copy, and an empty script exits 0 unmerged.
 const staged = `${driver}.${process.pid}.tmp`
-copyFileSync(join(root, 'config/scripts/fork-locale-json-merge.mjs'), staged)
+copyFileSync(join(import.meta.dirname, 'fork-locale-json-merge.mjs'), staged)
 renameSync(staged, driver)
 
 git('config', 'merge.fork-locale-json.name', 'fork locale JSON deep merge')
