@@ -86,7 +86,8 @@ describe('RecentTabSwitcher with a Git Graph tab', () => {
 
     const options = [...document.body.querySelectorAll('[role="option"]')]
     const graphOption = options.find((option) => option.textContent?.includes('graph-tab'))
-    expect(graphOption?.querySelector('svg.lucide-git-graph')).not.toBeNull()
+    expect(graphOption).toBeDefined()
+    expect(graphOption!.querySelector('svg.lucide-git-graph')).not.toBeNull()
     act(() => root.unmount())
   })
 })
