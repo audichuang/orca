@@ -110,10 +110,12 @@ export function useSourceControlEntryMutations({
       const runtimeEnvironmentId =
         activeRepoTarget?.kind === 'environment' ? activeRepoTarget.environmentId : null
       // Hold pending autosaves so delayed writes cannot recreate edits after Git restores the file.
-      const targets = [
-        { worktreeId: activeWorktreeId, worktreePath, relativePath: filePath, runtimeEnvironmentId }
-      ]
-      const releaseAutoSave = await requestEditorSaveQuiesceForOwners(editorWorktreeId, targets)
+      const releaseAutoSave = await requestEditorSaveQuiesceForOwners(editorWorktreeId, {
+        worktreeId: activeWorktreeId,
+        worktreePath,
+        relativePath: filePath,
+        runtimeEnvironmentId
+      })
       // Release in finally so every workspace holds autosave until Git finishes.
       try {
         const connectionId = getConnectionId(activeWorktreeId) ?? undefined
@@ -127,7 +129,12 @@ export function useSourceControlEntryMutations({
           },
           filePath
         )
-        notifyEditorExternalFileChangeForOwners(editorWorktreeId, targets)
+        notifyEditorExternalFileChangeForOwners(editorWorktreeId, {
+          worktreeId: activeWorktreeId,
+          worktreePath,
+          relativePath: filePath,
+          runtimeEnvironmentId
+        })
       } finally {
         releaseAutoSave()
       }
