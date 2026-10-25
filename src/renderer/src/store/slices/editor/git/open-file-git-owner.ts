@@ -84,6 +84,16 @@ export function getScopedTabIdOwner(worktreeId: string, gitWorktreeId?: string):
     : worktreeId
 }
 
+/** Tab id of a commit diff; the cross-file diff navigation looks its file list up by it. */
+export function commitDiffTabId(
+  worktreeId: string,
+  gitWorktreeId: string | undefined,
+  compareVersion: string,
+  relativePath: string
+): string {
+  return `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::diff::commit::${compareVersion}::${relativePath}`
+}
+
 /** Fork options of an editor open: the repo whose git state backs a folder workspace's tab. */
 export type GitOwnerOpenOptions = Pick<EditorOpenTargetOptions, 'gitWorktreeId'>
 
