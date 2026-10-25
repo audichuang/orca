@@ -461,9 +461,16 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
     .filter({ hasText: 'export const b = 2' })
   await expect(splitDiffLine).toBeVisible({ timeout: 20_000 })
   await expect(graph).toBeVisible()
-  const graphBox = (await graph.boundingBox())!
-  const diffBox = (await splitDiffLine.boundingBox())!
-  expect(diffBox.x).toBeGreaterThanOrEqual(graphBox.x + graphBox.width - 1)
+  // Why poll: Monaco re-renders its view lines while the split settles, so a line seen visible can detach before it is measured.
+  await expect
+    .poll(async () => {
+      const [graphBox, diffBox] = await Promise.all([
+        graph.boundingBox(),
+        splitDiffLine.boundingBox()
+      ])
+      return graphBox && diffBox ? diffBox.x - (graphBox.x + graphBox.width) : null
+    })
+    .toBeGreaterThanOrEqual(-1)
   await expect(graphTab).toHaveCount(1)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '07-diff-beside-graph.png') })
 })
