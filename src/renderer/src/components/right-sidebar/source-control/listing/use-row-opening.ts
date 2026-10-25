@@ -10,7 +10,7 @@ import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
 import { buildActiveOpenFileSignature, buildActiveOpenRowKeys } from './active-open-file-keys'
 import { resolveActiveFileRepoRelativePath } from './active-open-file-repo-path'
 import type { FlatEntry } from './use-selection'
-import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
+import { useSourceControlOwners } from '../folder/worktree-scope'
 import {
   isSourceControlSplitOpenModifier,
   shouldOpenSourceControlRowAsPreview,
@@ -29,10 +29,9 @@ export function useSourceControlRowOpening({
   branchSummary: GitBranchCompareSummary | null
 }) {
   // Why: a folder workspace's repo section reads git from the repo but opens tabs in the folder's editor.
-  const scope = useSourceControlWorktreeScope()
-  const tabWorktreeId = scope?.editorWorktreeId ?? activeWorktreeId
-  // Why: tabs keep reading git from the repo even though the folder workspace owns them.
-  const gitWorktreeId = scope ? (activeWorktreeId ?? undefined) : undefined
+  const { tabOwnerId: tabWorktreeId, gitOwnerId: gitWorktreeId } = useSourceControlOwners(
+    activeWorktreeId ?? ''
+  )
   const activeGroupIdByWorktree = useAppStore((s) => s.activeGroupIdByWorktree)
   const groupsByWorktree = useAppStore((s) => s.groupsByWorktree)
   const createEmptySplitGroup = useAppStore((s) => s.createEmptySplitGroup)
