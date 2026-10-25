@@ -72,9 +72,10 @@ export async function runAgentAndBannerScenarios(ctx: ExtraScenarioContext): Pro
     const compare = page.getByRole('dialog').filter({ hasText: 'File changed on disk' })
     await expect(compare).toBeVisible()
     await expect(compare.locator('.original-in-monaco-diff-editor .view-lines')).toContainText(disk)
-    await expect(compare.locator('.modified-in-monaco-diff-editor .view-lines')).toContainText(
-      local
-    )
+    // Why :not(.line-delete): an inline diff (narrow window) renders deleted lines in a view zone that also has .view-lines.
+    await expect(
+      compare.locator('.modified-in-monaco-diff-editor .view-lines:not(.line-delete)')
+    ).toContainText(local)
     await shot('S21a-compare')
     await compare.getByRole('button', { name: 'Keep My Edits' }).click()
     await expect(compare).toHaveCount(0)
