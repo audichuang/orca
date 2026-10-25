@@ -2,6 +2,7 @@
 import { translate } from '@/i18n/i18n'
 import { SourceControlPanelReady } from './panel-ready'
 import { useSourceControlPanelModel } from './use-panel-model'
+import { ClipcodeSourceControlActionsProvider } from '../clipcode/clipcode-source-control-actions'
 
 /** Resolves the panel model and guards the two states that have no source control to show. */
 export function SourceControlSingleRepoPanel() {
@@ -30,12 +31,14 @@ export function SourceControlSingleRepoPanel() {
   }
 
   return (
-    <SourceControlPanelReady
-      activeRepo={activeRepo}
-      activeWorktree={activeWorktree}
-      currentWorktreeId={activeWorktree.id}
-      model={model}
-      worktreePath={worktreePath}
-    />
+    <ClipcodeSourceControlActionsProvider model={model}>
+      <SourceControlPanelReady
+        activeRepo={activeRepo}
+        activeWorktree={activeWorktree}
+        currentWorktreeId={activeWorktree.id}
+        model={model}
+        worktreePath={worktreePath}
+      />
+    </ClipcodeSourceControlActionsProvider>
   )
 }
