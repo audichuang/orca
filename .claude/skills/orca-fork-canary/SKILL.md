@@ -53,8 +53,10 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
    python3 -c "import json,sys;print('\n'.join(sorted({r['name'] for r in json.load(open(sys.argv[1]))['testResults']})))" "$R/logs/vitest.json" \
      | xargs env LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 pnpm exec vitest run --config config/vitest.config.ts
    ```
-   有 locale 衝突時再跑 `pnpm run verify:localization-catalogs` 與 `node config/scripts/fork-locale-parity.mjs HEAD`。parity 的基底要用 `HEAD`（`K` 的 HEAD 是上游 main），不要用 `FORK_BASE` 或 `make fork-check-lint`：舊 tag 當基底時，上游 main 新加、只放進 en.json 的 key 也會被算成 fork key，報出其他 locale「缺 key」的誤報。
+
+   locale 檔兩邊只新增 key 時由 `fork-merge-driver-install.sh` 登記的 driver 合好，不會出現在衝突清單；出現就代表兩邊改了同一個字串。有 locale 衝突時再跑 `pnpm run verify:localization-catalogs` 與 `node config/scripts/fork-locale-parity.mjs HEAD`。parity 的基底要用 `HEAD`（`K` 的 HEAD 是上游 main），不要用 `FORK_BASE` 或 `make fork-check-lint`：舊 tag 當基底時，上游 main 新加、只放進 en.json 的 key 也會被算成 fork key，報出其他 locale「缺 key」的誤報。
    `$R/logs/vitest.json` 不存在（報告寫 install 或 test listing 失敗，測試根本沒跑）→ 只跑 `pnpm tc`，測試那部分在通知裡寫「未驗證」。
+
 3. 套上解法就消失的 typecheck 錯誤和失敗測試，歸到那個衝突的條目。剩下的才是獨立問題，各自是一個根因。
 
 例：2026-10-25 那次有 7 個衝突檔、6 個 typecheck 錯誤檔、7 個失敗測試檔，歸因後是 5 個根因，只有 1 個是新的（上游 revert #32320，撞到 fork 在同一段的改動）。
@@ -86,6 +88,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
     ```
 
     `config/scripts/fork-notes.sh write "$tip" "canary <日期> <上游 sha>" known-resolutions.md="$S/known-resolutions.md" canary-last.json="$S/canary-last.json"`。
+
   - setup error：這次沒有結果可比，**不寫** `canary-last.json`（寫空清單會讓下一次把所有項目都當成新的）；`known-resolutions.md` 沒改就不寫。
   - exit 2 表示這段時間 auto-rebase 改過筆記：重新 `tip`、`git show` 出新版，把這次的改動重新套上（不要蓋掉對方刪掉或新增的條目），再寫一次。第二次還是 2，或任何其他非 0 → 不再試，在通知裡寫「筆記沒寫成」與原因。
 - 清 `$OUT` 裡超過 14 天的舊報告：`find "$OUT" -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +`。
