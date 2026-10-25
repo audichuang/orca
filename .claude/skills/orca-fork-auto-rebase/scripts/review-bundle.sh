@@ -50,11 +50,12 @@ done
 seam_re="${FORK_SEAM_RE:-gitWorktreeId|skipRenderLimit|missingSides|git-graph|TabContentType|contentType|isForkDistribution|GitHistoryPanel|renderCommitFilesMenu|EditorFileRecord|OpenFile\b|updater|clipcode|ClipCode}"
 fork_modified=$(git diff --name-only --diff-filter=M "$vnew" "$head" -- 'src/*' | grep -v '\.test\.' || true)
 fork_added=$(git diff --name-only --diff-filter=A "$vnew" "$head" -- 'src/*.ts' 'src/*.tsx' | grep -v '\.test\.' || true)
-imported_mods=$(for f in $fork_added; do git show "$head:$f" 2>/dev/null | grep -oE "from ['\"][^'\"]+['\"]" | sed -E "s#.*/([^/'\"]+)['\"]\$#\1#"; done | sort -u)
+# Why `|| true` per file: a fork file with no imports makes grep exit 1, which pipefail would turn into a fatal loop.
+imported_mods=$(for f in $fork_added; do git show "$head:$f" 2>/dev/null | grep -oE "from ['\"][^'\"]+['\"]" | sed -E "s#.*/([^/'\"]+)['\"]\$#\1#" || true; done | sort -u)
 seam_files=$(git diff --name-only "$vold" "$vnew" -- 'src/*.ts' 'src/*.tsx' | grep -v '\.test\.' | while read -r up; do
   mod=$(basename "${up%.*}")
   if echo "$fork_modified" | grep -qxF "$up" || { [ "$mod" != index ] && echo "$imported_mods" | grep -qxF "$mod"; } \
-     || git show "$vnew:$up" 2>/dev/null | grep -qE "$seam_re"; then echo "$up"; fi
+     || { git show "$vnew:$up" >"$out/.seam-probe" 2>/dev/null && grep -qE "$seam_re" "$out/.seam-probe"; }; then echo "$up"; fi
 done)
 if [ -n "$seam_files" ]; then
   # shellcheck disable=SC2086
