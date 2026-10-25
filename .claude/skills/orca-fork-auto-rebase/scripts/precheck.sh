@@ -19,7 +19,7 @@ if [ -n "$lock" ]; then
   [ -n "$pr" ] && when=$(printf '%s\n%s\n' "$when" "${pr#* }" | sort | tail -1)
   age=$(( $(date +%s) - $(date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$when" +%s) ))
   verified=0
-  [ -n "$pr" ] && verified=$(gh pr view "${pr%% *}" -R audichuang/orca --json comments --jq '[.comments[].body | select(startswith("<!-- auto-rebase:verified -->"))] | length')
+  [ -n "$pr" ] && verified=$(gh pr view "${pr%% *}" -R audichuang/orca --json comments --jq '[.comments[].body | select(startswith("<!-- auto-rebase:verified -->") or startswith("<!-- auto-rebase:needs-human -->"))] | length')
   if [ "$verified" = 0 ] && [ "$age" -gt 21600 ]; then
     echo "stale lock: $branch (${age}s since last activity)"
     exit 0
