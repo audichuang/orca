@@ -24,7 +24,7 @@ vi.mock('@/runtime/runtime-file-metadata-client', () => ({
 vi.mock('@/runtime/runtime-file-read-client', () => ({
   readRuntimeFileContent: (...args: unknown[]) => readRuntimeFileContent(...args)
 }))
-vi.mock('@/components/tab-bar/tab-create-entry-action', () => ({
+vi.mock('./clipcode-restore-parent-directories', () => ({
   createParentDirectoriesForNewFile: async () => undefined
 }))
 vi.mock('../../file-explorer-operation-owner', () => ({

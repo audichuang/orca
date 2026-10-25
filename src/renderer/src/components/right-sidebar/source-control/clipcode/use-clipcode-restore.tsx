@@ -1,15 +1,10 @@
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
-import { createParentDirectoriesForNewFile } from '@/components/tab-bar/tab-create-entry-action'
+import { createParentDirectoriesForNewFile } from './clipcode-restore-parent-directories'
 import { translate } from '@/i18n/i18n'
 import { readIpcErrorMessage } from '@/lib/ipc-error'
 import { joinPath } from '@/lib/path'
-import {
-  deleteRuntimePath,
-  createRuntimePath,
-  writeRuntimeFile
-} from '@/runtime/runtime-file-mutation-client'
-import { statRuntimePath } from '@/runtime/runtime-file-metadata-client'
+import { deleteRuntimePath, writeRuntimeFile } from '@/runtime/runtime-file-mutation-client'
 import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
 import { notifyEditorExternalFileChange } from '@/components/editor/editor-autosave'
 import {
@@ -159,7 +154,6 @@ export function useClipcodeRestore({
       let staleSkipped = 0
       try {
         current.assertCurrent()
-        const operations = { createRuntimePath, statRuntimePath }
         // Why: the same file can be open under the folder key or under the repo worktree owning it.
         // ponytail: overlapping folder workspaces are not quiesced; match openFiles by absolute path if that setup appears.
         const editorTargets = (relativePath: string) => {
@@ -209,7 +203,6 @@ export function useClipcodeRestore({
               }
               await createParentDirectoriesForNewFile({
                 context,
-                operations,
                 relativePath: write.relativePath,
                 worktreePath: root
               })
