@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Fork canary: merge the fork into upstream main in a throwaway worktree, then typecheck and run the fork's tests.
 # Report-only early warning before the next release tag; never a gate. Never pushes or touches the invoking checkout.
-# Shared side effects: the fetch updates remote refs and tags, and rerere writes preimages to the common git dir.
+# Shared side effects: the fetch updates remote refs and tags, rerere writes preimages to the common git dir, and
+# fork-merge-driver-install.sh registers the locale merge driver in the clone's git config.
 # Conflicted files are reset to upstream's side so typecheck and tests still run; the report marks them.
 # Exit: 0 green; 1 not green (conflicts and/or failures, the report's Result line says which); 3 setup error.
 # Env: FORK_BASE and UPSTREAM_REMOTE (both set by make fork-canary), CANARY_REF (fork side, default HEAD),
@@ -97,6 +98,7 @@ fi
 git worktree add --quiet --detach "$wt" "$upstream_sha" || die "cannot create worktree $wt"
 wt_created=1
 
+bash config/scripts/fork-merge-driver-install.sh >"$logs/merge-driver.log" 2>&1 || die "cannot install the locale merge driver; see $logs/merge-driver.log"
 echo ">> merging fork $(git rev-parse --short "$fork_sha") into upstream $(git rev-parse --short "$upstream_sha")"
 # Why rerere on: replaying recorded resolutions keeps old conflicts out of the report; nothing is committed, so no new resolution is recorded.
 git -C "$wt" -c rerere.enabled=true -c rerere.autoupdate=true -c user.name=fork-canary -c user.email=fork-canary@invalid \
