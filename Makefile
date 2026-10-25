@@ -281,7 +281,7 @@ sync:
 	echo ">> main is now $$(git rev-parse --short HEAD). next: make update"
 # Registers the locale JSON merge driver in this clone so rebases and merges keep both sides' added keys; rerun after it changes.
 fork-merge-driver:
-	bash config/scripts/fork-merge-driver-install.sh
+	node config/scripts/fork-merge-driver-install.mjs
 
 # Fork CI is the fork-*.yml workflows only (macOS arm64 is the only target); rerun after a rebase brings new upstream workflows.
 fork-ci-disable-upstream:
