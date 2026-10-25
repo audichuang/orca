@@ -25,7 +25,7 @@ function recordNotifiedTabs(event: Event): void {
   }
   const state = useAppStore.getState()
   const target: EditorPathMutationTarget = event.detail
-  for (const file of getOpenFilesForExternalFileChange(state.openFiles, target, state)) {
+  for (const file of getOpenFilesForExternalFileChange(state.openFiles, target)) {
     notifiedTabIds.add(file.id)
   }
 }
