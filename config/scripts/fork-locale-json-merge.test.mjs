@@ -13,7 +13,7 @@ describe('mergeLocaleJson', () => {
     const base = { a: { x: 'X' } }
     const ours = { a: { x: 'X', up: 'Up' } }
     const theirs = { a: { x: 'X', fork: 'Fork' } }
-    expect(JSON.stringify(mergeLocaleJson(base, ours, theirs))).toBe(
+    expect(JSON.stringify(mergeLocaleJson(base, ours, theirs).merged)).toBe(
       JSON.stringify({ a: { x: 'X', up: 'Up', fork: 'Fork' } })
     )
   })
@@ -22,16 +22,20 @@ describe('mergeLocaleJson', () => {
     const base = { kept: 'old', gone: 'G', moved: 'M' }
     const ours = { kept: 'new', gone: 'G', moved: 'M' }
     const theirs = { kept: 'old', moved: 'M' }
-    expect(mergeLocaleJson(base, ours, theirs)).toEqual({ kept: 'new', moved: 'M' })
+    expect(mergeLocaleJson(base, ours, theirs)).toEqual({
+      merged: { kept: 'new', moved: 'M' },
+      conflicts: []
+    })
   })
 
   it('records a key both sides changed differently and takes the picked side', () => {
-    const conflicts = []
     const base = { k: 'base', gone: 'G' }
     const ours = { k: 'up', gone: 'G2' }
     const theirs = { k: 'fork' }
-    expect(mergeLocaleJson(base, ours, theirs, 'theirs', conflicts)).toEqual({ k: 'fork' })
-    expect(conflicts).toEqual(['k', 'gone'])
+    expect(mergeLocaleJson(base, ours, theirs, { pick: 'theirs' })).toEqual({
+      merged: { k: 'fork' },
+      conflicts: ['k', 'gone']
+    })
   })
 })
 
@@ -75,7 +79,7 @@ describe('fork locale merge driver in a real rebase', () => {
   }
 
   // The driver lands after the fork's locale commits, so the rebase replays those before it exists in the tree.
-  function rebaseOntoUp({ wt, env, git }) {
+  function rebaseOntoUp({ wt, env, git }, { breakNode = false } = {}) {
     mkdirSync(join(wt, 'config/scripts'), { recursive: true })
     for (const name of ['fork-locale-json-merge.mjs', 'fork-merge-driver-install.sh']) {
       copyFileSync(join(scriptsDir, name), join(wt, 'config/scripts', name))
@@ -87,6 +91,15 @@ describe('fork locale merge driver in a real rebase', () => {
       env,
       stdio: 'pipe'
     })
+    if (breakNode) {
+      const driver = git(wt, 'config', 'merge.fork-locale-json.driver').trim()
+      git(
+        wt,
+        'config',
+        'merge.fork-locale-json.driver',
+        driver.replace(/^'[^']*'/, "'/nonexistent/node'")
+      )
+    }
     return spawnSync('git', ['rebase', 'up'], { cwd: wt, env, encoding: 'utf8' })
   }
 
@@ -120,5 +133,16 @@ describe('fork locale merge driver in a real rebase', () => {
     expect(hunk).not.toMatch(/ssh|GitHistoryGraph/)
     expect(text).toContain('"GitHistoryGraph": "Git Graph"')
     expect(text).toContain('"row": "Row"')
+  })
+
+  it('leaves conflict markers when the driver cannot start', () => {
+    const ctx = setup()
+    ctx.writeLocale(ctx.wt, { auto: { a: 'A', GitHistoryGraph: 'Git Graph' } })
+    ctx.git(ctx.wt, 'commit', '-qam', 'fork adds graph')
+
+    const result = rebaseOntoUp(ctx, { breakNode: true })
+
+    expect(result.status).not.toBe(0)
+    expect(readFileSync(join(ctx.wt, LOCALE), 'utf8')).toContain('<<<<<<< ours')
   })
 })
