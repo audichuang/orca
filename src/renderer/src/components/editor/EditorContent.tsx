@@ -10,7 +10,8 @@ import { EditorConflictReviewSurface } from './conflict-review/EditorConflictRev
 import { EditorDiffFileSurface } from './panel/EditorDiffFileSurface'
 import { EditorEditFileSurface } from './panel/EditorEditFileSurface'
 import { EditorFileLoadErrorView } from './loading/EditorFileLoadErrorView'
-import { CombinedDiffViewer, GitGraphTabView, MarkdownPreview } from './editor-lazy-views'
+import { CombinedDiffViewer, MarkdownPreview } from './editor-lazy-views'
+import { forkEditorTabView } from '../git-graph-tab/fork-editor-tab-kinds'
 import { MarkdownPreviewSizeGate } from './markdown-preview/render-tree/MarkdownPreviewSizeGate'
 import {
   HOST_STARTED,
@@ -171,8 +172,9 @@ export function EditorContent({
     )
   }
 
-  if (activeFile.mode === 'git-graph') {
-    return <GitGraphTabView file={activeFile} />
+  const forkView = forkEditorTabView(activeFile)
+  if (forkView) {
+    return forkView
   }
 
   if (activeFile.mode === 'conflict-review') {
