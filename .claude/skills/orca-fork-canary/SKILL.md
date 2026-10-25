@@ -33,8 +33,8 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
    - `CANARY_KEEP=1` 留下合併好的 worktree，第 2、3 步要在裡面套用解法、驗證。不要為了驗證重跑一次 canary。
    - 要跑好幾分鐘（typecheck 加一百多個 fork 測試檔），在背景跑，等完成通知。
 4. 讀結果。`make` 會把腳本的 exit code 換成自己的，所以看報告：`R="$OUT/$(cat "$OUT/latest.txt")"`，`$R/report.md` 的 `Result:` 行是 green / not green / setup error。`$S/canary.out` 裡 `>> kept canary worktree <路徑>; remove it with …` 那行，分號前面是留下的 worktree（下稱 `K`）。
-   - **setup error**，或 `latest.txt` 不存在、內容還是開跑前的 `$prev`（`make` 的前置檢查在腳本開跑前就失敗了，沒有新報告）：跳到第 4 步，通知寫報告的訊息或 `$S/canary.out` 的最後幾行。
-   - **green**：跳到第 4 步。
+   - **setup error**，或 `latest.txt` 不存在、內容還是開跑前的 `$prev`（`make` 的前置檢查在腳本開跑前就失敗了，沒有新報告）：跳到「4. 通知、存摘要、收尾」，通知寫報告的訊息或 `$S/canary.out` 的最後幾行。
+   - **green**：跳到「4. 通知、存摘要、收尾」。
 
 ## 2. 歸因：哪些是同一件事
 
@@ -95,5 +95,5 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
 ## 限制
 
 - 唯一會 push 的是 `fork-canary-notes`，只經 `config/scripts/fork-notes.sh`（不 force）；不推其他分支、不開 PR。
-- 不改 `MAIN` 裡的檔案，不在 `K` commit 或跑 `git rerere`。會寫的只有筆記分支、`$OUT`、`$S`，以及 `K`（第 2 步在那裡驗證，收尾時刪掉）。
+- 不改 `MAIN` 的追蹤檔（第 1 步的 checkout 與 `pnpm install` 除外），不在 `K` commit 或跑 `git rerere`。會寫的只有筆記分支、`$OUT`、`$S`，以及 `K`（第 2 步在那裡驗證，收尾時刪掉）。
 - 不開看得見的 Orca 視窗、不搶焦點（`ORCA_BACKGROUND_LAUNCH=1`）。
