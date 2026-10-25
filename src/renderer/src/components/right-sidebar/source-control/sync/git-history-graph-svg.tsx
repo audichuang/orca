@@ -9,7 +9,7 @@ import {
 
 export const SWIMLANE_HEIGHT = 24
 export const SWIMLANE_WIDTH = 11
-export const SWIMLANE_CURVE_RADIUS = 5
+const SWIMLANE_CURVE_RADIUS = 5
 const SWIMLANE_NODE_Y = SWIMLANE_HEIGHT / 2
 const CIRCLE_RADIUS = 3.5
 const CIRCLE_STROKE_WIDTH = 1.5
@@ -18,7 +18,7 @@ export function graphColor(color: GitHistoryGraphColorId): string {
   return `var(--${color})`
 }
 
-export function GraphPath({
+function GraphPath({
   d,
   color,
   strokeWidth = 1

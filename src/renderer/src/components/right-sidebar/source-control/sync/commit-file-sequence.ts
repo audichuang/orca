@@ -8,7 +8,7 @@ import type {
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import { toCommitCompareSnapshot } from '@/store/slices/editor/git/git-status-reconciliation'
 import { registerDiffFileSequence } from '../../../editor/diff-file-sequence'
-import { commitDiffTabId } from '@/store/slices/editor/actions/open-history-diff'
+import { commitDiffTabId } from '@/store/slices/editor/git/open-file-git-owner'
 import { detectLanguage } from '@/lib/language-detect'
 import type { CommitCompareLike } from '@/store/slices/editor/types/open-file'
 import type { EditorFilesSlice } from '@/store/slices/editor/types/editor-files-slice'
