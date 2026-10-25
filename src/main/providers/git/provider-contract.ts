@@ -31,7 +31,7 @@ import type { GitProviderStatusOptions } from './status-options'
 import type { BranchSwitchCreation } from '../../../shared/git/branch-switch-target'
 import type { RuntimeGitLocalBranches } from '../../../shared/worktree/catalog/runtime-worktree-contracts'
 import type { GitAdmissionTier } from '../../../shared/rpc-contract/source-control/git-admission-tier-params'
-import type { GitDiffReadOptions } from '../../git/source-control/diff-render-limit-options'
+import type { GitDiffReadOptions } from '../../git/source-control/git-diff-read-options'
 
 export type IGitProvider = {
   getStatus(worktreePath: string, options?: GitProviderStatusOptions): Promise<GitStatusResult>
