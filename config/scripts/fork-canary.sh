@@ -37,7 +37,7 @@ publish() {
 die() {
   echo "fork-canary: $*" >&2
   if [ -n "$tmp_report" ]; then
-    printf '# Fork canary report\n\n- Result: setup error (exit 3): %s\n' "$*" >"$tmp_report" && publish
+    printf '# Fork canary report\n\n- Result: setup error (exit 3): %s\n' "$*" >"$tmp_report" && publish && echo ">> report: $report (exit 3)"
   fi
   exit 3
 }
