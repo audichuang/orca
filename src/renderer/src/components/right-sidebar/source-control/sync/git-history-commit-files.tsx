@@ -236,11 +236,11 @@ export function GitHistoryCommitFiles({
   layout?: GitHistoryCommitFilesLayout
   author?: string
   timestamp?: number
-  /** `shownEntries` is the list in display order, so a diff can step to its neighbours. */
+  /** `shown.entries` is the list in display order, so a diff can step to its neighbours. */
   onOpenFile: (
     entry: GitBranchChangeEntry,
     event: SourceControlRowOpenEvent,
-    shownEntries: readonly GitBranchChangeEntry[]
+    shown: { entries: readonly GitBranchChangeEntry[] }
   ) => void
   onOpenAll?: () => void
   renderFilesMenu?: GitHistoryCommitFilesMenuRenderer
@@ -263,7 +263,7 @@ export function GitHistoryCommitFiles({
     return state.status === 'ready' ? state.entries : []
   }, [treeRoots, state])
   const openFile = (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent): void =>
-    onOpenFile(entry, event, menuEntries)
+    onOpenFile(entry, event, { entries: menuEntries })
   // Author and date move off the dense commit row and surface here on expand.
   const body = (
     <CommitFilesBody
