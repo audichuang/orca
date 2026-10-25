@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { app } from 'electron'
-import { statSync } from './asar-transparent-fs'
+import { statSync } from './asar-transparent-stat'
 
 type BundleIdentity = { ino: number; mtimeMs: number }
 
