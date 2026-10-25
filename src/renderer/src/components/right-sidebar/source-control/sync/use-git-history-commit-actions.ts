@@ -26,6 +26,7 @@ import {
   type CommitFileTarget,
   type OpenCommitFileHandler
 } from './commit-file-sequence'
+import { resolveTabOwners } from '../folder/worktree-scope'
 
 const EMPTY_BRANCH_CHANGE_ENTRIES: GitBranchChangeEntry[] = []
 
@@ -50,9 +51,7 @@ export function useGitHistoryCommitActions({
   activeRepoTarget: RuntimeClientTarget | null
   resolveSplitTargetGroupId: (event?: SourceControlRowOpenEvent) => string | undefined
 }): GitHistoryCommitActions {
-  const tabOwnerId = editorWorktreeId ?? activeWorktreeId ?? ''
-  const gitOwnerId =
-    activeWorktreeId && tabOwnerId !== activeWorktreeId ? activeWorktreeId : undefined
+  const { tabOwnerId, gitOwnerId } = resolveTabOwners(editorWorktreeId, activeWorktreeId ?? '')
   const openCommitAllDiffs = useAppStore((s) => s.openCommitAllDiffs)
   const openCommitDiff = useAppStore((s) => s.openCommitDiff)
 
