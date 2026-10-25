@@ -1,4 +1,5 @@
-// Fork-only git merge driver for the locale catalogs (node fork-locale-json-merge.mjs %O %A %B): both sides add keys at one spot.
+// Fork-only git merge driver for the locale catalogs (node fork-locale-json-merge.mjs %O %A %B, registered by
+// fork-merge-driver-install.mjs): both sides add keys at one spot. Exits 0 merged, 2 conflict markers written.
 import { spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -62,14 +63,11 @@ function readJson(file) {
   return text.trim() === '' ? {} : JSON.parse(text)
 }
 
+// Why 2: the installed command reads any other failure (a crash, unparsable JSON) as "line-merge it with markers".
+const CONFLICT_EXIT = 2
+
 function main([basePath, oursPath, theirsPath]) {
-  let sides
-  try {
-    sides = [basePath, oursPath, theirsPath].map(readJson)
-  } catch (error) {
-    console.error(`fork-locale-json-merge: ${error.message}; falling back to a line merge`)
-    return spawnSync('git', ['merge-file', oursPath, basePath, theirsPath]).status === 0 ? 0 : 1
-  }
+  const sides = [basePath, oursPath, theirsPath].map(readJson)
   const { merged, conflicts } = mergeLocaleJson(...sides)
   if (conflicts.length === 0) {
     writeFileSync(oursPath, format(merged))
@@ -99,7 +97,7 @@ function main([basePath, oursPath, theirsPath]) {
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
-  return 1
+  return CONFLICT_EXIT
 }
 
 // Why realpath: a symlinked path would skip main and exit 0, which git reads as a clean merge of ours alone.
