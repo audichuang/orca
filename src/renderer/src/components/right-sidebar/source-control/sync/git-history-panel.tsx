@@ -402,8 +402,10 @@ export function GitHistoryPanel({
                     state={filesByCommit[item.id] ?? { status: 'loading' }}
                     author={item.author}
                     timestamp={item.timestamp}
-                    onOpenFile={(entry, event, shownEntries) =>
-                      onOpenCommitFile?.(item, entry, event, commitFileTargets(item, shownEntries))
+                    onOpenFile={(entry, event, shown) =>
+                      onOpenCommitFile?.(item, entry, event, {
+                        sequence: commitFileTargets(item, shown.entries)
+                      })
                     }
                     onOpenAll={onOpenCommit ? () => onOpenCommit(item) : undefined}
                     renderFilesMenu={slots.renderCommitFilesMenu?.bind(null, [item])}
