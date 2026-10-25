@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-check-wire fork-check-mobile fork-base-guard
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-check-wire fork-check-mobile fork-base-guard fork-footprint fork-check-seams fork-canary
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -35,6 +35,10 @@ help:
 	@echo "  make fork-check       after a rebase: typecheck + tests the fork's changes reach + lint + quality gate"
 	@echo "  make fork-check-e2e   the fork's headless e2e specs (CI runs it on every PR)"
 	@echo "  make fork-check-full  before pushing: every fork CI job but the full unit suite and the macOS build"
+	@echo "  make fork-check-seams the fork seam contract tests in config/fork-seam-tests.txt"
+	@echo "  make fork-footprint   the fork's diff on upstream files since FORK_BASE (JSON=1 for --json)"
+	@echo "  make fork-canary      report-only: merge the fork into upstream main, typecheck, run fork tests"
+	@echo "                       (report: out/fork-canary/<run>/report.md, newest named in out/fork-canary/latest.txt)"
 
 install:
 	pnpm install
@@ -176,6 +180,9 @@ FORK_BASE := $(FORK_BASE)
 # Why 400: fork work alone passed 200 commits on v1.4.237; an ancient base is thousands behind.
 FORK_MAX_COMMITS ?= 400
 
+# Vitest on the unit config after restoring Node-built native modules; append the files.
+FORK_VITEST = node config/scripts/ensure-native-runtime.mjs --runtime=node && pnpm exec vitest run --config config/vitest.config.ts
+
 # fork-check = fork-check-static + fork-check-tests; CI runs the halves as parallel jobs, tests in FORK_TEST_SHARD slices.
 FORK_TEST_SHARD ?=
 # all: upstream CI's full unit suite; empty: the fast local --changed pre-check.
@@ -188,7 +195,8 @@ fork-check-static: export LC_ALL = C
 fork-check-static: fork-check-static-types fork-check-quality fork-check-lint
 
 fork-base-guard:
-	@echo ">> fork base: $(FORK_BASE)"
+	@# Why stderr: fork-footprint --json shares stdout.
+	@echo ">> fork base: $(FORK_BASE)" >&2
 	@# Why: an empty FORK_BASE makes the count below `..HEAD`, which is 0 and passes.
 	@test -n "$(FORK_BASE)" || { echo "fork-check: FORK_BASE is empty (no upstream vX.Y.Z tag reachable from HEAD); fetch upstream tags (git fetch <upstream-remote> --tags) or pass FORK_BASE=vX.Y.Z"; exit 1; }
 	@case '$(FORK_BASE)' in -*|*[!A-Za-z0-9._/~^-]*) echo "fork-check: FORK_BASE must be one tag or commit, not '$(FORK_BASE)'"; exit 1;; esac
@@ -206,6 +214,7 @@ fork-check-lint: fork-base-guard
 	node config/scripts/fork-lint-run.mjs
 	node config/scripts/fork-pr-gate-needs.mjs
 	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
+	node config/scripts/fork-test-inventory.mjs check $(FORK_BASE)
 	@# Why here too: a branch goes red in CI once upstream releases a daemon protocol bump.
 	pnpm run check:daemon-protocol-crossing
 
@@ -224,9 +233,31 @@ else
 	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) --changed $(FORK_BASE)
 endif
 
+fork-footprint: fork-base-guard
+	@node config/scripts/fork-footprint.mjs $(FORK_BASE) $(if $(JSON),--json)
+
+fork-check-seams: export LC_ALL = C
+fork-check-seams: export ORCA_BACKGROUND_LAUNCH = 1
+fork-check-seams:
+	@# Why not a pipe: the list check's failure must stop the run instead of running fewer files.
+	@# Why the empty check: vitest with no file filter runs the whole suite.
+	files=$$(node config/scripts/fork-test-inventory.mjs list) && \
+	  { test -n "$$files" || { echo "fork-check-seams: config/fork-seam-tests.txt lists no test"; exit 1; }; } && \
+	  $(FORK_VITEST) $$files
+
+# Report-only early warning against upstream main; exit codes and overrides are in the script header.
+# make reports any failure as its own error; read the report's Result line.
+fork-canary: fork-base-guard
+	@test -n "$(UPSTREAM_REMOTE)" || { echo "fork-canary: no remote points at $(UPSTREAM_REPO); pass UPSTREAM_REMOTE=<name>"; exit 1; }
+	FORK_BASE=$(FORK_BASE) UPSTREAM_REMOTE=$(UPSTREAM_REMOTE) bash config/scripts/fork-canary.sh
+
+# The remote in this clone whose fetch URL is GitHub repo $(1), whatever it is named.
+remote_for = $(shell git remote -v | awk -v r="$(1)" '$$3 == "(fetch)" && $$2 ~ ("[:/]" r "(\\.git)?$$") {print $$1; exit}')
 FORK_REPO ?= audichuang/orca
-# The fork's remote in this clone, whatever it is named (origin on a plain clone of the fork).
-FORK_REMOTE ?= $(shell git remote -v | awk -v r="$(FORK_REPO)" '$$3 == "(fetch)" && $$2 ~ ("[:/]" r "(\\.git)?$$") {print $$1; exit}')
+# origin on a plain clone of the fork.
+FORK_REMOTE ?= $(call remote_for,$(FORK_REPO))
+UPSTREAM_REPO ?= stablyai/orca
+UPSTREAM_REMOTE ?= $(call remote_for,$(UPSTREAM_REPO))
 
 # main is force-moved on release, so git pull would merge two histories; local main must be a value the fork's main once had (clone writes no reflog, so the pre-fetch value counts too).
 sync:
@@ -260,14 +291,15 @@ fork-check-full:
 	test -z "$$failed" || { echo "fork-check-full: failed:$$failed"; exit 1; }
 
 # CI's cross-version wire journeys: old/new clients and servers talking to each other.
-# Why skip one file: at the fork base this upstream test reads isStructuredTab from a module that no longer exports it.
-# Explicit paths, because a directory filter overrides --exclude; find keeps new files in.
+# Explicit paths, because a directory filter overrides --exclude; the inventory's wire mode globs new files in and
+# skips the one upstream file its WIRE_SKIPPED names, so fork-check-lint and this target agree on what runs.
 fork-check-wire: export LC_ALL = C
 # Why the guard: the journeys pick their baseline from the newest local vX.Y.Z tag.
 fork-check-wire: fork-base-guard
 	node config/scripts/ensure-native-runtime.mjs --runtime=node
 	$(if $(CI),,node config/scripts/fork-wait-for-quiet-machine.mjs)
-	pnpm exec vitest run --config config/vitest.config.ts $$(find tests/e2e/cross-version-wire -name '*.test.ts' ! -name 'cross-version-registered-agents.unit.test.ts' | sort)
+	files=$$(node config/scripts/fork-test-inventory.mjs wire) && test -n "$$files" && \
+	  pnpm exec vitest run --config config/vitest.config.ts $$files
 
 # CI's mobile web app checks; fork-check-tests skips these without mobile/node_modules.
 fork-check-mobile: export LC_ALL = C
