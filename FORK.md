@@ -6,7 +6,8 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 
 - Push only to the fork remote (`audichuang/orca`), never to upstream (`stablyai/orca`).
 - The base is the newest upstream release tag, not upstream `main`.
-- Work goes on a branch with a PR into `develop`, merged once Fork CI is green; never push `develop` directly, except a rebase.
+- Work goes on a branch with a PR into `develop`, merged once Fork CI is green; never push `develop` directly, except a rebase and doc-only changes.
+- A doc-only change (Markdown outside `.claude/skills/`, such as FORK.md, AGENTS.md or `docs/`) may be pushed straight to `develop` as a fast-forward, while no `rebase/*` branch exists on the fork (an auto-rebase in flight would lose its lease). The pipeline skills in `.claude/skills/` still go through a PR: they decide unattended moves of `develop` and releases, so Fork CI and review stay in front of them.
 - `fork-canary-notes` is the exception to PRs: an orphan branch holding the pipelines' shared state (`known-resolutions.md`, `canary-last.json`), no CI, never rebased, written only by `config/scripts/fork-notes.sh`, which never forces.
 - Pick a branch prefix that is not itself a branch on the fork: the fork carries a `refactor` branch, so pushing `refactor/<x>` is rejected as a directory/file conflict.
 - A PR meant for upstream branches from upstream `main` and carries no fork-only file (`Makefile`, fork CI, `FORK.md`).
