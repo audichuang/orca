@@ -19,7 +19,6 @@ describe('old-client session tabs with a Git Graph tab', () => {
         workspace: WS,
         fileId: 'git-graph:wt-1',
         contentType: 'git-graph',
-        file: GRAPH_FILE,
         view: {
           view: { mode: 'git-graph', gitGraph: { repoWorktreeId: 'wt-1' } },
           file: GRAPH_FILE
@@ -28,6 +27,7 @@ describe('old-client session tabs with a Git Graph tab', () => {
     ])
     const [readme, graph] = results
     expect(model.workspaces[WS]!.tabs.map((tab) => tab.kind)).toEqual(['editor', 'git-graph'])
+    expect(model.workspaces[WS]!.editorViews?.[graph!.tabId!]?.view.mode).toBe('git-graph')
 
     const projected = projectSessionTabs(
       WS,
