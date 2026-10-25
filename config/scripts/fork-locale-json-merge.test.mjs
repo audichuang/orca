@@ -3,7 +3,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { LocaleMergeConflict, mergeLocaleJson } from './fork-locale-json-merge.mjs'
+import { mergeLocaleJson } from './fork-locale-json-merge.mjs'
 
 const scriptsDir = import.meta.dirname
 const LOCALE = 'src/renderer/src/i18n/locales/en.json'
@@ -25,11 +25,13 @@ describe('mergeLocaleJson', () => {
     expect(mergeLocaleJson(base, ours, theirs)).toEqual({ kept: 'new', moved: 'M' })
   })
 
-  it('refuses when both sides gave one key different values', () => {
-    expect(() => mergeLocaleJson({ k: 'base' }, { k: 'up' }, { k: 'fork' })).toThrow(
-      LocaleMergeConflict
-    )
-    expect(() => mergeLocaleJson({ k: 'base' }, {}, { k: 'fork' })).toThrow(LocaleMergeConflict)
+  it('records a key both sides changed differently and takes the picked side', () => {
+    const conflicts = []
+    const base = { k: 'base', gone: 'G' }
+    const ours = { k: 'up', gone: 'G2' }
+    const theirs = { k: 'fork' }
+    expect(mergeLocaleJson(base, ours, theirs, 'theirs', conflicts)).toEqual({ k: 'fork' })
+    expect(conflicts).toEqual(['k', 'gone'])
   })
 })
 
@@ -101,16 +103,22 @@ describe('fork locale merge driver in a real rebase', () => {
     )
   })
 
-  it('stops with conflict markers when both sides changed the same string', () => {
+  it('marks only the string both sides changed and keeps every clean addition', () => {
     const ctx = setup()
-    ctx.writeLocale(ctx.wt, { auto: { a: 'Fork A' } })
-    ctx.git(ctx.wt, 'commit', '-qam', 'fork rewords a')
+    ctx.writeLocale(ctx.wt, { auto: { a: 'Fork A', GitHistoryGraph: 'Git Graph' } })
+    ctx.git(ctx.wt, 'commit', '-qam', 'fork rewords a and adds graph')
     ctx.writeLocale(ctx.repo, { auto: { a: 'Up A', ssh: { row: 'Row' } } })
     ctx.git(ctx.repo, 'commit', '-qam', 'upstream rewords a')
 
     const result = rebaseOntoUp(ctx)
 
     expect(result.status).not.toBe(0)
-    expect(readFileSync(join(ctx.wt, LOCALE), 'utf8')).toContain('<<<<<<< ours')
+    const text = readFileSync(join(ctx.wt, LOCALE), 'utf8')
+    const hunk = text.slice(text.indexOf('<<<<<<< ours'), text.indexOf('>>>>>>> theirs'))
+    expect(hunk).toContain('"a": "Up A"')
+    expect(hunk).toContain('"a": "Fork A"')
+    expect(hunk).not.toMatch(/ssh|GitHistoryGraph/)
+    expect(text).toContain('"GitHistoryGraph": "Git Graph"')
+    expect(text).toContain('"row": "Row"')
   })
 })
