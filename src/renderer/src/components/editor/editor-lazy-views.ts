@@ -8,7 +8,6 @@ export const RichMarkdownEditor = lazy(() => import('./RichMarkdownEditor'), {
   reloadKey: 'rich-markdown-editor'
 })
 export const MarkdownPreview = lazy(() => import('./MarkdownPreview'))
-export const GitGraphTabView = lazy(() => import('../git-graph-tab/GitGraphTabView'))
 export const ImageViewer = lazy(() => import('./ImageViewer'))
 export const MediaViewer = lazy(() => import('./MediaViewer'))
 export const ImageDiffViewer = lazy(() => import('./ImageDiffViewer'))
