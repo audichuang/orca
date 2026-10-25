@@ -1,0 +1,32 @@
+{
+  "upstream": "f92d82840f",
+  "date": "2026-10-25",
+  "report": "out/fork-canary/20261025T015942Z-89264/report.md",
+  "conflicts": [
+    "src/renderer/src/components/editor/editor-autosave.ts",
+    "src/renderer/src/components/right-sidebar/source-control/panel/use-panel-view-state.ts",
+    "src/renderer/src/components/terminal-pane/terminal-file-link-target.ts",
+    "src/renderer/src/components/terminal-pane/terminal-host-file-link-existence.ts",
+    "src/renderer/src/components/ui/sonner.tsx",
+    "src/renderer/src/runtime/sync-runtime-graph/mobile-session-surfaces.ts",
+    "src/shared/workspace-layout/workspace-layout-fact-locations.test.ts"
+  ],
+  "tcErrorFiles": [
+    "src/renderer/src/components/editor/editor-file-saved-event.contract.test.ts",
+    "src/renderer/src/components/editor/editor-save-queue.ts",
+    "src/renderer/src/components/right-sidebar/source-control/folder/use-folder-repo-status-refresh.store.test.ts",
+    "src/renderer/src/components/right-sidebar/source-control/folder/use-folder-repo-status-refresh.ts",
+    "src/renderer/src/components/terminal-pane/terminal-file-link-target.test.ts",
+    "src/renderer/src/components/terminal-pane/terminal-host-file-link-miss-expiry.test.ts"
+  ],
+  "failingTests": [
+    "src/renderer/src/runtime/sync-runtime-graph-git-graph-tab.test.ts",
+    "src/shared/workspace-layout/workspace-layout-fact-locations.test.ts",
+    "src/renderer/src/components/editor/editor-autosave.fork.test.ts",
+    "src/renderer/src/components/editor/folder-relative-git-consumers.test.tsx",
+    "src/renderer/src/components/terminal-pane/terminal-file-link-target.test.ts",
+    "src/renderer/src/components/terminal-pane/terminal-host-file-link-miss-expiry.test.ts",
+    "src/renderer/src/components/terminal-pane/terminal-link-provider-miss-expiry.test.ts"
+  ],
+  "droppedTests": []
+}
