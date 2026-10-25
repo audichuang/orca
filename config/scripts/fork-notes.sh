@@ -14,7 +14,7 @@ remote=${FORK_REMOTE:-fork}
 branch=fork-canary-notes
 
 tip() {
-  git fetch -q "$remote" "+refs/heads/$branch:refs/remotes/$remote/$branch"
+  git fetch -q "$remote" "+refs/heads/$branch:refs/remotes/$remote/$branch" || return 1
   git rev-parse "refs/remotes/$remote/$branch"
 }
 
@@ -44,7 +44,7 @@ case ${1:-} in
     fi
     commit=$(git commit-tree "$tree" -p "$base" -m "$message")
     if ! git push -q "$remote" "${commit}:refs/heads/${branch}" 2>/dev/null; then
-      now=$(tip)
+      now=$(tip) || exit 1
       if [ "$now" != "$base" ]; then
         echo "rejected: $branch moved to $now past $base; run tip, reapply, write again" >&2
         exit 2
