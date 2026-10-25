@@ -29,8 +29,9 @@ export function useSourceControlRowOpening({
   branchSummary: GitBranchCompareSummary | null
 }) {
   // Why: a folder workspace's repo section reads git from the repo but opens tabs in the folder's editor.
-  const { tabOwnerId: tabWorktreeId, gitOwnerId: gitWorktreeId } =
-    useSourceControlOwners(activeWorktreeId)
+  const { tabOwnerId: tabWorktreeId, gitOwnerId: gitWorktreeId } = useSourceControlOwners(
+    activeWorktreeId ?? ''
+  )
   const activeGroupIdByWorktree = useAppStore((s) => s.activeGroupIdByWorktree)
   const groupsByWorktree = useAppStore((s) => s.groupsByWorktree)
   const createEmptySplitGroup = useAppStore((s) => s.createEmptySplitGroup)

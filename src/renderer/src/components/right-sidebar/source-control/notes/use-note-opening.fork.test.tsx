@@ -53,4 +53,18 @@ describe('opening a note from a folder repo section (fork)', () => {
       })
     ])
   })
+
+  it('opens a markdown note in the folder editor with the repo as its git owner', () => {
+    const { result } = renderNoteOpening()
+
+    result.current.handleOpenComment({ ...COMMENT, filePath: 'docs/a.md', source: 'markdown' })
+
+    expect(useAppStore.getState().openFiles).toEqual([
+      expect.objectContaining({
+        filePath: '/work/repo-1/docs/a.md',
+        worktreeId: FOLDER,
+        gitWorktreeId: REPO
+      })
+    ])
+  })
 })
