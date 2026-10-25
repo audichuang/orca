@@ -5,9 +5,18 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { OpenFile } from '@/store/slices/editor'
 
-vi.mock('../git-graph-tab/GitGraphTabView', () => ({
-  default: ({ file }: { file: OpenFile }) => <div data-testid="git-graph-view">{file.id}</div>
-}))
+const viewImport = vi.hoisted(() => ({ attempts: 0 }))
+
+// Why: the first import fails like a stale chunk; upstream's retrying loader must recover it.
+vi.mock('../git-graph-tab/GitGraphTabView', () => {
+  viewImport.attempts += 1
+  if (viewImport.attempts === 1) {
+    throw new Error('Failed to fetch dynamically imported module: GitGraphTabView.js')
+  }
+  return {
+    default: ({ file }: { file: OpenFile }) => <div data-testid="git-graph-view">{file.id}</div>
+  }
+})
 
 import { EditorContent } from './EditorContent'
 
@@ -16,7 +25,7 @@ afterEach(() => {
 })
 
 describe('EditorContent with a Git Graph tab', () => {
-  it('draws the Git Graph view for a git-graph tab', async () => {
+  it('draws the Git Graph view for a git-graph tab, retrying a failed first import', async () => {
     const activeFile: OpenFile = {
       id: 'git-graph:wt-1',
       filePath: 'git-graph:wt-1',
@@ -61,11 +70,15 @@ describe('EditorContent with a Git Graph tab', () => {
         </Suspense>
       )
     })
-    await vi.waitFor(() => {
-      expect(container.querySelector('[data-testid="git-graph-view"]')?.textContent).toBe(
-        'git-graph:wt-1'
-      )
-    })
+    await vi.waitFor(
+      () => {
+        expect(container.querySelector('[data-testid="git-graph-view"]')?.textContent).toBe(
+          'git-graph:wt-1'
+        )
+      },
+      { timeout: 3000 }
+    )
+    expect(viewImport.attempts).toBe(2)
     act(() => root.unmount())
   })
 })
