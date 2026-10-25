@@ -1,6 +1,5 @@
 // Fork-only: how upstream editor-tab sites draw the fork's editor tab kinds (the Git Graph tab).
 
-import { createElement } from 'react'
 import { GitGraph, type LucideIcon } from 'lucide-react'
 import type { OpenFile } from '@/store/slices/editor'
 import type { EditorHeaderCopyState } from '@/components/editor/editor-header'
@@ -22,8 +21,7 @@ export function forkEditorTabIconElement(
   kind: string,
   className: string
 ): React.JSX.Element | null {
-  const icon = forkEditorTabIcon(kind)
-  return icon ? createElement(icon, { className }) : null
+  return kind === 'git-graph' ? <GitGraph className={className} /> : null
 }
 
 /** The Git Graph tab's path is a synthetic id, so it copies nothing and shows its label. */
