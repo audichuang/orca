@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { OpenInApplication } from '../../../../shared/ui-chrome-types'
 import { SourceControlEntryContextMenu } from './source-control/listing/entry-context-menu'
+import { OpenToSideMenuItem } from './source-control/listing/entry-context-menu-slots'
 
 type ItemProps = { onSelect?: () => void; disabled?: boolean; children?: React.ReactNode }
 
@@ -98,14 +99,14 @@ function childrenText(children: React.ReactNode): string {
     .join('')
 }
 
-function renderMenu(onOpenToSide?: () => void): void {
+function renderMenu(onOpen?: (event: { altKey: boolean }) => void): void {
   renderToStaticMarkup(
     <SourceControlEntryContextMenu
       currentWorktreeId="worktree-1"
       absolutePath="/repo/src/example.ts"
       relativePath="src/example.ts"
       hasWorkingTreeFile
-      onOpenToSide={onOpenToSide}
+      viewItems={<OpenToSideMenuItem onOpen={onOpen} />}
       onRevealInExplorer={vi.fn()}
     >
       <div />
@@ -119,14 +120,14 @@ describe('SourceControlEntryContextMenu Open to the Side', () => {
   })
 
   it('offers Open to the Side only when the row can open', () => {
-    const onOpenToSide = vi.fn()
-    renderMenu(onOpenToSide)
+    const onOpen = vi.fn()
+    renderMenu(onOpen)
     const item = items.list.find((entry) =>
       childrenText(entry.children).startsWith('Open to the Side')
     )
     expect(item?.disabled).toBe(false)
     item?.onSelect?.()
-    expect(onOpenToSide).toHaveBeenCalledOnce()
+    expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ altKey: true }))
 
     items.list = []
     renderMenu()
