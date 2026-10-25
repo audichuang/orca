@@ -18,7 +18,10 @@ describe('openUncommittedEntry in a folder workspace', () => {
     const state = fakeState()
     const entry: GitStatusEntry = { path: 'src/a.ts', area: 'staged', status: 'modified' }
 
-    openUncommittedEntry(state, 'repo-wt', '/f/repo', entry, folderOptions, 'folder-wt')
+    openUncommittedEntry(state, 'repo-wt', '/f/repo', entry, {
+      ...folderOptions,
+      tabWorktreeId: 'folder-wt'
+    })
 
     expect(state.openDiff).toHaveBeenCalledWith(
       'folder-wt',
@@ -40,7 +43,10 @@ describe('openUncommittedEntry in a folder workspace', () => {
       conflictStatus: 'unresolved'
     }
 
-    openUncommittedEntry(state, 'repo-wt', '/f/repo', entry, folderOptions, 'folder-wt')
+    openUncommittedEntry(state, 'repo-wt', '/f/repo', entry, {
+      ...folderOptions,
+      tabWorktreeId: 'folder-wt'
+    })
 
     expect(state.trackConflictPath).toHaveBeenCalledWith('repo-wt', 'src/a.ts', 'both_modified')
     expect(state.openConflictFile).toHaveBeenCalledWith(
@@ -56,7 +62,10 @@ describe('openUncommittedEntry in a folder workspace', () => {
     const state = fakeState()
     const entry: GitStatusEntry = { path: 'README.md', area: 'untracked', status: 'untracked' }
 
-    openUncommittedEntry(state, 'repo-wt', '/f/repo', entry, folderOptions, 'folder-wt')
+    openUncommittedEntry(state, 'repo-wt', '/f/repo', entry, {
+      ...folderOptions,
+      tabWorktreeId: 'folder-wt'
+    })
 
     expect(state.openFile).toHaveBeenCalledWith(
       expect.objectContaining({ worktreeId: 'folder-wt', gitWorktreeId: 'repo-wt' }),

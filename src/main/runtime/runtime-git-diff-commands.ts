@@ -6,7 +6,7 @@ import type {
 import { assertGitDiffWithinTransportBudget } from '../../shared/git-diff-transport-budget'
 import { getBranchDiff } from '../git/status'
 import type { GitAdmissionTier } from '../git/command-runner/git-exec-options'
-import type { GitDiffReadOptions } from '../git/source-control/diff-render-limit-options'
+import type { GitDiffReadOptions } from '../git/source-control/git-diff-read-options'
 import { normalizeRuntimeRelativePath } from './runtime-relative-paths'
 import {
   localGitOptionsForTarget,
