@@ -125,8 +125,9 @@ jobs:
           printf '%s\n' "$info"
           printf '%s\n' "$info" | grep -q '^Authority=Developer ID Application: ' || { echo "::error::Not signed with a Developer ID Application cert."; exit 1; }
           printf '%s\n' "$info" | grep -q '^TeamIdentifier=37HFR5V2JJ$' || { echo "::error::TeamIdentifier is not 37HFR5V2JJ."; exit 1; }
+          # Why offline: make fork-dmg already checked the ticket against Apple; a second CloudKit round trip only adds a network failure.
+          printf '%s\n' "$info" | grep -q '^Notarization Ticket=stapled$' || { echo "::error::No stapled notarization ticket."; exit 1; }
           codesign --verify --deep --strict "$app"
-          xcrun stapler validate "$app"
           spctl --assess --type execute --verbose=2 "$app"
 
       - name: Check the packaged version
