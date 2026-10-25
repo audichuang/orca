@@ -1,8 +1,8 @@
 // Copied from upstream components/tab-bar/tab-create-entry-action.ts createParentDirectoriesForNewFile
-// and isExistsError (module-private there); re-sync on rebase.
+// and isExistsError (module-private there), bound to the runtime clients upstream passes in; re-sync on rebase.
 import { joinPath } from '@/lib/path'
-import type { createRuntimePath } from '@/runtime/runtime-file-mutation-client'
-import type { statRuntimePath } from '@/runtime/runtime-file-metadata-client'
+import { createRuntimePath } from '@/runtime/runtime-file-mutation-client'
+import { statRuntimePath } from '@/runtime/runtime-file-metadata-client'
 import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
 
 function isExistsError(error: unknown): boolean {
@@ -12,10 +12,6 @@ function isExistsError(error: unknown): boolean {
 
 export async function createParentDirectoriesForNewFile(args: {
   context: RuntimeFileOperationArgs
-  operations: {
-    createRuntimePath: typeof createRuntimePath
-    statRuntimePath: typeof statRuntimePath
-  }
   relativePath: string
   worktreePath: string
 }): Promise<void> {
@@ -27,12 +23,12 @@ export async function createParentDirectoriesForNewFile(args: {
     try {
       // Why: file creation authorizes the immediate parent before its own mkdir,
       // so nested new-file paths must materialize parents one level at a time.
-      await args.operations.createRuntimePath(args.context, currentPath, 'directory')
+      await createRuntimePath(args.context, currentPath, 'directory')
     } catch (error) {
       if (!isExistsError(error)) {
         throw error
       }
-      const stat = await args.operations.statRuntimePath(args.context, currentPath)
+      const stat = await statRuntimePath(args.context, currentPath)
       if (!stat.isDirectory) {
         throw new Error(`Cannot create file because ${currentPath} is not a directory.`)
       }
