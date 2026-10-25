@@ -48,6 +48,25 @@ jobs:
               echo "::error::$TAG ($GITHUB_SHA) is not fork main ($main_sha)."
               exit 1
             }
+            # Why: Fork CI gates develop, not main; a main moved to a commit develop never had shipped untested.
+            # A rebase rewrites develop, so a commit an earlier published release shipped also passes: a rerun, or
+            # a rollback re-tagging the last good release. Drafts are not published (releases/tags omits them).
+            status=$(gh api "repos/$GITHUB_REPOSITORY/compare/develop...$GITHUB_SHA" --jq .status)
+            case "$status" in
+              identical|behind) ;;
+              *)
+                shipped=""
+                for t in $(git ls-remote --tags origin 'refs/tags/v*-fork.*' |
+                  awk -v sha="$GITHUB_SHA" '$1 == sha { sub("refs/tags/", "", $2); sub(/\^\{\}$/, "", $2); print $2 }' | sort -u); do
+                  if gh api "repos/$GITHUB_REPOSITORY/releases/tags/$t" > /dev/null 2>&1; then shipped=$t; break; fi
+                done
+                [ -n "$shipped" ] || {
+                  echo "::error::$TAG ($GITHUB_SHA) is not on fork develop (compare: $status) and no published fork release shipped it."
+                  exit 1
+                }
+                echo "::notice::$GITHUB_SHA is not on develop; published release $shipped already shipped it."
+                ;;
+            esac
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
@@ -98,6 +117,13 @@ jobs:
           security list-keychains -d user -s "$keychain" "${existing[@]}"
           rm -f "$RUNNER_TEMP/signing.p12"
           security find-identity -v -p codesigning "$keychain"
+          # Why: notarization rejects an expired cert, and its replacement needs Apple's portal plus new secrets.
+          pem="$RUNNER_TEMP/signing.pem"
+          if security find-certificate -c "Developer ID Application:" -p "$keychain" > "$pem" 2> /dev/null; then
+            openssl x509 -in "$pem" -noout -checkend $((60 * 86400)) > /dev/null ||
+              echo "::warning::The Developer ID cert expires within 60 days ($(openssl x509 -in "$pem" -noout -enddate)); renew it and update APPLE_CERTIFICATE."
+          fi
+          rm -f "$pem"
 
       # Why a file: electron-builder's notarize reads APPLE_API_KEY as a path to the .p8.
       - name: Stage the notarization API key
