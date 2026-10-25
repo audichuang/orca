@@ -8,9 +8,13 @@ export function openUncommittedEntry(
   worktreeId: string,
   worktreePath: string,
   entry: GitStatusEntry,
-  options: Parameters<AppState['openDiff']>[5] = {},
-  // Why: a folder workspace opens the tab in the folder while git and conflict tracking stay on the repo.
-  tabWorktreeId: string = worktreeId
+  {
+    tabWorktreeId = worktreeId,
+    ...options
+  }: Parameters<AppState['openDiff']>[5] & {
+    /** A folder workspace opens the tab in the folder while git and conflict tracking stay on the repo. */
+    tabWorktreeId?: string
+  } = {}
 ): void {
   const language = detectLanguage(entry.path)
   if (entry.conflictKind && entry.conflictStatus) {

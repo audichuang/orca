@@ -4,7 +4,7 @@ import { joinPath } from '@/lib/path'
 import type { OpenFile } from '../types/open-file'
 import type { ConflictReviewState } from '../../../../../../shared/editor-tab-view-types'
 import { toOpenConflictMetadata } from '../git/git-status-reconciliation'
-import { getScopedTabIdOwner } from '../git/open-file-git-owner'
+import { getScopedTabIdOwner, resolveOpenGitWorktreeId } from '../git/open-file-git-owner'
 import { resolveEditorFileIdForOwner } from '../file-ids/editor-file-ids'
 import { openWorkspaceEditorItem } from '../tabs/workspace-editor-item'
 import { captureEditorFileOperationProvenance } from '@/lib/editor-file-operation-owner'
@@ -25,15 +25,8 @@ export function createOpenConflictReview(
   get: EditorGet
 ): Pick<EditorSlice, 'openConflictReviewFile' | 'openConflictReview'> {
   return {
-    openConflictReviewFile: (
-      reviewFileId,
-      worktreeId,
-      worktreePath,
-      entry,
-      language,
-      gitWorktreeIdArg
-    ) => {
-      const gitWorktreeId = gitWorktreeIdArg !== worktreeId ? gitWorktreeIdArg : undefined
+    openConflictReviewFile: (reviewFileId, worktreeId, worktreePath, entry, language, gitOwner) => {
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, gitOwner)
       const trackedKey = gitWorktreeId ?? worktreeId
       const absolutePath = joinPath(worktreePath, entry.path)
       const reviewTab = (get().unifiedTabsByWorktree?.[worktreeId] ?? []).find(
@@ -150,8 +143,8 @@ export function createOpenConflictReview(
     },
 
     // Why: renders from a stored snapshot (entries + timestamp), not live status, so the list stays stable across polls while reviewing.
-    openConflictReview: (worktreeId, worktreePath, entries, source, gitWorktreeIdArg) => {
-      const gitWorktreeId = gitWorktreeIdArg !== worktreeId ? gitWorktreeIdArg : undefined
+    openConflictReview: (worktreeId, worktreePath, entries, source, gitOwner) => {
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, gitOwner)
       const id = `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::conflict-review`
       set((s) => {
         const conflictReview: ConflictReviewState = {
