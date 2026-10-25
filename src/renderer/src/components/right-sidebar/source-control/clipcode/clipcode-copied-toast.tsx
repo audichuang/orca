@@ -8,6 +8,10 @@ import {
   type ClipcodePayloadStats
 } from './clipcode-payload-stats'
 
+// Why: the clipboard holds only the latest copy, and stacked copy toasts cover the rows copied next.
+// A fresh id (not an update in place) so the new toast still shows if the old one is mid-exit.
+let shownCopiedToastId: string | number | undefined
+
 function ClipcodeCopiedBody({
   stats,
   limit,
@@ -68,7 +72,10 @@ export function notifyClipcodeCopied(
       : stats.tokens >= CLIPCODE_TOKEN_WARN_THRESHOLD
         ? [toast.warning, CLIPCODE_TOKEN_WARN_THRESHOLD]
         : [toast.success, null]
-  show(title, {
+  if (shownCopiedToastId !== undefined) {
+    toast.dismiss(shownCopiedToastId)
+  }
+  shownCopiedToastId = show(title, {
     description: <ClipcodeCopiedBody stats={stats} limit={limit} notes={notes} />,
     // Why: an oversized payload stays up until dismissed so the warning cannot be missed.
     duration: limit === null ? 4000 : Infinity
