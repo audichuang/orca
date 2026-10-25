@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import { resolveOpenGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 
 /** Pins a Source Control panel to one repo of a folder workspace instead of the active worktree. */
 export type SourceControlWorktreeScope = {
@@ -18,4 +19,30 @@ export const SourceControlWorktreeScopeContext = createContext<SourceControlWork
 
 export function useSourceControlWorktreeScope(): SourceControlWorktreeScope | null {
   return useContext(SourceControlWorktreeScopeContext)
+}
+
+/** Tab owner (the editor that shows a tab) and git owner (the repo backing it, or undefined when it is the tab owner). */
+export type TabOwners<T extends string | null | undefined> = {
+  tabOwnerId: string | T
+  gitOwnerId: string | undefined
+}
+
+/** Owners of tabs opened for repoWorktreeId from a panel whose editor may be a folder workspace's. */
+export function resolveTabOwners<T extends string | null | undefined>(
+  editorWorktreeId: string | null | undefined,
+  repoWorktreeId: T
+): TabOwners<T> {
+  const tabOwnerId = editorWorktreeId != null ? editorWorktreeId : repoWorktreeId
+  return {
+    tabOwnerId,
+    gitOwnerId: tabOwnerId
+      ? resolveOpenGitWorktreeId(tabOwnerId, { gitWorktreeId: repoWorktreeId || undefined })
+      : undefined
+  }
+}
+
+export function useSourceControlOwners<T extends string | null | undefined>(
+  repoWorktreeId: T
+): TabOwners<T> {
+  return resolveTabOwners(useSourceControlWorktreeScope()?.editorWorktreeId, repoWorktreeId)
 }
