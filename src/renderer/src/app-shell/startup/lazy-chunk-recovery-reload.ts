@@ -27,7 +27,10 @@ type RefusedNavigationWait = {
   armGrace: () => void
 }
 
-function waitForRefusedNavigation(win: Window, armGraceNow = true): RefusedNavigationWait {
+function waitForRefusedNavigation(
+  win: Window,
+  { armGraceNow = true }: { armGraceNow?: boolean } = {}
+): RefusedNavigationWait {
   let graceTimer: ReturnType<typeof setTimeout> | undefined
   let onUnloadPrevented: () => void = () => undefined
   let settled = false
@@ -106,7 +109,7 @@ async function isInstalledBundleReplaced(): Promise<boolean> {
 
 async function restartIntoReplacedBundle(win: Window): Promise<LazyChunkRecoveryReloadOutcome> {
   // Why deferred: restart() waits on a checkpoint that may outlast the grace window.
-  const refused = waitForRefusedNavigation(win, false)
+  const refused = waitForRefusedNavigation(win, { armGraceNow: false })
   try {
     // restart() runs the same hot-exit backup and checkpoint, then quits through the normal pipeline.
     await window.api.app.restart()
