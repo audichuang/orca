@@ -51,6 +51,22 @@ jobs:
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+      # Why first: a missing secret otherwise fails after the build, and HOMEBREW_TAP_TOKEN only after the release is public.
+      - name: Check the release secrets
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          names="APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_API_KEY_P8 APPLE_API_KEY_ID APPLE_API_ISSUER"
+          [ "$DRY_RUN" = true ] || names="$names HOMEBREW_TAP_TOKEN"
+          missing=""
+          for name in $names; do [ -n "$(printenv "$name")" ] || missing="$missing $name"; done
+          [ -z "$missing" ] || { echo "::error::Secrets not set:$missing"; exit 1; }
+
       - uses: ./.github/actions/install-node-dependencies
         with:
           native-runtime: electron
@@ -69,8 +85,6 @@ jobs:
           P12_BASE64: ${{ secrets.APPLE_CERTIFICATE }}
           P12_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
-          # Why: an unset secret expands to "" and the import fails without naming it.
-          [ -n "$P12_BASE64" ] || { echo "::error::APPLE_CERTIFICATE secret is not set."; exit 1; }
           keychain="$RUNNER_TEMP/fork-signing.keychain-db"
           keychain_password=$(uuidgen)
           printf '%s' "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/signing.p12"
@@ -90,7 +104,6 @@ jobs:
         env:
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
         run: |
-          [ -n "$APPLE_API_KEY_P8" ] || { echo "::error::APPLE_API_KEY_P8 secret is not set."; exit 1; }
           key="$RUNNER_TEMP/AuthKey.p8"
           printf '%s\n' "$APPLE_API_KEY_P8" > "$key"
           chmod 600 "$key"
@@ -101,8 +114,8 @@ jobs:
         env:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          FORK_SIGN_IDENTITY: 'Developer ID Application: Yung Chun Chuang (37HFR5V2JJ)'
-        run: make fork-dmg FORK_VERSION=${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: make fork-dmg FORK_VERSION="$VERSION"
 
       # Why: a lost secret must fail the release, not ship an app that re-prompts for every grant.
       - name: Verify the Developer ID signature and notarization
@@ -118,10 +131,12 @@ jobs:
 
       - name: Check the packaged version
         id: dmg
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           actual=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' dist/mac-arm64/Orca.app/Contents/Info.plist)
-          test "$actual" = "${{ steps.version.outputs.version }}" || {
-            echo "::error::Packaged version $actual != ${{ steps.version.outputs.version }}."
+          test "$actual" = "$VERSION" || {
+            echo "::error::Packaged version $actual != $VERSION."
             exit 1
           }
           echo "sha256=$(shasum -a 256 dist/orca-fork-macos-arm64.dmg | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
@@ -182,6 +197,10 @@ jobs:
           PY
           gh api -X PUT "$path" --input "$RUNNER_TEMP/cask-put.json" --jq '.commit.html_url'
 
-      - name: Remove the signing keychain
-        if: always() && runner.environment == 'github-hosted'
-        run: security delete-keychain "$RUNNER_TEMP/fork-signing.keychain-db" 2>/dev/null || true
+      - name: Remove the signing keychain and API key
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/AuthKey.p8"
+          if [ "${{ runner.environment }}" = github-hosted ]; then
+            security delete-keychain "$RUNNER_TEMP/fork-signing.keychain-db" 2>/dev/null || true
+          fi
