@@ -13,6 +13,7 @@ import {
   cancelSourceControlEditorRevealFrames,
   requestSourceControlEditorRevealFrame
 } from './editor-reveal-frames'
+import { resolveTabOwners } from '../folder/worktree-scope'
 
 export type SourceControlNoteOpening = {
   handleOpenComment: (comment: DiffComment) => void
@@ -65,6 +66,7 @@ export function useSourceControlNoteOpening({
         return
       }
       const filePath = comment.filePath
+      const { tabOwnerId, gitOwnerId } = resolveTabOwners(editorWorktreeId, activeWorktreeId)
       const commentId = comment.id
       // Clear any dangling prior scroll request; only the diff branches below re-stamp it.
       cancelSourceControlEditorRevealFrames(pendingCommentEditorRevealFrameIdsRef)
@@ -77,11 +79,8 @@ export function useSourceControlNoteOpening({
         openFile({
           filePath: absPath,
           relativePath: filePath,
-          worktreeId: editorWorktreeId ?? activeWorktreeId,
-          gitWorktreeId:
-            editorWorktreeId && editorWorktreeId !== activeWorktreeId
-              ? activeWorktreeId
-              : undefined,
+          worktreeId: tabOwnerId,
+          gitWorktreeId: gitOwnerId,
           language,
           mode: 'edit'
         })
@@ -125,9 +124,8 @@ export function useSourceControlNoteOpening({
       openFile({
         filePath: absPath,
         relativePath: filePath,
-        worktreeId: editorWorktreeId ?? activeWorktreeId,
-        gitWorktreeId:
-          editorWorktreeId && editorWorktreeId !== activeWorktreeId ? activeWorktreeId : undefined,
+        worktreeId: tabOwnerId,
+        gitWorktreeId: gitOwnerId,
         language,
         mode: 'edit'
       })
