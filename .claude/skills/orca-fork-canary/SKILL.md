@@ -13,7 +13,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
 
 ## 1. 準備並跑 canary
 
-1. 清掉之前 run 留下的 worktree：`git worktree list` 裡路徑含 `auto-orca-fork-canary-run-` 而且不是 `MAIN` 的，逐一 `orca worktree rm --worktree "id:622b02e4-f394-4c0d-a683-b027f426796b::<路徑>" --force --json`（只刪這種）。canary 從不改 run worktree，所以 `git -C <路徑> status --porcelain --untracked-files=no` 有輸出的，是有人接手在用：不刪，列進通知。
+1. 清掉之前 run 留下的 worktree：`git worktree list` 裡路徑含 `auto-orca-fork-canary-run-` 而且不是 `MAIN` 的，逐一 `orca worktree rm --worktree "id:622b02e4-f394-4c0d-a683-b027f426796b::<路徑>" --force --json`（只刪這種）。canary 從不改 run worktree，所以只刪 `git -C <路徑> status --porcelain`（含未追蹤檔）沒有輸出、而且 `git -C <路徑> branch -r --contains HEAD` 列得出 `fork/` 分支的；其他的是有人接手在用，不刪，列進通知。
 2. 取筆記（後面每一步都用這三份副本，原始那份留著比對）：
    ```sh
    tip=$(config/scripts/fork-notes.sh tip)
@@ -26,14 +26,13 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
    git fetch -q fork && git fetch -q origin main --tags
    git checkout -q --detach fork/develop
    pnpm install --frozen-lockfile
-   prev=$(cat "$OUT/latest.txt" 2>/dev/null || true)
    CANARY_KEEP=1 CANARY_OUT="$OUT" make fork-canary > "$S/canary.out" 2>&1
    ```
    - 用 `make`：它會帶入 `FORK_BASE` 與 `UPSTREAM_REMOTE`。直接呼叫 `config/scripts/fork-canary.sh` 少了這兩個變數，會 setup error（exit 3）。
    - `CANARY_KEEP=1` 留下合併好的 worktree，第 2、3 步要在裡面套用解法、驗證。不要為了驗證重跑一次 canary。
    - 要跑好幾分鐘（typecheck 加一百多個 fork 測試檔），在背景跑，等完成通知。
-4. 讀結果。`make` 會把腳本的 exit code 換成自己的，所以看報告：`R="$OUT/$(cat "$OUT/latest.txt")"`，`$R/report.md` 的 `Result:` 行是 green / not green / setup error。`$S/canary.out` 裡 `>> kept canary worktree <路徑>; remove it with …` 那行，分號前面是留下的 worktree（下稱 `K`）。
-   - **setup error**，或 `latest.txt` 不存在、內容還是開跑前的 `$prev`（`make` 的前置檢查在腳本開跑前就失敗了，沒有新報告）：跳到「4. 通知、存摘要、收尾」，通知寫報告的訊息或 `$S/canary.out` 的最後幾行。
+4. 讀結果。`make` 會把腳本的 exit code 換成自己的，所以看報告。報告目錄取自這次的輸出，不讀共用的 `latest.txt`（另一個 canary 可能剛好更新它）：`$S/canary.out` 的 `>> report: <路徑>/report.md (exit N)` 那行，`R` = 那個路徑去掉 `/report.md`。`$R/report.md` 的 `Result:` 行是 green / not green / setup error。`$S/canary.out` 裡 `>> kept canary worktree <路徑>; remove it with …` 那行，分號前面是留下的 worktree（下稱 `K`）。
+   - **setup error**，或 `$S/canary.out` 沒有 `>> report:` 那行（`make` 的前置檢查在腳本開跑前就失敗了，沒有新報告）：跳到「4. 通知、存摘要、收尾」，通知寫報告的訊息或 `$S/canary.out` 的最後幾行。
    - **green**：跳到「4. 通知、存摘要、收尾」。
 
 ## 2. 歸因：哪些是同一件事
@@ -74,14 +73,14 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
 
 ## 4. 通知、存摘要、收尾
 
-- **先決定要不要推 Bark**，拿這次的結果跟 `$S/canary-last.orig.json`（上一次的摘要）比：有出現新的檔案、有項目消失、setup error、報告的「Leftover canary worktrees」或第 1 步沒刪的 run worktree 不是空的，或是沒有上一次的摘要，就推；都一樣就不推。推的方式照 `.claude/skills/orca-fork-auto-rebase/SKILL.md` 第 8 步（同一個 Bash 指令裡組內容並送出，group `orca`）。
+- **先決定要不要推 Bark**，拿這次的結果跟 `$S/canary-last.orig.json`（上一次的摘要）比：`Result:` 行跟上次的 `result` 不同、有出現新的檔案、有項目消失、setup error、報告的「Leftover canary worktrees」或第 1 步沒刪的 run worktree 不是空的，或是沒有上一次的摘要，就推；都一樣就不推。推的方式照 `.claude/skills/orca-fork-auto-rebase/SKILL.md` 第 8 步（同一個 Bash 指令裡組內容並送出，group `orca`）。
   - title：「Orca fork canary：<N 個新問題｜setup error｜全綠>」。N 是**新的根因條數**，不是檔案數；「新」指它在 `known-resolutions.orig.md` 沒有條目、檔案也不在上一次的摘要裡。條目被 auto-rebase 清掉才重寫的根因，使用者之前已經收過通知，算在「已知」那段（註明重寫幾條）。沒有新根因但有變化（例如有項目消失），就寫「沒有新問題」。
   - body：上游 main sha 與距 develop 基底幾個 commit；然後分三段：新的根因（每項一句建議，加上驗證結果）、已知的根因（條目名稱）、消失的項目；殘留的 worktree；最後是報告路徑 `$R/report.md`。
 - 寫回筆記（第 1 步取筆記失敗就跳過，通知裡已寫原因）：
-  - green 或 not green：把這次的摘要寫進 `$S/canary-last.json`，四個清單照報告原樣列還沒歸因的檔案路徑，下一次就拿它來比對：
+  - green 或 not green：把這次的摘要寫進 `$S/canary-last.json`，四個清單照報告原樣列還沒歸因的檔案路徑；`result` 記下 install 或 test listing 失敗這類清單表達不出來的狀態。下一次就拿它來比對：
 
     ```json
-    {"upstream": "<sha>", "date": "<YYYY-MM-DD>", "report": "<$R/report.md>",
+    {"upstream": "<sha>", "date": "<YYYY-MM-DD>", "report": "<$R/report.md>", "result": "<Result: 行的內容>",
      "conflicts": [...], "tcErrorFiles": [...], "failingTests": [...], "droppedTests": [...]}
     ```
 
