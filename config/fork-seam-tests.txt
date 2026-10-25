@@ -42,6 +42,7 @@ src/renderer/src/store/slices/editor-read-only-tabs.fork.test.ts
 src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts
 src/shared/workspace-layout/layout-editor-view.fork.test.ts
 src/shared/workspace-layout/workspace-layout-fact-locations.test.ts
+src/shared/workspace-session-schema.git-owner.test.ts
 
 # gitWorktreeId on editor open actions: panel, combined view, history, status reconcile
 src/renderer/src/components/editor/combined-diff/CombinedDiffViewer.fork.test.tsx
@@ -69,6 +70,9 @@ src/renderer/src/components/right-sidebar/source-control/folder/folder-multi-rep
 src/renderer/src/components/right-sidebar/source-control/commit/folder-discard-autosave-holds.test.tsx
 src/renderer/src/components/right-sidebar/source-control/commit/use-entry-mutations.fork.test.tsx
 src/renderer/src/components/right-sidebar/SourceControl.preview-open.fork.test.tsx
+src/renderer/src/components/editor/editor-autosave.fork.test.ts
+src/renderer/src/components/editor/folder-relative-git-consumers.test.tsx
+src/renderer/src/components/editor/editor-external-watch-path-index.fork.test.ts
 
 # Editor save event
 src/renderer/src/components/editor/editor-file-saved-event.contract.test.ts
