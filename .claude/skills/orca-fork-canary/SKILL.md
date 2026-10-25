@@ -69,8 +69,8 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
   - **上游改了 fork 依賴的 API**（改名、刪 export、改簽章）→ 寫 fork 這邊要怎麼跟上。
   - **看不出來** → 照實寫「待人判斷」與已知的事實，不要猜。
 - 驗證就是第 2 步那次 `pnpm tc` 和重跑測試。寫下跑了什麼、結果如何、在哪個上游 sha 上跑的；沒驗證的標「未驗證」。
-- 寫進 `$S/known-resolutions.md`，**一個根因一條**，格式照檔案開頭的範本：標題寫上游 commit、fork commit、canary 日期；內容列出衝突檔，以及連帶出現的 typecheck 錯誤檔和失敗測試，這樣 auto-rebase 看到同樣的症狀，就知道是同一件事。上游 commit 一定要寫完整的 sha：auto-rebase 用 `git merge-base --is-ancestor <它> vNEW` 判斷條目適不適用。
-- 已經有條目的根因：這次也驗證過的話，在條目上更新「驗證（日期，上游 sha）」那行，不要另開一條。條目留著；auto-rebase 移動 develop 後會自己刪。
+- 寫進 `$S/known-resolutions.md`，**一個根因一條**，格式照檔案開頭的範本：標題寫上游 commit、fork commit、canary 日期；內容列出衝突檔，以及連帶出現的 typecheck 錯誤檔和失敗測試，這樣 auto-rebase 看到同樣的症狀，就知道是同一件事。上游 commit 一定要寫完整的 sha：auto-rebase 用 `git merge-base --is-ancestor <它> vNEW` 判斷條目適不適用。fork commit 寫 sha 也寫標題：develop 每次 rebase 都會改寫 sha，靠標題才找得回來。
+- 已經有條目的根因：這次也驗證過的話，在條目上更新「驗證（日期，上游 sha）」那行，不要另開一條。條目的 fork sha 不在目前的 develop 上（`git merge-base --is-ancestor <sha> fork/develop` 失敗，代表 develop 已被 rebase 改寫過），就用 commit 標題在 `git log --format='%h %s' <FORK_BASE>..fork/develop` 找到新的 sha 換上。條目留著；auto-rebase 移動 develop 後會自己刪。
 
 ## 4. 通知、存摘要、收尾
 
@@ -81,7 +81,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
   - green 或 not green：把這次的摘要寫進 `$S/canary-last.json`，四個清單照報告原樣列還沒歸因的檔案路徑；`result` 記下 install 或 test listing 失敗這類清單表達不出來的狀態。下一次就拿它來比對：
 
     ```json
-    {"upstream": "<sha>", "date": "<YYYY-MM-DD>", "report": "<$R/report.md>", "result": "<Result: 行的內容>",
+    {"upstream": "<sha>", "date": "<YYYY-MM-DD>", "report": "<$R/report.md，家目錄寫成 ~>", "result": "<Result: 行的內容>",
      "conflicts": [...], "tcErrorFiles": [...], "failingTests": [...], "droppedTests": [...]}
     ```
 
