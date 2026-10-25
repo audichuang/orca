@@ -10,6 +10,7 @@ import {
 import os from 'node:os'
 import path from 'node:path'
 import { test, expect } from './helpers/orca-app'
+import { expectCopyToastClears } from './helpers/settled-toast-box'
 import { startHiddenRendererFrameCapture } from './helpers/hidden-renderer-frame-capture'
 import { waitForSessionReady } from './helpers/store'
 import {
@@ -490,6 +491,14 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     expect(actual).toBe(expected)
   }
 
+  const stagedSectionCopy = () =>
+    page
+      .locator('button[aria-expanded]')
+      .filter({ hasText: /^Staged/i })
+      .first()
+      .locator('xpath=ancestor::div[contains(@class,"group/section")][1]')
+      .getByRole('button', { name: 'Copy Full Source' })
+
   await scenario('S9a Copy Full Source: row context menu', async (ev) => {
     await expandOnly(H.web)
     const cases: { area: 'unstaged' | 'staged'; p: string }[] = [
@@ -518,20 +527,15 @@ test('folder workspace multi-repo source control, copy and restore', async ({
       expect(toast).toContain(statsLine(actual))
       ev.push(`toast: ${toast}`)
       await expect(page.getByRole('menuitem', { name: 'Copy Full Source' })).toHaveCount(0)
+      const later = cases.slice(cases.indexOf(c) + 1).map((n) => entry(n.area, n.p))
+      await expectCopyToastClears(page, [...later, stagedSectionCopy()])
     }
   })
 
   await scenario('S9b Copy Full Source: Staged section header', async (ev) => {
     await expandOnly(H.web)
     await setClipboard(page, 'sentinel')
-    const stagedHeader = page
-      .locator('button[aria-expanded]')
-      .filter({ hasText: /^Staged/i })
-      .first()
-    const container = stagedHeader.locator(
-      'xpath=ancestor::div[contains(@class,"group/section")][1]'
-    )
-    await container.getByRole('button', { name: 'Copy Full Source' }).click()
+    await stagedSectionCopy().click()
     const { actual, toast } = await copiedPayload()
     const files = readStatus(R.webapp)
       .filter((e) => e.area === 'staged')
