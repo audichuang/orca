@@ -22,7 +22,7 @@ import {
 import { translate } from '@/i18n/i18n'
 import { addAppKeyListener, removeAppKeyListener } from '@/lib/app-keyboard-router'
 import { cn } from '@/lib/utils'
-import { forkEditorTabIconElement } from '@/components/git-graph-tab/fork-editor-tab-kinds'
+import { forkEditorTabIconElement } from '@/components/git-graph-tab/git-graph-editor-surfaces'
 
 type SwitcherState = {
   items: RecentTabSwitcherItem[]
