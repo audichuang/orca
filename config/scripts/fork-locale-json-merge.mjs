@@ -6,18 +6,23 @@ import { join } from 'node:path'
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+// Why own keys only: `toString` or `__proto__` are valid catalog keys, not inherited members.
+const own = (object, key) => (Object.hasOwn(object, key) ? object[key] : undefined)
 
 // `undefined` stands for a key a side never had or deleted; a key both sides changed takes `pick`'s value.
 function mergeValue(base, ours, theirs, pick, conflicts, path) {
   if (isObject(ours) && isObject(theirs)) {
     const baseObject = isObject(base) ? base : {}
-    const merged = {}
+    const merged = Object.create(null)
     // Ours first so upstream's key order survives; keys only theirs added follow.
-    for (const key of [...Object.keys(ours), ...Object.keys(theirs).filter((k) => !(k in ours))]) {
+    for (const key of [
+      ...Object.keys(ours),
+      ...Object.keys(theirs).filter((k) => !Object.hasOwn(ours, k))
+    ]) {
       const value = mergeValue(
-        baseObject[key],
-        ours[key],
-        theirs[key],
+        own(baseObject, key),
+        own(ours, key),
+        own(theirs, key),
         pick,
         conflicts,
         `${path}${key}.`
