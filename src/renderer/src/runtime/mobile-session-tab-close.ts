@@ -1,12 +1,8 @@
 import type { AppState } from '../store/types'
+import { addForkEditorTabKinds } from '../../../shared/fork-editor-tab-kinds'
 
-const EDITOR_SESSION_CONTENT_TYPES = new Set([
-  'editor',
-  'diff',
-  'conflict-review',
-  'check-details',
-  'git-graph'
-])
+const EDITOR_SESSION_CONTENT_TYPES = new Set(['editor', 'diff', 'conflict-review', 'check-details'])
+addForkEditorTabKinds(EDITOR_SESSION_CONTENT_TYPES)
 
 export function closeMobileSessionTabInStore(
   store: Pick<AppState, 'unifiedTabsByWorktree' | 'openFiles' | 'closeFile' | 'closeUnifiedTab'>,
