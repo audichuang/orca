@@ -83,6 +83,7 @@ src/renderer/src/app-shell/git-graph-command-handler.test.ts
 # Updater: fork distribution
 src/main/updater.fork-distribution.test.ts
 src/main/updater/fork-distribution.test.ts
+src/main/updater/updater-nudge.fork.test.ts
 
 # Hidden folder repos
 src/renderer/src/components/right-sidebar/source-control/folder/folder-sidebar-hidden-repos.test.ts

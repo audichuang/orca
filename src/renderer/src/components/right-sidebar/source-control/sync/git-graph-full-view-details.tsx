@@ -9,16 +9,16 @@ import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import type { OpenCommitFileHandler } from './commit-file-sequence'
 import { mergeCommitFiles } from './git-graph-merged-commit-files'
-import {
-  GitHistoryCommitFiles,
-  type GitHistoryCommitFilesLayout,
-  type GitHistoryCommitFilesState
-} from './git-history-commit-files'
+import { GitHistoryCommitFiles, type GitHistoryCommitFilesState } from './git-history-commit-files'
 import {
   GitGraphCommitInfo,
   GitGraphCommitsSummary,
   type GitGraphCommitContext
 } from './git-graph-commit-info'
+
+type GitHistoryCommitFilesLayout = NonNullable<
+  React.ComponentProps<typeof GitHistoryCommitFiles>['layout']
+>
 
 const DETAILS_WIDTH_KEY = 'orca:git-graph-details-width'
 const FILES_LAYOUT_KEY = 'orca:git-graph-files-layout'
