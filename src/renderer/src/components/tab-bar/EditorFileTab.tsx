@@ -1,15 +1,7 @@
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
-import {
-  GitCompareArrows,
-  Eye,
-  ShieldAlert,
-  Pin,
-  ListChecks,
-  Smartphone,
-  GitGraph
-} from 'lucide-react'
+import { Eye, ShieldAlert, Pin } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { TabHoverCard } from './TabHoverCard'
 import { basename } from '@/lib/path'
@@ -45,6 +37,7 @@ import { useTabContextMenuOpening } from './tab-context-menu-opening'
 import { editorTabDocumentFolderAccess } from '@/lib/local-file-access'
 import { useTabCustomEditor } from '@/store/plugin-custom-editors'
 import { PluginContributionIcon } from '../plugins/PluginContributionIcon'
+import { editorFileTabModeIcon } from './editor-file-tab-hover-icon'
 
 export default function EditorFileTab({
   file,
@@ -96,25 +89,10 @@ export default function EditorFileTab({
     data: dragData
   })
 
-  const isDiff = file.mode === 'diff'
   const isConflictReview = file.mode === 'conflict-review'
-  const isCheckDetails = file.mode === 'check-details'
   const isMarkdownPreviewTab = file.mode === 'markdown-preview'
   const customEditor = useTabCustomEditor(file)
-  // Why: simulator tabs reuse this chrome with a synthetic path an icon theme would map to its file icon.
-  const ModeIcon = isConflictReview
-    ? ShieldAlert
-    : isCheckDetails
-      ? ListChecks
-      : file.mode === 'git-graph'
-        ? GitGraph
-        : isDiff
-          ? GitCompareArrows
-          : isMarkdownPreviewTab
-            ? Eye
-            : file.language === 'simulator'
-              ? Smartphone
-              : null
+  const ModeIcon = editorFileTabModeIcon(file)
   const tabIcon = (className: string): React.ReactNode => (
     <PluginContributionIcon
       url={customEditor?.iconUrl}
