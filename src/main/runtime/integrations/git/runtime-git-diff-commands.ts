@@ -7,7 +7,7 @@ import type { GitBlameResult } from '../../../../shared/git/blame/git-blame-type
 import { assertGitDiffWithinTransportBudget } from '../../../../shared/git/diff/git-diff-transport-budget'
 import { getBranchDiff } from '../../../git/source-control/comparisons/branch-diff'
 import type { GitAdmissionTier } from '../../../../shared/rpc-contract/source-control/git-admission-tier-params'
-import type { GitDiffReadOptions } from '../../../git/source-control/diff-render-limit-options'
+import type { GitDiffReadOptions } from '../../../git/source-control/git-diff-read-options'
 import { normalizeRuntimeRelativePath } from '../../files/paths/runtime-relative-paths'
 import {
   localGitOptionsForTarget,
