@@ -1,11 +1,10 @@
 import { useCallback } from 'react'
 import { requireGitOwnerTarget } from '../../worktree-git-owner-target'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
-import { notifyEditorExternalFileChange } from '@/components/editor/editor-autosave'
 import {
-  releaseEditorSaveHolds,
-  requestEditorSaveQuiesceAll
-} from '@/components/editor/editor-save-quiesce-batch'
+  notifyEditorExternalFileChangeForOwners,
+  requestEditorSaveQuiesceForOwners
+} from '../folder/repo-editor-owner-save-holds'
 import { getConnectionId } from '@/lib/connection-context'
 import { basename } from '@/lib/path'
 import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
@@ -21,13 +20,6 @@ import {
   dismissSourceControlEntryFailureToast,
   showSourceControlEntryFailureToast
 } from './source-control-entry-failure-toast'
-
-// Why: a folder workspace's open tabs are owned by the folder key while git runs against the repo.
-function editorOwnerIds(gitWorktreeId: string, editorWorktreeId: string | undefined): string[] {
-  return editorWorktreeId && editorWorktreeId !== gitWorktreeId
-    ? [gitWorktreeId, editorWorktreeId]
-    : [gitWorktreeId]
-}
 
 export function useSourceControlEntryMutations({
   activeRepoTarget,
@@ -118,14 +110,12 @@ export function useSourceControlEntryMutations({
       const runtimeEnvironmentId =
         activeRepoTarget?.kind === 'environment' ? activeRepoTarget.environmentId : null
       // Hold pending autosaves so delayed writes cannot recreate edits after Git restores the file.
-      const releases = await requestEditorSaveQuiesceAll(
-        editorOwnerIds(activeWorktreeId, editorWorktreeId).map((worktreeId) => ({
-          worktreeId,
-          worktreePath,
-          relativePath: filePath,
-          runtimeEnvironmentId
-        }))
-      )
+      const releaseAutoSave = await requestEditorSaveQuiesceForOwners(editorWorktreeId, {
+        worktreeId: activeWorktreeId,
+        worktreePath,
+        relativePath: filePath,
+        runtimeEnvironmentId
+      })
       // Release in finally so every workspace holds autosave until Git finishes.
       try {
         const connectionId = getConnectionId(activeWorktreeId) ?? undefined
@@ -139,16 +129,14 @@ export function useSourceControlEntryMutations({
           },
           filePath
         )
-        for (const worktreeId of editorOwnerIds(activeWorktreeId, editorWorktreeId)) {
-          notifyEditorExternalFileChange({
-            worktreeId,
-            worktreePath,
-            relativePath: filePath,
-            runtimeEnvironmentId
-          })
-        }
+        notifyEditorExternalFileChangeForOwners(editorWorktreeId, {
+          worktreeId: activeWorktreeId,
+          worktreePath,
+          relativePath: filePath,
+          runtimeEnvironmentId
+        })
       } finally {
-        releaseEditorSaveHolds(releases)
+        releaseAutoSave()
       }
     },
     [activeRepoTarget, activeWorktreeId, editorWorktreeId, worktreePath]
@@ -162,16 +150,13 @@ export function useSourceControlEntryMutations({
       const runtimeEnvironmentId =
         activeRepoTarget?.kind === 'environment' ? activeRepoTarget.environmentId : null
       // Quiesce matching editors so delayed autosaves cannot recreate edits after Git mutates files.
-      const releases = await requestEditorSaveQuiesceAll(
-        editorOwnerIds(activeWorktreeId, editorWorktreeId).flatMap((worktreeId) =>
-          filePaths.map((relativePath) => ({
-            worktreeId,
-            worktreePath,
-            relativePath,
-            runtimeEnvironmentId
-          }))
-        )
-      )
+      const targets = filePaths.map((relativePath) => ({
+        worktreeId: activeWorktreeId,
+        worktreePath,
+        relativePath,
+        runtimeEnvironmentId
+      }))
+      const releaseAutoSaves = await requestEditorSaveQuiesceForOwners(editorWorktreeId, targets)
       try {
         const connectionId = getConnectionId(activeWorktreeId) ?? undefined
         await bulkDiscardRuntimeGitPaths(
@@ -184,18 +169,9 @@ export function useSourceControlEntryMutations({
           },
           filePaths
         )
-        for (const worktreeId of editorOwnerIds(activeWorktreeId, editorWorktreeId)) {
-          for (const relativePath of filePaths) {
-            notifyEditorExternalFileChange({
-              worktreeId,
-              worktreePath,
-              relativePath,
-              runtimeEnvironmentId
-            })
-          }
-        }
+        notifyEditorExternalFileChangeForOwners(editorWorktreeId, targets)
       } finally {
-        releaseEditorSaveHolds(releases)
+        releaseAutoSaves()
       }
     },
     [activeRepoTarget, activeWorktreeId, editorWorktreeId, worktreePath]
