@@ -18,7 +18,7 @@ import type { CommitMessageDraftContext } from '../../shared/commit-message-gene
 import type { ConflictResolution } from '../../shared/source-control-entry-actions'
 import type { GitProviderStatusOptions } from './git-provider-status-options'
 import type { GitAdmissionTier } from '../git/command-runner/git-exec-options'
-import type { GitDiffReadOptions } from '../git/source-control/diff-render-limit-options'
+import type { GitDiffReadOptions } from '../git/source-control/git-diff-read-options'
 
 export type { GitProviderStatusOptions } from './git-provider-status-options'
 
