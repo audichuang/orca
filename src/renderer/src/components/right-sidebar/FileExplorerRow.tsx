@@ -63,7 +63,6 @@ export type FileExplorerRowProps = {
   onViewFile: () => void
   onContextMenuSelect: () => void
   onCopyPaths: (pathKind: 'absolute' | 'relative') => void
-  onCopyFullSource?: () => void
   onStartNew: (type: 'file' | 'folder', dir: string, depth: number) => void
   onStartRename: (node: TreeNode) => void
   onDuplicate: (node: TreeNode) => void
@@ -110,7 +109,6 @@ export function FileExplorerRow({
   onViewFile,
   onContextMenuSelect,
   onCopyPaths,
-  onCopyFullSource,
   onStartNew,
   onStartRename,
   onDuplicate,
@@ -304,7 +302,6 @@ export function FileExplorerRow({
         selectionSize={selectionSize}
         onViewFile={onViewFile}
         onCopyPaths={onCopyPaths}
-        onCopyFullSource={onCopyFullSource}
         onStartNew={onStartNew}
         onStartRename={onStartRename}
         onDuplicate={onDuplicate}
