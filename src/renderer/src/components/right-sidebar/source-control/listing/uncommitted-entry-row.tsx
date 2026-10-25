@@ -26,11 +26,9 @@ import {
   type ConflictResolution
 } from '../../../../../../shared/source-control-entry-actions'
 import { isSubmoduleWorktreeOnlyChange } from '../../../../../../shared/source-control-discard-all-sequence'
-import {
-  SOURCE_CONTROL_OPEN_TO_SIDE_EVENT,
-  toPermanentSourceControlRowOpenEvent,
-  type SourceControlRowOpenEvent
-} from './split-open'
+import { toPermanentSourceControlRowOpenEvent, type SourceControlRowOpenEvent } from './split-open'
+import { OpenToSideMenuItem } from './entry-context-menu-slots'
+import { ClipcodeEntryCopyItem } from '../clipcode/clipcode-menu-items'
 import {
   getSourceControlRowHighlightClass,
   SOURCE_CONTROL_ROW_ACTION_OVERLAY_CLASS,
@@ -58,7 +56,6 @@ export const UncommittedEntryRow = React.memo(function UncommittedEntryRow({
   onResolveConflict,
   onUnstage,
   onDiscard,
-  onCopyFullSource,
   commentCount,
   showPathHint = true,
   submoduleExpansion
@@ -79,7 +76,6 @@ export const UncommittedEntryRow = React.memo(function UncommittedEntryRow({
   onResolveConflict: (entry: GitStatusEntry, resolution: ConflictResolution) => Promise<void>
   onUnstage: (filePath: string, oldPath?: string) => Promise<void>
   onDiscard: (entry: GitStatusEntry) => void
-  onCopyFullSource?: (entryKey: string) => void
   commentCount: number
   showPathHint?: boolean
   // When set, the row is a dirty submodule: clicking toggles lazy expansion instead of opening an uninformative gitlink diff.
@@ -111,8 +107,8 @@ export const UncommittedEntryRow = React.memo(function UncommittedEntryRow({
       onView={() => onOpen(entry)}
       conflictResolutions={conflictResolutions}
       onResolveConflict={(resolution) => void onResolveConflict(entry, resolution)}
-      onOpenToSide={() => onOpen(entry, SOURCE_CONTROL_OPEN_TO_SIDE_EVENT)}
-      onCopyFullSource={onCopyFullSource ? () => onCopyFullSource(entryKey) : undefined}
+      viewItems={<OpenToSideMenuItem onOpen={(event) => onOpen(entry, event)} />}
+      copyItems={<ClipcodeEntryCopyItem rowKey={entryKey} />}
       onRevealInExplorer={onRevealInExplorer}
       onOpenChange={(open) => {
         if (open && onContextMenu) {
