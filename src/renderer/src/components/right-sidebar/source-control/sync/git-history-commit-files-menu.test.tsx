@@ -29,7 +29,8 @@ vi.mock('../listing/entry-context-menu', () => ({
 }))
 vi.mock('./git-history-commit-copy', () => ({ copyHistoryCommitsFullSource: mocks.copy }))
 
-const { ShowFileHistoryMenuItem } = await import('../listing/entry-context-menu-slots')
+const { OpenToSideMenuItem, ShowFileHistoryMenuItem } =
+  await import('../listing/entry-context-menu-slots')
 const { ClipcodeCopyFullSourceMenuItem } = await import('../clipcode/clipcode-menu-items')
 const { GitHistoryCommitFilesMenu, commitFilesMenuSlot } =
   await import('./git-history-commit-files-menu')
@@ -89,27 +90,38 @@ function renderMenu(model = defaultModel, onOpenFile = vi.fn()): void {
   )
 }
 
-/** The `onSelect` of the fork item of `type` inside a menu slot, if the slot renders one. */
-function slotAction(slot: React.ReactNode, type: unknown): (() => void) | undefined {
-  let action: (() => void) | undefined
+/** The props of the fork item of `type` inside a menu slot, if the slot renders one. */
+function slotItem(slot: React.ReactNode, type: unknown): Record<string, unknown> | undefined {
+  let found: Record<string, unknown> | undefined
   const walk = (node: React.ReactNode): void => {
     React.Children.forEach(node, (child) => {
-      if (!React.isValidElement<{ onSelect?: () => void; children?: React.ReactNode }>(child)) {
+      if (!React.isValidElement<Record<string, unknown> & { children?: React.ReactNode }>(child)) {
         return
       }
       if (child.type === type) {
-        action = child.props.onSelect
+        found = child.props
       }
       walk(child.props.children)
     })
   }
   walk(slot)
-  return action
+  return found
 }
-const copyFullSource = (): (() => void) | undefined =>
-  slotAction(mocks.menuProps?.copyItems, ClipcodeCopyFullSourceMenuItem)
-const showFileHistory = (): (() => void) | undefined =>
-  slotAction(mocks.menuProps?.viewItems, ShowFileHistoryMenuItem)
+function action(props: Record<string, unknown> | undefined, name: string): () => void {
+  const fn = props?.[name]
+  expect(fn).toBeTypeOf('function')
+  return () => {
+    if (typeof fn === 'function') {
+      fn()
+    }
+  }
+}
+const copyFullSourceItem = () =>
+  slotItem(mocks.menuProps?.copyItems, ClipcodeCopyFullSourceMenuItem)
+const showFileHistoryItem = () => slotItem(mocks.menuProps?.viewItems, ShowFileHistoryMenuItem)
+const openToSideItem = () => slotItem(mocks.menuProps?.viewItems, OpenToSideMenuItem)
+const copyFullSource = (): void => action(copyFullSourceItem(), 'onSelect')()
+const showFileHistory = (): void => action(showFileHistoryItem(), 'onSelect')()
 
 afterEach(() => {
   cleanup()
@@ -138,9 +150,18 @@ describe('GitHistoryCommitFilesMenu', () => {
     expect(mocks.menuProps?.absolutePath).toBe('/repo/src/two.ts')
     mocks.menuProps?.onView?.()
     expect(onOpenFile).toHaveBeenCalledWith(entries[1], expect.objectContaining({ altKey: false }))
+    const openToSide = openToSideItem()?.onOpen
+    expect(openToSide).toBeTypeOf('function')
+    if (typeof openToSide === 'function') {
+      openToSide({ altKey: true, ctrlKey: false, metaKey: false, shiftKey: false })
+    }
+    expect(onOpenFile).toHaveBeenLastCalledWith(
+      entries[1],
+      expect.objectContaining({ altKey: true })
+    )
     mocks.menuProps?.onRevealInExplorer('repo-wt', '/repo/src/two.ts')
     expect(model.revealInExplorer).toHaveBeenCalledWith('folder-1', '/repo/src/two.ts')
-    copyFullSource()?.()
+    copyFullSource()
     const args = mocks.copy.mock.calls[0]?.[0]
     expect(args).toMatchObject({
       items: [item],
@@ -157,7 +178,10 @@ describe('GitHistoryCommitFilesMenu', () => {
     expect(mocks.menuProps?.relativePath).toBe('src')
     expect(mocks.menuProps?.absolutePath).toBe('/repo/src')
     expect(mocks.menuProps?.onView).toBeUndefined()
-    copyFullSource()?.()
+    // A folder still lists Open to the Side, disabled.
+    expect(openToSideItem()).toBeDefined()
+    expect(openToSideItem()?.onOpen).toBeUndefined()
+    copyFullSource()
     const args = mocks.copy.mock.calls[0]?.[0]
     await expect(args.loadCommitFiles(item)).resolves.toEqual(entries)
   })
@@ -166,10 +190,10 @@ describe('GitHistoryCommitFilesMenu', () => {
     const openGitGraphTab = vi.fn()
     useAppStore.setState({ openGitGraphTab })
     renderMenu()
-    expect(showFileHistory()).toBeUndefined()
+    expect(showFileHistoryItem()).toBeUndefined()
 
     fireEvent.contextMenu(screen.getByText('src/two.ts'))
-    showFileHistory()?.()
+    showFileHistory()
     // The Git Graph tab's own filter, not the sidebar Commits panel's.
     const tabKey = gitGraphTabFilterKey(buildGitGraphTabId('folder-1'), 'repo-wt')
     expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({
@@ -183,7 +207,7 @@ describe('GitHistoryCommitFilesMenu', () => {
     })
 
     fireEvent.contextMenu(screen.getByText('src folder'))
-    showFileHistory()?.()
+    showFileHistory()
     expect(getGitHistoryGraphFilter(tabKey).query).toBe('path:src')
     expect(openGitGraphTab).toHaveBeenCalledTimes(2)
   })
@@ -201,7 +225,7 @@ describe('GitHistoryCommitFilesMenu', () => {
     expect(selected).toEqual(['src/one.ts', 'src/three.ts'])
 
     fireEvent.contextMenu(screen.getByText('src/three.ts'))
-    copyFullSource()?.()
+    copyFullSource()
     const args = mocks.copy.mock.calls[0]?.[0]
     await expect(args.loadCommitFiles(item)).resolves.toEqual([entries[0], entries[2]])
   })
@@ -224,7 +248,7 @@ describe('GitHistoryCommitFilesMenu', () => {
     renderMenu()
     fireEvent.click(screen.getByText('src/one.ts'), { metaKey: true, ctrlKey: true })
     fireEvent.contextMenu(screen.getByText('src/two.ts'))
-    copyFullSource()?.()
+    copyFullSource()
     const args = mocks.copy.mock.calls[0]?.[0]
     await expect(args.loadCommitFiles(item)).resolves.toEqual([entries[1]])
   })
@@ -255,7 +279,7 @@ describe('GitHistoryCommitFilesMenu', () => {
     rerender(<>{slot([other], entries, vi.fn(), list)}</>)
     expect(document.querySelectorAll('[data-selected]')).toHaveLength(0)
     fireEvent.contextMenu(screen.getByText('src/two.ts'))
-    copyFullSource()?.()
+    copyFullSource()
     const args = mocks.copy.mock.calls[0]?.[0]
     expect(args.items).toEqual([other])
     await expect(args.loadCommitFiles(other)).resolves.toEqual([entries[1]])
@@ -286,7 +310,7 @@ describe('GitHistoryCommitFilesMenu', () => {
     fireEvent.click(screen.getByText('src/one.ts'), { metaKey: true, ctrlKey: true })
     fireEvent.click(screen.getByText('src/two.ts'), { metaKey: true, ctrlKey: true })
     fireEvent.contextMenu(screen.getByText('src/two.ts'))
-    copyFullSource()?.()
+    copyFullSource()
     const args = mocks.copy.mock.calls[0]?.[0]
     expect(args.items).toEqual([item, other])
     await expect(args.loadCommitFiles(item)).resolves.toEqual([entries[0]])
