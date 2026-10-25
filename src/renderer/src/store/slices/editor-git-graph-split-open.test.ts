@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { createEditorTabsStore } from './editor-slice-test-harness'
 import { resolveGitGraphSplitTargetGroupId } from '@/components/git-graph-tab/git-graph-split-target'
 import {
-  SOURCE_CONTROL_OPEN_TO_SIDE_EVENT,
   toSourceControlRowOpenEvent,
   type SourceControlRowOpenEvent
 } from '@/components/right-sidebar/source-control/listing/split-open'
+import { SOURCE_CONTROL_OPEN_TO_SIDE_EVENT } from '@/components/right-sidebar/source-control/listing/split-open-to-side'
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 

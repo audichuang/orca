@@ -1,4 +1,6 @@
-import { requestEditorSaveQuiesce, type EditorSaveQuiesceTarget } from './editor-autosave'
+import { requestEditorSaveQuiesce } from './editor-autosave'
+
+type EditorSaveQuiesceTarget = Parameters<typeof requestEditorSaveQuiesce>[0]
 
 export function releaseEditorSaveHolds(releases: (() => void)[]): void {
   for (const release of releases) {
