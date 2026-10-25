@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render } from '@testing-library/react'
-import { Toaster } from 'sonner'
+import { Toaster, toast } from 'sonner'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { notifyClipcodeCopied } from './clipcode-copied-toast'
 
@@ -33,5 +33,20 @@ describe('Copy Full Source toast', () => {
     const toasts = document.querySelectorAll('[data-sonner-toast]')
     expect(toasts).toHaveLength(1)
     expect(toasts[0]?.textContent).toContain('3 Git file(s) copied')
+  })
+
+  it('still shows a copy made while the previous copy toast is leaving', async () => {
+    render(<Toaster />)
+    notifyClipcodeCopied('1 Git file(s) copied', [], 'a\n')
+    await settle(50)
+    toast.dismiss()
+    // Why 50ms: past the frame where sonner marks the dismissed toast, inside its 200ms exit.
+    await settle(50)
+    notifyClipcodeCopied('2 Git file(s) copied', [], 'b\nc\n')
+    await settle(400)
+
+    const toasts = document.querySelectorAll('[data-sonner-toast]')
+    expect(toasts).toHaveLength(1)
+    expect(toasts[0]?.textContent).toContain('2 Git file(s) copied')
   })
 })
