@@ -41,14 +41,13 @@ module.exports = {
   publish: null,
   mac: {
     ...base.mac,
-    // Why a stable identity: ad-hoc signatures change every build, so keychain "Always Allow" and
-    // TCC grants reset on each update. Releases sign with the fork's Developer ID and notarize
-    // (ORCA_MAC_RELEASE=1 from `make fork-dmg`); local builds keep the self-signed cert or '-' (ad-hoc).
+    // Why a Developer ID: ad-hoc signatures change every build, so keychain "Always Allow" and TCC
+    // grants reset on each update. `make fork-dmg` sets ORCA_MAC_RELEASE=1 for notarization.
     identity: process.env.ORCA_FORK_SIGN_IDENTITY || '-',
-    // Why: a self-signed build is never notarized and Apple's timestamp server added ~1s per signed
-    // file; notarization requires the timestamp, so only a release build keeps it.
+    // Why: an ad-hoc build is never notarized, and Apple's timestamp server adds ~1s per signed file.
     ...(process.env.ORCA_MAC_RELEASE === '1' ? {} : { timestamp: 'none' }),
     target: [{ target: 'dmg', arch: ['arm64'] }]
   },
-  dmg: { ...base.dmg, artifactName: 'orca-fork-macos-${arch}.${ext}' }
+  // Why no blockmap: the fork's updater is off, so nothing reads it.
+  dmg: { ...base.dmg, artifactName: 'orca-fork-macos-${arch}.${ext}', writeUpdateInfo: false }
 }
