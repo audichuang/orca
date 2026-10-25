@@ -6,7 +6,7 @@ import type { GitRuntimeOptions } from '../../command-runner/git-runtime-options
 import { gitRuntimeOptionsKey } from '../git-runtime-options-cache-key'
 import { gitDiffReadDedupe, settledDiffCache } from '../git-read-cache-invalidation'
 import { readWorktreeDiffStamp } from '../input-stamps/worktree-diff-stamp'
-import type { GitDiffReadOptions } from '../diff-render-limit-options'
+import type { GitDiffReadOptions } from '../git-diff-read-options'
 import { buildDiffResult } from './diff-result'
 import {
   blobConversion,
