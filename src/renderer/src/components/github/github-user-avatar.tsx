@@ -9,7 +9,7 @@ function githubAvatarUrl(login: string): string {
  * Build a 1-2 character initials placeholder from a display name or login,
  * used when no avatar image is available or the image fails to load.
  */
-export function initialsFor(login: string, name?: string | null): string {
+function initialsFor(login: string, name?: string | null): string {
   const source = (name?.trim() || login).trim()
   if (!source) {
     return '?'
