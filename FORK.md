@@ -7,6 +7,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 - Push only to the fork remote (`audichuang/orca`), never to upstream (`stablyai/orca`).
 - The base is the newest upstream release tag, not upstream `main`.
 - Work goes on a branch with a PR into `develop`, merged once Fork CI is green; never push `develop` directly, except a rebase.
+- Pick a branch prefix that is not itself a branch on the fork: the fork carries a `refactor` branch, so pushing `refactor/<x>` is rejected as a directory/file conflict.
 - A PR meant for upstream branches from upstream `main` and carries no fork-only file (`Makefile`, fork CI, `FORK.md`).
 
 ## Merge gate
@@ -24,6 +25,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 - The target forces `LC_ALL=C`: upstream real-git tests match English git messages and fail under a translated locale.
 - `fork-check-lint` runs upstream's `pnpm lint` steps from `package.json` via `config/scripts/fork-lint-run.mjs`, minus its `EXCLUDED`, which fails once upstream drops an excluded step.
 - A fork file that an upstream census or ratchet must list (`config/*-baseline.txt`, `src/shared/wsl-move/*-dispositions.ts`) gets its own entry there; on a rebase conflict in those files keep both sides.
+- A branch cut from `develop` before a rebase moved it: `git rebase --onto fork/develop <its old merge-base>`. A plain rebase replays the old upstream range along with it.
 - Keep `git config rerere.enabled true` so a conflict resolved once replays on the next rebase.
 - Rebase with `git rebase --onto vNEW vOLD`: upstream release tags are side commits (`release: vX.Y.Z` on a branch), so the old tag is not an ancestor of the new one and a plain `git rebase vNEW` replays the old release commit into a `package.json` conflict.
 - A new fork UI string goes into every locale file (seven since v1.4.238 added `pt.json`), not only `en.json`: `fork-locale-parity.mjs` in `fork-check-lint` fails otherwise. This is the one place a fork change grows an upstream file on purpose; don't drop translations to keep the upstream diff small.
@@ -43,6 +45,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 
 - A feature PR merges into `develop` without the user once the finish pipeline is done (simplify, code-review, Codex deep test with no open blocker, an lcu round when it changes UI) and "Fork PR checks passed" is green with `develop` at its current head: `gh pr merge <n> --merge`. A blocker the pipeline could not settle leaves it open for the user.
 - The auto-rebase pipeline (`orca-fork-auto-rebase` skill) moves `develop` when the rebase is CLEAN, or MANUAL with every resolved hunk and fix commit guarded by a test shown to turn red when that hunk is reverted, no confirmed blocker from its four reviewers, and no untested seam among the resolved hunks. It then releases. Anything short of that leaves a verified PR for the user.
+- While a `rebase/*` branch exists on the fork, an auto-rebase is in flight: hold merges into `develop` until it is gone, or its `--force-with-lease` push fails and the rebase falls back to a PR.
 - Closing a seam test gap the reviewers report is what lets the next MANUAL rebase move on its own; treat those gaps as debt.
 
 ## Release
@@ -90,7 +93,7 @@ The release UI set (ClipCode copy, Paste & Restore, the folder repo list, sessio
 ## Upstream-file conventions
 
 - `max-lines` cannot be disabled. When fork wiring pushes an upstream file over, move fork code out first. If upstream code has to move, open the new file with a comment naming where it came from, so rebases port upstream edits to it.
-- Keep fork additions to upstream components as typed slots (`GitHistoryPanelSlots`) rather than inline branches.
+- Keep fork additions to upstream components as typed slots (`GitHistoryPanelSlots`) rather than inline branches, and carry fork values in an options object rather than new trailing positional params, which conflict at every call site. A refactor of fork wiring must lower `make fork-footprint`'s production number; compare before and after.
 - A cast needs its `oxlint-disable-next-line … -- SAFETY:` comment on the line directly above the `as`, or the quality gate flags it.
 - Every nested `AGENTS.md` has a sibling `CLAUDE.md` containing `@AGENTS.md`. The root `CLAUDE.md` and any `CLAUDE.local.md` make Claude Code skip `AGENTS.md` files, so without the sibling a subdirectory's rules never load for it. When a rebase brings a new nested `AGENTS.md`, add its `CLAUDE.md`.
 
