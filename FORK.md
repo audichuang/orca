@@ -7,6 +7,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 - Push only to the fork remote (`audichuang/orca`), never to upstream (`stablyai/orca`).
 - The base is the newest upstream release tag, not upstream `main`.
 - Work goes on a branch with a PR into `develop`, merged once Fork CI is green; never push `develop` directly, except a rebase.
+- `fork-canary-notes` is the exception to PRs: an orphan branch holding the pipelines' shared state (`known-resolutions.md`, `canary-last.json`), no CI, never rebased, written only by `config/scripts/fork-notes.sh`, which never forces.
 - Pick a branch prefix that is not itself a branch on the fork: the fork carries a `refactor` branch, so pushing `refactor/<x>` is rejected as a directory/file conflict.
 - A PR meant for upstream branches from upstream `main` and carries no fork-only file (`Makefile`, fork CI, `FORK.md`).
 
@@ -44,8 +45,9 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 ## Unattended merges
 
 - A feature PR merges into `develop` without the user once the finish pipeline is done (simplify, code-review, Codex deep test with no open blocker, an lcu round when it changes UI) and "Fork PR checks passed" is green with `develop` at its current head: `gh pr merge <n> --merge`. A blocker the pipeline could not settle leaves it open for the user.
-- The auto-rebase pipeline (`orca-fork-auto-rebase` skill) moves `develop` when the rebase is CLEAN, or MANUAL with every resolved hunk and fix commit guarded by a test shown to turn red when that hunk is reverted, no confirmed blocker from its four reviewers, and no untested seam among the resolved hunks. It then releases. Anything short of that leaves a verified PR for the user.
-- While a `rebase/*` branch exists on the fork, an auto-rebase is in flight: hold merges into `develop` until it is gone, or its `--force-with-lease` push fails and the rebase falls back to a PR.
+- The auto-rebase pipeline (`orca-fork-auto-rebase` skill) moves `develop` when the rebase is CLEAN, or MANUAL with every resolved hunk and fix commit guarded by a test shown to turn red when that hunk is reverted, no Claude reviewer blocker left unfixed or unrefuted, Codex's last round ACCEPTABLE, and no untested seam among the resolved hunks. It pushes the sha Fork CI verified with a lease on the develop it rebased; when develop moved meanwhile it drops the attempt and the next run starts over. It then releases. Anything short of that leaves a verified PR for the user.
+- While a `rebase/*` branch exists on the fork, an auto-rebase is in flight: hold merges into `develop` until it is gone, or its `--force-with-lease` push fails and the attempt is dropped and redone from the new `develop`.
+- Both pipelines' skills live in `.claude/skills/orca-fork-*/` and change through a PR like any fork file. Upstream ignores `/.claude/skills/`, so a new file there needs `git add -f`. Their Orca automations open a fresh worktree on `fork/develop` (not the local `develop`) and run each skill's `scripts/precheck.sh` as read from `fork/develop`; only the automation definitions, `BARK_URL` (Doppler) and the shared precheck alert script stay on the machine.
 - Closing a seam test gap the reviewers report is what lets the next MANUAL rebase move on its own; treat those gaps as debt.
 
 ## Release
