@@ -9,7 +9,7 @@ describe('pty-connection test environment', () => {
     await installTerminalTestGlobals()
     let restored = false
     let fired = 0
-    // Stand-ins for an undisposed session's retry and poll loops; under load restore can outlast the delay.
+    // Stand-ins for an undisposed session's retry and poll loops; under load restore can outlast 50 ms.
     setTimeout(() => {
       fired += restored ? 1 : 0
     }, 50)
