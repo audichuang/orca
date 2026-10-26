@@ -1,5 +1,9 @@
 import { describe, expect, it, afterEach, vi } from 'vitest'
-import { resolveEditorTabGitStatus } from './tab-bar-item-model'
+import {
+  buildTabStripLayoutKey,
+  resolveEditorTabGitStatus,
+  type TabBarItem
+} from './tab-bar-item-model'
 import { buildEditorTabGitStatusMap } from './editor-tab-git-status'
 
 describe('resolveEditorTabGitStatus in a folder workspace', () => {
@@ -22,6 +26,40 @@ describe('resolveEditorTabGitStatus in a folder workspace', () => {
     expect(resolveEditorTabGitStatus(tab('web'), map)).toBe('modified')
     expect(resolveEditorTabGitStatus(tab('api'), map)).toBe('deleted')
     expect(resolveEditorTabGitStatus(tab('core'), map)).toBeNull()
+  })
+})
+
+describe('buildTabStripLayoutKey in a folder workspace', () => {
+  it("re-keys the strip when a folder-workspace tab's own repo status changes", () => {
+    const item: TabBarItem = {
+      type: 'editor',
+      id: '/f/web/README.md',
+      unifiedTabId: 'tab-1',
+      isPinned: false,
+      data: {
+        id: '/f/web/README.md',
+        mode: 'edit',
+        filePath: '/f/web/README.md',
+        relativePath: 'README.md',
+        worktreeId: 'folder:f1',
+        gitWorktreeId: 'web',
+        language: 'markdown',
+        isDirty: false
+      }
+    }
+    const keyFor = (status: 'modified' | 'deleted') =>
+      buildTabStripLayoutKey(
+        [item],
+        false,
+        {},
+        buildEditorTabGitStatusMap(
+          [],
+          { web: [{ path: 'README.md', status, area: 'unstaged' }] },
+          { web: '/f/web' }
+        ),
+        new Map()
+      )
+    expect(keyFor('modified')).not.toBe(keyFor('deleted'))
   })
 })
 
