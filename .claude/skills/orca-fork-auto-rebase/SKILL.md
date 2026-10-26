@@ -7,7 +7,7 @@ description: Unattended pipeline that rebases the Orca fork's develop onto the n
 
 無人值守：沒有人會回答問題，不要停下來問。repo 是 audichuang/orca（remote `fork`），上游 stablyai/orca（remote `origin`）。規則來源是 `git show fork/develop:FORK.md` 的 Merge gate 與 Release 兩節，先讀；這裡沒寫的照它。
 
-本技能覆寫兩個預設：codex 技能的「找到問題不自動修、停下來問」在這裡不適用（第 5 步規定怎麼修）；`orca-lcu-ui-test` 與 Codex desktop 的真實 UI 測試輪**不在這裡跑**——它們會占用螢幕鍵盤剪貼簿，排程隨時會觸發。發版前要驗的 UI 情境（ClipCode 複製、Paste & Restore、資料夾 repo 清單、session restore、external-change banner、agent launch cwd）由 fork e2e 在隱藏視窗驗（`folder-multi-repo-source-control.spec.ts`、`folder-workspace-tab-restart-restore.spec.ts`），第 3 步的 `fork-check-e2e` 與 CI 都會跑；lcu 實機輪只留給新增或改了 UI 的功能 PR。
+本技能覆寫兩個預設：codex 技能的「找到問題不自動修、停下來問」在這裡不適用（第 5 步規定怎麼修）；`orca-lcu-ui-test` 與 Codex desktop 的真實 UI 測試輪**不在這裡跑**——它們會占用螢幕鍵盤剪貼簿，排程隨時會觸發。發版前要驗的 UI 情境（ClipCode 複製、Paste & Restore、資料夾 repo 清單、session restore、external-change banner、agent launch cwd）由 fork e2e 在隱藏視窗驗（`folder-multi-repo-source-control.spec.ts`、`folder-workspace-tab-restart-restore.spec.ts`），CI 的 fork e2e job 會跑；lcu 實機輪只留給新增或改了 UI 的功能 PR。
 
 本文說「第 N 步」一律指下面標題 `## N.` 那一整節；一節裡面的編號項目說「第 N 點」（例如「第 1 步第 7 點」）。PR 留言的標記（`<!-- auto-rebase:… -->`）一律放在留言第一行最前面：precheck 只認開頭的標記。
 
@@ -19,6 +19,13 @@ description: Unattended pipeline that rebases the Orca fork's develop onto the n
 - `vNEW`、`vOLD`、`OLD_DEVELOP`、`PR`：第 0 步定義。
 
 所有 gh 呼叫間隔放寬（API 配額與 release workflow 共用）。等 CI 用 `gh-wait`，不要用 `gh pr checks --watch`、`gh run watch` 或 sleep 迴圈。
+
+**等待一律在前景，絕不結束這一輪去等背景通知。** 你停下來等通知時看起來是閒置：Orca 會把這次 run 判成完成，並可能關掉 terminal，連你和背景工作一起殺掉（run 121 就這樣死在第 2 步）。單一 Bash 呼叫超過 10 分鐘會被移到背景，所以每次等待都切成 9 分鐘以內、一次接一次呼叫：
+
+- make 與其他長指令：用 run_in_background 跑 `<指令> > LOG 2>&1; echo $? > LOG.exit`，接著在前景重複 `bash config/scripts/fork-wait-for-job.sh LOG.exit`，直到它回 0（印出指令的 exit code；回 3 是還在跑，再呼叫一次）。
+- CI：`gh-wait pr|run … -t 9`；回 2 且印出 `timeout after` 就再呼叫一次，其他的 2 是 API 或用法錯誤。
+- Codex：`node ~/.claude/skills/codex/scripts/codex-companion.mjs wait <jobId> --timeout-ms 540000 --json`，還沒完成就再呼叫一次。
+- Claude 審查者：**不用 Agent 工具**（它一律在背景跑、完成才通知，等它就是閒置），改用 `claude -p` 子行程，跟 make 一樣寫 exit 檔、用 `fork-wait-for-job.sh` 等（第 4 步）。
 
 ## 0. 決定模式
 
@@ -73,11 +80,13 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
 
 ## 2. 本機閘門（一律跑，不分 CLEAN/MANUAL）
 
-先在 PR 留言「本機閘門開始」（心跳；修失敗的每一輪開始時也各留一則）。`pnpm install --frozen-lockfile`，然後 `make fork-check`，再 `make fork-check-seams`（`config/fork-seam-tests.txt` 列的 fork seam contract 測試，一個不漏地跑；沒有這個 target 的舊 develop 就略過並註明）。`make fork-footprint` 的輸出貼進 PR 說明（fork 在上游檔案上的足跡，跟上一次 rebase 比）。
+先在 PR 留言「本機閘門開始」（心跳；修失敗的每一輪開始時也各留一則）。`pnpm install --frozen-lockfile`，然後 `make -k fork-check-static`（`pnpm tc`、changed-code quality、`fork-check-lint`；`-k` 讓 typecheck 紅了也照跑 lint，lint 本身也會跑完每一步，一輪就列出全部失敗），再 `make fork-check-seams`（`config/fork-seam-tests.txt` 列的 fork seam contract 測試，一個不漏地跑；沒有這個 target 的舊 develop 就略過並註明）。`make fork-footprint` 的輸出貼進 PR 說明（fork 在上游檔案上的足跡，跟上一次 rebase 比）。
 
-macOS 上 `fork-check-tests` 會連上游自己的測試一起報紅（`orca-runtime.test.ts` 的 `/var` 對 `/private/var`，CI 的 Linux 上會過）；只有這種的不算回歸，失敗清單照貼進 PR。其他 vitest 失敗照下面處理。
+整套單元測試、e2e、wire、mobile **不在本機跑**：CI 在 Linux 上跑同樣的 make target，一次就有結果。本機在 macOS 跑會多出十來個上游自己的紅（路徑、shell、打包環境），還會跟機器上其他 session 搶 CPU 而逾時，每個都要再拿上游對照，徒增時間（v1.4.241 為此多花約 40 分鐘）。
 
-**失敗處理（新的 vitest 失敗、第 3 步的 e2e）**：在乾淨的上游 worktree 重現同一個檔案。上游 tag 沒有 `Makefile` 和 fork 的 config，所以用 make 底下的原始指令：
+lint 紅：先在乾淨的 vNEW（下面的 `../ar-$RUN-base`）跑同一步（`pnpm run <step>`）。上游自己也紅時，上游 `main` 多半已經修了（`git fetch origin main` 後 `git log vNEW..origin/main -- <檔>`）：`git cherry-pick -x <那個 commit>` 進來（算 MANUAL；之後 rebase 到含它的 release 時 git 會以相同 patch 略過），它若新增只有 `en.json` 的 key，補齊其他語系的翻譯（fork-locale-parity 以 vNEW 為基底，會把它們算成 fork key）。上游 `main` 也沒修 → 第 8 步回報。
+
+**失敗處理（CI 的 vitest、e2e 失敗）**：在乾淨的上游 worktree 重現同一個檔案。上游 tag 沒有 `Makefile` 和 fork 的 config，所以用 make 底下的原始指令：
 
 ```sh
 git worktree add --detach ../ar-$RUN-base vNEW && cd ../ar-$RUN-base && pnpm install --frozen-lockfile
@@ -87,17 +96,13 @@ pnpm run ensure:electron-runtime && LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 npx playwr
 
 只有「fork 失敗、上游通過」才算回歸，要修（修正 commit 算 MANUAL）。兩邊都失敗才可排除，而且**兩份輸出的尾段都要貼進 PR**，沒貼不准排除。同一個問題修兩輪還不過 → 第 8 步回報，分支照推讓使用者接手。
 
-## 3. 推上去：fork CI 與 e2e 並行
+## 3. 推上去：CI 與盲審並行
 
-- 第 2 步有修正 commit 就 `git push --force fork HEAD:refs/heads/rebase/vNEW`；PR 第 1 步已開（RESUME 沿用既有 PR），CI 跟著 head 跑。
-- 等 CI 的同時跑 e2e（本機）：
-  1. `make fork-check-e2e FORK_BASE=vNEW`：跟 CI 同一個 target，選 spec 的方式一樣（folder spec 加上 fork 新增或改過的 e2e），開跑前會先等 1 分鐘 load 降到核心數以下，最多等 10 分鐘；仍高照跑，但結果註明負載。
-  2. 失敗 → 先在負載降下來時重跑一次，再照第 2 步的失敗處理對照：spec 在 vNEW 存在就在 vNEW 跑；是 fork 自己的 spec（上游沒有）就在 OLD_DEVELOP 跑（`git worktree add --detach ../ar-$RUN-olddev OLD_DEVELOP && (cd ../ar-$RUN-olddev && pnpm install --frozen-lockfile)`，那裡有 Makefile，可直接 `make`）。舊 develop 上也失敗 = fork 既有問題，不擋這次 rebase，但要在通知裡列為「develop 既有紅測試」。
-  3. 接著 `make fork-check-wire` 和 `make fork-check-mobile`，分兩個指令跑（CI 的跨版本 wire 與 mobile web app 兩個 job，約 4 分鐘；寫在同一個 make 裡，前一個紅了後一個就不跑）。失敗照第 2 點對照 vNEW。
-- CI：`gh-wait pr PR -R audichuang/orca` 等完，看「Fork PR checks passed」。有 job 紅：`gh run list -R audichuang/orca --workflow fork-pr.yml --commit <head> --limit 1 --json databaseId` 取 run id，先 `gh run rerun <id> --failed -R audichuang/orca` **自動重跑一次**再 `gh-wait run <id> -R audichuang/orca`（偶發失敗，例如會讀剪貼簿的 e2e，在 CI 層重跑；fork-check 目標裡不加任何豁免）。同一個 job 第二次還紅才算真的失敗：看 `gh run view <id> --log-failed -R audichuang/orca`，照第 2 步的規則處理；fork e2e 失敗另外照 FORK.md「When a fork e2e goes red」下載 artifact 看 `shots/`。重跑過的 job 在第 8 步的通知裡註明。
-- e2e、wire、mobile 的結果（通過數、失敗與對照）貼成 PR 留言。這則留言也是心跳：precheck 看 PR 的更新時間判斷這個 run 還活著，所以第 4、5 步每個階段開始時也各留一則短留言（「盲審開始」「第 2 輪審查開始」）。
+- 第 2 步有修正 commit 就 `git push --force fork HEAD:refs/heads/rebase/vNEW`；PR 第 1 步已開（RESUME 沿用既有 PR），CI 跟著 head 跑。**推完不等 CI，直接開始第 4 步**；CI 結果在第 6 步移動 develop 前才用到。
+- CI：照上面「等待」的方式 `gh-wait pr PR -R audichuang/orca -t 9`，看「Fork PR checks passed」。有 job 紅：`gh run list -R audichuang/orca --workflow fork-pr.yml --commit <head> --limit 1 --json databaseId` 取 run id，先 `gh run rerun <id> --failed -R audichuang/orca` **自動重跑一次**再 `gh-wait run <id> -R audichuang/orca -t 9`（偶發失敗，例如會讀剪貼簿的 e2e，在 CI 層重跑；fork-check 目標裡不加任何豁免）。同一個 job 第二次還紅才算真的失敗：看 `gh run view <id> --log-failed -R audichuang/orca`，照第 2 步的失敗處理對照；fork e2e 失敗另外照 FORK.md「When a fork e2e goes red」下載 artifact 看 `shots/`。spec 在 vNEW 存在就在 vNEW 跑；是 fork 自己的 spec（上游沒有）就在 OLD_DEVELOP 跑（`git worktree add --detach ../ar-$RUN-olddev OLD_DEVELOP && (cd ../ar-$RUN-olddev && pnpm install --frozen-lockfile)`，那裡有 Makefile，可直接 `make fork-check-e2e`）。舊 develop 上也失敗 = fork 既有問題，不擋這次 rebase，但要在通知裡列為「develop 既有紅測試」。修正 commit 換了 head，審查者照第 5 步看修正的部分。重跑過的 job 在第 8 步的通知裡註明。
+- CI 結果（綠，或每個紅 job 與對照）貼成 PR 留言。留言也是心跳：precheck 看 PR 的更新時間判斷這個 run 還活著，所以第 4、5 步每個階段開始時也各留一則短留言（「盲審開始」「第 2 輪審查開始」）。
 
-## 4. 盲審（本機、CI、e2e、wire、mobile 都綠才做；不審紅的 build）
+## 4. 盲審（第 2 步本機閘門綠、推上去就開始，跟 CI 同時跑）
 
 產生審查素材：
 
@@ -111,7 +116,8 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 
 **同時**開審查者，每個只拿素材資料夾路徑與（自己的）worktree 路徑，**不給 PR 說明、不給你的解衝突理由**（盲審：讓他們自己判斷，不被你的敘述帶著走）：
 
-- Claude 審查者：用 Agent 工具，`subagent_type: general-purpose`（不要用 fork，fork 會繼承你的脈絡），各一個角度：
+- 先啟動 Codex（下面），再啟動 Claude 審查者，然後照「等待」的方式逐一等到全部完成。
+- Claude 審查者：每個是一個全新的 `claude -p`（沒有你的脈絡，所以是盲審），提示寫進 `$MAIN/.rebase-review/claude-<角度>-prompt.md`，在它的 worktree（A、B 用 `MAIN`）以 run_in_background 跑 `claude -p --model opus --dangerously-skip-permissions < <提示檔> > $MAIN/.rebase-review/claude-<角度>-result.md 2>&1; echo $? > $MAIN/.rebase-review/claude-<角度>-result.exit`，各一個角度：
   - **A 衝突忠實度**：`range-diff.txt` 每個 `!` 項目，新版是否保留 fork 原本的行為、同時採用上游的新結構？有沒有 fork 的欄位、分支、呼叫被默默丟掉？每個 `<` 項目（rebase 後消失的 fork commit）是不是刻意丟的、理由是否成立？
   - **B 上游 API 漂移**：讀 `upstream-touching.diff`、`importer-sweep.txt` 與 `seam-upstream.diff`，上游改了簽章、回傳值、語意（例如回傳一個要呼叫的 release、改成會 reject）的模組，fork 的呼叫點有沒有跟上？上游新增的平行路徑（新的 switch、新的入口、重建的 options 物件）有沒有繞過 fork 的 seam？逐一打開呼叫點看，不要只看 diff。
   - **C 測試與 seam**：對**每一個**解過衝突（含 rerere 重放）或額外修正的 hunk，找到守它的測試，把該 hunk 改回上游那一側或拿掉修正，跑那個測試確認會變紅，看完 `git checkout -- .` 還原；逐項列出 hunk、測試、紅的那一行（第 6 步「合格的 MANUAL」靠這張表）。hunk 超過 10 個就開兩個 C（`review-c1`、`review-c2`）、各分一半。沒有測試會紅的 seam 就是發現，標明它是不是這次解過的 hunk。**CLEAN 時也要做**：對 `seam-upstream.diff` 碰到的每個 seam（對照 `config/fork-seam-tests.txt` 的分組），把 fork 在那個 seam 的接線拿掉一處（刪欄位轉傳、刪 `'git-graph'` case、刪 slot prop），跑那組 seam 測試確認會紅；沒有會紅的就是發現。
@@ -120,14 +126,14 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
   ```sh
   cd ../ar-$RUN-review-codex && CODEX_JOB_TIMEOUT_MS=5400000 node ~/.claude/skills/codex/scripts/codex-companion.mjs task --background --json --write --prompt-file "$MAIN/.rebase-review/codex-prompt.md" > "$MAIN/.rebase-review/codex-launch.json"
   ```
-  `--write` 讓它能在自己的 worktree 做改回上游的實驗；提示檔用絕對路徑，因為指令在另一個目錄跑。等待照 codex 技能的 wait 迴圈；完成後 `result <jobId>` 存成 `.rebase-review/codex-result.md`，並記下它的 thread id（`status <jobId> --json`）。Codex 跑失敗或沒啟動成功：**不要自己代寫結果**，記為「Codex 未完成」，這次就不能自動移動 develop。
+  `--write` 讓它能在自己的 worktree 做改回上游的實驗；提示檔用絕對路徑，因為指令在另一個目錄跑。照上面「等待」的方式 `wait`；完成後 `result <jobId>` 存成 `.rebase-review/codex-result.md`，並記下它的 thread id（`status <jobId> --json`）。Codex 跑失敗或沒啟動成功：**不要自己代寫結果**，記為「Codex 未完成」，這次就不能自動移動 develop。
 
 ## 5. 分流與修正（最多兩輪）
 
 - 彙整所有結果。每個 BLOCKING 自己去程式碼裡確認：
-  - 確認是真的 → 修、補會變紅的測試、commit（算 MANUAL）、`git push --force fork HEAD:refs/heads/rebase/vNEW`、重跑受影響的本機測試，`gh-wait pr PR` 等 CI 綠。
+  - 確認是真的 → 修、補會變紅的測試、commit（算 MANUAL）、`git push --force fork HEAD:refs/heads/rebase/vNEW`、重跑受影響的本機測試，CI 照第 3 步等綠。
   - 不同意 → 寫下理由（引用程式碼證據），原文與理由一起進 PR。
-- 有修正就再審一輪：先在 `../ar-$RUN-review-codex` `git checkout --detach <新 head>`，Codex 在那裡用 `task --thread <第一輪的 thread id>` 看修正後的 diff（**不要用 `--resume-last`**：機器上別的 session 也在跑 Codex，會接錯 thread）；Claude 只開一個新的 general-purpose 審查者看修正的部分。
+- 有修正就再審一輪：先在 `../ar-$RUN-review-codex` `git checkout --detach <新 head>`，Codex 在那裡用 `task --thread <第一輪的 thread id>` 看修正後的 diff（**不要用 `--resume-last`**：機器上別的 session 也在跑 Codex，會接錯 thread）；Claude 只開一個新的 `claude -p` 審查者看修正的部分（同第 4 步的跑法）。
 - 兩輪後仍有確認為真、沒修好的 BLOCKING → 不移動 develop，第 8 步回報。
 - 審查結果貼成一則 PR 留言：每個審查者的 VERDICT、每個發現與處理（已修 commit / 不同意理由 / NON-BLOCKING 留待），附上 importer-sweep 裡人工確認過的「上游改了 X，fork 呼叫點 Y 已看過」。
 
@@ -138,8 +144,8 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 **自動移動**的條件，全部都要成立：
 
 - (CLEAN、沒有任何修正 commit，且審查者 C 對 `seam-upstream.diff` 碰到的 seam 沒有列出「沒有測試會紅」的項目) 或 **合格的 MANUAL**（見下）；
-- 本機 fork-check 與 fork-check-seams 綠（或只有附了雙邊輸出的上游既有失敗）；e2e、wire、mobile 綠（或只有第 3 步判定的 develop 既有紅測試）；
-- CI 綠：「Fork PR checks passed」在目前 head 的 conclusion 是 SUCCESS，且它來自 `.github/workflows/fork-pr.yml` 的 job `verify`（`gh run list -R audichuang/orca --workflow fork-pr.yml --commit <head>` 對得上；SKIPPED、沒有這個 check、或同名 check 來自別的 workflow 都不算）；
+- 本機 fork-check-static 與 fork-check-seams 綠（或只有附了雙邊輸出的上游既有失敗）；
+- CI 綠：「Fork PR checks passed」在目前 head 的 conclusion 是 SUCCESS，且它來自 `.github/workflows/fork-pr.yml` 的 job `verify`（它要求整套單元測試與 e2e、wire、mobile 都綠；`gh run list -R audichuang/orca --workflow fork-pr.yml --commit <head>` 對得上；SKIPPED、沒有這個 check、或同名 check 來自別的 workflow 都不算）；
 - 第 5 步的審查通過；
 - RESUME 時 PR 說明裡有 old-develop 那行。
 
@@ -175,7 +181,8 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
    old=$(git ls-remote fork refs/heads/main | cut -f1)
    git tag -a "vNEW-fork.N" "${sha}" -F <notes 檔> && git push --atomic --force-with-lease="main:${old}" fork "${sha}:main" "vNEW-fork.N"
    ```
-4. 在 PR 留言「發版開始 vNEW-fork.N」（心跳）。找這個 tag 的 release run：`gh run list -R audichuang/orca --workflow fork-release.yml --event push --limit 5 --json databaseId,headBranch --jq '.[] | select(.headBranch=="vNEW-fork.N") | .databaseId'`。剛推完可能還沒出現，查不到就先寫第 8 步的通知草稿再查，查三次都沒有就當 release 沒觸發，第 8 步回報。找到後 `gh-wait run <id> -R audichuang/orca`。「Bump the Homebrew cask」紅多半是 API 配額，`gh run rerun <id> --failed -R audichuang/orca` 一次。確認 `gh api repos/audichuang/homebrew-tap/contents/Casks/orca-fork.rb --jq .content | base64 -d` 的 version 是新版。release 紅兩次 → 不升級，第 8 步回報（tag 已推不刪；修好後重跑 workflow 即可）。
+   推完再跑一次 `make fork-ci-disable-upstream`：上游新加的 workflow 要等它進到預設分支 `main` 才會在 GitHub 註冊，第 6 步那次停用不到（v1.4.241 的 `wsl-orcad-e2e-frozen-runner-retry.yml`）。
+4. 在 PR 留言「發版開始 vNEW-fork.N」（心跳）。找這個 tag 的 release run：`gh run list -R audichuang/orca --workflow fork-release.yml --event push --limit 5 --json databaseId,headBranch --jq '.[] | select(.headBranch=="vNEW-fork.N") | .databaseId'`。剛推完可能還沒出現，查不到就先寫第 8 步的通知草稿再查，查三次都沒有就當 release 沒觸發，第 8 步回報。找到後 `gh-wait run <id> -R audichuang/orca -t 9`（照「等待」的方式）。「Bump the Homebrew cask」紅多半是 API 配額，`gh run rerun <id> --failed -R audichuang/orca` 一次。確認 `gh api repos/audichuang/homebrew-tap/contents/Casks/orca-fork.rb --jq .content | base64 -d` 的 version 是新版。release 紅兩次 → 不升級，第 8 步回報（tag 已推不刪；修好後重跑 workflow 即可）。
 5. MacBook：`ssh macbookpro "bash -lc 'export PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH; pgrep -f \"Orca Fork.app\" >/dev/null && echo RUNNING || { brew update >/dev/null; brew upgrade --cask orca-fork; }'"`。印 RUNNING 就不升級（不幫使用者關 app），通知裡請使用者自己升級。
 6. 收鎖與收尾：`gh pr close PR -R audichuang/orca -c "<發版結果：vNEW-fork.N 已發佈，或失敗在哪>"`，刪 fork 的 `rebase/vNEW` 與 `ci-base/vNEW`；`git worktree remove --force` 這次的 `../ar-$RUN-*`（先確認沒有你要留給使用者看的東西）；`MAIN` 由 Orca 管理，留給下一次 run 清。回滾不由這個技能做（develop 這時還指著壞的 commit，第 3 點的檢查會擋下）：在通知裡寫出上一個好的 commit，讓使用者照 FORK.md「Release」把它打成 `vNEW-fork.(N+1)` 推上去。
 
