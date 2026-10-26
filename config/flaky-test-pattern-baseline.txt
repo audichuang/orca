@@ -100,6 +100,7 @@
 2 test-no-polling-loop:tests/e2e/helpers/computer-driver.ts
 1 test-no-polling-loop:tests/e2e/helpers/daemon-generation-processes.ts
 1 test-no-polling-loop:tests/e2e/helpers/electron-process-shutdown.ts
+1 test-no-polling-loop:tests/e2e/helpers/folder-multi-repo-import.ts
 1 test-no-polling-loop:tests/e2e/helpers/headless-layout-oracle-hosts.ts
 1 test-no-polling-loop:tests/e2e/helpers/hold-window-graph-publication.ts
 2 test-no-polling-loop:tests/e2e/helpers/layout-compat-baseline.ts
@@ -424,8 +425,10 @@
 9 test-no-real-time-wait:src/renderer/src/components/contextual-tours/contextual-tour-floating-position.test.ts
 1 test-no-real-time-wait:src/renderer/src/components/contextual-tours/ContextualTourOverlay.remeasure.test.tsx
 1 test-no-real-time-wait:src/renderer/src/components/dashboard-popout/useDashboardSnapshot.test.tsx
+3 test-no-real-time-wait:src/renderer/src/components/editor/DiffSectionBody.monaco-strict-reveal.test.tsx
 1 test-no-real-time-wait:src/renderer/src/components/editor/combined-diff/load-sections/combined-diff-stale-analysis-work-budget.test.tsx
 1 test-no-real-time-wait:src/renderer/src/components/editor/DiagramViewerModal.test.tsx
+3 test-no-real-time-wait:src/renderer/src/components/git-graph-tab/GitGraphTabView.component.test.tsx
 1 test-no-real-time-wait:src/renderer/src/components/native-chat/native-chat-composer-draft-lifecycle.test.tsx
 6 test-no-real-time-wait:src/renderer/src/components/native-chat/native-chat-composer-draft-store.test.ts
 1 test-no-real-time-wait:src/renderer/src/components/native-chat/NativeChatModelCombobox.test.tsx
@@ -440,7 +443,9 @@
 1 test-no-real-time-wait:src/renderer/src/components/right-sidebar/checks-panel/use-checks-panel-generation.test.tsx
 1 test-no-real-time-wait:src/renderer/src/components/right-sidebar/file-explorer-watch-refresh-scheduler.test.ts
 1 test-no-real-time-wait:src/renderer/src/components/right-sidebar/parent-pr-checks-refresh.test.ts
+1 test-no-real-time-wait:src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-copied-toast.sonner.test.tsx
 1 test-no-real-time-wait:src/renderer/src/components/right-sidebar/source-control/review/use-pull-request-generation.test.tsx
+3 test-no-real-time-wait:src/renderer/src/components/right-sidebar/source-control/sync/git-graph-full-view.component.test.tsx
 2 test-no-real-time-wait:src/renderer/src/components/settings/MobilePane.test.tsx
 1 test-no-real-time-wait:src/renderer/src/components/sidebar/SidebarFeedbackDialog.test.tsx
 8 test-no-real-time-wait:src/renderer/src/components/sidebar/worktree-list/rows/ProjectHeaderHostLabel.test.tsx
@@ -448,6 +453,7 @@
 2 test-no-real-time-wait:src/renderer/src/components/terminal-pane/fish-color-scheme-child-stdin.node-pty.test.ts
 1 test-no-real-time-wait:src/renderer/src/components/terminal-pane/issue-12112-agent-pane-startup-color-reply-leak.repro.test.ts
 3 test-no-real-time-wait:src/renderer/src/components/terminal-pane/pty-connection-hidden-backlog-snapshot.test.ts
+2 test-no-real-time-wait:src/renderer/src/components/terminal-pane/pty-connection-test-environment.test.ts
 1 test-no-real-time-wait:src/renderer/src/components/terminal-pane/remote-runtime-connect-failure-recovery.test.ts
 2 test-no-real-time-wait:src/renderer/src/components/terminal-pane/remote-runtime-pty-transport-host-exit-record.test.ts
 3 test-no-real-time-wait:src/renderer/src/components/terminal-pane/remote-runtime-pty-transport-subscribe-ack-input.test.ts
@@ -460,6 +466,7 @@
 1 test-no-real-time-wait:src/renderer/src/lib/agent-hibernation-coordinator.test.ts
 1 test-no-real-time-wait:src/renderer/src/lib/agent-paste-draft-readiness-budget.test.ts
 3 test-no-real-time-wait:src/renderer/src/lib/execute-open-editor-path-move.test.ts
+1 test-no-real-time-wait:src/renderer/src/lib/lazy-chunk-recovery-reload.fork.test.ts
 1 test-no-real-time-wait:src/renderer/src/lib/monaco-delayer-cancellation-guard.test.ts
 1 test-no-real-time-wait:src/renderer/src/lib/native-chat-cli-fork-preparation.test.ts
 1 test-no-real-time-wait:src/renderer/src/lib/orca-yaml-trust-prompt-slot-eviction.test.ts
@@ -521,6 +528,9 @@
 1 test-no-real-time-wait:tests/e2e/fixtures/daemon-generation-reconnect-client.ts
 4 test-no-real-time-wait:tests/e2e/floating-workspace-reopen-webgl-recovery.spec.ts
 4 test-no-real-time-wait:tests/e2e/floating-workspace-shared-glyph-atlas.spec.ts
+3 test-no-real-time-wait:tests/e2e/folder-multi-repo-source-control.spec.ts
+7 test-no-real-time-wait:tests/e2e/git-graph-full-view.spec.ts
+1 test-no-real-time-wait:tests/e2e/git-graph-open-all-changes.spec.ts
 1 test-no-real-time-wait:tests/e2e/git-no-upstream-polling-churn.spec.ts
 2 test-no-real-time-wait:tests/e2e/github-project-board.spec.ts
 1 test-no-real-time-wait:tests/e2e/golden-core-flows.spec.ts
@@ -531,6 +541,9 @@
 1 test-no-real-time-wait:tests/e2e/helpers/daemon-generation-processes.ts
 1 test-no-real-time-wait:tests/e2e/helpers/electron-main-evaluate-retry.ts
 2 test-no-real-time-wait:tests/e2e/helpers/electron-process-shutdown.ts
+1 test-no-real-time-wait:tests/e2e/helpers/folder-multi-repo-binary-and-keyboard-scenarios.ts
+1 test-no-real-time-wait:tests/e2e/helpers/folder-multi-repo-import.ts
+1 test-no-real-time-wait:tests/e2e/helpers/folder-multi-repo-restore-scenarios.ts
 1 test-no-real-time-wait:tests/e2e/helpers/headless-layout-oracle-hosts.ts
 1 test-no-real-time-wait:tests/e2e/helpers/hold-window-graph-publication.ts
 2 test-no-real-time-wait:tests/e2e/helpers/layout-compat-baseline.ts
@@ -796,6 +809,7 @@
 6 test-no-wall-clock:src/main/git/runner-gh-rate-limit-breaker.test.ts
 4 test-no-wall-clock:src/main/git/settled-diff-cache-bounds.test.ts
 1 test-no-wall-clock:src/main/git/source-control/blob-absence-real-git.test.ts
+1 test-no-wall-clock:src/main/git/source-control/file-diff.skip-render-limit-real-git.test.ts
 2 test-no-wall-clock:src/main/git/status-diff-settled-cache.test.ts
 1 test-no-wall-clock:src/main/git/status-upstream-negative-cache.test.ts
 2 test-no-wall-clock:src/main/git/worktree-created-description-real-git.test.ts
@@ -1102,6 +1116,7 @@
 2 test-no-wall-clock:src/renderer/src/lib/use-tab-agent-observed-signal-dispatch.test.tsx
 2 test-no-wall-clock:src/renderer/src/lib/wake-sleeping-agents-live-unmounted-pane.test.ts
 1 test-no-wall-clock:src/renderer/src/lib/workspace-activation-path-gate.test.ts
+1 test-no-wall-clock:src/renderer/src/lib/workspace-session.fork.test.ts
 1 test-no-wall-clock:src/renderer/src/lib/workspace-session.test.ts
 1 test-no-wall-clock:src/renderer/src/lib/workspace-terminal-host-authority.test.ts
 1 test-no-wall-clock:src/renderer/src/lib/worktree-activation-default-tabs.test.ts
@@ -1386,6 +1401,10 @@
 1 test-timeout-needs-reason:tests/e2e/desktop-published-split-orientation-legacy-leaf.spec.ts
 2 test-timeout-needs-reason:tests/e2e/desktop-window-mobile-markdown.spec.ts
 1 test-timeout-needs-reason:tests/e2e/floating-tab-rename.spec.ts
+1 test-timeout-needs-reason:tests/e2e/folder-multi-repo-source-control.spec.ts
+1 test-timeout-needs-reason:tests/e2e/folder-workspace-tab-restart-restore.spec.ts
+1 test-timeout-needs-reason:tests/e2e/git-graph-auto-load-tags.spec.ts
+2 test-timeout-needs-reason:tests/e2e/git-graph-open-all-changes.spec.ts
 1 test-timeout-needs-reason:tests/e2e/golden-quit-relaunch-session.spec.ts
 2 test-timeout-needs-reason:tests/e2e/golden-terminal-file-link.spec.ts
 1 test-timeout-needs-reason:tests/e2e/golden-worktree-create-switch.spec.ts
