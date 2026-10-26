@@ -1,7 +1,6 @@
 # Fork-only PR gate. This fork ships only the macOS arm64 desktop build, so it replaces
 # upstream's pr.yml (disabled on the fork by `make fork-ci-disable-upstream`, not edited,
-# so rebases never conflict here). Merge gate: the "Fork PR checks passed" job, for every PR; the `scope` job
-# decides whether the heavy jobs run (docs-only PRs skip them).
+# so rebases never conflict here). Merge gate: the "Fork PR checks passed" job, for every PR.
 name: Fork PR Checks
 
 on:
@@ -24,7 +23,6 @@ env:
   UPSTREAM_REPO: https://github.com/stablyai/orca.git
 
 jobs:
-  # Docs-only PRs skip the heavy jobs; verify accepts those skips only when this job succeeded and said docs.
   scope:
     name: fork PR scope
     if: github.event.pull_request.draft != true
@@ -60,7 +58,7 @@ jobs:
   fork_check_static:
     name: fork-check typecheck and quality
     needs: scope
-    if: github.event.pull_request.draft != true && needs.scope.outputs.scope == 'full'
+    if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -90,7 +88,7 @@ jobs:
   fork_check_tests:
     name: fork-check tests (${{ matrix.shard }})
     needs: scope
-    if: github.event.pull_request.draft != true && needs.scope.outputs.scope == 'full'
+    if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -128,7 +126,7 @@ jobs:
     # Why kept: the fork desktop client talks to hosts running upstream releases.
     name: fork cross-version wire compatibility
     needs: scope
-    if: github.event.pull_request.draft != true && needs.scope.outputs.scope == 'full'
+    if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     steps:
@@ -154,7 +152,7 @@ jobs:
     # Why on every PR: the unattended upstream rebase PRs merge on this gate, and the fork's UI lives in these specs.
     name: fork e2e specs
     needs: scope
-    if: github.event.pull_request.draft != true && needs.scope.outputs.scope == 'full'
+    if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -209,7 +207,7 @@ jobs:
     # Upstream's mobile_web_app steps, one after another, in the Makefile so they also run locally.
     name: fork mobile web app bundle
     needs: scope
-    if: github.event.pull_request.draft != true && needs.scope.outputs.scope == 'full'
+    if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -234,7 +232,7 @@ jobs:
     # Same `make fork-dmg` as fork-release.yml, ad-hoc signed: fork builder config, dmg and the app.asar leak check.
     name: fork macOS arm64 build
     needs: scope
-    if: github.event.pull_request.draft != true && needs.scope.outputs.scope == 'full'
+    if: needs.scope.outputs.scope == 'full'
     runs-on: macos-15
     timeout-minutes: 60
     env:
