@@ -7,15 +7,15 @@ describe('forkPrScope', () => {
     expect(forkPrScope(['FORK.md', 'Makefile'])).toBe('full')
   })
 
-  it.each([
-    '.claude/skills/orca-fork-auto-rebase/SKILL.md',
-    '.github/workflows/fork-pr.yml',
-    'config/scripts/fork-pr-scope.mjs',
-    'docs/site/package.json',
-    'Makefile',
-    'package.json'
-  ])('runs everything for %s, even beside docs', (file) => {
-    expect(forkPrScope(['FORK.md', file])).toBe('full')
+  it.each(['docs/site/package.json', 'docs/site/tests/build.test.mjs'])(
+    'runs everything for %s, which upstream counts as docs but `pnpm lint` reads',
+    (file) => {
+      expect(forkPrScope(['FORK.md', file])).toBe('full')
+    }
+  )
+
+  it('runs everything for the pipeline skills, which unattended agents execute', () => {
+    expect(forkPrScope(['.claude/skills/orca-fork-auto-rebase/SKILL.md'])).toBe('full')
   })
 
   it('runs everything when the detector found no paths', () => {
