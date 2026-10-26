@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { getConnectionId } from '@/lib/connection-context'
 import { isWindowVisible } from '@/lib/window-visibility-interval'
+import { resolveWorktreeGitCopyNow } from '@/lib/worktree-git-copy'
 import { useAppStore } from '@/store'
 import {
   ORCA_EDITOR_FILE_SAVED_EVENT,
@@ -9,7 +9,6 @@ import {
 import { isPathInsideOrEqual } from '../../../../../../shared/cross-platform-path'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { refreshGitStatusForWorktree } from '../../git-status-refresh'
-import { getWorktreeGitOwnerTarget } from '../../worktree-git-owner-target'
 
 export const FOLDER_REPO_STATUS_INTERVAL_MS = 20_000
 const REPO_NUDGE_DEBOUNCE_MS = 400
@@ -33,11 +32,12 @@ export function useFolderRepoStatusRefresh(
 
   const refreshOne = useCallback(async (worktree: Worktree, periodic = false): Promise<void> => {
     const state = useAppStore.getState()
-    const connectionId = getConnectionId(worktree.id) ?? undefined
-    const target = getWorktreeGitOwnerTarget(worktree.id)
-    if (!target) {
+    // Why one resolution: a same-path twin must not get this copy's transport, SSH target or answer.
+    const copy = resolveWorktreeGitCopyNow(worktree.id)
+    if (!copy) {
       return
     }
+    const { connectionId, transport: target } = copy
     // Why: a paired server's SSH target lives in that server's state, not this client's map.
     const connectionReady =
       !connectionId ||
@@ -49,6 +49,7 @@ export function useFolderRepoStatusRefresh(
     }
     await refreshGitStatusForWorktree({
       target,
+      ownerHostId: copy.hostId,
       worktreeId: worktree.id,
       worktreePath: worktree.path,
       connectionId,
