@@ -4,9 +4,8 @@
 # a lock left for the user is obsolete (a newer release, or develop already on its version; step 0 retires it).
 set -euo pipefail
 trap 'rc=$?; m="precheck failed (exit $rc) at line $LINENO: $BASH_COMMAND"; echo "$m" >&2; "$HOME/.config/fork-automation/precheck-alert.sh" "Orca fork 自動 rebase" "$m" || true' ERR
-# Why quiet at first: an API or network hiccup is retried next hour; alerting on each one only trains the user to
-# ignore alerts. One that lasts 6 h (a dead token, an outage) alerts, since it stops every rebase.
-down="$HOME/.cache/fork-automation/orca-rebase-precheck-down"
+# Why: a hiccup retries next hour; 6 h down (dead token, outage) blocks every rebase, so alert (once a day).
+down="$HOME/.cache/fork-automation/orca-rebase-precheck-down-since"
 skipped=
 trap '[ -n "$skipped" ] || rm -f "$down"' EXIT
 skip() {
