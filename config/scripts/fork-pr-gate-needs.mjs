@@ -1,4 +1,5 @@
-// Fork-only: fails when fork-pr.yml's "Fork PR checks passed" job could pass without every other job succeeding.
+// Fork-only: fails when fork-pr.yml's "Fork PR checks passed" job could pass without every other job succeeding,
+// except that it accepts skipped jobs when the `scope` job succeeded and said `docs` (config/scripts/fork-pr-scope.mjs).
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { parse } from 'yaml'
@@ -10,7 +11,7 @@ const RESULTS_EXPRESSION = '${{toJSON(needs)}}'
 // Why pinned text instead of validating any script: three Codex rounds kept finding scripts that pass a
 // simulation but not GitHub ($0, printenv, JSON formatting, multi-failure predicates). Changing the check
 // now means changing this constant, which review sees; fork-pr-gate-needs.test.mjs proves it rejects failures.
-export const REQUIRED_SCRIPT = `echo "$RESULTS" | jq -e 'to_entries | all(.value.result == "success")' > /dev/null || {
+export const REQUIRED_SCRIPT = `echo "$RESULTS" | jq -e '(.scope.result == "success" and .scope.outputs.scope == "docs") as $docs | .scope.result == "success" and (to_entries | all(.value.result == "success" or ($docs and .value.result == "skipped")))' > /dev/null || {
   echo "$RESULTS" | jq -r 'to_entries[] | "\\(.key): \\(.value.result)"'
   echo "::error::A fork PR check did not succeed."
   exit 1
@@ -108,5 +109,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     console.error(errors.join('\n'))
     process.exit(1)
   }
-  console.log(`fork-pr-gate OK — ${GATE} requires every other job in ${WORKFLOW} to succeed`)
+  console.log(
+    `fork-pr-gate OK — ${GATE} requires every other job in ${WORKFLOW} to succeed, or to be skipped on a docs-only scope`
+  )
 }
