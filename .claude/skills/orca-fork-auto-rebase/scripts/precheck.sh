@@ -7,15 +7,16 @@ trap 'rc=$?; m="precheck failed (exit $rc) at line $LINENO: $BASH_COMMAND"; echo
 # Why quiet: a GitHub API hiccup or an odd tag is retried next hour; alerting on it only trains the user to ignore alerts.
 skip() { echo "$1; skipped"; exit 1; }
 cd "$HOME/Project/orca"
-git fetch -q fork develop
-git fetch -q origin --no-tags '+refs/tags/v*:refs/tags/v*'
+git fetch -q fork develop || skip "git fetch fork failed"
+git fetch -q origin --no-tags '+refs/tags/v*:refs/tags/v*' || skip "git fetch origin tags failed"
 # Upstream also pushes tags it never publishes as a Release (v1.4.236); only a published Release counts.
 newest=$(gh api repos/stablyai/orca/releases/latest --jq .tag_name) || skip "gh api releases/latest failed"
 [[ $newest =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || skip "latest upstream release tag '$newest' is not vX.Y.Z"
 base=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' --exclude '*-fork*' fork/develop)
 echo "upstream=$newest develop-base=$base"
 newer() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -1)" = "$1" ]; }
-lock=$(git ls-remote fork 'refs/heads/rebase/*' | head -1)
+locks=$(git ls-remote fork 'refs/heads/rebase/*') || skip "git ls-remote fork failed"
+lock=$(head -1 <<<"$locks")
 if [ -n "$lock" ]; then
   branch=${lock#*refs/heads/}
   held=${branch#rebase/}
@@ -25,10 +26,14 @@ if [ -n "$lock" ]; then
   [ -n "$pr" ] && when=$(printf '%s\n%s\n' "$when" "${pr#* }" | sort | tail -1)
   age=$(( $(date +%s) - $(date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$when" +%s) ))
   waiting=0
+  moved=0
   if [ -n "$pr" ]; then
-    waiting=$(gh pr view "${pr%% *}" -R audichuang/orca --json comments --jq '[.comments[].body | select(startswith("<!-- auto-rebase:verified -->") or startswith("<!-- auto-rebase:needs-human -->"))] | length') || skip "gh pr view failed"
+    comments=$(gh pr view "${pr%% *}" -R audichuang/orca --json comments --jq '.comments[].body') || skip "gh pr view failed"
+    waiting=$(grep -cE '^<!-- auto-rebase:(verified|needs-human) -->' <<<"$comments" || true)
+    moved=$(grep -c '^<!-- auto-rebase:develop-moved ' <<<"$comments" || true)
   fi
-  if [ "$waiting" = 0 ]; then
+  # Why moved first: once develop moved, a release is running (or died) whatever earlier comments say.
+  if [ "$waiting" = 0 ] || [ "$moved" != 0 ]; then
     if [ "$age" -gt 21600 ]; then
       echo "stale lock: $branch (${age}s since last activity)"
       exit 0
