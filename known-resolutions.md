@@ -1,12 +1,12 @@
 # 已知的上游衝突與處理方式
 
-每日 canary（`make fork-canary`）對上游 main 試合時看過的衝突，一個根因一條。auto-rebase 用 `git merge-base --is-ancestor <上游 commit> vNEW` 判斷條目適用，照它處理；develop 移動後刪掉用過的條目。只經 `config/scripts/fork-notes.sh` 寫。
+待處理的建議，一個根因一條：每日 canary（`make fork-canary`）對上游 main 試合時看過的衝突，以及 fork 自身問題。auto-rebase 用 `git merge-base --is-ancestor <上游 commit> vNEW` 判斷條目適用（fork 自身問題沒有上游 commit，修正還沒做就適用），照它處理；develop 移動後把用過的條目搬進 `resolution-history.md`。之前怎麼處理過，看 `resolution-history.md`。只經 `config/scripts/fork-notes.sh` 寫。
 
 範本（複製後填寫，不要留這段以外的範例）：
 
 ```
-## <上游 commit 完整 sha>（#PR 號、標題）× fork <短 sha>（標題）— canary <YYYY-MM-DD>
-- 類型：上游修了同一件事｜兩邊各改各的｜上游改了 fork 依賴的 API｜待人判斷
+## <上游 commit 完整 sha（fork 自身問題寫「fork 自身問題」）>（#PR 號、標題）× fork <短 sha>（標題）— canary <YYYY-MM-DD>
+- 類型：上游修了同一件事｜兩邊各改各的｜上游改了 fork 依賴的 API｜fork 自身問題｜待人判斷
 - 衝突檔：<路徑>…
 - 連帶症狀：typecheck 錯誤 <檔>…；失敗測試 <檔>…
 - 處理：<丟掉 fork commit X 並刪哪些測試｜採上游結構後把 fork 的哪幾行加回｜fork 這邊怎麼跟上>
@@ -41,11 +41,3 @@
 - 處理：照上游 `useGitStatusPolling.ts` 的寫法（一次解析一個 copy，same-path twin 不會拿到別台的 transport）。`refreshOne` 裡把 `getConnectionId(worktree.id)`＋`getWorktreeGitOwnerTarget(worktree.id)` 換成 `const copy = resolveWorktreeGitCopyNow(worktree.id)`（`@/lib/worktree-git-copy`），`if (!copy) return`，`const { connectionId, transport: target } = copy`，呼叫時加 `ownerHostId: copy.hostId`；拿掉兩個不再用的 import。測試把 `../../worktree-git-owner-target` 與 `@/lib/connection-context` 兩個 mock 換成 `vi.mock('@/lib/worktree-git-copy', () => ({ resolveWorktreeGitCopyNow: (id) => ({ worktreeId: id, hostId: null, connectionId: id.includes('ssh') ? 't1' : undefined, transport: ownerEnvironmentId ? { kind: 'environment', environmentId: ownerEnvironmentId } : { kind: 'local' } }) }))`。
 - 守它的測試：use-folder-repo-status-refresh.test.ts、folder-multi-repo-panel.test.tsx
 - 驗證（2026-10-26，上游 27e7f8fd6d6e35e1ba04e16b18e452c1709ecb3e）：同上一條（tc 通過、170 檔 963 測試全過，含改過的 use-folder-repo-status-refresh.test.ts）。
-
-## 27e7f8fd6d6e35e1ba04e16b18e452c1709ecb3e（上游 main 當時的 tip；沒有單一觸發 commit）× fork 31e98b4203（test(terminal-pane): 測試結束時清掉真實 timer,不再滲進下一個測試的 stub）、34c38f14ac（test(terminal-pane): timer 清除測試只計算 restore 之後的觸發）— canary 2026-10-26
-- 類型：兩邊各改各的（fork 測試在上游 main 的負載下出現時序不穩）
-- 衝突檔：無
-- 連帶症狀：失敗測試 src/renderer/src/components/terminal-pane/pty-connection-test-environment.test.ts「stops real timers a test leaves behind…」（expected 5 to be 0）。整批 170 檔跑兩次都失敗，單獨跑會過。
-- 處理：第一個 case 用 5ms 的 setTimeout／setInterval，`restoreTerminalTestGlobals` 裡的動態 import 在負載下超過 5ms，restore 前就觸發了。比照 34c38f14ac 對第二個 case 的修法：加 `let restored = false`，callback 改成 `fired += restored ? 1 : 0`，`await restoreTerminalTestGlobals()` 之後設 `restored = true`。這是 fork 測試，跟哪一版上游無關，develop 現在就可以改。
-- 守它的測試：pty-connection-test-environment.test.ts 本身
-- 驗證（2026-10-26，上游 27e7f8fd6d6e35e1ba04e16b18e452c1709ecb3e）：改後整批 170 檔 963 測試全過。
