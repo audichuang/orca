@@ -7,6 +7,7 @@
 - `fork-lint-run.mjs` 與 `make fork-check-lint` 跑完每一步再列出全部失敗；canary 在合併樹跑上游 lint（只報告），`canary-last.json` 多 `lintFailures`。
 - auto-rebase 本機閘門改成 `make -k fork-check-static` 加 seams；整套單元測試、e2e、wire、mobile 只在 CI 跑；推上去就開盲審，跟 CI 同時跑；第 7 步推 main 後再停用一次上游 workflow。cherry-pick 的上游 lint 修正以「改回那一步 lint 會紅」為證明，翻譯另一個 commit（patch-id 才對得上上游）。
 - 已處理的 `known-resolutions.md` 條目「fork 自身問題（seam 清單漏登錄 d809e41db0 新增的測試）」：`tab-bar-item-model.git-status.fork.test.ts` 登錄進「Upstream component slots and folder routing」組，條目已刪。
+- 耗時基準（v1.4.241，12:17 → 14:57，共 2 小時 40 分，時間取自 PR #83 留言與 CI）：rebase＋開 PR 18 分；run 被殺到接手 48 分（含查原因約 35 分）；本機 fork-check 5 輪（每輪撞一個上游新檢查）＋整套單元測試 37 分；CI 與本機 e2e/wire/mobile 13 分；盲審第 1 輪 15 分；補測試＋CI＋第 2 輪 13 分；發版 11 分。PR #84 後的目標是 50～60 分：rebase ～10、static＋seams ～10、CI ∥ 盲審 ～15、修正輪（有的話）～13、發版 ～11。下一次 auto-rebase 寫它的處理紀錄時，照這個分段寫實際耗時；明顯超過就找出是哪一段、寫下原因。
 - 這個 PR 的 CI 有一次 mobile job 卡住 17 分鐘（平常 4～5 分鐘），取消後 `rerun --failed` 5 分鐘綠；跟這次改動無關。
 
 ## 2026-10-26 auto-rebase v1.4.240 → v1.4.241（PR #83）— develop 已移動並發 v1.4.241-fork.1
