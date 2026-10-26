@@ -19,6 +19,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
    tip=$(config/scripts/fork-notes.sh tip)
    git show "$tip":known-resolutions.md > "$S/known-resolutions.orig.md" && cp "$S/known-resolutions.orig.md" "$S/known-resolutions.md"
    git show "$tip":canary-last.json > "$S/canary-last.orig.json"
+   git show "$tip":resolution-history.md > "$S/resolution-history.md" || : > "$S/resolution-history.md"
    ```
    `fork-notes.sh` 回 0 以外的值（分支不見、網路斷）→ 照跑 canary，但第 4 步不寫回筆記，通知裡寫原因。
 3. 在 `MAIN` 跑（不要動 `~/Project/orca` 主 checkout）：
@@ -39,7 +40,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
 
 報告裡衝突的檔案會被重設成上游版本，所以很多 typecheck 錯誤和失敗測試只是**衝突的連帶症狀**，不是獨立的問題。先歸因，再診斷：
 
-1. 對每個衝突檔，先看 `$S/known-resolutions.md` 有沒有條目。有就照它做，沒有就照第 3 步判斷怎麼合。腳本已把衝突檔重設成上游那一側、清掉了衝突標記，要重建衝突時在 `K` 裡（合併還沒 commit，`MERGE_HEAD` 還在）：
+1. 對每個衝突檔，先看 `$S/known-resolutions.md` 有沒有條目。有就照它做；沒有就先在 `$S/resolution-history.md`（之前的 auto-rebase 與人工處理怎麼解的，只讀）找同一個檔或同一個 fork commit 的前例，照前例的做法，再照第 3 步判斷怎麼合。腳本已把衝突檔重設成上游那一側、清掉了衝突標記，要重建衝突時在 `K` 裡（合併還沒 commit，`MERGE_HEAD` 還在）：
    ```sh
    b=$(git merge-base HEAD MERGE_HEAD)
    git show "$b:<檔>" > "$S/base"; git show "HEAD:<檔>" > "$S/ours"; git show "MERGE_HEAD:<檔>" > "$S/theirs"
@@ -61,7 +62,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
 
 例：2026-10-25 那次有 7 個衝突檔、6 個 typecheck 錯誤檔、7 個失敗測試檔，歸因後是 5 個根因，只有 1 個是新的（上游 revert #32320，撞到 fork 在同一段的改動）。
 
-**哪些要診斷**：看 `known-resolutions.orig.md` 有沒有條目，不看上一次的摘要。原因：上游一發版，auto-rebase 處理完就會刪掉條目，但上游 main 可能還帶著同樣的衝突。這時只跟摘要比，會以為「不是新的」而跳過，處理方法就沒人記了。第一次跑、還沒有摘要時也一樣。
+**哪些要診斷**：看 `known-resolutions.orig.md` 有沒有條目，不看上一次的摘要。原因：上游一發版，auto-rebase 處理完就會把條目搬進 `resolution-history.md`，但上游 main 可能還帶著同樣的衝突。這時只跟摘要比，會以為「不是新的」而跳過，處理方法就沒人記了。第一次跑、還沒有摘要時也一樣。
 
 ## 3. 診斷沒有條目的根因，寫進 known-resolutions.md
 
@@ -69,16 +70,17 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
   - **上游修了同一件事**（像 078ffe8487 被上游 #6282 取代）→ 建議丟掉那個 fork commit，列出要一起刪的 fork 測試與常數。
   - **兩邊各改各的** → 寫清楚怎麼合（採上游結構，再把 fork 的哪幾行加回），以及守它的測試（`config/fork-seam-tests.txt` 裡的哪一組）。上游 revert 一個 fork 也有改到的功能，也算這一種：fork 的行加回，被上游刪掉的東西不要加回來。
   - **上游改了 fork 依賴的 API**（改名、刪 export、改簽章）→ 寫 fork 這邊要怎麼跟上。
+  - **fork 自身問題**（跟上游哪一版無關，develop 現在就壞或不穩，例如 fork 測試的時序）→ 寫清楚怎麼改、哪個測試守它。標題的上游 commit 位置寫「fork 自身問題」：沒有上游 sha，下一次 auto-rebase 不論 vNEW 是哪一版都會在 rebase 後照它改，不必等人處理。條目列的修正已經在 develop 上（有人先改了）就刪掉條目，在 `resolution-history.md` 不用另記。
   - **看不出來** → 照實寫「待人判斷」與已知的事實，不要猜。
 - 驗證就是第 2 步那次 `pnpm tc` 和重跑測試。寫下跑了什麼、結果如何、在哪個上游 sha 上跑的；沒驗證的標「未驗證」。
-- 寫進 `$S/known-resolutions.md`，**一個根因一條**，格式照檔案開頭的範本：標題寫上游 commit、fork commit、canary 日期；內容列出衝突檔，以及連帶出現的 typecheck 錯誤檔和失敗測試，這樣 auto-rebase 看到同樣的症狀，就知道是同一件事。上游 commit 一定要寫完整的 sha：auto-rebase 用 `git merge-base --is-ancestor <它> vNEW` 判斷條目適不適用。fork commit 寫 sha 也寫標題：develop 每次 rebase 都會改寫 sha，靠標題才找得回來。
-- 已經有條目的根因：這次也驗證過的話，在條目上更新「驗證（日期，上游 sha）」那行，不要另開一條。條目的 fork sha 不在目前的 develop 上（`git merge-base --is-ancestor <sha> fork/develop` 失敗，代表 develop 已被 rebase 改寫過），就用 commit 標題在 `git log --format='%h %s' "$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' fork/develop)"..fork/develop` 找標題完全相同的那一個，把新的 sha 換上；找不到或不只一個，就在條目上註明「fork sha 待人判斷」。條目留著；auto-rebase 移動 develop 後會自己刪。
+- 寫進 `$S/known-resolutions.md`，**一個根因一條**，格式照檔案開頭的範本：標題寫上游 commit、fork commit、canary 日期；內容列出衝突檔，以及連帶出現的 typecheck 錯誤檔和失敗測試，這樣 auto-rebase 看到同樣的症狀，就知道是同一件事。上游 commit 一定要寫完整的 sha（fork 自身問題除外）：auto-rebase 用 `git merge-base --is-ancestor <它> vNEW` 判斷條目適不適用。fork commit 寫 sha 也寫標題：develop 每次 rebase 都會改寫 sha，靠標題才找得回來。
+- 已經有條目的根因：這次也驗證過的話，在條目上更新「驗證（日期，上游 sha）」那行，不要另開一條。條目的 fork sha 不在目前的 develop 上（`git merge-base --is-ancestor <sha> fork/develop` 失敗，代表 develop 已被 rebase 改寫過），就用 commit 標題在 `git log --format='%h %s' "$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' fork/develop)"..fork/develop` 找標題完全相同的那一個，把新的 sha 換上；找不到或不只一個，就在條目上註明「fork sha 待人判斷」。條目留著；auto-rebase 移動 develop 後會把它搬進 `resolution-history.md`。
 
 ## 4. 通知、存摘要、收尾
 
 - **先決定要不要推 Bark**，拿這次的結果跟 `$S/canary-last.orig.json`（上一次的摘要）比：`Result:` 行跟上次的 `result` 不同、有出現新的檔案、有項目消失、setup error、報告的「Leftover canary worktrees」或第 1 步沒刪的 run worktree 不是空的，或是沒有上一次的摘要，就推；都一樣就不推。推的方式照 `.claude/skills/orca-fork-auto-rebase/SKILL.md` 第 8 步（同一個 Bash 指令裡組內容並送出，group `orca`）。
   - title：「Orca fork canary：<N 個新問題｜setup error｜全綠>」。N 是**新的根因條數**，不是檔案數；「新」指它在 `known-resolutions.orig.md` 沒有條目、檔案也不在上一次的摘要裡。條目被 auto-rebase 清掉才重寫的根因，使用者之前已經收過通知，算在「已知」那段（註明重寫幾條）。沒有新根因但有變化（例如有項目消失），就寫「沒有新問題」。
-  - body：上游 main sha 與距 develop 基底幾個 commit；然後分三段：新的根因（每項一句建議，加上驗證結果）、已知的根因（條目名稱）、消失的項目；殘留的 worktree；最後是報告路徑 `$R/report.md`。
+  - body：上游 main sha 與距 develop 基底幾個 commit；然後分三段：新的根因（每項一句建議，加上驗證結果；寫明已記進筆記、下一次 auto-rebase 會照做，不需要使用者處理，筆記沒寫成的除外）、已知的根因（條目名稱）、消失的項目；殘留的 worktree；最後是報告路徑 `$R/report.md`。
 - 寫回筆記（第 1 步取筆記失敗就跳過，通知裡已寫原因）：
   - green 或 not green：把這次的摘要寫進 `$S/canary-last.json`，四個清單照報告原樣列還沒歸因的檔案路徑；`result` 記下 install 或 test listing 失敗這類清單表達不出來的狀態。下一次就拿它來比對：
 
