@@ -287,7 +287,7 @@ export async function runLayoutScenarios(ctx: ExtraScenarioContext): Promise<voi
     await expect(barCopy).toBeVisible()
     const toast = await settledToastBox(page)
     const bar1 = await barGeo()
-    if ('barBox' in bar1) {
+    if (bar1.barBox) {
       expect(toast.bottom, 'settled toast sits above the bar').toBeLessThanOrEqual(bar1.barBox[2])
       // Why: the bar's padding lifts the dock without resizing it (fb2dba0af8).
       expect(bar1.dockTop, 'Git History dock is on screen').not.toBeNull()
