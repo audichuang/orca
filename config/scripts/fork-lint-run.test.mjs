@@ -33,14 +33,14 @@ describe('fork-lint-run', () => {
     expect(() => pnpmArgs('pnpm run a | tee log')).toThrow('needs a shell')
   })
 
-  it('stops at the first failing step and returns its exit code', () => {
+  it('runs every step and returns the first failing exit code', () => {
     const ran = []
     const code = runLintSteps(['oxlint', 'pnpm run check:a', 'pnpm run check:b'], (args) => {
       ran.push(args.join(' '))
-      return args.includes('check:a') ? 3 : 0
+      return args.includes('check:a') ? 3 : args.includes('check:b') ? 4 : 0
     })
     expect(code).toBe(3)
-    expect(ran).toEqual(['exec oxlint', 'run check:a'])
+    expect(ran).toEqual(['exec oxlint', 'run check:a', 'run check:b'])
   })
 
   it("applies this checkout's exclusions to its lint script", () => {
