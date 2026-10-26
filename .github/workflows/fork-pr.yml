@@ -1,6 +1,6 @@
 # Fork-only PR gate. This fork ships only the macOS arm64 desktop build, so it replaces
 # upstream's pr.yml (disabled on the fork by `make fork-ci-disable-upstream`, not edited,
-# so rebases never conflict here). Merge gate: the "Fork PR checks passed" job.
+# so rebases never conflict here). Merge gate: the "Fork PR checks passed" job, for every PR.
 name: Fork PR Checks
 
 on:
@@ -23,10 +23,42 @@ env:
   UPSTREAM_REPO: https://github.com/stablyai/orca.git
 
 jobs:
+  scope:
+    name: fork PR scope
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      scope: ${{ steps.scope.outputs.scope }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # Why depth 2: the diff is HEAD^1..HEAD of the pull request merge commit.
+          fetch-depth: 2
+          persist-credentials: false
+
+      # Why here: `pnpm lint` checks these links in fork-check-static, which a docs-only PR skips.
+      - name: Check README local links
+        run: node config/scripts/check-readme-local-links.mjs
+
+      - name: Classify changed paths
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          DIFF_BASE="$(node config/scripts/git-pull-request-diff-base.mjs "$BASE_SHA")"
+          # Why --no-renames: a code file moved under docs/ must still show its code-side deletion.
+          CHANGED="$(git diff --name-only --no-renames --diff-filter=ACDMRT "$DIFF_BASE" HEAD)"
+          printf '%s\n' "$CHANGED"
+          printf '%s\n' "$CHANGED" | node config/scripts/fork-pr-scope.mjs | tee -a "$GITHUB_OUTPUT"
+
   # `make fork-check` split in two so its halves run in parallel; together they cover exactly the same checks.
   fork_check_static:
     name: fork-check typecheck and quality
-    if: github.event.pull_request.draft != true
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -55,7 +87,8 @@ jobs:
 
   fork_check_tests:
     name: fork-check tests (${{ matrix.shard }})
-    if: github.event.pull_request.draft != true
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -92,7 +125,8 @@ jobs:
   cross_version_wire:
     # Why kept: the fork desktop client talks to hosts running upstream releases.
     name: fork cross-version wire compatibility
-    if: github.event.pull_request.draft != true
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     steps:
@@ -117,7 +151,8 @@ jobs:
   fork_e2e:
     # Why on every PR: the unattended upstream rebase PRs merge on this gate, and the fork's UI lives in these specs.
     name: fork e2e specs
-    if: github.event.pull_request.draft != true
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -171,7 +206,8 @@ jobs:
     # Why: fork-check's tests skip the mobile bundling checks without mobile/node_modules; this job installs them.
     # Upstream's mobile_web_app steps, one after another, in the Makefile so they also run locally.
     name: fork mobile web app bundle
-    if: github.event.pull_request.draft != true
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -195,7 +231,8 @@ jobs:
   mac_arm64_build:
     # Same `make fork-dmg` as fork-release.yml, ad-hoc signed: fork builder config, dmg and the app.asar leak check.
     name: fork macOS arm64 build
-    if: github.event.pull_request.draft != true
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
     runs-on: macos-15
     timeout-minutes: 60
     env:
@@ -222,6 +259,7 @@ jobs:
   verify:
     name: Fork PR checks passed
     needs:
+      - scope
       - fork_check_static
       - fork_check_tests
       - cross_version_wire
@@ -236,7 +274,7 @@ jobs:
         env:
           RESULTS: ${{ toJSON(needs) }}
         run: |
-          echo "$RESULTS" | jq -e 'to_entries | all(.value.result == "success")' > /dev/null || {
+          echo "$RESULTS" | jq -e '(.scope.result == "success" and .scope.outputs.scope == "docs") as $docs | .scope.result == "success" and (to_entries | all(.value.result == "success" or ($docs and .value.result == "skipped")))' > /dev/null || {
             echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
             echo "::error::A fork PR check did not succeed."
             exit 1
