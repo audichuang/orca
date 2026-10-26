@@ -40,6 +40,10 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
 
+      # Why here: `pnpm lint` checks these links in fork-check-static, which a docs-only PR skips.
+      - name: Check README local links
+        run: node config/scripts/check-readme-local-links.mjs
+
       - name: Classify changed paths
         id: scope
         env:
