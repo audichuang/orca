@@ -45,6 +45,8 @@ case ${1:-} in
     commit=$(git commit-tree "$tree" -p "$base" -m "$message")
     if ! git push -q "$remote" "${commit}:refs/heads/${branch}" 2>/dev/null; then
       now=$(tip) || exit 1
+      # Why: the push can land while the client still sees an error; the tip is then our own commit.
+      [ "$now" = "$commit" ] && { echo "$commit"; exit 0; }
       if [ "$now" != "$base" ]; then
         echo "rejected: $branch moved to $now past $base; run tip, reapply, write again" >&2
         exit 2
