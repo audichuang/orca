@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Fork canary: merge the fork into upstream main in a throwaway worktree, then typecheck and run the fork's tests.
+# Fork canary: merge the fork into upstream main in a throwaway worktree, then typecheck, run the fork's tests and
+# upstream's lint steps (fork-lint-run.mjs).
 # Report-only early warning before the next release tag; never a gate. Never pushes or touches the invoking checkout.
 # Shared side effects: the fetch updates remote refs and tags, rerere writes preimages to the common git dir, and
 # fork-merge-driver-install.mjs registers the locale merge driver in the clone's git config.
@@ -125,6 +126,7 @@ tc_failed=
 listing_failed=
 dropped=
 tests_failed=
+lint_failed=
 # Why HUSKY=0: husky's prepare script would write hooksPath into the shared .git/config.
 pnpm_install() {
   (cd "$wt" && HUSKY=0 pnpm install "$1") >>"$logs/install.log" 2>&1
@@ -155,6 +157,9 @@ if [ -z "$install_failed" ]; then
       pnpm exec vitest run --config config/vitest.config.ts --reporter=default --reporter=json \
         --outputFile.json="$logs/vitest.json" $tests) >"$logs/vitest.log" 2>&1 || tests_failed=1
   fi
+  # Why: a release often adds lint ratchets the fork trips; seeing them here lets the auto-rebase fix them in one round.
+  echo ">> fork-lint-run"
+  (cd "$wt" && node config/scripts/fork-lint-run.mjs) >"$logs/lint.log" 2>&1 || lint_failed=1
 fi
 
 findings=
@@ -163,6 +168,7 @@ findings=
 [ -z "$tc_failed" ] || findings="$findings, typecheck errors"
 [ -z "$listing_failed" ] || findings="$findings, test listing failed in the merged tree"
 [ -z "$tests_failed" ] || findings="$findings, failing tests"
+[ -z "$lint_failed" ] || findings="$findings, lint failures"
 [ -z "$dropped" ] || findings="$findings, fork tests the merged tree no longer runs"
 status=$([ -z "$findings" ] && echo 0 || echo 1)
 
@@ -272,6 +278,13 @@ list_commits() {
     else
       log_tail "$logs/vitest.log"
     fi
+  fi
+  if [ -n "$lint_failed" ]; then
+    echo
+    echo "## Lint failures"
+    echo
+    sed -n 's/^fork-lint-run: `\(.*\)` failed with exit code \(.*\)$/- `\1` (exit \2)/p' "$logs/lint.log"
+    grep -q '^fork-lint-run: `' "$logs/lint.log" || log_tail "$logs/lint.log"
   fi
   # Why only listed: a leftover may belong to a canary still running, so a human removes it.
   leftovers=$(git worktree list --porcelain | sed -n 's/^worktree //p' | while IFS= read -r other; do
