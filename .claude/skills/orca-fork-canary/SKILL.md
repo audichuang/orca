@@ -9,7 +9,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
 
 目的：上游幾乎每天發一版。canary 先對上游 `main` 試合，讓下一次 `orca-fork-auto-rebase` 開跑時，衝突與該丟的 fork commit 已經查清楚、寫在筆記分支 `fork-canary-notes` 的 `known-resolutions.md`（跟 develop 沒有共同歷史，不跑 CI、不會被 rebase 改寫）。
 
-**等待一律在前景，絕不結束這一輪去等完成通知**：你看起來閒置，Orca 會把這次 run 判成完成，並可能關掉 terminal 連背景工作一起殺掉（auto-rebase run 121 就這樣死掉）。超過幾分鐘的指令（canary、`pnpm tc`、重跑測試、lint）用 run_in_background 跑 `<指令> > LOG 2>&1; echo $? > LOG.exit`（LOG 每次用新名字，放 `$S`），再在前景重複 `bash "$MAIN/config/scripts/fork-wait-for-job.sh" LOG.exit` 直到它回 0（回 3 是還在跑，再呼叫一次）。
+**等待一律在前景，絕不結束這一輪去等完成通知**：你看起來閒置，Orca 會把這次 run 判成完成，並可能關掉 terminal 連背景工作一起殺掉（auto-rebase run 121 就這樣死掉）。超過幾分鐘的指令（canary、`pnpm tc`、重跑測試、lint）用 run_in_background 跑 `<指令> > LOG 2>&1; echo $? > LOG.exit`（LOG 每次用新名字，放 `$S`），再在前景重複 `bash "$MAIN/config/scripts/fork-wait-for-job.sh" LOG.exit` 直到它回 0（回 3 是還在跑，再呼叫一次）。Bash 預設 timeout 只有 2 分鐘，超過一樣會被移到背景：**每個等待的 Bash 呼叫都要傳 `timeout: 600000`**。連續兩次回 3 而 LOG 都沒變大、`pgrep -f` 也找不到那個指令 → 它被殺了，換新 LOG 名重跑一次。
 
 本文的變數：`MAIN` = Orca 為這次 run 開的 worktree（`pwd -P`，開頭記下）；`S` = 這次的暫存目錄（`S=$(mktemp -d)`）；`OUT` = `$HOME/.cache/orca-fork-canary`（報告放在 run worktree 外，下一次 run 清掉舊 worktree 後，筆記與通知裡的報告路徑仍然有效）。
 
