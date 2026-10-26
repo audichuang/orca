@@ -9,6 +9,8 @@ description: Unattended pipeline that rebases the Orca fork's develop onto the n
 
 本技能覆寫兩個預設：codex 技能的「找到問題不自動修、停下來問」在這裡不適用（第 5 步規定怎麼修）；`orca-lcu-ui-test` 與 Codex desktop 的真實 UI 測試輪**不在這裡跑**——它們會占用螢幕鍵盤剪貼簿，排程隨時會觸發。發版前要驗的 UI 情境（ClipCode 複製、Paste & Restore、資料夾 repo 清單、session restore、external-change banner、agent launch cwd）由 fork e2e 在隱藏視窗驗（`folder-multi-repo-source-control.spec.ts`、`folder-workspace-tab-restart-restore.spec.ts`），第 3 步的 `fork-check-e2e` 與 CI 都會跑；lcu 實機輪只留給新增或改了 UI 的功能 PR。
 
+本文說「第 N 步」一律指下面標題 `## N.` 那一整節；一節裡面的編號項目說「第 N 點」（例如「第 1 步第 7 點」）。
+
 本文的變數：
 
 - `SKILL_DIR`：這個 SKILL.md 所在目錄。
@@ -59,10 +61,10 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
    d=$(git rev-parse --short <要丟的 fork commit>)
    GIT_SEQUENCE_EDITOR="sed -i '' -e '/^pick ${d} /s/^pick/drop/'" git rebase -i --onto vNEW vOLD
    ```
-   要丟的 commit 必須在這次的 develop 上：`git merge-base --is-ancestor <條目的 sha> OLD_DEVELOP`。不在（條目是在上一次 rebase 前寫的，sha 已被改寫）就用條目寫的 commit 標題在 `git log --format='%h %s' vOLD..OLD_DEVELOP` 找，標題完全相同的剛好一個才用它；找不到或不只一個 → 不 rebase，鎖留著，跳到第 8 步交給人（筆記說要丟的 commit 沒丟，後面的閘門都綠也不能發）。todo 清單用 `git rev-parse --short` 的長度，所以先轉換。rebase 完用 `git range-diff vOLD..OLD_DEVELOP vNEW..HEAD` 確認那個 commit 是 `<`（被丟掉）；不是就 `git checkout --detach OLD_DEVELOP` 回到起點重做一次（rebase 已經結束，`--abort` 沒有作用），第二次還不是就當失敗（第 5 點）。
+   要丟的 commit 必須在這次的 develop 上：`git merge-base --is-ancestor <條目的 sha> OLD_DEVELOP`。不在（條目是在上一次 rebase 前寫的，sha 已被改寫）就用條目寫的 commit 標題在 `git log --format='%h %s' vOLD..OLD_DEVELOP` 找，標題完全相同的剛好一個才用它；找不到或不只一個 → 不 rebase，鎖留著，跳到第 8 步（`## 8.` 那節）交給人（筆記說要丟的 commit 沒丟，後面的閘門都綠也不能發）。todo 清單用 `git rev-parse --short` 的長度，所以先轉換。rebase 完用 `git range-diff vOLD..OLD_DEVELOP vNEW..HEAD` 確認那個 commit 是 `<`（被丟掉）；不是就 `git checkout --detach OLD_DEVELOP` 回到起點重做一次（rebase 已經結束，`--abort` 沒有作用），第二次還不是就當失敗（第 5 點）。
    rerere 已開；重放後仍要 `git add` 才能 continue。適用的條目照它處理、在 PR 說明裡逐條列出；它跟眼前的衝突對不上就以眼前為準，並在通知裡註明。
 4. CLEAN = 完全沒衝突、也沒丟 commit；MANUAL = 有任何衝突（**rerere 自動重放的也算**：那是對舊上游錄下的解法，要跟自己解的一樣過 mutation 證明）、丟掉了 commit、或有額外修正 commit。
-5. 自己解：保留 fork 功能、採上游新結構（FORK.md 的 seam 原則）；locale 兩邊只新增 key 時 driver 已合好、不算衝突；還停在 locale 檔，代表兩邊改了同一個字串（driver 留下衝突標記），兩邊 key 都保留、字串照筆記條目或上游新文案決定，之後 `pnpm run verify:localization-catalogs`。沒把握就 `git rebase --abort`，鎖留著，跳到第 8 步：那裡會開 PR 並標 `needs-human`。放掉鎖的話，下一次排程會重跑同一個註定失敗的 rebase，每小時推一次失敗通知。
+5. 自己解：保留 fork 功能、採上游新結構（FORK.md 的 seam 原則）；locale 兩邊只新增 key 時 driver 已合好、不算衝突；還停在 locale 檔，代表兩邊改了同一個字串（driver 留下衝突標記），兩邊 key 都保留、字串照筆記條目或上游新文案決定，之後 `pnpm run verify:localization-catalogs`。沒把握就 `git rebase --abort`，鎖留著，跳到第 8 步（`## 8.` 那節）：那裡會開 PR 並標 `needs-human`。放掉鎖的話，下一次排程會重跑同一個註定失敗的 rebase，每小時推一次失敗通知。
 6. 適用的「fork 自身問題」條目：rebase 完成後照條目改，一條一個 commit（算 MANUAL），跑條目「守它的測試」確認通過。
 7. `git push --force fork HEAD:refs/heads/rebase/vNEW`，然後馬上開 PR（第 2 步可能跑好幾小時，PR 開了才能留心跳）：`git push fork "vNEW^{commit}:refs/heads/ci-base/vNEW"`（上游 tag 是 annotated tag，不加 `^{commit}` 推不上分支），`gh pr create -R audichuang/orca --base ci-base/vNEW --head rebase/vNEW --title "[不合併] develop rebase 到 vNEW 的 CI 驗證"`，記下編號當 `PR`。body 第一行放 `<!-- auto-rebase:old-develop OLD_DEVELOP 的完整 sha -->`（RESUME 靠它），其餘照 PR #22/#29 的格式（不合併的原因、`develop = vOLD + N 個 fork commit` → `vNEW + …` diff 區塊、每個衝突檔怎麼解、用了哪幾條筆記、額外 commit、Merge Danger），結尾 `🤖 Generated with [Claude Code](https://claude.com/claude-code)`。之後各步有新的衝突解法或修正就 `gh pr edit` 補進說明。
 8. `make fork-check-lint` 直接讀 `package.json` 的 `"lint"` 逐項執行（`config/scripts/fork-lint-run.mjs`），上游增減 lint 項目不用手動同步。只有兩種情況要動它，另外 commit（算 MANUAL）：上游拿掉了 `EXCLUDED` 裡的項目（腳本會報錯要你刪掉那筆排除），或 `lint` script 出現它拒絕的寫法（換行、管線等 shell 語法）。
@@ -152,7 +154,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
 ```
 
 - lease 失敗 = 期間有 PR 合進 develop，這次的 rebase 不含它。不重試、不 force：`gh pr close PR -R audichuang/orca -c "develop 在驗證期間移動了，下一次排程重新 rebase"`，刪掉 fork 的 `rebase/vNEW` 與 `ci-base/vNEW`（下一次排程就會從新的 develop 重來），第 8 步寫筆記（這次的解法下一次還用得到）並回報。
-- 成功後：馬上在 PR 留言 `<!-- auto-rebase:develop-moved ${head} -->`（PR 與 `rebase/vNEW` 都留到第 7 步結束：這時死掉，precheck 六小時後判定過期，第 0 步看到這則留言就接著發版；先收鎖的話，develop 已移動、沒有 tag，之後每小時的預檢都會安靜結束），然後 `make fork-ci-disable-upstream`。筆記在第 8 步寫：這次用掉的條目從 `known-resolutions.md` 移到 `resolution-history.md`。條目等 develop 真的移動了才移走：沒移動的話，下一次 rebase 還用得到。
+- 成功後：馬上在 PR 留言 `<!-- auto-rebase:develop-moved <head 的完整 sha> -->`（寫實際的 sha：留言多半在另一個 Bash 呼叫送出，那時 `$head` 已經是空的）（PR 與 `rebase/vNEW` 都留到第 7 步結束：這時死掉，precheck 六小時後判定過期，第 0 步看到這則留言就接著發版；先收鎖的話，develop 已移動、沒有 tag，之後每小時的預檢都會安靜結束），然後 `make fork-ci-disable-upstream`。筆記在第 8 步寫：這次用掉的條目從 `known-resolutions.md` 移到 `resolution-history.md`。條目等 develop 真的移動了才移走：沒移動的話，下一次 rebase 還用得到。
 
 移動成功就接第 7 步發版。
 
