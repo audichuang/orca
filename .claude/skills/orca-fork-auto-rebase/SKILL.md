@@ -120,7 +120,7 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 - Claude 審查者：每個是一個全新的 `claude -p`（沒有你的脈絡，所以是盲審），提示寫進 `$MAIN/.rebase-review/claude-<角度>-prompt.md`，在它的 worktree（A、B 用 `MAIN`）以 run_in_background 跑 `claude -p --model opus --dangerously-skip-permissions < <提示檔> > $MAIN/.rebase-review/claude-<角度>-r<輪>-result.md 2>&1; echo $? > $MAIN/.rebase-review/claude-<角度>-r<輪>-result.exit`（它不會問權限，所以 A、B 的提示要寫明 `MAIN` 唯讀、不准改檔；每個提示都要寫「不要開背景工作或 subagent，所有指令在前景跑完再回答」，不然它可能先結束、留下不完整的結果），各一個角度：
   - **A 衝突忠實度**：`range-diff.txt` 每個 `!` 項目，新版是否保留 fork 原本的行為、同時採用上游的新結構？有沒有 fork 的欄位、分支、呼叫被默默丟掉？每個 `<` 項目（rebase 後消失的 fork commit）是不是刻意丟的、理由是否成立？
   - **B 上游 API 漂移**：讀 `upstream-touching.diff`、`importer-sweep.txt` 與 `seam-upstream.diff`，上游改了簽章、回傳值、語意（例如回傳一個要呼叫的 release、改成會 reject）的模組，fork 的呼叫點有沒有跟上？上游新增的平行路徑（新的 switch、新的入口、重建的 options 物件）有沒有繞過 fork 的 seam？逐一打開呼叫點看，不要只看 diff。
-  - **C 測試與 seam**：對**每一個**解過衝突（含 rerere 重放）或額外修正的 hunk，找到守它的測試，把該 hunk 改回上游那一側或拿掉修正，跑那個測試確認會變紅，看完 `git checkout -- .` 還原；逐項列出 hunk、測試、紅的那一行（第 6 步「合格的 MANUAL」靠這張表）。hunk 超過 10 個就開兩個 C（`review-c1`、`review-c2`）、各分一半。沒有測試會紅的 seam 就是發現，標明它是不是這次解過的 hunk。**CLEAN 時也要做**：對 `seam-upstream.diff` 碰到的每個 seam（對照 `config/fork-seam-tests.txt` 的分組），把 fork 在那個 seam 的接線拿掉一處（刪欄位轉傳、刪 `'git-graph'` case、刪 slot prop），跑那組 seam 測試確認會紅；沒有會紅的就是發現。
+  - **C 測試與 seam**：對**每一個**解過衝突（含 rerere 重放）或額外修正的 hunk，找到守它的測試（lint 修正就是那一步 lint），把該 hunk 改回上游那一側或拿掉修正，跑那個測試確認會變紅，看完 `git checkout -- .` 還原；逐項列出 hunk、測試、紅的那一行（第 6 步「合格的 MANUAL」靠這張表）。hunk 超過 10 個就開兩個 C（`review-c1`、`review-c2`）、各分一半。沒有測試會紅的 seam 就是發現，標明它是不是這次解過的 hunk。**CLEAN 時也要做**：對 `seam-upstream.diff` 碰到的每個 seam（對照 `config/fork-seam-tests.txt` 的分組），把 fork 在那個 seam 的接線拿掉一處（刪欄位轉傳、刪 `'git-graph'` case、刪 slot prop），跑那組 seam 測試確認會紅；沒有會紅的就是發現。
   - 每個都要求輸出：發現清單（BLOCKING / NON-BLOCKING、`file:line`、為什麼、怎麼證實的），最後一行 `VERDICT: ACCEPTABLE` 或 `VERDICT: NOT ACCEPTABLE`。
 - Codex 兜底（獨立全面審）：照 codex 技能用 companion 的 `task`（**不要用 `review`/`adversarial-review`**：它們拿分支比預設分支，在這裡會是整串 fork 或兩條分岔歷史）。提示寫進 `$MAIN/.rebase-review/codex-prompt.md`：說明這是 fork rebase 的審查、素材在哪、四個問題（A/B/C 的問題加上「還有什麼會讓 fork 功能在 vNEW 上壞掉」）、同樣的輸出格式與 VERDICT 行。
   ```sh
@@ -149,7 +149,7 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 - 第 5 步的審查通過；
 - RESUME 時 PR 說明裡有 old-develop 那行。
 
-**合格的 MANUAL**：range-diff 每個 `!` 項目與每個修正 commit 都有審查者 C（或你自己）做過的 mutation 證明——把那個 hunk 改回上游那一側或拿掉修正，指定的測試會變紅，證據（指令與紅的那一行）寫進審查留言；審查者 C 列出的「沒有測試會紅的 seam」裡，沒有一個落在這次解過衝突、rerere 重放或修正的 hunk 上，也沒有一個落在 `seam-upstream.diff` 碰到的 seam 上（不相關的既有缺口不擋，但要列進通知）。任何一項做不到就不移動。例外：「fork 自身問題」條目的修正 commit 只改 fork 自己的測試檔（`git cat-file -e vNEW:<檔>` 失敗，上游沒有這個檔）時，不需要 mutation 證明（時序類的修正改回去也不一定會紅），條目「守它的測試」在本機與 CI 都通過即可；改到產品程式碼或上游檔的照一般規則。
+**合格的 MANUAL**：range-diff 每個 `!` 項目與每個修正 commit 都有審查者 C（或你自己）做過的 mutation 證明——把那個 hunk 改回上游那一側或拿掉修正，指定的測試會變紅（cherry-pick 的上游 lint 修正用那一步 lint；補翻譯的 commit 用 `fork-locale-parity.mjs vNEW`），證據（指令與紅的那一行）寫進審查留言；審查者 C 列出的「沒有測試會紅的 seam」裡，沒有一個落在這次解過衝突、rerere 重放或修正的 hunk 上，也沒有一個落在 `seam-upstream.diff` 碰到的 seam 上（不相關的既有缺口不擋，但要列進通知）。任何一項做不到就不移動。例外：「fork 自身問題」條目的修正 commit 只改 fork 自己的測試檔（`git cat-file -e vNEW:<檔>` 失敗，上游沒有這個檔）時，不需要 mutation 證明（時序類的修正改回去也不一定會紅），條目「守它的測試」在本機與 CI 都通過即可；改到產品程式碼或上游檔的照一般規則。
 
 推的是 CI 驗過的那個 sha，不是分支名：
 
