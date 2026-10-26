@@ -27,10 +27,10 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
 - vNEW = 上游最新**已發布的 GitHub Release**：`gh api repos/stablyai/orca/releases/latest --jq .tag_name`（須符合 `^v[0-9]+\.[0-9]+\.[0-9]+$`）。上游也會推從沒發布成 Release 的 tag（例如 v1.4.236），那些不算，不要用 `git ls-remote` 取最大 tag。
 - vOLD = `git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' --exclude '*-fork*' fork/develop`。
 - 有沒有進行中的 rebase，用 `git ls-remote fork 'refs/heads/rebase/*'` 判斷（remote-tracking ref 可能是 GitHub 上已刪掉的殘影）。有 `rebase/vX`：
-  - PR 開著、有 `<!-- auto-rebase:develop-moved <sha> -->` 留言（前一次 run 移動 develop 後、發版途中死了）→ **RESUME 發版**：vNEW=vX，PR=那個 PR，先在 PR 留言「resume 發版（RUN=$RUN）」，直接做第 7 步，發的是留言裡的 sha。
+  - PR 開著、有 `<!-- auto-rebase:develop-moved <sha> -->` 留言（前一次 run 移動 develop 後、發版途中死了）→ **RESUME 發版**：vNEW=vX，PR=那個 PR，先在 PR 留言「resume 發版（RUN=$RUN）」，直接做第 7 步，發的是留言裡的 sha。vOLD、OLD_DEVELOP 與用掉的筆記條目取 PR 說明（old-develop 那行、`develop = vOLD + …` 那行、第 1 步列的條目），第 8 步寫筆記要用；`git describe` 這時已經算出 vX。
   - 它對 `ci-base/vX` 的 PR 還開著、沒有這三種留言（見上一項與下一項）→ **RESUME**：`git checkout --detach fork/rebase/vX`，vNEW=vX，PR=那個 PR。OLD_DEVELOP 取 PR 說明裡的 `<!-- auto-rebase:old-develop <sha> -->`，不要重算：develop 在這期間可能已經合進別的 PR，重算會讓第 6 步的 lease 通過、把那些 PR 從 develop 蓋掉。說明裡沒有這行（舊 PR）→ 照常驗證，但第 6 步一律不移動。先在 PR 留言「resume 開始（RUN=$RUN）」：鎖是因為過期才讓你跑到這，不留言的話，下一次排程還會判定過期、再開一個 RESUME 把你的 worktree 刪掉。適用的筆記條目看 PR 說明裡第 1 步列的那幾條。從第 2 步開始；CLEAN/MANUAL 依 PR 說明（有手動解衝突或額外 commit 就是 MANUAL）。
   - PR 開著、已有 `<!-- auto-rebase:verified -->` 或 `<!-- auto-rebase:needs-human -->` 留言（等人審或等人接手）：precheck 只在這把鎖過時才讓你跑到這（上游有比 vX 新的 release，或 develop 的基底已經是 vX）。
-    - develop 的基底已是 vX、`git ls-remote fork refs/heads/develop` 等於 `rebase/vX` 的 tip、`git ls-remote fork 'refs/tags/vX-fork.*'` 沒有指著它的 tag（使用者照 verified 留言推了 develop，沒發版也沒收鎖）→ vNEW=vX，PR=那個 PR，留言 `<!-- auto-rebase:develop-moved <那個 sha> -->`，做第 7 步。
+    - develop 的基底已是 vX、`git ls-remote fork refs/heads/develop` 等於 `rebase/vX` 的 tip、`git ls-remote fork 'refs/tags/vX-fork.*'` 沒有指著它的 tag（annotated tag 要比對 `^{}` 那行，那才是 commit；使用者照 verified 留言推了 develop，沒發版也沒收鎖）→ vNEW=vX，PR=那個 PR，留言 `<!-- auto-rebase:develop-moved <那個 sha> -->`，做第 7 步（vOLD 等取 PR 說明，同上一項）。
     - 其他（被更新的 release 取代，或 develop 已經是別的樣子）→ **收鎖**：`rebase/vX` 的 tip 不在 `fork/develop` 或 `fork/backup/*` 上就先 `git push fork "fork/rebase/vX:refs/heads/backup/rebase-vX-$RUN"`；PR 留言說明原因（「上游已發 vNEW，改從新版重來；這次的處理見 PR 說明與 resolution-history.md」或「develop 已在 vX」）後 `gh pr close`，刪 fork 的 `rebase/vX` 與 `ci-base/vX`。PR 說明裡第 1 步列的解法、第 5 步的審查結論、卡住的原因，照第 8 步「寫筆記」記進筆記（前一次 run 已寫過就不重寫）。然後重新判斷：vNEW == vOLD 就結束、不推通知；否則 **NEW**。
   - 沒有開著的 PR（前一次 run 在開 PR 前就死了，預檢判定鎖已過期才會讓你跑到這）→ 先確認刪了不會丟東西：`rebase/vX` 的 tip 訊息是 `auto-rebase lock vX`，或 `git branch -r --contains fork/rebase/vX` 列得出 `fork/develop` 或 `fork/backup/`。不是的話（可能是使用者關了 PR 繼續在上面做），先 `git push fork fork/rebase/vX:refs/heads/backup/rebase-vX-$RUN` 備份。然後 `git push fork --delete rebase/vX`，再另外 `git push fork --delete ci-base/vX`（不存在會報錯，忽略），當成 **NEW** 重來。
 - 沒有 `rebase/*` 且 vNEW == vOLD → 結束，不推通知。
@@ -53,7 +53,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
    git push fork "${lock}:refs/heads/rebase/vNEW"
    ```
    這個 commit 的時間是現在，precheck 拿它判斷鎖是否過期。之後每次推 `rebase/vNEW` 都是 `--force`。
-2. `git checkout --detach OLD_DEVELOP`，讀筆記：`tip=$(config/scripts/fork-notes.sh tip) && mkdir -p "$MAIN/.rebase-review" && for f in known-resolutions.md resolution-history.md; do git show "$tip:$f" > "$MAIN/.rebase-review/$f" || : > "$MAIN/.rebase-review/$f"; done`（`fork-notes.sh` 是 fork 自己的檔案，rebase 中途可能不在工作樹，所以先讀）。`known-resolutions.md` 是待處理的建議：canary 對上游 main 試合時看過的衝突、「該丟掉的 fork commit」，以及 fork 自身問題；`resolution-history.md` 是之前怎麼處理過的紀錄，遇到筆記沒寫到的衝突，先在裡面找同一個檔或同一個 fork commit 的前例照做。條目適用於這次的條件：一般條目是 `git merge-base --is-ancestor <條目的上游 commit> vNEW`；類型是「fork 自身問題」的條目沒有上游 commit，條目列的檔案在 OLD_DEVELOP 上還在、修正還沒做就適用。`fork-notes.sh` 回非 0 → 沒有筆記也能做，照常 rebase，在通知裡註明。
+2. `git checkout --detach OLD_DEVELOP`，讀筆記：`tip=$(config/scripts/fork-notes.sh tip) && mkdir -p "$MAIN/.rebase-review" && for f in known-resolutions.md resolution-history.md; do git show "${tip}:$f" > "$MAIN/.rebase-review/$f" || : > "$MAIN/.rebase-review/$f"; done`（`fork-notes.sh` 是 fork 自己的檔案，rebase 中途可能不在工作樹，所以先讀）。`known-resolutions.md` 是待處理的建議：canary 對上游 main 試合時看過的衝突、「該丟掉的 fork commit」，以及 fork 自身問題；`resolution-history.md` 是之前怎麼處理過的紀錄，遇到筆記沒寫到的衝突，先在裡面找同一個檔或同一個 fork commit 的前例照做。條目適用於這次的條件：一般條目是 `git merge-base --is-ancestor <條目的上游 commit> vNEW`；類型是「fork 自身問題」的條目沒有上游 commit，條目列的檔案在 OLD_DEVELOP 上還在、修正還沒做就適用。`fork-notes.sh` 回非 0 → 沒有筆記也能做，照常 rebase，在通知裡註明。
 3. Rebase：先 `node config/scripts/fork-merge-driver-install.mjs`（讓 locale JSON 由 driver 合併；driver 複製進 git 目錄，rebase 中途工作樹沒有它也能用），再 `git rebase --onto vNEW vOLD`（FORK.md 說明為何要 --onto）。條目要丟掉某個 fork commit 時，改用：
    ```sh
    d=$(git rev-parse --short <要丟的 fork commit>)
@@ -164,7 +164,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
 
 發版途中任何一步失敗（release 沒觸發、紅兩次、第 3 點的檢查或推送失敗），都照第 6 點收鎖、第 8 步回報，不要留著鎖：develop 已經移動，鎖不再保護什麼，留著只會讓 precheck 六小時後再跑一次同樣失敗的發版。
 
-0. RESUME 發版時先看 `git ls-remote fork 'refs/tags/vNEW-fork.*'`：已有 tag 指著這個 sha（前一次 run 推完 tag 才死）→ 跳到第 4 點。
+0. RESUME 發版時先看 `git ls-remote fork 'refs/tags/vNEW-fork.*'`：已有 tag 指著這個 sha（比對 `^{}` 那行；前一次 run 推完 tag 才死）→ 跳到第 4 點。
 1. N：`git tag -l "vNEW-fork.*" | sed 's/.*-fork\.//' | sort -n | tail -1`，沒有就是 1，否則 +1（要數字排序，字串排序會把 fork.10 排在 fork.9 前面）。
 2. 發版說明寫進檔案（中文、使用者看得到的變化）。格式照上一個 fork tag：`prev=$(git describe --tags --abbrev=0 --match 'v*-fork.*' fork/main)`、`git tag -l --format='%(contents)' "$prev"`。第一行「跟上上游 Orca vNEW，fork 功能（…）全部保留。」，接著 4–6 點整理 `gh release view vNEW -R stablyai/orca --json body` 的「The short version」，最後一點寫這次 fork 自己的修正（第 1、5 步的修正 commit 有使用者看得到的就寫，例如新語系的 fork 翻譯）。
 3. 打 tag 並推（zsh：變數後接 `:` 一律寫 `${}`）：
@@ -179,7 +179,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
 
 ## 8. Bark 通知（不論結果都推）
 
-先處理鎖：凡是保留 `rebase/vNEW` 給人看或接手的結局（第 1 步 rebase 放棄、第 2、3、5 步的失敗、第 4 步素材產生失敗、不移動 develop），還沒有 PR 就開：fork 上沒有 `ci-base/vNEW` 就先 `git push fork "vNEW^{commit}:refs/heads/ci-base/vNEW"`，然後照第 3 步的 `gh pr create`（第 1 步放棄的不要把 HEAD 推上去蓋掉鎖，PR 說明寫明失敗在哪、卡在哪個檔），再留言 `<!-- auto-rebase:needs-human -->`（第 6 步「其他情況不移動」已留 verified 的不用再留）。沒有這兩種留言，precheck 六小時後會判定鎖過期，把分支刪掉重跑，使用者接手的東西就沒了。
+先處理鎖：凡是保留 `rebase/vNEW` 給人看或接手的結局（第 1 步 rebase 放棄、第 2、3、5 步的失敗、第 4 步素材產生失敗、不移動 develop），還沒有 PR 就開：fork 上沒有 `ci-base/vNEW` 就先 `git push fork "vNEW^{commit}:refs/heads/ci-base/vNEW"`，然後照第 1 步第 7 點的 `gh pr create`（body 含 old-develop 那行）（第 1 步放棄的不要把 HEAD 推上去蓋掉鎖，PR 說明寫明失敗在哪、卡在哪個檔），再留言 `<!-- auto-rebase:needs-human -->`（第 6 步「其他情況不移動」已留 verified 的不用再留）。沒有這兩種留言，precheck 六小時後會判定鎖過期，把分支刪掉重跑，使用者接手的東西就沒了。
 
 **寫筆記（不論結果都寫，Bark 之前做）**：使用者不會照通知去處理，下一次 run 只能靠筆記知道之前怎麼做的。重新 `tip=$(config/scripts/fork-notes.sh tip)`，`git show` 出兩份副本：
 
