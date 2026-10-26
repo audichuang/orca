@@ -9,6 +9,8 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
 
 目的：上游幾乎每天發一版。canary 先對上游 `main` 試合，讓下一次 `orca-fork-auto-rebase` 開跑時，衝突與該丟的 fork commit 已經查清楚、寫在筆記分支 `fork-canary-notes` 的 `known-resolutions.md`（跟 develop 沒有共同歷史，不跑 CI、不會被 rebase 改寫）。
 
+**等待一律在前景，絕不結束這一輪去等完成通知**：你看起來閒置，Orca 會把這次 run 判成完成，並可能關掉 terminal 連背景工作一起殺掉（auto-rebase run 121 就這樣死掉）。超過幾分鐘的指令（canary、`pnpm tc`、重跑測試、lint）用 run_in_background 跑 `<指令> > LOG 2>&1; echo $? > LOG.exit`（LOG 每次用新名字，放 `$S`），再在前景重複 `bash "$MAIN/config/scripts/fork-wait-for-job.sh" LOG.exit` 直到它回 0（回 3 是還在跑，再呼叫一次）。Bash 預設 timeout 只有 2 分鐘，超過一樣會被移到背景：**每個等待的 Bash 呼叫都要傳 `timeout: 600000`**。連續兩次回 3 而 LOG 都沒變大、`pgrep -f` 也找不到那個指令 → 它被殺了，換新 LOG 名重跑一次。
+
 本文的變數：`MAIN` = Orca 為這次 run 開的 worktree（`pwd -P`，開頭記下）；`S` = 這次的暫存目錄（`S=$(mktemp -d)`）；`OUT` = `$HOME/.cache/orca-fork-canary`（報告放在 run worktree 外，下一次 run 清掉舊 worktree 後，筆記與通知裡的報告路徑仍然有效）。
 
 ## 1. 準備並跑 canary
@@ -27,11 +29,11 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
    git fetch -q fork && git fetch -q origin main --tags
    git checkout -q --detach fork/develop
    pnpm install --frozen-lockfile
-   CANARY_KEEP=1 CANARY_OUT="$OUT" make fork-canary > "$S/canary.out" 2>&1
+   CANARY_KEEP=1 CANARY_OUT="$OUT" make fork-canary > "$S/canary.out" 2>&1; echo $? > "$S/canary.exit"
    ```
    - 用 `make`：它會帶入 `FORK_BASE` 與 `UPSTREAM_REMOTE`。直接呼叫 `config/scripts/fork-canary.sh` 少了這兩個變數，會 setup error（exit 3）。
    - `CANARY_KEEP=1` 留下合併好的 worktree，第 2、3 步要在裡面套用解法、驗證。不要為了驗證重跑一次 canary。
-   - 要跑好幾分鐘（typecheck 加一百多個 fork 測試檔），在背景跑，等完成通知。
+   - 要跑十幾分鐘（typecheck、一百多個 fork 測試檔、上游的 lint），照開頭「等待」的方式跑、等 `$S/canary.exit`。
 4. 讀結果。`make` 會把腳本的 exit code 換成自己的，所以看報告。報告目錄取自這次的輸出，不讀共用的 `latest.txt`（另一個 canary 可能剛好更新它）：`$S/canary.out` 的 `>> report: <路徑>/report.md (exit N)` 那行，`R` = 那個路徑去掉 `/report.md`。`$R/report.md` 的 `Result:` 行是 green / not green / setup error。`$S/canary.out` 裡 `>> kept canary worktree <路徑>; remove it with …` 那行，分號前面是留下的 worktree（下稱 `K`）。
    - **setup error**，或 `$S/canary.out` 沒有 `>> report:` 那行（`make` 的前置檢查在腳本開跑前就失敗了，沒有新報告）：跳到「4. 通知、存摘要、收尾」，通知寫報告的訊息或 `$S/canary.out` 的最後幾行。
    - **green**：跳到「4. 通知、存摘要、收尾」。
@@ -59,6 +61,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
    `$R/logs/vitest.json` 不存在（報告寫 install 或 test listing 失敗，測試根本沒跑）→ 只跑 `pnpm tc`，測試那部分在通知裡寫「未驗證」。
 
 3. 套上解法就消失的 typecheck 錯誤和失敗測試，歸到那個衝突的條目。剩下的才是獨立問題，各自是一個根因。
+4. 報告的「Lint failures」列出在合併樹紅的上游 lint 步驟（細節在 `$R/logs/lint.log`）。每一步在 `K` 用 log 裡 `>> pnpm …` 那條指令重跑確認，再看它點名的檔是誰的：全是 fork 改過或新增的（`git -C "$K" diff --name-only "$(git -C "$K" merge-base HEAD MERGE_HEAD)" MERGE_HEAD` 列得出）→ 多半是上游新加的 ratchet 抓到 fork 的檔；有 fork 沒碰過的上游檔 → 上游自己的紅，條目寫「上游自己就紅」與上游之後修好它的 commit（有的話），auto-rebase 會 cherry-pick 它。fork 的情況（baseline 要列 fork 檔、fork 的型別錯誤），照 FORK.md 的做法寫怎麼修（例：`config/*-baseline.txt` 只插入 fork 的行、不重排上游行）。一個 lint 步驟一條，類型多半是「上游改了 fork 依賴的 API」。
 
 例：2026-10-25 那次有 7 個衝突檔、6 個 typecheck 錯誤檔、7 個失敗測試檔，歸因後是 5 個根因，只有 1 個是新的（上游 revert #32320，撞到 fork 在同一段的改動）。
 
@@ -82,11 +85,11 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
   - title：「Orca fork canary：<N 個新問題｜setup error｜全綠>」。N 是**新的根因條數**，不是檔案數；「新」指它在 `known-resolutions.orig.md` 沒有條目、檔案也不在上一次的摘要裡。條目被 auto-rebase 清掉才重寫的根因，使用者之前已經收過通知，算在「已知」那段（註明重寫幾條）。沒有新根因但有變化（例如有項目消失），就寫「沒有新問題」。
   - body：上游 main sha 與距 develop 基底幾個 commit；然後分三段：新的根因（每項一句建議，加上驗證結果；寫明已記進筆記、下一次 auto-rebase 會照做，不需要使用者處理，筆記沒寫成的除外）、已知的根因（條目名稱）、消失的項目；殘留的 worktree；最後是報告路徑 `$R/report.md`。
 - 寫回筆記（第 1 步取筆記失敗就跳過，通知裡已寫原因）：
-  - green 或 not green：把這次的摘要寫進 `$S/canary-last.json`，四個清單照報告原樣列還沒歸因的檔案路徑；`result` 記下 install 或 test listing 失敗這類清單表達不出來的狀態。下一次就拿它來比對：
+  - green 或 not green：把這次的摘要寫進 `$S/canary-last.json`，五個清單照報告原樣列還沒歸因的檔案路徑（`lintFailures` 列報告「Lint failures」的步驟；上一次的摘要沒有這個欄位就當空清單）；`result` 記下 install 或 test listing 失敗這類清單表達不出來的狀態。下一次就拿它來比對：
 
     ```json
     {"upstream": "<sha>", "date": "<YYYY-MM-DD>", "report": "<$R/report.md，家目錄寫成 ~>", "result": "<Result: 行的內容>",
-     "conflicts": [...], "tcErrorFiles": [...], "failingTests": [...], "droppedTests": [...]}
+     "conflicts": [...], "tcErrorFiles": [...], "failingTests": [...], "droppedTests": [...], "lintFailures": [...]}
     ```
 
     `config/scripts/fork-notes.sh write "$tip" "canary <日期> <上游 sha>" known-resolutions.md="$S/known-resolutions.md" canary-last.json="$S/canary-last.json"`。
