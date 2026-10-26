@@ -13,11 +13,3 @@
 - 守它的測試：<config/fork-seam-tests.txt 的組名或測試檔>
 - 驗證（<YYYY-MM-DD>，上游 <sha>）：<跑了什麼、結果>｜未驗證
 ```
-
-## fork 自身問題（seam 清單漏登錄 d809e41db0 新增的測試）— auto-rebase 2026-10-26
-- 類型：fork 自身問題
-- 衝突檔：無
-- 連帶症狀：無（unit suite 與 CI 會跑它，只是 `make fork-check-seams` 不跑）
-- 處理：`src/renderer/src/components/tab-bar/tab-bar-item-model.git-status.fork.test.ts` 已有 `buildTabStripLayoutKey` 的 folder git 狀態 key 測試（v1.4.241 auto-rebase 補的），但沒列進 `config/fork-seam-tests.txt`。把它加進「Hidden folder repos」或「gitWorktreeId on editor open actions」附近最貼切的組（看該組註解；這是 folder workspace 的分頁 git 狀態），一個 commit。
-- 守它的測試：`make fork-check-seams`（新登錄的檔要跑到）、`make fork-check-lint`（fork-test-inventory 檢查重複／缺漏）
-- 驗證：未驗證

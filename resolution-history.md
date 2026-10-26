@@ -2,6 +2,13 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-10-26 run 121 的流程修正 — PR #84（已合併）
+- 無人值守的 pipeline 一律前景等待：Orca automation 看到 agent 結束這一輪就判 run 完成並可能關 terminal。長指令跑成 `<指令> > LOG 2>&1; echo $? > LOG.exit`，用 `config/scripts/fork-wait-for-job.sh` 分段等；**每個等待的 Bash 呼叫要傳 `timeout: 600000`**（預設 2 分鐘，超過一樣被移到背景）；CI 用 `gh-wait -t 9`、Codex 用 `codex-companion wait --timeout-ms 540000`；Claude 審查者改用 `claude -p` 子行程（Agent 工具只能在背景跑）。LOG 每輪換新名，舊的 `.exit` 會讓等待立刻結束。
+- `fork-lint-run.mjs` 與 `make fork-check-lint` 跑完每一步再列出全部失敗；canary 在合併樹跑上游 lint（只報告），`canary-last.json` 多 `lintFailures`。
+- auto-rebase 本機閘門改成 `make -k fork-check-static` 加 seams；整套單元測試、e2e、wire、mobile 只在 CI 跑；推上去就開盲審，跟 CI 同時跑；第 7 步推 main 後再停用一次上游 workflow。cherry-pick 的上游 lint 修正以「改回那一步 lint 會紅」為證明，翻譯另一個 commit（patch-id 才對得上上游）。
+- 已處理的 `known-resolutions.md` 條目「fork 自身問題（seam 清單漏登錄 d809e41db0 新增的測試）」：`tab-bar-item-model.git-status.fork.test.ts` 登錄進「Upstream component slots and folder routing」組，條目已刪。
+- 這個 PR 的 CI 有一次 mobile job 卡住 17 分鐘（平常 4～5 分鐘），取消後 `rerun --failed` 5 分鐘綠；跟這次改動無關。
+
 ## 2026-10-26 auto-rebase v1.4.240 → v1.4.241（PR #83）— develop 已移動並發 v1.4.241-fork.1
 - 結果：develop = main = d809e41db0（舊 develop 備份 `backup/develop-v1.4.240-20261026T041726Z`），release run 40281818581 綠，cask 1.4.241-fork.1；MacBook 上 Orca Fork 開著，沒自動升級。MANUAL：313 個 fork commit，range-diff 273 `=`、40 `!`、0 `<`，rerere 沒重放；衝突逐檔解法見 PR #83 說明。
 - 中斷與接手：run 121 在 12:33 把第 3 輪 `make fork-check` 丟到背景、結束這一輪等通知 → Orca 的 `judgeIdleRun` 把 run 判成 completed → 12:35 Orca 以 operator_close 關掉 terminal，Claude 與背景 fork-check 一起被殺（task 輸出 `[killed]`）；兩個修正 commit 還沒推。使用者在互動 session 接手（RUN 沿用 20261026T041726Z）。**下一次要怎麼做**：無人值守 run 等長任務（fork-check、e2e、CI、Codex）一律在前景等（Bash timeout 上限 10 分鐘，超過就用 `gh-wait`／`codex-companion wait` 這類前景阻塞的指令，或把 make 拆段），不要結束這一輪等背景通知；否則 automation 會被判完成、terminal 可能被收掉。這該改進 skill（待人開 PR）。
