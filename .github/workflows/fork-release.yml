@@ -186,7 +186,7 @@ jobs:
         with:
           name: orca-fork-dryrun-dmg
           path: dist/orca-fork-macos-arm64.dmg
-          retention-days: 3
+          retention-days: 1
 
       - name: Publish the GitHub Release
         if: env.DRY_RUN != 'true'
