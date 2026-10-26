@@ -7,8 +7,7 @@ import { isDocsOnlyPath } from './pr-code-change-scope.mjs'
 
 // Why FORK.md here: it is the fork's own rules doc, which upstream's list cannot name.
 const FORK_DOCS_ONLY_FILES = new Set(['FORK.md'])
-// Why: build, CI and agent inputs, and docs/site (a workspace whose test script `pnpm lint` reads), always
-// run everything, even if upstream's docs list grows to cover them.
+// Why: these run everything even if upstream's docs list grows (docs/site's test script is read by `pnpm lint`).
 const FULL_PREFIXES = ['.github/workflows/', '.claude/', 'config/', 'src/', 'mobile/', 'docs/site/']
 const FULL_FILES = new Set(['Makefile', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'])
 
