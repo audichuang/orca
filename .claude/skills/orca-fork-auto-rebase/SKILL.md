@@ -192,7 +192,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
 
 **寫筆記（不論結果都寫，Bark 之前做）**：使用者不會照通知去處理，下一次 run 只能靠筆記知道之前怎麼做的。重新 `tip=$(config/scripts/fork-notes.sh tip)`，`git show` 出兩份副本：
 
-- `resolution-history.md`（處理紀錄，只增不刪）：最上面加一條 `## <YYYY-MM-DD> auto-rebase vOLD → vNEW（PR #N）— <develop 已移動並發 vNEW-fork.N｜沒移動：原因>`，列出：每個衝突檔怎麼解、守它的測試（mutation 證據的那一行）；用掉的 `known-resolutions.md` 條目整段搬過來並註明「照做／跟眼前不符改怎麼做」；確認為真的審查發現與修法；沒移動或發版失敗時卡在哪、下一次要怎麼做。
+- `resolution-history.md`（處理紀錄，只增不刪）：最上面加一條 `## <YYYY-MM-DD> auto-rebase vOLD → vNEW（PR #N）— <develop 已移動並發 vNEW-fork.N｜沒移動：原因>`，列出：每個衝突檔怎麼解、守它的測試（mutation 證據的那一行）；用掉的 `known-resolutions.md` 條目整段搬過來並註明「照做／跟眼前不符改怎麼做」；確認為真的審查發現與修法；各階段耗時（rebase、本機閘門、CI、盲審、修正輪、發版，時間取自 PR 留言與 CI；跟上一條有耗時的紀錄比，明顯變長就寫出是哪一段、為什麼）；沒移動或發版失敗時卡在哪、下一次要怎麼做。
 - `known-resolutions.md`：develop 移動了才刪掉用掉的條目（已搬進紀錄）。沒移動、而且這次有自己解出來的衝突或修正，就照檔頭範本補條目（上游 commit 填 `git log -1 --format=%H vOLD..vNEW -- <衝突檔>`），讓下一次 rebase 或 canary 直接用；卡住的寫「待人判斷」與已知事實。
 
 `config/scripts/fork-notes.sh write "$tip" "auto-rebase vNEW: <結果>" known-resolutions.md=<副本> resolution-history.md=<副本>`。exit 2 表示 canary 剛寫過：重新 `tip`、在新版上套同樣的改動再寫一次；還是 exit 2 或其他非 0 就不再試，在通知裡註明筆記沒寫成、該怎麼改。
