@@ -1,4 +1,4 @@
-// Fork-only: runs upstream's `pnpm lint` steps from package.json, minus EXCLUDED, running every step and naming all failures at the end.
+// Fork-only: runs upstream's `pnpm lint` steps from package.json, minus EXCLUDED, naming every failing step so one round shows them all.
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { runProcessSync } from '@orca/process-host'
@@ -44,16 +44,15 @@ export function pnpmArgs(step) {
   return args[0] === 'pnpm' ? args.slice(1) : ['exec', ...args]
 }
 
-// Why not stop at the first failure: a release can add several new ratchets, and fixing them one run at a time cost an auto-rebase five rounds (v1.4.241).
 export function runLintSteps(steps, run) {
   const failed = []
   for (const step of steps) {
     const args = pnpmArgs(step)
     console.log(`>> pnpm ${args.join(' ')}`)
-    const code = run(args)
+    const code = run(args) ?? 1
     if (code !== 0) {
       console.error(`fork-lint-run: \`${step}\` failed with exit code ${code}`)
-      failed.push({ step, code: code ?? 1 })
+      failed.push({ step, code })
     }
   }
   if (failed.length === 0) {
