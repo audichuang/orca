@@ -27,11 +27,11 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
    git fetch -q fork && git fetch -q origin main --tags
    git checkout -q --detach fork/develop
    pnpm install --frozen-lockfile
-   CANARY_KEEP=1 CANARY_OUT="$OUT" make fork-canary > "$S/canary.out" 2>&1
+   CANARY_KEEP=1 CANARY_OUT="$OUT" make fork-canary > "$S/canary.out" 2>&1; echo $? > "$S/canary.exit"
    ```
    - 用 `make`：它會帶入 `FORK_BASE` 與 `UPSTREAM_REMOTE`。直接呼叫 `config/scripts/fork-canary.sh` 少了這兩個變數，會 setup error（exit 3）。
    - `CANARY_KEEP=1` 留下合併好的 worktree，第 2、3 步要在裡面套用解法、驗證。不要為了驗證重跑一次 canary。
-   - 要跑好幾分鐘（typecheck 加一百多個 fork 測試檔），在背景跑，等完成通知。
+   - 要跑十幾分鐘（typecheck、一百多個 fork 測試檔、上游的 lint），用 run_in_background 跑，然後**在前景**重複 `bash config/scripts/fork-wait-for-job.sh "$S/canary.exit"` 直到它回 0（回 3 是還在跑，再呼叫一次）。不要結束這一輪去等完成通知：你看起來閒置，Orca 會把這次 run 判成完成，並可能關掉 terminal 連 canary 一起殺掉（auto-rebase run 121 就這樣死掉）。
 4. 讀結果。`make` 會把腳本的 exit code 換成自己的，所以看報告。報告目錄取自這次的輸出，不讀共用的 `latest.txt`（另一個 canary 可能剛好更新它）：`$S/canary.out` 的 `>> report: <路徑>/report.md (exit N)` 那行，`R` = 那個路徑去掉 `/report.md`。`$R/report.md` 的 `Result:` 行是 green / not green / setup error。`$S/canary.out` 裡 `>> kept canary worktree <路徑>; remove it with …` 那行，分號前面是留下的 worktree（下稱 `K`）。
    - **setup error**，或 `$S/canary.out` 沒有 `>> report:` 那行（`make` 的前置檢查在腳本開跑前就失敗了，沒有新報告）：跳到「4. 通知、存摘要、收尾」，通知寫報告的訊息或 `$S/canary.out` 的最後幾行。
    - **green**：跳到「4. 通知、存摘要、收尾」。
@@ -59,6 +59,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
    `$R/logs/vitest.json` 不存在（報告寫 install 或 test listing 失敗，測試根本沒跑）→ 只跑 `pnpm tc`，測試那部分在通知裡寫「未驗證」。
 
 3. 套上解法就消失的 typecheck 錯誤和失敗測試，歸到那個衝突的條目。剩下的才是獨立問題，各自是一個根因。
+4. 報告的「Lint failures」列出在合併樹紅的上游 lint 步驟（細節在 `$R/logs/lint.log`）。每一步在 `K` 重跑（`pnpm run <step>`）確認，再看是誰造成的：上游 main 乾淨的樹上也紅（`git worktree add --detach "$S/upstream" HEAD`、裝好依賴後跑同一步）→ 上游自己的問題，條目寫「上游自己就紅」與上游已修的 commit（有的話），auto-rebase 會 cherry-pick 它；只有合併樹紅 → 多半是上游新加的 ratchet 抓到 fork 的檔（baseline 要列 fork 檔、fork 的型別錯誤），照 FORK.md 的做法寫怎麼修（例：`config/*-baseline.txt` 只插入 fork 的行、不重排上游行）。一個 lint 步驟一條，類型多半是「上游改了 fork 依賴的 API」。
 
 例：2026-10-25 那次有 7 個衝突檔、6 個 typecheck 錯誤檔、7 個失敗測試檔，歸因後是 5 個根因，只有 1 個是新的（上游 revert #32320，撞到 fork 在同一段的改動）。
 
