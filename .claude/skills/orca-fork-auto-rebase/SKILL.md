@@ -9,7 +9,7 @@ description: Unattended pipeline that rebases the Orca fork's develop onto the n
 
 本技能覆寫兩個預設：codex 技能的「找到問題不自動修、停下來問」在這裡不適用（第 5 步規定怎麼修）；`orca-lcu-ui-test` 與 Codex desktop 的真實 UI 測試輪**不在這裡跑**——它們會占用螢幕鍵盤剪貼簿，排程隨時會觸發。發版前要驗的 UI 情境（ClipCode 複製、Paste & Restore、資料夾 repo 清單、session restore、external-change banner、agent launch cwd）由 fork e2e 在隱藏視窗驗（`folder-multi-repo-source-control.spec.ts`、`folder-workspace-tab-restart-restore.spec.ts`），第 3 步的 `fork-check-e2e` 與 CI 都會跑；lcu 實機輪只留給新增或改了 UI 的功能 PR。
 
-本文說「第 N 步」一律指下面標題 `## N.` 那一整節；一節裡面的編號項目說「第 N 點」（例如「第 1 步第 7 點」）。
+本文說「第 N 步」一律指下面標題 `## N.` 那一整節；一節裡面的編號項目說「第 N 點」（例如「第 1 步第 7 點」）。PR 留言的標記（`<!-- auto-rebase:… -->`）一律放在留言第一行最前面：precheck 只認開頭的標記。
 
 本文的變數：
 
@@ -154,7 +154,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
 ```
 
 - lease 失敗 = 期間有 PR 合進 develop，這次的 rebase 不含它。不重試、不 force：`gh pr close PR -R audichuang/orca -c "develop 在驗證期間移動了，下一次排程重新 rebase"`，刪掉 fork 的 `rebase/vNEW` 與 `ci-base/vNEW`（下一次排程就會從新的 develop 重來），第 8 步寫筆記（這次的解法下一次還用得到）並回報。
-- 成功後：馬上在 PR 留言 `<!-- auto-rebase:develop-moved <head 的完整 sha> -->`（寫實際的 sha：留言多半在另一個 Bash 呼叫送出，那時 `$head` 已經是空的）（PR 與 `rebase/vNEW` 都留到第 7 步結束：這時死掉，precheck 六小時後判定過期，第 0 步看到這則留言就接著發版；先收鎖的話，develop 已移動、沒有 tag，之後每小時的預檢都會安靜結束），然後 `make fork-ci-disable-upstream`。筆記在第 8 步寫：這次用掉的條目從 `known-resolutions.md` 移到 `resolution-history.md`。條目等 develop 真的移動了才移走：沒移動的話，下一次 rebase 還用得到。
+- 成功後：馬上在 PR 留言 `<!-- auto-rebase:develop-moved <head 的完整 sha> -->`。sha 寫實際的值：留言多半在另一個 Bash 呼叫送出，那時 `$head` 已經是空的。（PR 與 `rebase/vNEW` 都留到第 7 步結束：這時死掉，precheck 六小時後判定過期，第 0 步看到這則留言就接著發版；先收鎖的話，develop 已移動、沒有 tag，之後每小時的預檢都會安靜結束），然後 `make fork-ci-disable-upstream`。筆記在第 8 步寫：這次用掉的條目從 `known-resolutions.md` 移到 `resolution-history.md`。條目等 develop 真的移動了才移走：沒移動的話，下一次 rebase 還用得到。
 
 移動成功就接第 7 步發版。
 
