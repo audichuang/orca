@@ -7,16 +7,18 @@ import {
 describe('pty-connection test environment', () => {
   it('stops real timers a test leaves behind so they cannot fire into the next test', async () => {
     await installTerminalTestGlobals()
+    let restored = false
     let fired = 0
-    // Stand-ins for an undisposed session's retry and poll loops.
+    // Stand-ins for an undisposed session's retry and poll loops; under load restore can outlast 5 ms.
     setTimeout(() => {
-      fired += 1
+      fired += restored ? 1 : 0
     }, 5)
     setInterval(() => {
-      fired += 1
+      fired += restored ? 1 : 0
     }, 5)
 
     await restoreTerminalTestGlobals()
+    restored = true
     await new Promise<void>((resolve) => setTimeout(resolve, 40))
 
     expect(fired).toBe(0)
