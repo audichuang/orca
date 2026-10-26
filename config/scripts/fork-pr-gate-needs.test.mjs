@@ -167,8 +167,9 @@ describe('REQUIRED_SCRIPT', () => {
   writeFileSync(file, REQUIRED_SCRIPT)
   afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
-  const JOBS = ['fork_check_static', 'fork_e2e', 'fork_mobile_web_app']
-  const runStep = async (results) =>
+  const JOBS = ['scope', 'fork_check_static', 'fork_e2e', 'fork_mobile_web_app']
+  const HEAVY = JOBS.slice(1)
+  const runStep = async (results, scope = 'full') =>
     (
       await runProcess({
         program: 'bash',
@@ -177,7 +178,10 @@ describe('REQUIRED_SCRIPT', () => {
           PATH: process.env.PATH,
           RESULTS: JSON.stringify(
             Object.fromEntries(
-              JOBS.map((job) => [job, { result: results[job] ?? 'success', outputs: {} }])
+              JOBS.map((job) => [
+                job,
+                { result: results[job] ?? 'success', outputs: job === 'scope' ? { scope } : {} }
+              ])
             ),
             null,
             2
@@ -194,6 +198,24 @@ describe('REQUIRED_SCRIPT', () => {
     JOBS.flatMap((job) => ['failure', 'skipped', 'cancelled'].map((result) => [job, result]))
   )('fails when %s is %s', async (job, result) => {
     expect(await runStep({ [job]: result })).not.toBe(0)
+  })
+
+  it('passes a docs-only scope whose heavy jobs were skipped', async () => {
+    expect(await runStep(Object.fromEntries(HEAVY.map((job) => [job, 'skipped'])), 'docs')).toBe(0)
+  })
+
+  it.each(HEAVY.map((job) => [job]))('fails a docs-only scope when %s failed', async (job) => {
+    expect(await runStep({ [job]: 'failure' }, 'docs')).not.toBe(0)
+  })
+
+  it.each([
+    ['the scope job failed', { scope: 'failure' }, 'docs'],
+    ['the scope job was skipped', { scope: 'skipped' }, 'docs'],
+    ['the scope output is not docs', {}, ''],
+    ['the scope is full', {}, 'full']
+  ])('fails skipped heavy jobs when %s', async (_, results, scope) => {
+    const skipped = Object.fromEntries(HEAVY.map((job) => [job, 'skipped']))
+    expect(await runStep({ ...skipped, ...results }, scope)).not.toBe(0)
   })
 
   it('fails when several needs did not succeed', async () => {
