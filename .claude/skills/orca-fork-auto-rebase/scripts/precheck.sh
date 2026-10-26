@@ -37,7 +37,9 @@ if [ -n "$lock" ]; then
   when=$(gh api "repos/audichuang/orca/commits/${lock%%[[:space:]]*}" --jq .commit.committer.date) || skip "gh api lock commit failed"
   pr=$(gh pr list -R audichuang/orca --head "$branch" --state open --json number,updatedAt --jq '.[0] // empty | "\(.number) \(.updatedAt)"') || skip "gh pr list failed"
   [ -n "$pr" ] && when=$(printf '%s\n%s\n' "$when" "${pr#* }" | sort | tail -1)
-  age=$(( $(date +%s) - $(date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$when" +%s) ))
+  # Why both: the automation runs on macOS (BSD date); precheck.test.sh also runs in Linux CI (GNU date).
+  since=$(date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$when" +%s 2>/dev/null || date -u -d "$when" +%s)
+  age=$(( $(date +%s) - since ))
   waiting=0
   moved=0
   if [ -n "$pr" ]; then
