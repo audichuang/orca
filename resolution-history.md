@@ -6,7 +6,8 @@
 - 文件不再直推 develop：每個改動都開 PR，等同一個「Fork PR checks passed」。跑多少由 CI 的 `scope` job 決定（`config/scripts/fork-pr-scope.mjs`），agent 不選流程：全部是文件 → 重的 job 跳過，約一分鐘；其他路徑或空清單 → 全套；`scope` 失敗 → PR 被擋，重跑。
 - 文件的定義沿用上游 `isDocsOnlyPath` 加 FORK.md；`.claude/`、`.github/workflows/`、`config/`、`src/`、`mobile/`、`docs/site/`、build 檔永遠跑全套。`verify` 只在 `scope` 成功且判 `docs` 時接受被跳過的 job（`fork-pr-gate-needs.mjs` 固定這段腳本）。
 - 審查抓到的雷：只改文件的 PR 會跳過 `pnpm lint` 的 README 連結檢查，壞連結合進去後之後每個 PR 都紅，所以 `scope` job 自己跑這項檢查；`docs/site/package.json` 被 lint 讀，不能算文件。
-- 還沒做、等使用者決定：develop 沒有 branch protection，「文件也走 PR」只靠 FORK.md 約束；只改文件的合併 commit 沒跑 macOS 建置就判綠（程式碼跟上一個 commit 相同）。
+- 使用者決定（PR #81）：develop 刻意不設 branch protection，因為 auto-rebase 要用 lease force-push develop；「文件也走 PR」由 FORK.md 與流程維持。只改文件的合併 commit 要發版時，沿 `git log --first-parent` 找到最近一個不是只改文件的合併（有跑建置且綠的 feat 合併，或 auto-rebase 的 head），以它的檢查為準。
+- 快速路徑第一次實測（PR #81）：整個 run 29 秒，`scope` 判 docs、README 連結檢查有跑、六個重的 job 都 skipped、「Fork PR checks passed」綠。
 
 ## 2026-10-26 precheck 情境測試、發 v1.4.240-fork.4 — PR #79（已合併）
 - `.claude/skills/orca-fork-auto-rebase/scripts/precheck.test.sh` 已掛進 `make fork-check-lint`（CI 的 static job 會跑）：假的 git、gh 與警報腳本，一種鎖狀態一個情境。改 precheck 時在這裡加情境；拿掉 develop-moved 判斷或改警報門檻都會讓它紅。precheck 的日期解析 BSD／GNU 都能用，所以 Linux CI 也跑得起來。
