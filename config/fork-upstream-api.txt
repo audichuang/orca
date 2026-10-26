@@ -11,3 +11,5 @@ src/shared/git-push-target-validation.ts isSafeGitRemoteName
 src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-svg.tsx GitHistoryGraphNodeMarker
 src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-svg.tsx SWIMLANE_HEIGHT
 src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-svg.tsx SWIMLANE_WIDTH
+# fork-pr.yml's scope job treats upstream's docs-only paths (plus FORK.md) as docs.
+config/scripts/pr-code-change-scope.mjs isDocsOnlyPath
