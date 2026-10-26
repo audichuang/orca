@@ -2,6 +2,13 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-10-26 /code-review 對 PR #77 的兩輪審查 — PR #78（已合併）
+- auto-rebase SKILL.md：「第 N 步」一律指 `## N.` 那節，節內項目叫「第 N 點」；以前「跳到第 8 步」可能被讀成第 1 步第 8 點（lint），跳過開 PR 與 needs-human。之後改 skill 時維持這個寫法。
+- PR 留言標記（`<!-- auto-rebase:… -->`）一律放在留言第一行最前面，兩個 precheck 都用 jq `startswith` 只認開頭。
+- precheck：網路或 GitHub API 失敗先安靜跳過，連續 6 小時以上才警報（計時檔 `~/.cache/fork-automation/orca-rebase-precheck-down-since`，任何一次沒失敗就清掉；precheck-alert 同訊息一天一次）。上游 release tag 格式怪異刻意不警報，等上游下一版。
+- 刻意保留：「fork 自身問題」只改 fork 測試檔的修正免 mutation 證明，否則每條不穩測試的建議都會讓 develop 無法自動移動。
+- pty-connection-test-environment.test.ts 第一個 case 改成 50ms timer、等 120ms：restore 超過 50ms 時 setTimeout 那半仍會沒檢查到，是測試本身的限制，不是回歸。
+
 ## 2026-10-26 人工審查 10-25～10-26 的 64 個 fork commit（PR #65～#76）— PR #77（已合併）
 - 結論：develop 的產品程式碼沒有找到行為退化（20 個重構 commit 審過；`check:code-quality:changed v1.4.240`、`make fork-check-seams` 78 檔 466 測試、`pnpm tc` 都過）。問題都在自動化流程，PR #77 修掉。
 - 已處理的 `known-resolutions.md` 條目「27e7f8fd6d…× fork 31e98b4203、34c38f14ac — canary 2026-10-26」（pty-connection-test-environment.test.ts 第一個 case 5ms timer 在負載下 restore 前就觸發）：照條目改，第一個 case 也加 `restored` 判斷，只算 restore 之後的觸發。把 `clearTrackedRealTimers()` 拿掉兩個 case 都紅。條目已刪。再看到這個測試不穩，先查這個 case 有沒有被改回去。
