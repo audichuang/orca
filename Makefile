@@ -214,15 +214,20 @@ fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
 
 # Upstream's `pnpm lint` steps minus fork-lint-run.mjs's EXCLUDED, then the fork-only checks.
+# Why keep going: a rebase meets several new failures at once; naming them all saves a round per failure.
+# check:daemon-protocol-crossing is here too: a branch goes red in CI once upstream releases a daemon protocol bump.
 fork-check-lint: fork-base-guard
-	node config/scripts/fork-lint-run.mjs
-	node config/scripts/fork-pr-gate-needs.mjs
-	node config/scripts/fork-locale-parity.mjs $(FORK_BASE)
-	node config/scripts/fork-test-inventory.mjs check $(FORK_BASE)
-	node config/scripts/fork-upstream-api.mjs
-	bash .claude/skills/orca-fork-auto-rebase/scripts/precheck.test.sh
-	@# Why here too: a branch goes red in CI once upstream releases a daemon protocol bump.
-	pnpm run check:daemon-protocol-crossing
+	@failed=; for cmd in \
+	  "node config/scripts/fork-lint-run.mjs" \
+	  "node config/scripts/fork-pr-gate-needs.mjs" \
+	  "node config/scripts/fork-locale-parity.mjs $(FORK_BASE)" \
+	  "node config/scripts/fork-test-inventory.mjs check $(FORK_BASE)" \
+	  "node config/scripts/fork-upstream-api.mjs" \
+	  "bash .claude/skills/orca-fork-auto-rebase/scripts/precheck.test.sh" \
+	  "pnpm run check:daemon-protocol-crossing"; do \
+	  echo "$$cmd"; $$cmd || failed="$${failed:+$$failed; }$$cmd"; \
+	done; \
+	test -z "$$failed" || { echo "fork-check-lint: failed: $$failed"; exit 1; }
 
 fork-check-tests: export LC_ALL = C
 # Why: upstream CI's env; it applies UNIT_EXCLUDE, balances shards by timing, and some tests assert background launch.
