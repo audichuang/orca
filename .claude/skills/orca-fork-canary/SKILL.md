@@ -19,7 +19,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
    tip=$(config/scripts/fork-notes.sh tip)
    git show "$tip":known-resolutions.md > "$S/known-resolutions.orig.md" && cp "$S/known-resolutions.orig.md" "$S/known-resolutions.md"
    git show "$tip":canary-last.json > "$S/canary-last.orig.json"
-   git show "$tip":resolution-history.md > "$S/resolution-history.md" || : > "$S/resolution-history.md"
+   git show "${tip}:resolution-history.md" > "$S/resolution-history.md" || : > "$S/resolution-history.md"
    ```
    `fork-notes.sh` 回 0 以外的值（分支不見、網路斷）→ 照跑 canary，但第 4 步不寫回筆記，通知裡寫原因。
 3. 在 `MAIN` 跑（不要動 `~/Project/orca` 主 checkout）：
