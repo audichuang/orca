@@ -10,14 +10,16 @@ vi.mock('../../git-status-refresh', () => ({
   refreshGitStatusForWorktree: (...args: unknown[]) => refreshGitStatusForWorktree(...args)
 }))
 let ownerEnvironmentId: string | null = null
-vi.mock('../../worktree-git-owner-target', () => ({
-  getWorktreeGitOwnerTarget: () =>
-    ownerEnvironmentId
+let copyHostId: string | null = null
+vi.mock('@/lib/worktree-git-copy', () => ({
+  resolveWorktreeGitCopyNow: (id: string) => ({
+    worktreeId: id,
+    hostId: copyHostId,
+    connectionId: id.includes('ssh') ? 't1' : undefined,
+    transport: ownerEnvironmentId
       ? { kind: 'environment', environmentId: ownerEnvironmentId }
       : { kind: 'local' }
-}))
-vi.mock('@/lib/connection-context', () => ({
-  getConnectionId: (id: string) => (id.includes('ssh') ? 't1' : undefined)
+  })
 }))
 
 const { FOLDER_REPO_STATUS_INTERVAL_MS, useFolderRepoStatusRefresh } =
@@ -49,6 +51,7 @@ describe('useFolderRepoStatusRefresh', () => {
   beforeEach(() => {
     refreshGitStatusForWorktree.mockClear()
     ownerEnvironmentId = null
+    copyHostId = null
     seed({
       repos: [{ id: 'r1', path: '/r1', displayName: 'r1', badgeColor: '', addedAt: 0 }],
       gitStatusHugeByWorktree: {},
@@ -103,6 +106,19 @@ describe('useFolderRepoStatusRefresh', () => {
     ownerEnvironmentId = 'envA'
     await mountAndRefresh()
     expect(refreshGitStatusForWorktree).toHaveBeenCalledTimes(1)
+  })
+
+  it("refreshes through the resolved copy's host and transport", async () => {
+    ownerEnvironmentId = 'envA'
+    copyHostId = 'runtime:envA'
+    await mountAndRefresh()
+    expect(refreshGitStatusForWorktree).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: { kind: 'environment', environmentId: 'envA' },
+        ownerHostId: 'runtime:envA',
+        connectionId: 't1'
+      })
+    )
   })
 
   it("still gates this client's own disconnected SSH repo", async () => {
