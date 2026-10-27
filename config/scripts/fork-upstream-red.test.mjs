@@ -37,9 +37,17 @@ describe('fork-upstream-red', () => {
     ])
   })
 
-  it('names only files that exist in the checkout, relative to its root', () => {
-    const present = new Set(['/w/src/main/a.ts', '/w/.github/workflows/pr.yml'])
-    const output = '/w/src/main/a.ts(3,1): error TS2322\n.github/workflows/pr.yml lacks src/gone.ts'
+  it('names the files a failure points at that exist in the checkout, not the command pnpm echoes', () => {
+    const present = new Set([
+      '/w/src/main/a.ts',
+      '/w/.github/workflows/pr.yml',
+      '/w/config/scripts/run-typecheck-projects-in-parallel.mjs'
+    ])
+    const output = [
+      '$ node config/scripts/run-typecheck-projects-in-parallel.mjs',
+      '/w/src/main/a.ts(3,1): error TS2322',
+      '.github/workflows/pr.yml lacks src/gone.ts'
+    ].join('\n')
     expect(mentionedFiles(output, '/w', (file) => present.has(file))).toEqual([
       'src/main/a.ts',
       '.github/workflows/pr.yml'
