@@ -2,6 +2,13 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-10-27 人工複查 auto-rebase run 141（v1.4.242，PR #86）
+- 結果：照 SKILL.md 跑完，沒有偏離；develop = main = dfb4a446e8，tag／release／dmg／cask 一致，ar-* worktree 已清。審查者 A／B 都實際跑了指令（A 31 次、B 57 次 Bash，B 跑了 vitest），ACCEPTABLE 不是只讀 diff 給的。
+- 啟動延遲不是 bug：上游 tag 23:16:32Z 建、Release 00:09:03Z 才發布，run 140（23:17）precheck 看到的 latest 還是 v1.4.241；run 141（00:17）在發布後 8 分鐘就接手。
+- 第 6 步「seam 不是檔案」的判準跟 SKILL.md 原文（「落在 `seam-upstream.diff` 碰到的 seam 上」）一致，是釐清不是改規則。
+- **之後照做**：vNEW 本身過不了某個 fork CI 會跑的上游檢查時，先在 `vNEW..origin/main` 找上游自己的修正，`cherry-pick -x` 帶進來（不要另寫 fork 版修法），每個 cherry-pick 做 mutation 證明；有衝突而採了 vNEW 側的，patch-id 會對不上，同一個 run 就要寫 known-resolutions 條目讓下一次 rebase 丟掉它（run 141 的 f34c13ca1e 就是這樣）。SKILL.md 還沒寫這條，待補。
+- **之後照做**：審查者找到的「既有缺口」不要只寫在這裡當債務：能補測試的寫成 known-resolutions「fork 自身問題」條目（含「守它的測試」），下一次 run 照做；要選行為的才標「待人判斷」。run 141 的 ②～④（CombinedDiffViewer `gitWorktreeId`、`openGitGraph` 快捷鍵、App bundle replaced IPC）與 Codex 的 fork-lint-run CLI 入口測試都還只在這裡。
+
 ## 2026-10-27 auto-rebase v1.4.241 → v1.4.242（PR #86）— develop 已移動並發 v1.4.242-fork.1
 - 結果：develop = main = dfb4a446e8（舊 develop 備份 `backup/develop-v1.4.241-20261027T001750Z`），release run 40429975071 綠，cask 1.4.242-fork.1；MacBook 上 Orca Fork 開著，沒自動升級。MANUAL：range-diff 319 `=`、5 `!`、2 `<`、5 `>`；rerere 沒重放；locale driver 合好，沒停在 locale。
 - 衝突（3 個，都照筆記）：df6ae0f346 `editor-external-watch-path-index.ts`（條目 17621d5368）、9179c28214 `build-computer-macos.mjs`（條目 8d18f318，整檔採 v1.4.242）、a0c670fca6 `AGENTS.md`（條目 512927523e）。`!` 另兩個（7c0479dc7f en.json、edddbe1b0a sonner.tsx）只有 context 變。`<`：d3acf4d1a6 照條目丟；23bc22afdf（上游 5dfaee07b1 的 cherry-pick）因 v1.4.242 已含而自動略過，跟上一次紀錄的預期相符；補翻譯的 c31fc67504 仍需要（v1.4.242 其他語系沒有 `fontKeyword*`）。
