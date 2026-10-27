@@ -1,21 +1,46 @@
 {
- "upstream": "b7fb07c379",
- "date": "2026-10-27",
- "report": "~/.cache/orca-fork-canary/20261026T213049Z-39380/report.md",
- "result": "not green (exit 1): 3 merge conflicts, typecheck errors, failing tests, lint failures（上游 lint 未實際執行：fork-lint-run 在 EXCLUDED 檢查就停）",
+ "upstream": "54411a9a96",
+ "date": "2026-10-28",
+ "report": "~/.cache/orca-fork-canary/20261027T213118Z-21638/report.md",
+ "result": "not green (exit 1): 10 merge conflicts, typecheck errors, failing tests, lint failures, fork tests the merged tree no longer runs（上游 lint 未實際執行：fork-lint-run 在 import resolveLintCommands 就失敗）",
  "conflicts": [
   "AGENTS.md",
-  "config/scripts/build-computer-macos.mjs",
-  "src/renderer/src/components/editor/editor-external-watch-path-index.ts"
+  "config/reliability-gates.jsonc",
+  "src/main/ipc/pty/pane/terminal-spawn-restore.test.ts",
+  "src/renderer/src/components/editor/useEditorPanelActiveTabContentLoad.ts",
+  "src/renderer/src/components/editor/useEditorPanelExternalContentEvents.ts",
+  "src/renderer/src/components/editor/useEditorPanelFileContentLoader.ts",
+  "src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.ts",
+  "src/renderer/src/components/right-sidebar/source-control/commit/use-discard-confirmation.ts",
+  "src/renderer/src/components/right-sidebar/useSourceControlAgentActionDialog.ts",
+  "src/renderer/src/components/right-sidebar/useSourceControlAgentActionStart.ts"
  ],
  "tcErrorFiles": [
-  "src/renderer/src/components/native-chat/use-native-chat-context-menu.tsx"
+  "src/main/ipc/pty-agent-pane-launch.fork.test.ts",
+  "src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.folder-cwd.test.ts",
+  "src/renderer/src/components/right-sidebar/source-control/ai/use-recovery-ai.ts",
+  "src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-menu-items.tsx",
+  "src/renderer/src/components/right-sidebar/source-control/listing/section-action-buttons.fork.test.tsx",
+  "src/renderer/src/components/right-sidebar/source-control/panel/panel-content.fork.test.tsx",
+  "src/renderer/src/runtime/sync-runtime-graph/mobile-session-surfaces.ts"
  ],
  "failingTests": [
+  "src/main/updater.fork-distribution.test.ts",
   "config/scripts/fork-lint-run.test.mjs",
-  "src/renderer/src/components/editor/editor-external-watch-path-index.fork.test.ts"
+  "config/scripts/ui-rounds-map.test.mjs",
+  "src/shared/fork-editor-kind-sites.guard.test.ts",
+  "src/main/ipc/pty-agent-pane-launch.fork.test.ts",
+  "src/main/updater/updater-nudge.fork.test.ts",
+  "src/renderer/src/components/editor/EditorConflictReviewSurface.git-owner.test.tsx",
+  "src/renderer/src/components/editor/conflict-review-folder-owner.test.tsx",
+  "src/renderer/src/components/editor/folder-relative-git-consumers.test.tsx",
+  "src/renderer/src/components/right-sidebar/SourceControlAgentActionDialog.folder-cwd.test.tsx",
+  "src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.folder-cwd.test.ts"
  ],
- "droppedTests": [],
+ "droppedTests": [
+  "src/main/runtime/orca-runtime-tests/terminal-workspace-id-env.spec.ts",
+  "src/main/runtime/runtime-terminal-client-use.spec.ts"
+ ],
  "lintFailures": [
   "fork-lint-run"
  ]
