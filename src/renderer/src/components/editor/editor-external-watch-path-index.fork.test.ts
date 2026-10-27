@@ -30,4 +30,28 @@ describe('editor external watch path batch index in a folder workspace', () => {
     expect(index.matchingOpenFiles(index.changes[0])).toEqual([repoDiff])
     expect(index.matchingOpenFiles(index.changes[1])).toEqual([])
   })
+
+  it('matches a folder-scoped diff tab across Windows separator and drive spellings', () => {
+    const scope = { worktreeId: 'folder:f', worktreePath: 'C:/F', runtimeEnvironmentId: null }
+    const repoDiff: OpenFile = {
+      id: 'repo-a-diff',
+      worktreeId: scope.worktreeId,
+      gitWorktreeId: 'repo-a',
+      mode: 'diff',
+      diffSource: 'unstaged',
+      filePath: 'c:\\F\\a\\src\\x.ts',
+      relativePath: 'src/x.ts',
+      isDirty: false,
+      language: 'typescript'
+    }
+    const index = indexEditorExternalWatchBatchPaths(
+      {
+        worktreePath: scope.worktreePath,
+        events: [{ kind: 'update', absolutePath: 'C:/F/a/src/x.ts' }]
+      },
+      [repoDiff],
+      scope
+    )
+    expect(index.matchingOpenFiles(index.changes[0])).toEqual([repoDiff])
+  })
 })
