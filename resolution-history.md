@@ -7,6 +7,7 @@
 - run 141 用到的：5 條 `— canary 2026-10-27` 條目全部照做（3 個衝突：editor-external-watch-path-index.ts、build-computer-macos.mjs 丟 d3acf4d1a6、AGENTS.md；3 個修正 commit：fork-lint-run 改讀 run-lint.mjs、autosave Windows 路徑、updater-nudge 預熱），而且直接從 canary 快取 `~/.cache/orca-fork-canary/20261026T213049Z-39380/resolution/files/` 複製解好的檔。衝突從開始 rebase 到解完約 1 分鐘（00:21:14 → 00:22:20），三個修正 commit 約 1 分鐘（00:22:49 → 00:23:55）；rebase＋開 PR 全段 8 分，上一次（v1.4.241，沒有這批條目）是 18 分，那次光是 lint 改版就讓本機 fork-check 跑了 5 輪、37 分。
 - 它沒料到的：v1.4.242 本身過不了 `check:test-file-runners`。canary 試合的是上游 main，main 上已經修好（#33889、#34062），release tag 卻沒帶，所以 canary 看不到。這類「只在 tag 上紅」的問題現在由 PR #87 的 `fork-upstream-red.mjs` 在 rebase 開頭補上。
 - 還沒用到的：10-25／10-26 的 3 條（0b28553093、7d6603aa17、e03786fb90）對應的上游 commit 不在 v1.4.242，留給下一版。
+- 偶發紅：`session-scanner-pi-omp-shared-root.test.ts` 今天在 run 141 的 CI（shard 3/8）與 PR #88 的 CI（shard 5/8）各紅一次、重跑都綠。上游 b7fb07c379（#34072，canary 已記的那條）有改這個測試檔（pin scanner test file times），下一版含它就應該不再偶發；下一次 rebase 後若還紅，再當真的問題查。
 - 結論：這一次 canary 效益明確，保留。PR #88 起每次 auto-rebase 的處理紀錄都會有一行「canary 效益」，連續三次沒用到就寫「建議停用 canary」。
 
 ## 2026-10-27 人工複查 auto-rebase run 141（v1.4.242，PR #86）
