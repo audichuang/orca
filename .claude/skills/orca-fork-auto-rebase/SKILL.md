@@ -63,6 +63,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
    ```
    這個 commit 的時間是現在，precheck 拿它判斷鎖是否過期。之後每次推 `rebase/vNEW` 都是 `--force`。
 2. `git checkout --detach OLD_DEVELOP`，讀筆記：`tip=$(config/scripts/fork-notes.sh tip) && mkdir -p "$MAIN/.rebase-review" && for f in known-resolutions.md resolution-history.md; do git show "${tip}:$f" > "$MAIN/.rebase-review/$f" || : > "$MAIN/.rebase-review/$f"; done`（`fork-notes.sh` 是 fork 自己的檔案，rebase 中途可能不在工作樹，所以先讀）。`known-resolutions.md` 是待處理的建議：canary 對上游 main 試合時看過的衝突、「該丟掉的 fork commit」，以及 fork 自身問題；`resolution-history.md` 是之前怎麼處理過的紀錄，遇到筆記沒寫到的衝突，先在裡面找同一個檔或同一個 fork commit 的前例照做。條目適用於這次的條件：一般條目是 `git merge-base --is-ancestor <條目的上游 commit> vNEW`；類型是「fork 自身問題」的條目沒有上游 commit，條目列的檔案在 OLD_DEVELOP 上還在、修正還沒做就適用。`fork-notes.sh` 回非 0 → 沒有筆記也能做，照常 rebase，在通知裡註明。
+   讀完筆記，rebase 之前先在背景量上游基準（約 1 分鐘，跟 rebase 同時跑；第 2 步要用）：`git fetch origin main`，然後 `node config/scripts/fork-upstream-red.mjs vNEW ../ar-$RUN-base "$MAIN/.rebase-review/upstream-red" > "$MAIN/.rebase-review/upstream-red.log" 2>&1; echo $? > "$MAIN/.rebase-review/upstream-red.log.exit"`。它在乾淨的 vNEW worktree 跑 `pnpm tc`、上游 `pnpm lint` 的每一步與 `check:daemon-protocol-crossing`，寫出 `upstream-red.md`／`.json`：哪些上游自己就紅、各自的輸出，以及 `vNEW..origin/main` 裡碰過那些檔的 commit（cherry-pick 候選）。只是報告，不豁免任何東西。
 3. Rebase：先 `node config/scripts/fork-merge-driver-install.mjs`（讓 locale JSON 由 driver 合併；driver 複製進 git 目錄，rebase 中途工作樹沒有它也能用），再 `git rebase --onto vNEW vOLD`（FORK.md 說明為何要 --onto）。條目要丟掉某個 fork commit 時，改用：
    ```sh
    d=$(git rev-parse --short <要丟的 fork commit>)
@@ -84,12 +85,12 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
 
 整套單元測試、e2e、wire、mobile **不在本機跑**：CI 在 Linux 上跑同樣的 make target，一次就有結果。本機在 macOS 跑會多出十來個上游自己的紅（路徑、shell、打包環境），還會跟機器上其他 session 搶 CPU 而逾時，每個都要再拿上游對照，徒增時間（v1.4.241 為此多花約 40 分鐘）。
 
-lint 紅：先在乾淨的 vNEW（下面的 `../ar-$RUN-base`）跑 `fork-lint-run` 印出的同一條 `>> pnpm …` 指令。上游自己也紅時，上游 `main` 多半已經修了（`git fetch origin main` 後 `git log vNEW..origin/main -- <檔>`）：`git cherry-pick -x <那個 commit>` 進來（算 MANUAL；它的 mutation 證明就是改回去那一步 lint 會紅；之後 rebase 到含它的 release 時 git 會以相同 patch 略過，所以不要改動這個 commit），它若新增只有 `en.json` 的 key，**另一個 commit** 補齊其他語系的翻譯（fork-locale-parity 以 vNEW 為基底，會把它們算成 fork key）。上游 `main` 也沒修 → 第 8 步回報。
+**上游基準**：跑閘門前先 `bash config/scripts/fork-wait-for-job.sh "$MAIN/.rebase-review/upstream-red.log.exit"` 等第 1 步的基準（RESUME 沒有這份就先在前景跑那條指令），exit 非 0 → 照舊辦法在 `../ar-$RUN-base` 逐條重跑，並在通知裡註明。讀 `upstream-red.md`，把它整份貼進 PR 說明。列為紅的每一步都是上游自己的問題，**在跑第一輪閘門之前**就處理：照它列的候選，在上游 `main` 找修正（`git show --stat <候選>` 看是不是修這個失敗；候選沒有就 `git log vNEW..origin/main -- <輸出裡的檔>` 自己找），`git cherry-pick -x <那個 commit>` 進來（算 MANUAL；它的 mutation 證明就是改回去那一步會紅；之後 rebase 到含它的 release 時 git 會以相同 patch 略過，所以不要改動這個 commit；cherry-pick 有衝突而採了 vNEW 那側時 patch 會不同、不會自動略過，這時同一個 run 就寫 known-resolutions 條目，讓下一次 rebase 用標題找到它丟掉），它若新增只有 `en.json` 的 key，**另一個 commit** 補齊其他語系的翻譯（fork-locale-parity 以 vNEW 為基底，會把它們算成 fork key）。上游 `main` 也沒修 → 第 8 步回報。標了 `fork-check-lint skips it` 的那步閘門本來就不跑，不用處理。閘門裡紅、基準裡沒有的步驟是 fork 造成的，要修；同一步兩邊都紅時，比對兩份輸出，多出來的那幾行才是 fork 的。
 
 **失敗處理（CI 的 vitest、e2e 失敗）**：在乾淨的上游 worktree 重現同一個檔案。上游 tag 沒有 `Makefile` 和 fork 的 config，所以用 make 底下的原始指令：
 
 ```sh
-git worktree add --detach ../ar-$RUN-base vNEW && cd ../ar-$RUN-base && pnpm install --frozen-lockfile
+[ -d ../ar-$RUN-base ] || git worktree add --detach ../ar-$RUN-base vNEW; cd ../ar-$RUN-base && pnpm install --frozen-lockfile
 LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 pnpm exec vitest run --config config/vitest.config.ts <測試檔>
 pnpm run ensure:electron-runtime && LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 npx playwright test <spec> --config tests/playwright.config.ts --project=electron-headless --workers=1
 ```
