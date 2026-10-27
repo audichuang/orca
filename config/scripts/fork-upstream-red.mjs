@@ -21,7 +21,11 @@ export const UPSTREAM_CHECKS = [
 ]
 
 function tail(output) {
-  return output.trimEnd().split('\n').slice(-OUTPUT_TAIL_LINES).join('\n')
+  const lines = output.trimEnd().split('\n')
+  const dropped = lines.length - OUTPUT_TAIL_LINES
+  return dropped > 0
+    ? [`… ${dropped} earlier lines are in the .json`, ...lines.slice(-OUTPUT_TAIL_LINES)].join('\n')
+    : lines.join('\n')
 }
 
 // run-lint.mjs prints `✗ <step> (<secs>)` above each failing step's output, then `✗ N of M lint step(s) failed in <secs>: a, b`.
@@ -31,15 +35,24 @@ export function parseRunLintFailures(output) {
   if (!summary) {
     return null
   }
-  const lines = output.split('\n')
-  return summary[1].split(', ').map((step) => {
-    const start = lines.findIndex((line) => line.startsWith(`✗ ${step} (`))
-    if (start === -1) {
-      return { step, output: '' }
-    }
-    const end = lines.findIndex((line, index) => index > start && line.startsWith('✗ '))
-    return { step, output: tail(lines.slice(start + 1, end === -1 ? undefined : end).join('\n')) }
-  })
+  const lines = output.split(/\r?\n/)
+  return summary[1]
+    .split(', ')
+    .map((step) => step.trim())
+    .map((step) => {
+      const start = lines.findIndex((line) => line.startsWith(`✗ ${step} (`))
+      if (start === -1) {
+        return { step, output: '' }
+      }
+      const end = lines.findIndex((line, index) => index > start && line.startsWith('✗ '))
+      return {
+        step,
+        output: lines
+          .slice(start + 1, end === -1 ? undefined : end)
+          .join('\n')
+          .trim()
+      }
+    })
 }
 
 export function checkFailures(check, result) {
@@ -53,14 +66,19 @@ export function checkFailures(check, result) {
       return steps.map((failure) => ({ ...failure, forkSkips: Boolean(EXCLUDED[failure.step]) }))
     }
   }
-  return [{ step: check.name, output: tail(output), forkSkips: false }]
+  return [{ step: check.name, output: output.trim(), forkSkips: false }]
 }
 
 // Repo-relative paths a failure names, relative or under root, that exist in the checkout.
+// Skips pnpm's `$ <script>` echo and runner exit lines, which name the tooling rather than the failure.
 export function mentionedFiles(output, root, exists = existsSync) {
   const prefix = `${root.replace(/\/$/, '')}/`
   const found = new Set()
-  for (const match of output.matchAll(/[\w@.~/-]+\.[A-Za-z]{1,5}\b/g)) {
+  const findings = output
+    .split(/\r?\n/)
+    .filter((line) => !line.startsWith('$ ') && !/exited with code \d+$/.test(line))
+    .join('\n')
+  for (const match of findings.matchAll(/[\w@.~/-]+\.[A-Za-z]{1,5}\b/g)) {
     const candidate = match[0].startsWith(prefix) ? match[0].slice(prefix.length) : match[0]
     if (
       !candidate.startsWith('/') &&
@@ -88,14 +106,27 @@ function fixCandidates(root, sha, upstreamMain, files) {
   // Why null: an unfetched upstream main must not read as "upstream has no fix".
   const result = runProcessSync({
     program: 'git',
-    args: ['-C', root, 'log', '--format=%h %s', `${sha}..${upstreamMain}`, '--', ...files],
+    // Oldest first: the first upstream commit after the tag is the likeliest fix.
+    args: [
+      '-C',
+      root,
+      'log',
+      '--reverse',
+      '--format=%h %s',
+      `${sha}..${upstreamMain}`,
+      '--',
+      ...files
+    ],
     timeoutMs: null
   })
   if (result.code !== 0) {
     return null
   }
   const log = result.stdout.trim()
-  return log ? log.split('\n').slice(0, MAX_FIX_CANDIDATES) : []
+  const commits = log ? log.split('\n') : []
+  return commits.length > MAX_FIX_CANDIDATES
+    ? [...commits.slice(0, MAX_FIX_CANDIDATES), `… ${commits.length - MAX_FIX_CANDIDATES} more`]
+    : commits
 }
 
 export function renderReport({ ref, sha, upstreamMain, results }) {
@@ -117,7 +148,7 @@ export function renderReport({ ref, sha, upstreamMain, results }) {
       '',
       `## ${failure.step}${failure.forkSkips ? ' (fork-check-lint skips it: EXCLUDED)' : ''}`
     )
-    lines.push('', '```', failure.output || '(no output captured)', '```')
+    lines.push('', '```', tail(failure.output) || '(no output captured)', '```')
     if (failure.candidates === null) {
       lines.push(
         '',
@@ -154,6 +185,8 @@ function main([ref, dir, out, upstreamMain = 'origin/main']) {
     program: 'pnpm',
     args: ['install', '--frozen-lockfile'],
     cwd: root,
+    // Why HUSKY=0: husky's prepare writes core.hooksPath into the git config every worktree shares.
+    env: { ...process.env, HUSKY: '0' },
     stdio: 'inherit',
     timeoutMs: null
   })
