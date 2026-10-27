@@ -213,7 +213,7 @@ fork-check-static-types: fork-base-guard
 fork-check-quality: fork-base-guard
 	pnpm run check:code-quality:changed $(FORK_BASE)
 
-# Upstream's `pnpm lint` steps minus fork-lint-run.mjs's EXCLUDED, then the fork-only checks.
+# Upstream's `pnpm lint` steps (run-lint.mjs LINT_STEPS) minus fork-lint-run.mjs's EXCLUDED, then the fork-only checks.
 # Why keep going: a rebase can meet several new failures at once.
 # check:daemon-protocol-crossing is here too: a branch goes red in CI once upstream releases a daemon protocol bump.
 fork-check-lint: fork-base-guard
