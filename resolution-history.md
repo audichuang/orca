@@ -6,7 +6,7 @@
 - 結果：照 SKILL.md 跑完，沒有偏離；develop = main = dfb4a446e8，tag／release／dmg／cask 一致，ar-* worktree 已清。審查者 A／B 都實際跑了指令（A 31 次、B 57 次 Bash，B 跑了 vitest），ACCEPTABLE 不是只讀 diff 給的。
 - 啟動延遲不是 bug：上游 tag 23:16:32Z 建、Release 00:09:03Z 才發布，run 140（23:17）precheck 看到的 latest 還是 v1.4.241；run 141（00:17）在發布後 8 分鐘就接手。
 - 第 6 步「seam 不是檔案」的判準跟 SKILL.md 原文（「落在 `seam-upstream.diff` 碰到的 seam 上」）一致，是釐清不是改規則。
-- **之後照做**：vNEW 本身過不了某個 fork CI 會跑的上游檢查時，先在 `vNEW..origin/main` 找上游自己的修正，`cherry-pick -x` 帶進來（不要另寫 fork 版修法），每個 cherry-pick 做 mutation 證明；有衝突而採了 vNEW 側的，patch-id 會對不上，同一個 run 就要寫 known-resolutions 條目讓下一次 rebase 丟掉它（run 141 的 f34c13ca1e 就是這樣）。SKILL.md 還沒寫這條，待補。
+- **之後照做**：vNEW 本身過不了某個 fork CI 會跑的上游檢查時，先在 `vNEW..origin/main` 找上游自己的修正，`cherry-pick -x` 帶進來（不要另寫 fork 版修法），每個 cherry-pick 做 mutation 證明；有衝突而採了 vNEW 側的，patch-id 會對不上，同一個 run 就要寫 known-resolutions 條目讓下一次 rebase 丟掉它（run 141 的 f34c13ca1e 就是這樣）。（更正：SKILL.md 第 2 步早已有「lint 紅 → 乾淨 vNEW 重跑 → cherry-pick -x」這條，FORK.md 也提到；缺的是「事先知道」。已改成第 1 步就在背景跑 `config/scripts/fork-upstream-red.mjs vNEW`，在第一輪閘門前就列出上游自己紅的步驟與 cherry-pick 候選，見 PR ci-fork/upstream-baseline-report。它只是報告，不豁免任何檢查：FORK.md「Who checks what」禁止在 fork-check 裡加自動豁免。）
 - **之後照做**：審查者找到的「既有缺口」不要只寫在這裡當債務：能補測試的寫成 known-resolutions「fork 自身問題」條目（含「守它的測試」），下一次 run 照做；要選行為的才標「待人判斷」。run 141 的 ②～④（CombinedDiffViewer `gitWorktreeId`、`openGitGraph` 快捷鍵、App bundle replaced IPC）與 Codex 的 fork-lint-run CLI 入口測試都還只在這裡。
 
 ## 2026-10-27 auto-rebase v1.4.241 → v1.4.242（PR #86）— develop 已移動並發 v1.4.242-fork.1
