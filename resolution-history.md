@@ -2,6 +2,13 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-10-27 canary 效益評估（以 auto-rebase run 141、v1.4.242 為例）
+- canary 已跑 4 次（10-25 起，每次 10～30 分鐘，在發版前、不擋任何東西）。
+- run 141 用到的：5 條 `— canary 2026-10-27` 條目全部照做（3 個衝突：editor-external-watch-path-index.ts、build-computer-macos.mjs 丟 d3acf4d1a6、AGENTS.md；3 個修正 commit：fork-lint-run 改讀 run-lint.mjs、autosave Windows 路徑、updater-nudge 預熱），而且直接從 canary 快取 `~/.cache/orca-fork-canary/20261026T213049Z-39380/resolution/files/` 複製解好的檔。衝突從開始 rebase 到解完約 1 分鐘（00:21:14 → 00:22:20），三個修正 commit 約 1 分鐘（00:22:49 → 00:23:55）；rebase＋開 PR 全段 8 分，上一次（v1.4.241，沒有這批條目）是 18 分，那次光是 lint 改版就讓本機 fork-check 跑了 5 輪、37 分。
+- 它沒料到的：v1.4.242 本身過不了 `check:test-file-runners`。canary 試合的是上游 main，main 上已經修好（#33889、#34062），release tag 卻沒帶，所以 canary 看不到。這類「只在 tag 上紅」的問題現在由 PR #87 的 `fork-upstream-red.mjs` 在 rebase 開頭補上。
+- 還沒用到的：10-25／10-26 的 3 條（0b28553093、7d6603aa17、e03786fb90）對應的上游 commit 不在 v1.4.242，留給下一版。
+- 結論：這一次 canary 效益明確，保留。PR #88 起每次 auto-rebase 的處理紀錄都會有一行「canary 效益」，連續三次沒用到就寫「建議停用 canary」。
+
 ## 2026-10-27 人工複查 auto-rebase run 141（v1.4.242，PR #86）
 - 結果：照 SKILL.md 跑完，沒有偏離；develop = main = dfb4a446e8，tag／release／dmg／cask 一致，ar-* worktree 已清。審查者 A／B 都實際跑了指令（A 31 次、B 57 次 Bash，B 跑了 vitest），ACCEPTABLE 不是只讀 diff 給的。
 - 啟動延遲不是 bug：上游 tag 23:16:32Z 建、Release 00:09:03Z 才發布，run 140（23:17）precheck 看到的 latest 還是 v1.4.241；run 141（00:17）在發布後 8 分鐘就接手。
