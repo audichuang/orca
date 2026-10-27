@@ -51,4 +51,23 @@ describe('getOpenFilesForExternalFileChange in a folder workspace', () => {
       })
     ).toEqual([])
   })
+
+  it('matches a folder-owned diff tab across Windows separator and drive spellings', () => {
+    const folderDiff = makeOpenFile({
+      id: 'folder-diff',
+      filePath: 'c:\\Repo\\file.ts',
+      worktreeId: 'folder:f1',
+      gitWorktreeId: 'wt-1',
+      mode: 'diff',
+      diffSource: 'unstaged'
+    })
+
+    expect(
+      getOpenFilesForExternalFileChange([folderDiff], {
+        worktreeId: 'wt-1',
+        worktreePath: 'C:/Repo',
+        relativePath: 'file.ts'
+      }).map((file) => file.id)
+    ).toEqual(['folder-diff'])
+  })
 })
