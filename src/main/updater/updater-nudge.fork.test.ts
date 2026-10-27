@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { BrowserWindow } from 'electron'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { appMock, autoUpdaterMock, fetchNudgeMock, moduleFactories, resetUpdaterMocks } =
   await vi.hoisted(async () => (await import('../updater-test-harness')).createUpdaterMocks())
@@ -38,6 +38,11 @@ async function loadProbe(window: BrowserWindow) {
   }
   return new Probe()
 }
+
+// Why: the first cold import of updater-setup takes seconds and passed the 30s test timeout under full-suite load.
+beforeAll(async () => {
+  await import('./updater-setup')
+}, 120_000)
 
 describe.each([
   { fork: true, label: 'a packaged fork distribution' },
