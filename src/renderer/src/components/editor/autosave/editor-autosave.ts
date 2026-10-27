@@ -171,7 +171,7 @@ export function getOpenFilesForExternalFileChange(
         (file.diffSource === 'unstaged' || file.diffSource === 'staged') &&
         // Why: a folder-scoped diff's relativePath may not be relative to its repo; its filePath is unambiguous.
         (file.gitWorktreeId && file.gitWorktreeId !== file.worktreeId
-          ? file.filePath === absolutePath
+          ? pathKey(file.filePath) === absolutePathKey
           : file.relativePath === target.relativePath) &&
         // Why: repos sharing a folder editor reuse relative paths; only the owning repo's diff is affected.
         getOpenFileGitWorktreeId(file) === target.worktreeId
