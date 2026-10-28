@@ -2,6 +2,20 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-10-28 人工處理：v1.4.243-fork.1 發版失敗的修正與發版 v1.4.243-fork.2（PR #91）
+- 結果：PR #91 合進 develop（merge commit 0fd13f83ad），main 與 tag `v1.4.243-fork.2` 推到 0fd13f83ad；release run 40660015296 綠，cask 1.4.243-fork.2，MacBook Pro 已 `brew upgrade`。`v1.4.243-fork.1` tag 保留、沒有 Release。
+- 修正：Makefile `computer-use` 補 `pnpm run build:process-footprint-macos -- --single-arch`。守它的兩層（跟下方搬來的條目原本建議的 `fork-mac-helper-build.test.mjs` 不同，以這裡為準）：`config/scripts/fork-mac-helpers.mjs`（fork-check-lint，任何 OS；上游 `build:mac:release` 的每個 `build:*-macos` 都要在 `computer-use` target）；`config/scripts/fork-verify-mac-helpers.cjs`（`make fork-dmg` 打包後，builder config 每個 `MacOS/` extraFile 都要在 .app 裡，不依賴命名，PR CI 的 ad-hoc 建置就會紅）。Mutation：拿掉 Makefile 那行 lint 測試紅；假 .app 缺 helper → exit 1。正式簽章路徑先用 dryrun tag（run 40657729443）驗過 helper 簽章、公證、spctl accepted。
+- 這次 auto-rebase 的其他教訓（已寫進 FORK.md／auto-rebase skill）：上游 release commit 同步 `.github/` 但沒同步讀 workflow 的 `config/scripts` 測試，upstream-red 只跑 tc／lint 抓不到，第一輪 CI 必紅，先在乾淨 vNEW 確認再從上游 main cherry-pick（在 macmini 跑這些測試沒有訊號，部分在 macOS 上本來就紅）；審查修正 commit 推之前要先跑 `make -k fork-check-static`（這次有一輪 CI 被 `audit:anti-slop` 擋）。
+- 從 known-resolutions 搬來的條目（已處理）：
+
+### fork 自身問題（fork 的 macOS 建置沒建上游新的 orca-process-footprint helper，發版失敗）× fork Makefile `computer-use` target — auto-rebase 2026-10-28
+- 類型：fork 自身問題
+- 衝突檔：無
+- 連帶症狀：v1.4.243-fork.1 的 release run 40640209742 在 `make fork-dmg` 紅：`⨯ Missing orca-process-footprint helper at …/Orca.app/Contents/MacOS/orca-process-footprint`。上游 #34053（d58ab9762c）新增 `native/process-footprint-macos`，`build:native` 與 `build:mac:release` 都加了 `build:process-footprint-macos`，`config/electron-builder.config.cjs` 的 extraFiles 把它放進 `MacOS/`，afterPack 的 `signMacStandaloneHelper` 在 `isMacRelease` 時找不到就丟錯（非 release 建置只是跳過，記憶體面板退回用 `top`）。fork PR CI 的 macOS 建置是 ad-hoc、`ORCA_MAC_RELEASE` 沒設，抓不到。
+- 處理：Makefile `computer-use` target 在 `pnpm run build:notification-status-macos -- --single-arch` 後加一行 `pnpm run build:process-footprint-macos -- --single-arch`。同一個 commit 加守它的 fork 測試（例如 `config/scripts/fork-mac-helper-build.test.mjs`，進 fork-check-lint 或 vitest）：讀 `config/electron-builder.config.cjs` 每個 `to: 'MacOS/orca-<name>'` 的 extraFile，斷言 Makefile 的 `computer-use` target 有對應的 `pnpm run build:<name>-macos`（`orca-keyboard-layout` → `build:keyboard-layout-macos`，依此類推）；拿掉新加那行要紅。這樣下一次上游再加 helper 也會在本機閘門紅，不會等到發版。Makefile 不是測試檔，照一般規則要 mutation 證明。
+- 守它的測試：上面新加的 fork 測試；發版時 fork-release.yml 會真的簽章建置
+- 驗證（2026-10-28，上游 v1.4.243）：在 ac6ddc39dc 跑 `pnpm run build:process-footprint-macos -- --single-arch` 成功，產出 `native/process-footprint-macos/.build/release/orca-process-footprint`（Mach-O 64-bit arm64）。Makefile 修改與 guard 測試未做；develop 已在 ac6ddc39dc、tag v1.4.243-fork.1 已推，修好後要發 `v1.4.243-fork.2`（或跟下一個上游 release 一起發）。
+
 ## 2026-10-28 auto-rebase v1.4.242 → v1.4.243（PR #90）— develop 已移動並推 tag v1.4.243-fork.1，發版失敗：make fork-dmg 缺 orca-process-footprint helper
 - 結果：develop = main = ac6ddc39dc（舊 develop 備份 `backup/develop-v1.4.242-20261028T041757Z`），tag `v1.4.243-fork.1` 已推（不刪）。release run 40640209742 在 `make fork-dmg` 紅：上游 #34053 新增的 `orca-process-footprint` helper，fork Makefile 的 `computer-use` target 沒建，正式簽章時 afterPack 丟錯。確定性失敗，沒有重跑；修法寫成 known-resolutions「fork 自身問題」條目（本機已驗證 `pnpm run build:process-footprint-macos -- --single-arch` 產出 arm64 helper）。cask 仍是 1.4.242-fork.1，MacBook 沒升級。本機 `make update` 不受影響（非 release 建置缺 helper 只是跳過，記憶體面板退回用 `top`）。PR #90 已關，`rebase/v1.4.243`、`ci-base/v1.4.243` 已刪。
 - MANUAL：range-diff 322 `=`、16 `!`、2 `<`（照條目丟的兩個 cherry-pick）；rerere 沒重放舊解法；locale driver 合好。最終 develop = v1.4.243 + 332 個 fork commit + 14 個修正 commit + 7 個上游 cherry-pick。

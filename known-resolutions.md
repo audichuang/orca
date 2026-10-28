@@ -14,14 +14,6 @@
 - 驗證（<YYYY-MM-DD>，上游 <sha>）：<跑了什麼、結果>｜未驗證
 ```
 
-## fork 自身問題（fork 的 macOS 建置沒建上游新的 orca-process-footprint helper，發版失敗）× fork Makefile `computer-use` target — auto-rebase 2026-10-28
-- 類型：fork 自身問題
-- 衝突檔：無
-- 連帶症狀：v1.4.243-fork.1 的 release run 40640209742 在 `make fork-dmg` 紅：`⨯ Missing orca-process-footprint helper at …/Orca.app/Contents/MacOS/orca-process-footprint`。上游 #34053（d58ab9762c）新增 `native/process-footprint-macos`，`build:native` 與 `build:mac:release` 都加了 `build:process-footprint-macos`，`config/electron-builder.config.cjs` 的 extraFiles 把它放進 `MacOS/`，afterPack 的 `signMacStandaloneHelper` 在 `isMacRelease` 時找不到就丟錯（非 release 建置只是跳過，記憶體面板退回用 `top`）。fork PR CI 的 macOS 建置是 ad-hoc、`ORCA_MAC_RELEASE` 沒設，抓不到。
-- 處理：Makefile `computer-use` target 在 `pnpm run build:notification-status-macos -- --single-arch` 後加一行 `pnpm run build:process-footprint-macos -- --single-arch`。同一個 commit 加守它的 fork 測試（例如 `config/scripts/fork-mac-helper-build.test.mjs`，進 fork-check-lint 或 vitest）：讀 `config/electron-builder.config.cjs` 每個 `to: 'MacOS/orca-<name>'` 的 extraFile，斷言 Makefile 的 `computer-use` target 有對應的 `pnpm run build:<name>-macos`（`orca-keyboard-layout` → `build:keyboard-layout-macos`，依此類推）；拿掉新加那行要紅。這樣下一次上游再加 helper 也會在本機閘門紅，不會等到發版。Makefile 不是測試檔，照一般規則要 mutation 證明。
-- 守它的測試：上面新加的 fork 測試；發版時 fork-release.yml 會真的簽章建置
-- 驗證（2026-10-28，上游 v1.4.243）：在 ac6ddc39dc 跑 `pnpm run build:process-footprint-macos -- --single-arch` 成功，產出 `native/process-footprint-macos/.build/release/orca-process-footprint`（Mach-O 64-bit arm64）。Makefile 修改與 guard 測試未做；develop 已在 ac6ddc39dc、tag v1.4.243-fork.1 已推，修好後要發 `v1.4.243-fork.2`（或跟下一個上游 release 一起發）。
-
 ## f4d98b74e32535fb12394a085a0dd01bd9975a97、791502fae43c9886bdec4b6cf78a1bb91678c06f、2cd3e6d6a38347fd15db9f5dd3d61b1b715ba978、beb53a7f9e8816269702cf065a747bb3b08ef56e、e0f32dcac1d0669952bd5ec7c43fc94c9c0158df、1df26abf60f9da03f850d76150e251a304be6f04、8b64ec281a318d1bd1d041a4525cd5986dca2370（上游 main 的 7 個 CI commit）× fork 4e3b0c1fbd、f87f545202、5791e58c0c、d5d565db6a、e6469b6a48、8b5087529e、bca26276e6（這 7 個 commit 自己的 cherry-pick）— auto-rebase 2026-10-28
 - 類型：上游修了同一件事
 - 衝突檔：可能有 `.github/` 與這些 commit 碰的 config/scripts 測試檔
