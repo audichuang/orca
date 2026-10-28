@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { runProcessSync } from '@orca/process-host'
-import { LINT_STEPS, resolveLintCommands } from './run-lint.mjs'
+import { LINT_STEPS } from './run-lint.mjs'
 
 // Steps fork-check-lint deliberately skips, with why.
 export const EXCLUDED = {
@@ -21,18 +21,17 @@ export function applyExclusions(steps, excluded = EXCLUDED) {
   return steps.filter((name) => !excluded[name])
 }
 
-// Why reject shell syntax: steps run with no shell, so a step that needs one must fail loudly.
-export function pnpmArgs(step) {
-  if (/[|;<>&$`'"()\\]/.test(step)) {
-    throw new Error(`fork-lint-run: upstream lint step \`${step}\` needs a shell; run it by hand`)
+// Package scripts run through `pnpm run`; oxlint, run-lint.mjs's one step without a script, through `pnpm exec`.
+export function lintStepArgs(name, scripts) {
+  if (scripts[name]) {
+    return ['run', name]
   }
-  const args = step.split(/\s+/)
-  return args[0] === 'pnpm' ? args.slice(1) : ['exec', ...args]
-}
-
-// Package scripts run through `pnpm run`; run-lint.mjs's bare commands through `pnpm exec`.
-export function lintStepArgs({ name, command }, scripts) {
-  return scripts[name] ? ['run', name] : pnpmArgs(command)
+  if (name === 'oxlint') {
+    return ['exec', 'oxlint']
+  }
+  throw new Error(
+    `fork-lint-run: upstream lint step \`${name}\` has no package script; see run-lint.mjs`
+  )
 }
 
 export function runLintSteps(steps, run) {
@@ -58,10 +57,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const { scripts } = JSON.parse(readFileSync('package.json', 'utf8'))
   let steps
   try {
-    steps = resolveLintCommands(scripts, applyExclusions(LINT_STEPS)).map((step) => ({
-      name: step.name,
-      args: lintStepArgs(step, scripts)
-    }))
+    steps = applyExclusions(LINT_STEPS).map((name) => ({ name, args: lintStepArgs(name, scripts) }))
   } catch (error) {
     console.error(error instanceof Error ? error.message : error)
     process.exit(1)
