@@ -22,7 +22,8 @@ const FIXTURE_NAMES = [
   'LaneRepo',
   'pr13',
   'hidden',
-  'Terminal'
+  'Terminal',
+  'README'
 ]
 const FIXTURE_WORDS = new RegExp(`^(${FIXTURE_NAMES.join('|')})\\b|\\.\\w+$`)
 
