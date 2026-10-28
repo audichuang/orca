@@ -110,7 +110,7 @@ describe('conflict review in a folder workspace', () => {
       expect.any(String),
       FOLDER,
       'src/x.ts',
-      expect.objectContaining({ gitWorktreeId: 'repo-a' })
+      { wakeWslDistro: true, gitWorktreeId: 'repo-a' }
     )
   })
 })
