@@ -51,10 +51,8 @@ afterEach(() => {
   useAppStore.setState(initialState, true)
 })
 
-it('starts a saved conflict agent in the folder workspace at the repo directory', async () => {
-  const settings = getDefaultSettings('/tmp')
-  settings.sourceControlAi!.actions = { resolveConflicts: { agentId: 'codex' } }
-  const { result } = renderHook(() =>
+function renderFolderRepoAi(settings: ReturnType<typeof getDefaultSettings>) {
+  return renderHook(() =>
     useSourceControlAi({
       settings,
       target: { kind: 'local' },
@@ -78,9 +76,27 @@ it('starts a saved conflict agent in the folder workspace at the repo directory'
       openSettingsPage: vi.fn()
     })
   )
+}
+
+it('starts a saved conflict agent in the folder workspace at the repo directory', async () => {
+  const settings = getDefaultSettings('/tmp')
+  settings.sourceControlAi!.actions = { resolveConflicts: { agentId: 'codex' } }
+  const { result } = renderFolderRepoAi(settings)
   await act(() => result.current.handleResolveConflictsWithAI())
   await waitFor(() => expect(launchAgent).toHaveBeenCalledOnce())
   expect(launchAgent).toHaveBeenCalledWith(
     expect.objectContaining({ agent: 'codex', worktreeId: FOLDER, initialCwd: '/work/repo-1' })
   )
+})
+
+// The conflicts dialog spreads this editor over the panel's own worktreeId and initialCwd props.
+it('opens the conflict dialog for the folder workspace at the repo directory without a saved agent', async () => {
+  const { result } = renderFolderRepoAi(getDefaultSettings('/tmp'))
+  await act(() => result.current.handleResolveConflictsWithAI())
+  await waitFor(() => expect(result.current.resolveConflictsComposerOpen).toBe(true))
+  expect(result.current.resolveConflictsEditor).toMatchObject({
+    worktreeId: FOLDER,
+    initialCwd: '/work/repo-1'
+  })
+  expect(launchAgent).not.toHaveBeenCalled()
 })
