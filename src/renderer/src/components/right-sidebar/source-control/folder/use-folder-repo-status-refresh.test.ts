@@ -25,6 +25,7 @@ vi.mock('@/lib/worktree-git-copy', () => ({
 const { FOLDER_REPO_STATUS_INTERVAL_MS, useFolderRepoStatusRefresh } =
   await import('./use-folder-repo-status-refresh')
 const { useAppStore } = await import('@/store')
+const { ORCA_EDITOR_FILE_SAVED_EVENT } = await import('@/components/editor/editor-autosave')
 
 // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the hook reads only id, repoId and path.
 const wt = { id: 'r1::/ssh/r1', repoId: 'r1', path: '/r1' } as Worktree
@@ -88,7 +89,7 @@ describe('useFolderRepoStatusRefresh', () => {
     }
   })
 
-  it('may wake a stopped WSL distro on open and manual refresh, never on the periodic poll', async () => {
+  it('may wake a stopped WSL distro on open and manual refresh, never on a poll or save nudge', async () => {
     vi.useFakeTimers()
     try {
       globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -98,7 +99,10 @@ describe('useFolderRepoStatusRefresh', () => {
         trigger = useFolderRepoStatusRefresh([wt], true)
         return null
       }
-      const requested = (n: number, request: object): void =>
+      const requested = (
+        n: number,
+        request: { admissionTier: string; wakeWslDistro?: boolean }
+      ): void =>
         expect(refreshGitStatusForWorktree).toHaveBeenNthCalledWith(
           n,
           expect.objectContaining({ request })
@@ -112,6 +116,15 @@ describe('useFolderRepoStatusRefresh', () => {
       requested(2, { admissionTier: 'background' })
       await act(async () => trigger())
       requested(3, woken)
+      await act(async () => {
+        window.dispatchEvent(
+          new CustomEvent(ORCA_EDITOR_FILE_SAVED_EVENT, {
+            detail: { fileId: 'f', content: '', filePath: '/r1/a.ts' }
+          })
+        )
+        await vi.advanceTimersByTimeAsync(1_000)
+      })
+      requested(4, { admissionTier: 'background' })
       await act(async () => root.unmount())
     } finally {
       vi.useRealTimers()
