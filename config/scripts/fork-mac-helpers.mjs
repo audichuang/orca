@@ -6,18 +6,21 @@ import { pathToFileURL } from 'node:url'
 
 const TARGET = 'computer-use'
 
-export function releaseHelperScripts(releaseScript) {
+function releaseHelperScripts(releaseScript) {
   return [...new Set(releaseScript.match(/\bbuild:[\w-]+-macos\b/g) ?? [])]
 }
 
-export function makeTargetBody(makefile, target) {
+function makeTargetBody(makefile, target) {
   const lines = makefile.split('\n')
   const start = lines.findIndex((line) => line.startsWith(`${target}:`))
   if (start === -1) {
     return undefined
   }
   const end = lines.findIndex((line, i) => i > start && line !== '' && !line.startsWith('\t'))
-  return lines.slice(start + 1, end === -1 ? undefined : end).join('\n')
+  return lines
+    .slice(start + 1, end === -1 ? undefined : end)
+    .filter((line) => !/^\t@?#/.test(line))
+    .join('\n')
 }
 
 export function forkMacHelperErrors(packageJson, makefile) {
