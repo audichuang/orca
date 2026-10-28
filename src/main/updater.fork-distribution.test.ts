@@ -30,8 +30,9 @@ vi.mock('./local-builds/local-build-feed-server', () => moduleFactories.localBui
 warmUpdaterModule()
 
 function fakeWindow(send = vi.fn()): BrowserWindow {
-  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the updater only calls webContents.send on its window.
-  return { webContents: { send } } as never
+  const live = () => false
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the updater only checks isDestroyed and calls webContents.send on its window.
+  return { isDestroyed: live, webContents: { send, isDestroyed: live } } as never
 }
 
 // The fork's feed would be upstream's releases, so a packaged fork build must never auto-update.
