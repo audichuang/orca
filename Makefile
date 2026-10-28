@@ -56,6 +56,7 @@ computer-use:
 	@# Why --single-arch: every target here packages arm64 only, so the x86_64 slice was dead weight.
 	pnpm run build:keyboard-layout-macos -- --single-arch
 	pnpm run build:notification-status-macos -- --single-arch
+	pnpm run build:process-footprint-macos -- --single-arch
 
 setup: install
 	pnpm run build:computer-macos
@@ -173,6 +174,7 @@ fork-dmg: computer-use
 	pnpm run ensure:electron-runtime
 	ORCA_FORK_VERSION=$(FORK_VERSION) ORCA_FORK_SIGN_IDENTITY="$(FORK_SIGN_NAME)" $(FORK_RELEASE_ENV) \
 		$(if $(filter -,$(FORK_SIGN_IDENTITY)),,CSC_NAME="$(FORK_SIGN_NAME)") pnpm exec electron-builder --config config/electron-builder.fork.config.cjs --mac --arm64 --publish never
+	node config/scripts/fork-verify-mac-helpers.cjs dist/mac-arm64/Orca.app
 	node config/scripts/fork-verify-packaged-files.cjs dist/mac-arm64/Orca.app/Contents/Resources/app.asar
 	$(if $(FORK_RELEASE_ENV),bash config/scripts/fork-stapler-validate.sh dist/mac-arm64/Orca.app)
 
@@ -220,6 +222,7 @@ fork-check-lint: fork-base-guard
 	@failed=; for cmd in \
 	  "node config/scripts/fork-lint-run.mjs" \
 	  "node config/scripts/fork-pr-gate-needs.mjs" \
+	  "node config/scripts/fork-mac-helpers.mjs" \
 	  "node config/scripts/fork-locale-parity.mjs $(FORK_BASE)" \
 	  "node config/scripts/fork-test-inventory.mjs check $(FORK_BASE)" \
 	  "node config/scripts/fork-upstream-api.mjs" \
