@@ -106,8 +106,9 @@ src/renderer/src/components/ui/sonner.fork.test.tsx
 src/main/app-bundle-replacement.test.ts
 src/main/asar-transparent-stat.electron.test.ts
 
-# Agent launch cwd in folder repos: route input, offered agents, recovery, dialog, main pane launch
+# Agent launch cwd in folder repos: route input, offered agents, recovery, AI conflicts, dialog, main pane launch
 src/renderer/src/lib/folder-repo-launch-chat-route.test.ts
 src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.folder-cwd.test.ts
+src/renderer/src/components/right-sidebar/source-control/ai/use-ai.folder-cwd.test.tsx
 src/renderer/src/components/right-sidebar/SourceControlAgentActionDialog.folder-cwd.test.tsx
 src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts
