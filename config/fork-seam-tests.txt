@@ -110,4 +110,4 @@ src/main/asar-transparent-stat.electron.test.ts
 src/renderer/src/lib/folder-repo-launch-chat-route.test.ts
 src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.folder-cwd.test.ts
 src/renderer/src/components/right-sidebar/SourceControlAgentActionDialog.folder-cwd.test.tsx
-src/main/ipc/pty-agent-pane-launch.fork.test.ts
+src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts

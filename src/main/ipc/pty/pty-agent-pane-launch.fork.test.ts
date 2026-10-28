@@ -1,10 +1,10 @@
-import { ptyIncarnationById, ptyOwnership } from './pty/provider/ownership-state'
+import { ptyIncarnationById, ptyOwnership } from './provider/ownership-state'
 import { createLaunchRaceRuntime } from './pty-launch-race-test-fixture'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { AgentPaneLaunchRequest } from '../../shared/agent-pane-launch-request'
+import type { AgentPaneLaunchRequest } from '../../../shared/agent-pane-launch-request'
 import { setupPtyIpcSuite } from './pty-ipc-test-harness'
-import { registerPtyHandlers } from './pty/register-handlers'
-import { resetAgentLaunchPanesForTests } from '../agent-launch/agent-launch-pane-attachment'
+import { registerPtyHandlers } from './register-handlers'
+import { resetAgentLaunchPanesForTests } from '../../agent-launch/agent-launch-pane-attachment'
 
 vi.mock('electron', () => import('./pty-ipc-mock-registry').then((m) => m.electronModuleMock()))
 vi.mock('fs', () => import('./pty-ipc-mock-registry').then((m) => m.fsModuleMock()))
@@ -15,41 +15,41 @@ vi.mock('node-pty', () => import('./pty-ipc-mock-registry').then((m) => m.nodePt
 vi.mock('node:child_process', async (importOriginal) =>
   (await import('./pty-ipc-mock-registry')).childProcessModuleMock(await importOriginal())
 )
-vi.mock('../opencode/hook-service', () =>
+vi.mock('../../opencode/hook-service', () =>
   import('./pty-ipc-mock-registry').then((m) => m.openCodeHookServiceModuleMock())
 )
-vi.mock('../mimo/hook-service', () =>
+vi.mock('../../mimo/hook-service', () =>
   import('./pty-ipc-mock-registry').then((m) => m.mimoHookServiceModuleMock())
 )
-vi.mock('../agent-hooks/server', () =>
+vi.mock('../../agent-hooks/server', () =>
   import('./pty-ipc-mock-registry').then((m) => m.agentHookServerModuleMock())
 )
-vi.mock('../pi/titlebar-extension-service', () =>
+vi.mock('../../pi/titlebar-extension-service', () =>
   import('./pty-ipc-mock-registry').then((m) => m.piTitlebarExtensionModuleMock())
 )
-vi.mock('../pwsh', () => import('./pty-ipc-mock-registry').then((m) => m.pwshModuleMock()))
-vi.mock('../wsl', async (importOriginal) =>
+vi.mock('../../pwsh', () => import('./pty-ipc-mock-registry').then((m) => m.pwshModuleMock()))
+vi.mock('../../wsl', async (importOriginal) =>
   (await import('./pty-ipc-mock-registry')).wslModuleMock(await importOriginal())
 )
-vi.mock('../telemetry/client', () =>
+vi.mock('../../telemetry/client', () =>
   import('./pty-ipc-mock-registry').then((m) => m.telemetryClientModuleMock())
 )
-vi.mock('../telemetry/classify-error', () =>
+vi.mock('../../telemetry/classify-error', () =>
   import('./pty-ipc-mock-registry').then((m) => m.classifyErrorModuleMock())
 )
-vi.mock('../cli/linux-terminal-orca-cli-shim', () =>
+vi.mock('../../cli/linux-terminal-orca-cli-shim', () =>
   import('./pty-ipc-mock-registry').then((m) => m.linuxCliShimModuleMock())
 )
-vi.mock('../memory/pty-registry', () =>
+vi.mock('../../memory/pty-registry', () =>
   import('./pty-ipc-mock-registry').then((m) => m.ptyRegistryModuleMock())
 )
-vi.mock('../agent-hooks/migration-unsupported-pty-state', () =>
+vi.mock('../../agent-hooks/migration-unsupported-pty-state', () =>
   import('./pty-ipc-mock-registry').then((m) => m.migrationUnsupportedPtyModuleMock())
 )
-vi.mock('../codex/codex-pane-account-registry', () =>
+vi.mock('../../codex/codex-pane-account-registry', () =>
   import('./pty-ipc-mock-registry').then((m) => m.codexPaneAccountRegistryModuleMock())
 )
-vi.mock('../codex/codex-state-db-backfill-recovery', () =>
+vi.mock('../../codex/codex-state-db-backfill-recovery', () =>
   import('./pty-ipc-mock-registry').then((m) => m.codexBackfillRecoveryModuleMock())
 )
 
