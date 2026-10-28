@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { cleanup, renderHook, waitFor } from '@testing-library/react'
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getDefaultSettings } from '../../../../shared/constants'
 import { MANAGED_RUNTIME_INSTALL_RUNTIME_CAPABILITY as INSTALL } from '../../../../shared/managed-runtime-install'
@@ -15,6 +15,8 @@ const rpc = vi.hoisted(() => ({ call: vi.fn(), subscribe: vi.fn() }))
 vi.mock('@/runtime/runtime-rpc-client', () => ({ callRuntimeRpc: rpc.call }))
 vi.mock('@/runtime/runtime-rpc-subscribe', () => ({ subscribeRuntimeRpc: rpc.subscribe }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
+const { launchAgent } = vi.hoisted(() => ({ launchAgent: vi.fn() }))
+vi.mock('@/lib/launch-agent-in-new-tab', () => ({ launchAgentInNewTab: launchAgent }))
 import { useAppStore } from '@/store'
 import { makeFolderWorkspace } from '@/store/slices/worktrees-slice-test-fixtures'
 import { resetHostStructuredAgentsForTests } from '@/runtime/host-structured-agents'
@@ -30,6 +32,7 @@ const REPO_CWD = '/work/repo-1'
 const initial = useAppStore.getState()
 
 beforeEach(() => {
+  launchAgent.mockReset().mockReturnValue({ surface: { kind: 'local-terminal', tabId: 'agent' } })
   rpc.call.mockReset().mockResolvedValue({
     agents: [{ agent: 'antigravity', capabilities: {}, managedRuntime: true }]
   })
@@ -93,22 +96,21 @@ describe('saved Source Control action start in a folder workspace', () => {
 })
 
 describe('Source Control action dialog in a folder workspace', () => {
-  function renderDialog(initialCwd?: string) {
+  function renderDialog(initialCwd?: string, agent: 'antigravity' | 'claude' = 'antigravity') {
     return renderHook(() =>
       useSourceControlAgentActionDialog({
         open: true,
-        initialRecipe: { agentId: 'antigravity' },
+        initialRecipe: { agentId: agent },
         onOpenChange: () => {},
         actionId: 'resolveConflicts',
         title: '',
         description: '',
         baseCommandInput: 'Resolve conflicts.',
         launchSource: 'source_control_recovery',
-        savedAgentId: 'antigravity',
+        savedAgentId: agent,
         worktreeId: FOLDER,
         connectionId: null,
-        initialCwd,
-        onStart: vi.fn().mockResolvedValue(true)
+        initialCwd
       })
     )
   }
@@ -123,5 +125,19 @@ describe('Source Control action dialog in a folder workspace', () => {
     const { result } = renderDialog(REPO_CWD)
     await waitFor(() => expect(result.current.surfaceRows.selection.ready).toBe(true))
     expect(result.current.canStart).toBe(false)
+  })
+
+  it('starts a terminal agent in the folder workspace at the repo directory', async () => {
+    useAppStore.setState({
+      detectedAgentIds: ['claude'],
+      localDetectedAgentIdsByContext: { host: ['claude'] },
+      ensureDetectedAgents: async () => ['claude']
+    })
+    const { result } = renderDialog(REPO_CWD, 'claude')
+    await waitFor(() => expect(result.current.canStart).toBe(true))
+    await act(() => result.current.handleStart())
+    expect(launchAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ agent: 'claude', worktreeId: FOLDER, initialCwd: REPO_CWD })
+    )
   })
 })
