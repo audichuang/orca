@@ -2,11 +2,8 @@ import { createEditorAutoSaveScan } from './editor-autosave-scan'
 import type { StoreApi } from 'zustand'
 import type { AppState } from '@/store'
 import type { OpenFile } from '@/store/slices/editor'
-import {
-  isAutosaveSuspendedForFile,
-  ORCA_EDITOR_FILE_SAVED_EVENT,
-  type EditorFileSavedDetail
-} from './editor-autosave'
+import { isAutosaveSuspendedForFile } from './editor-autosave'
+import { dispatchEditorFileSaved } from './editor-file-saved-dispatch'
 import { flushEditorViewsForSave, hasPendingEditorBufferChange } from './editor-pending-flush'
 import { createAutoSaveHolds, editorPathHoldKey } from './editor-autosave-holds'
 import {
@@ -224,16 +221,12 @@ export function createEditorSaveQueue(store: AppStoreApi): EditorSaveQueue {
     if (settledViewIds.length === 0) {
       return 'written'
     }
-    window.dispatchEvent(
-      new CustomEvent<EditorFileSavedDetail>(ORCA_EDITOR_FILE_SAVED_EVENT, {
-        detail: {
-          fileId: settledViewIds.includes(fileId) ? fileId : settledViewIds[0],
-          content: contentToSave,
-          filePath: liveFile.filePath,
-          recordViewIds: settledViewIds
-        }
-      })
-    )
+    dispatchEditorFileSaved({
+      fileId: settledViewIds.includes(fileId) ? fileId : settledViewIds[0],
+      content: contentToSave,
+      filePath: liveFile.filePath,
+      recordViewIds: settledViewIds
+    })
     return 'written'
   }
 
