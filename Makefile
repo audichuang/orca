@@ -56,6 +56,7 @@ computer-use:
 	@# Why --single-arch: every target here packages arm64 only, so the x86_64 slice was dead weight.
 	pnpm run build:keyboard-layout-macos -- --single-arch
 	pnpm run build:notification-status-macos -- --single-arch
+	pnpm run build:process-footprint-macos -- --single-arch
 
 setup: install
 	pnpm run build:computer-macos
@@ -220,6 +221,7 @@ fork-check-lint: fork-base-guard
 	@failed=; for cmd in \
 	  "node config/scripts/fork-lint-run.mjs" \
 	  "node config/scripts/fork-pr-gate-needs.mjs" \
+	  "node config/scripts/fork-mac-helpers.mjs" \
 	  "node config/scripts/fork-locale-parity.mjs $(FORK_BASE)" \
 	  "node config/scripts/fork-test-inventory.mjs check $(FORK_BASE)" \
 	  "node config/scripts/fork-upstream-api.mjs" \
