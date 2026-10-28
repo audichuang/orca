@@ -142,7 +142,8 @@ describe('conflict review surface in a folder workspace', () => {
     expect(retries.current).toHaveLength(1)
     retries.current[0]()
     expect(reloadContent).toHaveBeenCalledWith(
-      expect.objectContaining({ worktreeId: FOLDER, gitWorktreeId: 'repo-a' })
+      expect.objectContaining({ worktreeId: FOLDER, gitWorktreeId: 'repo-a' }),
+      expect.anything()
     )
   })
 })
