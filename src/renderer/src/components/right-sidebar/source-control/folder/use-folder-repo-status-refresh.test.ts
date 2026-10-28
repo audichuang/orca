@@ -88,6 +88,36 @@ describe('useFolderRepoStatusRefresh', () => {
     }
   })
 
+  it('may wake a stopped WSL distro on open and manual refresh, never on the periodic poll', async () => {
+    vi.useFakeTimers()
+    try {
+      globalThis.IS_REACT_ACT_ENVIRONMENT = true
+      const root = createRoot(document.createElement('div'))
+      let trigger: () => Promise<void> = async () => undefined
+      function Harness(): null {
+        trigger = useFolderRepoStatusRefresh([wt], true)
+        return null
+      }
+      const requested = (n: number, request: object): void =>
+        expect(refreshGitStatusForWorktree).toHaveBeenNthCalledWith(
+          n,
+          expect.objectContaining({ request })
+        )
+      const woken = { admissionTier: 'background', wakeWslDistro: true }
+      await act(async () => root.render(React.createElement(Harness)))
+      requested(1, woken)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(FOLDER_REPO_STATUS_INTERVAL_MS)
+      })
+      requested(2, { admissionTier: 'background' })
+      await act(async () => trigger())
+      requested(3, woken)
+      await act(async () => root.unmount())
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it("does not gate a paired server's SSH repo on this client's own SSH map", async () => {
     seed({
       repos: [
