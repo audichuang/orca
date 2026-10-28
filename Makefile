@@ -174,6 +174,7 @@ fork-dmg: computer-use
 	pnpm run ensure:electron-runtime
 	ORCA_FORK_VERSION=$(FORK_VERSION) ORCA_FORK_SIGN_IDENTITY="$(FORK_SIGN_NAME)" $(FORK_RELEASE_ENV) \
 		$(if $(filter -,$(FORK_SIGN_IDENTITY)),,CSC_NAME="$(FORK_SIGN_NAME)") pnpm exec electron-builder --config config/electron-builder.fork.config.cjs --mac --arm64 --publish never
+	node config/scripts/fork-verify-mac-helpers.cjs dist/mac-arm64/Orca.app
 	node config/scripts/fork-verify-packaged-files.cjs dist/mac-arm64/Orca.app/Contents/Resources/app.asar
 	$(if $(FORK_RELEASE_ENV),bash config/scripts/fork-stapler-validate.sh dist/mac-arm64/Orca.app)
 
