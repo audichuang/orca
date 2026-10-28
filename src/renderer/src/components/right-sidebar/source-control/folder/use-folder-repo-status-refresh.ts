@@ -30,41 +30,45 @@ export function useFolderRepoStatusRefresh(
   const sweepRef = useRef<Promise<void> | null>(null)
   const rerunRef = useRef(false)
 
-  const refreshOne = useCallback(async (worktree: Worktree, periodic = false): Promise<void> => {
-    const state = useAppStore.getState()
-    // Why one resolution: a same-path twin must not get this copy's transport, SSH target or answer.
-    const copy = resolveWorktreeGitCopyNow(worktree.id)
-    if (!copy) {
-      return
-    }
-    const { connectionId, transport: target } = copy
-    // Why: a paired server's SSH target lives in that server's state, not this client's map.
-    const connectionReady =
-      !connectionId ||
-      target.kind === 'environment' ||
-      state.sshConnectionStates.get(connectionId)?.status === 'connected'
-    // Why: a huge repo pauses evidence-free polling only; explicit refreshes and change signals still probe so it can recover.
-    if (!connectionReady || (periodic && state.gitStatusHugeByWorktree?.[worktree.id])) {
-      return
-    }
-    await refreshGitStatusForWorktree({
-      target,
-      ownerHostId: copy.hostId,
-      worktreeId: worktree.id,
-      worktreePath: worktree.path,
-      connectionId,
-      pushTarget: worktree.pushTarget,
-      deps: {
-        setGitStatus: state.setGitStatus,
-        updateWorktreeGitIdentity: state.updateWorktreeGitIdentity,
-        setUpstreamStatus: state.setUpstreamStatus,
-        fetchUpstreamStatus: state.fetchUpstreamStatus
-      },
-      request: { admissionTier: 'background' }
-    }).catch((error: unknown) => {
-      console.warn('[SourceControl] folder repo status refresh failed', worktree.path, error)
-    })
-  }, [])
+  const refreshOne = useCallback(
+    async (worktree: Worktree, periodic = false, wakeWslDistro = false): Promise<void> => {
+      const state = useAppStore.getState()
+      // Why one resolution: a same-path twin must not get this copy's transport, SSH target or answer.
+      const copy = resolveWorktreeGitCopyNow(worktree.id)
+      if (!copy) {
+        return
+      }
+      const { connectionId, transport: target } = copy
+      // Why: a paired server's SSH target lives in that server's state, not this client's map.
+      const connectionReady =
+        !connectionId ||
+        target.kind === 'environment' ||
+        state.sshConnectionStates.get(connectionId)?.status === 'connected'
+      // Why: a huge repo pauses evidence-free polling only; explicit refreshes and change signals still probe so it can recover.
+      if (!connectionReady || (periodic && state.gitStatusHugeByWorktree?.[worktree.id])) {
+        return
+      }
+      await refreshGitStatusForWorktree({
+        target,
+        ownerHostId: copy.hostId,
+        worktreeId: worktree.id,
+        worktreePath: worktree.path,
+        connectionId,
+        pushTarget: worktree.pushTarget,
+        deps: {
+          setGitStatus: state.setGitStatus,
+          updateWorktreeGitIdentity: state.updateWorktreeGitIdentity,
+          setUpstreamStatus: state.setUpstreamStatus,
+          fetchUpstreamStatus: state.fetchUpstreamStatus
+        },
+        // Why: like the active workspace's first status, opening the panel or a manual refresh is a user act that may start a stopped WSL distro; polls and nudges stay gated.
+        request: { admissionTier: 'background', ...(wakeWslDistro ? { wakeWslDistro: true } : {}) }
+      }).catch((error: unknown) => {
+        console.warn('[SourceControl] folder repo status refresh failed', worktree.path, error)
+      })
+    },
+    []
+  )
 
   const refreshAll = useCallback(
     async (periodic = false): Promise<void> => {
@@ -84,7 +88,7 @@ export function useFolderRepoStatusRefresh(
           for (;;) {
             // ponytail: one repo at a time on the background tier; add a concurrency cap if folders hold dozens of repos.
             for (const worktree of worktreesRef.current) {
-              await refreshOne(worktree, sweepIsPeriodic)
+              await refreshOne(worktree, sweepIsPeriodic, !sweepIsPeriodic)
             }
             if (!rerunRef.current) {
               break
