@@ -74,6 +74,7 @@ src/renderer/src/components/right-sidebar/source-control/panel/panel-folder-rout
 src/renderer/src/components/right-sidebar/source-control/sync/git-graph-full-view.component.test.tsx
 src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph.component.test.tsx
 src/renderer/src/components/right-sidebar/source-control/folder/folder-multi-repo-panel.test.tsx
+src/renderer/src/components/right-sidebar/source-control/folder/use-folder-repo-status-refresh.test.ts
 src/renderer/src/components/right-sidebar/source-control/commit/folder-discard-autosave-holds.test.tsx
 src/renderer/src/components/right-sidebar/source-control/commit/use-entry-mutations.fork.test.tsx
 src/renderer/src/components/right-sidebar/SourceControl.preview-open.fork.test.tsx
