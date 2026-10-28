@@ -31,10 +31,6 @@ const ALLOWED = new Map<string, string>([
   [
     'renderer/src/store/slices/editor/actions/check-run-details-actions.ts',
     'opens and refreshes check-details tabs; git-graph has its own actions'
-  ],
-  [
-    'shared/workspace-layout/old-client/old-client-session-editor-rows.ts',
-    "reviewTabRow serves conflict-review and check-details; the projection's switch drops git-graph"
   ]
 ])
 
