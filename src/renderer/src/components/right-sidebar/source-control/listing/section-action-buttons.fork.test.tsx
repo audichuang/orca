@@ -12,7 +12,10 @@ import {
   ClipcodeSourceControlActionsContext,
   type ClipcodeSourceControlActions
 } from '../clipcode/clipcode-actions-context'
-import type { SourceControlDisplaySection, SourceControlDisplaySectionId } from './section-order'
+import type {
+  SourceControlDisplaySection,
+  SourceControlDisplaySectionId
+} from '../../../../../../shared/source-control-section-order'
 
 afterEach(cleanup)
 
