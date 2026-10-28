@@ -175,8 +175,11 @@ export function useSourceControlAi({
         initialRecipe: getLaunchActionRecipe('resolveConflicts'),
         recoveryContext,
         baseCommandInput: resolveConflictsPrompt,
-        worktreeId: activeWorktreeId,
+        // A folder repo's agent opens in the folder workspace, started inside the repo.
+        worktreeId: editorWorktreeId ?? activeWorktreeId,
         groupId: activeGroupId,
+        initialCwd:
+          editorWorktreeId && editorWorktreeId !== activeWorktreeId ? worktreePath : undefined,
         connectionId: activeConnectionId,
         repoId: activeRepo?.id,
         launchPlatform: activeSourceControlLaunchPlatform
