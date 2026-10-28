@@ -52,6 +52,8 @@ src/renderer/src/components/right-sidebar/source-control/notes/use-note-opening.
 src/renderer/src/components/right-sidebar/source-control/listing/use-row-opening.fork.test.tsx
 src/renderer/src/store/slices/editor/actions/git-status-actions.fork.test.ts
 src/renderer/src/components/editor/EditorConflictReviewSurface.git-owner.test.tsx
+src/renderer/src/components/editor/conflict-review-folder-owner.test.tsx
+src/renderer/src/components/editor/ExternalFileChangeBanner.git-owner.test.ts
 
 # git-graph tab type: hydration, editor tabs, layout, runtime graph sync
 src/renderer/src/runtime/sync-runtime-graph-git-graph-tab.test.ts
