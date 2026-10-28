@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
 import type { GitBranchCompareSummary } from '../../../../../../shared/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
-import type { SourceControlSectionViewAction } from '../listing/section-order'
+import type { SourceControlSectionViewAction } from '../../../../../../shared/source-control-section-order'
 import { SourceControlWorktreeScopeContext } from '../folder/worktree-scope'
 import type { SourceControlPanelReadyProps } from './panel-props'
 
