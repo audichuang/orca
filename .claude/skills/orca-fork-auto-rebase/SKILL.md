@@ -132,7 +132,7 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 ## 5. 分流與修正（最多兩輪）
 
 - 彙整所有結果。每個 BLOCKING 自己去程式碼裡確認：
-  - 確認是真的 → 修、補會變紅的測試、commit（算 MANUAL）、`git push --force fork HEAD:refs/heads/rebase/vNEW`、重跑受影響的本機測試，CI 照第 3 步等綠。
+  - 確認是真的 → 修、補會變紅的測試、commit（算 MANUAL）、重跑受影響的本機測試與 `make -k fork-check-static`（綠了才推：v1.4.243 有一輪 CI 只因修正 commit 沒先跑 static、被 `audit:anti-slop` 擋下）、`git push --force fork HEAD:refs/heads/rebase/vNEW`，CI 照第 3 步等綠。
   - 不同意 → 寫下理由（引用程式碼證據），原文與理由一起進 PR。
 - 有修正就再審一輪：先在 `../ar-$RUN-review-codex` `git checkout --detach <新 head>`，Codex 在那裡用 `task --thread <第一輪的 thread id>` 看修正後的 diff（**不要用 `--resume-last`**：機器上別的 session 也在跑 Codex，會接錯 thread）；Claude 只開一個新的 `claude -p` 審查者看修正的部分（同第 4 步的跑法）。
 - 兩輪後仍有確認為真、沒修好的 BLOCKING → 不移動 develop，第 8 步回報。
