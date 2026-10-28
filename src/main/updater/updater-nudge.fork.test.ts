@@ -50,8 +50,12 @@ describe.each([
 ])('updater inner guards in $label', ({ fork }) => {
   let appPath = ''
   const send = vi.fn()
-  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the updater only calls webContents.send on its window.
-  const window = { webContents: { send } } as never as BrowserWindow
+  const live = () => false
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the updater only checks isDestroyed and calls webContents.send on its window.
+  const window = {
+    isDestroyed: live,
+    webContents: { send, isDestroyed: live }
+  } as never as BrowserWindow
 
   beforeEach(() => {
     vi.resetModules()
