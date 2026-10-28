@@ -3,12 +3,8 @@ import type { AppState } from '@/store'
 import type { OpenFile } from '@/store/slices/editor'
 import { findWorktreeById } from '@/store/slices/worktree-helpers'
 import { getEditorFileOperationContext } from '@/lib/editor-file-operation-owner'
-import {
-  isAutosaveSuspendedForFile,
-  normalizeAutoSaveDelayMs,
-  ORCA_EDITOR_FILE_SAVED_EVENT,
-  type EditorFileSavedDetail
-} from './editor-autosave'
+import { isAutosaveSuspendedForFile, normalizeAutoSaveDelayMs } from './editor-autosave'
+import { dispatchEditorFileSaved } from './editor-file-saved-dispatch'
 import { flushPendingEditorBuffer, hasPendingEditorBufferChange } from './editor-pending-flush'
 import { createAutoSaveHolds, editorPathHoldKey } from './editor-autosave-holds'
 import {
@@ -213,18 +209,12 @@ export function createEditorSaveQueue(store: AppStoreApi): EditorSaveQueue {
     } else {
       settleEditorWriteWithoutViews(store.getState(), recordViewIds, identityKey, contentToSave)
     }
-    window.dispatchEvent(
-      new CustomEvent<EditorFileSavedDetail>(ORCA_EDITOR_FILE_SAVED_EVENT, {
-        detail: {
-          fileId,
-          content: contentToSave,
-          filePath: liveFile.filePath,
-          recordViewIds: savedView
-            ? editorBufferSiblingViewIds(store.getState(), savedView.id)
-            : [fileId]
-        }
-      })
-    )
+    dispatchEditorFileSaved(store.getState(), {
+      fileId,
+      content: contentToSave,
+      filePath: liveFile.filePath,
+      savedViewId: savedView?.id
+    })
     return 'written'
   }
 
