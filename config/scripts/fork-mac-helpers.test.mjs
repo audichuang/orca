@@ -32,10 +32,11 @@ setup:
     expect(forkMacHelperErrors(pkg(RELEASE), makefile)).toEqual([])
   })
 
-  it('rejects a release helper the target does not build, even when another target does', () => {
+  it('rejects a release helper the target only names in a comment or another target', () => {
     const makefile = `computer-use:
 \tpnpm run build:computer-macos
 \tpnpm run build:process-footprint-macos-legacy
+\t@# pnpm run build:process-footprint-macos
 
 other:
 \tpnpm run build:process-footprint-macos
