@@ -23698,7 +23698,8 @@
       "newAgentTab": "New {{agent}} tab",
       "tabNewBrowserSplitRight": "New browser tab in right split",
       "viewPlugins": "Open Plugins",
-      "sidebarProjectsToggleCollapse": "Collapse / Expand All Projects"
+      "sidebarProjectsToggleCollapse": "Collapse / Expand All Projects",
+      "sourceControlOpenGitGraph": "Open Git Graph"
     },
     "group": {
       "global": "Global",
