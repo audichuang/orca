@@ -26213,7 +26213,8 @@
       "d286d1ab85": "Clear pane title",
       "botItemBack": "Back to items",
       "botItemPrevious": "Previous item",
-      "botItemNext": "Next item"
+      "botItemNext": "Next item",
+      "sourceControlOpenGitGraph": "Open Git Graph"
     },
     "group": {
       "global": "Global",
