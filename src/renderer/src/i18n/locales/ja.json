@@ -22274,7 +22274,8 @@
       "terminalSplitDown": "ターミナルを下に分割",
       "terminalSwitchInputSource": "入力ソース / 言語を切り替え（ネイティブ）",
       "newAgentTab": "新規 {{agent}} タブ",
-      "viewPlugins": "プラグインを開く"
+      "viewPlugins": "プラグインを開く",
+      "sourceControlOpenGitGraph": "Git Graph を開く"
     },
     "group": {
       "global": "グローバル",
