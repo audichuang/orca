@@ -12884,7 +12884,9 @@
             "discardFailedSingular": "無法捨棄 {{count}} 個檔案的變更",
             "discardFailedPlural": "無法捨棄 {{count}} 個檔案的變更",
             "noteCountSingular": "{{count}} 則筆記",
-            "noteCountPlural": "{{count}} 則筆記"
+            "noteCountPlural": "{{count}} 則筆記",
+            "commitHashes": "提交雜湊",
+            "commitMessages": "提交訊息"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "無法啟動選定的代理程式。",
@@ -13476,6 +13478,138 @@
                   "e7876a2bde": "暫存至少一個檔案以產生訊息。",
                   "0904be2505": "清除訊息以重新產生。",
                   "1ea9ba37aa": "在「設定」->「Git」->「原始碼控制 AI」中選擇一個代理程式。"
+                },
+                "bulk": {
+                  "action": {
+                    "bar": {
+                      "8a434c829f": "複製完整原始碼",
+                      "4139bc5679": "清除選取"
+                    }
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "multi": {
+                    "repo": {
+                      "panel": {
+                        "4c62351467": "此資料夾下沒有已匯入的 Git 存放庫。將其中的存放庫新增到 Orca 後，即可在此查看變更。",
+                        "a044a830f1": "重新整理所有存放庫",
+                        "c023ba6838": "此資料夾位於已匯入的存放庫內，因此也會列出資料夾以外的變更。",
+                        "efd34a4169": "{{value0}} 的變更清單已截斷，複製內容不完整。",
+                        "d98e7b731c": "複製所有變更",
+                        "da953a696f": "貼上並恢復",
+                        "5de321918e": "此資料夾下的隱藏工作樹未包含在內（{{value0}}）。",
+                        "ab32287003": "存放庫",
+                        "addRepos": "新增此資料夾中的存放庫",
+                        "filterRepos": "篩選存放庫",
+                        "clearFilter": "清除篩選",
+                        "filterNoMatch": "沒有符合的存放庫",
+                        "groupChanges": "有變更",
+                        "groupNoChanges": "無變更"
+                      }
+                    }
+                  },
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "title": "新增此資料夾中的存放庫",
+                        "description": "{{value0}} 下的 Git 存放庫，包括巢狀於其他存放庫中的存放庫。",
+                        "scanning": "正在掃描存放庫...",
+                        "failed": "無法掃描此資料夾。",
+                        "none": "此資料夾中的所有存放庫都已新增。",
+                        "truncated": "掃描提前結束，可能遺漏了部分存放庫。",
+                        "hide": "僅在此資料夾中顯示，不作為側邊欄專案",
+                        "cancel": "取消",
+                        "add": "新增（{{value0}}）"
+                      }
+                    }
+                  },
+                  "repo": {
+                    "row": {
+                      "showInSidebar": "已從側邊欄隱藏。改為顯示為側邊欄專案",
+                      "hideFromSidebar": "顯示在側邊欄中。改為只在此資料夾中顯示"
+                    }
+                  }
+                }
+              },
+              "clipcode": {
+                "clipcode": {
+                  "copy": {
+                    "action": {
+                      "2749202819": "（{{value0}} 個無法讀取）",
+                      "e6cdc3a753": "超過 {{value0}} 個 token。",
+                      "21758e255e": "找不到可複製的 Git 變更。",
+                      "7828c565da": "（{{value0}} 個因超出大小限制而略過）",
+                      "65b422bbd1": "已複製 {{value0}} 個 Git 檔案",
+                      "7c6daaf4fa": "複製完整原始碼失敗",
+                      "9c3f952874": "無法讀取 {{value0}} 個 Git 檔案。",
+                      "binarySkipped": "（{{value0}} 個二進位檔案已略過）",
+                      "onlyBinarySkipped": "沒有可複製的內容：已略過 {{value0}} 個二進位檔案。",
+                      "filesCopied": "已複製 {{value0}} 個檔案",
+                      "filesUnreadable": "無法讀取 {{value0}} 個檔案。",
+                      "noFiles": "找不到可複製的檔案。",
+                      "onlyUnsafeNamesSkipped": "沒有可複製的內容：已略過 {{value0}} 個無法安全恢復名稱的檔案。",
+                      "unsafeNamesSkipped": "（{{value0}} 個檔案因名稱不安全而略過）",
+                      "tokenCount": "~{{value0}} 個 token",
+                      "payloadDetails": "{{lines}} 行 · {{chars}} 個字元 · {{words}} 個詞"
+                    }
+                  },
+                  "restore": {
+                    "preview": {
+                      "dialog": {
+                        "2c06a4e179": "貼上並恢復",
+                        "87832cd30d": "剪貼簿中的檔案將寫入此資料夾。",
+                        "813199296f": "調整路徑（{{value0}}）",
+                        "9a421f14d8": "建立",
+                        "d469ff3b81": "覆寫",
+                        "9cf3526c1f": "刪除",
+                        "0d87b3b39d": "略過",
+                        "80224f9095": "覆寫現有檔案",
+                        "677bf0ade9": "取消",
+                        "c0b1b53e49": "恢復",
+                        "9bd78385ce": "路徑不安全",
+                        "85d6d805ca": "位於資料夾之外",
+                        "67e63b0749": "已不存在",
+                        "becf17b643": "是資料夾",
+                        "4acb11ed21": "複製時已略過內容",
+                        "ef509f9991": ".git 受保護",
+                        "1f409f3dd6": "路徑經過符號連結",
+                        "parentIsFile": "上層資料夾是檔案",
+                        "targetUnreadable": "無法檢查現有檔案",
+                        "caseConflict": "路徑相同但大小寫不同",
+                        "nonUtf8Target": "現有檔案不是 UTF-8"
+                      }
+                    }
+                  }
+                },
+                "use": {
+                  "clipcode": {
+                    "restore": {
+                      "b124e9c64e": "剪貼簿為空或不含文字。",
+                      "1847420a23": "剪貼簿中找不到 Snipcode 檔案標頭。",
+                      "af5c90f593": "貼上並恢復失敗",
+                      "ae1ec38ef1": "已建立 {{value0}}，已覆寫 {{value1}}，已刪除 {{value2}}，已略過 {{value3}}。",
+                      "19a6f378aa": "...另外還有 {{value0}} 項",
+                      "c9af35dc2d": "失敗 {{value0}} 項。"
+                    }
+                  }
+                }
+              },
+              "listing": {
+                "entry": {
+                  "context": {
+                    "menu": {
+                      "9137d88b9f": "複製完整原始碼",
+                      "ce8235a6a4": "在側邊開啟",
+                      "showFileHistory": "顯示檔案歷史記錄"
+                    }
+                  }
+                },
+                "uncommitted": {
+                  "sections": {
+                    "1a59d5a05b": "複製完整原始碼"
+                  }
                 }
               }
             }
@@ -13706,7 +13840,12 @@
             "7b1c4e9a02": "在瀏覽器中開啟提交",
             "8c2d5fab13": "複製提交雜湊",
             "9d3e60bc24": "複製提交訊息",
-            "ae4f71cd35": "解釋變更"
+            "ae4f71cd35": "解釋變更",
+            "copyFullSource": "複製完整原始碼",
+            "copyFullSourceMany": "複製完整原始碼（{{value0}} 個提交）",
+            "copyHashMany": "複製提交雜湊（{{value0}} 個提交）",
+            "copyMessageMany": "複製提交訊息（{{value0}} 個提交）",
+            "showInGraph": "在 Git Graph 中顯示"
           },
           "pull": {
             "policy": {
@@ -13885,6 +14024,89 @@
                 }
               }
             }
+          },
+          "GitHistoryGraph": {
+            "allBranches": "所有分支",
+            "branchCount": "{{value0}} 個分支",
+            "currentBranch": "目前分支",
+            "branchFilter": "分支篩選",
+            "searchBranches": "搜尋分支...",
+            "scope": "顯示",
+            "sources": "來源",
+            "localBranches": "本機分支",
+            "loadingBranches": "正在載入分支...",
+            "hostTooOld": "此存放庫所在主機執行的是較舊版本的 Orca，只能顯示目前分支。",
+            "branchesFailed": "無法載入分支",
+            "searchCommits": "搜尋提交（author: path:）",
+            "searchCommitsLabel": "搜尋提交",
+            "loadMore": "載入更多提交",
+            "noMatchingCommits": "沒有符合此篩選條件的提交",
+            "clearAllFilters": "清除篩選",
+            "local": "本機",
+            "showAllBranches": "顯示所有分支",
+            "userFilter": "使用者",
+            "pathsFilter": "路徑",
+            "clearUserFilter": "清除使用者篩選",
+            "searchUsers": "搜尋使用者...",
+            "noUsers": "已載入的提交中沒有使用者。",
+            "clearPathFilter": "清除路徑篩選",
+            "typePath": "相對於存放庫的檔案或資料夾路徑",
+            "typePathHint": "輸入路徑，然後按 Enter。",
+            "filterByPath": "依 {{value0}} 篩選",
+            "recentPaths": "最近的",
+            "clearFilters": "清除",
+            "searchCommitMessages": "搜尋提交訊息",
+            "tags": "標籤"
+          },
+          "GitGraphFullView": {
+            "open": "開啟 Git Graph",
+            "description": "目前存放庫的提交圖。",
+            "message": "訊息",
+            "author": "作者",
+            "date": "日期",
+            "commit": "提交",
+            "selectCommit": "選取一個提交以查看詳情和變更的檔案。",
+            "resizeDetails": "調整提交詳情寬度",
+            "copyFullSource": "複製所有變更檔案的完整原始碼",
+            "filesInCommits": "變更檔案 ({{files}}) · {{commits}} 個提交",
+            "filesChanged": "變更檔案 ({{files}})",
+            "toggleBranches": "切換分支面板",
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "往下 {{count}} 列接到 {{sha}} {{subject}}。點一下跳過去。",
+            "laneComesFromAbove": "從上方 {{count}} 列的 {{sha}} {{subject}} 接過來。點一下跳過去。",
+            "laneContinuesPastLoaded": "接到尚未載入的更早提交。載入更多提交後即可跳過去。",
+            "openAllChanges": "開啟所有變更",
+            "hideDetails": "隱藏詳情",
+            "enterKey": "Enter",
+            "showDetails": "顯示詳情",
+            "detailsStrip": "詳情",
+            "listOptions": "清單選項",
+            "columns": "欄",
+            "twoLineRows": "雙行顯示",
+            "resetList": "重設為預設",
+            "columnTooNarrow": "清單太窄",
+            "laneContinuesPastLoadedJump": "接到尚未載入的提交 {{sha}}。點一下即可載入並跳過去。",
+            "loadingMore": "正在載入更多提交...",
+            "loadCapReached": "已顯示前 {{count}} 個提交，這是圖表載入的上限。請用「分支」、「使用者」或「路徑」縮小範圍。"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "本機",
+            "tags": "標籤",
+            "label": "分支與標籤",
+            "empty": "尚未載入分支。",
+            "showRef": "不在目前清單中 — 點一下即可只顯示此分支"
+          },
+          "GitGraphCommitInfo": {
+            "author": "作者",
+            "date": "日期",
+            "copySha": "複製提交 SHA",
+            "parents": "父提交",
+            "refs": "參照",
+            "containedIn": "所在分支",
+            "moreBranches": "+{{count}} 個",
+            "containedInHint": "只計入末端提交位於已載入清單中的分支；清單外的分支不計入。",
+            "children": "子提交",
+            "childrenHint": "已載入的清單中，以這個提交為父提交的提交。"
           }
         }
       },
@@ -15715,6 +15937,11 @@
         },
         "useMarkdownDocuments": {
           "listFailed": "無法列出 Markdown 文件。"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} 個檔案",
+          "pressAgainNext": "再按一次前往下一個檔案",
+          "pressAgainPrevious": "再按一次前往上一個檔案"
         }
       },
       "diff": {
@@ -16006,7 +16233,10 @@
                 "chatPaneRight": "聊天窗格右側",
                 "splitChatDown": "向下分割聊天",
                 "newChatBelow": "在下方新增聊天",
-                "chatPaneBelow": "下面的聊天窗格"
+                "chatPaneBelow": "下面的聊天窗格",
+                "openGitGraph": "開啟 git graph",
+                "gitLog": "git log",
+                "commitHistory": "提交歷史記錄"
               },
               "splitChatRight": "向右分割聊天",
               "splitChatRightDescription": "在右側的分割窗格中開啟新聊天。",
@@ -17523,6 +17753,18 @@
         "cancelled": "此一般 SSH 終端機在啟動前已關閉。",
         "terminalUnavailable": "Orca 無法在此處開啟終端機。",
         "openHint": "在 Orca 無法於主機上完成設定時，仍可繼續在主機上工作。"
+      },
+      "gitGraphTab": {
+        "noRepo": "此工作區沒有可用的 Git 存放庫。",
+        "repoSwitcher": "存放庫",
+        "selectRepo": "選取存放庫",
+        "searchRepos": "搜尋存放庫...",
+        "noRepos": "找不到存放庫。",
+        "addRepos": "新增存放庫...",
+        "addReposMissing": "{{value0}} 個未新增",
+        "addReposButton": "新增此資料夾中的存放庫",
+        "openInSourceControl": "在原始碼控制中開啟",
+        "revealNotLoaded": "該提交不在已載入的歷史記錄中。"
       }
     },
     "i18n": {
@@ -20448,6 +20690,7 @@
       "chatFind": "在聊天中尋找",
       "terminalToggleNativeChat": "在聊天介面與終端機之間切換",
       "sidebarChildWorkspacesToggle": "顯示／隱藏子工作區",
+      "sourceControlOpenGitGraph": "開啟 Git Graph",
       "terminalClearPaneTitle": "清除窗格標題",
       "terminalClosePane": "關閉作用中的窗格",
       "terminalSplitRight": "向右分割終端機",

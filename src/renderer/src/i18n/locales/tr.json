@@ -12896,7 +12896,9 @@
             "discardFailedSingular": "{{count}} dosyadaki değişiklikler atılamadı",
             "discardFailedPlural": "{{count}} dosyadaki değişiklikler atılamadı",
             "noteCountSingular": "{{count}} not",
-            "noteCountPlural": "{{count}} not"
+            "noteCountPlural": "{{count}} not",
+            "commitHashes": "Commit hash'leri",
+            "commitMessages": "Commit mesajları"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "Seçilen ajan başlatılamadı.",
@@ -13488,6 +13490,138 @@
                   "e7876a2bde": "Mesaj oluşturmak için en az bir dosya stage edin.",
                   "0904be2505": "Yeniden oluşturmak için mesajı temizleyin.",
                   "1ea9ba37aa": "Ayarlar -> Git -> Kaynak Kontrolü AI bölümünden bir ajan seçin."
+                },
+                "bulk": {
+                  "action": {
+                    "bar": {
+                      "8a434c829f": "Tam kaynağı kopyala",
+                      "4139bc5679": "Seçimi temizle"
+                    }
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "multi": {
+                    "repo": {
+                      "panel": {
+                        "4c62351467": "Bu klasörde içe aktarılmış Git repository'si yok. Değişikliklerini burada görmek için içindeki repository'leri Orca'ya ekleyin.",
+                        "a044a830f1": "Tüm repository'leri yenile",
+                        "c023ba6838": "Bu klasör içe aktarılmış bir repository'nin içinde olduğundan klasör dışındaki değişiklikler de listelenir.",
+                        "efd34a4169": "{{value0}} için değişiklik listesi kesildi; kopya eksik.",
+                        "d98e7b731c": "Tüm değişiklikleri kopyala",
+                        "da953a696f": "Yapıştır ve Geri Yükle",
+                        "5de321918e": "Bu klasördeki gizli worktree'ler dahil edilmedi ({{value0}}).",
+                        "ab32287003": "Repository'ler",
+                        "addRepos": "Bu klasördeki repository'leri ekle",
+                        "filterRepos": "Repository'leri filtrele",
+                        "clearFilter": "Filtreyi temizle",
+                        "filterNoMatch": "Eşleşen repository yok",
+                        "groupChanges": "Değişiklik olanlar",
+                        "groupNoChanges": "Değişiklik olmayanlar"
+                      }
+                    }
+                  },
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "title": "Bu klasördeki repository'leri ekle",
+                        "description": "{{value0}} altındaki Git repository'leri, diğer repository'lerin içinde yer alanlar dahil.",
+                        "scanning": "Repository'ler taranıyor...",
+                        "failed": "Bu klasör taranamadı.",
+                        "none": "Bu klasördeki tüm repository'ler zaten eklendi.",
+                        "truncated": "Tarama erken durduğu için bazı repository'ler eksik olabilir.",
+                        "hide": "Yalnızca bu klasörde göster, kenar çubuğunda proje olarak gösterme",
+                        "cancel": "İptal",
+                        "add": "Ekle ({{value0}})"
+                      }
+                    }
+                  },
+                  "repo": {
+                    "row": {
+                      "showInSidebar": "Kenar çubuğunda gizli. Kenar çubuğu projesi olarak göster",
+                      "hideFromSidebar": "Kenar çubuğunda gösteriliyor. Yalnızca bu klasörde tut"
+                    }
+                  }
+                }
+              },
+              "clipcode": {
+                "clipcode": {
+                  "copy": {
+                    "action": {
+                      "2749202819": "({{value0}} okunamadı)",
+                      "e6cdc3a753": "{{value0}} token'ın üzerinde.",
+                      "21758e255e": "Kopyalanacak Git değişikliği bulunamadı.",
+                      "7828c565da": "({{value0}} atlandı: boyut aşıldı)",
+                      "65b422bbd1": "{{value0}} Git dosyası kopyalandı",
+                      "7c6daaf4fa": "Tam kaynak kopyalanamadı",
+                      "9c3f952874": "{{value0}} Git dosyası okunamadı.",
+                      "binarySkipped": "({{value0}} atlandı: ikili)",
+                      "onlyBinarySkipped": "Kopyalanacak bir şey yok: {{value0}} ikili dosya atlandı.",
+                      "filesCopied": "{{value0}} dosya kopyalandı",
+                      "filesUnreadable": "{{value0}} dosya okunamadı.",
+                      "noFiles": "Kopyalanacak dosya bulunamadı.",
+                      "onlyUnsafeNamesSkipped": "Kopyalanacak bir şey yok: adları güvenli şekilde geri yüklenemediği için {{value0}} dosya atlandı.",
+                      "unsafeNamesSkipped": "({{value0}} atlandı: güvenli olmayan dosya adı)",
+                      "tokenCount": "~{{value0}} token",
+                      "payloadDetails": "{{lines}} satır · {{chars}} karakter · {{words}} sözcük"
+                    }
+                  },
+                  "restore": {
+                    "preview": {
+                      "dialog": {
+                        "2c06a4e179": "Yapıştır ve Geri Yükle",
+                        "87832cd30d": "Panodaki dosyalar bu klasöre yazılacak.",
+                        "813199296f": "Yolları ayarla ({{value0}})",
+                        "9a421f14d8": "Oluştur",
+                        "d469ff3b81": "Üzerine yaz",
+                        "9cf3526c1f": "Sil",
+                        "0d87b3b39d": "Atla",
+                        "80224f9095": "Mevcut dosyaların üzerine yaz",
+                        "677bf0ade9": "İptal",
+                        "c0b1b53e49": "Geri Yükle",
+                        "9bd78385ce": "güvenli olmayan yol",
+                        "85d6d805ca": "klasörün dışında",
+                        "67e63b0749": "zaten yok",
+                        "becf17b643": "bir klasör",
+                        "4acb11ed21": "içerik kopyalanırken atlandı",
+                        "ef509f9991": ".git korumalı",
+                        "1f409f3dd6": "yol bir sembolik bağlantıdan geçiyor",
+                        "parentIsFile": "üst klasör bir dosya",
+                        "targetUnreadable": "mevcut dosya denetlenemedi",
+                        "caseConflict": "aynı yol, farklı harf büyüklüğüyle",
+                        "nonUtf8Target": "mevcut dosya UTF-8 değil"
+                      }
+                    }
+                  }
+                },
+                "use": {
+                  "clipcode": {
+                    "restore": {
+                      "b124e9c64e": "Pano boş veya metin içermiyor.",
+                      "1847420a23": "Panoda Snipcode dosya başlığı bulunamadı.",
+                      "af5c90f593": "Yapıştır ve Geri Yükle başarısız oldu",
+                      "ae1ec38ef1": "{{value0}} oluşturuldu, {{value1}} üzerine yazıldı, {{value2}} silindi, {{value3}} atlandı.",
+                      "19a6f378aa": "...ve {{value0}} tane daha",
+                      "c9af35dc2d": "{{value0}} başarısız oldu."
+                    }
+                  }
+                }
+              },
+              "listing": {
+                "entry": {
+                  "context": {
+                    "menu": {
+                      "9137d88b9f": "Tam kaynağı kopyala",
+                      "ce8235a6a4": "Yan tarafta aç",
+                      "showFileHistory": "Dosya geçmişini göster"
+                    }
+                  }
+                },
+                "uncommitted": {
+                  "sections": {
+                    "1a59d5a05b": "Tam kaynağı kopyala"
+                  }
                 }
               }
             }
@@ -13720,7 +13854,12 @@
             "7b1c4e9a02": "Commit'i tarayıcıda aç",
             "8c2d5fab13": "Commit hash'ini kopyala",
             "9d3e60bc24": "Commit mesajını kopyala",
-            "ae4f71cd35": "Değişiklikleri açıkla"
+            "ae4f71cd35": "Değişiklikleri açıkla",
+            "copyFullSource": "Tam kaynağı kopyala",
+            "copyFullSourceMany": "Tam kaynağı kopyala ({{value0}} commit)",
+            "copyHashMany": "Commit hash'lerini kopyala ({{value0}} commit)",
+            "copyMessageMany": "Commit mesajlarını kopyala ({{value0}} commit)",
+            "showInGraph": "Git Graph'ta göster"
           },
           "pull": {
             "policy": {
@@ -13899,6 +14038,89 @@
                 }
               }
             }
+          },
+          "GitHistoryGraph": {
+            "allBranches": "Tüm branch'ler",
+            "branchCount": "{{value0}} branch",
+            "currentBranch": "Geçerli branch",
+            "branchFilter": "Branch filtresi",
+            "searchBranches": "Branch'lerde ara...",
+            "scope": "Göster",
+            "sources": "Kaynaklar",
+            "localBranches": "Yerel branch'ler",
+            "loadingBranches": "Branch'ler yükleniyor...",
+            "hostTooOld": "Bu repository'nin barındığı ana makinede yalnızca geçerli branch'i gösteren eski bir Orca sürümü çalışıyor.",
+            "branchesFailed": "Branch'ler yüklenemedi",
+            "searchCommits": "Commit'lerde ara (author: path:)",
+            "searchCommitsLabel": "Commit'lerde ara",
+            "loadMore": "Daha fazla commit yükle",
+            "noMatchingCommits": "Bu filtreyle eşleşen commit yok",
+            "clearAllFilters": "Filtreleri temizle",
+            "local": "Yerel",
+            "showAllBranches": "Tüm branch'leri göster",
+            "userFilter": "Kullanıcı",
+            "pathsFilter": "Yollar",
+            "clearUserFilter": "Kullanıcı filtresini temizle",
+            "searchUsers": "Kullanıcı ara...",
+            "noUsers": "Yüklenen commit'lerde kullanıcı yok.",
+            "clearPathFilter": "Yol filtresini temizle",
+            "typePath": "Repository'ye göre göreli dosya veya klasör yolu",
+            "typePathHint": "Bir yol yazın, ardından Enter'a basın.",
+            "filterByPath": "{{value0}} ile filtrele",
+            "recentPaths": "Son Kullanılanlar",
+            "clearFilters": "Temizle",
+            "searchCommitMessages": "Commit mesajlarında ara",
+            "tags": "Tag'ler"
+          },
+          "GitGraphFullView": {
+            "open": "Git Graph'ı aç",
+            "description": "Geçerli repository'nin commit grafiği.",
+            "message": "Mesaj",
+            "author": "Yazar",
+            "date": "Tarih",
+            "commit": "Commit",
+            "selectCommit": "Ayrıntılarını ve değişen dosyaları görmek için bir commit seçin.",
+            "resizeDetails": "Commit ayrıntılarını yeniden boyutlandır",
+            "copyFullSource": "Tüm değişen dosyaların tam kaynağını kopyala",
+            "filesInCommits": "Değişen dosyalar ({{files}}) · {{commits}} commit",
+            "filesChanged": "Değişen dosyalar ({{files}})",
+            "toggleBranches": "Branch'leri göster/gizle",
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "{{count}} satır aşağıda {{sha}} {{subject}} ile devam ediyor. Atlamak için tıklayın.",
+            "laneComesFromAbove": "{{count}} satır yukarıdaki {{sha}} {{subject}} öğesinden geliyor. Atlamak için tıklayın.",
+            "laneContinuesPastLoaded": "Yüklenen commit'lerin ötesinde devam ediyor. Takip etmek için daha fazla commit yükleyin.",
+            "openAllChanges": "Tüm değişiklikleri aç",
+            "hideDetails": "Ayrıntıları gizle",
+            "enterKey": "Enter",
+            "showDetails": "Ayrıntıları göster",
+            "detailsStrip": "Ayrıntılar",
+            "listOptions": "Liste seçenekleri",
+            "columns": "Sütunlar",
+            "twoLineRows": "İki satırlı görünüm",
+            "resetList": "Varsayılanlara sıfırla",
+            "columnTooNarrow": "Liste çok dar",
+            "laneContinuesPastLoadedJump": "Yüklenen commit'lerin ötesinde {{sha}} konumunda devam ediyor. Yüklemek ve atlamak için tıklayın.",
+            "loadingMore": "Daha fazla commit yükleniyor...",
+            "loadCapReached": "İlk {{count}} commit gösteriliyor; grafiğin yükleyebileceği en fazla sayı bu. Branch, Kullanıcı veya Yollar ile daraltın."
+          },
+          "GitGraphBranchSidebar": {
+            "local": "Yerel",
+            "tags": "Tag'ler",
+            "label": "Branch'ler ve tag'ler",
+            "empty": "Henüz branch yüklenmedi.",
+            "showRef": "Geçerli listede yok — yalnızca bu branch'i göstermek için tıklayın"
+          },
+          "GitGraphCommitInfo": {
+            "author": "Yazar",
+            "date": "Tarih",
+            "copySha": "Commit SHA'sını kopyala",
+            "parents": "Üst commit'ler",
+            "refs": "Ref'ler",
+            "containedIn": "Branch'lerde",
+            "moreBranches": "+{{count}} tane daha",
+            "containedInHint": "Uçları yüklenen listede olan branch'ler; liste dışındaki branch'ler sayılmaz.",
+            "children": "Alt commit'ler",
+            "childrenHint": "Yüklenen listede, üst commit'i bu commit olan commit'ler."
           }
         }
       },
@@ -15729,6 +15951,11 @@
         },
         "useMarkdownDocuments": {
           "listFailed": "Markdown belgeleri listelenemedi."
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} dosya",
+          "pressAgainNext": "Sonraki dosyaya geçmek için tekrar basın",
+          "pressAgainPrevious": "Önceki dosyaya geçmek için tekrar basın"
         }
       },
       "diff": {
@@ -16020,7 +16247,10 @@
                 "chatPaneRight": "sohbet paneli sağda",
                 "splitChatDown": "sohbeti aşağı böl",
                 "newChatBelow": "altta yeni sohbet",
-                "chatPaneBelow": "sohbet paneli altta"
+                "chatPaneBelow": "sohbet paneli altta",
+                "openGitGraph": "git graph aç",
+                "gitLog": "git log",
+                "commitHistory": "commit geçmişi"
               },
               "splitChatRight": "Sohbeti Sağa Böl",
               "splitChatRightDescription": "Sağda ayrı bir bölmede yeni bir sohbet açın.",
@@ -17537,6 +17767,18 @@
         "cancelled": "Bu yalın SSH terminali başlatılmadan kapatıldı.",
         "terminalUnavailable": "Burada bir terminal açılamadı.",
         "openHint": "Orca sunucuda kurulum yapamadığında orada çalışmaya devam etmenizi sağlar."
+      },
+      "gitGraphTab": {
+        "noRepo": "Bu çalışma alanı için kullanılabilir Git repository'si yok.",
+        "repoSwitcher": "Repository",
+        "selectRepo": "Repository seç",
+        "searchRepos": "Repository'lerde ara...",
+        "noRepos": "Repository bulunamadı.",
+        "addRepos": "Repository ekle...",
+        "addReposMissing": "{{value0}} eklenmedi",
+        "addReposButton": "Bu klasördeki repository'leri ekle",
+        "openInSourceControl": "Source Control'de aç",
+        "revealNotLoaded": "Bu commit yüklenen geçmişte yok."
       }
     },
     "i18n": {
@@ -20464,6 +20706,7 @@
       "chatFind": "Sohbette bul",
       "terminalToggleNativeChat": "Sohbet arayüzü ile terminal arasında geçiş yap",
       "sidebarChildWorkspacesToggle": "Alt çalışma alanlarını göster/gizle",
+      "sourceControlOpenGitGraph": "Git Graph'ı aç",
       "terminalClearPaneTitle": "Bölme başlığını temizle",
       "terminalClosePane": "Etkin bölmeyi kapat",
       "terminalSplitRight": "Terminali sağa böl",

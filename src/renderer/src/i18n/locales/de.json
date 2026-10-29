@@ -12932,7 +12932,9 @@
             "discardFailedSingular": "Änderungen an {{count}} Datei konnten nicht verworfen werden",
             "discardFailedPlural": "Änderungen an {{count}} Dateien konnten nicht verworfen werden",
             "noteCountSingular": "{{count}} Notiz",
-            "noteCountPlural": "{{count}} Notizen"
+            "noteCountPlural": "{{count}} Notizen",
+            "commitHashes": "Commit-Hashes",
+            "commitMessages": "Commit-Nachrichten"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "Der ausgewählte Agent konnte nicht gestartet werden.",
@@ -13524,6 +13526,138 @@
                   "e7876a2bde": "Mindestens eine Datei zum Commit vormerken, um eine Nachricht zu generieren.",
                   "0904be2505": "Nachricht leeren, um sie neu zu generieren.",
                   "1ea9ba37aa": "Unter Einstellungen -> Git -> KI für die Quellcodeverwaltung einen Agenten auswählen."
+                },
+                "bulk": {
+                  "action": {
+                    "bar": {
+                      "8a434c829f": "Vollständigen Quellcode kopieren",
+                      "4139bc5679": "Auswahl aufheben"
+                    }
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "multi": {
+                    "repo": {
+                      "panel": {
+                        "4c62351467": "Unter diesem Ordner gibt es keine importierten Git-Repositorys. Die darin enthaltenen Repositorys zu Orca hinzufügen, um ihre Änderungen hier zu sehen.",
+                        "a044a830f1": "Alle Repositorys aktualisieren",
+                        "c023ba6838": "Dieser Ordner liegt in einem importierten Repository, daher werden auch Änderungen außerhalb des Ordners aufgelistet.",
+                        "efd34a4169": "Die Änderungsliste für {{value0}} ist abgeschnitten; die Kopie ist unvollständig.",
+                        "d98e7b731c": "Alle Änderungen kopieren",
+                        "da953a696f": "Einfügen & Wiederherstellen",
+                        "5de321918e": "Ausgeblendete Worktrees unter diesem Ordner sind nicht enthalten ({{value0}}).",
+                        "ab32287003": "Repositorys",
+                        "addRepos": "Repositorys in diesem Ordner hinzufügen",
+                        "filterRepos": "Repositorys filtern",
+                        "clearFilter": "Filter leeren",
+                        "filterNoMatch": "Keine passenden Repositorys",
+                        "groupChanges": "Mit Änderungen",
+                        "groupNoChanges": "Ohne Änderungen"
+                      }
+                    }
+                  },
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "title": "Repositorys in diesem Ordner hinzufügen",
+                        "description": "Git-Repositorys unter {{value0}}, einschließlich solcher, die in anderen Repositorys verschachtelt sind.",
+                        "scanning": "Repositorys werden gesucht...",
+                        "failed": "Dieser Ordner konnte nicht durchsucht werden.",
+                        "none": "Alle Repositorys in diesem Ordner wurden bereits hinzugefügt.",
+                        "truncated": "Der Scan wurde vorzeitig beendet, daher fehlen möglicherweise einige Repositorys.",
+                        "hide": "Nur in diesem Ordner anzeigen, nicht als Seitenleisten-Projekte",
+                        "cancel": "Abbrechen",
+                        "add": "Hinzufügen ({{value0}})"
+                      }
+                    }
+                  },
+                  "repo": {
+                    "row": {
+                      "showInSidebar": "In der Seitenleiste ausgeblendet. Als Seitenleisten-Projekt anzeigen",
+                      "hideFromSidebar": "In der Seitenleiste sichtbar. Nur in diesem Ordner behalten"
+                    }
+                  }
+                }
+              },
+              "clipcode": {
+                "clipcode": {
+                  "copy": {
+                    "action": {
+                      "2749202819": "({{value0}} nicht lesbar)",
+                      "e6cdc3a753": "Über {{value0}} Token.",
+                      "21758e255e": "Keine Git-Änderungen zum Kopieren gefunden.",
+                      "7828c565da": "({{value0}} übersprungen: Größe überschritten)",
+                      "65b422bbd1": "{{value0}} Git-Datei(en) kopiert",
+                      "7c6daaf4fa": "Vollständigen Quellcode kopieren fehlgeschlagen",
+                      "9c3f952874": "{{value0}} Git-Datei(en) konnten nicht gelesen werden.",
+                      "binarySkipped": "({{value0}} übersprungen: binär)",
+                      "onlyBinarySkipped": "Nichts zu kopieren: {{value0}} Binärdatei(en) übersprungen.",
+                      "filesCopied": "{{value0}} Datei(en) kopiert",
+                      "filesUnreadable": "{{value0}} Datei(en) konnten nicht gelesen werden.",
+                      "noFiles": "Keine Dateien zum Kopieren gefunden.",
+                      "onlyUnsafeNamesSkipped": "Nichts zu kopieren: {{value0}} Datei(en) übersprungen, da ihre Namen nicht sicher wiederhergestellt werden können.",
+                      "unsafeNamesSkipped": "({{value0}} übersprungen: unsicherer Dateiname)",
+                      "tokenCount": "~{{value0}} Token",
+                      "payloadDetails": "{{lines}} Zeilen · {{chars}} Zeichen · {{words}} Wörter"
+                    }
+                  },
+                  "restore": {
+                    "preview": {
+                      "dialog": {
+                        "2c06a4e179": "Einfügen & Wiederherstellen",
+                        "87832cd30d": "Dateien aus der Zwischenablage werden in diesen Ordner geschrieben.",
+                        "813199296f": "Pfade anpassen ({{value0}})",
+                        "9a421f14d8": "Erstellen",
+                        "d469ff3b81": "Überschreiben",
+                        "9cf3526c1f": "Löschen",
+                        "0d87b3b39d": "Überspringen",
+                        "80224f9095": "Vorhandene Dateien überschreiben",
+                        "677bf0ade9": "Abbrechen",
+                        "c0b1b53e49": "Wiederherstellen",
+                        "9bd78385ce": "unsicherer Pfad",
+                        "85d6d805ca": "außerhalb des Ordners",
+                        "67e63b0749": "bereits nicht vorhanden",
+                        "becf17b643": "ist ein Ordner",
+                        "4acb11ed21": "Inhalt wurde beim Kopieren übersprungen",
+                        "ef509f9991": ".git ist geschützt",
+                        "1f409f3dd6": "Pfad führt über einen symbolischen Link",
+                        "parentIsFile": "ein übergeordneter Ordner ist eine Datei",
+                        "targetUnreadable": "vorhandene Datei konnte nicht geprüft werden",
+                        "caseConflict": "gleicher Pfad mit abweichender Groß-/Kleinschreibung",
+                        "nonUtf8Target": "vorhandene Datei ist nicht UTF-8"
+                      }
+                    }
+                  }
+                },
+                "use": {
+                  "clipcode": {
+                    "restore": {
+                      "b124e9c64e": "Die Zwischenablage ist leer oder enthält keinen Text.",
+                      "1847420a23": "Keine Snipcode-Dateiheader in der Zwischenablage gefunden.",
+                      "af5c90f593": "Einfügen & Wiederherstellen fehlgeschlagen",
+                      "ae1ec38ef1": "{{value0}} erstellt, {{value1}} überschrieben, {{value2}} gelöscht, {{value3}} übersprungen.",
+                      "19a6f378aa": "...und {{value0}} weitere",
+                      "c9af35dc2d": "{{value0}} fehlgeschlagen."
+                    }
+                  }
+                }
+              },
+              "listing": {
+                "entry": {
+                  "context": {
+                    "menu": {
+                      "9137d88b9f": "Vollständigen Quellcode kopieren",
+                      "ce8235a6a4": "An der Seite öffnen",
+                      "showFileHistory": "Dateiverlauf anzeigen"
+                    }
+                  }
+                },
+                "uncommitted": {
+                  "sections": {
+                    "1a59d5a05b": "Vollständigen Quellcode kopieren"
+                  }
                 }
               }
             }
@@ -13756,7 +13890,12 @@
             "7b1c4e9a02": "Commit im Browser öffnen",
             "8c2d5fab13": "Commit-Hash kopieren",
             "9d3e60bc24": "Commit-Nachricht kopieren",
-            "ae4f71cd35": "Änderungen erklären"
+            "ae4f71cd35": "Änderungen erklären",
+            "copyFullSource": "Vollständigen Quellcode kopieren",
+            "copyFullSourceMany": "Vollständigen Quellcode kopieren ({{value0}} Commits)",
+            "copyHashMany": "Commit-Hashes kopieren ({{value0}} Commits)",
+            "copyMessageMany": "Commit-Nachrichten kopieren ({{value0}} Commits)",
+            "showInGraph": "Im Git Graph anzeigen"
           },
           "pull": {
             "policy": {
@@ -13935,6 +14074,89 @@
                 }
               }
             }
+          },
+          "GitHistoryGraph": {
+            "allBranches": "Alle Branches",
+            "branchCount": "{{value0}} Branches",
+            "currentBranch": "Aktueller Branch",
+            "branchFilter": "Branch-Filter",
+            "searchBranches": "Branches suchen...",
+            "scope": "Anzeigen",
+            "sources": "Quellen",
+            "localBranches": "Lokale Branches",
+            "loadingBranches": "Branches werden geladen...",
+            "hostTooOld": "Der Host dieses Repositorys führt eine ältere Orca-Version aus, die nur den aktuellen Branch anzeigt.",
+            "branchesFailed": "Branches konnten nicht geladen werden",
+            "searchCommits": "Commits suchen (author: path:)",
+            "searchCommitsLabel": "Commits suchen",
+            "loadMore": "Weitere Commits laden",
+            "noMatchingCommits": "Keine Commits entsprechen diesem Filter",
+            "clearAllFilters": "Filter leeren",
+            "local": "Lokal",
+            "showAllBranches": "Alle Branches anzeigen",
+            "userFilter": "Benutzer",
+            "pathsFilter": "Pfade",
+            "clearUserFilter": "Benutzerfilter leeren",
+            "searchUsers": "Benutzer suchen...",
+            "noUsers": "Keine Benutzer in den geladenen Commits.",
+            "clearPathFilter": "Pfadfilter leeren",
+            "typePath": "Datei- oder Ordnerpfad relativ zum Repository",
+            "typePathHint": "Pfad eingeben und Enter drücken.",
+            "filterByPath": "Nach {{value0}} filtern",
+            "recentPaths": "Zuletzt verwendet",
+            "clearFilters": "Leeren",
+            "searchCommitMessages": "Commit-Nachrichten durchsuchen",
+            "tags": "Tags"
+          },
+          "GitGraphFullView": {
+            "open": "Git Graph öffnen",
+            "description": "Commit-Graph des aktuellen Repositorys.",
+            "message": "Nachricht",
+            "author": "Autor",
+            "date": "Datum",
+            "commit": "Commit",
+            "selectCommit": "Einen Commit auswählen, um Details und geänderte Dateien zu sehen.",
+            "resizeDetails": "Größe der Commit-Details ändern",
+            "copyFullSource": "Vollständigen Quellcode aller geänderten Dateien kopieren",
+            "filesInCommits": "Geänderte Dateien ({{files}}) · {{commits}} Commits",
+            "filesChanged": "Geänderte Dateien ({{files}})",
+            "toggleBranches": "Branches ein-/ausblenden",
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "Setzt sich {{count}} Zeilen weiter unten bei {{sha}} {{subject}} fort. Zum Springen klicken.",
+            "laneComesFromAbove": "Kommt von {{sha}} {{subject}}, {{count}} Zeilen weiter oben. Zum Springen klicken.",
+            "laneContinuesPastLoaded": "Setzt sich über die geladenen Commits hinaus fort. Weitere Commits laden, um ihm zu folgen.",
+            "openAllChanges": "Alle Änderungen öffnen",
+            "hideDetails": "Details ausblenden",
+            "enterKey": "Enter",
+            "showDetails": "Details anzeigen",
+            "detailsStrip": "Details",
+            "listOptions": "Listenoptionen",
+            "columns": "Spalten",
+            "twoLineRows": "Zweizeilige Einträge",
+            "resetList": "Auf Standard zurücksetzen",
+            "columnTooNarrow": "Liste zu schmal",
+            "laneContinuesPastLoadedJump": "Setzt sich über die geladenen Commits hinaus bei {{sha}} fort. Zum Laden und Springen klicken.",
+            "loadingMore": "Weitere Commits werden geladen...",
+            "loadCapReached": "Die ersten {{count}} Commits werden angezeigt – mehr lädt der Graph nicht. Über Branch, Benutzer oder Pfade eingrenzen."
+          },
+          "GitGraphBranchSidebar": {
+            "local": "Lokal",
+            "tags": "Tags",
+            "label": "Branches und Tags",
+            "empty": "Noch keine Branches geladen.",
+            "showRef": "Nicht in der aktuellen Liste – klicken, um nur diesen Branch anzuzeigen"
+          },
+          "GitGraphCommitInfo": {
+            "author": "Autor",
+            "date": "Datum",
+            "copySha": "Commit-SHA kopieren",
+            "parents": "Eltern-Commits",
+            "refs": "Refs",
+            "containedIn": "In Branches",
+            "moreBranches": "+{{count}} weitere",
+            "containedInHint": "Branches, deren Spitzen in der geladenen Liste liegen; Branches außerhalb werden nicht mitgezählt.",
+            "children": "Kind-Commits",
+            "childrenHint": "Commits in der geladenen Liste, deren Eltern-Commit dieser Commit ist."
           }
         }
       },
@@ -15765,6 +15987,11 @@
         },
         "useMarkdownDocuments": {
           "listFailed": "Markdown-Dokumente konnten nicht aufgelistet werden."
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} Dateien",
+          "pressAgainNext": "Erneut drücken, um zur nächsten Datei zu wechseln",
+          "pressAgainPrevious": "Erneut drücken, um zur vorherigen Datei zu wechseln"
         }
       },
       "diff": {
@@ -16056,7 +16283,10 @@
                 "chatPaneRight": "Chat-Bereich rechts",
                 "splitChatDown": "Chat nach unten teilen",
                 "newChatBelow": "Neuen Chat darunter öffnen",
-                "chatPaneBelow": "Chat-Bereich darunter"
+                "chatPaneBelow": "Chat-Bereich darunter",
+                "openGitGraph": "git graph öffnen",
+                "gitLog": "git log",
+                "commitHistory": "Commit-Verlauf"
               },
               "splitChatRight": "Chat nach rechts teilen",
               "splitChatRightDescription": "Einen neuen Chat in einem geteilten Bereich auf der rechten Seite öffnen.",
@@ -17573,6 +17803,18 @@
         "cancelled": "Dieses einfache SSH-Terminal wurde vor dem Start geschlossen.",
         "terminalUnavailable": "Orca konnte hier kein Terminal öffnen.",
         "openHint": "Ermöglicht die weitere Arbeit auf dem Host, während Orca dort nicht eingerichtet werden kann."
+      },
+      "gitGraphTab": {
+        "noRepo": "Für diesen Arbeitsbereich ist kein Git-Repository verfügbar.",
+        "repoSwitcher": "Repository",
+        "selectRepo": "Repository auswählen",
+        "searchRepos": "Repositorys suchen...",
+        "noRepos": "Keine Repositorys gefunden.",
+        "addRepos": "Repositorys hinzufügen...",
+        "addReposMissing": "{{value0}} nicht hinzugefügt",
+        "addReposButton": "Repositorys in diesem Ordner hinzufügen",
+        "openInSourceControl": "In Quellcodeverwaltung öffnen",
+        "revealNotLoaded": "Dieser Commit befindet sich nicht im geladenen Verlauf."
       }
     },
     "i18n": {
@@ -20660,6 +20902,7 @@
       "chatFind": "Im Chat suchen",
       "terminalToggleNativeChat": "Zwischen Chat-Oberfläche und Terminal wechseln",
       "sidebarChildWorkspacesToggle": "Untergeordnete Arbeitsbereiche ein-/ausblenden",
+      "sourceControlOpenGitGraph": "Git Graph öffnen",
       "terminalClearPaneTitle": "Bereichstitel leeren",
       "terminalClosePane": "Aktiven Bereich schließen",
       "terminalSplitRight": "Terminal nach rechts teilen",
