@@ -26220,7 +26220,8 @@
       "e9da9f872a": "Send review notes to agent",
       "1524825c2c": "Toggle workspace board",
       "d286d1ab85": "Clear pane title",
-      "botItemBack": "Back to items"
+      "botItemBack": "Back to items",
+      "sourceControlOpenGitGraph": "Open Git Graph"
     },
     "group": {
       "global": "Global",
