@@ -90,10 +90,11 @@ function openFolderRelativeTab(overrides: Partial<OpenFile> = {}): OpenFile {
 describe('git consumers of a folder tab whose relativePath is folder-relative', () => {
   beforeEach(seed)
 
-  it('reads the file through the repo selector with the repo-relative path', async () => {
+  async function loadFile(
+    ...args: Parameters<ReturnType<typeof useEditorPanelFileContentLoader>>
+  ): Promise<void> {
     mocks.readRuntimeFileContent.mockReset()
     mocks.readRuntimeFileContent.mockResolvedValue({ content: 'x', isBinary: false })
-    const file = openFolderRelativeTab()
     let load: ReturnType<typeof useEditorPanelFileContentLoader> | null = null
     let fileContents: Record<string, FileContent> = {}
     const container = document.createElement('div')
@@ -116,8 +117,21 @@ describe('git consumers of a folder tab whose relativePath is folder-relative', 
       return null
     }
     act(() => root.render(<Harness />))
-    await act(async () => load!(FILE_PATH, file.id, FOLDER, file.relativePath))
+    await act(async () => load!(...args))
     act(() => root.unmount())
+  }
+
+  it('reads the file through the repo selector with the repo-relative path', async () => {
+    const file = openFolderRelativeTab()
+    await loadFile(FILE_PATH, file.id, FOLDER, file.relativePath)
+
+    expect(mocks.readRuntimeFileContent).toHaveBeenCalledWith(
+      expect.objectContaining({ worktreeId: REPO, relativePath: REPO_RELATIVE })
+    )
+  })
+
+  it('reads through the requested git owner when no open tab carries one', async () => {
+    await loadFile(FILE_PATH, 'not-open', FOLDER, REPO_RELATIVE, { gitWorktreeId: REPO })
 
     expect(mocks.readRuntimeFileContent).toHaveBeenCalledWith(
       expect.objectContaining({ worktreeId: REPO, relativePath: REPO_RELATIVE })
