@@ -24718,7 +24718,8 @@
       "1524825c2c": "切换工作区看板",
       "d286d1ab85": "清除窗格标题",
       "tabNewBrowserSplitRight": "在右侧拆分窗格中新建浏览器标签页",
-      "5468defe61": "折叠/展开所有项目"
+      "5468defe61": "折叠/展开所有项目",
+      "sourceControlOpenGitGraph": "打开 Git Graph"
     },
     "group": {
       "global": "全局",
