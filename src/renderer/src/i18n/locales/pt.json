@@ -22816,7 +22816,8 @@
       "terminalSplitDown": "Dividir terminal para baixo",
       "terminalSwitchInputSource": "Alternar fonte de entrada / idioma (nativo)",
       "newAgentTab": "Nova aba do {{agent}}",
-      "viewPlugins": "Abrir plugins"
+      "viewPlugins": "Abrir plugins",
+      "sourceControlOpenGitGraph": "Abrir Git Graph"
     },
     "group": {
       "global": "Global",
