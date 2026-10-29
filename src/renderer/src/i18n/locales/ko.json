@@ -22563,7 +22563,8 @@
       "128cce6e6d": "제목 설정…",
       "e9da9f872a": "리뷰 노트를 에이전트에 보내기",
       "1524825c2c": "워크스페이스 보드 전환",
-      "d286d1ab85": "창 제목 지우기"
+      "d286d1ab85": "창 제목 지우기",
+      "sourceControlOpenGitGraph": "Git Graph 열기"
     },
     "group": {
       "global": "글로벌",

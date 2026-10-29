@@ -23197,7 +23197,8 @@
       "128cce6e6d": "Definir Título…",
       "e9da9f872a": "Enviar Notas de Revisão ao Agente",
       "1524825c2c": "Alternar Quadro do Espaço de Trabalho",
-      "d286d1ab85": "Limpar Título do Painel"
+      "d286d1ab85": "Limpar Título do Painel",
+      "sourceControlOpenGitGraph": "Abrir Git Graph"
     },
     "group": {
       "global": "Global",

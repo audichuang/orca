@@ -23242,7 +23242,8 @@
       "128cce6e6d": "Establecer título…",
       "e9da9f872a": "Enviar notas de revisión al agente",
       "1524825c2c": "Alternar tablero de espacios de trabajo",
-      "d286d1ab85": "Borrar título del panel"
+      "d286d1ab85": "Borrar título del panel",
+      "sourceControlOpenGitGraph": "Abrir Git Graph"
     },
     "group": {
       "global": "Global",
