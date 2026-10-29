@@ -2,18 +2,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
 
-const mocks = vi.hoisted(() => ({
-  launchAgentInNewTab: vi.fn(),
-  toastError: vi.fn(),
-  // As the route decides: a start directory below the folder root (/work) cannot open as a chat.
-  mayOpenAsChat: vi.fn((_workspace: unknown, cwd?: string | null) => !cwd || cwd === '/work')
-}))
+const mocks = vi.hoisted(() => {
+  const detected: string[] = []
+  return {
+    launchAgentInNewTab: vi.fn(),
+    toastError: vi.fn(),
+    // As the route decides: a start directory below the folder root (/work) cannot open as a chat.
+    mayOpenAsChat: vi.fn((_workspace: unknown, cwd?: string | null) => !cwd || cwd === '/work'),
+    detected
+  }
+})
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError, success: vi.fn() } }))
 vi.mock('@/lib/launch-agent-in-new-tab', () => ({ launchAgentInNewTab: mocks.launchAgentInNewTab }))
 vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => null }))
-// The host offers codex as a chat although its CLI was not detected.
+// By default the host offers codex as a chat although its CLI was not detected.
 vi.mock('@/lib/host-chat-program-acquisition', () => ({
-  acquireAgentLaunchChoices: async () => ({ detected: [], offered: ['codex'] })
+  acquireAgentLaunchChoices: async () => ({ detected: mocks.detected, offered: ['codex'] })
 }))
 vi.mock('@/lib/host-chat-program', () => ({
   agentChoiceMayOpenAsChat: (
@@ -50,6 +54,7 @@ function launch(editorWorktreeId: string | undefined): Promise<boolean> {
 describe('source control recovery launch from a folder workspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.detected = []
     mocks.launchAgentInNewTab.mockReturnValue({ surface: { kind: 'structured-chat' } })
   })
 
@@ -68,5 +73,13 @@ describe('source control recovery launch from a folder workspace', () => {
     )
     expect(mocks.toastError).toHaveBeenCalledWith(copy.savedAgentUnavailable)
     expect(mocks.launchAgentInNewTab).not.toHaveBeenCalled()
+  })
+
+  it('starts a detected agent in the folder workspace at the repo directory', async () => {
+    mocks.detected = ['codex']
+    await expect(launch(FOLDER)).resolves.toBe(true)
+    expect(mocks.launchAgentInNewTab).toHaveBeenCalledWith(
+      expect.objectContaining({ agent: 'codex', worktreeId: FOLDER, initialCwd: '/work/repo-1' })
+    )
   })
 })
