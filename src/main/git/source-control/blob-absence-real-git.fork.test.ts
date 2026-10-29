@@ -55,4 +55,11 @@ describe('real Git missing sides of a diff', () => {
     await git(['add', 'new.txt'])
     expect(await getDiff(repo, 'new.txt', true)).toMatchObject({ missingSides: ['original'] })
   })
+
+  it('marks the working-tree side missing for an unstaged deletion', async () => {
+    await writeFile(path.join(repo, 'file.txt'), 'kept\n')
+    gitCommit(repo, 'initial')
+    await rm(path.join(repo, 'file.txt'))
+    expect(await diff()).toMatchObject({ originalContent: 'kept\n', missingSides: ['modified'] })
+  })
 })
