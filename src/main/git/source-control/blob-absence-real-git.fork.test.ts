@@ -62,4 +62,13 @@ describe('real Git missing sides of a diff', () => {
     await rm(path.join(repo, 'file.txt'))
     expect(await diff()).toMatchObject({ originalContent: 'kept\n', missingSides: ['modified'] })
   })
+
+  it('marks the HEAD side missing for an unstaged file HEAD never had', async () => {
+    gitCommit(repo, 'empty')
+    await writeFile(path.join(repo, 'file.txt'), '')
+    expect(await getDiff(repo, 'file.txt', false, true)).toMatchObject({
+      modifiedContent: '',
+      missingSides: ['original']
+    })
+  })
 })
