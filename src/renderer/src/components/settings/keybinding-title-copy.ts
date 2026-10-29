@@ -145,6 +145,8 @@ const STATIC_TITLE_COPY = {
     translate('keybindings.title.terminalToggleNativeChat', 'Switch between Chat UI and terminal'),
   'sidebar.childWorkspaces.toggle': () =>
     translate('keybindings.title.sidebarChildWorkspacesToggle', 'Toggle Child Workspaces'),
+  'sourceControl.openGitGraph': () =>
+    translate('keybindings.title.sourceControlOpenGitGraph', 'Open Git Graph'),
   'terminal.clearPaneTitle': () =>
     translate('keybindings.title.terminalClearPaneTitle', 'Clear Pane Title'),
   'terminal.closePane': () => translate('keybindings.title.terminalClosePane', 'Close active pane'),

@@ -20940,6 +20940,7 @@
       "chatFind": "Find in chat",
       "terminalToggleNativeChat": "Switch between Chat UI and terminal",
       "sidebarChildWorkspacesToggle": "Toggle Child Workspaces",
+      "sourceControlOpenGitGraph": "Open Git Graph",
       "terminalClearPaneTitle": "Clear Pane Title",
       "terminalClosePane": "Close active pane",
       "terminalSplitRight": "Split terminal right",

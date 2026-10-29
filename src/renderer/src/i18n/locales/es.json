@@ -20665,6 +20665,7 @@
       "chatFind": "Buscar en el chat",
       "terminalToggleNativeChat": "Cambiar entre la interfaz de chat y el terminal",
       "sidebarChildWorkspacesToggle": "Alternar espacios de trabajo secundarios",
+      "sourceControlOpenGitGraph": "Abrir Git Graph",
       "terminalClearPaneTitle": "Borrar título del panel",
       "terminalClosePane": "Cerrar panel activo",
       "terminalSplitRight": "Dividir terminal a la derecha",
