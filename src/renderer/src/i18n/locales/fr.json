@@ -22592,7 +22592,8 @@
       "terminalSplitRight": "Scinder le terminal vers la droite",
       "terminalSplitDown": "Scinder le terminal vers le bas",
       "terminalSwitchInputSource": "Changer de source de saisie / langue (natif)",
-      "newAgentTab": "Nouvel onglet {{agent}}"
+      "newAgentTab": "Nouvel onglet {{agent}}",
+      "sourceControlOpenGitGraph": "Ouvrir Git Graph"
     },
     "group": {
       "global": "Global",

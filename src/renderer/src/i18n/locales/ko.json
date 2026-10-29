@@ -21915,7 +21915,8 @@
       "terminalSplitRight": "터미널 오른쪽으로 분할",
       "terminalSplitDown": "터미널 아래로 분할",
       "terminalSwitchInputSource": "입력 소스/언어 전환(네이티브)",
-      "newAgentTab": "새 {{agent}} 탭"
+      "newAgentTab": "새 {{agent}} 탭",
+      "sourceControlOpenGitGraph": "Git Graph 열기"
     },
     "group": {
       "global": "글로벌",

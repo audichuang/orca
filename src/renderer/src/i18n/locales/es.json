@@ -22592,7 +22592,8 @@
       "terminalSplitRight": "Dividir terminal a la derecha",
       "terminalSplitDown": "Dividir terminal hacia abajo",
       "terminalSwitchInputSource": "Cambiar fuente de entrada / idioma (nativo)",
-      "newAgentTab": "Nueva pestaña de {{agent}}"
+      "newAgentTab": "Nueva pestaña de {{agent}}",
+      "sourceControlOpenGitGraph": "Abrir Git Graph"
     },
     "group": {
       "global": "Global",

@@ -21969,7 +21969,8 @@
       "terminalSplitRight": "向右拆分终端",
       "terminalSplitDown": "向下拆分终端",
       "terminalSwitchInputSource": "切换输入法/语言（原生）",
-      "newAgentTab": "新建 {{agent}} 标签页"
+      "newAgentTab": "新建 {{agent}} 标签页",
+      "sourceControlOpenGitGraph": "打开 Git Graph"
     },
     "group": {
       "global": "全局",

@@ -22640,7 +22640,8 @@
       "terminalSwitchInputSource": "Switch input source / language (native)",
       "newAgentTab": "New {{agent}} tab",
       "tabNewBrowserSplitRight": "New browser tab in right split",
-      "viewPlugins": "Open Plugins"
+      "viewPlugins": "Open Plugins",
+      "sourceControlOpenGitGraph": "Open Git Graph"
     },
     "group": {
       "global": "Global",
