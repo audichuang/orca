@@ -24567,7 +24567,8 @@
       "128cce6e6d": "Set title…",
       "e9da9f872a": "Send review notes to agent",
       "1524825c2c": "Toggle workspace board",
-      "d286d1ab85": "Clear pane title"
+      "d286d1ab85": "Clear pane title",
+      "sourceControlOpenGitGraph": "Open Git Graph"
     },
     "group": {
       "global": "Global",
