@@ -22651,7 +22651,8 @@
       "128cce6e6d": "设置标题…",
       "e9da9f872a": "将评审笔记发送给智能体",
       "1524825c2c": "切换工作区看板",
-      "d286d1ab85": "清除窗格标题"
+      "d286d1ab85": "清除窗格标题",
+      "sourceControlOpenGitGraph": "打开 Git Graph"
     },
     "group": {
       "global": "全局",

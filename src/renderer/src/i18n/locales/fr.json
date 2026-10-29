@@ -23278,7 +23278,8 @@
       "128cce6e6d": "Définir le titre…",
       "e9da9f872a": "Envoyer les notes de revue à l'agent",
       "1524825c2c": "Afficher/masquer le tableau des espaces de travail",
-      "d286d1ab85": "Effacer le titre du volet"
+      "d286d1ab85": "Effacer le titre du volet",
+      "sourceControlOpenGitGraph": "Ouvrir Git Graph"
     },
     "group": {
       "global": "Global",
