@@ -22162,7 +22162,8 @@
       "terminalSplitDown": "터미널 아래로 분할",
       "terminalSwitchInputSource": "입력 소스/언어 전환(네이티브)",
       "newAgentTab": "새 {{agent}} 탭",
-      "viewPlugins": "플러그인 열기"
+      "viewPlugins": "플러그인 열기",
+      "sourceControlOpenGitGraph": "Git Graph 열기"
     },
     "group": {
       "global": "글로벌",
