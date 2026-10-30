@@ -1,5 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
-import type { CmdJQuickActionContext } from './quick-action-context'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { i18n, loadRendererUiLanguage } from '@/i18n/i18n'
+import { UI_LANGUAGE_SPANISH } from '../../../../shared/ui-language'
+import {
+  getUnavailableQuickActionMessage,
+  type CmdJQuickActionContext
+} from './quick-action-context'
 import { getCmdJQuickActions } from './quick-actions'
 
 function context(overrides: Partial<CmdJQuickActionContext> = {}): CmdJQuickActionContext {
@@ -50,4 +55,15 @@ describe('Open Git Graph palette action', () => {
       reason: 'ssh-disconnected'
     })
   })
+
+  it('explains a missing git repo in the UI language', async () => {
+    await i18n.changeLanguage(await loadRendererUiLanguage(UI_LANGUAGE_SPANISH))
+    expect(getUnavailableQuickActionMessage('Abrir Git Graph', 'no-git-repo')).toBe(
+      'No se puede ejecutar «Abrir Git Graph» — no hay ningún repositorio Git disponible.'
+    )
+  })
+})
+
+afterEach(async () => {
+  await i18n.changeLanguage('en')
 })
