@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
-// Fork seam guard: both the wide and the narrow (<=600px) toast offsets clear registered bottom chrome.
+// Fork seam guard: both the wide and the narrow (<=600px) toast offsets clear registered bottom chrome,
+// and the fork's max() keeps upstream's lift above the notification card stack.
 import { act } from 'react'
 import { cleanup, render } from '@testing-library/react'
 import { toast } from 'sonner'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { NOTIFICATION_CARD_STACK_HEIGHT_VAR } from '@/lib/notification-card-stack-height'
 import { TOAST_BOTTOM_CLEARANCE_VAR } from '@/lib/toast-bottom-clearance'
 import { Toaster } from './sonner'
 
@@ -31,5 +33,8 @@ describe('Toaster bottom offsets', () => {
     const clearance = `var(${TOAST_BOTTOM_CLEARANCE_VAR}, 0px)`
     expect(toaster?.style.getPropertyValue('--offset-bottom')).toContain(clearance)
     expect(toaster?.style.getPropertyValue('--mobile-offset-bottom')).toContain(clearance)
+    const cardStack = `var(${NOTIFICATION_CARD_STACK_HEIGHT_VAR}, 0px)`
+    expect(toaster?.style.getPropertyValue('--offset-bottom')).toContain(cardStack)
+    expect(toaster?.style.getPropertyValue('--mobile-offset-bottom')).toContain(cardStack)
   })
 })
