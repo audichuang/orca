@@ -60,6 +60,11 @@ export const ORCAD_MIGRATION_PATH_FIELDS: readonly {
   { at: 'dormantState.workspaceSession.openFilesByWorktree{}[].filePath', kind: 'absolute' },
   { at: 'dormantState.workspaceSession.openFilesByWorktree{}[].relativePath', kind: 'relative' },
   { at: 'dormantState.workspaceSession.openFilesByWorktree{}[].worktreeId', kind: 'worktree-id' },
+  // Fork: a folder tab's git owner (workspace-session-editor-schema.ts) moves with its repo.
+  {
+    at: 'dormantState.workspaceSession.openFilesByWorktree{}[].gitWorktreeId',
+    kind: 'worktree-id'
+  },
   { at: 'dormantState.workspaceSession.activeFileIdByWorktree{key}', kind: 'owner-key' },
   { at: 'dormantState.workspaceSession.activeFileIdByWorktree{}', kind: 'editor-file-id' },
   { at: 'dormantState.workspaceSession.markdownFrontmatterVisible{key}', kind: 'editor-file-id' },
