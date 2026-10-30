@@ -140,4 +140,19 @@ describe('useSourceControlHostedReviewCreation in a folder repo section', () => 
       worktreeId: FOLDER
     })
   })
+
+  it('never switches to the Checks tab, which folder workspaces hide', async () => {
+    useAppStore.setState({ activeWorktreeId: REPO_WORKTREE })
+    const input = makeInput({ ok: true, number: 7, url: 'https://github.com/o/r/pull/7' })
+    const { result } = renderHook(() => useSourceControlHostedReviewCreation(input), {
+      wrapper: folderScope
+    })
+
+    await act(async () => result.current.handleCreatePullRequest())
+
+    expect(input.handlePullRequestCreated).toHaveBeenCalledWith(
+      expect.objectContaining({ number: 7 }),
+      expect.objectContaining({ openChecks: false })
+    )
+  })
 })
