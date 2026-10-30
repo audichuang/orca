@@ -9,6 +9,8 @@ import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
 import type { SourceControlSectionViewAction } from '../../../../../../shared/source-control-section-order'
 import { SourceControlWorktreeScopeContext } from '../folder/worktree-scope'
 import type { SourceControlPanelReadyProps } from './panel-props'
+import type { GitHistoryPanelState } from '../sync/git-history-panel'
+import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 
 type Callbacks = {
   onReviewConflicts?: () => void
@@ -39,9 +41,24 @@ vi.mock('../listing/branch-section', () => ({
   }
 }))
 vi.mock('./commit-surface', () => ({ SourceControlCommitSurface: () => null }))
+const history = vi.hoisted((): { props: Record<string, unknown> | null } => ({ props: null }))
+vi.mock('../sync/git-history-panel', () => ({
+  GitHistoryPanel: (props: Record<string, unknown>) => {
+    history.props = props
+    return null
+  }
+}))
+// Why: happy-dom has no ResizeObserver and measures every element at 0, so observe the ref itself.
+vi.mock('@/lib/toast-bottom-clearance', () => ({ toastBottomClearanceRef: vi.fn() }))
 vi.mock('./fork-push-notice', () => ({ SourceControlForkPushNotice: () => null }))
 
 const { SourceControlPanelContent } = await import('./panel-content')
+const { toastBottomClearanceRef } = await import('@/lib/toast-bottom-clearance')
+const { GitGraphTabLauncher } = await import('../sync/git-graph-tab-launcher')
+const { GitHistoryGraphToolbar } = await import('../sync/git-history-graph-toolbar')
+const { GitHistoryGraphLoadMore } = await import('../sync/git-history-graph-host-status')
+const { GitHistoryGraphEmptyMessage } = await import('../sync/git-history-graph-empty-message')
+const { GitHistoryCommitFilesMenu } = await import('../sync/git-history-commit-files-menu')
 
 const FOLDER = 'folder:f1'
 const REPO = 'repo-1::/work/repo-1'
@@ -58,7 +75,7 @@ const SUMMARY: GitBranchCompareSummary = {
   status: 'ready'
 }
 
-function renderPanel(): void {
+function renderPanel({ showHistory = false } = {}): void {
   const state = useAppStore.getState()
   const model = {
     openAllDiffs: state.openAllDiffs,
@@ -72,7 +89,10 @@ function renderPanel(): void {
     filteredBranchEntries: [{ path: 'b.ts', status: 'modified' }],
     fileFilterState: { tooLarge: false },
     collapsedSections: new Set<string>(),
-    isGitHistoryVisible: false,
+    isGitHistoryVisible: showHistory,
+    gitHistoryState: HISTORY_STATE,
+    activeRepoTarget: REPO_TARGET,
+    loadCommitFiles,
     hasUncommittedEntries: true
   }
   const props = {
@@ -89,6 +109,11 @@ function renderPanel(): void {
     </SourceControlWorktreeScopeContext.Provider>
   )
 }
+
+const HISTORY_STATE: GitHistoryPanelState = { status: 'idle' }
+// Why remote: a slot that fell back to a local target would misroute this repo's git reads.
+const REPO_TARGET: RuntimeClientTarget = { kind: 'environment', environmentId: 'env-1' }
+const loadCommitFiles = vi.fn(async () => [])
 
 const SITES: [string, () => void, string][] = [
   [
@@ -125,5 +150,64 @@ describe('a folder repo section opens its combined views in the folder (fork)', 
     expect(useAppStore.getState().openFiles).toEqual([
       expect.objectContaining({ mode, worktreeId: FOLDER, gitWorktreeId: REPO })
     ])
+  })
+})
+
+describe("the Commits dock carries the fork's slots (fork)", () => {
+  it('keeps toasts above the dock', () => {
+    renderPanel({ showHistory: true })
+    expect(toastBottomClearanceRef).toHaveBeenCalledWith(
+      document.querySelector('[data-git-history-dock]')
+    )
+  })
+
+  it('plugs the Git Graph launcher, filters, load more and no-match message into the repo it shows', () => {
+    renderPanel({ showHistory: true })
+    expect(history.props).toMatchObject({
+      headerActions: {
+        type: GitGraphTabLauncher,
+        props: { workspaceId: FOLDER, repoWorktreeId: REPO }
+      },
+      toolbar: {
+        type: GitHistoryGraphToolbar,
+        props: {
+          worktreeId: REPO,
+          worktreePath: '/work/repo-1',
+          activeRepoTarget: REPO_TARGET,
+          state: HISTORY_STATE
+        }
+      },
+      footer: { type: GitHistoryGraphLoadMore, props: { worktreeId: REPO, state: HISTORY_STATE } },
+      emptyMessage: { type: GitHistoryGraphEmptyMessage, props: { worktreeId: REPO } }
+    })
+  })
+
+  it("builds a commit's file menu over this repo's files", () => {
+    renderPanel({ showHistory: true })
+    const renderMenu = history.props?.renderCommitFilesMenu
+    if (typeof renderMenu !== 'function') {
+      throw new Error('no renderCommitFilesMenu slot')
+    }
+    const item = { id: 'c1' }
+    expect(renderMenu([item], [], vi.fn(), vi.fn())).toMatchObject({
+      type: GitHistoryCommitFilesMenu,
+      key: `${REPO}:c1`,
+      props: { worktreeId: REPO, worktreePath: '/work/repo-1', items: [item], loadCommitFiles }
+    })
+  })
+
+  it("opens a commit's Show in Git Graph in the folder, on this repo", () => {
+    const openGitGraphTab = vi.fn()
+    useAppStore.setState({ openGitGraphTab })
+    renderPanel({ showHistory: true })
+    const show = history.props?.onShowCommitInGraph
+    if (typeof show !== 'function') {
+      throw new Error('no onShowCommitInGraph slot')
+    }
+    show({ id: 'c1' })
+    expect(openGitGraphTab).toHaveBeenCalledWith(FOLDER, {
+      repoWorktreeId: REPO,
+      revealCommit: 'c1'
+    })
   })
 })
