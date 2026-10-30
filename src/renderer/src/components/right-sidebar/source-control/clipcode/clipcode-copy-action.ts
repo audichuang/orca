@@ -23,10 +23,18 @@ import {
   type ClipcodeCopyRepo,
   type ClipcodeGitCopyResult
 } from './clipcode-git-copy'
-import { buildClipcodeCommitCopy, type ClipcodeCommitCopyCommit } from './clipcode-commit-copy'
+import {
+  buildClipcodeCommitCopy,
+  type ClipcodeCommitCopyCommit,
+  type ClipcodeCommitReaders
+} from './clipcode-commit-copy'
 import { notifyClipcodeCopied } from './clipcode-copied-toast'
 import { svgPreviewText } from './clipcode-svg-text'
-import { buildClipcodeExplorerCopy, type ClipcodeExplorerTarget } from './clipcode-explorer-copy'
+import {
+  buildClipcodeExplorerCopy,
+  type ClipcodeExplorerReaders,
+  type ClipcodeExplorerTarget
+} from './clipcode-explorer-copy'
 import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
 
 export type ClipcodeCopyRequest = {
@@ -56,6 +64,9 @@ export function getClipcodeRootPath(editorWorktreeId: string | null, worktreePat
   return folder?.folderPath ?? worktreePath
 }
 
+// Copy Full Source is the user's own act, so its reads may start a stopped WSL distro (E9).
+const USER_ACT = { wakeWslDistro: true } as const
+
 async function readClipcodeFile(
   context: RuntimeGitContext,
   relativePath: string
@@ -65,7 +76,8 @@ async function readClipcodeFile(
     filePath: joinPath(context.worktreePath, relativePath),
     relativePath,
     worktreeId: context.worktreeId ?? undefined,
-    connectionId: context.connectionId
+    connectionId: context.connectionId,
+    ...USER_ACT
   })
   const svgText = svgPreviewText(file)
   return svgText === null
@@ -74,8 +86,32 @@ async function readClipcodeFile(
 }
 
 export const clipcodeRuntimeReaders: ClipcodeContentReaders = {
-  readDiff: getRuntimeGitDiff,
+  readDiff: (context, args) => getRuntimeGitDiff(context, args, USER_ACT),
   readWorkingFile: readClipcodeFile
+}
+
+export const clipcodeCommitReaders: ClipcodeCommitReaders = {
+  readCommitDiff: (context, args) => getRuntimeGitCommitDiff(context, args, USER_ACT)
+}
+
+export function clipcodeExplorerReaders(
+  context: RuntimeGitContext,
+  followSymlinks: boolean
+): ClipcodeExplorerReaders {
+  return {
+    readDir: (absolutePath) =>
+      readRuntimeDirectory(context, absolutePath, {
+        ...(followSymlinks ? { followSymlinks: true } : {}),
+        ...USER_ACT
+      }),
+    readFile: async (absolutePath) => {
+      const relativePath = getRelativePathInsideRoot(absolutePath, context.worktreePath)
+      if (relativePath === null) {
+        throw new Error('File is outside the workspace')
+      }
+      return readClipcodeFile(context, relativePath)
+    }
+  }
 }
 
 /** Builds the Snipcode payload for the given repos, puts it on the clipboard and reports its size. */
@@ -225,7 +261,7 @@ export async function copyClipcodeCommitChanges(args: {
       rootPath: args.rootPath,
       context: args.context,
       commits: await args.loadCommits(),
-      readers: { readCommitDiff: getRuntimeGitCommitDiff }
+      readers: clipcodeCommitReaders
     })
     await reportClipcodeCopyResult(result)
   } catch (error) {
@@ -259,21 +295,7 @@ export async function copyClipcodeExplorerTargets(args: {
     const result = await buildClipcodeExplorerCopy({
       rootPath: worktreePath,
       targets: args.targets,
-      readers: {
-        readDir: (absolutePath) =>
-          readRuntimeDirectory(
-            context,
-            absolutePath,
-            followSymlinks ? { followSymlinks: true } : undefined
-          ),
-        readFile: async (absolutePath) => {
-          const relativePath = getRelativePathInsideRoot(absolutePath, worktreePath)
-          if (relativePath === null) {
-            throw new Error('File is outside the workspace')
-          }
-          return readClipcodeFile(context, relativePath)
-        }
-      }
+      readers: clipcodeExplorerReaders(context, followSymlinks)
     })
     await reportClipcodeCopyResult(result, 'files')
   } catch (error) {
