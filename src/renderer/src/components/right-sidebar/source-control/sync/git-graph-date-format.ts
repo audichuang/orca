@@ -1,5 +1,6 @@
 // Fork-only: how the full Git Graph writes commit dates (row column, details pane).
 import { formatUiRelativeTime, getUiRelativeTimeFormatter } from '@/i18n/relative-time-format'
+import { uiDateTimeFormat } from '@/i18n/ui-intl-formatters'
 
 /** "3 days ago" in the UI language; empty for a missing timestamp. */
 export function formatGitGraphRelativeDate(timestamp: number | undefined): string {
@@ -8,26 +9,26 @@ export function formatGitGraphRelativeDate(timestamp: number | undefined): strin
     : formatUiRelativeTime(timestamp - Date.now())
 }
 
-const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
+const SHORT_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   dateStyle: 'short',
   timeStyle: 'short'
-})
+}
 
 // Why zero-padded and 24-hour: every row of a kind has the same width, so the column reads as one ruler.
-const paddedDateFormatter = new Intl.DateTimeFormat(undefined, {
+const PADDED_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
   month: '2-digit',
   day: '2-digit'
-})
-const paddedMonthDayFormatter = new Intl.DateTimeFormat(undefined, {
+}
+const PADDED_MONTH_DAY_OPTIONS: Intl.DateTimeFormatOptions = {
   month: '2-digit',
   day: '2-digit'
-})
-const paddedTimeFormatter = new Intl.DateTimeFormat(undefined, {
+}
+const PADDED_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
   hour: '2-digit',
   minute: '2-digit',
   hourCycle: 'h23'
-})
+}
 
 function calendarDayOffset(date: Date, now: Date): number {
   const day = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
@@ -55,17 +56,17 @@ export function formatGitGraphCompactDate(
   const offset = calendarDayOffset(date, now)
   if (offset === 0 || offset === -1) {
     const word = capitalize(getUiRelativeTimeFormatter().format(offset, 'day'))
-    return `${word} ${paddedTimeFormatter.format(date)}`
+    return `${word} ${uiDateTimeFormat(PADDED_TIME_OPTIONS).format(date)}`
   }
   if (date.getFullYear() !== now.getFullYear()) {
-    return paddedDateFormatter.format(date)
+    return uiDateTimeFormat(PADDED_DATE_OPTIONS).format(date)
   }
-  return `${paddedMonthDayFormatter.format(date)} ${paddedTimeFormatter.format(date)}`
+  return `${uiDateTimeFormat(PADDED_MONTH_DAY_OPTIONS).format(date)} ${uiDateTimeFormat(PADDED_TIME_OPTIONS).format(date)}`
 }
 
 export function formatGitGraphShortDate(timestamp: number | undefined): string {
   if (timestamp == null || !Number.isFinite(timestamp)) {
     return ''
   }
-  return shortDateFormatter.format(new Date(timestamp))
+  return uiDateTimeFormat(SHORT_DATE_OPTIONS).format(new Date(timestamp))
 }
