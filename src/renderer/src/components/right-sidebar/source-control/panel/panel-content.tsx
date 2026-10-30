@@ -1,10 +1,5 @@
 import { GitHistoryPanel } from '../sync/git-history-panel'
-import { GitHistoryGraphToolbar } from '../sync/git-history-graph-toolbar'
-import { GitHistoryGraphLoadMore } from '../sync/git-history-graph-host-status'
-import { GitHistoryGraphEmptyMessage } from '../sync/git-history-graph-empty-message'
-import { GitGraphTabLauncher } from '../sync/git-graph-tab-launcher'
-import { showCommitInGitGraphSlot } from '../../../git-graph-tab/git-graph-source-control-link'
-import { commitFilesMenuSlot } from '../sync/git-history-commit-files-menu'
+import { sourceControlHistorySlots } from './source-control-history-slots'
 import { shouldShowSourceControlCompareUnavailableCard } from './header-toolbar'
 import { shouldRenderCommitArea } from '../commit/component-gates'
 import { SourceControlBranchSection } from '../listing/branch-section'
@@ -23,7 +18,6 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
   const { tabOwnerId, gitOwnerId } = useSourceControlOwners(currentWorktreeId)
   const {
     activeConnectionId,
-    activeRepoTarget,
     activeOpenRowKeys,
     branchEntries,
     branchSummary,
@@ -247,28 +241,12 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
             onLoadCommitFiles={loadCommitFiles}
             onOpenCommitFile={openCommitFile}
             onCommitAction={handleCommitAction}
-            renderCommitFilesMenu={commitFilesMenuSlot(
+            {...sourceControlHistorySlots({
               model,
-              currentWorktreeId,
-              worktreePath,
-              loadCommitFiles
-            )}
-            onShowCommitInGraph={showCommitInGitGraphSlot(tabOwnerId, currentWorktreeId)}
-            headerActions={
-              <GitGraphTabLauncher workspaceId={tabOwnerId} repoWorktreeId={currentWorktreeId} />
-            }
-            toolbar={
-              <GitHistoryGraphToolbar
-                worktreeId={currentWorktreeId}
-                worktreePath={worktreePath}
-                activeRepoTarget={activeRepoTarget}
-                state={gitHistoryState}
-              />
-            }
-            footer={
-              <GitHistoryGraphLoadMore worktreeId={currentWorktreeId} state={gitHistoryState} />
-            }
-            emptyMessage={<GitHistoryGraphEmptyMessage worktreeId={currentWorktreeId} />}
+              tabOwnerId,
+              repoWorktreeId: currentWorktreeId,
+              worktreePath
+            })}
           />
         </div>
       )}
