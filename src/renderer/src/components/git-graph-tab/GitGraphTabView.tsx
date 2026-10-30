@@ -133,7 +133,7 @@ function GitGraphTabBody({
       worktreePath={worktree.path}
       activeRepoTarget={target}
       state={gitHistoryState}
-      onRefresh={() => void refreshGitHistory()}
+      onRefresh={() => void refreshGitHistory({ wakeWslDistro: true })}
       onOpenCommit={(item) => void openHistoryCommitDiff(item)}
       onLoadCommitFiles={loadCommitFiles}
       onOpenCommitFile={openCommitFile}
