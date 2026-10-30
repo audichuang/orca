@@ -4,10 +4,6 @@ import { readEditorPanelFileContent } from './editor-panel-file-reads'
 import type { OpenFile } from '@/store/slices/editor'
 import { getConnectionIdForFile, isWorktreeConnectionResolved } from '@/lib/connection-context'
 import { useAppStore } from '@/store'
-import {
-  getOpenFileGitRelativePath,
-  getOpenFileGitWorktreeId
-} from '@/store/slices/editor/git/open-file-git-owner'
 import { getRuntimeFileReadScope } from '@/runtime/runtime-file-routing'
 import { readEditorCsvFileContent } from './csv/csv-file-content'
 import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
@@ -33,6 +29,7 @@ import { editorTabFileAccess, isClientLocalReadOnlyTab } from '@/lib/local-file-
 import { placeAbsoluteTab } from './absolute-tab-placement'
 import type { RuntimeFileReadArgs } from '@/runtime/runtime-file-client-types'
 import { stampCleanTabDiskBaseline } from './external-changes/editor-clean-tab-disk-baseline'
+import { fileMatchesReadOwner, fileReadGitOwner } from './editor-file-read-git-owner'
 import {
   applyEditorFileLoadFailure,
   getEditorFileLoadFailureContent
@@ -67,9 +64,7 @@ export function useEditorPanelFileContentLoader({
       let requestedFile: OpenFile | undefined
       let requiredLive = false
       const matchesRequest = (file: OpenFile): boolean =>
-        file.filePath === filePath &&
-        (worktreeId === undefined || file.worktreeId === worktreeId) &&
-        (relativePath === undefined || file.relativePath === relativePath)
+        file.filePath === filePath && fileMatchesReadOwner(file, worktreeId, relativePath)
       const requestCurrent = (): boolean => {
         if (fileReadGenerationRef.current[id] !== generation) {
           return false
@@ -115,11 +110,9 @@ export function useEditorPanelFileContentLoader({
         const readOwnerEnvironmentId =
           readTarget.kind === 'environment' ? readTarget.environmentId : undefined
         readConnectionId = connectionId
-        const readWorktreeId =
-          options?.gitWorktreeId ??
-          (restoredOpenFile ? getOpenFileGitWorktreeId(restoredOpenFile) : worktreeId)
         let readGrantId = restoredOpenFile?.terminalArtifactGrantId
         let readGrantPairing: number | undefined
+        const gitOwner = fileReadGitOwner(restoredOpenFile, worktreeId, relativePath, options)
         // Re-owning re-keys the tab, which starts a fresh load under the new owner.
         const reownRestoredFile = async (
           route: RuntimeWorkspaceFileRoute,
@@ -225,10 +218,8 @@ export function useEditorPanelFileContentLoader({
         const readArgs: RuntimeFileReadArgs = {
           target: readTarget,
           filePath,
-          relativePath: restoredOpenFile
-            ? getOpenFileGitRelativePath(useAppStore.getState(), restoredOpenFile)
-            : relativePath,
-          worktreeId: readWorktreeId,
+          relativePath: gitOwner.relativePath,
+          worktreeId: gitOwner.worktreeId,
           connectionId: readConnectionId,
           expectedExternalSshTargetId: restoredOpenFile?.externalSshTargetId,
           includeLocalLogMetadata: isLiveTailLogTab,
