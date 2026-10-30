@@ -18310,7 +18310,8 @@
           "workspaceDisconnected": "「{{action}}」を実行できません。ワークスペースが切断されています。",
           "noTabGroup": "「{{action}}」を実行できません。利用可能なタブグループがありません。",
           "noMovableChat": "「{{action}}」を実行できません。移動できるアクティブなチャットがありません。",
-          "clientUnsupported": "「{{action}}」を実行できません。このクライアントとランタイムは対応していません。"
+          "clientUnsupported": "「{{action}}」を実行できません。このクライアントとランタイムは対応していません。",
+          "noGitRepo": "「{{action}}」を実行できません。利用できる Git リポジトリがありません。"
         }
       },
       "gitGraphTab": {

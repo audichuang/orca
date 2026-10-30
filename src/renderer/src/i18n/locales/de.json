@@ -18675,7 +18675,8 @@
           "workspaceDisconnected": "„{{action}}“ kann nicht ausgeführt werden — der Arbeitsbereich ist nicht verbunden.",
           "noTabGroup": "„{{action}}“ kann nicht ausgeführt werden — keine Tab-Gruppe verfügbar.",
           "noMovableChat": "„{{action}}“ kann nicht ausgeführt werden — kein verschiebbarer Chat ist aktiv.",
-          "clientUnsupported": "„{{action}}“ kann nicht ausgeführt werden — dieser Client und diese Laufzeitumgebung unterstützen die Aktion nicht."
+          "clientUnsupported": "„{{action}}“ kann nicht ausgeführt werden — dieser Client und diese Laufzeitumgebung unterstützen die Aktion nicht.",
+          "noGitRepo": "„{{action}}“ kann nicht ausgeführt werden — kein Git-Repository ist verfügbar."
         }
       },
       "gitGraphTab": {

@@ -19771,7 +19771,8 @@
           "workspaceDisconnected": "Não é possível executar “{{action}}” — o espaço de trabalho está desconectado.",
           "noTabGroup": "Não é possível executar “{{action}}” — nenhum grupo de abas está disponível.",
           "noMovableChat": "Não é possível executar “{{action}}” — nenhum chat que possa ser movido está ativo.",
-          "clientUnsupported": "Não é possível executar “{{action}}” — este cliente e este runtime não oferecem suporte a essa ação."
+          "clientUnsupported": "Não é possível executar “{{action}}” — este cliente e este runtime não oferecem suporte a essa ação.",
+          "noGitRepo": "Não é possível executar “{{action}}” — nenhum repositório Git está disponível."
         }
       },
       "gitGraphTab": {
