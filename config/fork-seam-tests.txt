@@ -27,6 +27,10 @@ src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-commi
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-explorer-copy.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-git-copy.test.ts
 
+# WSL wake (E9) on fork user acts: Git Graph Refresh, ClipCode copy reads
+src/renderer/src/components/git-graph-tab/GitGraphTabView.component.test.tsx
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-copy-action.wsl-wake.test.ts
+
 # ClipCode clipboard and preview contracts
 src/main/ipc/filesystem/filesystem-svg-preview-clipcode-contract.test.ts
 src/renderer/src/components/right-sidebar/file-explorer-clipcode-copy.wiring.test.tsx
