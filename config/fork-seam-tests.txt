@@ -44,6 +44,7 @@ src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts
 src/shared/workspace-layout/layout-editor-view.fork.test.ts
 src/shared/workspace-layout/workspace-layout-fact-locations.test.ts
 src/shared/workspace-session-schema.git-owner.test.ts
+src/main/ssh/orcad-migration-path-rewrite.fork.test.ts
 
 # gitWorktreeId on editor open actions: panel, combined view, history, status reconcile
 src/renderer/src/components/editor/combined-diff/CombinedDiffViewer.fork.test.tsx
