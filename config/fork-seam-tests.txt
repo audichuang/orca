@@ -69,6 +69,7 @@ src/renderer/src/store/slices/tabs-hydration-git-graph.test.ts
 src/renderer/src/components/tab-group/TabGroupPanel.git-graph-button.test.tsx
 src/shared/fork-editor-kind-sites.guard.test.ts
 src/renderer/src/components/git-graph-tab/git-graph-tab-kind-seams.test.ts
+src/renderer/src/components/cmd-j/git-graph-quick-action.test.ts
 src/renderer/src/components/editor/EditorContent.fork.test.tsx
 src/renderer/src/components/tab-bar/EditorFileTab.fork.test.tsx
 src/renderer/src/components/tab-bar/RecentTabSwitcher.fork.test.tsx
