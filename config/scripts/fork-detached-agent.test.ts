@@ -32,10 +32,11 @@ function throughWrapper(hookScript: string, detached: boolean): string {
   return `#!/bin/sh\nexec ${prefix}/bin/sh "${join(dir, 'hook.sh')}"\n`
 }
 
-describe('fork-detached-agent', () => {
+// The wrapper is a POSIX shell script; the pipelines it serves run on macOS.
+describe.skipIf(process.platform === 'win32')('fork-detached-agent', () => {
   // Codex's hook reads the same pane identity; the shared fixture expects Claude's stdout.
   it('keeps a child agent from reporting as the pane it was launched from', async () => {
-    const hook = getClaudeManagedScript('local')
+    const hook = getClaudeManagedScript('posix')
     const inherited = await runVendorHook(throughWrapper(hook, false), paneIdentity)
     expect(inherited.requests).toHaveLength(1)
 
