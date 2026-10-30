@@ -9,6 +9,8 @@ import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
 import type { SourceControlSectionViewAction } from '../../../../../../shared/source-control-section-order'
 import { SourceControlWorktreeScopeContext } from '../folder/worktree-scope'
 import type { SourceControlPanelReadyProps } from './panel-props'
+import type { GitHistoryPanelState } from '../sync/git-history-panel'
+import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 
 type Callbacks = {
   onReviewConflicts?: () => void
@@ -56,6 +58,7 @@ const { GitGraphTabLauncher } = await import('../sync/git-graph-tab-launcher')
 const { GitHistoryGraphToolbar } = await import('../sync/git-history-graph-toolbar')
 const { GitHistoryGraphLoadMore } = await import('../sync/git-history-graph-host-status')
 const { GitHistoryGraphEmptyMessage } = await import('../sync/git-history-graph-empty-message')
+const { GitHistoryCommitFilesMenu } = await import('../sync/git-history-commit-files-menu')
 
 const FOLDER = 'folder:f1'
 const REPO = 'repo-1::/work/repo-1'
@@ -88,7 +91,8 @@ function renderPanel({ showHistory = false } = {}): void {
     collapsedSections: new Set<string>(),
     isGitHistoryVisible: showHistory,
     gitHistoryState: HISTORY_STATE,
-    activeRepoTarget: { kind: 'local' },
+    activeRepoTarget: REPO_TARGET,
+    loadCommitFiles,
     hasUncommittedEntries: true
   }
   const props = {
@@ -106,7 +110,10 @@ function renderPanel({ showHistory = false } = {}): void {
   )
 }
 
-const HISTORY_STATE = { items: [] }
+const HISTORY_STATE: GitHistoryPanelState = { status: 'idle' }
+// Why remote: a slot that fell back to a local target would misroute this repo's git reads.
+const REPO_TARGET: RuntimeClientTarget = { kind: 'environment', environmentId: 'env-1' }
+const loadCommitFiles = vi.fn(async () => [])
 
 const SITES: [string, () => void, string][] = [
   [
@@ -163,12 +170,30 @@ describe("the Commits dock carries the fork's slots (fork)", () => {
       },
       toolbar: {
         type: GitHistoryGraphToolbar,
-        props: { worktreeId: REPO, worktreePath: '/work/repo-1', state: HISTORY_STATE }
+        props: {
+          worktreeId: REPO,
+          worktreePath: '/work/repo-1',
+          activeRepoTarget: REPO_TARGET,
+          state: HISTORY_STATE
+        }
       },
       footer: { type: GitHistoryGraphLoadMore, props: { worktreeId: REPO, state: HISTORY_STATE } },
       emptyMessage: { type: GitHistoryGraphEmptyMessage, props: { worktreeId: REPO } }
     })
-    expect(history.props?.renderCommitFilesMenu).toBeTypeOf('function')
+  })
+
+  it("builds a commit's file menu over this repo's files", () => {
+    renderPanel({ showHistory: true })
+    const renderMenu = history.props?.renderCommitFilesMenu
+    if (typeof renderMenu !== 'function') {
+      throw new Error('no renderCommitFilesMenu slot')
+    }
+    const item = { id: 'c1' }
+    expect(renderMenu([item], [], vi.fn(), vi.fn())).toMatchObject({
+      type: GitHistoryCommitFilesMenu,
+      key: `${REPO}:c1`,
+      props: { worktreeId: REPO, worktreePath: '/work/repo-1', items: [item], loadCommitFiles }
+    })
   })
 
   it("opens a commit's Show in Git Graph in the folder, on this repo", () => {

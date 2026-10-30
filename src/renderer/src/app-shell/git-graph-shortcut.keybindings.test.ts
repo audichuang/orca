@@ -10,8 +10,13 @@ import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 
 vi.mock('@/store/plugin-panels', () => ({ usePluginCommands: () => [] }))
-vi.mock('@/lib/shortcut-platform', () => ({ getShortcutPlatform: () => 'win32' }))
-vi.mock('@/app-shell/app-window-chrome', () => ({ shortcutPlatform: 'win32' }))
+const platform = vi.hoisted((): { current: NodeJS.Platform } => ({ current: 'win32' }))
+vi.mock('@/lib/shortcut-platform', () => ({ getShortcutPlatform: () => platform.current }))
+vi.mock('@/app-shell/app-window-chrome', () => ({
+  get shortcutPlatform() {
+    return platform.current
+  }
+}))
 
 const REPO: Repo = {
   id: 'repo-api',
@@ -45,7 +50,6 @@ const WORKTREE: Worktree = {
 const openGitGraphTab = vi.fn(() => null)
 
 beforeEach(() => {
-  vi.stubGlobal('navigator', { userAgent: 'Windows NT 10.0' })
   useAppStore.setState({
     activeView: 'terminal',
     activeWorktreeId: WORKTREE.id,
@@ -62,24 +66,34 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-it('opens the Git Graph tab for the active workspace on its default chord', () => {
-  renderHook(() =>
-    useGlobalKeybindings({
-      layout: useAppChromeLayout(),
-      floatingWorkspace: useFloatingWorkspacePanel()
+// Mod+Shift+H is Cmd on macOS and Ctrl elsewhere.
+it.each([
+  ['darwin', 'Macintosh; Intel Mac OS X 14_0', { metaKey: true }],
+  ['win32', 'Windows NT 10.0', { ctrlKey: true }],
+  ['linux', 'X11; Linux x86_64', { ctrlKey: true }]
+] as const)(
+  'opens the Git Graph tab for the active workspace on its default chord (%s)',
+  (os, userAgent, modifier) => {
+    platform.current = os
+    vi.stubGlobal('navigator', { userAgent })
+    renderHook(() =>
+      useGlobalKeybindings({
+        layout: useAppChromeLayout(),
+        floatingWorkspace: useFloatingWorkspacePanel()
+      })
+    )
+    const event = new KeyboardEvent('keydown', {
+      key: 'h',
+      code: 'KeyH',
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+      ...modifier
     })
-  )
-  const event = new KeyboardEvent('keydown', {
-    key: 'h',
-    code: 'KeyH',
-    ctrlKey: true,
-    shiftKey: true,
-    bubbles: true,
-    cancelable: true
-  })
-  Object.defineProperty(event, 'getModifierState', { value: () => false })
-  document.body.dispatchEvent(event)
+    Object.defineProperty(event, 'getModifierState', { value: () => false })
+    document.body.dispatchEvent(event)
 
-  expect(openGitGraphTab).toHaveBeenCalledWith(WORKTREE.id)
-  expect(event.defaultPrevented).toBe(true)
-})
+    expect(openGitGraphTab).toHaveBeenCalledWith(WORKTREE.id)
+    expect(event.defaultPrevented).toBe(true)
+  }
+)
