@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { sourceControlActionRecipeEntry } from '../../../../../../shared/source-control-action-selection'
 
 const mocks = vi.hoisted(() => {
   const detected: string[] = []
@@ -45,7 +46,8 @@ function launch(editorWorktreeId: string | undefined): Promise<boolean> {
     activeSourceControlLaunchPlatform: 'darwin',
     actionId: 'fixCommitFailure',
     basePrompt: 'Fix the commit.',
-    getLaunchActionRecipe: () => ({ agentId: 'codex', commandInputTemplate: '{basePrompt}' }),
+    getLaunchActionRecipe: () =>
+      sourceControlActionRecipeEntry({ agentId: 'codex', commandInputTemplate: '{basePrompt}' }),
     getStoreState: () => useAppStore.getState(),
     copy
   })
