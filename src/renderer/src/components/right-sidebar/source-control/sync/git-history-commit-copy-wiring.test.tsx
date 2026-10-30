@@ -69,7 +69,8 @@ describe('Copy Full Source from the Commits context menu (fork wiring)', () => {
 
     expect(mocks.getRuntimeGitCommitDiff).toHaveBeenCalledWith(
       expect.objectContaining({ worktreePath: '/repo' }),
-      expect.objectContaining({ commitOid: a.id, parentOid: PARENT, filePath: 'a.txt' })
+      expect.objectContaining({ commitOid: a.id, parentOid: PARENT, filePath: 'a.txt' }),
+      { wakeWslDistro: true }
     )
     const payload = String(mocks.writeClipboardText.mock.calls[0]?.[0])
     expect(payload).toContain('content of a.txt')
