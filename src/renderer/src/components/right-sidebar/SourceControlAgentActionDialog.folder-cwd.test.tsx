@@ -9,6 +9,7 @@ import {
   STRUCTURED_AGENT_SESSION_REGISTERED_AGENTS_RUNTIME_CAPABILITY as CATALOG,
   STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY as CHAT
 } from '../../../../shared/protocol-version'
+import { canonicalSourceControlActionSelection } from '../../../../shared/source-control-action-selection'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
 
 const rpc = vi.hoisted(() => ({ call: vi.fn(), subscribe: vi.fn() }))
@@ -60,7 +61,10 @@ describe('saved Source Control action start in a folder workspace', () => {
     const onFallback = vi.fn()
     const { result } = renderHook(() => useSavedSourceControlActionStart())
     await result.current.start({
-      recipe: { agentId: 'antigravity', agentArgs: '--saved' },
+      selection: canonicalSourceControlActionSelection({
+        agentId: 'antigravity',
+        agentArgs: '--saved'
+      }),
       basePrompt: 'Resolve conflicts.',
       actionId: 'resolveConflicts',
       settings: useAppStore.getState().settings,
