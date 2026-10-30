@@ -26,7 +26,13 @@ vi.mock('./diff-editor-shift-wheel-scroll', () => ({
 }))
 vi.mock('@/i18n/i18n', () => ({ translate: (_key: string, fallback: string) => fallback }))
 
-type FakeModel = { uri: string; dispose: () => void; setValue: () => void }
+type FakeModel = {
+  uri: string
+  dispose: () => void
+  setValue: () => void
+  isDisposed: () => boolean
+  getLanguageId: () => string
+}
 
 // Mirrors the Monaco behavior behind the crash: a disposed editor throws when given a model.
 function createFakeMonaco() {
@@ -68,8 +74,14 @@ function createFakeMonaco() {
     editor: {
       EditorOption: { readOnly: 0 },
       getModel: (uri: string) => models.get(uri) ?? null,
-      createModel: (_value: string, _language: string, uri: string) => {
-        const model = { uri, dispose: () => models.delete(uri), setValue: () => {} }
+      createModel: (_value: string, language: string, uri: string) => {
+        const model = {
+          uri,
+          dispose: () => models.delete(uri),
+          setValue: () => {},
+          isDisposed: () => !models.has(uri),
+          getLanguageId: () => language
+        }
         models.set(uri, model)
         return model
       },
