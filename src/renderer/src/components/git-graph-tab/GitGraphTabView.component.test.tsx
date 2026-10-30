@@ -244,6 +244,21 @@ describe('Git Graph tab', () => {
     await waitFor(() => expect(pageReads()).toHaveLength(3))
   })
 
+  it('lets only its Refresh button start a stopped WSL distro, like the sidebar Commits Refresh', async () => {
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    render(
+      <TooltipProvider>
+        <Host fileId={id} />
+      </TooltipProvider>
+    )
+    await waitFor(() => expect(pageReads()).toHaveLength(1))
+    expect(pageReads()[0][0]).not.toHaveProperty('wakeWslDistro')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh commits' }))
+    await waitFor(() => expect(pageReads()).toHaveLength(2))
+    expect(pageReads()[1][0]).toMatchObject({ wakeWslDistro: true })
+  })
+
   it('asks for a repository when the chosen one is gone but others remain', async () => {
     const id = useAppStore.getState().openGitGraphTab('wt-api', { repoWorktreeId: 'wt-web' })!
     useAppStore.setState((s) => ({ worktreesByRepo: { ...s.worktreesByRepo, 'repo-web': [] } }))
