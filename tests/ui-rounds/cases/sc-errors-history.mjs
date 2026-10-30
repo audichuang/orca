@@ -401,7 +401,7 @@ defineCase('SC-16', {
     await sleep(1000)
     const d2 = await scDlg()
     need(d2, 'Abort merge 沒有確認對話框')
-    await scConfirm(/^按鈕 Abort( merge)?$/, 3000)
+    await scConfirm(/^按鈕 Abort merge$/, 3000)
     check(
       await waitFor(() => scPorcelain('$P/docs-site').trim() === ''),
       `docs-site status 應為空:${scPorcelain('$P/docs-site')}`
