@@ -21,6 +21,7 @@ src/renderer/src/web/preload-api/web-git-history-graph.test.ts
 # missingSides and blob absence feeding ClipCode copy
 src/main/git/source-control/blob-absence-real-git.test.ts
 src/main/git/source-control/blob-absence-real-git.fork.test.ts
+src/main/git/source-control/file-diff.read-failure.test.ts
 src/main/git/source-control/commit-diff-missing-sides.real-git.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-commit-copy.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-explorer-copy.test.ts
@@ -85,6 +86,7 @@ src/renderer/src/components/editor/folder-relative-git-consumers.test.tsx
 src/renderer/src/components/editor/editor-external-watch-path-index.fork.test.ts
 src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files-menu.test.tsx
 src/renderer/src/components/tab-bar/tab-bar-item-model.git-status.fork.test.ts
+src/renderer/src/components/right-sidebar/source-control-entry-context-menu.fork.test.tsx
 
 # Editor save event
 src/renderer/src/components/editor/editor-file-saved-event.contract.test.ts
