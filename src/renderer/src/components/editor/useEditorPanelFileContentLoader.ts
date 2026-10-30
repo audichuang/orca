@@ -2,10 +2,6 @@ import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction 
 import type { OpenFile } from '@/store/slices/editor'
 import { getConnectionIdForFile, isWorktreeConnectionResolved } from '@/lib/connection-context'
 import { useAppStore } from '@/store'
-import {
-  getOpenFileGitRelativePath,
-  getOpenFileGitWorktreeId
-} from '@/store/slices/editor/git/open-file-git-owner'
 import { getRuntimeFileReadScope } from '@/runtime/runtime-file-routing'
 import { readEditorCsvFileContent } from './csv/csv-file-content'
 import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
@@ -39,6 +35,7 @@ import type { RuntimeFileReadArgs } from '@/runtime/runtime-file-client-types'
 import { stampCleanTabDiskBaseline } from './editor-clean-tab-disk-baseline'
 import { applyEditorFileLoadFailure } from './editor-deleted-file-reload'
 import { translate } from '@/i18n/i18n'
+import { fileReadGitOwner } from './editor-file-read-git-owner'
 
 const inFlightFileReads = new Map<string, InFlightContentRead<FileContent>>()
 
@@ -105,14 +102,10 @@ export function useEditorPanelFileContentLoader({
         const readOwnerEnvironmentId =
           readTarget.kind === 'environment' ? readTarget.environmentId : undefined
         readConnectionId = connectionId
-        let readWorktreeId =
-          options?.gitWorktreeId ??
-          (restoredOpenFile ? getOpenFileGitWorktreeId(restoredOpenFile) : worktreeId)
+        const gitOwner = fileReadGitOwner(restoredOpenFile, worktreeId, relativePath, options)
+        let readWorktreeId = gitOwner.worktreeId
         let readGrantId = restoredOpenFile?.terminalArtifactGrantId
         let readGrantPairing: number | undefined
-        let readRelativePath = restoredOpenFile
-          ? getOpenFileGitRelativePath(useAppStore.getState(), restoredOpenFile)
-          : relativePath
         // Re-owning re-keys the tab, which starts a fresh load under the new owner.
         const reownRestoredFile = async (
           route: RuntimeWorkspaceFileRoute,
@@ -229,7 +222,7 @@ export function useEditorPanelFileContentLoader({
         const readArgs: RuntimeFileReadArgs = {
           target: readTarget,
           filePath,
-          relativePath: readRelativePath,
+          relativePath: gitOwner.relativePath,
           worktreeId: readWorktreeId,
           connectionId: readConnectionId,
           expectedExternalSshTargetId: restoredOpenFile?.externalSshTargetId,

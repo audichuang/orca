@@ -258,11 +258,10 @@ export default function CombinedDiffViewer({
     if (!file.combinedAlternate) {
       return
     }
+    const gitOwner = { gitWorktreeId: file.gitWorktreeId }
 
     if (file.combinedAlternate.source === 'combined-all') {
-      openAllDiffs(file.worktreeId, file.filePath, undefined, undefined, undefined, {
-        gitWorktreeId: file.gitWorktreeId
-      })
+      openAllDiffs(file.worktreeId, file.filePath, undefined, undefined, undefined, gitOwner)
       return
     }
 
@@ -272,7 +271,7 @@ export default function CombinedDiffViewer({
         file.filePath,
         branchSummary,
         { source: 'combined-all' },
-        { gitWorktreeId: file.gitWorktreeId }
+        gitOwner
       )
     }
   }, [branchSummary, file, openAllDiffs, openBranchAllDiffs])
