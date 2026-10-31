@@ -3,6 +3,7 @@
 // Usage: node config/scripts/fork-hunk-guard-scan.mjs <fork-base> --out <dir> [--shard i/n] [--only <substr>]...
 //        node config/scripts/fork-hunk-guard-scan.mjs --report <dir>
 import { execFileSync, spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -22,6 +23,10 @@ export function isCrash(failure) {
 
 export function isVitestTimeout(result) {
   return result.error?.code === 'ETIMEDOUT' || ['SIGTERM', 'SIGKILL'].includes(result.signal)
+}
+
+function contentHash(text) {
+  return createHash('sha256').update(text).digest('hex')
 }
 
 function git(args) {
@@ -193,11 +198,13 @@ function runVitest(root, tests, outFile, { bail = true } = {}) {
   const report = JSON.parse(readFileSync(outFile, 'utf8'))
   const failed = []
   for (const file of report.testResults ?? []) {
-    const failure = (file.assertionResults ?? []).find((test) => test.status === 'failed')
+    const failures = (file.assertionResults ?? []).filter((test) => test.status === 'failed')
     if (file.status === 'failed') {
+      const failure = failures[0]
       failed.push({
         file: relative(root, file.name),
         test: failure?.fullName ?? '(file failed to load)',
+        tests: failures.map((test) => test.fullName),
         message: (failure?.failureMessages?.[0] ?? file.message ?? '').split('\n')[0].slice(0, 300)
       })
     }
@@ -222,7 +229,13 @@ function scan(base, { out, shard, only }) {
     'fork-hunk-scan-reverting'
   )
   if (existsSync(reverting)) {
-    const path = readFileSync(reverting, 'utf8').trim()
+    const { path, sha256 } = JSON.parse(readFileSync(reverting, 'utf8'))
+    // Why the hash: restore only the text the scan wrote, never an edit made after the interruption.
+    if (contentHash(readFileSync(join(root, path), 'utf8')) !== sha256) {
+      throw new Error(
+        `${path} changed after an interrupted scan reverted it; fix it by hand, then delete ${reverting}`
+      )
+    }
     git(['checkout', '--', path])
     rmSync(reverting)
     console.log(`restored ${path} left reverted by an interrupted scan`)
@@ -307,11 +320,11 @@ function scan(base, { out, shard, only }) {
       kind: classifyHunk(hunk, { oldText, newText, path })
     }))
     const imports = classified.filter(({ kind }) => kind === 'import').map(({ hunk }) => hunk)
-    const runReverted = (text) => {
-      writeFileSync(reverting, path)
+    const runReverted = (text, tests = candidates, options) => {
+      writeFileSync(reverting, JSON.stringify({ path, sha256: contentHash(text) }))
       try {
         writeFileSync(absolute, text)
-        return runVitest(root, candidates, vitestJson)
+        return runVitest(root, tests, vitestJson, options)
       } finally {
         writeFileSync(absolute, newText)
         rmSync(reverting)
@@ -338,8 +351,17 @@ function scan(base, { out, shard, only }) {
         if (!run.error && run.failed.length > 0 && isCrash(run.failed[0]) && imports.length > 0) {
           const paired = runReverted(revertHunks(newText, [hunk, ...imports]))
           if (!paired.error && paired.failed.length > 0 && !isCrash(paired.failed[0])) {
-            run = paired
-            record.pairedWithImports = true
+            // Why: the same failure with only the imports reverted comes from another import, not this hunk.
+            const control = runReverted(revertHunks(newText, imports), [paired.failed[0].file], {
+              bail: false
+            })
+            const target = paired.failed[0].test
+            const controlled =
+              !control.error && !control.failed.some((f) => isCrash(f) || f.tests.includes(target))
+            if (controlled) {
+              run = paired
+              record.pairedWithImports = true
+            }
           }
         }
         if (run.error) {
