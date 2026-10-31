@@ -68,3 +68,23 @@ describe('opening a note from a folder repo section (fork)', () => {
     ])
   })
 })
+
+it('opens a note in the new folder after the editor scope changes', () => {
+  const params = {
+    activeWorktreeId: REPO,
+    worktreePath: '/work/repo-1',
+    entries: [],
+    branchEntries: [],
+    branchSummary: null,
+    handleOpenDiff: () => {},
+    openCommittedDiff: () => {},
+    sourceControlRef: { current: null }
+  }
+  const { result, rerender } = renderHook(
+    ({ editorWorktreeId }) => useSourceControlNoteOpening({ ...params, editorWorktreeId }),
+    { initialProps: { editorWorktreeId: FOLDER } }
+  )
+  rerender({ editorWorktreeId: 'folder:other-folder' })
+  result.current.handleOpenComment(COMMENT)
+  expect(useAppStore.getState().openFiles[0]?.worktreeId).toBe('folder:other-folder')
+})
