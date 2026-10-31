@@ -143,3 +143,9 @@ src/renderer/src/components/editor/EditorPanel.fork.test.tsx
 src/renderer/src/components/editor/ExternalFileChangeCompareDialog.fork.test.tsx
 src/renderer/src/components/editor/combined-diff/scroll-viewport/combined-diff-section-list.fork.test.tsx
 src/renderer/src/components/editor/useDiffViewerFirstChangeAutoScroll.fork.test.tsx
+
+# Folder source-control action routing: real panel, recovery dialogs, notes and discard failures
+src/renderer/src/components/right-sidebar/source-control/panel/use-panel-model.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/panel/commit-surface.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/panel/panel-dialogs.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/ai/use-recovery-ai.fork.test.tsx
