@@ -55,6 +55,7 @@ it.each(['edit', 'branch', 'commit'] as const)(
       }
     )
     rerender({ file: folderFile({ filePath: ROOT }) })
+    act(() => useAppStore.setState({ repos: [], worktreesByRepo: {} }))
     act(() => result.current.openSection(0))
     expect(useAppStore.getState().openFiles).toEqual([
       expect.objectContaining({
