@@ -1,37 +1,20 @@
 // @vitest-environment happy-dom
-// Fork seam guard: a folder repo's combined diff opens its alternate view and Conflict Review in the
-// folder with the repo as git owner. Leaf controls are stubbed to hand back their callbacks; the store is real.
-import { cleanup, render } from '@testing-library/react'
+import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import type { OpenFile } from '@/store/slices/editor'
 import type { GitBranchCompareSummary } from '../../../../../shared/git-diff-compare-types'
+import { makeWorktree, TEST_REPO } from '@/store/slices/worktrees-slice-test-fixtures'
 import type { GitStatusEntry } from '../../../../../shared/git-status-types'
 
-type Callbacks = { onOpenAlternateDiff?: () => void; onReviewConflicts?: () => void }
-const callbacks = vi.hoisted((): Callbacks => ({}))
-vi.mock('@/lib/monaco-setup', () => ({}))
-vi.mock('./review-controls/combined-diff-toolbar', () => ({
-  CombinedDiffToolbar: (props: { onOpenAlternateDiff: () => void }) => {
-    callbacks.onOpenAlternateDiff = props.onOpenAlternateDiff
-    return null
+vi.mock('@monaco-editor/react', () => ({ DiffEditor: () => null }))
+vi.mock('@/lib/monaco-setup', () => ({
+  monaco: {
+    Uri: { parse: (path: string) => path },
+    editor: { getModel: () => null, getModels: () => [], getEditors: () => [] }
   }
 }))
-vi.mock('./review-controls/combined-diff-skipped-conflicts', () => {
-  const capture = (props: { onReviewConflicts: () => void }) => {
-    callbacks.onReviewConflicts = props.onReviewConflicts
-    return null
-  }
-  return {
-    CombinedDiffNoChangesEmptyState: () => null,
-    CombinedDiffSkippedConflictNotice: capture,
-    CombinedDiffSkippedConflictsEmptyState: capture
-  }
-})
-vi.mock('./scroll-viewport/combined-diff-section-list', () => ({
-  CombinedDiffSectionList: () => null
-}))
-vi.mock('./browse-files/combined-diff-file-tree', () => ({ CombinedDiffFileTree: () => null }))
 
 const { default: CombinedDiffViewer } = await import('./CombinedDiffViewer')
 
@@ -59,7 +42,11 @@ function renderOnlyTab(): OpenFile {
   const [file] = useAppStore.getState().openFiles
   expect(file).toMatchObject({ worktreeId: FOLDER, gitWorktreeId: REPO })
   useAppStore.setState({ openFiles: [] })
-  render(<CombinedDiffViewer file={file!} viewStateKey={file!.id} />)
+  render(
+    <TooltipProvider>
+      <CombinedDiffViewer file={file!} viewStateKey={file!.id} />
+    </TooltipProvider>
+  )
   return file!
 }
 
@@ -76,8 +63,6 @@ beforeEach(() => {
     gitBranchChangesByWorktree: { [REPO]: [{ path: 'b.ts', status: 'modified' }] },
     gitBranchCompareSummaryByWorktree: { [REPO]: SUMMARY }
   })
-  callbacks.onOpenAlternateDiff = undefined
-  callbacks.onReviewConflicts = undefined
 })
 afterEach(cleanup)
 
@@ -93,7 +78,7 @@ describe("a folder repo's combined diff opens its follow-ups under the repo (for
       }
     )
     const file = renderOnlyTab()
-    callbacks.onOpenAlternateDiff!()
+    fireEvent.click(screen.getByRole('button', { name: 'Open All Changes' }))
     expectOpenedUnderRepo('diff', file)
   })
 
@@ -104,7 +89,7 @@ describe("a folder repo's combined diff opens its follow-ups under the repo (for
         gitWorktreeId: REPO
       })
     const file = renderOnlyTab()
-    callbacks.onOpenAlternateDiff!()
+    fireEvent.click(screen.getByRole('button', { name: 'Open Branch Diff' }))
     expectOpenedUnderRepo('diff', file)
   })
 
@@ -115,7 +100,58 @@ describe("a folder repo's combined diff opens its follow-ups under the repo (for
         gitWorktreeId: REPO
       })
     const file = renderOnlyTab()
-    callbacks.onReviewConflicts!()
+    fireEvent.click(screen.getByRole('button', { name: 'Review conflicts' }))
     expectOpenedUnderRepo('conflict-review', file)
   })
+})
+
+it('clears repo review notes through the folder combined diff controls', async () => {
+  const previous = window.api
+  const updateMeta = vi.fn(async () => ({}))
+  Object.assign(window, { api: { ...previous, worktrees: { ...previous?.worktrees, updateMeta } } })
+  useAppStore.setState({
+    repos: [{ ...TEST_REPO, id: 'repo-1', path: '/work/repo-1', executionHostId: 'local' }],
+    worktreesByRepo: {
+      'repo-1': [
+        makeWorktree({
+          id: REPO,
+          repoId: 'repo-1',
+          path: '/work/repo-1',
+          hostId: 'local',
+          diffComments: [
+            {
+              id: 'note',
+              worktreeId: REPO,
+              filePath: 'a.ts',
+              lineNumber: 1,
+              body: 'Check repo change',
+              createdAt: 1,
+              side: 'modified'
+            }
+          ]
+        })
+      ]
+    }
+  })
+  useAppStore
+    .getState()
+    .openAllDiffs(FOLDER, '/work/repo-1', undefined, undefined, [ENTRY], { gitWorktreeId: REPO })
+  renderOnlyTab()
+  try {
+    fireEvent.click(screen.getByRole('button', { name: 'Show 1 AI note' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Clear Notes' }))
+    await waitFor(() =>
+      expect(updateMeta).toHaveBeenCalledWith(
+        expect.objectContaining({
+          worktreeId: REPO,
+          updates: { diffComments: [] }
+        })
+      )
+    )
+    expect(useAppStore.getState().worktreesByRepo['repo-1']?.[0]?.diffComments).toEqual([])
+  } finally {
+    cleanup()
+    Object.assign(window, { api: previous })
+  }
 })

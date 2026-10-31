@@ -137,3 +137,9 @@ src/renderer/src/components/editor/combined-diff/load-sections/use-combined-diff
 src/renderer/src/components/editor/combined-diff/review-controls/use-combined-diff-section-actions.fork.test.tsx
 src/renderer/src/components/editor/useEditorPanelDiffContentLoader.fork.test.tsx
 src/renderer/src/components/tab-bar/use-tab-bar-runtime-model.fork.test.tsx
+src/renderer/src/components/editor/ChangesModeView.fork.test.tsx
+src/renderer/src/components/editor/EditorDiffFileSurface.fork.test.tsx
+src/renderer/src/components/editor/EditorPanel.fork.test.tsx
+src/renderer/src/components/editor/ExternalFileChangeCompareDialog.fork.test.tsx
+src/renderer/src/components/editor/combined-diff/scroll-viewport/combined-diff-section-list.fork.test.tsx
+src/renderer/src/components/editor/useDiffViewerFirstChangeAutoScroll.fork.test.tsx
