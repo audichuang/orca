@@ -14,7 +14,7 @@
 - 驗證（<YYYY-MM-DD>，上游 <sha>）：<跑了什麼、結果>｜未驗證
 ```
 
-## fork 自身問題（待人判斷，auto-rebase 不要照做：folder 層級的外部變更要不要配對到 repo-scoped diff 分頁：兩條路徑不一致）× fork ebae8279bd（folder workspace 多 repo）、a9b651f3b9（folder diff 改用 filePath 比對）— auto-rebase 2026-10-27
+## fork 自身問題（待人判斷，auto-rebase 不要照做：folder 層級的外部變更要不要配對到 repo-scoped diff 分頁：兩條路徑不一致）× fork d4ac764be9（feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229）、4b7966a4eb（fix(source-control): folder 分頁的 git/讀檔改由 filePath 推導 repo 相對路徑…）— auto-rebase 2026-10-27（原 sha ebae8279bd、a9b651f3b9 已被 rebase 改寫，canary 2026-10-31 依標題換成目前 develop 的 sha）
 - 類型：待人判斷
 - 衝突檔：無
 - 連帶症狀：無（審查者 C 的 mutation：拿掉 `editor-autosave.ts:177` 的 `getOpenFileGitWorktreeId(file) === target.worktreeId`，所有測試仍綠）
@@ -30,7 +30,7 @@
 - 守它的測試：無
 - 驗證（2026-10-30，上游 4217095c06e684c6463eac026c28c807c4021a18）：兩個檔 `git diff --quiet v1.4.244 MERGE_HEAD` 成立；採上游後 tc 與測試全過。
 - 2026-10-31 同型：develop 已在 v1.4.245，computer-task-benchmark.yml 的 fork 版與 v1.4.245 逐位元組相同（v1.4.245 的 4d5547e23f「ci: sync release workflows with main for the v1.4.245 cut」在 merge-base ec62243ded 之後）；上游 main 之後又改了 4 次（上面 4 個 sha）。
-- 驗證（2026-10-31，上游 a079f519910d7352e11ebd56198fd34dfc8918c2）：`git diff --quiet v1.4.245 MERGE_HEAD -- .github/workflows/computer-task-benchmark.yml` 成立；採上游後 tc、測試、上游 lint 全過。
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：`git diff --quiet v1.4.245 MERGE_HEAD -- .github/workflows/computer-task-benchmark.yml` 仍成立（a079f51991 之後上游沒再改這個檔）；採上游後 tc、測試、上游 lint 全過。
 
 ## 5a925965d5a984691d31199ec3a57526a9297bfc（#34779、fix(git): compare staged renames against their HEAD source）× fork fd15fa9558（refactor: carry fork values in options objects instead of trailing positional params）、226cc2e007（refactor: finish moving fork params into options objects and pin the remaining hops）、e50ff438e0（fix(source-control): 修正 folder workspace 多 repo 與 ClipCode 交叉測試找到的問題）、d4ac764be9（feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229）、1bffd51a2e（feat(source-control): git 歷史支援多分支、分支篩選與 git 端搜尋(後端)）、49541d5c2f（refactor(git-graph-tab): route upstream editor-kind sites through fork-editor-tab-kinds）、75deec9118（feat(source-control): Git Graph 改成編輯器分頁,可切換 repo,並加上快捷鍵與 Cmd+J 進入點）、4b7966a4eb（fix(source-control): folder 分頁的 git/讀檔改由 filePath 推導 repo 相對路徑…）— canary 2026-10-31
 - 類型：兩邊各改各的（另含上游改了 fork 依賴的 API：上游在 provider `getDiff` 與 `runtime.getRuntimeGitDiff` 的尾端加了位置參數 `oldPath`，正好是 fork `readOptions` 的位置）
@@ -49,9 +49,9 @@
   - open-uncommitted-entry.ts：採上游的多行 `openDiff`（含 staged rename 的 `oldPath`），第一個參數改 fork 的 `tabWorktreeId`。
   - git-status-reconciliation.ts：採上游的 `(originalFile) => { let file = originalFile`，判斷改 fork 的 `getOpenFileGitWorktreeId(file) !== worktreeId`。另把上游新加的 `stagedEntriesByPath.get(file.relativePath)` 改成 `.get(gitRelativePathOf(file))`（folder 分頁的 `relativePath` 是相對 folder，status 的 path 相對 repo；不改的話 folder 分頁的 staged rename 永遠拿不到 `branchOldPath`）。這一處沒有測試守，auto-rebase 照做算 MANUAL，要補 fork 測試（folder 分頁的 staged rename 在 reconcile 後帶上 `branchOldPath`）並證明拿掉會紅。
   - fork 測試（額外 commit 或併進衝突解）：file-diff.skip-render-limit-real-git.test.ts 的 provider 呼叫改 `createLocalGitProvider().getDiff(repo, 'big.txt', true, false, undefined, { skipRenderLimit })`；git-diff-skip-render-limit.test.ts 的期望改成 `('id:wt-1', 'a.ts', true, undefined, undefined, undefined, { skipRenderLimit: true })`。
-  - 合好的檔在 `~/.cache/orca-fork-canary/20261030T213048Z-88484/resolution/files/`（整份 diff：上一層的 `resolution.diff`）；vNEW 跟上游 main 不同時照上面的描述做，不要直接複製。
+  - 合好的檔在 `~/.cache/orca-fork-canary/20261031T150310Z-58390/resolution/files/`（2026-10-31 上游 2487a258fe，含這次所有條目；整份 diff：上一層的 `resolution.diff`）；vNEW 跟上游 main 不同時照上面的描述做，不要直接複製。
 - 守它的測試：上面列的失敗測試（fork-seam-tests 的 skipRenderLimit 組、git history graph 組、folder 組）、`pnpm tc`、上游 lint 的 `oxlint`（max-lines）
-- 驗證（2026-10-31，上游 a079f519910d7352e11ebd56198fd34dfc8918c2）：在 canary worktree 套上本次全部條目後 `pnpm tc` 通過；canary 那 180 個測試檔 1016 個測試全過；`make fork-check-seams` 90 檔 534 測試全過；上游 lint 全套（`fork-lint-run.mjs`）通過；`fork-upstream-api.mjs HEAD` 通過。`gitRelativePathOf` 那處沒有 mutation 驗證。
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：這個條目涉及的檔兩側自 a079f51991／ffe7046898 起都沒變，直接沿用上一次合好的檔；套上本次全部條目後 `pnpm tc` 通過；canary 那 199 個測試檔 1065 個測試中 1062 過，失敗的 3 個：saved-event 那例屬 #31617 條目（待人判斷），ChangesModeView.fork／EditorDiffFileSurface.fork 只在整批並行時失敗一次、單獨重跑兩次都過（上一輪整批也過）；上游 lint 全套（`fork-lint-run.mjs`）通過；`make fork-check-seams` 114 檔 590 測試中 587 過（失敗的 3 個同上：saved-event 那例，以及 ChangesModeView.fork／EditorDiffFileSurface.fork 再次在並行下逾時——兩者用 10 秒 `waitFor` 等 lazy 載入，單獨跑在 develop 約 3.0 秒、合併樹約 3.5 秒，判斷是負載下的時序，不是這次的解法）；`fork-upstream-api.mjs HEAD` 通過（8 個 pinned export）。`gitRelativePathOf` 那處沒有 mutation 驗證。合好的檔在 `~/.cache/orca-fork-canary/20261031T150310Z-58390/resolution/files/`（整份 diff：上一層的 `resolution.diff`）。
 
 ## 6b937c7e5f5a8d2cfcb755c6708ac38a632b3012（#35347、fix(source-control): resolve delete/modify conflicts and complete merges from the panel）、dc9928108597fcf35690a76f5616d20cfea4bed7（#36160、feat(source-control): resolve merge conflicts and complete merges from the phone）× fork d4ac764be9（feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229）、20993ea706（refactor(clipcode): move Copy Full Source out of upstream components into fork slots）、6860a18f1d（feat(source-control): Git 介面順手度優化第一批）、da9b76691a（refactor(source-control): let the folder save-hold helpers take one target or a list）、d5bed0235c（fix(source-control): release autosave holds after fork discard and ClipCode restore）、1bffd51a2e（feat(source-control): git 歷史支援多分支、分支篩選與 git 端搜尋(後端)）— canary 2026-10-31
 - 類型：兩邊各改各的（上游加「右鍵解衝突」：`conflictResolutions`／`onResolveConflict` prop、`handleResolveConflict`；fork 在同一處有 `viewItems`／`copyItems` slot 與 folder 的 autosave hold）
@@ -64,7 +64,7 @@
   - git-params.ts import：兩行都留（上游 `CONFLICT_RESOLUTIONS` 在前、fork `GitHistoryGraphParams` 在後）。
   - fork 測試 section-action-buttons.fork.test.tsx：`handleUnstage={vi.fn()}` 後加 `handleResolveConflict={vi.fn()}`（額外 commit；上游 section-action-buttons.test.tsx 同寫法）。
 - 守它的測試：上面列的失敗測試（fork-seam-tests「Upstream component slots and folder routing」組、folder discard 組）、`pnpm tc`
-- 驗證（2026-10-31，上游 a079f519910d7352e11ebd56198fd34dfc8918c2）：同 #34779 那條；`keep_deletion` 改走 ForOwners 那處沒有 mutation 驗證。
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：同 #34779 那條；`keep_deletion` 改走 ForOwners 那處沒有 mutation 驗證。
 
 ## 5c30ebaca97b3e964b1fc04e98162de617ed6f5f（#36301、Highlight the active committed file in Source Control）× fork d4ac764be9（feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229）、20993ea706（refactor(clipcode): move Copy Full Source out of upstream components into fork slots）、e50ff438e0（fix(source-control): 修正 folder workspace 多 repo 與 ClipCode 交叉測試找到的問題）、226cc2e007（refactor: finish moving fork params into options objects and pin the remaining hops）、0405e6358f（refactor(source-control): derive folder tab and git owners in one fork helper）、aa5ef85485（test(source-control): guard folder discard notices, markdown notes and branch rows）— canary 2026-10-31
 - 類型：兩邊各改各的（另含 fork 改過的上游 API：fork 在 d4ac764be9 拿掉了 `useSourceControlRowOpening`／`useFileListing` 的 `isMac`，上游新測試還在傳）
@@ -73,9 +73,9 @@
 - 處理：
   - branch-entry-row.tsx：fork 的 `import { OpenToSideMenuItem } from './entry-context-menu-slots'` 在前，接上游三行的 `getSourceControlRowHighlightClass, SOURCE_CONTROL_TREE_FILE_PADDING_PX, SOURCE_CONTROL_TREE_INDENT_PX` import。
   - use-row-opening.ts：用 fork 的 `if (!activeFile) return null` 與 `resolveActiveFileRepoRelativePath(...)`，最後呼叫改成上游的四參數 `buildActiveOpenFileSignature(activeFile.diffSource, repoRelativePath, activeFile.branchCompare, branchSummary)`。上游自動合入的 `visibleBranchRowKeys` 參數照收；不要加回 `isMac`。
-  - 測試（額外 commit）：fork 的 use-row-opening.fork.test.tsx 在 `visibleSelectionEntries: [],` 後加 `visibleBranchRowKeys: [],`；上游的 use-file-projection-work.test.tsx 刪掉 #36301 新案例裡的 `isMac: true,`（fork 的 `useFileListing` 沒有這個參數，fork 先前已在同檔其他案例刪過）。
+  - 測試（額外 commit）：fork 的 use-row-opening.fork.test.tsx 每個 `useSourceControlRowOpening({…})` 呼叫的 `visibleSelectionEntries` 那行後面都加 `visibleBranchRowKeys: [],`（2026-10-31 起 fork 多了第二個呼叫「keeps the folder file row active…」，兩處都要加）；上游的 use-file-projection-work.test.tsx 刪掉 #36301 新案例裡的 `isMac: true,`（fork 的 `useFileListing` 沒有這個參數，fork 先前已在同檔其他案例刪過）。
 - 守它的測試：use-row-opening.fork.test.tsx、上游 SourceControl.open-file-highlight.test.tsx、use-file-projection-work.test.tsx、`pnpm tc`
-- 驗證（2026-10-31，上游 a079f519910d7352e11ebd56198fd34dfc8918c2）：同 #34779 那條。
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：同 #34779 那條。
 
 ## 2078ebb959f4af6ed7b1e583c9faeffa3fdaf52e（#36308、Keep tab right-click menus open through the opening release）、a17b6706f542ef710a52c66b368bee334757b305（#36191、fix(explorer): open folder links that lead outside the project again）× fork 20993ea706（refactor(clipcode): move Copy Full Source out of upstream components into fork slots）、a9b4201a60（feat(file-explorer): 檔案總管右鍵 Copy Full Source,可多選檔案與整個資料夾(ClipCode 格式)）— canary 2026-10-31
 - 類型：兩邊各改各的
@@ -83,15 +83,15 @@
 - 連帶症狀：失敗測試 src/renderer/src/components/right-sidebar/{file-explorer-clipcode-copy.wiring,file-explorer-row-context-menu.fork}.test.tsx（衝突重設造成）
 - 處理：兩行都留：上游 `import { fileExplorerNodeTabRelativePath } from './file-explorer-directory-listing'` 在前，fork `import { ClipcodeExplorerCopyItem } from './source-control/clipcode/clipcode-menu-items'` 在後。
 - 守它的測試：上面兩個測試檔、`pnpm tc`
-- 驗證（2026-10-31，上游 a079f519910d7352e11ebd56198fd34dfc8918c2）：同 #34779 那條。
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：同 #34779 那條。
 
-## 6efdd36dcb4fc6de93ac4b2554c77a4044d6f2af（#36233、fix(ui): notification cards lift above a chat composer they would cover）× fork cdd12598dc（fix(source-control): keep toasts above the bulk action bar）— canary 2026-10-31
+## 6efdd36dcb4fc6de93ac4b2554c77a4044d6f2af（#36233、fix(ui): notification cards lift above a chat composer they would cover）、c378e78d5a4c6dfe76230d981e050560a6bb6221（#36531、perf(notifications): scope card layout vars to their readers instead of :root）× fork cdd12598dc（fix(source-control): keep toasts above the bulk action bar）— canary 2026-10-31
 - 類型：兩邊各改各的（上游把 toast 底部的 `2.5rem` 換成 `NOTIFICATION_CARD_STACK_BOTTOM`，讓開聊天輸入框；fork 用 `max(…, clearance)` 讓開 bulk action bar，兩者讓的是不同的 chrome）
 - 衝突檔：src/renderer/src/components/ui/sonner.tsx（2 個 hunk：import 區、`TOASTER_OFFSET.bottom`）
 - 連帶症狀：失敗測試 src/renderer/src/components/ui/sonner.fork.test.tsx（衝突重設造成）
-- 處理：import 兩行都留（上游 `NOTIFICATION_CARD_STACK_BOTTOM` 在前、fork `TOAST_BOTTOM_CLEARANCE_VAR` 在後）；bottom 寫成 fork 的 `// Fork-only:` 註解加 `` bottom: `max(calc(${NOTIFICATION_CARD_STACK_BOTTOM} + env(safe-area-inset-bottom, 0px) + var(${NOTIFICATION_CARD_STACK_HEIGHT_VAR}, 0px)), var(${TOAST_BOTTOM_CLEARANCE_VAR}, 0px))`, ``（上游運算式整段包進 fork 的 `max(…)`，與 v1.4.245 rebase 時 sonner.tsx 的解法同型）。
+- 處理：採上游檔（含 #36531 的 `useRef`／`useNotificationCardLayoutVarReader`／`ref={wrapperRef}`），fork 的 `import { TOAST_BOTTOM_CLEARANCE_VAR } from '@/lib/toast-bottom-clearance'` 接在上游最後一行 import（`useNotificationCardLayoutVarReader`）後面；bottom 寫成 fork 的 `// Fork-only:` 註解加 `` bottom: `max(calc(${NOTIFICATION_CARD_STACK_BOTTOM} + env(safe-area-inset-bottom, 0px) + var(${NOTIFICATION_CARD_STACK_HEIGHT_VAR}, 0px)), var(${TOAST_BOTTOM_CLEARANCE_VAR}, 0px))`, ``（上游運算式整段包進 fork 的 `max(…)`，與 v1.4.245 rebase 時 sonner.tsx 的解法同型）。
 - 守它的測試：sonner.fork.test.tsx（`lifts toasts above registered bottom chrome on wide and narrow windows`）
-- 驗證（2026-10-31，上游 a079f519910d7352e11ebd56198fd34dfc8918c2）：同 #34779 那條。
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：同 #34779 那條。
 
 ## f22a7d43b59bc9f152e38c1acb3b5f7b4077c8d7（#36433、refactor(source-control): move the changed-file tree builder to src/shared）× fork 339bd5869d（feat(source-control): Git Graph 的 Changed files 改成依資料夾分層的樹狀顯示）— canary 2026-10-31
 - 類型：上游改了 fork 依賴的 API（`source-control-tree.ts` 從 renderer 的 right-sidebar 搬到 `src/shared/`）
@@ -99,7 +99,7 @@
 - 連帶症狀：typecheck 錯誤 src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.tsx（TS2307）；失敗測試（都是 `Failed to resolve import "../../source-control-tree"`）src/renderer/src/components/git-graph-tab/GitGraphTabView.component.test.tsx、src/renderer/src/components/right-sidebar/{SourceControl.preview-open.fork,SourceControl.preview-open}.test.tsx、src/renderer/src/components/right-sidebar/source-control/panel/{panel-capped-status-copy,panel-clipcode-actions.fork}.test.tsx、src/renderer/src/components/right-sidebar/source-control/sync/{git-graph-full-view-state,git-graph-full-view-tab-host,git-graph-full-view,git-graph-open-commit,git-graph-tab-launcher,git-history-graph,git-history-show-in-graph}.component.test.tsx、src/renderer/src/components/right-sidebar/source-control/sync/{git-history-commit-files-menu,git-history-commit-files}.test.tsx
 - 處理（額外 commit）：git-history-commit-files.tsx 的 `} from '../../source-control-tree'` 改成 `} from '../../../../../../shared/source-control-tree'`（上游 branch-section.tsx 同樣改法）。
 - 守它的測試：`pnpm tc`、上面列的測試
-- 驗證（2026-10-31，上游 a079f519910d7352e11ebd56198fd34dfc8918c2）：同 #34779 那條。
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：同 #34779 那條。
 
 ## d0bdbfb314e84b7d70d92a0c98f46908944a9aa5（#34104、fix(updater): keep status current after reopening the window）× fork b82c17d5c5（refactor(fork): stop exporting upstream internals the fork reads）— canary 2026-10-31
 - 類型：上游改了 fork 依賴的 API（`UpdaterState.mainWindowRef` 改成 `getMainWindow: () => BrowserWindow | null`）
@@ -107,7 +107,7 @@
 - 連帶症狀：typecheck 錯誤與失敗測試 src/main/updater/updater-nudge.fork.test.ts（`Property 'mainWindowRef' does not exist on type 'Probe'`）
 - 處理（額外 commit）：updater-nudge.fork.test.ts 的 `Probe` 建構子 `this.mainWindowRef = window` 改成 `this.getMainWindow = () => window`。
 - 守它的測試：updater-nudge.fork.test.ts
-- 驗證（2026-10-31，上游 a079f519910d7352e11ebd56198fd34dfc8918c2）：同 #34779 那條。
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：同 #34779 那條。
 
 ## 2e37fc45717f7eb898ca98f89ea0c17e218f57d4（#35004、fix(editor): scroll combined diffs with keyboard navigation）× fork 590eafc175（fix(source-control): 依第二輪 QA 修正:combined diff 在 dev StrictMode 不再 crash、多選複製 hash/訊息涵蓋全部選取、Git Graph 可在旁邊開 diff）、52493540d5（test(editor): give the strict-reveal fake Monaco model isDisposed and getLanguageId）— canary 2026-10-31
 - 類型：上游改了 fork 測試依賴的 Monaco API（DiffSectionBody mount 時呼叫 `installCombinedDiffCursorReveal`，會用 `diff.getContainerDomNode()`）
@@ -115,4 +115,53 @@
 - 連帶症狀：失敗測試 src/renderer/src/components/editor/DiffSectionBody.monaco-strict-reveal.test.tsx（2 例：`TypeError: diff.getContainerDomNode is not a function`；第二例連帶 `expected [ 'create', 'dispose' ] to deeply equal [ 'create' ]`）
 - 處理（額外 commit）：fork 測試 `createDiffEditor` 回傳的物件加 `getContainerDomNode: () => document.createElement('div'),`（上游 DiffSectionBody.word-wrap-lifecycle.test.tsx 同寫法；離線的 div 找不到 combined diff viewport，reveal 直接 no-op）。
 - 守它的測試：DiffSectionBody.monaco-strict-reveal.test.tsx
-- 驗證（2026-10-31，上游 a079f519910d7352e11ebd56198fd34dfc8918c2）：該檔 2 例通過；其餘同 #34779 那條。
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：該檔 2 例通過；其餘同 #34779 那條。
+
+## ae09815770c1d6c8b83a35f99c0021d35273608a（#31617、Support automations in Orca Mobile）× fork f3584b9c6d（refactor(editor): move the fork's file-read git owner out of the loaders upstream grew to max-lines）、4b7966a4eb（fix(source-control): folder 分頁的 git/讀檔改由 filePath 推導 repo 相對路徑，還原時丟掉失效 git owner 會重算 relativePath）、d4ac764be9（feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229）、49b36f943c（refactor(editor): move the saved-file dispatch out of editor-save-queue.ts）、e0074d50bb（fix(source-control): refresh a folder repo after a save whose views all closed）、55395a0221（test(editor): 上游 #30206 的 conflict review 重新歸屬測試改成 fork 語意…）、9bb9df964e（test: move fork cases out of upstream test files into .fork.test siblings）— canary 2026-10-31
+- 類型：兩邊各改各的（上游把編輯器讀寫改成 `acquireEditorFileOperation` 的 operation／context，並在 loader 加 `matchesRequest` 守門；fork 的 folder 分頁 git owner 要接進新的建構點）。其中「所有 view 都關了仍發 saved 事件」一項待人判斷，見下面。
+- 衝突檔：src/renderer/src/components/editor/combined-diff/load-sections/fetch-combined-diff-section.ts（3 個 hunk；#34779 也列在這個檔，但衝突是 #31617 的結構改動）、src/renderer/src/components/editor/editor-save-queue.ts（2）、src/renderer/src/components/editor/useEditorPanelFileContentLoader.ts（3）、src/renderer/src/components/editor/restored-editor-same-workspace-reown.test.tsx（1）
+- 連帶症狀：失敗測試 src/renderer/src/components/editor/combined-diff/load-sections/fetch-combined-diff-section.fork.test.ts、src/renderer/src/components/editor/{editor-file-saved-event.contract,folder-relative-git-consumers}.test.ts(x)、restored-editor-same-workspace-reown.test.tsx（7 例，含上游原本的 5 例）
+- 處理（採上游結構，fork 的值塞回上游的新建構點）：
+  - fetch-combined-diff-section.ts：採上游檔；`retainResult` 之後加 fork 的 `// Fork-only: a folder tab's git reads go to its repo, not the folder workspace.` 與 `const context = { ...operation.context, worktreeId: getOpenFileGitWorktreeId(file) }`（import `getOpenFileGitWorktreeId` from `'@/store/slices/editor/git/open-file-git-owner'`），三處 `(operation.context, {` 改成 `(context, {`。fork 的 `getCombinedDiffSectionConnectionId`／`requireRuntimeTargetForFileOwner` 不加回：上游的 operation 已用 `getFileConnectionOwnerFromState` 解出 folder 底下 repo 的 host／connection。fork 測試 fetch-combined-diff-section.fork.test.ts 要先把分頁放進 store（`const file = folderFile({ filePath: ROOT })`、`useAppStore.setState({ openFiles: [file] })`，再傳 `file`），否則上游的 operation 拋「Couldn't verify which host owns this file」。mutation：拿掉 `worktreeId` 覆寫，該檔 3 例全紅。
+  - useEditorPanelFileContentLoader.ts：採上游檔；import 區加 `import { fileMatchesReadOwner, fileReadGitOwner } from './editor-file-read-git-owner'`；`let readGrantPairing` 後加 `const gitOwner = fileReadGitOwner(restoredOpenFile, worktreeId, relativePath, options)`；`readArgs` 的 `relativePath:`／`worktreeId:` 改成 `gitOwner.relativePath`／`gitOwner.worktreeId`；上游新的 `matchesRequest` 改成 `file.filePath === filePath && fileMatchesReadOwner(file, worktreeId, relativePath)`。fork 檔 editor-file-read-git-owner.ts 新增 `fileMatchesReadOwner(file, worktreeId, relativePath)`：worktreeId 比 `file.worktreeId` 或 `getOpenFileGitWorktreeId(file)`，relativePath 比 `file.relativePath` 或 `getOpenFileGitRelativePath(useAppStore.getState(), file)`（fork 開檔時就把 folder 分頁綁到 repo、relativePath 改成 repo 相對；不認 git owner 的話，parent workspace 的 conflict review 用 repo 的 id／路徑讀同一個分頁會被上游守門丟掉，讀不到內容）。直接寫在 loader 裡會到 310 行，超過 `max-lines` 300，所以放 fork 檔。
+  - restored-editor-same-workspace-reown.test.tsx：保留上游新增的 `it.each(...)('drops a delayed read after the same tab ID changes …')`，接 fork 改寫的「leaves a folder tab already bound to its repo alone…」；另把上游兩處 `load!(FILE_PATH, id, FOLDER, FILE_PATH)` 的最後一個參數改成 `'pkg/a.md'`（fork 的分頁 relativePath 是 `pkg/a.md`；正式流程都傳分頁自己的 relativePath，傳絕對路徑會被上游的 `matchesRequest` 丟掉）。拿掉 `fileMatchesReadOwner` 的 git owner 判斷時 fork 改寫的 2 例會紅。
+  - editor-save-queue.ts：採上游檔；import 改成 `import { isAutosaveSuspendedForFile } from './editor-autosave'` 加 `import { dispatchEditorFileSaved } from './editor-file-saved-dispatch'`；上游的 `window.dispatchEvent(new CustomEvent…({ detail: { fileId: settledViewIds.includes(fileId) ? fileId : settledViewIds[0], content: contentToSave, recordViewIds: settledViewIds } }))` 改成 `dispatchEditorFileSaved({ fileId: …同上…, content: contentToSave, filePath: liveFile.filePath, recordViewIds: settledViewIds })`。fork 檔 editor-file-saved-dispatch.ts 改成 `dispatchEditorFileSaved(detail: Required<EditorFileSavedDetail>)` 直接 `window.dispatchEvent(new CustomEvent<EditorFileSavedDetail>(ORCA_EDITOR_FILE_SAVED_EVENT, { detail }))`（view id 由上游的 `settleEditorRecordAfterWrite` 算好傳進來）。
+  - **待人判斷**：上游在 `settledViewIds.length === 0`（所有 view 在寫入完成前都關了）時直接 `return 'written'`、不發 saved 事件，並有上游測試 editor-save-queue-closed-view.test.ts「does not notify a reused view replaced synchronously during settlement」守它（view id 被別的檔重用時不能通知）。fork e0074d50bb 正是要在這情況發事件帶 `filePath`，讓 folder 面板馬上刷新 repo 而不是等 20 秒輪詢。照上面合，fork 測試 editor-file-saved-event.contract.test.ts「names the written path when every view of the file closed before the write landed」會紅（`expected [] to have a length of 1`）。選項：(a) 接受上游行為，刪掉這一例，folder repo 在這情況靠 20 秒輪詢；(b) 全關時不發 `ORCA_EDITOR_FILE_SAVED_EVENT`，改成 fork 另外直接通知 folder repo 刷新（只帶 `filePath`、不帶 view id），補測試證明。auto-rebase 不要自己選；先照 (a) 以外的部分合，這一例在 PR 說明列為待人判斷。
+- 守它的測試：fetch-combined-diff-section.fork.test.ts、folder-relative-git-consumers.test.tsx、restored-editor-same-workspace-reown.test.tsx、editor-file-saved-event.contract.test.ts（第一例）、上游 editor-save-queue-closed-view*.test.ts、`pnpm tc`、上游 lint 的 `oxlint`（max-lines）
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：同 #34779 那條；除 saved-event 那一例（待人判斷）外，上列測試全過；fetch-combined-diff-section 與 `fileMatchesReadOwner` 各做了一次 mutation（見上），editor-save-queue 帶 `filePath` 那處沒有 mutation 驗證。
+
+## 76cf164cf967d8088b9741ae95f3e0152a7605dd（#36110、Chat UI leaves Experimental: each agent's Chat or CLI choice decides what opens）× fork 6b25808376（fix(source-control): judge chat eligibility with the folder repo launch's start directory）、955ec7cc2b（fix(source-control): refuse chat below the folder root even before the host catalog is learned）、fd15fa9558（refactor: carry fork values in options objects instead of trailing positional params）、d4ac764be9（feat(source-control): folder workspace 多 repo 變更面板…）、e73bd3fdeb（test(source-control): build folder-cwd launch fixtures with upstream's action selection API）— canary 2026-10-31
+- 類型：兩邊各改各的（上游拿掉 `experimentalNativeChat` 開關：`isNativeChatDefaultFor` 換成 `nativeChatPreferenceFor`，`useSourceControlActionAgentChoice` 拿掉 `settings` 參數；fork 在同幾行加 folder repo 的啟動目錄 `initialCwd`／`tuiCustomization`）
+- 衝突檔：src/renderer/src/lib/host-chat-program.ts、src/renderer/src/components/right-sidebar/use-source-control-action-agent-choice.ts、src/renderer/src/components/right-sidebar/useSourceControlAgentActionDialog.ts
+- 連帶症狀：typecheck 錯誤 src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.ts、src/renderer/src/lib/agent-tab-shortcuts.ts、src/renderer/src/lib/folder-repo-launch-chat-route.test.ts（`Expected 4 arguments, but got 5`：衝突重設造成），以及 `experimentalNativeChat` 不存在：src/renderer/src/components/right-sidebar/SourceControlAgentActionDialog.folder-cwd.test.tsx、src/renderer/src/components/right-sidebar/source-control/panel/folder-source-control-test-fixture.tsx、folder-repo-launch-chat-route.test.ts；失敗測試 folder-repo-launch-chat-route.test.ts、SourceControlAgentActionDialog.folder-cwd.test.tsx、src/renderer/src/components/right-sidebar/source-control/panel/{commit-surface,panel-dialogs}.fork.test.tsx
+- 處理：
+  - host-chat-program.ts：上游的 `!nativeChatPreferenceFor(store.settings, agent) ||` 在前，接 fork 的 `// Why: a start directory below the root is a terminal whatever the host's catalog says.` 與 `input.startsOutsideWorkspaceRoot === true ||`。
+  - use-source-control-action-agent-choice.ts：丟上游刪掉的 `settings: GlobalSettings | null`，留 fork 的 `initialCwd?: string | null` 與註解。
+  - useSourceControlAgentActionDialog.ts：呼叫改成 `livePick,` 接 `initialCwd`（不要加回 `settings`）。
+  - fork 測試（額外 commit）：SourceControlAgentActionDialog.folder-cwd.test.tsx 與 folder-repo-launch-chat-route.test.ts 的 `experimentalNativeChat: true` 改成 `agentDefaultSurface: 'chat'`（舊語意：開關開、沒有個別選擇就開 chat；新語意由 `agentDefaultSurface` 決定沒選的 agent）；folder-source-control-test-fixture.tsx 刪掉 `settings.experimentalNativeChat = false`（預設 `agentDefaultSurface: 'terminal'` 已是同樣行為）。
+- 守它的測試：folder-repo-launch-chat-route.test.ts、SourceControlAgentActionDialog.folder-cwd.test.tsx、commit-surface.fork.test.tsx、panel-dialogs.fork.test.tsx、`pnpm tc`
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：同 #34779 那條；上列測試全過。
+
+## 12edee3ac61aba50f73ad3b8ac1b0d6cf80a68d5（#36210、Choose default models and effort for agents）× fork 3aaa74f8f3（test(fork): 守住來源控制復原啟動的 folder owner 與 cwd）— canary 2026-10-31
+- 類型：上游改了 fork 測試依賴的行為（`launchSourceControlRecoveryAgentWithDefault` 改成 `await settleAgentTabLaunch(result)` 並等 prompt 送達，測試環境沒有 PTY，永遠等不到）
+- 衝突檔：無
+- 連帶症狀：失敗測試（`Test timed out in 30000ms`）src/renderer/src/components/right-sidebar/source-control/ai/use-recovery-ai.fork.test.tsx（2 例）、src/renderer/src/components/right-sidebar/source-control/panel/use-panel-model.fork.test.tsx（「launches repo recovery through the panel in the folder with the repo cwd」）。canary 報告在 #36110 衝突重設時這些也紅，但原因是 tc；#36110 合好後才露出逾時。
+- 處理（額外 commit）：兩個測試不要 `await act(() => handler())`，改成 `act(() => void handler())`（use-recovery-ai 那個是 `void (kind === 'commit' ? …FixCommit… : …FixPush…)`），再用 `await vi.waitFor(() => expect(...))` 等分頁出現／`pendingInitialCwdByTabId` 帶 repo 路徑；vitest import 加 `vi`；加一行註解 `// The launch then waits for the agent to take its prompt, which no PTY here ever does.`
+- 守它的測試：上面兩個檔
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：兩檔 3 例通過（斷言仍是分頁開在哪個 folder 與 cwd，`vi.waitFor` 逾時就紅）；其餘同 #34779 那條。
+
+## 72104bfc64de3a2dc0454dc1dc2fc6661b338bdf（#36600、test: remove low-value fixture and forwarding suites）× fork d4ac764be9（feat(source-control): folder workspace 多 repo 變更面板…）、9bb9df964e（test: move fork cases out of upstream test files into .fork.test siblings）— canary 2026-10-31
+- 類型：上游刪掉 fork 改過的上游測試檔（modify/delete）
+- 衝突檔：src/renderer/src/components/right-sidebar/source-control-entry-context-menu.test.tsx、src/renderer/src/components/right-sidebar/source-control-split-open.test.ts（報告列在「Fork tests the merged tree no longer runs」）
+- 連帶症狀：無
+- 處理：接受上游的刪除（`git rm` 這兩個檔）。fork 在前者只加了 `ContextMenuShortcut: passthrough` mock，fork 的 context menu 案例已在 source-control-entry-context-menu.fork.test.tsx；後者 fork 改寫成「只有 Alt/Option 開 split」，同樣的行為由 fork 的 src/renderer/src/components/right-sidebar/source-control/listing/split-open.test.ts 守（config/fork-seam-tests.txt 的「Source-control row split-open modifiers and Open to the Side」組，逐一斷言 alt=true、ctrl/meta/shift=false）。
+- 守它的測試：listing/split-open.test.ts、source-control-entry-context-menu.fork.test.tsx
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：同 #34779 那條（兩個檔不在合併樹，其餘測試全過）。
+
+## 5cb0551b680f81cce526621b5c8fd06a68fff7b3（#36345、fix(editor): apply file icon themes to editor tabs）、2078ebb959f4af6ed7b1e583c9faeffa3fdaf52e（#36308、Keep tab right-click menus open through the opening release）× fork 49541d5c2f（refactor(git-graph-tab): route upstream editor-kind sites through fork-editor-tab-kinds）、75deec9118（feat(source-control): Git Graph 改成編輯器分頁,可切換 repo,並加上快捷鍵與 Cmd+J 進入點）— canary 2026-10-31
+- 類型：兩邊各改各的（上游把分頁圖示改成 `ModeIcon`，沒有固定圖示時回 `null` 改用 `FileTypeIcon`（icon theme），並加 simulator 的 `Smartphone`；fork 早先把這串判斷搬到 fork 檔 editor-file-tab-hover-icon.ts 的 `editorFileTabHoverIcon`，加 Git Graph 分頁的圖示）
+- 衝突檔：src/renderer/src/components/tab-bar/EditorFileTab.tsx（2 個 hunk：lucide import、圖示判斷）；#36308 只是 import 區的相鄰改動
+- 連帶症狀：失敗測試 src/renderer/src/components/tab-bar/EditorFileTab.fork.test.tsx（「draws the Git Graph icon」）
+- 處理：EditorFileTab.tsx 採上游檔，lucide import 改成 `import { Eye, ShieldAlert, Pin } from 'lucide-react'`（JSX 其他地方還用 Eye／ShieldAlert），加 `import { editorFileTabModeIcon } from './editor-file-tab-hover-icon'`；刪掉 `isDiff`、`isCheckDetails` 與上游整串 `ModeIcon` 三元式，換成 `const ModeIcon = editorFileTabModeIcon(file)`（保留 `isConflictReview`、`isMarkdownPreviewTab`、`customEditor`）。fork 檔 editor-file-tab-hover-icon.ts 把 `editorFileTabHoverIcon(mode, fileIcon)` 改成 `editorFileTabModeIcon(file: Pick<OpenFile, 'mode' | 'language'>): LucideIcon | null`：conflict-review→ShieldAlert、check-details→ListChecks、diff→GitCompareArrows、markdown-preview→Eye、`file.language === 'simulator'`→Smartphone（帶上游的 Why 註解）、其餘 `forkEditorTabIcon(mode) ?? null`。
+- 守它的測試：EditorFileTab.fork.test.tsx、`pnpm tc`
+- 驗證（2026-10-31，上游 2487a258fe25e4ea35850d0f912447c939855234）：同 #34779 那條；EditorFileTab.fork.test.tsx 通過。
