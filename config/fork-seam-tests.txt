@@ -61,6 +61,9 @@ src/renderer/src/components/editor/EditorConflictReviewSurface.git-owner.test.ts
 src/renderer/src/components/editor/conflict-review-folder-owner.test.tsx
 src/renderer/src/components/editor/ExternalFileChangeBanner.git-owner.test.ts
 
+# Source-control row split-open modifiers and Open to the Side
+src/renderer/src/components/right-sidebar/source-control/listing/split-open.test.ts
+
 # git-graph tab type: hydration, editor tabs, layout, runtime graph sync
 src/renderer/src/runtime/sync-runtime-graph-git-graph-tab.test.ts
 src/renderer/src/store/slices/editor-git-graph-tabs.test.ts
