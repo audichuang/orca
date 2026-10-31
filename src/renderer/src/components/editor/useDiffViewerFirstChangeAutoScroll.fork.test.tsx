@@ -13,7 +13,7 @@ afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
 })
-it('yields a queued first-change scroll when previous-file arrival takes over before the frame', () => {
+function navigationHarness(ready = true) {
   const frames = new Map<number, FrameRequestCallback>()
   let nextFrame = 0
   vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
@@ -64,7 +64,7 @@ it('yields a queued first-change scroll when previous-file arrival takes over be
       const navigation = useDiffNavigation()
       useDiffViewerFirstChangeAutoScroll({
         diffEditorRef: ref,
-        modifiedEditor: diff.getModifiedEditor(),
+        modifiedEditor: ready ? diff.getModifiedEditor() : null,
         modelKey: 'target-file',
         pendingScrollCommentId: null
       })
@@ -81,14 +81,49 @@ it('yields a queued first-change scroll when previous-file arrival takes over be
     }
   )
   act(() => result.current.registration.registerDiffEditor(diff))
-  act(() => result.current.navigation.goToPreviousDiff())
-  act(() => result.current.navigation.goToPreviousDiff())
-  expect(open).toHaveBeenCalledWith(0)
-  index = 0
-  rerender()
-  act(() => listeners.forEach((listener) => listener()))
-  flushFrame()
-  expect(line).toBe(1)
-  flushFrame()
-  expect(line).toBe(7)
+  return {
+    open,
+    flushFrame,
+    line: () => line,
+    previous: () => act(() => result.current.navigation.goToPreviousDiff()),
+    update: () => act(() => listeners.forEach((listener) => listener())),
+    setIndex: (next: number) => {
+      index = next
+      rerender()
+    },
+    setReady: (next: boolean) => {
+      ready = next
+      rerender()
+    }
+  }
+}
+
+it('yields a queued first-change scroll when previous-file arrival takes over before the frame', () => {
+  const h = navigationHarness()
+  h.previous()
+  h.previous()
+  expect(h.open).toHaveBeenCalledWith(0)
+  h.setIndex(0)
+  h.update()
+  h.flushFrame()
+  expect(h.line()).toBe(1)
+  h.flushFrame()
+  expect(h.line()).toBe(7)
+})
+
+it('keeps an arrived cursor when only the file-list context changes', () => {
+  const h = navigationHarness(false)
+  h.previous()
+  h.previous()
+  h.setIndex(0)
+  h.update()
+  h.flushFrame()
+  h.flushFrame()
+  expect(h.line()).toBe(7)
+  h.setReady(true)
+  h.flushFrame()
+  h.setIndex(1)
+  h.update()
+  h.flushFrame()
+  expect(h.line()).toBe(7)
 })
