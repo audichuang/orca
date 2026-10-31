@@ -215,12 +215,17 @@ function shardOf(list, spec) {
 
 function scan(base, { out, shard, only }) {
   const root = git(['rev-parse', '--show-toplevel']).trim()
-  const reverting = join(out, '.reverting')
+  // Why the worktree's git dir: a rerun with another --out still finds a file a killed run left reverted.
+  const reverting = resolve(
+    root,
+    git(['rev-parse', '--git-dir']).trim(),
+    'fork-hunk-scan-reverting'
+  )
   if (existsSync(reverting)) {
     const path = readFileSync(reverting, 'utf8').trim()
     git(['checkout', '--', path])
     rmSync(reverting)
-    console.log(`restored ${path} from .reverting`)
+    console.log(`restored ${path} left reverted by an interrupted scan`)
   }
   if (git(['status', '--porcelain', '--untracked-files=no']).trim()) {
     throw new Error('tracked changes in the worktree; scan a clean checkout')
