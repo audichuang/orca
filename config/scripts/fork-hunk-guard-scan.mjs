@@ -80,13 +80,6 @@ export function revertHunk(newText, hunk) {
   return lines.join('\n')
 }
 
-export function revertHunks(newText, hunks) {
-  // Why: later hunks keep their HEAD offsets only until an earlier hunk changes the line count.
-  return [...hunks]
-    .sort((a, b) => b.newStart - a.newStart)
-    .reduce((text, hunk) => revertHunk(text, hunk), newText)
-}
-
 function importLineSet(sourceText, path) {
   const lines = new Set()
   if (!/\.[cm]?[jt]sx?$/.test(path)) {
@@ -198,13 +191,11 @@ function runVitest(root, tests, outFile, { bail = true } = {}) {
   const report = JSON.parse(readFileSync(outFile, 'utf8'))
   const failed = []
   for (const file of report.testResults ?? []) {
-    const failures = (file.assertionResults ?? []).filter((test) => test.status === 'failed')
+    const failure = (file.assertionResults ?? []).find((test) => test.status === 'failed')
     if (file.status === 'failed') {
-      const failure = failures[0]
       failed.push({
         file: relative(root, file.name),
         test: failure?.fullName ?? '(file failed to load)',
-        tests: failures.map((test) => test.fullName),
         message: (failure?.failureMessages?.[0] ?? file.message ?? '').split('\n')[0].slice(0, 300)
       })
     }
@@ -319,7 +310,6 @@ function scan(base, { out, shard, only }) {
       hunk,
       kind: classifyHunk(hunk, { oldText, newText, path })
     }))
-    const imports = classified.filter(({ kind }) => kind === 'import').map(({ hunk }) => hunk)
     const runReverted = (text, tests = candidates, options) => {
       writeFileSync(reverting, JSON.stringify({ path, sha256: contentHash(text) }))
       try {
@@ -347,23 +337,7 @@ function scan(base, { out, shard, only }) {
       } else if (candidates.length === 0) {
         record.result = 'no-fork-test'
       } else {
-        let run = runReverted(revertHunk(newText, hunk))
-        if (!run.error && run.failed.length > 0 && isCrash(run.failed[0]) && imports.length > 0) {
-          const paired = runReverted(revertHunks(newText, [hunk, ...imports]))
-          if (!paired.error && paired.failed.length > 0 && !isCrash(paired.failed[0])) {
-            // Why: the same failure with only the imports reverted comes from another import, not this hunk.
-            const control = runReverted(revertHunks(newText, imports), [paired.failed[0].file], {
-              bail: false
-            })
-            const target = paired.failed[0].test
-            const controlled =
-              !control.error && !control.failed.some((f) => isCrash(f) || f.tests.includes(target))
-            if (controlled) {
-              run = paired
-              record.pairedWithImports = true
-            }
-          }
-        }
+        const run = runReverted(revertHunk(newText, hunk))
         if (run.error) {
           record.result = 'error'
           record.detail = run.error
@@ -385,9 +359,7 @@ function scan(base, { out, shard, only }) {
         }
       }
       writeFileSync(outFile, `${JSON.stringify(record)}\n`, { flag: 'a' })
-      console.log(
-        `${record.result.padEnd(12)} ${path}:${record.line} (${kind}${record.pairedWithImports ? ', paired with imports' : ''})`
-      )
+      console.log(`${record.result.padEnd(12)} ${path}:${record.line} (${kind})`)
     }
   }
   rmSync(vitestJson, { force: true })
