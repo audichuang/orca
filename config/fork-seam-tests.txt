@@ -125,3 +125,10 @@ src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.fold
 src/renderer/src/components/right-sidebar/source-control/ai/use-ai.folder-cwd.test.tsx
 src/renderer/src/components/right-sidebar/SourceControlAgentActionDialog.folder-cwd.test.tsx
 src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts
+
+# Editor folder git-owner routing, mounted owner changes, and diff review notes
+src/renderer/src/store/slices/editor/actions/open-history-diff.fork.test.ts
+src/renderer/src/store/slices/editor/tabs/untitled-file-cleanup.fork.test.ts
+src/renderer/src/store/slices/editor/actions/open-conflict-file-owner.test.ts
+src/renderer/src/store/slices/editor/actions/open-file-git-owner-merge.test.ts
+src/renderer/src/lib/remap-open-editor-tabs-for-path-change.fork.test.ts
