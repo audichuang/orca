@@ -12,11 +12,7 @@ import type { TreeNode } from './file-explorer-types'
 import { createFileExplorerRowProjection } from './file-explorer-row-projection'
 import { visit, type ReactElementLike } from './file-explorer-element-tree-test-harness'
 
-const mocks = vi.hoisted(() => ({ readRuntimeFileContent: vi.fn(), writeClipboardText: vi.fn() }))
-vi.mock('@/runtime/runtime-file-read-client', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  readRuntimeFileContent: mocks.readRuntimeFileContent
-}))
+const mocks = vi.hoisted(() => ({ readFile: vi.fn(), writeClipboardText: vi.fn() }))
 
 const { FileExplorerFilesTreePane } = await import('./FileExplorerFilesTreePane')
 const { ClipcodeExplorerVirtualRows } =
@@ -44,10 +40,11 @@ beforeEach(() => {
   })
   vi.stubGlobal('api', {
     ...window.api,
-    ui: { ...window.api?.ui, writeClipboardText: mocks.writeClipboardText }
+    ui: { ...window.api?.ui, writeClipboardText: mocks.writeClipboardText },
+    fs: { ...window.api?.fs, readFile: mocks.readFile }
   })
-  mocks.readRuntimeFileContent.mockImplementation(async (args: { relativePath: string }) => ({
-    content: `content of ${args.relativePath}`,
+  mocks.readFile.mockImplementation(async (args: { filePath: string }) => ({
+    content: `content of ${args.filePath.slice('/repo/'.length)}`,
     isBinary: false
   }))
 })
@@ -59,7 +56,7 @@ afterEach(() => {
 
 type RowsProps = ComponentProps<typeof ClipcodeExplorerVirtualRows>
 
-function renderRows(selectedPaths: Set<string>): void {
+function renderRows(selectedPaths: Set<string>, throughPane = false): void {
   const nodes = [a, b, c]
   const props: RowsProps = {
     clipcodeWorktreePath: '/repo',
@@ -109,11 +106,48 @@ function renderRows(selectedPaths: Set<string>): void {
     dragSourcePath: null,
     nativeDropTargetDir: null
   }
-  render(
-    <TooltipProvider>
-      <ClipcodeExplorerVirtualRows {...props} />
-    </TooltipProvider>
+  const paneProps = {
+    activeRepo: null,
+    worktreePath: '/repo',
+    displayRootPath: '/repo',
+    explorerView: 'files',
+    activeFileId: null,
+    hasNameFilter: false,
+    nameFilterSource: null,
+    nameFilterFiles: { loadError: null },
+    tree: {
+      loadingDirPaths: new Set(),
+      rootError: null,
+      dirCache: { '/repo': { children: nodes } }
+    },
+    selection: {
+      selectedPaths,
+      preserveSelectionForContextMenu: props.onContextMenuSelect,
+      copyPathsForNode: props.onCopyPaths
+    },
+    rowProjection: props.rowProjection,
+    ignoredByRelativePath: props.ignoredByRelativePath,
+    rowExpandedPaths: props.expanded,
+    visibleRowCount: nodes.length,
+    paneState: {
+      folderStatusByRelativePath: props.folderStatusByRelativePath,
+      statusByRelativePath: props.statusByRelativePath,
+      inlineInputState: { inlineInput: null, inlineInputIndex: -1 },
+      rowScrolling: { virtualizer: props.virtualizer },
+      handlers: {},
+      nodeCommands: {},
+      deletion: { deleteShortcutLabel: 'Del' },
+      dragDrop: { rootDragHandlers: {} }
+    }
+  }
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: supplies every field used by the rendered rows and copy menu; other explorer commands stay inactive.
+  const treePaneProps = paneProps as unknown as ComponentProps<typeof FileExplorerFilesTreePane>
+  const content = throughPane ? (
+    <FileExplorerFilesTreePane {...treePaneProps} />
+  ) : (
+    <ClipcodeExplorerVirtualRows {...props} />
   )
+  render(<TooltipProvider>{content}</TooltipProvider>)
 }
 
 async function copyFullSourceFrom(name: string): Promise<string> {
@@ -129,6 +163,13 @@ async function copyFullSourceFrom(name: string): Promise<string> {
 }
 
 describe('explorer Copy Full Source wiring', () => {
+  it('copies a file through the tree pane menu using the real runtime reader', async () => {
+    renderRows(new Set(), true)
+    const payload = await copyFullSourceFrom('a.ts')
+    expect(payload).toContain('content of a.ts')
+    expect(mocks.readFile).toHaveBeenCalledWith(expect.objectContaining({ filePath: '/repo/a.ts' }))
+  })
+
   it('the tree pane renders its rows with ClipCode actions for the worktree', () => {
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: element-tree fixture; only the fields the pane reads before rendering rows are supplied.
     const element = FileExplorerFilesTreePane({
