@@ -14,7 +14,7 @@ import { collectUnitDependencyGraph, unitConsumers } from './ci-unit-dependency-
 const UNIT_TEST = /\.test\.[cm]?[jt]sx?$/
 const RUN_TIMEOUT_MS = 10 * 60 * 1000
 const CRASH =
-  /^(?:ReferenceError|SyntaxError)|is not defined|is not a function|Cannot find module|does not provide an export|No "[^"]+" export is defined on the "[^"]+" mock|Failed to resolve import/
+  /^(?:ReferenceError|SyntaxError)|is not defined|is not a function|Cannot find module|does not provide an export|\(file failed to load\)|No "[^"]+" export is defined on the "[^"]+" mock|Failed to resolve import/
 
 export function isCrash(failure) {
   return failure.test === '(file failed to load)' || CRASH.test(failure.message)
