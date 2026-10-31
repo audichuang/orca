@@ -1,6 +1,6 @@
 // Fork mutation pass: revert each fork hunk in an upstream production file to upstream's side, one at a
 // time, and run the fork tests that reach that file. A hunk no fork test turns red on is an unguarded seam.
-// Usage: node config/scripts/fork-hunk-guard-scan.mjs <fork-base> --out <dir> [--shard i/n] [--only <substr>]
+// Usage: node config/scripts/fork-hunk-guard-scan.mjs <fork-base> --out <dir> [--shard i/n] [--only <substr>]...
 //        node config/scripts/fork-hunk-guard-scan.mjs --report <dir>
 import { execFileSync, spawnSync } from 'node:child_process'
 import {
@@ -215,7 +215,7 @@ function scan(base, { out, shard, only }) {
     status
       .filter(([code, path]) => code === 'M' && classifyUpstreamFile(path) === 'production')
       .map(([, path]) => path)
-      .filter((path) => !only || path.includes(only))
+      .filter((path) => only.length === 0 || only.some((part) => path.includes(part)))
       .sort(),
     shard
   )
@@ -367,11 +367,11 @@ function main() {
   const out = flag('--out')
   if (!base || !out) {
     console.error(
-      'usage: fork-hunk-guard-scan.mjs <fork-base> --out <dir> [--shard i/n] [--only <substr>] | --report <dir>'
+      'usage: fork-hunk-guard-scan.mjs <fork-base> --out <dir> [--shard i/n] [--only <substr>]... | --report <dir>'
     )
     process.exit(2)
   }
-  scan(base, { out: resolve(out), shard: flag('--shard'), only: flag('--only') })
+  scan(base, { out: resolve(out), shard: flag('--shard'), only: args.filter((_, index) => args[index - 1] === '--only') })
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
