@@ -43,7 +43,9 @@ it.each(['commit', 'push'] as const)(
         ? result.current.handleFixCommitFailureWithAI()
         : result.current.handleFixPushFailureWithAI()
     )
-    expect(useAppStore.getState().tabsByWorktree[OTHER_FOLDER]).toHaveLength(1)
+    expect(useAppStore.getState().tabsByWorktree[OTHER_FOLDER]).toEqual([
+      expect.objectContaining({ worktreeId: OTHER_FOLDER })
+    ])
     expect(Object.values(useAppStore.getState().pendingInitialCwdByTabId)).toEqual([REPO.path])
   }
 )
