@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Fork seam guard: a branch row clicked in a folder repo section opens its diff in the folder's editor
 // through the real store, keeping the repo as the tab's git owner.
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useAppStore } from '@/store'
@@ -47,5 +47,38 @@ describe('a folder repo section branch row (fork)', () => {
     expect(useAppStore.getState().openFiles).toEqual([
       expect.objectContaining({ mode: 'diff', worktreeId: FOLDER, gitWorktreeId: REPO })
     ])
+  })
+})
+
+it('keeps the folder file row active and opens its working-tree diff with repo ownership', () => {
+  useAppStore.setState({ activeWorktreeId: FOLDER })
+  useAppStore.getState().openFile({
+    filePath: '/work/repo-1/src/a.ts',
+    relativePath: 'repo-1/src/a.ts',
+    worktreeId: FOLDER,
+    language: 'typescript',
+    mode: 'edit'
+  })
+  const entry = { path: 'src/a.ts', status: 'modified' as const, area: 'unstaged' as const }
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <SourceControlWorktreeScopeContext.Provider value={SCOPE}>
+      {children}
+    </SourceControlWorktreeScopeContext.Provider>
+  )
+  const { result } = renderHook(
+    () =>
+      useSourceControlRowOpening({
+        activeWorktreeId: REPO,
+        worktreePath: '/work/repo-1',
+        visibleSelectionEntries: [{ key: 'unstaged::src/a.ts', entry, area: 'unstaged' }],
+        branchSummary: null
+      }),
+    { wrapper }
+  )
+  expect([...result.current.activeOpenRowKeys]).toEqual(['unstaged::src/a.ts'])
+  act(() => result.current.handleOpenDiff(entry))
+  expect(useAppStore.getState().openFiles.find((file) => file.mode === 'diff')).toMatchObject({
+    worktreeId: FOLDER,
+    relativePath: 'src/a.ts'
   })
 })
