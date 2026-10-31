@@ -123,4 +123,43 @@ describe('remapOpenEditorTabsForPathChange for a scoped tab git owner', () => {
     expect(diff?.relativePath).toBe('docs/x.ts')
     expect(diff?.gitWorktreeId).toBe('repo-a')
   })
+
+  it('re-homes a markdown preview and its source together when moved outside their repo', () => {
+    const state = useAppStore.getState()
+    const sourceId = state.openFile(
+      {
+        filePath: '/work/folder/repo-a/notes.md',
+        relativePath: 'notes.md',
+        worktreeId: 'folder:folder',
+        gitWorktreeId: 'repo-a',
+        runtimeEnvironmentId: null,
+        language: 'markdown',
+        mode: 'edit'
+      },
+      { suppressActiveRuntimeFallback: true }
+    )
+    state.openMarkdownPreview(
+      useAppStore.getState().openFiles.find((file) => file.id === sourceId)!
+    )
+    useAppStore.setState((s) => ({
+      openFiles: s.openFiles.map((file) =>
+        file.mode === 'markdown-preview' ? { ...file, gitWorktreeId: 'repo-a' } : file
+      )
+    }))
+    remapOpenEditorTabsForPathChange({
+      fromPath: '/work/folder/repo-a/notes.md',
+      toPath: '/work/folder/notes.md',
+      worktreePath: '/work/folder',
+      worktreeId: 'folder:folder',
+      owner: localMoveOwner('folder:folder')
+    })
+    expect(
+      useAppStore.getState().openFiles.find((file) => file.mode === 'markdown-preview')
+    ).toMatchObject({
+      filePath: '/work/folder/notes.md',
+      relativePath: 'notes.md',
+      gitWorktreeId: undefined,
+      markdownPreviewSourceFileId: '/work/folder/notes.md'
+    })
+  })
 })

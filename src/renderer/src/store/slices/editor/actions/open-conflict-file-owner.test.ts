@@ -44,4 +44,28 @@ describe('openConflictFile owner isolation', () => {
     expect(files).toHaveLength(1)
     expect(files[0]).toMatchObject({ worktreeId: 'folder:f1', gitWorktreeId: 'repo-a' })
   })
+
+  it('adds the discovered repo owner to an existing ordinary folder editor', () => {
+    const state = useAppStore.getState()
+    state.openFile(
+      {
+        filePath: '/work/folder/repo-a/src/x.ts',
+        relativePath: 'src/x.ts',
+        worktreeId: 'folder:folder',
+        runtimeEnvironmentId: null,
+        language: 'typescript',
+        mode: 'edit'
+      },
+      { suppressActiveRuntimeFallback: true }
+    )
+    state.openConflictFile('folder:folder', '/work/folder/repo-a', entry, 'typescript', {
+      gitWorktreeId: 'repo-a'
+    })
+    expect(useAppStore.getState().openFiles).toEqual([
+      expect.objectContaining({
+        gitWorktreeId: 'repo-a',
+        conflict: expect.objectContaining({ conflictStatus: 'unresolved' })
+      })
+    ])
+  })
 })
