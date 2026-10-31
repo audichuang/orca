@@ -132,3 +132,8 @@ src/renderer/src/store/slices/editor/tabs/untitled-file-cleanup.fork.test.ts
 src/renderer/src/store/slices/editor/actions/open-conflict-file-owner.test.ts
 src/renderer/src/store/slices/editor/actions/open-file-git-owner-merge.test.ts
 src/renderer/src/lib/remap-open-editor-tabs-for-path-change.fork.test.ts
+src/renderer/src/components/editor/combined-diff/load-sections/fetch-combined-diff-section.fork.test.ts
+src/renderer/src/components/editor/combined-diff/load-sections/use-combined-diff-section-revalidation.fork.test.tsx
+src/renderer/src/components/editor/combined-diff/review-controls/use-combined-diff-section-actions.fork.test.tsx
+src/renderer/src/components/editor/useEditorPanelDiffContentLoader.fork.test.tsx
+src/renderer/src/components/tab-bar/use-tab-bar-runtime-model.fork.test.tsx
