@@ -15,3 +15,6 @@ src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-
 config/scripts/pr-code-change-scope.mjs isDocsOnlyPath
 # fork-lint-run.mjs runs upstream's lint steps one at a time, so it reads the step list run-lint.mjs uses.
 config/scripts/run-lint.mjs LINT_STEPS
+# Behavior-bearing: fork-hunk-guard-scan.mjs finds the fork tests reaching a file through upstream's unit graph.
+config/scripts/ci-unit-dependency-graph.mjs collectUnitDependencyGraph
+config/scripts/ci-unit-dependency-graph.mjs unitConsumers
