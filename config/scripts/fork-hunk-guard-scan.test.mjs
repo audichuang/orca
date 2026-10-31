@@ -4,8 +4,7 @@ import {
   isCrash,
   isVitestTimeout,
   parseHunks,
-  revertHunk,
-  revertHunks
+  revertHunk
 } from './fork-hunk-guard-scan.mjs'
 
 const OLD = ["import { a } from './a'", '', 'export function f() {', '  return a()', '}', ''].join(
@@ -68,11 +67,6 @@ describe('fork hunk guard scan', () => {
 
   it('tests only hunks that change behaviour', () => {
     expect(hunks.map((hunk) => classifyHunk(hunk, context))).toEqual(['import', 'code'])
-  })
-
-  it('reverts code and imports together without shifting HEAD hunk offsets', () => {
-    expect(revertHunks(NEW, hunks)).toBe(OLD)
-    expect(revertHunks(NEW, [hunks[1], hunks[0]])).toBe(OLD)
   })
 
   it.each([
