@@ -350,4 +350,4 @@ fork-check-e2e: fork-base-guard
 	    test -f "$$spec" || { echo "fork-check-e2e: $$spec is missing; playwright would skip it silently"; exit 1; }; \
 	  done && \
 	  echo ">> fork e2e specs:" $$specs && \
-	  npx playwright test $$specs --config tests/playwright.config.ts --project=electron-headless --workers=1
+	  npx playwright test $$specs --config tests/playwright.config.ts --project=electron-headless --workers=1 $(if $(FORK_E2E_SHARD),--shard=$(FORK_E2E_SHARD))
