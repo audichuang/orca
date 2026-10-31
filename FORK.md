@@ -79,7 +79,7 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 
 ## When a fork e2e goes red
 
-- On CI, download the job's artifact (`gh run download <run> -R audichuang/orca -n fork-e2e-playwright-traces`) and open `shots/`: the folder spec saves a screenshot per step, and the step before `FAIL-<scenario>.png` shows what the page looked like. `test-failed-1.png` is taken after the run and the Electron trace has no frames.
+- On CI, download the job's artifact (`gh run download <run> -R audichuang/orca -p 'fork-e2e-playwright-traces-*'`; one artifact per e2e shard) and open `shots/`: the folder spec saves a screenshot per step, and the step before `FAIL-<scenario>.png` shows what the page looked like. `test-failed-1.png` is taken after the run and the Electron trace has no frames.
 - Something covering the target (a toast, a dialog, a floating button) is a product bug until shown otherwise: a user hits it too. Fix the layout and make a geometry check go red on the old code. Wait for an overlay to leave only when it would make the scenario's own check pass early (S13), never to get a click through.
 - Locally, `fork-check-e2e` and `fork-check-wire` first wait up to 10 minutes for the 1-minute load to fall to the core count; a timeout on a still-loaded machine is load first, so rerun it quiet before calling it a regression.
 
