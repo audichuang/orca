@@ -183,8 +183,8 @@ FORK_BASE ?= $(shell git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude 
 # Why: resolve once; a recursive ?= reruns git describe on every reference.
 FORK_BASE := $(FORK_BASE)
 # Why the guard: a clone without upstream tags resolves an ancient FORK_BASE and silently runs thousands of unrelated tests.
-# Why 400: fork work alone passed 200 commits on v1.4.237; an ancient base is thousands behind.
-FORK_MAX_COMMITS ?= 400
+# Why 1000: fork work alone reached 400 commits on v1.4.245; an ancient base is thousands behind.
+FORK_MAX_COMMITS ?= 1000
 
 # Vitest on the unit config after restoring Node-built native modules; append the files.
 FORK_VITEST = node config/scripts/ensure-native-runtime.mjs --runtime=node && pnpm exec vitest run --config config/vitest.config.ts
