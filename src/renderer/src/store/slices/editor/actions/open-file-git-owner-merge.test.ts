@@ -51,6 +51,8 @@ describe('openFile git owner merge', () => {
     }
     const state = useAppStore.getState()
     state.openFile(file, { suppressActiveRuntimeFallback: true })
+    // Settle preview pinning before discovering only the git owner.
+    state.openFile(file, { suppressActiveRuntimeFallback: true })
     state.openFile({ ...file, gitWorktreeId: 'repo-a' }, { suppressActiveRuntimeFallback: true })
     expect(useAppStore.getState().openFiles).toEqual([
       expect.objectContaining({ gitWorktreeId: 'repo-a' })

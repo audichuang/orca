@@ -43,7 +43,8 @@ it('disables opening a working file deleted in the folder tab repo', () => {
   expect(view.getByRole('button', { name: 'Open file' }).hasAttribute('disabled')).toBe(true)
 })
 
-it('opens the working file from a folder diff with its repo owner intact', () => {
+it('opens a restored folder diff with its repo owner before the repo catalog reloads', () => {
+  useAppStore.setState({ repos: [], worktreesByRepo: {} })
   const view = render(
     <TooltipProvider>
       <EditorPanel />
