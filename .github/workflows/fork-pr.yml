@@ -203,7 +203,7 @@ jobs:
         if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
-          name: fork-e2e-playwright-traces-${{ strategy.job-index }}
+          name: fork-e2e-playwright-traces-${{ strategy.job-index }}-${{ github.run_attempt }}
           path: test-results/
           retention-days: 7
           if-no-files-found: ignore
