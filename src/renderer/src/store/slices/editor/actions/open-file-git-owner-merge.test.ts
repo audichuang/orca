@@ -39,4 +39,23 @@ describe('openFile git owner merge', () => {
     state.openFile(base, { suppressActiveRuntimeFallback: true })
     expect(useAppStore.getState().openFiles[0]?.gitWorktreeId).toBe('repo-a')
   })
+
+  it('upgrades an already-open folder tab when only its git owner becomes known', () => {
+    const file = {
+      filePath: '/work/folder/repo-a/src/a.ts',
+      relativePath: 'src/a.ts',
+      worktreeId: 'folder:folder',
+      runtimeEnvironmentId: null,
+      language: 'typescript',
+      mode: 'edit' as const
+    }
+    const state = useAppStore.getState()
+    state.openFile(file, { suppressActiveRuntimeFallback: true })
+    // Settle preview pinning before discovering only the git owner.
+    state.openFile(file, { suppressActiveRuntimeFallback: true })
+    state.openFile({ ...file, gitWorktreeId: 'repo-a' }, { suppressActiveRuntimeFallback: true })
+    expect(useAppStore.getState().openFiles).toEqual([
+      expect.objectContaining({ gitWorktreeId: 'repo-a' })
+    ])
+  })
 })

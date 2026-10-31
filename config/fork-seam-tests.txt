@@ -125,3 +125,30 @@ src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.fold
 src/renderer/src/components/right-sidebar/source-control/ai/use-ai.folder-cwd.test.tsx
 src/renderer/src/components/right-sidebar/SourceControlAgentActionDialog.folder-cwd.test.tsx
 src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts
+
+# Editor folder git-owner routing, mounted owner changes, and diff review notes
+src/renderer/src/store/slices/editor/actions/open-history-diff.fork.test.ts
+src/renderer/src/store/slices/editor/tabs/untitled-file-cleanup.fork.test.ts
+src/renderer/src/store/slices/editor/actions/open-conflict-file-owner.test.ts
+src/renderer/src/store/slices/editor/actions/open-file-git-owner-merge.test.ts
+src/renderer/src/lib/remap-open-editor-tabs-for-path-change.fork.test.ts
+src/renderer/src/components/editor/combined-diff/load-sections/fetch-combined-diff-section.fork.test.ts
+src/renderer/src/components/editor/combined-diff/load-sections/use-combined-diff-section-revalidation.fork.test.tsx
+src/renderer/src/components/editor/combined-diff/review-controls/use-combined-diff-section-actions.fork.test.tsx
+src/renderer/src/components/editor/useEditorPanelDiffContentLoader.fork.test.tsx
+src/renderer/src/components/tab-bar/use-tab-bar-runtime-model.fork.test.tsx
+src/renderer/src/components/editor/ChangesModeView.fork.test.tsx
+src/renderer/src/components/editor/EditorDiffFileSurface.fork.test.tsx
+src/renderer/src/components/editor/EditorPanel.fork.test.tsx
+src/renderer/src/components/editor/ExternalFileChangeCompareDialog.fork.test.tsx
+src/renderer/src/components/editor/combined-diff/scroll-viewport/combined-diff-section-list.fork.test.tsx
+src/renderer/src/components/editor/useDiffViewerFirstChangeAutoScroll.fork.test.tsx
+
+# Folder source-control action routing: real panel, recovery dialogs, notes and discard failures
+src/renderer/src/components/right-sidebar/source-control/panel/use-panel-model.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/panel/commit-surface.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/panel/panel-dialogs.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/ai/use-recovery-ai.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/notes/notes-shelf.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/commit/use-discard-confirmation.fork.test.tsx
+src/renderer/src/components/right-sidebar/useSourceControlAgentActionStart.fork.test.tsx

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Fork seam guard: a discard in a folder repo section tells the folder's tabs the file changed, even a tab
 // opened before the repo was known (so it has no git owner). Real store; only window.api.git is stubbed.
+import { toast } from 'sonner'
 import { act, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -34,7 +35,15 @@ beforeEach(() => {
   useAppStore.setState(useAppStore.getInitialState(), true)
   Object.defineProperty(window, 'api', {
     configurable: true,
-    value: { git: { discard: vi.fn(async () => {}), bulkDiscard: vi.fn(async () => {}) } }
+    value: {
+      git: {
+        stage: vi.fn(async () => {
+          throw new Error('index.lock exists')
+        }),
+        discard: vi.fn(async () => {}),
+        bulkDiscard: vi.fn(async () => {})
+      }
+    }
   })
   notifiedTabIds = new Set()
   window.addEventListener(ORCA_EDITOR_EXTERNAL_FILE_CHANGE_EVENT, recordNotifiedTabs)
@@ -87,4 +96,58 @@ describe.each([false, true])('folder repo section discard (bulk: %s, fork)', (bu
 
     expect([...notifiedTabIds].sort()).toEqual([...tabIds].sort())
   })
+})
+
+function retryAction() {
+  const notification = toast.getToasts().find((item) => item.id === 'source-control-entry-mutation')
+  return notification && 'action' in notification ? notification.action : undefined
+}
+
+it('keeps Retry available for a stage failure after moving the repo section to another folder', async () => {
+  const args = {
+    activeRepoTarget: runtimeTargetForOwnerEnvironment(null),
+    activeWorktreeId: REPO,
+    worktreePath: '/f/repo',
+    refreshActiveGitStatusAfterMutation: async () => {}
+  }
+  let scope = FOLDER_SCOPE
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <SourceControlWorktreeScopeContext.Provider value={scope}>
+      {children}
+    </SourceControlWorktreeScopeContext.Provider>
+  )
+  const { result, rerender } = renderHook(() => useSourceControlEntryMutations(args), { wrapper })
+  scope = { ...FOLDER_SCOPE, editorWorktreeId: 'folder:other-folder' }
+  useAppStore.setState({ activeWorktreeId: scope.editorWorktreeId })
+  rerender()
+  await act(() => result.current.handleStage('a.ts'))
+  expect(retryAction()).toEqual(expect.objectContaining({ label: 'Retry' }))
+})
+
+it('notifies the new folder after a discard callback survives a scope change', async () => {
+  const args = {
+    activeRepoTarget: runtimeTargetForOwnerEnvironment(null),
+    activeWorktreeId: REPO,
+    worktreePath: '/f/repo',
+    refreshActiveGitStatusAfterMutation: async () => {}
+  }
+  let scope = FOLDER_SCOPE
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <SourceControlWorktreeScopeContext.Provider value={scope}>
+      {children}
+    </SourceControlWorktreeScopeContext.Provider>
+  )
+  const { result, rerender } = renderHook(() => useSourceControlEntryMutations(args), { wrapper })
+  scope = { ...FOLDER_SCOPE, editorWorktreeId: 'folder:other-folder' }
+  useAppStore.getState().openFile({
+    filePath: '/f/repo/a.ts',
+    relativePath: 'repo/a.ts',
+    worktreeId: scope.editorWorktreeId,
+    language: 'typescript',
+    mode: 'edit'
+  })
+  const id = useAppStore.getState().openFiles[0]?.id
+  rerender()
+  await act(() => result.current.discardSingle('a.ts'))
+  expect([...notifiedTabIds]).toEqual([id])
 })
