@@ -77,6 +77,7 @@ describe('fork hunk guard scan', () => {
 
   it.each([
     ['(file failed to load)', 'unexpected token in dependency', true],
+    ['save', '(file failed to load)', true],
     ['save', 'ReferenceError: ORCA_EDITOR_FILE_SAVED_EVENT is not defined', true],
     ['save', 'TypeError: dispatchEditorFileSaved is not a function', true],
     [
