@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { classifyHunk, parseHunks, revertHunk } from './fork-hunk-guard-scan.mjs'
+import {
+  classifyHunk,
+  isCrash,
+  isVitestTimeout,
+  parseHunks,
+  revertHunk
+} from './fork-hunk-guard-scan.mjs'
 
 const OLD = ["import { a } from './a'", '', 'export function f() {', '  return a()', '}', ''].join(
   '\n'
@@ -61,6 +67,32 @@ describe('fork hunk guard scan', () => {
 
   it('tests only hunks that change behaviour', () => {
     expect(hunks.map((hunk) => classifyHunk(hunk, context))).toEqual(['import', 'code'])
+  })
+
+  it.each([
+    ['(file failed to load)', 'unexpected token in dependency', true],
+    ['save', '(file failed to load)', true],
+    ['save', 'ReferenceError: ORCA_EDITOR_FILE_SAVED_EVENT is not defined', true],
+    ['save', 'TypeError: dispatchEditorFileSaved is not a function', true],
+    [
+      'save',
+      '[vitest] No "dispatchEditorFileSaved" export is defined on the "./editor-file-saved-dispatch" mock.',
+      true
+    ],
+    ['save', 'Failed to resolve import "./editor-file-saved-dispatch"', true],
+    ['save', 'AssertionError: expected undefined to be "written"', false]
+  ])('classifies crash for %s / %s as %s', (test, message, crash) => {
+    expect(isCrash({ test, message })).toBe(crash)
+  })
+
+  it.each([
+    [{ error: { code: 'ETIMEDOUT' }, signal: null }, true],
+    [{ signal: 'SIGTERM' }, true],
+    [{ signal: 'SIGKILL' }, true],
+    [{ signal: 'SIGSEGV' }, false],
+    [{ status: 1, signal: null }, false]
+  ])('recognizes timeout result %j as %s', (result, timeout) => {
+    expect(isVitestTimeout(result)).toBe(timeout)
   })
 
   it('leaves a type-only hunk to the typecheck', () => {

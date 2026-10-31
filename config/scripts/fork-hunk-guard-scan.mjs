@@ -3,14 +3,8 @@
 // Usage: node config/scripts/fork-hunk-guard-scan.mjs <fork-base> --out <dir> [--shard i/n] [--only <substr>]...
 //        node config/scripts/fork-hunk-guard-scan.mjs --report <dir>
 import { execFileSync, spawnSync } from 'node:child_process'
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  writeFileSync
-} from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import ts from 'typescript-api'
@@ -21,7 +15,19 @@ import { collectUnitDependencyGraph, unitConsumers } from './ci-unit-dependency-
 const UNIT_TEST = /\.test\.[cm]?[jt]sx?$/
 const RUN_TIMEOUT_MS = 10 * 60 * 1000
 const CRASH =
-  /^(?:ReferenceError|SyntaxError)|is not defined|is not a function|Cannot find module|does not provide an export|\(file failed to load\)/
+  /^(?:ReferenceError|SyntaxError)|is not defined|is not a function|Cannot find module|does not provide an export|\(file failed to load\)|No "[^"]+" export is defined on the "[^"]+" mock|Failed to resolve import/
+
+export function isCrash(failure) {
+  return failure.test === '(file failed to load)' || CRASH.test(failure.message)
+}
+
+export function isVitestTimeout(result) {
+  return result.error?.code === 'ETIMEDOUT' || ['SIGTERM', 'SIGKILL'].includes(result.signal)
+}
+
+function contentHash(text) {
+  return createHash('sha256').update(text).digest('hex')
+}
 
 function git(args) {
   return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 1 << 28 })
@@ -176,6 +182,9 @@ function runVitest(root, tests, outFile, { bail = true } = {}) {
       maxBuffer: 1 << 28
     }
   )
+  if (isVitestTimeout(result)) {
+    return { error: 'timeout' }
+  }
   if (!existsSync(outFile)) {
     return { error: (result.stderr || result.stdout || String(result.error)).slice(-600) }
   }
@@ -204,6 +213,24 @@ function shardOf(list, spec) {
 
 function scan(base, { out, shard, only }) {
   const root = git(['rev-parse', '--show-toplevel']).trim()
+  // Why the worktree's git dir: a rerun with another --out still finds a file a killed run left reverted.
+  const reverting = resolve(
+    root,
+    git(['rev-parse', '--git-dir']).trim(),
+    'fork-hunk-scan-reverting'
+  )
+  if (existsSync(reverting)) {
+    const { path, sha256 } = JSON.parse(readFileSync(reverting, 'utf8'))
+    // Why the hash: restore only the text the scan wrote, never an edit made after the interruption.
+    if (contentHash(readFileSync(join(root, path), 'utf8')) !== sha256) {
+      throw new Error(
+        `${path} changed after an interrupted scan reverted it; fix it by hand, then delete ${reverting}`
+      )
+    }
+    git(['checkout', '--', path])
+    rmSync(reverting)
+    console.log(`restored ${path} left reverted by an interrupted scan`)
+  }
   if (git(['status', '--porcelain', '--untracked-files=no']).trim()) {
     throw new Error('tracked changes in the worktree; scan a clean checkout')
   }
@@ -211,10 +238,40 @@ function scan(base, { out, shard, only }) {
     .split('\n')
     .filter(Boolean)
     .map((line) => line.split('\t'))
+  const upstreamFiles = status
+    .filter(([code, path]) => code === 'M' && classifyUpstreamFile(path) === 'production')
+    .map(([, path]) => path)
+  const unmatched = []
+  for (const part of only) {
+    const matches = upstreamFiles.filter((path) => path.includes(part))
+    let reason = ''
+    if (matches.length === 0) {
+      const excluded = status.filter(([, path]) => path.includes(part))
+      reason = excluded.length
+        ? [
+            ...new Set(
+              excluded.map(([code, path]) =>
+                code === 'A'
+                  ? 'fork-added file'
+                  : code === 'D'
+                    ? 'deleted file'
+                    : `${classifyUpstreamFile(path)} file`
+              )
+            )
+          ].join(', ')
+        : git(['ls-files'])
+              .split('\n')
+              .some((path) => path.includes(part))
+          ? 'no fork hunk vs base'
+          : 'no matching tracked file'
+      unmatched.push({ only: part, reason })
+    }
+    console.log(
+      `--only ${JSON.stringify(part)}: ${matches.length} upstream production files${reason ? ` (${reason})` : ''}`
+    )
+  }
   const files = shardOf(
-    status
-      .filter(([code, path]) => code === 'M' && classifyUpstreamFile(path) === 'production')
-      .map(([, path]) => path)
+    upstreamFiles
       .filter((path) => only.length === 0 || only.some((part) => path.includes(part)))
       .sort(),
     shard
@@ -225,6 +282,7 @@ function scan(base, { out, shard, only }) {
     .filter((path) => !path.startsWith('tests/e2e/'))
   mkdirSync(out, { recursive: true })
   const tag = shard ? shard.replace('/', 'of') : 'all'
+  writeFileSync(join(out, `unmatched-${tag}.json`), JSON.stringify(unmatched, null, 2))
   const outFile = join(out, `hunks-${tag}.jsonl`)
   const vitestJson = join(out, `.vitest-${tag}.json`)
   const reach = forkTestReach(root, forkTests)
@@ -241,12 +299,6 @@ function scan(base, { out, shard, only }) {
   const baselineRed = new Set(baseline.failed.map(({ file }) => file))
   writeFileSync(join(out, `baseline-${tag}.json`), JSON.stringify([...baselineRed], null, 2))
 
-  const restore = new Map()
-  const putBack = () => restore.forEach((text, file) => writeFileSync(file, text))
-  process.once('SIGINT', () => {
-    putBack()
-    process.exit(130)
-  })
   writeFileSync(outFile, '')
   for (const { path, tests } of plan) {
     const absolute = join(root, path)
@@ -254,9 +306,21 @@ function scan(base, { out, shard, only }) {
     const oldText = git(['show', `${base}:${path}`])
     const candidates = tests.filter((test) => !baselineRed.has(test))
     const hunks = parseHunks(git(['diff', '--no-renames', base, 'HEAD', '--', path]))
-    restore.set(absolute, newText)
-    for (const hunk of hunks) {
-      const kind = classifyHunk(hunk, { oldText, newText, path })
+    const classified = hunks.map((hunk) => ({
+      hunk,
+      kind: classifyHunk(hunk, { oldText, newText, path })
+    }))
+    const runReverted = (text, tests = candidates, options) => {
+      writeFileSync(reverting, JSON.stringify({ path, sha256: contentHash(text) }))
+      try {
+        writeFileSync(absolute, text)
+        return runVitest(root, tests, vitestJson, options)
+      } finally {
+        writeFileSync(absolute, newText)
+        rmSync(reverting)
+      }
+    }
+    for (const { hunk, kind } of classified) {
       const record = {
         file: path,
         line: hunk.added[0]?.line ?? hunk.newStart,
@@ -273,34 +337,49 @@ function scan(base, { out, shard, only }) {
       } else if (candidates.length === 0) {
         record.result = 'no-fork-test'
       } else {
-        writeFileSync(absolute, revertHunk(newText, hunk))
-        try {
-          const run = runVitest(root, candidates, vitestJson)
-          if (run.error) {
+        const run = runReverted(revertHunk(newText, hunk))
+        if (run.error) {
+          record.result = 'error'
+          record.detail = run.error
+        } else if (run.failed.length > 0) {
+          // Why: reverting half a fork change (a declaration another hunk uses) turns tests red without testing it.
+          record.result = isCrash(run.failed[0]) ? 'crash-only' : 'guarded'
+          record.redBy = run.failed[0]
+          const head = runVitest(root, [record.redBy.file], vitestJson)
+          if (head.error) {
             record.result = 'error'
-            record.detail = run.error
-          } else if (run.failed.length > 0) {
-            // Why: reverting half a fork change (a declaration another hunk uses) turns tests red without testing it.
-            record.result = CRASH.test(run.failed[0].message) ? 'crash-only' : 'guarded'
-            record.redBy = run.failed[0]
-          } else {
-            record.result = 'survived'
-            record.ran = candidates
+            record.detail = head.error
+          } else if (head.failed.length > 0) {
+            record.result = 'flaky'
+            record.headFailure = head.failed[0]
           }
-        } finally {
-          writeFileSync(absolute, newText)
+        } else {
+          record.result = 'survived'
+          record.ran = candidates
         }
       }
       writeFileSync(outFile, `${JSON.stringify(record)}\n`, { flag: 'a' })
       console.log(`${record.result.padEnd(12)} ${path}:${record.line} (${kind})`)
     }
-    restore.delete(absolute)
   }
   rmSync(vitestJson, { force: true })
 }
 
 function report(dir) {
-  const records = readdirSync(dir)
+  const names = readdirSync(dir)
+  const baseline = names
+    .filter((name) => /^baseline-.*\.json$/.test(name))
+    .flatMap((name) =>
+      JSON.parse(readFileSync(join(dir, name), 'utf8')).map((file) => `- \`${file}\` (\`${name}\`)`)
+    )
+  const unmatched = names
+    .filter((name) => /^unmatched-.*\.json$/.test(name))
+    .flatMap((name) =>
+      JSON.parse(readFileSync(join(dir, name), 'utf8')).map(
+        ({ only, reason }) => `- \`${only}\`: ${reason} (\`${name}\`)`
+      )
+    )
+  const records = names
     .filter((name) => /^hunks-.*\.jsonl$/.test(name))
     .flatMap((name) =>
       readFileSync(join(dir, name), 'utf8')
@@ -321,7 +400,9 @@ function report(dir) {
             ? `\n  ${record.detail.replace(/\n/g, ' ').slice(0, 200)}`
             : result === 'crash-only'
               ? `\n  red by: ${record.redBy.file}: ${record.redBy.message}`
-              : ''
+              : result === 'flaky'
+                ? `\n  red at HEAD: ${record.headFailure.file}: ${record.headFailure.message}`
+                : ''
       return `- \`${record.file}:${record.line}\` (+${record.added} -${record.removed})${extra}\n\n  \`\`\`diff\n${record.preview
         .split('\n')
         .map((line) => `  ${line}`)
@@ -332,7 +413,17 @@ function report(dir) {
   const markdown = [
     '# Fork hunk guard scan',
     '',
-    `hunks: ${records.length}; guarded ${count('guarded')}, survived ${count('survived')}, no fork test ${count('no-fork-test')}, crash-only ${count('crash-only')}, error ${count('error')}, skipped (import, comment or type only, which pnpm tc guards) ${count('skipped')}`,
+    `hunks: ${records.length}; guarded ${count('guarded')}, survived ${count('survived')}, no fork test ${count('no-fork-test')}, crash-only ${count('crash-only')}, flaky ${count('flaky')}, error ${count('error')}, skipped (import, comment or type only, which pnpm tc guards) ${count('skipped')}`,
+    '',
+    `## Baseline-red test files (${baseline.length})`,
+    '',
+    'Red at HEAD before mutation; excluded from hunk candidates.',
+    '',
+    ...baseline,
+    '',
+    `## Unmatched --only values (${unmatched.length})`,
+    '',
+    ...unmatched,
     '',
     section(
       'Survived: fork tests reach the file but stay green',
@@ -345,10 +436,18 @@ function report(dir) {
       'crash-only',
       'Reverting this hunk alone broke the module (a name another hunk uses); guarded only if that hunk is.'
     ),
+    section(
+      'Flaky: red again at HEAD',
+      'flaky',
+      'The failing test also failed after restoring HEAD; no mutation proof.'
+    ),
     section('Errors', 'error', 'The run did not report; rerun these.')
   ].join('\n')
   writeFileSync(join(dir, 'report.md'), markdown)
   console.log(markdown.split('\n')[2])
+  console.log(
+    `baseline-red test files: ${baseline.length}; unmatched --only values: ${unmatched.length}`
+  )
 }
 
 function main() {
@@ -371,7 +470,11 @@ function main() {
     )
     process.exit(2)
   }
-  scan(base, { out: resolve(out), shard: flag('--shard'), only: args.filter((_, index) => args[index - 1] === '--only') })
+  scan(base, {
+    out: resolve(out),
+    shard: flag('--shard'),
+    only: args.filter((_, index) => args[index - 1] === '--only')
+  })
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {

@@ -5,15 +5,15 @@ description: Unattended pipeline that rebases the Orca fork's develop onto the n
 
 # Orca fork 自動 rebase
 
-無人值守：沒有人會回答問題，不要停下來問。repo 是 audichuang/orca（remote `fork`），上游 stablyai/orca（remote `origin`）。規則來源是 `git show fork/develop:FORK.md` 的 Merge gate 與 Release 兩節，先讀；這裡沒寫的照它。
+無人值守：沒有人會回答問題，不要停下來問。repo 是 audichuang/orca（remote `fork`），上游 stablyai/orca（remote `origin`）。規則來源是 `git show fork/develop:FORK.md`，先讀全文（至少 Platform scope、Merge gate、Unattended merges、Release 四節）；這裡沒寫的照它。
 
 ## 範圍
 
 只做一件事：把 develop 搬到上游最新 release，確認 fork 功能在新基底上照常運作（macOS，連 remote Linux），閘門全過就移動 develop 並發版。慢沒關係，重點是做得完；做不下去就停下來交人，不要為了發版硬修。
 
-- 要處理：衝突；上游改動讓 fork 功能壞掉的地方（typecheck、測試、lint、審查找到的 API 漂移）；這次解過衝突、rerere 重放或修正過的 hunk 都要有證明（改回上游會讓測試變紅，或只改 import／型別而由 `pnpm tc` 守）。
+- 要處理：衝突；上游改動讓 fork 功能壞掉的地方（typecheck、測試、lint、審查找到的 API 漂移）；這次解過衝突、rerere 重放或修正過的 hunk 都要有證明（改回上游會讓測試變紅，或只改 import／型別而由 `pnpm tc` 守；細節見第 6 步「合格的 MANUAL」）。
 - 不處理，只列進第 8 步通知：這次沒碰到的既有測試缺口；只在 Windows 或 WSL 發生的問題（FORK.md「Platform scope」）；功能改進與重構；實機 UI 測試。
-- 停下來交人（第 8 步，PR 與鎖留著）：沒把握解的衝突、筆記要丟的 commit 找不到（第 1 步）；同一個問題修兩輪還不過（第 2 步）；第 5 步兩輪後仍有確認為真的 BLOCKING；審查素材產生失敗（第 4 步）。
+- 停下來交人（第 8 步，PR 與鎖留著），主要是：沒把握解的衝突、筆記要丟的 commit 找不到（第 1 步）；同一個問題修兩輪還不過、上游自己紅而上游 `main` 也沒修（第 2 步）；審查素材產生失敗或 Codex 沒跑完（第 4 步）；第 5 步兩輪後仍有確認為真的 BLOCKING。各步寫的其他結局照該步。
 
 本技能覆寫兩個預設：codex 技能的「找到問題不自動修、停下來問」在這裡不適用（第 5 步規定怎麼修）；`orca-lcu-ui-test` 與 Codex desktop 的真實 UI 測試輪**不在這裡跑**——它們會占用螢幕鍵盤剪貼簿，排程隨時會觸發。發版前要驗的 UI 情境（ClipCode 複製、Paste & Restore、資料夾 repo 清單、session restore、external-change banner、agent launch cwd）由 fork e2e 在隱藏視窗驗（`folder-multi-repo-source-control.spec.ts`、`folder-workspace-tab-restart-restore.spec.ts`），CI 的 fork e2e job 會跑；lcu 實機輪只留給新增或改了 UI 的功能 PR。
 
@@ -79,14 +79,14 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
    GIT_SEQUENCE_EDITOR="sed -i '' -e '/^pick ${d} /s/^pick/drop/'" git rebase -i --onto vNEW vOLD
    ```
    要丟的 commit 必須在這次的 develop 上：`git merge-base --is-ancestor <條目的 sha> OLD_DEVELOP`。不在（條目是在上一次 rebase 前寫的，sha 已被改寫）就用條目寫的 commit 標題在 `git log --format='%h %s' vOLD..OLD_DEVELOP` 找，標題完全相同的剛好一個才用它；找不到或不只一個 → 不 rebase，鎖留著，跳到第 8 步（`## 8.` 那節）交給人（筆記說要丟的 commit 沒丟，後面的閘門都綠也不能發）。todo 清單用 `git rev-parse --short` 的長度，所以先轉換。rebase 完用 `git range-diff vOLD..OLD_DEVELOP vNEW..HEAD` 確認那個 commit 是 `<`（被丟掉）；不是就 `git checkout --detach OLD_DEVELOP` 回到起點重做一次（rebase 已經結束，`--abort` 沒有作用），第二次還不是就當失敗（第 5 點）。
-   rerere 已開；重放後仍要 `git add` 才能 continue。適用的條目照它處理、在 PR 說明裡逐條列出；它跟眼前的衝突對不上就以眼前為準，並在通知裡註明。
+   rerere 已開；重放後仍要 `git add` 才能 continue。每解完一個衝突（含 rerere 重放）就把那個檔的路徑記進 `$MAIN/.rebase-review/resolved-files.txt`（一行一個、不重複）；之後每個修正 commit（第 1 步第 6 點、第 2、5 步、cherry-pick）改的每個檔也加進去（fork 新增檔、測試、locale 都算：掃描會把它們列為 unmatched，由審查者 C 手動證明）。第 4 步的 hunk 掃描與第 6 步的證明範圍都只看這份清單。適用的條目照它處理、在 PR 說明裡逐條列出；它跟眼前的衝突對不上就以眼前為準，並在通知裡註明。
 4. CLEAN = 完全沒衝突、也沒丟 commit；MANUAL = 有任何衝突（**rerere 自動重放的也算**：那是對舊上游錄下的解法，要跟自己解的一樣過 mutation 證明）、丟掉了 commit、或有額外修正 commit。
 5. 自己解：保留 fork 功能、採上游新結構（FORK.md 的 seam 原則）；locale 兩邊只新增 key 時 driver 已合好、不算衝突；還停在 locale 檔，代表兩邊改了同一個字串（driver 留下衝突標記），兩邊 key 都保留、字串照筆記條目或上游新文案決定，之後 `pnpm run verify:localization-catalogs`。沒把握就 `git rebase --abort`，鎖留著，跳到第 8 步（`## 8.` 那節）：那裡會開 PR 並標 `needs-human`。放掉鎖的話，下一次排程會重跑同一個註定失敗的 rebase，每小時推一次失敗通知。
 6. 適用的「fork 自身問題」條目：rebase 完成後照條目改，一條一個 commit（算 MANUAL），跑條目「守它的測試」確認通過。
 7. `git push --force fork HEAD:refs/heads/rebase/vNEW`，然後馬上開 PR（第 2 步可能跑好幾小時，PR 開了才能留心跳）：`git push fork "vNEW^{commit}:refs/heads/ci-base/vNEW"`（上游 tag 是 annotated tag，不加 `^{commit}` 推不上分支），`gh pr create -R audichuang/orca --base ci-base/vNEW --head rebase/vNEW --title "[不合併] develop rebase 到 vNEW 的 CI 驗證"`，記下編號當 `PR`。body 第一行放 `<!-- auto-rebase:old-develop OLD_DEVELOP 的完整 sha -->`（RESUME 靠它），其餘照 PR #22/#29 的格式（不合併的原因、`develop = vOLD + N 個 fork commit` → `vNEW + …` diff 區塊、每個衝突檔怎麼解、用了哪幾條筆記、額外 commit、Merge Danger），不加任何 attribution 行。之後各步有新的衝突解法或修正就 `gh pr edit` 補進說明。
 8. `make fork-check-lint` 直接讀上游 `config/scripts/run-lint.mjs` 的 `LINT_STEPS` 逐項執行（`config/scripts/fork-lint-run.mjs`），上游增減 lint 項目不用手動同步。只有兩種情況要動它，另外 commit（算 MANUAL）：上游拿掉了 `EXCLUDED` 裡的項目（腳本會報錯要你刪掉那筆排除），或上游換掉 `LINT_STEPS`（`fork-upstream-api.mjs` 會報錯），或上游新增 `oxlint` 以外沒有 package script 的步驟（`lintStepArgs` 會報錯）。
 
-所有 commit：message 英文，不加 Co-Authored-By 或任何 attribution 行。
+你寫的 commit：message 英文，不加 Co-Authored-By 或任何 attribution 行（cherry-pick 的上游 commit 照原樣保留）。
 
 ## 2. 本機閘門（一律跑，不分 CLEAN/MANUAL）
 
@@ -124,17 +124,21 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 
 **會改檔的審查者（C 與 Codex）各用一個自己的 worktree**：`git worktree add --detach ../ar-$RUN-review-<名字> HEAD && (cd ../ar-$RUN-review-<名字> && pnpm install --frozen-lockfile)`，否則改回上游那一側的實驗會污染其他人正在讀的樹；A、B 用 `MAIN` 唯讀。
 
+**hunk 掃描由你跑**（C 是 `claude -p`，自己跑會被 Bash 的時間上限打斷）：C 的 worktree（`../ar-$RUN-review-c`）建好後，照「等待」的方式在背景跑：
+
+```sh
+cd ../ar-$RUN-review-c && { node config/scripts/ensure-native-runtime.mjs --runtime=node && node config/scripts/fork-hunk-guard-scan.mjs vNEW --out "$MAIN/.rebase-review/scan" $(sed 's/^/--only /' "$MAIN/.rebase-review/resolved-files.txt") && node config/scripts/fork-hunk-guard-scan.mjs --report "$MAIN/.rebase-review/scan"; } > "$MAIN/.rebase-review/scan.log" 2>&1; echo $? > "$MAIN/.rebase-review/scan.log.exit"
+```
+
+`ensure-native-runtime` 不能省：`pnpm install` 把原生模組編成 Electron 版，Node 載不到，碰到它們的 fork 測試會在基準就紅、被排除，守的 hunk 變成假缺口。`resolved-files.txt` 是空的（CLEAN）就不跑；RESUME 沒有這份檔，用同一個規則重建：PR 說明列的衝突檔，加上 `extra-commits.diff` 碰到的每個檔。每個 hunk 約十幾秒到一分鐘。回非 0 看 `scan.log`；結果裡的 `error` 對那個檔重跑一次（新的 `--out`，例如 `scan-retry`）。給 C 的提示裡 `$MAIN` 寫成絕對路徑。
+
 **同時**開審查者，每個只拿素材資料夾路徑與（自己的）worktree 路徑，**不給 PR 說明、不給你的解衝突理由**（盲審：讓他們自己判斷，不被你的敘述帶著走）：
 
-- 先啟動 Codex（下面），再啟動 Claude 審查者，然後回第 3 步等 CI，之後照「等待」的方式逐一等審查者全部完成。
+- 先啟動 Codex（下面），再啟動 Claude 審查者 A、B 與背景的 hunk 掃描（下面），然後回第 3 步等 CI；掃描完成後才啟動 C；之後照「等待」的方式逐一等審查者全部完成。
 - Claude 審查者：每個是一個全新的 `claude -p`（沒有你的脈絡，所以是盲審），提示寫進 `$MAIN/.rebase-review/claude-<角度>-prompt.md`，在它的 worktree（A、B 用 `MAIN`）以 run_in_background 跑 `sh "$MAIN/config/scripts/fork-detached-agent.sh" claude -p --model opus --dangerously-skip-permissions < <提示檔> > $MAIN/.rebase-review/claude-<角度>-r<輪>-result.md 2>&1; echo $? > $MAIN/.rebase-review/claude-<角度>-r<輪>-result.exit`（它不會問權限，所以 A、B 的提示要寫明 `MAIN` 唯讀、不准改檔；每個提示都要寫「不要開背景工作或 subagent，所有指令在前景跑完再回答」，不然它可能先結束、留下不完整的結果），各一個角度：
   - **A 衝突忠實度**：`range-diff.txt` 每個 `!` 項目，新版是否保留 fork 原本的行為、同時採用上游的新結構？有沒有 fork 的欄位、分支、呼叫被默默丟掉？每個 `<` 項目（rebase 後消失的 fork commit）是不是刻意丟的、理由是否成立？
   - **B 上游 API 漂移**：讀 `upstream-touching.diff`、`importer-sweep.txt` 與 `seam-upstream.diff`，上游改了簽章、回傳值、語意（例如回傳一個要呼叫的 release、改成會 reject）的模組，fork 的呼叫點有沒有跟上？上游新增的平行路徑（新的 switch、新的入口、重建的 options 物件）有沒有繞過 fork 的 seam？逐一打開呼叫點看，不要只看 diff。
-  - **C 測試與 seam**：先在自己的 worktree 跑 hunk 掃描，對象是這次解過衝突（含 rerere 重放）或額外修正碰到的每個檔（PR 說明列的衝突檔與 `extra-commits.diff` 的檔），一個檔一個 `--only`：
-    ```sh
-    node config/scripts/fork-hunk-guard-scan.mjs vNEW --out "$MAIN/.rebase-review/scan" --only <檔1> --only <檔2> && node config/scripts/fork-hunk-guard-scan.mjs --report "$MAIN/.rebase-review/scan"
-    ```
-    它把檔裡每個 fork hunk 單獨改回 vNEW 那一側、跑會碰到該檔的 fork 單元測試：`guarded` 那行的 `redBy` 就是 mutation 證明；import、註解、只改型別的 hunk 由 `pnpm tc` 守，不用證。C 只看**這次解過或修過**的 hunk：`survived`、`no-fork-test` 先判斷是不是等價或只有 e2e 看得到，都不是就是發現；`crash-only`（宣告被別的 hunk 用到）確認用到它的 hunk 是 `guarded`。腳本不涵蓋的照手動做：lint 修正（改回後跑那一步 lint，看完 `git checkout -- .`）、補翻譯（`fork-locale-parity.mjs vNEW`）。逐項列出 hunk 與證明（`redBy`，或手動的指令與紅的那一行；第 6 步「合格的 MANUAL」靠這張表）；其他 hunk 的缺口只列為既有缺口。**CLEAN 時也要做**：對 `seam-upstream.diff` 碰到的每個 seam（對照 `config/fork-seam-tests.txt` 的分組），把 fork 在那個 seam 的接線拿掉一處（刪欄位轉傳、刪 `'git-graph'` case、刪 slot prop），跑那組 seam 測試確認會紅；沒有會紅的就是發現。
+  - **C 測試與 seam**：讀 hunk 掃描的結果判斷，只看**這次解過或修過**的 hunk（`resolved-files.txt` 列的檔）。證明表從 `scan/hunks-all.jsonl` 取：`guarded` 的 `redBy` 就是 mutation 證明；`skipped`（import、註解、只改型別）由 `pnpm tc` 守；`crash-only` 確認用到它的 hunk 是 `guarded`，錯誤是名稱不見（`X is not defined`，對應的 import 在另一個 hunk）時，手動把這個 hunk 和那個 import 一起改回、跑 `redBy` 那支測試，紅在斷言上才算證明；`survived`、`no-fork-test` 先判斷是不是等價或只有 e2e 看得到，都不是就是發現；`flaky`、`error` 不算證明，手動補。掃描不涵蓋的照手動做：`report.md` 列的 unmatched 檔（fork 新增檔、測試檔、locale）、lint 修正（改回後跑那一步 lint）、補翻譯（`fork-locale-parity.mjs vNEW`），每個都把那個 hunk 改回上游或拿掉修正、跑指定的測試確認會紅，看完 `git checkout -- .` 還原。逐項列出 hunk 與證明（第 6 步「合格的 MANUAL」靠這張表）；其他 hunk 的缺口只列為既有缺口。**CLEAN 時也要做**：對 `seam-upstream.diff` 碰到的每個 seam（對照 `config/fork-seam-tests.txt` 的分組），把 fork 在那個 seam 的接線拿掉一處（刪欄位轉傳、刪 `'git-graph'` case、刪 slot prop），跑那組 seam 測試確認會紅；沒有會紅的就是發現。
   - 每個都要求輸出：發現清單（BLOCKING / NON-BLOCKING、`file:line`、為什麼、怎麼證實的），最後一行 `VERDICT: ACCEPTABLE` 或 `VERDICT: NOT ACCEPTABLE`。提示要寫明：只在 Windows 或 WSL 上才會發生的問題一律標 NON-BLOCKING、不影響 VERDICT（FORK.md「Platform scope」：fork 不在 Windows 上用）。
 - Codex 兜底（獨立全面審）：照 codex 技能用 companion 的 `task`（**不要用 `review`/`adversarial-review`**：它們拿分支比預設分支，在這裡會是整串 fork 或兩條分岔歷史）。提示寫進 `$MAIN/.rebase-review/codex-prompt.md`：說明這是 fork rebase 的審查、素材在哪、四個問題（A/B/C 的問題加上「還有什麼會讓 fork 功能在 vNEW 上壞掉」）、同樣的輸出格式與 VERDICT 行（含 Windows／WSL 只列 NON-BLOCKING 那句）。
   ```sh
@@ -148,10 +152,11 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
   - 確認是真的 → 修、補會變紅的測試、commit（算 MANUAL）、重跑受影響的本機測試與 `make -k fork-check-static`（綠了才推：v1.4.243 有一輪 CI 只因修正 commit 沒先跑 static、被 `audit:anti-slop` 擋下）、`git push --force fork HEAD:refs/heads/rebase/vNEW`，CI 照第 3 步等綠。
   - 不同意 → 寫下理由（引用程式碼證據），原文與理由一起進 PR。
 - 有修正就再審一輪：先在 `../ar-$RUN-review-codex` `git checkout --detach <新 head>`，Codex 在那裡用 `task --thread <第一輪的 thread id>`（一樣經 `fork-detached-agent.sh` 啟動；thread 每跑完一次會被自動封存，先 `codex unarchive <thread id>`，否則 job 立刻 failed）看修正後的 diff（**不要用 `--resume-last`**：機器上別的 session 也在跑 Codex，會接錯 thread）；Claude 只開一個新的 `claude -p` 審查者看修正的部分（同第 4 步的跑法）。
+- 有修正時，C 的 worktree 也切到新 head（`git -C ../ar-$RUN-review-c checkout --detach <新 head>`），對修正碰到的檔照第 4 步的方式重跑掃描（`--out` 用新目錄，例如 `scan-r2`），新的審查者用它的結果。
 - 兩輪後仍有確認為真、沒修好的 BLOCKING → 不移動 develop，第 8 步回報。
 - 審查結果貼成一則 PR 留言：每個審查者的 VERDICT、每個發現與處理（已修 commit / 不同意理由 / NON-BLOCKING 留待），附上 importer-sweep 裡人工確認過的「上游改了 X，fork 呼叫點 Y 已看過」。
 
-**審查通過**的定義（第 6 步用）：每個 Claude 審查者的每個 BLOCKING 都已修好或有程式碼證據反駁，而且 Codex 最後一輪是 `VERDICT: ACCEPTABLE`。Codex 的 BLOCKING 不能只靠反駁放行：反駁後要它在同一個 thread 再看一次，它改判 ACCEPTABLE 才算。
+**審查通過**的定義（第 6 步用）：每個 Claude 審查者的每個 BLOCKING 都已修好或有程式碼證據反駁，而且 Codex 最後一輪是 `VERDICT: ACCEPTABLE`。Codex 的 BLOCKING 不能只靠反駁放行：反駁後要它在同一個 thread 再看一次（不另算一輪），它改判 ACCEPTABLE 才算。
 
 ## 6. 移動 develop
 
@@ -163,7 +168,7 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 - 第 5 步的審查通過；
 - RESUME 時 PR 說明裡有 old-develop 那行。
 
-**合格的 MANUAL**：range-diff 每個 `!` 項目與每個修正 commit 都有審查者 C（或你自己）做過的 mutation 證明——把那個 hunk 改回上游那一側或拿掉修正，指定的測試會變紅（cherry-pick 的上游 lint 修正用那一步 lint；補翻譯的 commit 用 `fork-locale-parity.mjs vNEW`），證據（指令與紅的那一行）寫進審查留言。審查者 C 的 hunk 掃描結果直接算數：`guarded` 的 `redBy` 就是證明；`skipped`（import、註解、只改型別）由本機 `pnpm tc` 綠守住；`crash-only` 以用到它的 hunk 是 `guarded` 為證；審查者 C 列出的「沒有測試會紅的 seam」裡，沒有一個落在這次解過衝突、rerere 重放或修正的 hunk 上，也沒有一個落在 `seam-upstream.diff` 碰到的 seam 上（不相關的既有缺口不擋，但要列進通知）。任何一項做不到就不移動。例外：「fork 自身問題」條目的修正 commit 只改 fork 自己的測試檔（`git cat-file -e vNEW:<檔>` 失敗，上游沒有這個檔）時，不需要 mutation 證明（時序類的修正改回去也不一定會紅），條目「守它的測試」在本機與 CI 都通過即可；改到產品程式碼或上游檔的照一般規則。
+**合格的 MANUAL**：每個解過衝突、rerere 重放的 hunk 與每個修正 commit（`resolved-files.txt` 列的檔；`range-diff.txt` 的 `!` 項目由審查者 A 看忠實度）都有審查者 C（或你自己）做過的 mutation 證明——把那個 hunk 改回上游那一側或拿掉修正，指定的測試會變紅（cherry-pick 的上游 lint 修正用那一步 lint；補翻譯的 commit 用 `fork-locale-parity.mjs vNEW`），證據（指令與紅的那一行）寫進審查留言。審查者 C 的 hunk 掃描結果直接算數：`guarded` 的 `redBy` 就是證明；`skipped`（import、註解、只改型別）由本機 `pnpm tc` 綠守住；`crash-only` 以用到它的 hunk 是 `guarded` 為證；`flaky`、`error` 不算；審查者 C 列出的「沒有測試會紅的 seam」裡，沒有一個落在這次解過衝突、rerere 重放或修正的 hunk 上，也沒有一個落在 `seam-upstream.diff` 碰到的 seam 上（不相關的既有缺口不擋，但要列進通知）。任何一項做不到就不移動。例外：「fork 自身問題」條目的修正 commit 只改 fork 自己的測試檔（`git cat-file -e vNEW:<檔>` 失敗，上游沒有這個檔）時，不需要 mutation 證明（時序類的修正改回去也不一定會紅），條目「守它的測試」在本機與 CI 都通過即可；改到產品程式碼或上游檔的照一般規則。
 
 推的是 CI 驗過的那個 sha，不是分支名：
 
