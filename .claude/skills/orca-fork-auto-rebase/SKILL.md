@@ -79,7 +79,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
    GIT_SEQUENCE_EDITOR="sed -i '' -e '/^pick ${d} /s/^pick/drop/'" git rebase -i --onto vNEW vOLD
    ```
    要丟的 commit 必須在這次的 develop 上：`git merge-base --is-ancestor <條目的 sha> OLD_DEVELOP`。不在（條目是在上一次 rebase 前寫的，sha 已被改寫）就用條目寫的 commit 標題在 `git log --format='%h %s' vOLD..OLD_DEVELOP` 找，標題完全相同的剛好一個才用它；找不到或不只一個 → 不 rebase，鎖留著，跳到第 8 步（`## 8.` 那節）交給人（筆記說要丟的 commit 沒丟，後面的閘門都綠也不能發）。todo 清單用 `git rev-parse --short` 的長度，所以先轉換。rebase 完用 `git range-diff vOLD..OLD_DEVELOP vNEW..HEAD` 確認那個 commit 是 `<`（被丟掉）；不是就 `git checkout --detach OLD_DEVELOP` 回到起點重做一次（rebase 已經結束，`--abort` 沒有作用），第二次還不是就當失敗（第 5 點）。
-   rerere 已開；重放後仍要 `git add` 才能 continue。每解完一個衝突（含 rerere 重放）就把那個檔的路徑記進 `$MAIN/.rebase-review/resolved-files.txt`（一行一個、不重複）；之後每個修正 commit（第 1 步第 6 點、第 2、5 步、cherry-pick）改的上游檔也加進去。第 4 步的 hunk 掃描只掃這份清單。適用的條目照它處理、在 PR 說明裡逐條列出；它跟眼前的衝突對不上就以眼前為準，並在通知裡註明。
+   rerere 已開；重放後仍要 `git add` 才能 continue。每解完一個衝突（含 rerere 重放）就把那個檔的路徑記進 `$MAIN/.rebase-review/resolved-files.txt`（一行一個、不重複）；之後每個修正 commit（第 1 步第 6 點、第 2、5 步、cherry-pick）改的每個檔也加進去（fork 新增檔、測試、locale 都算：掃描會把它們列為 unmatched，由審查者 C 手動證明）。第 4 步的 hunk 掃描與第 6 步的證明範圍都只看這份清單。適用的條目照它處理、在 PR 說明裡逐條列出；它跟眼前的衝突對不上就以眼前為準，並在通知裡註明。
 4. CLEAN = 完全沒衝突、也沒丟 commit；MANUAL = 有任何衝突（**rerere 自動重放的也算**：那是對舊上游錄下的解法，要跟自己解的一樣過 mutation 證明）、丟掉了 commit、或有額外修正 commit。
 5. 自己解：保留 fork 功能、採上游新結構（FORK.md 的 seam 原則）；locale 兩邊只新增 key 時 driver 已合好、不算衝突；還停在 locale 檔，代表兩邊改了同一個字串（driver 留下衝突標記），兩邊 key 都保留、字串照筆記條目或上游新文案決定，之後 `pnpm run verify:localization-catalogs`。沒把握就 `git rebase --abort`，鎖留著，跳到第 8 步（`## 8.` 那節）：那裡會開 PR 並標 `needs-human`。放掉鎖的話，下一次排程會重跑同一個註定失敗的 rebase，每小時推一次失敗通知。
 6. 適用的「fork 自身問題」條目：rebase 完成後照條目改，一條一個 commit（算 MANUAL），跑條目「守它的測試」確認通過。
@@ -130,7 +130,7 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 cd ../ar-$RUN-review-c && { node config/scripts/ensure-native-runtime.mjs --runtime=node && node config/scripts/fork-hunk-guard-scan.mjs vNEW --out "$MAIN/.rebase-review/scan" $(sed 's/^/--only /' "$MAIN/.rebase-review/resolved-files.txt") && node config/scripts/fork-hunk-guard-scan.mjs --report "$MAIN/.rebase-review/scan"; } > "$MAIN/.rebase-review/scan.log" 2>&1; echo $? > "$MAIN/.rebase-review/scan.log.exit"
 ```
 
-`ensure-native-runtime` 不能省：`pnpm install` 把原生模組編成 Electron 版，Node 載不到，碰到它們的 fork 測試會在基準就紅、被排除，守的 hunk 變成假缺口。`resolved-files.txt` 是空的（CLEAN）就不跑；RESUME 沒有這份檔，照 PR 說明列的衝突檔與 `extra-commits.diff` 碰到的檔重建。每個 hunk 約十幾秒到一分鐘。回非 0 看 `scan.log`；結果裡的 `error` 對那個檔重跑一次（新的 `--out`，例如 `scan-retry`）。給 C 的提示裡 `$MAIN` 寫成絕對路徑。
+`ensure-native-runtime` 不能省：`pnpm install` 把原生模組編成 Electron 版，Node 載不到，碰到它們的 fork 測試會在基準就紅、被排除，守的 hunk 變成假缺口。`resolved-files.txt` 是空的（CLEAN）就不跑；RESUME 沒有這份檔，用同一個規則重建：PR 說明列的衝突檔，加上 `extra-commits.diff` 碰到的每個檔。每個 hunk 約十幾秒到一分鐘。回非 0 看 `scan.log`；結果裡的 `error` 對那個檔重跑一次（新的 `--out`，例如 `scan-retry`）。給 C 的提示裡 `$MAIN` 寫成絕對路徑。
 
 **同時**開審查者，每個只拿素材資料夾路徑與（自己的）worktree 路徑，**不給 PR 說明、不給你的解衝突理由**（盲審：讓他們自己判斷，不被你的敘述帶著走）：
 
