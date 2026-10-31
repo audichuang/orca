@@ -11,6 +11,10 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 - Pick a branch prefix that is not itself a branch on the fork: the fork carries a `refactor` branch, so pushing `refactor/<x>` is rejected as a directory/file conflict.
 - A PR meant for upstream branches from upstream `main` and carries no fork-only file (`Makefile`, fork CI, `FORK.md`).
 
+## Platform scope
+
+- The fork runs only on macOS, connecting to remote Linux hosts; nobody runs it on Windows or WSL. Fork features need not work there: a gap that shows only on Windows or WSL is not fixed, and a review finding of that kind is NON-BLOCKING. Upstream's own Windows and WSL code stays as upstream wrote it. For fork code this overrides AGENTS.md's Cross-Platform Support section. Fork CI has no Windows job.
+
 ## Merge gate
 
 - Fork CI (below) is the merge gate for every rebase and every merge into `develop`; it runs upstream's full unit suite (`FORK_TESTS=all`), like upstream's own PR CI. Locally, `make fork-check` is the fast pre-check: `pnpm tc`, `vitest --changed $(FORK_BASE)`, the changed-code quality gate and `fork-check-lint`.
@@ -93,7 +97,7 @@ Upstream changes break fork features silently when they are type-compatible: a r
 - **Fork cases go in a sibling** `<basename>.fork.test.ts(x)` next to the upstream test, never appended to the upstream file, so rebases do not conflict there. Edit an upstream test only where the fork deliberately changed upstream behavior, and keep that edit minimal.
 - Keep a contract test inside one layer; a main test importing renderer code (or the reverse) breaks the tsconfig projects. Write one contract per side of the seam instead.
 
-To measure coverage after a large rebase, run a mutation pass: list the seams, apply plausible upstream edits one at a time in a separate checkout, and record which tests go red.
+To measure coverage, run `config/scripts/fork-hunk-guard-scan.mjs <FORK_BASE> --out <dir> [--shard i/n]` in a clean checkout, then `--report <dir>`. It puts each fork hunk in an upstream production file back to upstream's side, one at a time, and runs the fork unit tests that import the file or name it. The report lists the hunks no test turns red on, so the gaps get closed before a rebase finds them. Import-only and comment-only hunks are skipped; one that goes red only by crashing (it declares a name another hunk uses) is listed apart. Shard it across clean worktrees on a machine with spare cores, not the macmini.
 
 The release UI set (ClipCode copy, Paste & Restore, the folder repo list, session restore, the external-change banner, agent launch cwd) runs as fork e2e in a hidden window: `folder-multi-repo-source-control.spec.ts` and `folder-workspace-tab-restart-restore.spec.ts`. A new fork UI behaviour that ships joins that set as an e2e scenario. What only hands-on UI rounds catch: long-session state, real clipboard round trips with the ClipCode plugins, focus, hover and how the change feels; run them for PRs that add or change UI, not before every release.
 
