@@ -123,8 +123,8 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
   - **A 衝突忠實度**：`range-diff.txt` 每個 `!` 項目，新版是否保留 fork 原本的行為、同時採用上游的新結構？有沒有 fork 的欄位、分支、呼叫被默默丟掉？每個 `<` 項目（rebase 後消失的 fork commit）是不是刻意丟的、理由是否成立？
   - **B 上游 API 漂移**：讀 `upstream-touching.diff`、`importer-sweep.txt` 與 `seam-upstream.diff`，上游改了簽章、回傳值、語意（例如回傳一個要呼叫的 release、改成會 reject）的模組，fork 的呼叫點有沒有跟上？上游新增的平行路徑（新的 switch、新的入口、重建的 options 物件）有沒有繞過 fork 的 seam？逐一打開呼叫點看，不要只看 diff。
   - **C 測試與 seam**：對**每一個**解過衝突（含 rerere 重放）或額外修正的 hunk，找到守它的測試（lint 修正就是那一步 lint），把該 hunk 改回上游那一側或拿掉修正，跑那個測試確認會變紅，看完 `git checkout -- .` 還原；逐項列出 hunk、測試、紅的那一行（第 6 步「合格的 MANUAL」靠這張表）。hunk 超過 10 個就開兩個 C（`review-c1`、`review-c2`）、各分一半。沒有測試會紅的 seam 就是發現，標明它是不是這次解過的 hunk。**CLEAN 時也要做**：對 `seam-upstream.diff` 碰到的每個 seam（對照 `config/fork-seam-tests.txt` 的分組），把 fork 在那個 seam 的接線拿掉一處（刪欄位轉傳、刪 `'git-graph'` case、刪 slot prop），跑那組 seam 測試確認會紅；沒有會紅的就是發現。
-  - 每個都要求輸出：發現清單（BLOCKING / NON-BLOCKING、`file:line`、為什麼、怎麼證實的），最後一行 `VERDICT: ACCEPTABLE` 或 `VERDICT: NOT ACCEPTABLE`。
-- Codex 兜底（獨立全面審）：照 codex 技能用 companion 的 `task`（**不要用 `review`/`adversarial-review`**：它們拿分支比預設分支，在這裡會是整串 fork 或兩條分岔歷史）。提示寫進 `$MAIN/.rebase-review/codex-prompt.md`：說明這是 fork rebase 的審查、素材在哪、四個問題（A/B/C 的問題加上「還有什麼會讓 fork 功能在 vNEW 上壞掉」）、同樣的輸出格式與 VERDICT 行。
+  - 每個都要求輸出：發現清單（BLOCKING / NON-BLOCKING、`file:line`、為什麼、怎麼證實的），最後一行 `VERDICT: ACCEPTABLE` 或 `VERDICT: NOT ACCEPTABLE`。提示要寫明：只在 Windows 或 WSL 上才會發生的問題一律標 NON-BLOCKING、不影響 VERDICT（FORK.md「Platform scope」：fork 不在 Windows 上用）。
+- Codex 兜底（獨立全面審）：照 codex 技能用 companion 的 `task`（**不要用 `review`/`adversarial-review`**：它們拿分支比預設分支，在這裡會是整串 fork 或兩條分岔歷史）。提示寫進 `$MAIN/.rebase-review/codex-prompt.md`：說明這是 fork rebase 的審查、素材在哪、四個問題（A/B/C 的問題加上「還有什麼會讓 fork 功能在 vNEW 上壞掉」）、同樣的輸出格式與 VERDICT 行（含 Windows／WSL 只列 NON-BLOCKING 那句）。
   ```sh
   cd ../ar-$RUN-review-codex && CODEX_JOB_TIMEOUT_MS=5400000 sh "$MAIN/config/scripts/fork-detached-agent.sh" node ~/.claude/skills/codex/scripts/codex-companion.mjs task --background --json --write --prompt-file "$MAIN/.rebase-review/codex-prompt.md" > "$MAIN/.rebase-review/codex-launch.json"
   ```
