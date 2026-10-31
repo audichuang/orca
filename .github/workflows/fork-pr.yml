@@ -89,13 +89,13 @@ jobs:
     name: fork-check tests (${{ matrix.shard }})
     needs: scope
     if: needs.scope.outputs.scope == 'full'
-    # Why: upstream's own unit shards run 12 wide on free hosted ARM (pr.yml); 8 x64 shards took ~13 min each.
+    # Why 14: upstream's unit shards use free hosted ARM (pr.yml), and this keeps the run at the free plan's 20 concurrent jobs.
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard: [1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12, 10/12, 11/12, 12/12]
+        shard: [1/14, 2/14, 3/14, 4/14, 5/14, 6/14, 7/14, 8/14, 9/14, 10/14, 11/14, 12/14, 13/14, 14/14]
     steps:
       # Why shallow, like upstream: with history, scripts that diff a PR merge ref against HEAD^1 ignore the base a test passes them.
       - name: Checkout
