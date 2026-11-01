@@ -40,7 +40,10 @@ vi.mock('@/components/ui/context-menu', async () => {
       return React_.createElement(React_.Fragment, null, props.children)
     },
     ContextMenuSeparator: () => null,
-    ContextMenuShortcut: () => null
+    ContextMenuShortcut: () => null,
+    ContextMenuSub: passthrough,
+    ContextMenuSubContent: passthrough,
+    ContextMenuSubTrigger: passthrough
   }
 })
 
