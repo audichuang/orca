@@ -1,4 +1,5 @@
 // Fork-only: "Duplicate as _result.txt" explorer menu item; the copy flow mirrors useFileDuplicate.
+import { createContext, useContext } from 'react'
 import type React from 'react'
 import { FileOutput } from 'lucide-react'
 import { toast } from 'sonner'
@@ -29,7 +30,17 @@ export function resultCopyName(name: string, attempt: number): string {
 
 const MAX_EEXIST_RETRIES = 10
 
-async function copyAsResult(node: TreeNode, activeWorktreeId: string, worktreePath: string) {
+type RefreshDir = (dirPath: string) => Promise<void>
+
+/** Supplied by the explorer rows wrapper: the tree's own refresh, which watcher-ignored dirs depend on. */
+export const DuplicateAsResultRefreshContext = createContext<RefreshDir | null>(null)
+
+async function copyAsResult(
+  node: TreeNode,
+  activeWorktreeId: string,
+  worktreePath: string,
+  refreshDir: RefreshDir | null
+) {
   const dir = dirname(node.path)
   const name = basename(node.path)
   let operationGuard
@@ -82,6 +93,11 @@ async function copyAsResult(node: TreeNode, activeWorktreeId: string, worktreePa
     }
   }
 
+  // Watcher-ignored dirs (dist, build, ...) never announce the new file; a refresh failure must not fail a done copy.
+  try {
+    await refreshDir?.(dir)
+  } catch {}
+
   // relativePath ends with the file name, so the copy shares its parent.
   const relativeDir = node.relativePath.slice(0, node.relativePath.length - name.length)
   const runtimeEnvironmentId = runtimeTargetEnvironmentId(operationGuard.route.target)
@@ -98,7 +114,7 @@ async function copyAsResult(node: TreeNode, activeWorktreeId: string, worktreePa
   )
 }
 
-export function duplicateFileAsResult(node: TreeNode): void {
+export function duplicateFileAsResult(node: TreeNode, refreshDir: RefreshDir | null = null): void {
   // Read at click time so the menu item renders without subscribing to the store.
   const { activeWorktreeId, activeWorkspaceExecutionHostId, getKnownWorktreeById } =
     useAppStore.getState()
@@ -108,15 +124,16 @@ export function duplicateFileAsResult(node: TreeNode): void {
   if (node.isDirectory || !worktreePath || !activeWorktreeId) {
     return
   }
-  void copyAsResult(node, activeWorktreeId, worktreePath)
+  void copyAsResult(node, activeWorktreeId, worktreePath, refreshDir)
 }
 
 export function DuplicateAsResultItem({ node }: { node: TreeNode }): React.JSX.Element | null {
+  const refreshDir = useContext(DuplicateAsResultRefreshContext)
   if (node.isDirectory) {
     return null
   }
   return (
-    <ContextMenuItem onSelect={() => duplicateFileAsResult(node)}>
+    <ContextMenuItem onSelect={() => duplicateFileAsResult(node, refreshDir)}>
       <FileOutput />
       {translate(
         'auto.components.right.sidebar.FileExplorerRow.duplicateAsResult',
