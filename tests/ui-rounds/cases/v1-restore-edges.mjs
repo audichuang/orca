@@ -418,9 +418,11 @@ defineCase('V1-H6', {
   run: async () => {
     await openMP()
     const snap0 = v1Snap()
-    await app.click(await find(UI_RE.button(UI_TEXT.pasteRestore)))
-    await sleep(1500)
-    const n = await note()
+    const n = await inSourceControlAfter(async () => {
+      await clickExplorerPasteRestore()
+      await sleep(1500)
+      return await note()
+    })
     checkRe(n, /No Snipcode file headers found in clipboard\./, '提示')
     check((await grep(/^標題 Paste & Restore/)) === '', '不該出預覽對話框')
     checkEq(v1Snap(), snap0, '磁碟')
