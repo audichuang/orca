@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,7 +13,11 @@ async function load(manifest: string | null): Promise<boolean> {
     writeFileSync(join(appPath.current, 'package.json'), manifest)
   }
   const { isForkDistribution } = await import('./fork-distribution')
-  return isForkDistribution()
+  try {
+    return isForkDistribution()
+  } finally {
+    rmSync(appPath.current, { recursive: true, force: true })
+  }
 }
 
 describe('isForkDistribution', () => {
