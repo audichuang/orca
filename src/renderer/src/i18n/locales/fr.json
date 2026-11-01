@@ -14306,7 +14306,6 @@
                         "c023ba6838": "Ce dossier se trouve dans un dépôt importé : les modifications hors du dossier sont aussi listées.",
                         "efd34a4169": "La liste des modifications de {{value0}} est tronquée ; la copie est incomplète.",
                         "d98e7b731c": "Copier toutes les modifications",
-                        "da953a696f": "Coller et restaurer",
                         "5de321918e": "Les worktrees masqués de ce dossier ne sont pas inclus ({{value0}}).",
                         "ab32287003": "Dépôts",
                         "addRepos": "Ajouter les dépôts de ce dossier",
