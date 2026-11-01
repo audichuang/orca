@@ -14517,7 +14517,6 @@
                         "c023ba6838": "Dieser Ordner liegt in einem importierten Repository, daher werden auch Änderungen außerhalb des Ordners aufgelistet.",
                         "efd34a4169": "Die Änderungsliste für {{value0}} ist abgeschnitten; die Kopie ist unvollständig.",
                         "d98e7b731c": "Alle Änderungen kopieren",
-                        "da953a696f": "Einfügen & Wiederherstellen",
                         "5de321918e": "Ausgeblendete Worktrees unter diesem Ordner sind nicht enthalten ({{value0}}).",
                         "ab32287003": "Repositorys",
                         "addRepos": "Repositorys in diesem Ordner hinzufügen",

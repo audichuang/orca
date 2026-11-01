@@ -10440,7 +10440,6 @@
                         "c023ba6838": "Esta pasta está dentro de um repositório importado, então as alterações fora da pasta também são listadas.",
                         "efd34a4169": "A lista de alterações de {{value0}} está truncada; a cópia está incompleta.",
                         "d98e7b731c": "Copiar todas as alterações",
-                        "da953a696f": "Colar e restaurar",
                         "5de321918e": "Worktrees ocultas nesta pasta não são incluídas ({{value0}}).",
                         "ab32287003": "Repositórios",
                         "addRepos": "Adicionar repositórios desta pasta",
