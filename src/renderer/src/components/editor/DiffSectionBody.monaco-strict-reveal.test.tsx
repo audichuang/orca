@@ -90,13 +90,16 @@ function createFakeMonaco() {
       createDiffEditor: () => {
         const original = createCodeEditor()
         const modified = createCodeEditor()
+        // Real Monaco keeps the outer diff model itself; the wrapper never restores it on reconnect.
+        let diffModel: { original: FakeModel; modified: FakeModel } | null = null
         events.push('create')
         editors.push(original)
         return {
           getOriginalEditor: () => original,
           getModifiedEditor: () => modified,
-          getModel: () => ({ original: original.getModel(), modified: modified.getModel() }),
+          getModel: () => diffModel,
           setModel: (next: { original: FakeModel; modified: FakeModel } | null) => {
+            diffModel = next
             original.setModel(next?.original ?? null)
             modified.setModel(next?.modified ?? null)
           },
