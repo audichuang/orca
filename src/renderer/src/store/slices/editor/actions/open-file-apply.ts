@@ -3,6 +3,7 @@ import { extractIpcErrorMessage } from '@/lib/ipc-error'
 import { captureEditorFileOperationProvenance } from '@/lib/editor-file-operation-owner'
 import { getRecentlyClosedTabPosition, pushRecentlyClosedTabKind } from '../../recently-closed-tabs'
 import type { AppState } from '../../../types'
+import { nextOpenFileGitWorktreeId } from '../git/open-file-git-owner'
 import {
   type ClosedEditorTabSnapshot,
   MAX_RECENT_CLOSED_EDITOR_TABS,
@@ -133,7 +134,7 @@ export function applyOpenFileToState(
       existing.language !== file.language ||
       existing.relativePath !== file.relativePath ||
       existing.worktreeId !== file.worktreeId ||
-      (file.gitWorktreeId !== undefined && existing.gitWorktreeId !== file.gitWorktreeId) ||
+      existing.gitWorktreeId !== nextOpenFileGitWorktreeId(existing, file) ||
       existing.runtimeEnvironmentId !== runtimeEnvironmentId ||
       existing.externalSshTargetId !== nextExternalSshTargetId ||
       existing.terminalArtifactGrantId !== nextGrantId ||
@@ -151,10 +152,7 @@ export function applyOpenFileToState(
               ...f,
               relativePath: file.relativePath,
               worktreeId: file.worktreeId,
-              // Why: a kept git owner is only valid for the repo-relative path it was opened with.
-              gitWorktreeId:
-                file.gitWorktreeId ??
-                (file.relativePath === f.relativePath ? f.gitWorktreeId : undefined),
+              gitWorktreeId: nextOpenFileGitWorktreeId(f, file),
               language: file.language,
               runtimeEnvironmentId,
               externalSshTargetId: nextExternalSshTargetId,

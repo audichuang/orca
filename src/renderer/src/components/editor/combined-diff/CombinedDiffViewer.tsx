@@ -266,13 +266,8 @@ export default function CombinedDiffViewer({
     }
 
     if (branchSummary && branchSummary.status === 'ready') {
-      openBranchAllDiffs(
-        file.worktreeId,
-        file.filePath,
-        branchSummary,
-        { source: 'combined-all' },
-        gitOwner
-      )
+      const alternate = { source: 'combined-all' as const }
+      openBranchAllDiffs(file.worktreeId, file.filePath, branchSummary, alternate, gitOwner)
     }
   }, [branchSummary, file, openAllDiffs, openBranchAllDiffs])
 
