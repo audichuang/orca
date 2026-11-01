@@ -14,8 +14,10 @@ import { expectOneCopyToast } from './helpers/settled-toast-box'
 import { startHiddenRendererFrameCapture } from './helpers/hidden-renderer-frame-capture'
 import { waitForSessionReady } from './helpers/store'
 import {
+  clickExplorerPasteRestore,
   clipboardText,
   setClipboard,
+  showSourceControl,
   type ScenarioResult as Result
 } from './helpers/folder-multi-repo-scenario-context'
 import { runLayoutScenarios } from './helpers/folder-multi-repo-layout-scenarios'
@@ -677,7 +679,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
       ''
     ].join('\n')
     await setClipboard(page, payload)
-    await page.getByRole('button', { name: 'Paste & Restore' }).first().click()
+    await clickExplorerPasteRestore(page)
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible({ timeout: 15_000 })
     const dialogText = (await dialog.innerText()).replace(/\n+/g, '\n')
@@ -735,7 +737,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
       page,
       '// clipcode-root: MultiProduct\n// file: [MODIFIED] WebApp/src/restored/a.ts\nCLOBBER\n'
     )
-    await page.getByRole('button', { name: 'Paste & Restore' }).first().click()
+    await clickExplorerPasteRestore(page)
     const dialog2 = page.getByRole('dialog')
     await expect(dialog2).toBeVisible({ timeout: 15_000 })
     await expect(dialog2).toContainText('Overwrite (1)')
@@ -745,6 +747,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     await dialog2.getByRole('button', { name: 'Cancel' }).click()
     await expect(dialog2).toHaveCount(0, { timeout: 15_000 })
     expect(readFileSync(path.join(R.webapp, 'src/restored/a.ts'), 'utf8')).toBe(keep)
+    await showSourceControl(page)
     ev.push('overwrite unticked: Restore disabled and existing file left untouched')
     ev.push(
       'on disk: a.ts created, api README overwritten, core/extra.ts deleted; escape.txt and absolute path file absent'
