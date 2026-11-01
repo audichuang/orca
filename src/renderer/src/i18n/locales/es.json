@@ -14236,7 +14236,6 @@
                         "c023ba6838": "Esta carpeta está dentro de un repositorio importado, por lo que también se muestran los cambios fuera de la carpeta.",
                         "efd34a4169": "La lista de cambios de {{value0}} está truncada; la copia está incompleta.",
                         "d98e7b731c": "Copiar todos los cambios",
-                        "da953a696f": "Pegar y restaurar",
                         "5de321918e": "No se incluyen los worktrees ocultos de esta carpeta ({{value0}}).",
                         "ab32287003": "Repositorios",
                         "addRepos": "Añadir repositorios de esta carpeta",
