@@ -11,7 +11,6 @@ import {
   LOCAL_EXECUTION_HOST_ID
 } from '../../../../../../shared/execution-host'
 import { copyClipcodeGitChanges } from '../clipcode/clipcode-copy-action'
-import { useClipcodeRestore } from '../clipcode/use-clipcode-restore'
 import { SourceControlSingleRepoPanel } from '../panel/single-repo-panel'
 import { selectFolderHiddenWorktreeCount, type FolderGitWorktree } from './folder-git-worktrees'
 import { useFolderGitMembers } from './use-folder-git-members'
@@ -214,16 +213,6 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   const firstMatchId = visibleIds[0]
 
   const folderPath = folderWorkspace?.folderPath ?? ''
-  const repoWorktrees = useMemo(
-    () => members.map((member) => ({ id: member.worktree.id, path: member.worktree.path })),
-    [members]
-  )
-  const { requestRestore, dialog: restoreDialog } = useClipcodeRestore({
-    workspaceKey: folderWorkspaceKey,
-    rootPath: folderPath,
-    repoWorktrees,
-    onRestored: () => void refreshAll()
-  })
   const copyAllChanges = useCallback(() => {
     const state = useAppStore.getState()
     for (const member of members) {
@@ -318,7 +307,6 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
         selectedRepoId={selectedId}
         onCopyAll={copyAllChanges}
         onAddRepos={canAddRepos ? () => setAddReposOpen(true) : undefined}
-        onRestore={requestRestore}
         onRefresh={() => void refreshAll()}
       />
       {hiddenNotice && (
@@ -379,7 +367,6 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
           </div>
         )}
       </div>
-      {restoreDialog}
       {addReposDialog}
     </div>
   )
