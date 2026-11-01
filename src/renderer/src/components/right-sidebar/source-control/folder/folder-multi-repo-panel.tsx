@@ -5,20 +5,15 @@ import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { useAllWorktrees, useRepoMap } from '@/store/selectors'
-import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { useRepoMap } from '@/store/selectors'
 import {
   getRepoExecutionHostId,
   LOCAL_EXECUTION_HOST_ID
 } from '../../../../../../shared/execution-host'
 import { copyClipcodeGitChanges } from '../clipcode/clipcode-copy-action'
-import { useClipcodeRestore } from '../clipcode/use-clipcode-restore'
 import { SourceControlSingleRepoPanel } from '../panel/single-repo-panel'
-import {
-  getFolderGitWorktrees,
-  selectFolderHiddenWorktreeCount,
-  type FolderGitWorktree
-} from './folder-git-worktrees'
+import { selectFolderHiddenWorktreeCount, type FolderGitWorktree } from './folder-git-worktrees'
+import { useFolderGitMembers } from './use-folder-git-members'
 import { FolderAddReposDialog } from './folder-add-repos-dialog'
 import { FolderRepoFilterBox } from './folder-repo-filter-box'
 import { FolderRepoPanelToolbar } from './folder-repo-panel-toolbar'
@@ -57,7 +52,6 @@ import { useFolderRepoStatusRefresh } from './use-folder-repo-status-refresh'
 import { useFolderRepoRowFocus } from './use-folder-repo-row-focus'
 import { SourceControlWorktreeScopeContext } from './worktree-scope'
 import { useRepoDisplayColor } from '@/lib/repo-display-color'
-import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
 
 /**
  * Source Control for a folder workspace: a repo list grouped by whether a repo has changes, with the
@@ -65,17 +59,8 @@ import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
  * exactly as in a repo workspace.
  */
 export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKey: string }) {
-  const scope = parseWorkspaceKey(folderWorkspaceKey)
-  const folderWorkspaceId = scope?.type === 'folder' ? scope.folderWorkspaceId : null
-  const folderWorkspace = useAppStore(
-    (s) => selectFolderWorkspaces(s).find((workspace) => workspace.id === folderWorkspaceId) ?? null
-  )
-  const worktrees = useAllWorktrees()
+  const { folderWorkspace, members } = useFolderGitMembers(folderWorkspaceKey)
   const repoById = useRepoMap()
-  const members = useMemo(
-    () => (folderWorkspace ? getFolderGitWorktrees(folderWorkspace, worktrees, repoById) : []),
-    [folderWorkspace, repoById, worktrees]
-  )
   const hiddenCount = useAppStore((s) =>
     selectFolderHiddenWorktreeCount(s, folderWorkspace, repoById)
   )
@@ -228,16 +213,6 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
   const firstMatchId = visibleIds[0]
 
   const folderPath = folderWorkspace?.folderPath ?? ''
-  const repoWorktrees = useMemo(
-    () => members.map((member) => ({ id: member.worktree.id, path: member.worktree.path })),
-    [members]
-  )
-  const { requestRestore, dialog: restoreDialog } = useClipcodeRestore({
-    folderWorkspaceKey,
-    folderPath,
-    repoWorktrees,
-    onRestored: () => void refreshAll()
-  })
   const copyAllChanges = useCallback(() => {
     const state = useAppStore.getState()
     for (const member of members) {
@@ -332,7 +307,6 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
         selectedRepoId={selectedId}
         onCopyAll={copyAllChanges}
         onAddRepos={canAddRepos ? () => setAddReposOpen(true) : undefined}
-        onRestore={requestRestore}
         onRefresh={() => void refreshAll()}
       />
       {hiddenNotice && (
@@ -393,7 +367,6 @@ export function FolderMultiRepoPanel({ folderWorkspaceKey }: { folderWorkspaceKe
           </div>
         )}
       </div>
-      {restoreDialog}
       {addReposDialog}
     </div>
   )

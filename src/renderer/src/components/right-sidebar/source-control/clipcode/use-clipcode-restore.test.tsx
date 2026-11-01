@@ -47,8 +47,8 @@ const { useClipcodeRestore } = await import('./use-clipcode-restore')
 
 function Harness(): React.JSX.Element {
   const { requestRestore, dialog } = useClipcodeRestore({
-    folderWorkspaceKey: 'folder-1',
-    folderPath: '/f',
+    workspaceKey: 'folder-1',
+    rootPath: '/f',
     repoWorktrees: [{ id: 'repo-a::/f/a', path: '/f/a' }],
     onRestored: vi.fn()
   })
