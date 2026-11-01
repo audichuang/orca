@@ -316,6 +316,51 @@ globalThis.removeProj = async (name) => {
 }
 
 // ---- Paste & Restore 對話框 ----
+// Paste & Restore lives in the Explorer header; Source Control no longer has it.
+const PASTE_RESTORE_BUTTON = map.RE.buttonStart(map.UI_TEXT.pasteRestore)
+// 切右側欄分頁直到 markerRe 出現;側欄關著先打開
+globalThis.showRightTab = async (label, markerRe) => {
+  for (let k = 0; k < 3 && !(await grep(markerRe)); k++) {
+    const L = await lines()
+    const tabRe = map.RE.buttonStart(label)
+    let tab = L.find(([, t]) => tabRe.test(t))
+    const toggle = L.find(([, t]) => map.RE.buttonStart(map.UI_TEXT.toggleRightSidebar).test(t))
+    if (!tab && toggle) {
+      await app.click(toggle[0])
+      await sleep(1000)
+      tab = (await lines()).find(([, t]) => tabRe.test(t))
+    }
+    if (tab) {
+      await app.click(tab[0])
+      await sleep(1500)
+    }
+  }
+  if (!(await grep(markerRe))) {
+    throw new Error(`右側欄切不到 ${label}(找不到 ${markerRe})`)
+  }
+}
+// 切到檔案總管並點標題列的 Paste & Restore(folder 與一般 repo workspace 都在那裡)
+globalThis.clickExplorerPasteRestore = async () => {
+  await showRightTab(map.UI_TEXT.explorerTab, PASTE_RESTORE_BUTTON)
+  await app.click(await find(PASTE_RESTORE_BUTTON))
+}
+// 跑 fn;一開始不在檔案總管的話,結束後切回 Source Control(對話框已關才點得到分頁)
+globalThis.inSourceControlAfter = async (fn) => {
+  const startedInExplorer = (await grep(PASTE_RESTORE_BUTTON)) !== ''
+  try {
+    return await fn()
+  } finally {
+    if (!startedInExplorer) {
+      const sc = (await lines()).find(([, t]) =>
+        map.RE.buttonStart(map.UI_TEXT.sourceControlTab).test(t)
+      )
+      if (sc) {
+        await app.click(sc[0])
+        await sleep(1500)
+      }
+    }
+  }
+}
 globalThis.pv = async () => {
   const L = await lines()
   const i = L.findIndex(([, t]) => t.startsWith('標題 Paste & Restore'))
@@ -343,7 +388,7 @@ globalThis.openRestorePreview = async () => {
   for (let k = 0; k < 20 && (await grep(RESTORE_RESULT)); k++) {
     await sleep(500)
   }
-  await app.click(await find(/^按鈕 Paste & Restore/))
+  await clickExplorerPasteRestore()
   for (let k = 0; k < 8; k++) {
     await sleep(700)
     if (await grep(/^標題 Paste & Restore/)) {
@@ -355,7 +400,9 @@ globalThis.openRestorePreview = async () => {
   }
   return false
 }
-globalThis.rs = async ({ toggleAdjust = false, overwrite = false, restore = true } = {}) => {
+globalThis.rs = ({ toggleAdjust = false, overwrite = false, restore = true } = {}) =>
+  inSourceControlAfter(() => rsInExplorer({ toggleAdjust, overwrite, restore }))
+const rsInExplorer = async ({ toggleAdjust, overwrite, restore }) => {
   const cancel = async () => {
     const c = (await lines()).find(([, t]) => /^按鈕 Cancel$/.test(t))
     if (c) {
@@ -417,15 +464,16 @@ globalThis.preflight = async () => {
     await openMP()
     return true
   })
-  for (const key of [
-    'refreshAll',
-    'copyAllChanges',
-    'pasteRestore',
-    'addReposInFolder',
-    'openGitGraph'
-  ]) {
+  for (const key of ['refreshAll', 'copyAllChanges', 'addReposInFolder', 'openGitGraph']) {
     await ok(key, async () => grep(map.RE.button(map.UI_TEXT[key])))
   }
+  // Explorer tab, not Source Control
+  await ok('pasteRestore(Explorer)', () =>
+    inSourceControlAfter(async () => {
+      await showRightTab(map.UI_TEXT.explorerTab, PASTE_RESTORE_BUTTON)
+      return true
+    })
+  )
   await ok('repoRow(≥4)', async () => (await findAll(map.RE.anyRepoRow)).length >= 4)
   await ok('selectRepo(WebApp)', async () => {
     await selectRepo('WebApp', 'main')
