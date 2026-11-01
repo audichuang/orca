@@ -1,7 +1,11 @@
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 import { expect } from './orca-app'
-import type { ExtraScenarioContext } from './folder-multi-repo-scenario-context'
+import {
+  clickExplorerPasteRestore,
+  showSourceControl,
+  type ExtraScenarioContext
+} from './folder-multi-repo-scenario-context'
 
 // S12-S14: restore safety (symlink escapes, size-skip placeholders, pending editor edits).
 export async function runRestoreScenarios(ctx: ExtraScenarioContext): Promise<void> {
@@ -10,7 +14,7 @@ export async function runRestoreScenarios(ctx: ExtraScenarioContext): Promise<vo
   const dialogLocator = () => page.getByRole('dialog')
   const openRestoreDialog = async (payload: string) => {
     await setClipboard(page, payload)
-    await page.getByRole('button', { name: 'Paste & Restore' }).first().click()
+    await clickExplorerPasteRestore(page)
     await expect(dialogLocator()).toBeVisible({ timeout: 15_000 })
     return dialogLocator()
   }
@@ -175,4 +179,6 @@ export async function runRestoreScenarios(ctx: ExtraScenarioContext): Promise<vo
     await shot('S14b-after-restore')
     await page.evaluate(() => window.__store!.getState().updateSettings({ editorAutoSave: false }))
   })
+  // Why: the layout scenarios that follow expect the Source Control panel.
+  await showSourceControl(page)
 }
