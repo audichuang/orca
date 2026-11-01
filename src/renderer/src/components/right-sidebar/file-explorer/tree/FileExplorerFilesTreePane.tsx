@@ -199,6 +199,7 @@ export function FileExplorerFilesTreePane({
       {showTree && (
         <ClipcodeExplorerVirtualRows
           clipcodeWorktreePath={worktreePath}
+          refreshDir={tree.refreshDir}
           displayDepthOffset={getExplorerDisplayDepth(worktreePath, displayRootPath)}
           virtualizer={virtualizer}
           inlineInputIndex={inlineInputIndex}
