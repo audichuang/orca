@@ -13070,7 +13070,8 @@
             "clipboardStagingUnavailable": "Die Datei konnte nicht kopiert werden, da der temporäre Speicher von Orca nicht verfügbar ist",
             "revealInFinder": "Im Finder anzeigen",
             "openContainingFolder": "Übergeordneten Ordner öffnen",
-            "revealInFileExplorer": "In File Explorer anzeigen"
+            "revealInFileExplorer": "In File Explorer anzeigen",
+            "duplicateAsResult": "Als _result.txt duplizieren"
           },
           "FileExplorerToolbar": {
             "d238264654": "Von Git ignorierte Dateien anzeigen",
