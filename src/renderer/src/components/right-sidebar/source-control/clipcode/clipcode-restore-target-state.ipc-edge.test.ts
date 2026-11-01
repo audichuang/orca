@@ -1,7 +1,7 @@
-import { mkdir, mkdtemp, readdir, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { readCandidateState, readTargetState } from './clipcode-restore-target-state'
 
 // Unlike the contract test, the runtime file clients stay real: only window.api.fs is stubbed, and it
@@ -18,6 +18,7 @@ beforeAll(async () => {
   await writeFile(path.join(root, 'src', 'a.ts'), 'x')
   await writeFile(path.join(root, 'file.txt'), 'x')
 })
+afterAll(() => rm(root, { recursive: true, force: true }))
 afterEach(() => vi.unstubAllGlobals())
 
 function stubFs(): void {
