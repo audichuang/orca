@@ -171,6 +171,7 @@ describe('explorer Copy Full Source wiring', () => {
   })
 
   it('the tree pane renders its rows with ClipCode actions for the worktree', () => {
+    const refreshDir = vi.fn()
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: element-tree fixture; only the fields the pane reads before rendering rows are supplied.
     const element = FileExplorerFilesTreePane({
       worktreePath: '/repo',
@@ -179,7 +180,7 @@ describe('explorer Copy Full Source wiring', () => {
       visibleRowCount: 3,
       hasNameFilter: false,
       rowProjection: createFileExplorerRowProjection([a, b, c]),
-      tree: { loadingDirPaths: new Set(), rootError: null, dirCache: {} },
+      tree: { loadingDirPaths: new Set(), rootError: null, dirCache: {}, refreshDir },
       selection: { selectedPaths: new Set() },
       paneState: {
         inlineInputState: {},
@@ -197,6 +198,7 @@ describe('explorer Copy Full Source wiring', () => {
       }
     })
     expect(rows?.props.clipcodeWorktreePath).toBe('/repo')
+    expect(rows?.props.refreshDir).toBe(refreshDir)
   })
 
   it('copies the multi-selection in explorer order when the row is part of it', async () => {
