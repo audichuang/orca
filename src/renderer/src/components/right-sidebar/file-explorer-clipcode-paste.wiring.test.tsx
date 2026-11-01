@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ConfirmationDialogContext } from '@/components/confirmation-dialog-context'
 import { useAppStore } from '@/store'
@@ -152,5 +152,69 @@ describe('explorer Paste & Restore button gating', () => {
       </TooltipProvider>
     )
     expect(screen.queryByRole('button', { name: 'Paste & Restore' })).toBeNull()
+  })
+})
+
+describe('explorer Paste & Restore across workspace switches', () => {
+  function seedTwoWorkspacesOnOneHost(): void {
+    useAppStore.setState({
+      repos: [{ id: 'repo-1', path: '/repo', displayName: 'repo', badgeColor: '#000', addedAt: 0 }],
+      worktreesByRepo: {
+        'repo-1': [
+          makeWorktree({ id: 'wt-1', repoId: 'repo-1', path: '/repo', hostId: 'local' }),
+          makeWorktree({ id: 'wt-2', repoId: 'repo-1', path: '/repo-b', hostId: 'local' })
+        ]
+      },
+      activeWorktreeId: 'wt-1'
+    })
+    files.set('/repo/README.md', 'a')
+    files.set('/repo-b/README.md', 'b')
+  }
+
+  function renderExplorer(): void {
+    render(
+      <ConfirmationDialogContext.Provider value={confirmDialog}>
+        <TooltipProvider>
+          <FileExplorer />
+        </TooltipProvider>
+      </ConfirmationDialogContext.Provider>
+    )
+  }
+
+  function switchTo(worktreeId: string): void {
+    act(() => useAppStore.setState({ activeWorktreeId: worktreeId }))
+  }
+
+  it('drops an open preview when the active workspace changes', async () => {
+    seedTwoWorkspacesOnOneHost()
+    renderExplorer()
+    fireEvent.click(await screen.findByRole('button', { name: 'Paste & Restore' }))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    switchTo('wt-2')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(fsStub.writeFile).not.toHaveBeenCalled()
+  })
+
+  it('discards a restore still preparing when the active workspace changes', async () => {
+    seedTwoWorkspacesOnOneHost()
+    let resolveClipboard: (text: string) => void = () => undefined
+    readClipboardText.mockReturnValueOnce(
+      new Promise<string>((resolve) => {
+        resolveClipboard = resolve
+      })
+    )
+    renderExplorer()
+    fireEvent.click(await screen.findByRole('button', { name: 'Paste & Restore' }))
+    switchTo('wt-2')
+    await act(async () => resolveClipboard(PAYLOAD))
+    // The last per-path stat precedes the session being set; flush once more after it.
+    await waitFor(() =>
+      expect(fsStub.stat).toHaveBeenCalledWith(
+        expect.objectContaining({ filePath: '/repo/src/pasted.ts' })
+      )
+    )
+    await act(async () => undefined)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(fsStub.writeFile).not.toHaveBeenCalled()
   })
 })
