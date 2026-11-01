@@ -54,7 +54,7 @@ function createFakeMonaco() {
         disposeListeners.forEach((listener) => listener())
       },
       getModel: () => model,
-      setModel: (next: FakeModel) => {
+      setModel: (next: FakeModel | null) => {
         if (disposed) {
           throw new Error('InstantiationService has been disposed')
         }
@@ -96,9 +96,9 @@ function createFakeMonaco() {
           getOriginalEditor: () => original,
           getModifiedEditor: () => modified,
           getModel: () => ({ original: original.getModel(), modified: modified.getModel() }),
-          setModel: (next: { original: FakeModel; modified: FakeModel }) => {
-            original.setModel(next.original)
-            modified.setModel(next.modified)
+          setModel: (next: { original: FakeModel; modified: FakeModel } | null) => {
+            original.setModel(next?.original ?? null)
+            modified.setModel(next?.modified ?? null)
           },
           updateOptions: () => {},
           dispose: () => {
