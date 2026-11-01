@@ -11,6 +11,7 @@ import { useSourceControlRowOpening } from './use-row-opening'
 const FOLDER = 'folder:f1'
 const REPO = 'repo-1::/work/repo-1'
 const SCOPE = { gitWorktreeId: REPO, editorWorktreeId: FOLDER }
+const NO_OWNER_SCOPE = { gitWorktreeId: REPO, editorWorktreeId: '' }
 
 beforeEach(() => {
   useAppStore.setState(useAppStore.getInitialState(), true)
@@ -81,4 +82,25 @@ it('keeps the folder file row active and opens its working-tree diff with repo o
     worktreeId: FOLDER,
     relativePath: 'src/a.ts'
   })
+})
+
+it('opens nothing when no editor owner resolves for the tab', () => {
+  const entry = { path: 'src/a.ts', status: 'modified' as const, area: 'unstaged' as const }
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <SourceControlWorktreeScopeContext.Provider value={NO_OWNER_SCOPE}>
+      {children}
+    </SourceControlWorktreeScopeContext.Provider>
+  )
+  const { result } = renderHook(
+    () =>
+      useSourceControlRowOpening({
+        activeWorktreeId: REPO,
+        worktreePath: '/work/repo-1',
+        visibleSelectionEntries: [],
+        branchSummary: null
+      }),
+    { wrapper }
+  )
+  act(() => result.current.handleOpenDiff(entry))
+  expect(useAppStore.getState().openFiles).toEqual([])
 })
