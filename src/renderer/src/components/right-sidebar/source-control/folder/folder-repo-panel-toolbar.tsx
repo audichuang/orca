@@ -1,4 +1,4 @@
-import { ClipboardPaste, Copy, FolderPlus, RefreshCw } from 'lucide-react'
+import { Copy, FolderPlus, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { ActionButton } from '../listing/action-button'
@@ -12,7 +12,6 @@ export function FolderRepoPanelToolbar({
   selectedRepoId,
   onCopyAll,
   onAddRepos,
-  onRestore,
   onRefresh
 }: {
   name: string
@@ -23,7 +22,6 @@ export function FolderRepoPanelToolbar({
   onCopyAll: () => void
   /** Undefined hides the action, e.g. for folders on SSH hosts. */
   onAddRepos?: () => void
-  onRestore: () => void
   onRefresh: () => void
 }) {
   return (
@@ -50,14 +48,6 @@ export function FolderRepoPanelToolbar({
           onClick={onAddRepos}
         />
       )}
-      <ActionButton
-        icon={ClipboardPaste}
-        title={translate(
-          'auto.components.right.sidebar.source.control.folder.folder.multi.repo.panel.da953a696f',
-          'Paste & Restore'
-        )}
-        onClick={onRestore}
-      />
       <Button
         type="button"
         variant="ghost"
