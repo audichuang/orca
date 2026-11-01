@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@stablyai/playwright-test'
+import { openFileExplorer } from './file-explorer'
 
 export type ScenarioResult = {
   name: string
@@ -12,6 +13,16 @@ export async function clipboardText(page: Page): Promise<string> {
 }
 export async function setClipboard(page: Page, text: string): Promise<void> {
   await page.evaluate((t) => window.api.ui.writeClipboardText(t), text)
+}
+
+// Paste & Restore lives in the File Explorer header; the Source Control toolbar no longer has it.
+export async function clickExplorerPasteRestore(page: Page): Promise<void> {
+  await openFileExplorer(page)
+  await page.getByRole('button', { name: 'Paste & Restore' }).first().click()
+}
+
+export async function showSourceControl(page: Page): Promise<void> {
+  await page.evaluate(() => window.__store!.getState().setRightSidebarTab('source-control'))
 }
 
 export type ExtraScenarioContext = {
