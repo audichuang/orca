@@ -34,6 +34,8 @@ type FileExplorerToolbarProps = {
   onToggleGitIgnoredFiles: () => void
   showDotfiles: boolean
   onToggleDotfiles: () => void
+  // Fork-only: slot for fork header actions.
+  forkActions?: React.ReactNode
 }
 
 function formatOpenInAppLabel(appName: string): string {
@@ -61,7 +63,8 @@ export function FileExplorerToolbar({
   showGitIgnoredFiles,
   onToggleGitIgnoredFiles,
   showDotfiles,
-  onToggleDotfiles
+  onToggleDotfiles,
+  forkActions
 }: FileExplorerToolbarProps): React.JSX.Element {
   const t = useTranslate()
   return (
@@ -72,6 +75,7 @@ export function FileExplorerToolbar({
       >
         {repoName}
       </span>
+      {forkActions}
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
