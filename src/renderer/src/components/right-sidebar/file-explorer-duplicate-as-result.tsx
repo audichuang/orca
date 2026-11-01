@@ -94,9 +94,12 @@ async function copyAsResult(
   }
 
   // Watcher-ignored dirs (dist, build, ...) never announce the new file; a refresh failure must not fail a done copy.
-  try {
-    await refreshDir?.(dir)
-  } catch {}
+  // refreshDir is bound to the click-time workspace; a stale one would retag the new tree's source workspace.
+  if (useAppStore.getState().activeWorktreeId === activeWorktreeId) {
+    try {
+      await refreshDir?.(dir)
+    } catch {}
+  }
 
   // relativePath ends with the file name, so the copy shares its parent.
   const relativeDir = node.relativePath.slice(0, node.relativePath.length - name.length)
