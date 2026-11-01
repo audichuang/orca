@@ -17,6 +17,17 @@ export function getOpenFileGitWorktreeId(
   return file.gitWorktreeId ?? file.worktreeId
 }
 
+/** Git owner a reused tab ends up with: a kept owner is only valid for the repo-relative path it was opened with. */
+export function nextOpenFileGitWorktreeId(
+  existing: Pick<OpenFile, 'relativePath' | 'gitWorktreeId'>,
+  file: Pick<OpenFile, 'relativePath' | 'gitWorktreeId'>
+): string | undefined {
+  return (
+    file.gitWorktreeId ??
+    (file.relativePath === existing.relativePath ? existing.gitWorktreeId : undefined)
+  )
+}
+
 /** Path git and repo-selector reads expect: derived from filePath so it holds whichever root relativePath is relative to. */
 export function getOpenFileGitRelativePath(
   state: Pick<AppState, 'worktreesByRepo'>,
