@@ -174,6 +174,19 @@ describe('Duplicate as _result.txt menu item', () => {
     expect(toast.error).not.toHaveBeenCalled()
   })
 
+  it('skips the refresh but still opens the file when the workspace switches during the copy', async () => {
+    let finishCopy: () => void = () => {}
+    mocks.copy.mockImplementation(() => new Promise<void>((resolve) => (finishCopy = resolve)))
+    renderMenu(node('x.sql'))
+    fireEvent.click(await screen.findByRole('menuitem', { name: LABEL }))
+    await vi.waitFor(() => expect(mocks.copy).toHaveBeenCalledTimes(1))
+    useAppStore.setState({ activeWorktreeId: 'wt-2' })
+    finishCopy()
+    await vi.waitFor(() => expect(useAppStore.getState().openFiles).toHaveLength(1))
+    expect(mocks.refreshDir).not.toHaveBeenCalled()
+    expect(useAppStore.getState().openFiles[0]).toMatchObject({ worktreeId: 'wt-1' })
+  })
+
   it('does not refresh when the copy fails', async () => {
     mocks.copy.mockRejectedValue(new Error('EACCES: permission denied'))
     renderMenu(node('x.sql'))
