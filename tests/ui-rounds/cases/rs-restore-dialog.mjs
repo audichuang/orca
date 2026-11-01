@@ -131,14 +131,15 @@ globalThis.rsClickRestore = async () => {
   await sleep(1500) // OBS-2:通知先於磁碟一致
   return result
 }
-/** 開 Paste & Restore → 讀預覽 →(選)切 Adjust 看另一種 →(選)勾覆蓋 → Restore。
+/** 從檔案總管開 Paste & Restore → 讀預覽 →(選)切 Adjust 看另一種 →(選)勾覆蓋 → Restore。
  *  回傳 {first, toggled, disabledBefore, disabledAfterOverwrite, result, cancelled}。 */
 globalThis.rsOpenPreview = async () => {
   await openRestorePreview()
   return await rsView()
 }
 
-globalThis.rsRun = async ({ toggleAdjust = false, overwrite = false, restore = true } = {}) => {
+globalThis.rsRun = (opts = {}) => inSourceControlAfter(() => rsRunInExplorer(opts))
+const rsRunInExplorer = async ({ toggleAdjust = false, overwrite = false, restore = true }) => {
   const first = await rsOpenPreview()
   if (!first.open) {
     return { first, note: await note() }

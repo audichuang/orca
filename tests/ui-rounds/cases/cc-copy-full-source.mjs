@@ -12,6 +12,16 @@ const {
   new URL(`./cc-copy-actions.mjs${new URL(import.meta.url).search}`, import.meta.url).href
 )
 
+// 檔案總管標題列要有 Paste & Restore;看完切回 Source Control
+const ccExplorerHasPasteRestore = (label) =>
+  inSourceControlAfter(async () => {
+    try {
+      await showRightTab(UI_TEXT.explorerTab, UI_RE.buttonStart(UI_TEXT.pasteRestore))
+    } catch (e) {
+      throw new Error(`${label}:檔案總管標題列沒有 Paste & Restore(${e.message})`)
+    }
+  })
+
 defineCase('CC-01', {
   title: 'api-server repo 列逐字',
   pre: 'reset',
@@ -177,7 +187,7 @@ defineCase('CC-05.cleanup', {
 })
 
 defineCase('CC-06', {
-  title: '一般 repo workspace 的複製;沒有 Paste & Restore',
+  title: '一般 repo workspace 的複製;Paste & Restore 在檔案總管,Source Control 沒有',
   pre: 'reset',
   run: async () => {
     await openMP()
@@ -186,8 +196,9 @@ defineCase('CC-06', {
     await ccEnsureSourceControl(/^按鈕 STAGED CHANGES/)
     check(
       !(await grep(/Paste & Restore|Copy all changes/)),
-      '第 3 步:main workspace 不應有 Paste & Restore / Copy all changes'
+      '第 3 步:main workspace 的 Source Control 不應有 Paste & Restore / Copy all changes'
     )
+    await ccExplorerHasPasteRestore('第 3 步:main workspace')
     const r1 = await copyAndRead(() => ccSecCopy(/^按鈕 STAGED CHANGES/, 1300))
     checkEq(
       r1.clip,
@@ -207,15 +218,16 @@ defineCase('CC-06', {
     ccStat(r2.clip, '116 chars · 10 lines · 12 words · ~14 tokens.', '第 2 步')
     check(
       !(await grep(/Paste & Restore|Copy all changes/)),
-      '第 3 步:feature workspace 不應有 Paste & Restore / Copy all changes'
+      '第 3 步:feature workspace 的 Source Control 不應有 Paste & Restore / Copy all changes'
     )
+    await ccExplorerHasPasteRestore('第 3 步:feature workspace')
     await app.click(await find(/^彈出式按鈕 More source control actions/))
     await sleep(700)
     const menu = await grep(/Paste|Restore|Copy all/)
     await app.pressKey('Escape')
     await sleep(300)
     check(!menu, `第 3 步:More 選單不應有 Paste/Restore/Copy all: ${menu}`)
-    return 'STAGED 293/27/33/41 與 feature 右鍵 116/10/12/14 逐字相同;工具列、右鍵與 More 選單都沒有 Paste & Restore / Copy all changes'
+    return 'STAGED 293/27/33/41 與 feature 右鍵 116/10/12/14 逐字相同;Source Control 的工具列、右鍵與 More 選單都沒有 Paste & Restore / Copy all changes;兩個 workspace 的檔案總管標題列都有 Paste & Restore'
   }
 })
 
