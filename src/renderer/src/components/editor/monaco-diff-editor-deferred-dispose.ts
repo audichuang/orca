@@ -11,8 +11,6 @@ export function deferDiffEditorDispose(diffEditor: editor.IStandaloneDiffEditor)
       return
     }
     pending = true
-    // Why: models disposed in the same flush must not still be attached when the dispose lands.
-    diffEditor.setModel(null)
     queueMicrotask(() => {
       if (pending) {
         pending = false
