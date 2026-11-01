@@ -10,8 +10,12 @@ import { useAppStore } from '@/store'
 import { makeWorktree } from '../../store/slices/worktrees-slice-test-fixtures'
 import type { TreeNode } from './file-explorer-types'
 import { FileExplorerRowContextMenu } from './file-explorer-row-context-menu'
+import { DuplicateAsResultRefreshContext } from './file-explorer-duplicate-as-result'
+import { toast } from 'sonner'
 
-const mocks = vi.hoisted(() => ({ copy: vi.fn(), pathExists: vi.fn() }))
+const mocks = vi.hoisted(() => ({ copy: vi.fn(), pathExists: vi.fn(), refreshDir: vi.fn() }))
+
+vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 
 const node = (name: string, isDirectory = false): TreeNode => ({
   name,
@@ -24,32 +28,34 @@ const node = (name: string, isDirectory = false): TreeNode => ({
 
 function renderMenu(target: TreeNode): void {
   render(
-    <TooltipProvider>
-      <ContextMenu>
-        <ContextMenuTrigger>row</ContextMenuTrigger>
-        <FileExplorerRowContextMenu
-          node={target}
-          isExpanded={false}
-          deleteShortcutLabel=""
-          targetDir="/repo/sql"
-          targetDepth={1}
-          selectionSize={1}
-          onViewFile={vi.fn()}
-          onCopyPaths={vi.fn()}
-          onStartNew={vi.fn()}
-          onStartRename={vi.fn()}
-          onDuplicate={vi.fn()}
-          onRequestDelete={vi.fn()}
-          canOpenInOrcaBrowser={false}
-          canCollapseFolderSubtree={false}
-          canAddAsProject={false}
-          onAddFolderAsProject={vi.fn()}
-          onOpenInTerminal={vi.fn()}
-          onCollapseFolderSubtree={vi.fn()}
-          onFindInFolder={vi.fn()}
-        />
-      </ContextMenu>
-    </TooltipProvider>
+    <DuplicateAsResultRefreshContext.Provider value={mocks.refreshDir}>
+      <TooltipProvider>
+        <ContextMenu>
+          <ContextMenuTrigger>row</ContextMenuTrigger>
+          <FileExplorerRowContextMenu
+            node={target}
+            isExpanded={false}
+            deleteShortcutLabel=""
+            targetDir="/repo/sql"
+            targetDepth={1}
+            selectionSize={1}
+            onViewFile={vi.fn()}
+            onCopyPaths={vi.fn()}
+            onStartNew={vi.fn()}
+            onStartRename={vi.fn()}
+            onDuplicate={vi.fn()}
+            onRequestDelete={vi.fn()}
+            canOpenInOrcaBrowser={false}
+            canCollapseFolderSubtree={false}
+            canAddAsProject={false}
+            onAddFolderAsProject={vi.fn()}
+            onOpenInTerminal={vi.fn()}
+            onCollapseFolderSubtree={vi.fn()}
+            onFindInFolder={vi.fn()}
+          />
+        </ContextMenu>
+      </TooltipProvider>
+    </DuplicateAsResultRefreshContext.Provider>
   )
   fireEvent.contextMenu(screen.getByText('row'))
 }
@@ -71,6 +77,7 @@ beforeEach(() => {
   })
   mocks.copy.mockResolvedValue(undefined)
   mocks.pathExists.mockResolvedValue(false)
+  mocks.refreshDir.mockResolvedValue(undefined)
 })
 afterEach(() => {
   cleanup()
@@ -145,5 +152,33 @@ describe('Duplicate as _result.txt menu item', () => {
     expect(mocks.copy.mock.calls[1]?.[0]).toMatchObject({
       destinationPath: '/repo/sql/x.sql_result_2.txt'
     })
+  })
+
+  it('refreshes the parent directory after the copy and before opening it, for watcher-ignored dirs', async () => {
+    const order: string[] = []
+    mocks.copy.mockImplementation(async () => void order.push('copy'))
+    mocks.refreshDir.mockImplementation(async () => void order.push('refresh'))
+    renderMenu(node('x.sql'))
+    fireEvent.click(await screen.findByRole('menuitem', { name: LABEL }))
+    await vi.waitFor(() => expect(useAppStore.getState().openFiles).toHaveLength(1))
+    expect(mocks.refreshDir).toHaveBeenCalledExactlyOnceWith('/repo/sql')
+    expect(order).toEqual(['copy', 'refresh'])
+  })
+
+  it('a failed refresh neither shows an error nor stops the file from opening', async () => {
+    mocks.refreshDir.mockRejectedValue(new Error('refresh failed'))
+    renderMenu(node('x.sql'))
+    fireEvent.click(await screen.findByRole('menuitem', { name: LABEL }))
+    await vi.waitFor(() => expect(mocks.refreshDir).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(useAppStore.getState().openFiles).toHaveLength(1))
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('does not refresh when the copy fails', async () => {
+    mocks.copy.mockRejectedValue(new Error('EACCES: permission denied'))
+    renderMenu(node('x.sql'))
+    fireEvent.click(await screen.findByRole('menuitem', { name: LABEL }))
+    await vi.waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1))
+    expect(mocks.refreshDir).not.toHaveBeenCalled()
   })
 })
