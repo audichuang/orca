@@ -41,6 +41,9 @@ src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipb
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-restore.contract.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-target-state.ipc-edge.test.ts
 
+# Explorer: Duplicate as _result.txt menu item, naming, exclusive copy, open
+src/renderer/src/components/right-sidebar/file-explorer-duplicate-as-result.fork.test.tsx
+
 # gitWorktreeId persistence: save, reload, restore (layout and session)
 src/renderer/src/lib/workspace-session-hydration-keys.fork.test.ts
 src/renderer/src/lib/workspace-session.fork.test.ts

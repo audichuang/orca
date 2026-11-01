@@ -13739,7 +13739,8 @@
             "clipboardStagingUnavailable": "Could not copy the file because Orca's temporary storage is unavailable",
             "revealInFinder": "Reveal in Finder",
             "openContainingFolder": "Open Containing Folder",
-            "revealInFileExplorer": "Reveal in File Explorer"
+            "revealInFileExplorer": "Reveal in File Explorer",
+            "duplicateAsResult": "Duplicate as _result.txt"
           },
           "FileExplorerToolbar": {
             "d238264654": "Show Git Ignored Files",
