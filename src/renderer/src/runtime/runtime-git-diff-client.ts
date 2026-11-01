@@ -42,14 +42,7 @@ export async function getRuntimeGitDiff(
   return callRuntimeRpc<GitDiffResult>(
     target,
     'git.diff',
-    {
-      worktree: toRuntimeWorktreeSelector(context.worktreeId),
-      filePath: args.filePath,
-      staged: args.staged,
-      compareAgainstHead: args.compareAgainstHead,
-      // Why: send the optional flag only when set so older runtimes see the request they already accept.
-      ...(args.skipRenderLimit ? { skipRenderLimit: true } : {})
-    },
+    { worktree: toRuntimeWorktreeSelector(context.worktreeId), ...args },
     { timeoutMs: 15_000 }
   )
 }

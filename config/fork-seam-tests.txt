@@ -155,3 +155,7 @@ src/renderer/src/components/right-sidebar/source-control/ai/use-recovery-ai.fork
 src/renderer/src/components/right-sidebar/source-control/notes/notes-shelf.fork.test.tsx
 src/renderer/src/components/right-sidebar/source-control/commit/use-discard-confirmation.fork.test.tsx
 src/renderer/src/components/right-sidebar/useSourceControlAgentActionStart.fork.test.tsx
+
+# Monaco diff editor deferred dispose: StrictMode Suspense reconnect
+src/renderer/src/components/editor/DiffSectionBody.real-monaco-strict-reveal.test.tsx
+src/renderer/src/components/editor/DiffSectionBody.monaco-strict-reveal.test.tsx

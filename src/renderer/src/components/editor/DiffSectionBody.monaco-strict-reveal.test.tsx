@@ -54,7 +54,7 @@ function createFakeMonaco() {
         disposeListeners.forEach((listener) => listener())
       },
       getModel: () => model,
-      setModel: (next: FakeModel) => {
+      setModel: (next: FakeModel | null) => {
         if (disposed) {
           throw new Error('InstantiationService has been disposed')
         }
@@ -90,15 +90,18 @@ function createFakeMonaco() {
       createDiffEditor: () => {
         const original = createCodeEditor()
         const modified = createCodeEditor()
+        // Real Monaco keeps the outer diff model itself; the wrapper never restores it on reconnect.
+        let diffModel: { original: FakeModel; modified: FakeModel } | null = null
         events.push('create')
         editors.push(original)
         return {
           getOriginalEditor: () => original,
           getModifiedEditor: () => modified,
-          getModel: () => ({ original: original.getModel(), modified: modified.getModel() }),
-          setModel: (next: { original: FakeModel; modified: FakeModel }) => {
-            original.setModel(next.original)
-            modified.setModel(next.modified)
+          getModel: () => diffModel,
+          setModel: (next: { original: FakeModel; modified: FakeModel } | null) => {
+            diffModel = next
+            original.setModel(next?.original ?? null)
+            modified.setModel(next?.modified ?? null)
           },
           updateOptions: () => {},
           dispose: () => {
