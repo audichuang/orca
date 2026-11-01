@@ -14474,7 +14474,6 @@
                         "c023ba6838": "Bu klasör içe aktarılmış bir repository'nin içinde olduğundan klasör dışındaki değişiklikler de listelenir.",
                         "efd34a4169": "{{value0}} için değişiklik listesi kesildi; kopya eksik.",
                         "d98e7b731c": "Tüm değişiklikleri kopyala",
-                        "da953a696f": "Yapıştır ve Geri Yükle",
                         "5de321918e": "Bu klasördeki gizli worktree'ler dahil edilmedi ({{value0}}).",
                         "ab32287003": "Repository'ler",
                         "addRepos": "Bu klasördeki repository'leri ekle",
