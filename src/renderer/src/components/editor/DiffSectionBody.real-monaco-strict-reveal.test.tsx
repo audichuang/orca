@@ -51,8 +51,8 @@ beforeEach(() => {
 
 afterEach(async () => {
   cleanup()
-  // Why: the deferred editor dispose lands in a microtask; models must outlive it.
-  await new Promise((resolve) => setTimeout(resolve, 10))
+  // Why: the deferred editor dispose lands in a microtask; a zero-delay yield lets it run before models go.
+  await new Promise((resolve) => setTimeout(resolve, 0))
   monaco.editor.getModels().forEach((model) => model.dispose())
   window.removeEventListener('error', onWindowError)
   suspended = null
@@ -139,8 +139,12 @@ it.each([
     await act(async () => {
       suspended = null
       resume()
-      await new Promise((resolve) => setTimeout(resolve, 50))
     })
+    // Why: the reveal is done once the fallback is gone and the reconnected editor is not mid-dispose.
+    await vi.waitFor(() => {
+      expect(screen.queryByTestId('outer-fallback')).toBeNull()
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(boundaryErrors).toEqual([])
     expect(windowErrors).toEqual([])
