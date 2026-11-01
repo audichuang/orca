@@ -1,14 +1,17 @@
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { readLocalFileContent } from './filesystem-file-content-inspection'
 
 // Fork contract: ClipCode's svgPreviewText (renderer clipcode-svg-text.ts) decodes an SVG image
 // preview only when the mime is exactly image/svg+xml and the content is base64 of the source.
 describe('SVG read shape that ClipCode copy relies on', () => {
+  let dir = ''
+  afterEach(() => rm(dir, { recursive: true, force: true }))
+
   it('returns the source as text, or as an exact-mime base64 preview of it', async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), 'clipcode-svg-'))
+    dir = await mkdtemp(path.join(tmpdir(), 'clipcode-svg-'))
     const file = path.join(dir, 'icon.svg')
     const svg = '<svg xmlns="http://www.w3.org/2000/svg"><title>中文</title></svg>\n'
     await writeFile(file, svg)
