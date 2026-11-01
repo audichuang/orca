@@ -74,7 +74,13 @@ export function ClipcodeExplorerPasteButton({
   rootPath: string
   onRestored: () => void
 }): React.JSX.Element | null {
+  // Why: FileExplorer keeps this instance across same-host workspaces; remount so a pending or open restore never writes into the previous root.
   return workspaceKey ? (
-    <ExplorerPasteButton workspaceKey={workspaceKey} rootPath={rootPath} onRestored={onRestored} />
+    <ExplorerPasteButton
+      key={`${workspaceKey}\u0000${rootPath}`}
+      workspaceKey={workspaceKey}
+      rootPath={rootPath}
+      onRestored={onRestored}
+    />
   ) : null
 }
