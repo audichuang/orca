@@ -23,6 +23,7 @@ import { FileExplorerFilesTreePane } from './FileExplorerFilesTreePane'
 import { FileExplorerNameFilter } from './FileExplorerNameFilter'
 import { FileExplorerQueryStrip } from './FileExplorerQueryStrip'
 import { FileExplorerToolbar } from './FileExplorerToolbar'
+import { ClipcodeExplorerPasteButton } from './source-control/clipcode/clipcode-explorer-paste-button'
 import { SearchFilters } from './SearchFilters'
 import { SearchQueryRow } from './SearchQueryRow'
 import { SearchResultsPane } from './SearchResultsPane'
@@ -265,6 +266,13 @@ function FileExplorerFiles(): React.JSX.Element {
           onToggleGitIgnoredFiles={toggleGitIgnoredFiles}
           showDotfiles={showDotfiles}
           onToggleDotfiles={handleToggleDotfiles}
+          forkActions={
+            <ClipcodeExplorerPasteButton
+              workspaceKey={activeWorktreeId}
+              rootPath={worktreePath}
+              onRestored={() => void tree.refreshTree()}
+            />
+          }
         />
         {activeWorktree?.isSparse && (
           <FileExplorerScopeNotice
