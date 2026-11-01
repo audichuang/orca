@@ -39,19 +39,19 @@ type RestoreSession = {
   pending: PendingClipcodeRestore
   context: RuntimeFileOperationArgs
   assertCurrent: () => unknown
-  folderPath: string
+  rootPath: string
 }
 
-/** Paste & Restore for a folder workspace: reads the clipboard, previews the plan, then writes through the file explorer's owner route. */
+/** Paste & Restore for a repo, worktree or folder workspace: reads the clipboard, previews the plan, then writes under rootPath through the file explorer's owner route. */
 export function useClipcodeRestore({
-  folderWorkspaceKey,
-  folderPath,
+  workspaceKey,
+  rootPath,
   repoWorktrees = [],
   onRestored
 }: {
-  folderWorkspaceKey: string
-  folderPath: string
-  /** Member repo worktrees: tabs they own also hold restored files and must be quiesced/notified. */
+  workspaceKey: string
+  rootPath: string
+  /** Folder workspace member repo worktrees (empty otherwise): tabs they own also hold restored files and must be quiesced/notified. */
   repoWorktrees?: readonly { id: string; path: string }[]
   onRestored: () => void
 }): { requestRestore: () => void; dialog: React.ReactNode } {
@@ -81,24 +81,24 @@ export function useClipcodeRestore({
           return
         }
         const guard = captureFileExplorerOperationGuard(
-          folderWorkspaceKey,
-          getFileExplorerOperationOwner(folderWorkspaceKey)
+          workspaceKey,
+          getFileExplorerOperationOwner(workspaceKey)
         )
         const context: RuntimeFileOperationArgs = {
           ...guard.route,
-          worktreeId: folderWorkspaceKey,
-          worktreePath: folderPath
+          worktreeId: workspaceKey,
+          worktreePath: rootPath
         }
         const sourceRoot = extractSourceRoot(text)
         const safeSourceRoot = sourceRoot ? sanitizeRelativePath(sourceRoot) : undefined
         const sourceRootIsDirectory =
           safeSourceRoot !== undefined && !safeSourceRoot.includes('/')
-            ? (await readTargetState(context, joinPath(folderPath, safeSourceRoot)).catch(
+            ? (await readTargetState(context, joinPath(rootPath, safeSourceRoot)).catch(
                 () => 'unreadable'
               )) === 'directory'
             : false
         const suggestion = suggestRestoreBase({
-          rootPath: folderPath,
+          rootPath,
           relativePaths: entries.map((entry) => entry.path),
           sourceRoot: safeSourceRoot,
           sourceRootIsDirectory
@@ -106,7 +106,7 @@ export function useClipcodeRestore({
         // Both base choices stay selectable in the dialog, so stat every path either one can target.
         const candidatePaths = new Set<string>()
         for (const base of suggestion ? [undefined, suggestion.base] : [undefined]) {
-          const plan = planClipcodeRestore({ rootPath: folderPath, entries, base })
+          const plan = planClipcodeRestore({ rootPath, entries, base })
           for (const item of [...plan.writes, ...plan.deletes]) {
             candidatePaths.add(item.relativePath)
           }
@@ -116,14 +116,14 @@ export function useClipcodeRestore({
         for (const relativePath of candidatePaths) {
           states.set(
             relativePath,
-            await readCandidateState(context, folderPath, relativePath, directoryCache)
+            await readCandidateState(context, rootPath, relativePath, directoryCache)
           )
         }
         setSession({
-          pending: { rootPath: folderPath, entries, suggestion, states },
+          pending: { rootPath, entries, suggestion, states },
           context,
           assertCurrent: guard.assertCurrent,
-          folderPath
+          rootPath
         })
       } catch (error) {
         toast.error(
@@ -137,7 +137,7 @@ export function useClipcodeRestore({
         )
       }
     })()
-  }, [folderPath, folderWorkspaceKey])
+  }, [rootPath, workspaceKey])
 
   const confirm = useCallback(
     async ({ preview, overwrite }: ConfirmedClipcodeRestore) => {
@@ -146,7 +146,7 @@ export function useClipcodeRestore({
       if (!current) {
         return
       }
-      const { context, folderPath: root } = current
+      const { context, rootPath: root } = current
       const errors: string[] = []
       let created = 0
       let overwritten = 0
@@ -158,7 +158,7 @@ export function useClipcodeRestore({
         // ponytail: overlapping folder workspaces are not quiesced; match openFiles by absolute path if that setup appears.
         const editorTargets = (relativePath: string) => {
           const absolutePath = joinPath(root, relativePath)
-          const targets = [{ worktreeId: folderWorkspaceKey, worktreePath: root, relativePath }]
+          const targets = [{ worktreeId: workspaceKey, worktreePath: root, relativePath }]
           for (const repoWorktree of repoWorktrees) {
             const repoRelative = relativePathInsideRoot(repoWorktree.path, absolutePath)
             if (repoRelative) {
@@ -272,7 +272,7 @@ export function useClipcodeRestore({
       }
       onRestored()
     },
-    [folderWorkspaceKey, onRestored, repoWorktrees, session]
+    [workspaceKey, onRestored, repoWorktrees, session]
   )
 
   const dialog = session ? (
