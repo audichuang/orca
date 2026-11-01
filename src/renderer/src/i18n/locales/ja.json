@@ -12840,7 +12840,8 @@
             "clipboardStagingUnavailable": "Orca の一時ストレージが利用できないため、ファイルをコピーできませんでした",
             "revealInFinder": "Finderで表示",
             "openContainingFolder": "含まれているフォルダーを開く",
-            "revealInFileExplorer": "ファイルエクスプローラーで表示"
+            "revealInFileExplorer": "ファイルエクスプローラーで表示",
+            "duplicateAsResult": "_result.txt として複製"
           },
           "FileExplorerToolbar": {
             "d238264654": "Git で無視されたファイルを表示",
