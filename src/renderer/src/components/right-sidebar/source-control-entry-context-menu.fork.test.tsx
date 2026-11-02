@@ -8,7 +8,7 @@ import { BranchEntryRow } from './source-control/listing/branch-entry-row'
 
 type ItemProps = { onSelect?: () => void; disabled?: boolean; children?: React.ReactNode }
 
-const items = vi.hoisted(() => ({ list: [] as ItemProps[] }))
+const items = vi.hoisted((): { list: ItemProps[] } => ({ list: [] }))
 const storeState = vi.hoisted(
   (): {
     settings: {

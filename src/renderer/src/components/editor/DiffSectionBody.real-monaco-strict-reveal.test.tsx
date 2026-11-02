@@ -114,7 +114,14 @@ it.each([
               language="typescript"
               modelPathBase="diff:a"
               isEditable={false}
-              diffEditorFontSize={12}
+              typography={{
+                fontFamily: 'monospace',
+                cssFontFamily: 'monospace',
+                fontSize: 12,
+                fontWeight: 'normal',
+                lineHeight: 0,
+                fontLigatures: false
+              }}
               onRetrySection={() => {}}
               onLoadDeferredSection={() => {}}
               onSaveLimitedDiff={() => {}}
