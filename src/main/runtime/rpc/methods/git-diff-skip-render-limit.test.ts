@@ -37,8 +37,14 @@ describe('git.diff skipRenderLimit (fork: ClipCode full index text)', () => {
       method: 'git.diff',
       params: { worktree: 'id:wt-1', filePath: 'a.ts', staged: true, skipRenderLimit: true }
     })
-    expect(getRuntimeGitDiff).toHaveBeenCalledWith('id:wt-1', 'a.ts', true, undefined, undefined, {
-      skipRenderLimit: true
-    })
+    expect(getRuntimeGitDiff).toHaveBeenCalledWith(
+      'id:wt-1',
+      'a.ts',
+      true,
+      undefined,
+      undefined,
+      undefined,
+      { skipRenderLimit: true }
+    )
   })
 })
