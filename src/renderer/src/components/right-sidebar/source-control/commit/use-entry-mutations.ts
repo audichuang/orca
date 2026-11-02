@@ -7,11 +7,7 @@ import {
   editorFileHoldKey,
   pathMutationHoldKeys
 } from '@/components/editor/autosave/editor-autosave-holds'
-import {
-  notifyEditorExternalFileChange,
-  requestEditorFileSave,
-  requestEditorSaveQuiesce
-} from '@/components/editor/autosave/editor-autosave'
+import { requestEditorFileSave } from '@/components/editor/autosave/editor-autosave'
 import {
   notifyEditorExternalFileChangeForOwners,
   requestEditorSaveQuiesceForOwners
@@ -150,10 +146,13 @@ export function useSourceControlEntryMutations({
           return
         }
         // Hold autosave so an open tab cannot recreate the file the host removes.
-        const releaseAutoSave = await requestEditorSaveQuiesce(editorTarget)
+        const releaseAutoSave = await requestEditorSaveQuiesceForOwners(
+          editorWorktreeId,
+          editorTarget
+        )
         try {
           await resolveRuntimeGitConflict(context, filePath, resolution)
-          notifyEditorExternalFileChange(editorTarget)
+          notifyEditorExternalFileChangeForOwners(editorWorktreeId, editorTarget)
         } finally {
           releaseAutoSave()
         }
@@ -163,7 +162,7 @@ export function useSourceControlEntryMutations({
         resolvingConflictKeysRef.current.delete(resolvingKey)
       })
     },
-    [activeRepoTarget, activeWorktreeId, runEntryMutation, worktreePath]
+    [activeRepoTarget, activeWorktreeId, editorWorktreeId, runEntryMutation, worktreePath]
   )
 
   // Throw for bulk callers to aggregate; per-row callers report their own failures.
