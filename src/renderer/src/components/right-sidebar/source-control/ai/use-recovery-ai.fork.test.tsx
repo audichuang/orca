@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { act, renderHook } from '@testing-library/react'
-import { afterEach, beforeEach, expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
 import { sourceControlActionRecipeEntry } from '../../../../../../shared/source-control-action-selection'
 import {
@@ -38,14 +38,18 @@ it.each(['commit', 'push'] as const)(
       { initialProps: { editorWorktreeId: FOLDER } }
     )
     rerender({ editorWorktreeId: OTHER_FOLDER })
-    await act(() =>
-      kind === 'commit'
-        ? result.current.handleFixCommitFailureWithAI()
-        : result.current.handleFixPushFailureWithAI()
+    // The launch then waits for the agent to take its prompt, which no PTY here ever does.
+    act(
+      () =>
+        void (kind === 'commit'
+          ? result.current.handleFixCommitFailureWithAI()
+          : result.current.handleFixPushFailureWithAI())
     )
-    expect(useAppStore.getState().tabsByWorktree[OTHER_FOLDER]).toEqual([
-      expect.objectContaining({ worktreeId: OTHER_FOLDER })
-    ])
+    await vi.waitFor(() =>
+      expect(useAppStore.getState().tabsByWorktree[OTHER_FOLDER]).toEqual([
+        expect.objectContaining({ worktreeId: OTHER_FOLDER })
+      ])
+    )
     expect(Object.values(useAppStore.getState().pendingInitialCwdByTabId)).toEqual([REPO.path])
   }
 )
