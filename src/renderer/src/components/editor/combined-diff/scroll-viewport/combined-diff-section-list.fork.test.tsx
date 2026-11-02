@@ -61,7 +61,6 @@ it('renders the repo review note inside a folder combined diff section', async (
         setScrollContainerRef={vi.fn()}
         setSectionHeights={vi.fn()}
         setSections={vi.fn()}
-        settings={null}
         sideBySide
         skippedConflictNotice={null}
         toggleSection={vi.fn()}

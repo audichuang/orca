@@ -92,6 +92,7 @@ function renderUncommittedSections({
           handleOpenDiff={vi.fn()}
           handleStage={vi.fn()}
           handleUnstage={vi.fn()}
+          handleResolveConflict={vi.fn()}
           requestDiscardEntry={vi.fn()}
           diffCommentCountByPath={new Map()}
         />
