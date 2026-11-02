@@ -33,7 +33,6 @@ export function resetFolderSourceControl() {
   saveSessionRemoteActionErrors({})
   useAppStore.setState(useAppStore.getInitialState(), true)
   const settings = getDefaultSettings('/tmp')
-  settings.experimentalNativeChat = false
   settings.sourceControlAi!.actions = {
     fixCommitFailure: { agentId: 'codex' },
     fixPushFailure: { agentId: 'codex' },
