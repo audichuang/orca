@@ -29,8 +29,7 @@ import {
   getReplaceablePreviewFileId,
   removeEditorStateForReplacedPreview
 } from '../tabs/workspace-editor-item'
-import { createBrowserUuid } from '@/lib/browser-uuid'
-import { emptySplitGroup, insertSplitGroup } from '../../tabs/tabs-group-actions'
+import { linkSplitGroupState } from './open-file-link-split'
 
 export type OpenFileApplyScratch = {
   editorItemFileId: string
@@ -100,12 +99,7 @@ export function applyOpenFileToState(
   const isPreview = resolveEditorPreviewIntent(s, options?.preview)
   scratch.editorItemIsPreview = isPreview
   const recordReplacedPreview = options?.recordReplacedPreview ?? false
-  const splitGroup =
-    linkPlacement?.kind === 'split' ? emptySplitGroup(worktreeId, createBrowserUuid()) : undefined
-  const splitState =
-    splitGroup && linkPlacement?.kind === 'split'
-      ? insertSplitGroup(s, worktreeId, linkPlacement.split, splitGroup)
-      : undefined
+  const { splitGroup, splitState } = linkSplitGroupState(s, worktreeId, linkPlacement)
   // Why: resolve the target group up-front so preview replacement is scoped to it (group B open must not evict group A's preview).
   const requestedGroupId =
     splitGroup?.id ??
