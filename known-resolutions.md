@@ -5,6 +5,48 @@
 範本（複製後填寫，不要留這段以外的範例）：
 
 ```
+## fork 自身問題（上游 v1.4.246 改過的檔上，fork 接線沒有測試會紅）× fork 既有 folder workspace／diff 導覽／Git Graph 接線 — auto-rebase 2026-11-02
+- 類型：fork 自身問題
+- 衝突檔：無
+- 連帶症狀：無（v1.4.246 rebase 審查者 C r1 實測：拿掉接線後整份 seam 清單全綠），但它們擋下了 v1.4.246 的自動移動（SKILL 第 6 步）。
+- 處理：各補一個拿掉接線會紅的測試，加進 config/fork-seam-tests.txt：
+  - `src/renderer/src/components/editor/EditorPanelHeader.tsx:230` 的 `{filePosition && <DiffFileSequenceStatus …/>}`：有 file list 的 diff 分頁要畫出序號／邊界提示（拿掉那段會紅）。
+  - `src/renderer/src/components/editor/EditorPanel.tsx:72` 起的 `activeGitWorktreeId`：folder 分頁的 status／branch entries 要從 repo（`getOpenFileGitWorktreeId`）讀（改回 `activeWorktreeId` 會紅）。
+  - `src/renderer/src/components/right-sidebar/source-control/panel/header-toolbar.tsx:248` 的 `<RepoWorkspaceGitGraphButton />`：工具列要有 Git Graph 按鈕（拿掉會紅）。
+  - `src/renderer/src/components/editor/EditorEditFileSurface.tsx` 外層 `flex min-h-0 flex-1 flex-col`：ChangesModeView 用 flex-1 撐高，block 父層會讓 diff 0 高度；只有 e2e／幾何斷言看得到。
+- 守它的測試：待補
+- 驗證：未驗證（只有 C r1 的 mutation 結果，見 PR #109 審查留言）
+
+## baeedad2038455cc21ed58e02e107315aa1f6692（#36828、feat(themes): ship GitHub and VS Code themes…）× fork 6efe38867a（fix(rebase): drop runtime catalog entries v1.4.246 no longer requires (upstream baeedad203)）— auto-rebase 2026-11-02
+- 類型：上游自己就紅（v1.4.246 的 `verify:localization-catalogs`：`en-runtime-required.json no longer covers en.json`，`usageLimitActions`、`resumeInNewChat`）
+- 衝突檔：無
+- 連帶症狀：無
+- 處理：fork 只帶上游 main baeedad203 對 `src/renderer/src/i18n/en-runtime-required.json` 的 hunk（刪 20 行，與 `pnpm run sync:localization-runtime-catalog` 結果相同），訊息有 `(cherry picked from commit …)`。patch-id 與上游不同，**不會自動略過**。適用條件 `git merge-base --is-ancestor baeedad2038455cc21ed58e02e107315aa1f6692 vNEW`：成立就照第 1 步「丟 commit」用標題 `fix(rebase): drop runtime catalog entries v1.4.246 no longer requires (upstream baeedad203)` 在 `vOLD..OLD_DEVELOP` 找到它丟掉。
+- 守它的測試：上游 lint 的 `verify:localization-catalogs`
+- 驗證（2026-11-02，v1.4.246）：沒有這個 commit exit 1，有則 exit 0。
+
+## 0509a2d83a78b95c334290b90ee824307e9b157e（#37235、refactor: group local PTY provider and shell readiness modules）× fork 6177bf4a53（fix(rebase): point UNIT_EXCLUDE at the zsh test path v1.4.246's pr.yml runs (upstream 0509a2d83a)）— auto-rebase 2026-11-02
+- 類型：上游自己就紅（v1.4.246 的 `check:test-file-runners`：pr.yml 從 main 同步、跑 `src/main/providers/local-pty/local-pty-shell-ready-zsh-launch-environment.test.ts`，tag 的 `UNIT_EXCLUDE` 還是上一層的舊路徑）
+- 衝突檔：無
+- 連帶症狀：`check:path-literal-ratchet`（fork lint 排除）多一條同路徑
+- 處理：fork 只帶 0509a2d83a 對 `config/scripts/ci-unit-files.mjs` 的那一行（與上游逐字相同），測試留在舊路徑、由一般 unit shard 收。整個 cherry-pick 不行（3 檔衝突、依賴 vNEW 沒有的 `pty-master-foreground-observation`、`wsl-availability`）；只搬測試檔也不行（`fork-test-inventory` 用 `--no-renames`，會當成 fork 新增又被排除的測試）。rebase 到含 0509a2d83a 的 release 時這個 hunk 應該套上後為空、被 `--empty=drop` 丟掉；沒丟（標題 `fix(rebase): point UNIT_EXCLUDE at the zsh test path v1.4.246's pr.yml runs (upstream 0509a2d83a)` 還在 range-diff 的 `=`／`!`）就照第 1 步丟掉。
+- 守它的測試：上游 lint 的 `check:test-file-runners`
+- 驗證（2026-11-02，v1.4.246）：沒有它 `Runner list is out of date … do not contain "src/main/providers/local-pty-shell-ready-zsh-launch-environment.test.ts"`，有則 `Every checked-in test file is collected by a test runner.`
+
+## bdd997f71f40b2c511e982a4082caa3543c58ebd（#37297、test(cross-version): load moved modules from wherever each release defines them）× fork 10ed999b19（它自己的 cherry-pick -x）— auto-rebase 2026-11-02
+- 類型：上游自己就紅（v1.4.246 的 wire 測試從最新 release 載入搬走前的 `src/shared/agent-session-refusal-notice.ts` 等路徑，fork CI 的 `fork cross-version wire compatibility` 紅；乾淨 v1.4.246 同 4 檔 5 例紅）
+- 衝突檔：無
+- 連帶症狀：無
+- 處理：完整 `cherry-pick -x`，patch-id 與上游相同，rebase 到含它的 release 時應自動略過；沒略過就用標題丟掉。
+- 守它的測試：fork-pr.yml 的 `fork cross-version wire compatibility`
+- 驗證（2026-11-02，v1.4.246）：CI run 41392013082 起全綠；本機 5 檔 23 例綠。
+
+## 這次 rebase 的完整解法在 `rebase/v1.4.246`（55494b84b6）— auto-rebase 2026-11-02
+- 類型：待人判斷（develop 沒移動）
+- 處理：使用者推了 develop 就不用管這條（下一次排程發版、收鎖時刪掉）。若沒推、上游又發新版，下一次從舊 develop 2514b879a5 重做：上面 25 條條目照做之外，額外的 13 個 commit 照 PR #109 說明（`git log --oneline 31923ce912~1..55494b84b6`）照搬，rerere 也錄了 v1.4.246 的解法。收鎖時分支會備份成 `backup/rebase-v1.4.246-<RUN>`。
+- 守它的測試：PR #109 列的測試
+- 驗證：CI run 41399546111 全綠
+
 ## <上游 commit 完整 sha（fork 自身問題寫「fork 自身問題」）>（#PR 號、標題）× fork <短 sha>（標題）— canary <YYYY-MM-DD>
 - 類型：上游修了同一件事｜兩邊各改各的｜上游改了 fork 依賴的 API｜fork 自身問題｜待人判斷
 - 衝突檔：<路徑>…
