@@ -9,6 +9,7 @@ import {
   installFolderRuntime,
   seedFolderGitOwner
 } from '../../folder-git-owner.test-fixture'
+import { useAppStore } from '@/store'
 import { fetchCombinedDiffSection } from './fetch-combined-diff-section'
 
 let runtime: ReturnType<typeof installFolderRuntime>
@@ -21,8 +22,10 @@ afterEach(() => runtime.restore())
 it.each(['unstaged', 'branch', 'commit'] as const)(
   'reads a folder combined %s section from its repo on the server',
   async (mode) => {
+    const file = folderFile({ filePath: ROOT })
+    useAppStore.setState({ openFiles: [file] })
     await fetchCombinedDiffSection({
-      file: folderFile({ filePath: ROOT }),
+      file,
       entry: { path: 'src/a.ts', status: 'modified', area: 'unstaged' },
       branchCompare: BRANCH,
       commitCompare: COMMIT,
