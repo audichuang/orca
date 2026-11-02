@@ -183,7 +183,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
 
 移動成功就接第 7 步發版。
 
-**其他情況不移動**（也不發版，直接第 8 步）：PR 留言寫好上面的兩條 push 指令（填實際 sha 與日期，加上「成功後」那段收尾），留言第一行放 `<!-- auto-rebase:verified -->`。`rebase/vNEW` 留著，它讓下一次排程跳過。
+**其他情況不移動**（也不發版，直接第 8 步）：PR 留言寫好上面的兩條 push 指令（填實際 sha 與日期），留言第一行放 `<!-- auto-rebase:verified -->`。收尾只寫「推完就好，下一次排程會留 `develop-moved`、發版、收鎖；lease 失敗就關 PR、刪 `rebase/vNEW` 與 `ci-base/vNEW`」，不要抄上面「成功後」那段：使用者自己留 `develop-moved` 的話，precheck 會當成發版進行中，六小時後才接手（v1.4.246 卡過一小時）。`rebase/vNEW` 留著，它讓下一次排程跳過。
 
 ## 7. 發版（develop 由第 6 步移動後才做）
 
