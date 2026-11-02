@@ -27,7 +27,7 @@ async function loadProbe(window: BrowserWindow) {
   class Probe extends UpdaterSetup {
     constructor() {
       super()
-      this.mainWindowRef = window
+      this.getMainWindow = () => window
     }
     checkNudge(): Promise<void> {
       return this.checkForUpdateNudge()
