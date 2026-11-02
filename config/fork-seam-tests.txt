@@ -138,6 +138,7 @@ src/renderer/src/store/slices/editor/actions/open-history-diff.fork.test.ts
 src/renderer/src/store/slices/editor/tabs/untitled-file-cleanup.fork.test.ts
 src/renderer/src/store/slices/editor/actions/open-conflict-file-owner.test.ts
 src/renderer/src/store/slices/editor/actions/open-file-git-owner-merge.test.ts
+src/renderer/src/store/slices/editor/git/git-status-reconciliation.staged-rename.fork.test.ts
 src/renderer/src/lib/remap-open-editor-tabs-for-path-change.fork.test.ts
 src/renderer/src/components/editor/combined-diff/load-sections/fetch-combined-diff-section.fork.test.ts
 src/renderer/src/components/editor/combined-diff/load-sections/use-combined-diff-section-revalidation.fork.test.tsx
