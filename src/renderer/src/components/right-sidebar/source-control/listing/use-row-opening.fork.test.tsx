@@ -30,6 +30,7 @@ describe('a folder repo section branch row (fork)', () => {
           activeWorktreeId: REPO,
           worktreePath: '/work/repo-1',
           visibleSelectionEntries: [],
+          visibleBranchRowKeys: [],
           branchSummary: {
             baseRef: 'main',
             baseOid: 'b'.repeat(40),
@@ -72,6 +73,7 @@ it('keeps the folder file row active and opens its working-tree diff with repo o
         activeWorktreeId: REPO,
         worktreePath: '/work/repo-1',
         visibleSelectionEntries: [{ key: 'unstaged::src/a.ts', entry, area: 'unstaged' }],
+        visibleBranchRowKeys: [],
         branchSummary: null
       }),
     { wrapper }
@@ -97,6 +99,7 @@ it('opens nothing when no editor owner resolves for the tab', () => {
         activeWorktreeId: REPO,
         worktreePath: '/work/repo-1',
         visibleSelectionEntries: [],
+        visibleBranchRowKeys: [],
         branchSummary: null
       }),
     { wrapper }
