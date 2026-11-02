@@ -105,6 +105,41 @@ describe("a folder repo's combined diff opens its follow-ups under the repo (for
   })
 })
 
+describe("a restored folder combined diff without its snapshot lists the repo's live entries (fork)", () => {
+  function renderWithoutSnapshots(): void {
+    const [file] = useAppStore.getState().openFiles
+    expect(file).toMatchObject({ worktreeId: FOLDER, gitWorktreeId: REPO })
+    useAppStore.setState({ openFiles: [] })
+    const restored = {
+      ...file!,
+      uncommittedEntriesSnapshot: undefined,
+      branchEntriesSnapshot: undefined
+    }
+    render(
+      <TooltipProvider>
+        <CombinedDiffViewer file={restored} viewStateKey={restored.id} />
+      </TooltipProvider>
+    )
+  }
+
+  it('reads uncommitted and branch entries from the repo, not the folder', () => {
+    useAppStore
+      .getState()
+      .openAllDiffs(FOLDER, '/work/repo-1', undefined, undefined, [ENTRY], { gitWorktreeId: REPO })
+    renderWithoutSnapshots()
+    // a.ts from the repo's status plus b.ts from its branch changes; the conflict is skipped.
+    expect(screen.getByText(/^2 changed files vs origin\/main/)).toBeTruthy()
+  })
+
+  it('reads branch entries from the repo, not the folder', () => {
+    useAppStore
+      .getState()
+      .openBranchAllDiffs(FOLDER, '/work/repo-1', SUMMARY, undefined, { gitWorktreeId: REPO })
+    renderWithoutSnapshots()
+    expect(screen.getByText(/^1 changed file vs origin\/main/)).toBeTruthy()
+  })
+})
+
 it('clears repo review notes through the folder combined diff controls', async () => {
   const previous = window.api
   const updateMeta = vi.fn(async () => ({}))
