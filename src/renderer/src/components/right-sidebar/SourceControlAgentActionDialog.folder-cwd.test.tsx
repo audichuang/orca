@@ -6,9 +6,9 @@ import { getDefaultSettings } from '../../../../shared/constants'
 import { MANAGED_RUNTIME_INSTALL_RUNTIME_CAPABILITY as INSTALL } from '../../../../shared/managed-runtime-install'
 import {
   STRUCTURED_AGENT_SESSION_CLIENT_LAUNCH_MODE_CAPABILITY as CLIENT,
-  STRUCTURED_AGENT_SESSION_REGISTERED_AGENTS_RUNTIME_CAPABILITY as CATALOG,
   STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY as CHAT
-} from '../../../../shared/protocol-version'
+} from '../../../../shared/agent-session/agent-session-runtime-capabilities'
+import { STRUCTURED_AGENT_SESSION_REGISTERED_AGENTS_RUNTIME_CAPABILITY as CATALOG } from '../../../../shared/agent-session/structured-agent-session-surface-capabilities'
 import { canonicalSourceControlActionSelection } from '../../../../shared/source-control-action-selection'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
 
