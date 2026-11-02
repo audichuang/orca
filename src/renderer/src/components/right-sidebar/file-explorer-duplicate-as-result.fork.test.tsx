@@ -194,4 +194,16 @@ describe('Duplicate as _result.txt menu item', () => {
     await vi.waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1))
     expect(mocks.refreshDir).not.toHaveBeenCalled()
   })
+
+  it('is disabled, like Duplicate, on a row listed through an outside folder link', async () => {
+    renderMenu({ ...node('x.sql'), outsideProject: true })
+    expect(await screen.findByRole('menuitem', { name: /^Duplicate$/ })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+    expect(await screen.findByRole('menuitem', { name: LABEL })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+  })
 })
