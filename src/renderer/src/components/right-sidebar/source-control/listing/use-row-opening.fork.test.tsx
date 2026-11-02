@@ -3,7 +3,7 @@
 // through the real store, keeping the repo as the tab's git owner.
 import { act, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
 import { SourceControlWorktreeScopeContext } from '../folder/worktree-scope'
 import { useSourceControlRowOpening } from './use-row-opening'
@@ -106,4 +106,38 @@ it('opens nothing when no editor owner resolves for the tab', () => {
   )
   act(() => result.current.handleOpenDiff(entry))
   expect(useAppStore.getState().openFiles).toEqual([])
+})
+
+it('splits the folder editor, not the repo, on an Alt-click in a folder repo section', () => {
+  const group = (id: string, worktreeId: string) => ({
+    id,
+    worktreeId,
+    activeTabId: null,
+    tabOrder: []
+  })
+  const createEmptySplitGroup = vi.fn(() => 'split-new')
+  useAppStore.setState({
+    groupsByWorktree: { [FOLDER]: [group('folder-g', FOLDER)], [REPO]: [group('repo-g', REPO)] },
+    activeGroupIdByWorktree: { [FOLDER]: 'folder-g', [REPO]: 'repo-g' },
+    createEmptySplitGroup
+  })
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <SourceControlWorktreeScopeContext.Provider value={SCOPE}>
+      {children}
+    </SourceControlWorktreeScopeContext.Provider>
+  )
+  const { result } = renderHook(
+    () =>
+      useSourceControlRowOpening({
+        activeWorktreeId: REPO,
+        worktreePath: '/work/repo-1',
+        visibleSelectionEntries: [],
+        visibleBranchRowKeys: [],
+        branchSummary: null
+      }),
+    { wrapper }
+  )
+  const alt = { altKey: true, ctrlKey: false, metaKey: false, shiftKey: false }
+  expect(result.current.resolveSplitTargetGroupId(alt)).toBe('split-new')
+  expect(createEmptySplitGroup).toHaveBeenCalledExactlyOnceWith(FOLDER, 'folder-g', 'right')
 })
