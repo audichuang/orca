@@ -136,7 +136,11 @@ export function DuplicateAsResultItem({ node }: { node: TreeNode }): React.JSX.E
     return null
   }
   return (
-    <ContextMenuItem onSelect={() => duplicateFileAsResult(node, refreshDir)}>
+    // Why: rows listed through an outside folder link are browse-only; main refuses their writes.
+    <ContextMenuItem
+      disabled={node.outsideProject === true}
+      onSelect={() => duplicateFileAsResult(node, refreshDir)}
+    >
       <FileOutput />
       {translate(
         'auto.components.right.sidebar.FileExplorerRow.duplicateAsResult',
