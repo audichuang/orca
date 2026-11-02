@@ -4,11 +4,7 @@ import type { RuntimeClientTarget } from '../../../../../../shared/runtime-clien
 import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
 import type { ConflictResolution } from '../../../../../../shared/source-control-entry-actions'
 import { editorFileHoldKey, pathMutationHoldKeys } from '@/components/editor/editor-autosave-holds'
-import {
-  notifyEditorExternalFileChange,
-  requestEditorFileSave,
-  requestEditorSaveQuiesce
-} from '@/components/editor/editor-autosave'
+import { requestEditorFileSave } from '@/components/editor/editor-autosave'
 import {
   notifyEditorExternalFileChangeForOwners,
   requestEditorSaveQuiesceForOwners
@@ -147,10 +143,13 @@ export function useSourceControlEntryMutations({
           return
         }
         // Hold autosave so an open tab cannot recreate the file the host removes.
-        const releaseAutoSave = await requestEditorSaveQuiesce(editorTarget)
+        const releaseAutoSave = await requestEditorSaveQuiesceForOwners(
+          editorWorktreeId,
+          editorTarget
+        )
         try {
           await resolveRuntimeGitConflict(context, filePath, resolution)
-          notifyEditorExternalFileChange(editorTarget)
+          notifyEditorExternalFileChangeForOwners(editorWorktreeId, editorTarget)
         } finally {
           releaseAutoSave()
         }
@@ -160,7 +159,7 @@ export function useSourceControlEntryMutations({
         resolvingConflictKeysRef.current.delete(resolvingKey)
       })
     },
-    [activeRepoTarget, activeWorktreeId, runEntryMutation, worktreePath]
+    [activeRepoTarget, activeWorktreeId, editorWorktreeId, runEntryMutation, worktreePath]
   )
 
   // Throw for bulk callers to aggregate; per-row callers report their own failures.
