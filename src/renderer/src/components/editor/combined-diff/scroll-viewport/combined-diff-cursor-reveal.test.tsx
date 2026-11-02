@@ -84,6 +84,8 @@ function mountEditor(node: HTMLDivElement, options: monaco.editor.IDiffEditorCon
     }
   }
 }
+// Fork-only: this mock disposes models in the same flush; skip the fork's StrictMode deferred dispose.
+vi.mock('./monaco-diff-editor-deferred-dispose', () => ({ deferDiffEditorDispose: () => () => {} }))
 vi.mock('@monaco-editor/react', () => ({
   DiffEditor: ({
     onMount,
