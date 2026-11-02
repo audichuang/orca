@@ -491,7 +491,6 @@ describe('branch current-row projection contract', () => {
       isBranchVisible: true,
       isFolder: false,
       isGitHistoryExpanded: false,
-      isMac: true,
       refreshActiveGitStatusAfterMutation: async () => {},
       remoteActionError: null,
       repositoryHuge: undefined,
