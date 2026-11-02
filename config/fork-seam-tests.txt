@@ -125,6 +125,8 @@ src/renderer/src/components/ui/sonner.fork.test.tsx
 
 # App bundle replaced while running
 src/main/app-bundle-replacement.test.ts
+src/main/ipc/app-bundle-replacement-ipc.fork.test.ts
+src/preload/api/app-bridge.fork.test.ts
 src/main/asar-transparent-stat.electron.test.ts
 
 # Agent launch cwd in folder repos: route input, offered agents, recovery, AI conflicts, dialog, main pane launch
