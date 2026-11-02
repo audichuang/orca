@@ -159,7 +159,7 @@ export function reconcileOpenFilesForStatus(
           }
         }
       }
-      const entry = stagedEntriesByPath.get(file.relativePath)
+      const entry = stagedEntriesByPath.get(gitRelativePathOf(file))
       if (entry) {
         const oldPath = entry.status === 'renamed' ? entry.oldPath : undefined
         if (file.branchOldPath !== oldPath) {
