@@ -203,7 +203,7 @@ describe('a restored tab re-owned inside its own workspace, layout-owner build',
         .openFiles.find((file) => file.id === id)?.lastKnownDiskSignature
       let pending!: Promise<void>
       await act(async () => {
-        pending = load!(FILE_PATH, id, FOLDER, FILE_PATH)
+        pending = load!(FILE_PATH, id, FOLDER, 'pkg/a.md')
         await Promise.resolve()
       })
       expect(mocks.readRuntimeFileContent).toHaveBeenCalledOnce()
