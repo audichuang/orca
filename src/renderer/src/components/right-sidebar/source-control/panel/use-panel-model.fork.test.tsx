@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { act, render, renderHook, screen } from '@testing-library/react'
-import { afterEach, beforeEach, expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
 import {
   cleanupFolderSourceControl,
@@ -21,8 +21,11 @@ afterEach(cleanupFolderSourceControl)
 it('launches repo recovery through the panel in the folder with the repo cwd', async () => {
   const { result } = renderHook(useSourceControlPanelModel, { wrapper: FolderScope })
   act(() => result.current.setCommitErrorForWorktree(WORKTREE.id, 'pre-commit hook failed'))
-  await act(() => result.current.handleFixCommitFailureWithAI())
-  expect(Object.values(useAppStore.getState().pendingInitialCwdByTabId)).toEqual([REPO.path])
+  // The launch then waits for the agent to take its prompt, which no PTY here ever does.
+  act(() => void result.current.handleFixCommitFailureWithAI())
+  await vi.waitFor(() =>
+    expect(Object.values(useAppStore.getState().pendingInitialCwdByTabId)).toEqual([REPO.path])
+  )
   expect(useAppStore.getState().tabsByWorktree[FOLDER]).toHaveLength(1)
 })
 
