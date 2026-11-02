@@ -16,7 +16,7 @@ import {
   buildSourceControlTree,
   compactSourceControlTree,
   flattenSourceControlTree
-} from '../../source-control-tree'
+} from '../../../../../../shared/source-control-tree'
 import type { BranchSourceControlTreeNode } from '../listing/directory-action-paths'
 import { SourceControlBranchTreeDirectoryRow } from '../listing/tree-directory-rows'
 import {
