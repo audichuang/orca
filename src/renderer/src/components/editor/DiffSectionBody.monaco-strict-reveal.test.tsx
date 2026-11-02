@@ -95,6 +95,7 @@ function createFakeMonaco() {
         events.push('create')
         editors.push(original)
         return {
+          getContainerDomNode: () => document.createElement('div'),
           getOriginalEditor: () => original,
           getModifiedEditor: () => modified,
           getModel: () => diffModel,
@@ -142,7 +143,14 @@ function body(overrides: Partial<ComponentProps<typeof DiffSectionBody>> = {}) {
       language="markdown"
       modelPathBase="diff:a"
       isEditable={false}
-      diffEditorFontSize={12}
+      typography={{
+        fontFamily: 'monospace',
+        cssFontFamily: 'monospace',
+        fontSize: 12,
+        fontWeight: 'normal',
+        lineHeight: 0,
+        fontLigatures: false
+      }}
       onRetrySection={() => {}}
       onLoadDeferredSection={() => {}}
       onSaveLimitedDiff={() => {}}

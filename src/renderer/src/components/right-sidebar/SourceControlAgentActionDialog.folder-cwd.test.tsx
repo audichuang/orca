@@ -40,7 +40,7 @@ beforeEach(() => {
   rpc.subscribe.mockReset().mockResolvedValue({ unsubscribe: vi.fn() })
   setLocalRuntimeCapabilitiesForTests([CHAT, CLIENT, CATALOG, INSTALL])
   useAppStore.setState({
-    settings: { ...getDefaultSettings('/tmp'), experimentalNativeChat: true },
+    settings: { ...getDefaultSettings('/tmp'), agentDefaultSurface: 'chat' },
     folderWorkspaces: [makeFolderWorkspace({ id: 'folder-1', folderPath: '/work' })],
     ensureDetectedAgents: async () => [],
     detectedAgentIds: [],
