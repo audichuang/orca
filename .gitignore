@@ -118,8 +118,9 @@ validation-screenshots/
 test-results/
 playwright-report/
 
-# Agent skills are installed per machine.
-/.claude/skills/
+# Agent skills are installed per machine; the fork's own pipeline skills are tracked.
+/.claude/skills/*
+!/.claude/skills/orca-fork-*/
 /.agents/skills/
 /skills-lock.json
 
