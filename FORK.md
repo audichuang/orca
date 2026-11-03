@@ -83,6 +83,7 @@ The user decided not to fix these. A review finding that falls under one is NON-
 - `make fork-dmg FORK_VERSION=X.Y.Z-fork.N` still builds locally when CI is unavailable, signed and notarized like CI: the Developer ID must be in the keychain (p12 in 1Password, Agent vault, `aghub Developer ID Application p12`) and `APPLE_API_KEY` (.p8 path), `APPLE_API_KEY_ID`, `APPLE_API_ISSUER` set. `FORK_SIGN_IDENTITY=-` builds ad-hoc without notarization. The fork builder config excludes untracked checkout entries, and the build fails if app.asar still ships one: local dmgs once leaked `.orca/drops` screenshots and `CLAUDE.local.md`.
 - Pushed tags and `backup/*` branches keep released commits reachable; don't protect `main`, or allow force pushes if you do.
 - Install side: `make sync && make update`, never `git pull`, which merges the old and new histories. `sync` refuses on tracked changes, on local `main` commits the fork never had, and on ignored files the new commit would overwrite (`make clean` clears `dist/` and `out/`).
+- After a release, `make fork-wrapup` checks the tag, the Homebrew tap and the MacBook install agree, and lists worktrees whose branch is already in `develop` (prints only, deletes nothing).
 
 ## When a fork e2e goes red
 
