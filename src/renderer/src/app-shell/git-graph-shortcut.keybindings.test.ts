@@ -9,7 +9,11 @@ import { useFloatingWorkspacePanel } from '@/app-shell/use-floating-workspace-pa
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 
-vi.mock('@/store/plugin-panels', () => ({ usePluginCommands: () => [] }))
+vi.mock('@/store/plugin-panels', () => ({
+  usePluginCommands: () => [],
+  usePluginPanelsStore: { getState: () => ({ plugins: [] }) },
+  collectActivePluginCommands: () => []
+}))
 const platform = vi.hoisted((): { current: NodeJS.Platform } => ({ current: 'win32' }))
 vi.mock('@/lib/shortcut-platform', () => ({ getShortcutPlatform: () => platform.current }))
 vi.mock('@/app-shell/app-window-chrome', () => ({
