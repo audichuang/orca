@@ -23,8 +23,8 @@
   - `src/renderer/src/components/editor/EditorPanel.tsx:72` 起的 `activeGitWorktreeId`：folder 分頁的 status／branch entries 要從 repo（`getOpenFileGitWorktreeId`）讀（改回 `activeWorktreeId` 會紅）。
   - `src/renderer/src/components/right-sidebar/source-control/panel/header-toolbar.tsx:248` 的 `<RepoWorkspaceGitGraphButton />`：工具列要有 Git Graph 按鈕（拿掉會紅）。
   - `src/renderer/src/components/editor/EditorEditFileSurface.tsx` 外層 `flex min-h-0 flex-1 flex-col`：ChangesModeView 用 flex-1 撐高，block 父層會讓 diff 0 高度；只有 e2e／幾何斷言看得到。
-- 守它的測試：待補
-- 驗證：未驗證（只有 C r1 的 mutation 結果，見 PR #109 審查留言）
+- 守它的測試：已在 `rebase/v1.4.247` 補好（auto-rebase 2026-11-03，PR #111）：9dabc31e01 的 `EditorPanelHeader.fork.test.tsx`、`EditorPanel.fork.test.tsx` 的 branch 例、`header-toolbar.fork.test.tsx`、`EditorEditFileSurface.fork.test.tsx`，加上 81f4c4da1b 的 `EditorPanel.fork.test.tsx` commit diff 檔案清單例（守 `EditorPanel.tsx` 的 `useDiffFilePosition` → `DiffNavigationProvider filePosition`），都在 config/fork-seam-tests.txt。develop 移到含它們的 head 後刪掉這條；沒移動就從 `rebase/v1.4.247`（或它的 backup）cherry-pick 這兩個 commit。
+- 驗證（2026-11-03，v1.4.247）：每個測試拿掉它釘住的接線都會紅（PR #111 說明列了紅的那一行）；status entries 那行由既有的 `disables opening a working file deleted in the folder tab repo` 守。
 
 ## baeedad2038455cc21ed58e02e107315aa1f6692（#36828、feat(themes): ship GitHub and VS Code themes…）× fork 6efe38867a（fix(rebase): drop runtime catalog entries v1.4.246 no longer requires (upstream baeedad203)）— auto-rebase 2026-11-02
 - 類型：上游自己就紅（v1.4.246 的 `verify:localization-catalogs`：`en-runtime-required.json no longer covers en.json`，`usageLimitActions`、`resumeInNewChat`）
@@ -155,3 +155,23 @@
 - 處理：只改 fork 測試的 store 替身：`resetState` 裡 `isRemoteOperationActive: false,` 後加 `remoteOperations: [],`。
 - 守它的測試：SourceControl.preview-open.fork.test.tsx（Upstream component slots and folder routing 組）
 - 驗證（2026-11-03，上游 40f9d2a2468e05310caf1c5172524df0cd95b387）：1 例通過；其餘同 a7d6926f77 那條。
+
+## a7d6926f77715e586b0f3908eef2b6111ec398da（#37105、fix(git): show encrypted and textconv files as text diffs, not binary）× fork ClipCode 複製（clipcode-git-copy.ts、clipcode-commit-copy.ts）— auto-rebase 2026-11-03
+- 類型：上游改了 fork 依賴的 API（待人判斷：修法有設計選擇）
+- 衝突檔：無（語意漂移，Codex r1 BLOCKING、審查者 B NON-BLOCKING）
+- 連帶症狀：設了 `.gitattributes` 的 `diff=X` 與 `diff.X.textconv` 的路徑，ClipCode 的 staged 複製（`readIndexContent`、`readHeadContent` staged 分支）與 commit 複製（`readCommittedContent`、`readDeletedContent`）拿到 textconv 轉換後的文字；Paste & Restore 會把它寫回檔案。v1.4.247 起 `getDiff` 的 staged 兩側與 `getCommitDiff` 兩側預設 `textconv`，只有可編輯的 unstaged 那側用 `checkout`。
+- 處理（待使用者決定，auto-rebase 不要自己做）：建議 mode 用上游的 `'checkout'`（`cat-file --filters`，Paste & Restore 寫磁碟要 checkout 位元組），只在 `file-diff.ts`／`commit-diff.ts` 依 fork 選項選 mode（兩側含 `leftConversion`），不改上游 `BlobConversion`；`git.diff` 延伸 `GitDiffReadOptions`／`gitDiffReadArgs`；`git.commitDiff` 新增 optional 欄位，10 個逐欄解構的 hop（filesystem-git-diff-handlers、git-bridge、git-inspection-api、web-git-api（300/300 行，用 `...rest` 收 `oldPath`）、runtime-git-diff-client、git-params zod、git-diff-methods、runtime-git-diff-commands、git-provider-contract／local-git-provider、commit-diff），每跳一個測試；ClipCode 四個呼叫點帶旗標。待決：遠端 host 若跑上游 release，這個欄位會被忽略（FORK.md 的 wire job：fork client 連上游 release host），可能要改成 ClipCode 偵測 textconv 就拒絕複製。develop 還在 v1.4.246 時修正只能直接做在 `rebase/v1.4.247` 上。
+- 守它的測試：Codex 的 real-git probe `pending-tests/textconv-clipcode.probe.test.ts`（筆記分支；設 textconv `sed 's/^/DISPLAY:/'`，兩種複製都得到 `DISPLAY:new source` 而紅，停用 conversion 就綠），改寫成 seam 測試加進 missingSides／ClipCode 組。
+- 驗證（2026-11-03，v1.4.247，head 9dabc31e01）：Codex 以 vitest 跑 probe，兩個 payload 斷言失敗；只停用 conversion 就通過。
+
+## fork 自身問題（既有無測接線，審查者 C 在 v1.4.247 rebase 列出，不在這次解過的 hunk 上）× fork 既有 folder／Git Graph／ClipCode 接線 — auto-rebase 2026-11-03
+- 類型：fork 自身問題
+- 衝突檔：無
+- 連帶症狀：無（拿掉接線後整份 seam 清單全綠）
+- 處理：各補一個拿掉會紅的測試，加進 config/fork-seam-tests.txt：
+  - `src/renderer/src/components/right-sidebar/source-control/panel/use-panel-model.ts:145` 轉送給 `useGitHistoryCommitActions` 的 `editorWorktreeId`（目前只有 `pnpm tc` 因必填參數守）。
+  - `src/renderer/src/store/slices/editor/actions/git-graph-tab-actions.ts:91` 的 `existingGroupId`（改成 `undefined` 時 git-graph tab type 組全綠）。
+  - `src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-preview-dialog.tsx:150` 關閉時的 `onCancel()`（拿掉時 ClipCode 組全綠）。
+  - 「gitWorktreeId on editor open actions」組本身擋不住 EditorPanel 的 `gitWorktreeId`、`use-worktree-context` 的 `editorWorktreeId` 與 `use-panel-model.ts` 的 notes 轉送（別組會紅），清單分組可調整。
+- 守它的測試：待補
+- 驗證：未驗證（只有 PR #111 審查者 C r1 的 mutation 結果）

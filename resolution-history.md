@@ -2,6 +2,21 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-11-03 auto-rebase v1.4.246 → v1.4.247（PR #111）— 沒移動：Codex 的 BLOCKING（ClipCode 遇到 textconv）沒修，交人
+- run 314（RUN=20261103T041724Z），MANUAL。head 81f4c4da1b：本機 static（第 3 輪）與 seams（126 檔 624 例）綠，CI 兩輪都綠（run 41578986006、41581608204），審查者 C 的 BLOCKING 已修。唯一卡點是 Codex 的 BLOCKING（B 也列成 NON-BLOCKING）：上游 a7d6926f77（#37105）讓 staged／commit diff 兩側預設套 textconv，ClipCode 會把轉換後的文字當可還原內容。修法要在 `git.diff`／`git.commitDiff` 各加 fork 讀取選項（commitDiff 有 10 個逐欄解構的 hop，`web-git-api.ts` 已 300/300 行），還有「遠端 host 跑上游 release 時欄位會被忽略」這個設計問題，所以交人，見 known-resolutions 的 a7d6926f77 textconv 條目與 PR #111 的 needs-human 留言。完整解法在 `rebase/v1.4.247`（鎖被收時會先備份成 `backup/rebase-v1.4.247-*`）。
+- 衝突（6 檔，全部照 canary 2026-11-03 的條目、跟眼前一致）：
+  - `8ca8c6583b`：`file-diff.ts` 2 hunk（上游 `conversion`/`leftConversion` 後接 fork 的 missing 旗標；`missingSides` 區塊放在上游 `const reusable` 前）、`EditorPanel.tsx` import 兩行都留、`useSourceControlAgentActionDialog.ts` 採上游加回 `initialCwd,`。守它的測試：`file-diff.skip-render-limit-real-git`、`blob-absence-real-git.fork`（guarded）、`SourceControlAgentActionDialog.folder-cwd`（`expected true to be false`）、`commit-surface.fork`（`expected [] to deeply equal ['/work/folder/repo-a']`）。
+  - `1a1b35236b`：`AGENTS.md` 採上游重寫全文、檔尾補 fork 的 `# Fork Maintenance`；後面 3 個 docs commit 自動合入。逐位元組證明：fork 新增行與舊 develop 相同、沒刪上游行。
+  - `fdef87db0d`：`submodule-diff.ts` import 兩行、參數 `options: GitRuntimeOptions & GitDiffReadOptions, mode: BlobConversion['mode']`（`file-diff.skip-render-limit-real-git` 的 moved submodule 例 guarded）。
+  - `5ec7a0bd16`：`flaky-test-pattern-baseline.txt` hunk 1 用上游 `2 …execute-open-editor-path-move.test.ts` 接 fork 的 lazy-chunk 行；hunk 2 只放 fork 三個 e2e 行，`git-no-upstream-polling-churn.spec.ts` 那行不要（v1.4.247 刪了那檔，c0cc0168d2／d061d235b6）。ebf277b4aa 條目不在 v1.4.247，但同一個衝突照它的做法。刪 fork 行 → ratchet exit 1。
+- 丟掉的 commit：`6efe38867a`（baeedad203 已在 v1.4.247）、`6177bf4a53`（v1.4.247 的 ci-unit-files.mjs 第 31 行已相同），用 rebase -i drop；`10ed999b19`（bdd997f71f 的 cherry-pick）套上後為空、`--skip`。range-diff 三者都是 `<`。
+- rebase 途中 `a5210be9aa` 寫 commit 物件時暫時性 `error: unable to create temporary file: Invalid argument`（磁碟還有 167G）：staged 內容已套好，`git commit -C a5210be9aa` 後 patch-id 相同，重排的 pick 變空、`--skip`。下次遇到照做。
+- 用掉的 known-resolutions 條目（develop 沒移動，都留在 known-resolutions）：a7d6926f77、ba50135f9c、764bd0be44、3314da1335、baeedad203、0509a2d83a、bdd997f71f、c24d916f31、999160b3db、9599d718b6（後三條加 a7d6926f77 的 mock 各一個 test commit：1d75a2a8ce、570bd2850a、cab529a17f、b2e01be1b5，拿掉都會紅）、「4 個無測 seam」fork 自身問題（9dabc31e01 補 4 個測試，拿掉接線都會紅）。不適用：ebf277b4aa、e59b843336（不在 v1.4.247）。待人判斷的「folder 外部變更配對」沒做。
+- 上游基準（fork-upstream-red v1.4.247）：tc、lint、daemon-protocol 全綠，沒有 cherry-pick。
+- 確認為真的審查發現：C r1 BLOCKING `EditorPanel.tsx:356`（`useDiffFilePosition` → `DiffNavigationProvider filePosition`）沒測試會紅，因為 9dabc31e01 的 header 測試 mock 掉了 `useDiffNavigation` → 81f4c4da1b 在 `EditorPanel.fork.test.tsx` 加 commit diff 檔案清單例（拿掉 → `Unable to find an accessible element with the role "status"`），重掃 `guarded`。Codex r1 BLOCKING textconv（見上，未修）。C 的 NON-BLOCKING 既有缺口記成 known-resolutions 的 fork 自身問題條目。
+- 耗時（RUN 04:17:24Z 起，到交人約 56 分）：rebase＋開 PR 7 分（→ 04:24:00）；第 1 步修正（4 個 test 修正、補 4 個 seam 測試）04:24 → 04:27；本機閘門 7 分（04:27:51 → 04:35:01，static 第 1 輪 quality gate 擋 `as`，第 2 輪綠）；CI 第 1 輪 04:35:08 → 04:44:48、第 2 輪 05:03:13 → 05:12:35；盲審 04:37:02 → 04:58:30（Codex 10 分、hunk 掃描 3 分、B 7 分、C 18 分）；修正第 1 輪（C r1）05:01 → 05:03（含 static）。沒有超過上一條（約 2 小時 20 分）的 1.5 倍。
+- canary 效益：6 個衝突檔與 4 個連帶症狀的測試修正全部是 canary 2026-11-03（上游 40f9d2a246）事先寫好的條目，rebase 7 分鐘就開 PR；它沒料到的是審查才抓得到的語意漂移（textconv 讓 ClipCode 拿到轉換後文字），以及 flaky baseline 的條目寫在 v1.4.247 不含的 ebf277b4aa 下（同一個衝突還是出現了）。沒有它大概要多 30–60 分逐檔解衝突、追 4 個紅測試。
+
 ## 2026-11-02 auto-rebase v1.4.245 → v1.4.246（PR #109）— develop 已移動並發 v1.4.246-fork.1
 - run 294（RUN=20261102T081716Z）接手：run 289 留了 verified（審查者 C 列出 4 個在 v1.4.246 改過的檔上的既有無測 seam，第 6 步不自動移動），使用者 06:48 人工確認 4 個 seam 的 fork diff rebase 前後逐行一致後，自己備份 `backup/develop-v1.4.245-20261102T041814Z` 並把 develop 推到驗過的 head 55494b84b6。這次照第 0 步「使用者推了 develop、沒發版」留 develop-moved 標記、直接發版。
 - 驗證依據：CI run 41399546111 在 55494b84b6 上 `Fork PR checks passed` SUCCESS（發版前再查 check-runs 確認）；衝突解法、修正 commit、審查結論見下面 run 289 那條與 PR #109。
