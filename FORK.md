@@ -15,6 +15,12 @@ Personal fork of Orca. Fork-only code lives in fork-owned files where possible; 
 
 - The fork runs only on macOS, connecting to remote Linux hosts; nobody runs it on Windows or WSL. Fork features need not work there: a gap that shows only on Windows or WSL is not fixed, and a review finding of that kind is NON-BLOCKING. Upstream's own Windows and WSL code stays as upstream wrote it. For fork code this overrides AGENTS.md's Cross-Platform Support section. Fork CI has no Windows job.
 
+## Accepted risks
+
+The user decided not to fix these. A review finding that falls under one is NON-BLOCKING, is not fixed, and does not stop the auto-rebase from moving `develop`; list it in the notice only. Like Platform scope, the rule covers the whole class, so a new finding of the same kind is NON-BLOCKING too. Ask the user only about a finding outside every class below.
+
+- ClipCode output on files that git transforms for display. ClipCode is used for source code and docs. Nobody copies or restores PDFs, Office files or other formats that get a `diff=X` textconv driver, and none of the user's repos or machines configure one. Upstream v1.4.247 (#37105) reads the staged and commit diff sides with `cat-file --textconv`, so ClipCode's staged and commit copies of such a file carry the converted text, and Paste & Restore would write that text back (PR #111). The same class covers git filters (`filter=`), smudge/clean and other attribute-driven conversions of what ClipCode copies or restores. Fix only if the user reports hitting it; the cheap fix is to refuse the copy when the path has a textconv driver.
+
 ## Merge gate
 
 - Fork CI (below) is the merge gate for every rebase and every merge into `develop`; it runs upstream's full unit suite (`FORK_TESTS=all`), like upstream's own PR CI. Locally, `make fork-check` is the fast pre-check: `pnpm tc`, `vitest --changed $(FORK_BASE)`, the changed-code quality gate and `fork-check-lint`.
