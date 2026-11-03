@@ -12,7 +12,7 @@ description: Unattended pipeline that rebases the Orca fork's develop onto the n
 只做一件事：把 develop 搬到上游最新 release，確認 fork 功能在新基底上照常運作（macOS，連 remote Linux），閘門全過就移動 develop 並發版。慢沒關係，重點是做得完；做不下去就停下來交人，不要為了發版硬修。
 
 - 要處理：衝突；上游改動讓 fork 功能壞掉的地方（typecheck、測試、lint、審查找到的 API 漂移）；這次解過衝突、rerere 重放或修正過的 hunk 都要有證明（改回上游會讓測試變紅，或只改 import／型別而由 `pnpm tc` 守；細節見第 6 步「合格的 MANUAL」）。
-- 不處理，只列進第 8 步通知：這次沒碰到的既有測試缺口；只在 Windows 或 WSL 發生的問題（FORK.md「Platform scope」）；功能改進與重構；實機 UI 測試。
+- 不處理，只列進第 8 步通知：這次沒碰到的既有測試缺口；只在 Windows 或 WSL 發生的問題（FORK.md「Platform scope」）；屬於 FORK.md「Accepted risks」那幾類的問題；功能改進與重構；實機 UI 測試。
 - 停下來交人（第 8 步，PR 與鎖留著），主要是：沒把握解的衝突、筆記要丟的 commit 找不到（第 1 步）；同一個問題修兩輪還不過、上游自己紅而上游 `main` 也沒修（第 2 步）；審查素材產生失敗或 Codex 沒跑完（第 4 步）；第 5 步兩輪後仍有確認為真的 BLOCKING。各步寫的其他結局照該步。
 
 本技能覆寫兩個預設：codex 技能的「找到問題不自動修、停下來問」在這裡不適用（第 5 步規定怎麼修）；`orca-lcu-ui-test` 與 Codex desktop 的真實 UI 測試輪**不在這裡跑**——它們會占用螢幕鍵盤剪貼簿，排程隨時會觸發。發版前要驗的 UI 情境（ClipCode 複製、Paste & Restore、資料夾 repo 清單、session restore、external-change banner、agent launch cwd）由 fork e2e 在隱藏視窗驗（`folder-multi-repo-source-control.spec.ts`、`folder-workspace-tab-restart-restore.spec.ts`），CI 的 fork e2e job 會跑；lcu 實機輪只留給新增或改了 UI 的功能 PR。
@@ -139,8 +139,8 @@ cd ../ar-$RUN-review-c && { node config/scripts/ensure-native-runtime.mjs --runt
   - **A 衝突忠實度**：`range-diff.txt` 每個 `!` 項目，新版是否保留 fork 原本的行為、同時採用上游的新結構？有沒有 fork 的欄位、分支、呼叫被默默丟掉？每個 `<` 項目（rebase 後消失的 fork commit）是不是刻意丟的、理由是否成立？
   - **B 上游 API 漂移**：讀 `upstream-touching.diff`、`importer-sweep.txt` 與 `seam-upstream.diff`，上游改了簽章、回傳值、語意（例如回傳一個要呼叫的 release、改成會 reject）的模組，fork 的呼叫點有沒有跟上？上游新增的平行路徑（新的 switch、新的入口、重建的 options 物件）有沒有繞過 fork 的 seam？逐一打開呼叫點看，不要只看 diff。
   - **C 測試與 seam**：讀 hunk 掃描的結果判斷，只看**這次解過或修過**的 hunk（`resolved-files.txt` 列的檔）。證明表從 `scan/hunks-all.jsonl` 取：`guarded` 的 `redBy` 就是 mutation 證明；`skipped`（import、註解、只改型別）由 `pnpm tc` 守；`crash-only` 確認用到它的 hunk 是 `guarded`，錯誤是名稱不見（`X is not defined`，對應的 import 在另一個 hunk）時，手動把這個 hunk 和那個 import 一起改回、跑 `redBy` 那支測試，紅在斷言上才算證明；`survived`、`no-fork-test` 先判斷是不是等價或只有 e2e 看得到，都不是就是發現；`flaky`、`error` 不算證明，手動補。掃描不涵蓋的照手動做：`report.md` 列的 unmatched 檔（fork 新增檔、測試檔、locale）、lint 修正（改回後跑那一步 lint）、補翻譯（`fork-locale-parity.mjs vNEW`），每個都把那個 hunk 改回上游或拿掉修正、跑指定的測試確認會紅，看完 `git checkout -- .` 還原。逐項列出 hunk 與證明（第 6 步「合格的 MANUAL」靠這張表）；其他 hunk 的缺口只列為既有缺口。**CLEAN 時也要做**：對 `seam-upstream.diff` 碰到的每個 seam（對照 `config/fork-seam-tests.txt` 的分組），把 fork 在那個 seam 的接線拿掉一處（刪欄位轉傳、刪 `'git-graph'` case、刪 slot prop），跑那組 seam 測試確認會紅；沒有會紅的就是發現。
-  - 每個都要求輸出：發現清單（BLOCKING / NON-BLOCKING、`file:line`、為什麼、怎麼證實的），最後一行 `VERDICT: ACCEPTABLE` 或 `VERDICT: NOT ACCEPTABLE`。提示要寫明：只在 Windows 或 WSL 上才會發生的問題一律標 NON-BLOCKING、不影響 VERDICT（FORK.md「Platform scope」：fork 不在 Windows 上用）。
-- Codex 兜底（獨立全面審）：照 codex 技能用 companion 的 `task`（**不要用 `review`/`adversarial-review`**：它們拿分支比預設分支，在這裡會是整串 fork 或兩條分岔歷史）。提示寫進 `$MAIN/.rebase-review/codex-prompt.md`：說明這是 fork rebase 的審查、素材在哪、四個問題（A/B/C 的問題加上「還有什麼會讓 fork 功能在 vNEW 上壞掉」）、同樣的輸出格式與 VERDICT 行（含 Windows／WSL 只列 NON-BLOCKING 那句）。
+  - 每個都要求輸出：發現清單（BLOCKING / NON-BLOCKING、`file:line`、為什麼、怎麼證實的），最後一行 `VERDICT: ACCEPTABLE` 或 `VERDICT: NOT ACCEPTABLE`。提示要寫明：只在 Windows 或 WSL 上才會發生的問題一律標 NON-BLOCKING、不影響 VERDICT（FORK.md「Platform scope」：fork 不在 Windows 上用）；屬於 FORK.md「Accepted risks」所列類別的問題也一律標 NON-BLOCKING，提示裡把那一節原文貼給審查者。
+- Codex 兜底（獨立全面審）：照 codex 技能用 companion 的 `task`（**不要用 `review`/`adversarial-review`**：它們拿分支比預設分支，在這裡會是整串 fork 或兩條分岔歷史）。提示寫進 `$MAIN/.rebase-review/codex-prompt.md`：說明這是 fork rebase 的審查、素材在哪、四個問題（A/B/C 的問題加上「還有什麼會讓 fork 功能在 vNEW 上壞掉」）、同樣的輸出格式與 VERDICT 行（含 Windows／WSL 與 Accepted risks 只列 NON-BLOCKING 那兩句）。
   ```sh
   cd ../ar-$RUN-review-codex && CODEX_JOB_TIMEOUT_MS=5400000 sh "$MAIN/config/scripts/fork-detached-agent.sh" node ~/.claude/skills/codex/scripts/codex-companion.mjs task --background --json --write --prompt-file "$MAIN/.rebase-review/codex-prompt.md" > "$MAIN/.rebase-review/codex-launch.json"
   ```
@@ -156,7 +156,7 @@ cd ../ar-$RUN-review-c && { node config/scripts/ensure-native-runtime.mjs --runt
 - 兩輪後仍有確認為真、沒修好的 BLOCKING → 不移動 develop，第 8 步回報。
 - 審查結果貼成一則 PR 留言：每個審查者的 VERDICT、每個發現與處理（已修 commit / 不同意理由 / NON-BLOCKING 留待），附上 importer-sweep 裡人工確認過的「上游改了 X，fork 呼叫點 Y 已看過」。
 
-**審查通過**的定義（第 6 步用）：每個 Claude 審查者的每個 BLOCKING 都已修好或有程式碼證據反駁，而且 Codex 最後一輪是 `VERDICT: ACCEPTABLE`。Codex 的 BLOCKING 不能只靠反駁放行：反駁後要它在同一個 thread 再看一次（不另算一輪），它改判 ACCEPTABLE 才算。
+**審查通過**的定義（第 6 步用）：每個 Claude 審查者的每個 BLOCKING 都已修好或有程式碼證據反駁，而且 Codex 最後一輪是 `VERDICT: ACCEPTABLE`。Codex 的 BLOCKING 不能只靠反駁放行：反駁後要它在同一個 thread 再看一次（不另算一輪），它改判 ACCEPTABLE 才算。例外：審查者仍把屬於 FORK.md「Accepted risks」類別的問題標成 BLOCKING，就改記為 NON-BLOCKING，不需修、不需它改判；這樣的發現是它 NOT ACCEPTABLE 的唯一理由時，那個 VERDICT 視同 ACCEPTABLE，PR 留言寫明套用哪一條。
 
 ## 6. 移動 develop
 
