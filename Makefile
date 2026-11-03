@@ -13,7 +13,7 @@ DOCTOR       := $(HOME)/orca-doctor.txt
 HOST         ?=
 PORT         ?= 6768
 
-.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-check-wire fork-check-mobile fork-base-guard fork-footprint fork-check-seams fork-canary fork-merge-driver
+.PHONY: help install setup computer-use build app dmg run logs doctor sync update typecheck clean all fork-dmg fork-check fork-check-full fork-ci-disable-upstream fork-check-static fork-check-static-types fork-check-quality fork-check-tests fork-check-lint fork-check-e2e fork-check-wire fork-check-mobile fork-base-guard fork-footprint fork-check-seams fork-canary fork-wrapup fork-merge-driver
 
 help:
 	@echo "Orca local build (arm64 only):"
@@ -39,6 +39,7 @@ help:
 	@echo "  make fork-footprint   the fork's diff on upstream files since FORK_BASE (JSON=1 for --json)"
 	@echo "  make fork-canary      report-only: merge the fork into upstream main, typecheck, run fork tests"
 	@echo "                       (report: out/fork-canary/<run>/report.md, newest named in out/fork-canary/latest.txt)"
+	@echo "  make fork-wrapup      after a release: fork tag vs tap vs installed app, and removable worktrees (prints only)"
 
 install:
 	pnpm install
@@ -227,6 +228,7 @@ fork-check-lint: fork-base-guard
 	  "node config/scripts/fork-test-inventory.mjs check $(FORK_BASE)" \
 	  "node config/scripts/fork-upstream-api.mjs" \
 	  "bash .claude/skills/orca-fork-auto-rebase/scripts/precheck.test.sh" \
+	  "bash config/scripts/fork-rebase-continue.test.sh" \
 	  "pnpm run check:daemon-protocol-crossing"; do \
 	  echo "$$cmd"; $$cmd || failed="$${failed:+$$failed; }$$cmd"; \
 	done; \
@@ -264,6 +266,10 @@ fork-check-seams:
 fork-canary: fork-base-guard
 	@test -n "$(UPSTREAM_REMOTE)" || { echo "fork-canary: no remote points at $(UPSTREAM_REPO); pass UPSTREAM_REMOTE=<name>"; exit 1; }
 	FORK_BASE=$(FORK_BASE) UPSTREAM_REMOTE=$(UPSTREAM_REMOTE) bash config/scripts/fork-canary.sh
+
+# After a release: fork tag vs tap vs the MacBook install, and worktrees that can go. Prints only, deletes nothing.
+fork-wrapup:
+	@FORK_REMOTE=$(FORK_REMOTE) FORK_REPO=$(FORK_REPO) bash config/scripts/fork-wrapup.sh
 
 # The remote in this clone whose fetch URL is GitHub repo $(1), whatever it is named.
 remote_for = $(shell git remote -v | awk -v r="$(1)" '$$3 == "(fetch)" && $$2 ~ ("[:/]" r "(\\.git)?$$") {print $$1; exit}')
