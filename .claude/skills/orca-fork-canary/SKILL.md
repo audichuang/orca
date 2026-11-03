@@ -11,6 +11,8 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
 
 **等待一律在前景，絕不結束這一輪去等完成通知**：你看起來閒置，Orca 會把這次 run 判成完成，並可能關掉 terminal 連背景工作一起殺掉（auto-rebase run 121 就這樣死掉）。超過幾分鐘的指令（canary、`pnpm tc`、重跑測試、lint）用 run_in_background 跑 `<指令> > LOG 2>&1; echo $? > LOG.exit`（LOG 每次用新名字，放 `$S`），再在前景重複 `bash "$MAIN/config/scripts/fork-wait-for-job.sh" LOG.exit` 直到它回 0（回 3 是還在跑，再呼叫一次）。Bash 預設 timeout 只有 2 分鐘，超過一樣會被移到背景：**每個等待的 Bash 呼叫都要傳 `timeout: 600000`**。連續兩次回 3 而 LOG 都沒變大、`pgrep -f` 也找不到那個指令 → 它被殺了，換新 LOG 名重跑一次。
 
+Shell 是 zsh（macOS）：變數後接 `:` 一律寫 `${v}:`（`$b:config/…` 的 `:c` 會被當成修飾符吃掉；專案 hook 只在有它的 checkout 擋）；glob、`--include=*.ts` 這類參數加引號（沒命中時 zsh 報 `no matches found`、整條不跑），搜尋優先 `rg -g '<glob>'` 或 `git grep -- '<pathspec>'`；macOS 沒有 `timeout`，bash 是 3.2（沒有 `mapfile`、關聯陣列）。
+
 本文的變數：`MAIN` = Orca 為這次 run 開的 worktree（`pwd -P`，開頭記下）；`S` = 這次的暫存目錄（`S=$(mktemp -d)`）；`OUT` = `$HOME/.cache/orca-fork-canary`（報告放在 run worktree 外，下一次 run 清掉舊 worktree 後，筆記與通知裡的報告路徑仍然有效）。
 
 ## 1. 準備並跑 canary
@@ -45,10 +47,10 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
 1. 對每個衝突檔，先看 `$S/known-resolutions.md` 有沒有條目。有就照它做；沒有就先在 `$S/resolution-history.md`（之前的 auto-rebase 與人工處理怎麼解的，只讀）找同一個檔或同一個 fork commit 的前例，照前例的做法，再照第 3 步判斷怎麼合。腳本已把衝突檔重設成上游那一側、清掉了衝突標記，要重建衝突時在 `K` 裡（合併還沒 commit，`MERGE_HEAD` 還在）：
    ```sh
    b=$(git merge-base HEAD MERGE_HEAD)
-   git show "$b:<檔>" > "$S/base"; git show "HEAD:<檔>" > "$S/ours"; git show "MERGE_HEAD:<檔>" > "$S/theirs"
+   git show "${b}:<檔>" > "$S/base"; git show "HEAD:<檔>" > "$S/ours"; git show "MERGE_HEAD:<檔>" > "$S/theirs"
    git merge-file -p "$S/ours" "$S/base" "$S/theirs" > <檔>
    ```
-   ours 是上游 main，theirs 是 fork。把解法都套進 `K`。**不要在 `K` commit，也不要跑 `git rerere`**：rerere 的紀錄跨 worktree 共用，這裡對上游 main 解的結果會被下一次 auto-rebase 自動重放。
+   ours 是上游 main，theirs 是 fork。把解法都套進 `K`，每個解完的檔照原路徑複製一份到 `$R/resolution/files/<路徑>`（auto-rebase 的 `fork-canary-apply.sh` 讀這裡，對應 `report.md` 的 `- Upstream:` sha）。**不要在 `K` commit，也不要跑 `git rerere`**：rerere 的紀錄跨 worktree 共用，這裡對上游 main 解的結果會被下一次 auto-rebase 自動重放。
 2. 在 `K` 跑 `pnpm tc`，再重跑一次 canary 跑過的那批測試檔：
 
    ```sh
