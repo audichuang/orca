@@ -62,6 +62,7 @@ async function readCommittedContent(
   entry: GitBranchChangeEntry
 ): Promise<Content> {
   try {
+    // Why: both commit sides arrive textconv-converted; accepted risk, see FORK.md "Accepted risks".
     const diff = await readers.readCommitDiff(context, {
       commitOid: commit.commitOid,
       parentOid: commit.parentOids[0] ?? null,
