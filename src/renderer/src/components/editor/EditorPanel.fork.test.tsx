@@ -4,8 +4,10 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import EditorPanel from './EditorPanel'
+import { registerDiffFileSequence } from './diff-file-sequence'
 import {
   BRANCH,
+  COMMIT,
   FOLDER,
   REPO,
   folderFile,
@@ -57,6 +59,21 @@ it('disables opening a working file the branch deleted in the folder tab repo', 
     </TooltipProvider>
   )
   expect(view.getByRole('button', { name: 'Open file' }).hasAttribute('disabled')).toBe(true)
+})
+
+it('shows where the active commit diff sits in the file list it was opened from', () => {
+  const file = folderFile({ id: 'commit-b', diffSource: 'commit', commitCompare: COMMIT })
+  registerDiffFileSequence(
+    ['commit-a', 'commit-b', 'commit-c'].map((key) => ({ key, open: vi.fn() })),
+    'commit-b'
+  )
+  useAppStore.setState({ openFiles: [file], activeFileId: file.id })
+  const view = render(
+    <TooltipProvider>
+      <EditorPanel />
+    </TooltipProvider>
+  )
+  expect(view.getByRole('status').textContent).toBe('2/3 files')
 })
 
 it('opens a restored folder diff with its repo owner before the repo catalog reloads', () => {
