@@ -5,6 +5,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import EditorPanel from './EditorPanel'
 import {
+  BRANCH,
   FOLDER,
   REPO,
   folderFile,
@@ -34,6 +35,21 @@ afterEach(() => {
 it('disables opening a working file deleted in the folder tab repo', () => {
   useAppStore.setState({
     gitStatusByWorktree: { [REPO]: [{ path: 'src/a.ts', status: 'deleted', area: 'unstaged' }] }
+  })
+  const view = render(
+    <TooltipProvider>
+      <EditorPanel />
+    </TooltipProvider>
+  )
+  expect(view.getByRole('button', { name: 'Open file' }).hasAttribute('disabled')).toBe(true)
+})
+
+it('disables opening a working file the branch deleted in the folder tab repo', () => {
+  const file = folderFile({ relativePath: 'src/a.ts', diffSource: 'branch', branchCompare: BRANCH })
+  useAppStore.setState({
+    openFiles: [file],
+    activeFileId: file.id,
+    gitBranchChangesByWorktree: { [REPO]: [{ path: 'src/a.ts', status: 'deleted' }] }
   })
   const view = render(
     <TooltipProvider>
