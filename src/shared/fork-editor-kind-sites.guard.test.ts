@@ -31,6 +31,18 @@ const ALLOWED = new Map<string, string>([
   [
     'renderer/src/store/slices/editor/actions/check-run-details-actions.ts',
     'opens and refreshes check-details tabs; git-graph has its own actions'
+  ],
+  [
+    'renderer/src/store/slices/editor/actions/check-run-details-owner.ts',
+    'finds the execution host of a check-details tab; git-graph has no remote check owner'
+  ],
+  [
+    'renderer/src/store/slices/editor/tabs/workspace-editor-item.ts',
+    'only editor and check-details tabs carry their file host; git-graph keeps the default like diff'
+  ],
+  [
+    'shared/workspace-layout/workspace-layout-load-workspace.ts',
+    'restores check-details request scopes; a Git Graph tab has none'
   ]
 ])
 
