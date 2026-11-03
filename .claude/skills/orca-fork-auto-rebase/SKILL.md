@@ -26,6 +26,8 @@ description: Unattended pipeline that rebases the Orca fork's develop onto the n
 - `RUN`：`date -u +%Y%m%dT%H%M%SZ`，開頭記一次。這次 run 自己的暫時 worktree 一律叫 `../ar-$RUN-<名字>`，名字不會跟別的 run 撞，第 0 步也靠這個前綴認出殘留。
 - `vNEW`、`vOLD`、`OLD_DEVELOP`、`PR`：第 0 步定義。
 
+Shell 是 zsh（macOS），審查者提示也要轉述這段：變數後接 `:` 一律寫 `${v}:`（`$b:config/…` 的 `:c` 會被當成修飾符吃掉，專案 hook 會擋）；glob、`--include=*.ts` 這類參數加引號（沒命中時 zsh 報 `no matches found`、整條不跑），搜尋優先 `rg -g '<glob>'` 或 `git grep -- '<pathspec>'`；macOS 沒有 `timeout`，bash 是 3.2（沒有 `mapfile`、關聯陣列）。
+
 所有 gh 呼叫間隔放寬（API 配額與 release workflow 共用）。等 CI 用 `gh-wait`，不要用 `gh pr checks --watch`、`gh run watch` 或 sleep 迴圈。
 
 **等待一律在前景，絕不結束這一輪去等背景通知。** 你停下來等通知時看起來是閒置：Orca 會把這次 run 判成完成，並可能關掉 terminal，連你和背景工作一起殺掉（run 121 就這樣死在第 2 步）。Bash 呼叫超過它的 timeout 就會被移到背景，而預設只有 2 分鐘：**每個等待的 Bash 呼叫都要傳 `timeout: 600000`**（上限 10 分鐘），等待本身切成 9 分鐘以內、一次接一次呼叫：
@@ -93,6 +95,8 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
 
 先在 PR 留言「本機閘門開始」（心跳；修失敗的每一輪開始時也各留一則）。`pnpm install --frozen-lockfile`，然後 `make -k fork-check-static`（`pnpm tc`、changed-code quality、`fork-check-lint`；`-k` 讓 typecheck 紅了也照跑 lint，lint 本身也會跑完每一步，一輪就列出全部失敗），再 `make fork-check-seams`（`config/fork-seam-tests.txt` 列的 fork seam contract 測試，一個不漏地跑；沒有這個 target 的舊 develop 就略過並註明）。`make fork-footprint` 的輸出貼進 PR 說明（fork 在上游檔案上的足跡，跟上一次 rebase 比）。
 
+自己寫或改的測試與修正 commit（這一步、第 1 步第 6 點、第 5 步）：不用 type assertion（`as`，`as const` 除外），非用不可就在那一行加 `SAFETY:` 註解；commit 前先 `pnpm run check:code-quality:changed HEAD`（只看工作樹的改動），綠了再跑整輪 static（每輪約 5–6 分鐘，v1.4.246、v1.4.247 都因新測試的 `as` 多跑了一輪以上）。
+
 整套單元測試、e2e、wire、mobile **不在本機跑**：CI 在 Linux 上跑同樣的 make target，一次就有結果。本機在 macOS 跑會多出十來個上游自己的紅（路徑、shell、打包環境），還會跟機器上其他 session 搶 CPU 而逾時，每個都要再拿上游對照，徒增時間（v1.4.241 為此多花約 40 分鐘）。
 
 **上游基準**：跑閘門前先 `bash config/scripts/fork-wait-for-job.sh "$MAIN/.rebase-review/upstream-red.log.exit"` 等第 1 步的基準。RESUME 沒有這份：`mkdir -p "$MAIN/.rebase-review"` 後在前景跑第 1 步那兩條（先 `pnpm install --frozen-lockfile && git fetch origin main`，再跑腳本）；報告列的候選若已在 HEAD（`git log vNEW..HEAD --grep "cherry picked from commit <候選完整 sha>"` 有結果）就是前一次 run 帶過了，不要重複 cherry-pick。exit 非 0（看 `upstream-red.log`）→ 沒有基準，閘門紅了才對照：在乾淨的 `../ar-$RUN-base`（沒有就照下面「失敗處理」建）跑 `fork-lint-run` 印出的同一條 `>> pnpm …` 指令，兩邊都紅的才是上游的；在通知裡註明基準沒跑成。讀 `upstream-red.md`，把它整份貼進 PR 說明。列為紅的每一步都是上游自己的問題，**在跑第一輪閘門之前**就處理：照它列的候選，在上游 `main` 找修正（`git show --stat <候選>` 看是不是修這個失敗；候選沒有就 `git log vNEW..origin/main -- <輸出裡的檔>` 自己找），`git cherry-pick -x <那個 commit>` 進來（算 MANUAL；它的 mutation 證明就是改回去那一步會紅；之後 rebase 到含它的 release 時 git 會以相同 patch 略過，所以不要改動這個 commit；cherry-pick 有衝突而採了 vNEW 那側時 patch 會不同、不會自動略過，這時同一個 run 就寫 known-resolutions 條目，讓下一次 rebase 用標題找到它丟掉），它若新增只有 `en.json` 的 key，**另一個 commit** 補齊其他語系的翻譯（fork-locale-parity 以 vNEW 為基底，會把它們算成 fork key）。上游 `main` 也沒修 → 第 8 步回報。標了 `fork-check-lint skips it` 的那步閘門本來就不跑，不用處理。閘門裡紅、基準裡沒有的步驟是 fork 造成的，要修；同一步兩邊都紅時，比對兩份輸出，多出來的那幾行才是 fork 的。
@@ -109,7 +113,7 @@ pnpm run ensure:electron-runtime && LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 npx playwr
 
 ## 3. 推上去：CI 與盲審並行
 
-- 第 2 步有修正 commit 就 `git push --force fork HEAD:refs/heads/rebase/vNEW`；PR 第 1 步已開（RESUME 沿用既有 PR），CI 跟著 head 跑。**推完不等 CI，先做第 4 步啟動全部審查者**（它們是背景行程），再回來這裡等 CI（約 10 分鐘，通常比審查先完成），CI 結束後才去等審查者。
+- 第 2 步有修正 commit 就 `git push --force fork HEAD:refs/heads/rebase/vNEW`；PR 第 1 步已開（RESUME 沿用既有 PR），CI 跟著 head 跑。推完直接 `gh-wait pr`，不用先 sleep 或 `gh run list` 找 run id。**推完不等 CI，先做第 4 步啟動全部審查者**（它們是背景行程），再回來這裡等 CI（約 10 分鐘，通常比審查先完成），CI 結束後才去等審查者。
 - CI：照上面「等待」的方式 `gh-wait pr PR -R audichuang/orca -t 9`，看「Fork PR checks passed」。有 job 紅：`gh run list -R audichuang/orca --workflow fork-pr.yml --commit <head> --limit 1 --json databaseId` 取 run id，先 `gh run rerun <id> --failed -R audichuang/orca` **自動重跑一次**再 `gh-wait run <id> -R audichuang/orca -t 9`（偶發失敗，例如會讀剪貼簿的 e2e，在 CI 層重跑；fork-check 目標裡不加任何豁免）。同一個 job 第二次還紅才算真的失敗：看 `gh run view <id> --log-failed -R audichuang/orca`，照第 2 步的失敗處理對照；fork e2e 失敗另外照 FORK.md「When a fork e2e goes red」下載 artifact 看 `shots/`。spec 在 vNEW 存在就在 vNEW 跑；是 fork 自己的 spec（上游沒有）就在 OLD_DEVELOP 跑（`git worktree add --detach ../ar-$RUN-olddev OLD_DEVELOP && (cd ../ar-$RUN-olddev && pnpm install --frozen-lockfile)`，只重現那一個 spec，用第 2 步的 playwright 指令）。舊 develop 上也失敗 = fork 既有問題，不擋這次 rebase，但要在通知裡列為「develop 既有紅測試」。修正 commit 換了 head，審查者照第 5 步看修正的部分。重跑過的 job 在第 8 步的通知裡註明。
 - CI 結果（綠，或每個紅 job 與對照）貼成 PR 留言。留言也是心跳：precheck 看 PR 的更新時間判斷這個 run 還活著，所以第 4、5 步每個階段開始時也各留一則短留言（「盲審開始」「第 2 輪審查開始」）。
 
