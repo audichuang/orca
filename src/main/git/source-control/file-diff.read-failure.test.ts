@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('./git-blob-read', () => ({
+  blobConversion: vi.fn(
+    (_worktree: string, _file: string, _options: unknown, mode = 'textconv') => ({
+      mode,
+      hasDriver: Promise.resolve(false)
+    })
+  ),
   readGitBlobAtIndexPath: vi.fn(() => Promise.reject(new Error('spawn failed'))),
   readGitBlobAtOidPath: vi.fn(() => Promise.reject(new Error('spawn failed'))),
   readUnstagedLeftBlob: vi.fn(() => Promise.reject(new Error('spawn failed'))),
