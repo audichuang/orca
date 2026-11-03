@@ -7,5 +7,18 @@
   "enabledPlugins": {
     "orca-typescript@orca-agent-plugins": true,
     "typescript-lsp@claude-plugins-official": false
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/config/scripts/zsh-colon-modifier-guard.mjs\""
+          }
+        ]
+      }
+    ]
   }
 }
