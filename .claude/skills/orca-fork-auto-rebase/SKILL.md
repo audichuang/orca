@@ -49,6 +49,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
   - 它對 `ci-base/vX` 的 PR 還開著、沒有這三種留言（見上一項與下一項）→ **RESUME**：`git checkout --detach fork/rebase/vX`，vNEW=vX，PR=那個 PR。OLD_DEVELOP 取 PR 說明裡的 `<!-- auto-rebase:old-develop <sha> -->`，不要重算：develop 在這期間可能已經合進別的 PR，重算會讓第 6 步的 lease 通過、把那些 PR 從 develop 蓋掉。說明裡沒有這行（舊 PR）→ 照常驗證，但第 6 步一律不移動。先在 PR 留言「resume 開始（RUN=$RUN）」：鎖是因為過期才讓你跑到這，不留言的話，下一次排程還會判定過期、再開一個 RESUME 把你的 worktree 刪掉。適用的筆記條目看 PR 說明裡第 1 步列的那幾條。從第 2 步開始；CLEAN/MANUAL 依 PR 說明（有手動解衝突或額外 commit 就是 MANUAL）。
   - PR 開著、已有 `<!-- auto-rebase:verified -->` 或 `<!-- auto-rebase:needs-human -->` 留言（等人審或等人接手）：precheck 只在這把鎖過時才讓你跑到這（上游有比 vX 新的 release，或 develop 的基底已經是 vX）。
     - develop 的基底已是 vX、`git ls-remote fork refs/heads/develop` 等於 `rebase/vX` 的 tip、`git ls-remote fork 'refs/tags/vX-fork.*'` 沒有指著它的 tag（annotated tag 要比對 `^{}` 那行，那才是 commit；使用者照 verified 留言推了 develop，沒發版也沒收鎖）→ vNEW=vX，PR=那個 PR，留言 `<!-- auto-rebase:develop-moved <那個 sha> -->`，做第 7 步（vOLD 等取 PR 說明，同上一項）。
+    - 同上，但 develop 的 tip 在 `rebase/vX` 的 tip 之後多了 PR 合併（使用者推了 develop 之後又合了 PR，v1.4.247 的 #112）：`rebase/vX` 的 tip 是 develop 的 first-parent 祖先，而且 develop 的 tip 照 FORK.md「Release」可以發（`git log --first-parent <rebase/vX 的 tip>..<develop 的 tip>` 每個 commit 都是 PR 用 merge 方法合的 merge commit、那個 PR 的 Fork PR checks 綠；docs-only 的照那節的祖先規則）→ 一樣當成這一項，sha 用 develop 的 tip，PR 留言寫明多了哪些 PR。有一個不符合（直接推的 commit、非 merge 方法合的 PR、checks 沒綠）就照下面收鎖，通知裡寫原因。
     - 其他（被更新的 release 取代，或 develop 已經是別的樣子）→ **收鎖**：`rebase/vX` 的 tip 不在 `fork/develop` 或 `fork/backup/*` 上就先 `git push fork "fork/rebase/vX:refs/heads/backup/rebase-vX-$RUN"`；PR 留言說明原因（「上游已發 vNEW，改從新版重來；這次的處理見 PR 說明與 resolution-history.md」或「develop 已在 vX」）後 `gh pr close`，刪 fork 的 `rebase/vX` 與 `ci-base/vX`。PR 說明裡第 1 步列的解法、第 5 步的審查結論、卡住的原因，照第 8 步「寫筆記」記進筆記（前一次 run 已寫過就不重寫）。然後重新判斷：vNEW == vOLD 就結束、不推通知；否則 **NEW**。
   - 沒有開著的 PR（前一次 run 在開 PR 前就死了，預檢判定鎖已過期才會讓你跑到這）→ 先確認刪了不會丟東西：`rebase/vX` 的 tip 訊息是 `auto-rebase lock vX`，或 `git branch -r --contains fork/rebase/vX` 列得出 `fork/develop` 或 `fork/backup/`。不是的話（可能是使用者關了 PR 繼續在上面做），先 `git push fork fork/rebase/vX:refs/heads/backup/rebase-vX-$RUN` 備份。然後 `git push fork --delete rebase/vX`，再另外 `git push fork --delete ci-base/vX`（不存在會報錯，忽略），當成 **NEW** 重來。
 - 沒有 `rebase/*` 且 vNEW == vOLD → 結束，不推通知。
@@ -196,7 +197,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
 2. 發版說明寫進檔案（中文、使用者看得到的變化）。格式照上一個 fork tag：`prev=$(git describe --tags --abbrev=0 --match 'v*-fork.*' fork/main)`、`git tag -l --format='%(contents)' "$prev"`。第一行「跟上上游 Orca vNEW，fork 功能（…）全部保留。」，接著 4–6 點整理 `gh release view vNEW -R stablyai/orca --json body` 的「The short version」，最後一點寫這次 fork 自己的修正（第 1、5 步的修正 commit 有使用者看得到的就寫，例如新語系的 fork 翻譯）。
 3. 打 tag 並推（zsh：變數後接 `:` 一律寫 `${}`）：
    ```sh
-   sha=<第 6 步的 head 完整 sha>; [ "$(git ls-remote fork refs/heads/develop | cut -f1)" = "$sha" ] || { echo "develop 已不是驗過的 head，不發版"; exit 1; }
+   sha=<第 6 步的 head 完整 sha，或第 0 步判定的 develop tip>; [ "$(git ls-remote fork refs/heads/develop | cut -f1)" = "$sha" ] || { echo "develop 已不是驗過的 head，不發版"; exit 1; }
    old=$(git ls-remote fork refs/heads/main | cut -f1)
    git tag -a "vNEW-fork.N" "${sha}" -F <notes 檔> && git push --atomic --force-with-lease="main:${old}" fork "${sha}:main" "vNEW-fork.N"
    ```
