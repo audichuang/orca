@@ -114,6 +114,7 @@ async function readIndexContent(
   // Why: the working tree is a different version; copying it for a staged row would paste unstaged edits.
   try {
     // Why: the viewer's render limit blanks big blobs; ask for the full index text (old hosts ignore the flag).
+    // Staged and HEAD sides arrive textconv-converted; accepted risk, see FORK.md "Accepted risks".
     const diff = await readers.readDiff(context, {
       filePath: entry.path,
       staged: true,
