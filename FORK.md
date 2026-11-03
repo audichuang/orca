@@ -24,6 +24,7 @@ The user decided not to fix these. A review finding that falls under one is NON-
 ## Merge gate
 
 - Fork CI (below) is the merge gate for every rebase and every merge into `develop`; it runs upstream's full unit suite (`FORK_TESTS=all`), like upstream's own PR CI. Locally, `make fork-check` is the fast pre-check: `pnpm tc`, `vitest --changed $(FORK_BASE)`, the changed-code quality gate and `fork-check-lint`.
+- The fork has auto-merge turned off, so `gh pr merge --auto` fails: wait with `gh-wait pr <n> -R audichuang/orca`, then `gh pr merge <n> --merge` (merge commit, not squash or rebase; see Release).
 - Run the quality gate alone as `pnpm run check:code-quality:changed <tag>`, where `<tag>` is the `>> fork base:` line `make fork-check` prints (`git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' HEAD`).
 - Local `--changed` does not run the tests that read source as text instead of importing it; only CI's full suite does.
 - `make fork-check-e2e` runs the folder multi-repo e2e plus every e2e spec the fork added or changed since `FORK_BASE`, all in the `electron-headless` project, so a fork test tagged `@headful` never runs there.
