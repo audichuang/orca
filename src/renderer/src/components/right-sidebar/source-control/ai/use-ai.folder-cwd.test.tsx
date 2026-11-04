@@ -21,7 +21,7 @@ import {
   makeWorktree,
   TEST_REPO
 } from '@/store/slices/worktrees-slice-test-fixtures'
-import { clearHostAgentMenuSettingsForTests } from '@/components/settings/use-host-agent-launch-preferences'
+import { clearHostAgentMenuSettingsForTests } from '@/runtime/agent-launch-settings/host-agent-launch-preferences-resource'
 import { useSourceControlAi } from './use-ai'
 
 // Fork: a folder workspace's repo conflicts launch the agent in the folder workspace, started in the repo.
