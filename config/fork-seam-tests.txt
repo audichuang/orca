@@ -114,7 +114,7 @@ src/renderer/src/app-shell/git-graph-command-handler.test.ts
 src/renderer/src/app-shell/git-graph-shortcut.keybindings.test.ts
 
 # Updater: fork distribution
-src/main/updater.fork-distribution.test.ts
+src/main/updater/updater.fork-distribution.test.ts
 src/main/updater/fork-distribution.test.ts
 src/main/updater/updater-nudge.fork.test.ts
 
