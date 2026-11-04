@@ -43,14 +43,16 @@ it('offers a chat-only agent at the folder root but not for a repo below it', as
   await acquireAgentLaunchChoices(folder, async () => [])
   const state = useAppStore.getState()
   expect(agentChoiceMayOpenAsChat(state, 'antigravity', folder, [])).toBe(true)
-  expect(agentChoiceMayOpenAsChat(state, 'antigravity', folder, [], { cwd: '/work' })).toBe(true)
-  expect(agentChoiceMayOpenAsChat(state, 'antigravity', folder, [], { cwd: '/work/repo-1' })).toBe(
-    false
-  )
+  expect(
+    agentChoiceMayOpenAsChat(state, 'antigravity', folder, [], undefined, { cwd: '/work' })
+  ).toBe(true)
+  expect(
+    agentChoiceMayOpenAsChat(state, 'antigravity', folder, [], undefined, { cwd: '/work/repo-1' })
+  ).toBe(false)
   expect(agentsOfferedForLaunch(state, folder, [])).toContain('antigravity')
-  expect(agentsOfferedForLaunch(state, folder, [], { cwd: '/work/repo-1' })).not.toContain(
-    'antigravity'
-  )
+  expect(
+    agentsOfferedForLaunch(state, folder, [], undefined, { cwd: '/work/repo-1' })
+  ).not.toContain('antigravity')
 })
 
 it('picks a chat-only default agent at the folder root but not for a repo below it', async () => {
@@ -82,7 +84,7 @@ it('refuses a chat-only agent below the folder root before the host catalog is l
   const state = useAppStore.getState()
   // Unlearned catalog: the root launch is still pending, so it may open as a chat.
   expect(agentChoiceMayOpenAsChat(state, 'antigravity', folder, [])).toBe(true)
-  expect(agentChoiceMayOpenAsChat(state, 'antigravity', folder, [], { cwd: '/work/repo-1' })).toBe(
-    false
-  )
+  expect(
+    agentChoiceMayOpenAsChat(state, 'antigravity', folder, [], undefined, { cwd: '/work/repo-1' })
+  ).toBe(false)
 })
