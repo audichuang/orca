@@ -59,6 +59,19 @@ describe('ClipcodeRestorePreviewDialog', () => {
     expect(screen.getByText('new.ts')).toBeInTheDocument()
   })
 
+  it('cancels the restore when the dialog is dismissed without the Cancel button', () => {
+    const onCancel = vi.fn()
+    render(
+      <ClipcodeRestorePreviewDialog
+        pending={{ rootPath: '/f', entries, suggestion: undefined, states: new Map() }}
+        onCancel={onCancel}
+        onConfirm={vi.fn()}
+      />
+    )
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(onCancel).toHaveBeenCalledTimes(1)
+  })
+
   it('disables Restore when there is nothing to do', () => {
     render(
       <ClipcodeRestorePreviewDialog
