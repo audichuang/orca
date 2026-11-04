@@ -26,6 +26,7 @@ vi.mock('@/lib/host-chat-program', () => ({
     _agent: unknown,
     workspace: unknown,
     _detected: unknown,
+    _preferredSurface: unknown,
     launchAt?: { cwd?: string | null }
   ) => mocks.mayOpenAsChat(workspace, launchAt?.cwd)
 }))
