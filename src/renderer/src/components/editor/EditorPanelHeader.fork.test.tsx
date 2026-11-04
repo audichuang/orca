@@ -11,7 +11,8 @@ vi.mock('@/store', () => ({
   useAppStore: (selector: (state: Record<string, unknown>) => unknown) =>
     selector({ activeGroupIdByWorktree: {}, settings: {}, updateSettings: vi.fn() })
 }))
-vi.mock('@/store/worktree-diff-comments-selector', () => ({
+vi.mock('@/store/worktree-diff-comments-selector', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   selectWorktreeDiffCommentsOrEmpty: () => []
 }))
 vi.mock('./EditorPanelHeaderPath', () => ({ EditorPanelHeaderPath: () => null }))
