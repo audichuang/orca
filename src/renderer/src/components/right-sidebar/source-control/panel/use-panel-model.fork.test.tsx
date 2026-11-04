@@ -11,6 +11,8 @@ import {
   WORKTREE
 } from './folder-source-control-test-fixture'
 import { SourceControlPanelReady } from './panel-ready'
+import { commitFileTargets } from '../sync/commit-file-sequence'
+import type { GitHistoryItem } from '../../../../../../shared/git-history'
 import { useSourceControlPanelModel } from './use-panel-model'
 
 beforeEach(() => {
@@ -47,6 +49,47 @@ it('opens a repo note through the panel into the folder editor', () => {
       worktreeId: FOLDER,
       gitWorktreeId: WORKTREE.id,
       filePath: `${REPO.path}/a.ts`
+    })
+  ])
+})
+
+it('opens a repo commit file through the panel into the folder editor', async () => {
+  const item: GitHistoryItem = {
+    id: 'c'.repeat(40),
+    parentIds: ['p'.repeat(40)],
+    subject: 'fix',
+    message: 'fix',
+    timestamp: 1
+  }
+  const entries = [{ path: 'a.ts', status: 'modified' as const }]
+  const api = resetFolderSourceControl()
+  const commitCompare = vi.fn(async () => ({
+    summary: {
+      commitOid: item.id,
+      parentOid: item.parentIds[0],
+      compareRef: item.id.slice(0, 7),
+      baseRef: 'p'.repeat(7),
+      status: 'ready',
+      changedFiles: 1
+    },
+    entries
+  }))
+  vi.stubGlobal('api', { ...api, git: { ...api.git, commitCompare } })
+  const { result } = renderHook(useSourceControlPanelModel, { wrapper: FolderScope })
+  await act(async () => {
+    await result.current.loadCommitFiles(item)
+  })
+  expect(commitCompare).toHaveBeenCalled()
+  act(() =>
+    result.current.openCommitFile(item, entries[0]!, undefined, {
+      sequence: commitFileTargets(item, entries)
+    })
+  )
+  expect(useAppStore.getState().openFiles).toEqual([
+    expect.objectContaining({
+      worktreeId: FOLDER,
+      gitWorktreeId: WORKTREE.id,
+      relativePath: 'a.ts'
     })
   ])
 })
