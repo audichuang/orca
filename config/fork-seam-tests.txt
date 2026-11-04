@@ -40,6 +40,7 @@ src/renderer/src/components/right-sidebar/source-control/commit/bulk-action-bar.
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-format.contract.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-restore.contract.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-target-state.ipc-edge.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-preview-dialog.test.tsx
 
 # Explorer: Duplicate as _result.txt menu item, naming, exclusive copy, open
 src/renderer/src/components/right-sidebar/file-explorer-duplicate-as-result.fork.test.tsx
@@ -71,6 +72,7 @@ src/renderer/src/components/right-sidebar/source-control/listing/split-open.test
 # git-graph tab type: hydration, editor tabs, layout, runtime graph sync
 src/renderer/src/runtime/sync-runtime-graph-git-graph-tab.test.ts
 src/renderer/src/store/slices/editor-git-graph-tabs.test.ts
+src/renderer/src/store/slices/editor-git-graph-split-open.test.ts
 src/renderer/src/store/slices/editor/tabs/open-file-layout-view.fork.test.ts
 src/renderer/src/store/slices/tabs-hydration-git-graph.test.ts
 src/renderer/src/components/tab-group/TabGroupPanel.git-graph-button.test.tsx
