@@ -99,3 +99,21 @@ describe('Git Graph tab: open a commit file diff beside the graph', () => {
     expect(store.getState().groupsByWorktree[WS]).toHaveLength(1)
   })
 })
+
+describe('Git Graph tab: reopening without a target group', () => {
+  it('focuses the graph in its own group instead of duplicating it into the active one', () => {
+    const { store, graphTab, resolve } = setup()
+    const graphGroupId = graphTab()?.groupId
+    const side = resolve(ALT_CLICK)
+    openCommitFileDiff(store, 'src/a.ts', side)
+    expect(store.getState().activeGroupIdByWorktree[WS]).toBe(side)
+
+    store.getState().openGitGraphTab(WS)
+
+    const graphTabs = (store.getState().unifiedTabsByWorktree[WS] ?? []).filter(
+      (tab) => tab.contentType === 'git-graph'
+    )
+    expect(graphTabs.map((tab) => tab.groupId)).toEqual([graphGroupId])
+    expect(store.getState().activeGroupIdByWorktree[WS]).toBe(graphGroupId)
+  })
+})
