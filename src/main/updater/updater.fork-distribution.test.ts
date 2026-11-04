@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { BrowserWindow } from 'electron'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadUpdaterModule, warmUpdaterModule } from './updater-test-module-loader'
+import { loadUpdaterModule, warmUpdaterModule } from './testing/updater-test-module-loader'
 
 const {
   appMock,
@@ -12,20 +12,22 @@ const {
   fetchNudgeMock,
   moduleFactories,
   resetUpdaterMocks
-} = await vi.hoisted(async () => (await import('./updater-test-harness')).createUpdaterMocks())
+} = await vi.hoisted(async () =>
+  (await import('./testing/updater-test-harness')).createUpdaterMocks()
+)
 
 vi.mock('electron', () => moduleFactories.electron())
 vi.mock('electron-updater', () => moduleFactories.electronUpdater())
 vi.mock('./electron-updater-loader', () => moduleFactories.electronUpdaterLoader())
-vi.mock('./ipc/pty/kill-all', () => moduleFactories.ptyKillAll())
-vi.mock('./linux-update-package-type', () => moduleFactories.linuxUpdatePackageType())
+vi.mock('../ipc/pty/kill-all', () => moduleFactories.ptyKillAll())
+vi.mock('./linux-package/linux-update-package-type', () => moduleFactories.linuxUpdatePackageType())
 vi.mock('./updater-lifecycle-diagnostics', () => moduleFactories.updaterLifecycleDiagnostics())
-vi.mock('./updater-changelog', () => moduleFactories.updaterChangelog())
-vi.mock('./updater-nudge', () => moduleFactories.updaterNudge())
+vi.mock('./releases/updater-changelog', () => moduleFactories.updaterChangelog())
+vi.mock('./nudges/nudge-campaign', () => moduleFactories.updaterNudge())
 vi.mock('./update-install-exit-watchdog', () => moduleFactories.updateInstallExitWatchdog())
-vi.mock('./updater-prerelease-feed', () => moduleFactories.updaterPrereleaseFeed())
-vi.mock('./local-builds/local-build-switch', () => moduleFactories.localBuildSwitch())
-vi.mock('./local-builds/local-build-feed-server', () => moduleFactories.localBuildFeedServer())
+vi.mock('./releases/updater-prerelease-feed', () => moduleFactories.updaterPrereleaseFeed())
+vi.mock('../local-builds/local-build-switch', () => moduleFactories.localBuildSwitch())
+vi.mock('../local-builds/local-build-feed-server', () => moduleFactories.localBuildFeedServer())
 
 warmUpdaterModule()
 
