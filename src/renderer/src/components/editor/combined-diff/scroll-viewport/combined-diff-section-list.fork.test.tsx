@@ -40,6 +40,7 @@ it('renders the repo review note inside a folder combined diff section', async (
       <CombinedDiffSectionList
         activeGroupId={undefined}
         canOpenWorkspaceFileBrowserForPath={() => false}
+        commentOwner={null}
         diffCommentsForWorktree={[]}
         file={folderFile({ filePath: ROOT })}
         handleSectionSaveRef={{ current: async () => {} }}
