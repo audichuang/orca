@@ -12,7 +12,7 @@ vi.mock('electron', () => ({
   }
 }))
 vi.mock('../../git/history', () => ({ getHistory: mocks.getHistory }))
-vi.mock('../registered-worktree-roots-cache', () => ({
+vi.mock('../worktrees/removal/registered-worktree-roots-cache', () => ({
   resolveRegisteredWorktreePath: async (path: string) => path
 }))
 vi.mock('../local-worktree-runtime-options', () => ({
