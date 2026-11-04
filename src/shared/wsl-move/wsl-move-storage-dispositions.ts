@@ -49,10 +49,7 @@ export const LOCAL_STORAGE_MODULE_DISPOSITIONS: Record<string, WslMoveFieldDispo
     ),
   // Fork-only: the folder Source Control's hidden-repo picks.
   'src/renderer/src/components/right-sidebar/source-control/folder/folder-sidebar-hidden-repos.ts':
-    notApplicableDisposition(
-      62,
-      'Keyed by execution host and repo path; a moved repo shows again and can be hidden again.'
-    ),
+    notApplicableDisposition(62, 'Keyed by host and repo path; a moved repo shows again.'),
   ...Object.fromEntries(
     [
       'src/renderer/src/components/browser-pane/annotate/use-markup-draw-hint.ts',
