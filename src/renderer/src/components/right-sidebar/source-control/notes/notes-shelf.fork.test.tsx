@@ -39,7 +39,7 @@ it('targets folder agents when sending notes from a repo shelf', () => {
         diffCommentsCopied={false}
         handleCopyDiffComments={async () => {}}
         setPendingDiffCommentsClear={() => {}}
-        deleteDiffComment={() => {}}
+        deleteDiffComment={async () => {}}
         handleOpenComment={() => {}}
       />
     </FolderScope>
