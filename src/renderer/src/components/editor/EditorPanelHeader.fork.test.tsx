@@ -5,7 +5,10 @@ import type { OpenFile } from '@/store/slices/editor'
 import type { DiffDirection } from './diff-change-boundary'
 import { EditorPanelHeader } from './EditorPanelHeader'
 
-const navigation = vi.hoisted((): { hint: DiffDirection | null } => ({ hint: null }))
+const navigation = vi.hoisted((): { hint: DiffDirection | null; changeCount: number } => ({
+  hint: null,
+  changeCount: 2
+}))
 
 vi.mock('@/store', () => ({
   useAppStore: (selector: (state: Record<string, unknown>) => unknown) =>
@@ -19,7 +22,7 @@ vi.mock('./EditorPanelHeaderPath', () => ({ EditorPanelHeaderPath: () => null })
 vi.mock('./EditorPanelActionsMenu', () => ({ EditorPanelActionsMenu: () => null }))
 vi.mock('./diff-navigation-context', () => ({
   useDiffNavigation: () => ({
-    changeCount: 2,
+    changeCount: navigation.changeCount,
     goToPreviousDiff: vi.fn(),
     goToNextDiff: vi.fn(),
     filePosition: { index: 2, total: 6 },
@@ -79,5 +82,21 @@ describe('EditorPanelHeader diff file sequence', () => {
     expect(renderToStaticMarkup(<EditorPanelHeader {...props} />)).toContain(
       'Press again to go to the next file'
     )
+  })
+})
+
+describe('EditorPanelHeader change arrows in a diff file list', () => {
+  it('keeps the arrows enabled on an unchanged file so they can step to its neighbours', () => {
+    navigation.hint = null
+    navigation.changeCount = 0
+    try {
+      const markup = renderToStaticMarkup(<EditorPanelHeader {...props} />)
+      expect(markup).toContain('aria-label="Previous change"')
+      expect(markup).toContain('aria-label="Next change"')
+      expect(markup).not.toMatch(/<button[^>]*disabled=""[^>]*aria-label="(Previous|Next) change"/)
+      expect(markup).not.toMatch(/<button[^>]*aria-label="(Previous|Next) change"[^>]*disabled=""/)
+    } finally {
+      navigation.changeCount = 2
+    }
   })
 })
