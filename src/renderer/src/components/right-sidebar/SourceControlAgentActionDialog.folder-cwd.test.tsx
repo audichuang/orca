@@ -22,7 +22,7 @@ import { useAppStore } from '@/store'
 import { makeFolderWorkspace } from '@/store/slices/worktrees-slice-test-fixtures'
 import { resetHostStructuredAgentsForTests } from '@/runtime/host-structured-agents'
 import { setLocalRuntimeCapabilitiesForTests } from '@/runtime/local-runtime-capabilities'
-import { clearHostAgentMenuSettingsForTests } from '../settings/use-host-agent-launch-preferences'
+import { clearHostAgentMenuSettingsForTests } from '@/runtime/agent-launch-settings/host-agent-launch-preferences-resource'
 import { useSavedSourceControlActionStart } from './use-saved-source-control-action-start'
 import { useSourceControlAgentActionDialog } from './useSourceControlAgentActionDialog'
 
