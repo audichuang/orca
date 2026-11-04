@@ -135,7 +135,12 @@ export function readAgentLaunchChoice(
   tuiCustomization?: AgentLaunchRouteArgs['tuiCustomization']
 ) {
   const context = resolveChatProgramContext(store, workspace)
-  const input = buildAgentLaunchRouteInput(store, { agent, workspace, preferredSurface, tuiCustomization })
+  const input = buildAgentLaunchRouteInput(store, {
+    agent,
+    workspace,
+    preferredSurface,
+    tuiCustomization
+  })
   const program = readChatProgram(store, agent, context, detected)
   const support = structuredAgentLaunchSupport(input)
   const catalogReady =
