@@ -2,7 +2,7 @@
 import { act, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { EditorPathMutationTarget } from '@/components/editor/editor-autosave'
+import type { EditorPathMutationTarget } from '@/components/editor/autosave/editor-autosave'
 import { runtimeTargetForOwnerEnvironment } from '@/runtime/runtime-client-target'
 import { SourceControlWorktreeScopeContext } from '../folder/worktree-scope'
 
@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => {
   }
 })
 vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => undefined }))
-vi.mock('@/components/editor/editor-autosave', () => ({
+vi.mock('@/components/editor/autosave/editor-autosave', () => ({
   requestEditorSaveQuiesce: mocks.quiesce,
   notifyEditorExternalFileChange: mocks.notify
 }))

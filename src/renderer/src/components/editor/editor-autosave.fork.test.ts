@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { OpenFile } from '@/store/slices/editor'
-import { getOpenFilesForExternalFileChange } from './editor-autosave'
+import { getOpenFilesForExternalFileChange } from './autosave/editor-autosave'
 
 function makeOpenFile(overrides: Partial<OpenFile> = {}): OpenFile {
   return {

@@ -12,7 +12,7 @@ import {
 } from './folder-source-control-test-fixture'
 import { SourceControlPanelReady } from './panel-ready'
 import { commitFileTargets } from '../sync/commit-file-sequence'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import { useSourceControlPanelModel } from './use-panel-model'
 
 beforeEach(() => {

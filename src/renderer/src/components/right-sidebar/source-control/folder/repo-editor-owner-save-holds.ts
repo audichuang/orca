@@ -1,7 +1,7 @@
 import {
   notifyEditorExternalFileChange,
   type EditorPathMutationTarget
-} from '@/components/editor/editor-autosave'
+} from '@/components/editor/autosave/editor-autosave'
 import {
   releaseEditorSaveHolds,
   requestEditorSaveQuiesceAll

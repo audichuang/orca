@@ -4,8 +4,8 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import type { GitStatusEntry } from '../../../../shared/git-status-types'
-import SourceControl from './SourceControl'
+import type { GitStatusEntry } from '../../../../shared/git/status/git-status-types'
+import SourceControl from './source-control/panel/SourceControl'
 import { SourceControlWorktreeScopeContext } from './source-control/folder/worktree-scope'
 
 const mocks = vi.hoisted(() => {
@@ -89,12 +89,12 @@ vi.mock('@/runtime/runtime-git-working-tree-client', async (importOriginal) => {
   }
 })
 
-vi.mock('@/components/editor/editor-autosave', () => ({
+vi.mock('@/components/editor/autosave/editor-autosave', () => ({
   requestEditorSaveQuiesce: mocks.calls.requestEditorSaveQuiesce,
   notifyEditorExternalFileChange: mocks.calls.notifyEditorExternalFileChange
 }))
 
-vi.mock('./git-status-refresh', () => ({
+vi.mock('./source-control/sync/git-status-refresh', () => ({
   refreshGitStatusForWorktree: mocks.calls.refreshGitStatusForWorktree
 }))
 
