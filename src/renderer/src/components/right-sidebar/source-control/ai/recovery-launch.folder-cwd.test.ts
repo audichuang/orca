@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
-import { sourceControlActionRecipeEntry } from '../../../../../../shared/source-control-action-selection'
+import { sourceControlActionRecipeEntry } from '../../../../../../shared/source-control/ai/recipes/source-control-action-selection'
 
 const mocks = vi.hoisted(() => {
   const detected: string[] = []

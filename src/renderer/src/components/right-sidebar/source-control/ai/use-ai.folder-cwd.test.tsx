@@ -3,7 +3,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { getDefaultSettings } from '../../../../../../shared/constants'
-import type { TuiAgent } from '../../../../../../shared/tui-agent'
+import type { TuiAgent } from '../../../../../../shared/agent-launch/catalog/tui-agent'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
 
 const { launchAgent } = vi.hoisted(() => ({ launchAgent: vi.fn() }))

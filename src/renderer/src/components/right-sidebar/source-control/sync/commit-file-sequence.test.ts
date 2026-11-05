@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
-import type { GitCommitCompareResult } from '../../../../../../shared/git-diff-compare-types'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
+import type { GitCommitCompareResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import { getDiffFilePosition } from '../../../editor/diff-file-sequence'
 import { commitDiffTabId } from '@/store/slices/editor/git/open-file-git-owner'
 import { openCommitFileInSequence, type CommitFileTarget } from './commit-file-sequence'
