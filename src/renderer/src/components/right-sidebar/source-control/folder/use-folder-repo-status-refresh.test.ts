@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 
 const refreshGitStatusForWorktree = vi.fn(async (..._args: unknown[]) => undefined)
-vi.mock('../../git-status-refresh', () => ({
+vi.mock('../sync/git-status-refresh', () => ({
   refreshGitStatusForWorktree: (...args: unknown[]) => refreshGitStatusForWorktree(...args)
 }))
 let ownerEnvironmentId: string | null = null
@@ -25,7 +25,8 @@ vi.mock('@/lib/worktree-git-copy', () => ({
 const { FOLDER_REPO_STATUS_INTERVAL_MS, useFolderRepoStatusRefresh } =
   await import('./use-folder-repo-status-refresh')
 const { useAppStore } = await import('@/store')
-const { ORCA_EDITOR_FILE_SAVED_EVENT } = await import('@/components/editor/editor-autosave')
+const { ORCA_EDITOR_FILE_SAVED_EVENT } =
+  await import('@/components/editor/autosave/editor-autosave')
 
 // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the hook reads only id, repoId and path.
 const wt = { id: 'r1::/ssh/r1', repoId: 'r1', path: '/r1' } as Worktree

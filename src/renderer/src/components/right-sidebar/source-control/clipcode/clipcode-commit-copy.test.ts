@@ -4,7 +4,7 @@ import type {
   GitBranchChangeEntry,
   GitDiffResult,
   GitDiffTextResult
-} from '../../../../../../shared/git-diff-compare-types'
+} from '../../../../../../shared/git/diff/git-diff-compare-types'
 import { CLIPCODE_DEFAULTS, DELETED_FILE_MARKER, parseClipboard } from './clipcode-clipboard-format'
 import {
   buildClipcodeCommitCopy,

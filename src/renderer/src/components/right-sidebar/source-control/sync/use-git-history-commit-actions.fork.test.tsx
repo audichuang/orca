@@ -4,7 +4,7 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import { getDiffFilePosition } from '../../../editor/diff-file-sequence'
 import { commitFileTargets } from './commit-file-sequence'
 import { useGitHistoryCommitActions } from './use-git-history-commit-actions'

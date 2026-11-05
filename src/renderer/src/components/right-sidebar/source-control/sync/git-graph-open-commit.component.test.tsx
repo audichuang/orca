@@ -5,8 +5,11 @@ import '@testing-library/jest-dom/vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
-import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
+import type {
+  GitHistoryItem,
+  GitHistoryResult
+} from '../../../../../../shared/git/history/git-history-types'
+import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
 
 const mocks = vi.hoisted(() => ({ getRuntimeGitHistory: vi.fn() }))
 vi.mock('@/runtime/runtime-git-status-client', () => ({

@@ -68,7 +68,7 @@ vi.mock('@/lib/open-in-app-catalog', () => ({
   OpenInApplicationIcon: () => null
 }))
 
-vi.mock('@/components/sidebar/WorktreeOpenInMenu', async () => {
+vi.mock('@/components/sidebar/workspace-actions/open/WorktreeOpenInMenu', async () => {
   const { getExternalEditorOpenCapability } = await import('@/lib/external-editor-open-capability')
   return {
     getOpenInEntryAvailability: (

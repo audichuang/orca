@@ -1,4 +1,4 @@
-import { requestEditorSaveQuiesce } from './editor-autosave'
+import { requestEditorSaveQuiesce } from './autosave/editor-autosave'
 
 type EditorSaveQuiesceTarget = Parameters<typeof requestEditorSaveQuiesce>[0]
 

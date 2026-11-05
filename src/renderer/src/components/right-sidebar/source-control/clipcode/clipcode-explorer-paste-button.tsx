@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { getFileExplorerOperationOwnerFromState } from '../../file-explorer-operation-owner'
+import { getFileExplorerOperationOwnerFromState } from '../../file-explorer/navigation/file-explorer-operation-owner'
 import { useFolderGitMembers } from '../folder/use-folder-git-members'
 import { useClipcodeRestore } from './use-clipcode-restore'
 

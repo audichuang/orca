@@ -1,7 +1,10 @@
 // Fork-only: loads the changed files of the full Git Graph's selected commits.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
-import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
+import type {
+  GitHistoryItem,
+  GitHistoryResult
+} from '../../../../../../shared/git/history/git-history-types'
+import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitHistoryCommitFilesState } from './git-history-commit-files'
 
 // Why bounded: a Shift range can cover hundreds of commits; the runtime RPC queue rejects past 256.
