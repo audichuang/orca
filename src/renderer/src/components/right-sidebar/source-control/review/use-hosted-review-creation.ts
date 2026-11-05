@@ -20,7 +20,7 @@ import type { PullRequestGenerationFields } from '@/store/slices/pull-request-ge
 import { useGenerateBeforeCreatePullRequest } from '../../hosted-review/creation/use-generate-before-create-pull-request'
 import { createdReviewIsForeground } from '../../hosted-review/creation/created-review-foreground'
 import { openAppHttpLink } from '@/lib/app-http-link-open'
-import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
+import { useSourceControlForeground } from '../folder/worktree-scope'
 
 /** Already-open and partial-stack failures can leave a real review that still needs linking. */
 export function useSourceControlHostedReviewCreation({
@@ -78,8 +78,7 @@ export function useSourceControlHostedReviewCreation({
   settings: SourceControlWorktreeContext['settings']
   worktreePath: string | null
 }) {
-  const scope = useSourceControlWorktreeScope()
-  const foreground = scope?.editorWorktreeId ?? activeWorktreeId
+  const { scope, foreground } = useSourceControlForeground(activeWorktreeId)
   const createPullRequest = useCallback(
     async (stacked = false, generated?: PullRequestGenerationFields): Promise<void> => {
       if (

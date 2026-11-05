@@ -33,6 +33,7 @@ import { useSourceControlRecoveryAi } from './use-recovery-ai'
 import { useConflictRecoveryComposer } from './use-conflict-recovery-composer'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
+import { folderRepoAgentPlacement } from '../folder/worktree-scope'
 
 export function getSourceControlAiControllerDiscoveryHostKey(
   target: SourceControlAiControllerParams['target'],
@@ -184,11 +185,8 @@ export function useSourceControlAi({
         }),
         recoveryContext,
         baseCommandInput: resolveConflictsPrompt,
-        // A folder repo's agent opens in the folder workspace, started inside the repo.
-        worktreeId: editorWorktreeId ?? activeWorktreeId,
+        ...folderRepoAgentPlacement(editorWorktreeId, activeWorktreeId, worktreePath),
         groupId: activeGroupId,
-        initialCwd:
-          editorWorktreeId && editorWorktreeId !== activeWorktreeId ? worktreePath : undefined,
         connectionId: activeConnectionId,
         repoId: activeRepo?.id,
         launchPlatform: activeSourceControlLaunchPlatform
