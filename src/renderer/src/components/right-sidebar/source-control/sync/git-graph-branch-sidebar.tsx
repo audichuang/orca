@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight, Cloud, GitBranch, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import { rovingKeyTarget } from './git-graph-roving-keys'
-import type { GitHistoryResult } from '../../../../../../shared/git-history'
+import type { GitHistoryResult } from '../../../../../../shared/git/history/git-history-types'
 import type { GitHistoryGraphRefOption } from '../../../../../../shared/git-history-graph-query-types'
 
 /** Matches the tree's `w-56`; the details pane reserves it when capping its width. */

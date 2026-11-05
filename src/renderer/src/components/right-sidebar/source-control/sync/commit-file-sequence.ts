@@ -1,10 +1,10 @@
 // Fork-only. openCommitFileInSequence holds the commit-file open moved out of upstream
 // useGitHistoryCommitActions.openCommitFile (cache lookup, compare fields, language, options).
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import type {
   GitBranchChangeEntry,
   GitCommitCompareResult
-} from '../../../../../../shared/git-diff-compare-types'
+} from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import { toCommitCompareSnapshot } from '@/store/slices/editor/git/git-status-reconciliation'
 import { registerDiffFileSequence } from '../../../editor/diff-file-sequence'

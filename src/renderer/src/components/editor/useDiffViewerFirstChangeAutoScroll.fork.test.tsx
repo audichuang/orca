@@ -6,8 +6,8 @@ import {
   DiffNavigationProvider,
   useDiffEditorRegistration,
   useDiffNavigation
-} from './diff-navigation-context'
-import { useDiffViewerFirstChangeAutoScroll } from './useDiffViewerFirstChangeAutoScroll'
+} from './diff/review/diff-navigation-context'
+import { useDiffViewerFirstChangeAutoScroll } from './diff/monaco-view/useDiffViewerFirstChangeAutoScroll'
 
 afterEach(() => {
   cleanup()

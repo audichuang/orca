@@ -1,6 +1,6 @@
 // Fork-only: a one-shot "select this commit" request for the full Git Graph (Show in Git Graph).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { GitHistoryResult } from '../../../../../../shared/git-history'
+import type { GitHistoryResult } from '../../../../../../shared/git/history/git-history-types'
 import { GIT_HISTORY_GRAPH_MAX_LIMIT } from '../../../../../../shared/git-history-graph-query-types'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'

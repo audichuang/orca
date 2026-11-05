@@ -2,8 +2,8 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
-import type { GitHistoryGraphColorId } from '../../../../../../shared/git-history'
-import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
+import type { GitHistoryGraphColorId } from '../../../../../../shared/git/history/git-history-types'
+import type { GitHistoryItemViewModel } from '../../../../../../shared/git/history/git-history-graph'
 import type { GitGraphLaneRow, GitGraphLaneSegment } from './git-graph-lane-layout'
 import {
   GitHistoryGraphNodeMarker,

@@ -1,6 +1,6 @@
 // Moved out of workspace-session.ts (upstream v1.4.237) so the fork's gitWorktreeId field keeps that file under max-lines; port upstream edits of buildSanitizedTabsByWorktree here.
-import { pendingAgentLaunchPane } from '../../../shared/agent-launch-pane-verdict'
-import type { WorkspaceSessionState } from '../../../shared/workspace-session-state-types'
+import { pendingAgentLaunchPane } from '../../../shared/agent-launch/contracts/agent-launch-pane-verdict'
+import type { WorkspaceSessionState } from '../../../shared/workspace-session/workspace-session-state-types'
 import type { WorkspaceSessionSnapshot } from './workspace-session'
 
 export function buildSanitizedTabsByWorktree(

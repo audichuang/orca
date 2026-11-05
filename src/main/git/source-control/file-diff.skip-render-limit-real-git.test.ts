@@ -4,7 +4,10 @@ import { rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { GitDiffResult, GitDiffTextResult } from '../../../shared/git-diff-compare-types'
+import type {
+  GitDiffResult,
+  GitDiffTextResult
+} from '../../../shared/git/diff/git-diff-compare-types'
 import { createLocalGitProvider } from '../../providers/local-git-provider'
 import { getDiff } from './file-diff'
 import { invalidateGitReadCaches, settledDiffCache } from './git-read-cache-invalidation'
