@@ -1,5 +1,5 @@
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
-import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
+import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitHistoryCommitFilesState } from './git-history-commit-files'
 import type { CommitFileTarget } from './commit-file-sequence'
 

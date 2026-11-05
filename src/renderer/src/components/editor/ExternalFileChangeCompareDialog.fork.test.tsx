@@ -7,7 +7,7 @@ import {
   installFolderRuntime,
   seedFolderGitOwner
 } from './folder-git-owner.test-fixture'
-import { ExternalFileChangeCompareDialog } from './ExternalFileChangeCompareDialog'
+import { ExternalFileChangeCompareDialog } from './external-changes/ExternalFileChangeCompareDialog'
 
 vi.mock('@monaco-editor/react', () => ({ DiffEditor: () => null }))
 afterEach(cleanup)

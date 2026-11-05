@@ -4,9 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import type { OpenFile } from '@/store/slices/editor'
-import type { GitBranchCompareSummary } from '../../../../../shared/git-diff-compare-types'
+import type { GitBranchCompareSummary } from '../../../../../shared/git/diff/git-diff-compare-types'
 import { makeWorktree, TEST_REPO } from '@/store/slices/worktrees-slice-test-fixtures'
-import type { GitStatusEntry } from '../../../../../shared/git-status-types'
+import type { GitStatusEntry } from '../../../../../shared/git/status/git-status-types'
 
 vi.mock('@monaco-editor/react', () => ({ DiffEditor: () => null }))
 vi.mock('@/lib/monaco-setup', () => ({

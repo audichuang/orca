@@ -5,10 +5,10 @@ import { useAppStore } from '@/store'
 import {
   ORCA_EDITOR_FILE_SAVED_EVENT,
   type EditorFileSavedDetail
-} from '@/components/editor/editor-autosave'
+} from '@/components/editor/autosave/editor-autosave'
 import { isPathInsideOrEqual } from '../../../../../../shared/cross-platform-path'
 import type { Worktree } from '../../../../../../shared/worktree/types'
-import { refreshGitStatusForWorktree } from '../../git-status-refresh'
+import { refreshGitStatusForWorktree } from '../sync/git-status-refresh'
 
 export const FOLDER_REPO_STATUS_INTERVAL_MS = 20_000
 const REPO_NUDGE_DEBOUNCE_MS = 400

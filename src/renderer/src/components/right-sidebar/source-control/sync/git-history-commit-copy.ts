@@ -1,9 +1,9 @@
 // Fork-only: Copy Full Source for commits in the history graph.
 import { getConnectionId } from '@/lib/connection-context'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
-import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
-import { requireGitOwnerTarget } from '../../worktree-git-owner-target'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
+import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
+import { requireGitOwnerTarget } from './worktree-git-owner-target'
 import { copyClipcodeCommitChanges, getClipcodeRootPath } from '../clipcode/clipcode-copy-action'
 import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
 
