@@ -39,3 +39,24 @@ export function resolveTabOwners(
 export function useSourceControlOwners(repoWorktreeId: string): TabOwners {
   return resolveTabOwners(useSourceControlWorktreeScope()?.editorWorktreeId, repoWorktreeId)
 }
+
+/** The panel's scope and the worktree that shows what it opens: the folder workspace when scoped. */
+export function useSourceControlForeground<W>(activeWorktreeId: W): {
+  scope: SourceControlWorktreeScope | null
+  foreground: string | W
+} {
+  const scope = useSourceControlWorktreeScope()
+  return { scope, foreground: scope?.editorWorktreeId ?? activeWorktreeId }
+}
+
+/** Where a folder repo section's agent launches: the folder workspace, started inside the repo. */
+export function folderRepoAgentPlacement<W, P>(
+  editorWorktreeId: string | null | undefined,
+  activeWorktreeId: W,
+  repoPath: P
+): { worktreeId: string | W; initialCwd: P | undefined } {
+  return {
+    worktreeId: editorWorktreeId ?? activeWorktreeId,
+    initialCwd: editorWorktreeId && editorWorktreeId !== activeWorktreeId ? repoPath : undefined
+  }
+}

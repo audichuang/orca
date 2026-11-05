@@ -1,28 +1,28 @@
 // Fork-only: commit row wrapper for Cmd/Ctrl/Shift-click selection (multi-commit Copy Full Source).
 import React from 'react'
 import { cn } from '@/lib/utils'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
+import type { GitHistoryCommitSelection } from './use-git-history-commit-selection'
 
 type GitHistorySelectableRowProps = React.HTMLAttributes<HTMLDivElement> & {
-  selected: boolean
-  /** Returns true when the click was a selection gesture; the row then must not also expand. */
-  onSelectionClick: (event: React.MouseEvent) => boolean
+  selection: Pick<GitHistoryCommitSelection, 'isSelected' | 'handleRowClick'>
+  /** The row's commit, or null for a row that cannot be selected (the base-ref boundary). */
+  item: GitHistoryItem | null
 }
 
 // Why forwardRef and prop spread: it is the ContextMenuTrigger asChild target.
 export const GitHistorySelectableRow = React.forwardRef<
   HTMLDivElement,
   GitHistorySelectableRowProps
->(function GitHistorySelectableRow(
-  { selected, onSelectionClick, className, children, ...rest },
-  ref
-) {
+>(function GitHistorySelectableRow({ selection, item, className, children, ...rest }, ref) {
   return (
     <div
       ref={ref}
       {...rest}
-      className={cn(selected && 'bg-accent', className)}
+      className={cn(item && selection.isSelected(item.id) && 'bg-accent', className)}
       onClickCapture={(event) => {
-        if (onSelectionClick(event)) {
+        // A selection gesture must not also expand the row.
+        if (item && selection.handleRowClick(item, event)) {
           event.preventDefault()
           event.stopPropagation()
         }
