@@ -9,7 +9,7 @@ import type { Worktree } from '../../../../../../shared/worktree/types'
 import {
   ORCA_EDITOR_FILE_SAVED_EVENT,
   type EditorFileSavedDetail
-} from '../../../editor/editor-autosave'
+} from '../../../editor/autosave/editor-autosave'
 import { useFolderRepoStatusRefresh } from './use-folder-repo-status-refresh'
 
 // No mocks of git-status-refresh / owner-target / connection-context: only the IPC edge is stubbed,

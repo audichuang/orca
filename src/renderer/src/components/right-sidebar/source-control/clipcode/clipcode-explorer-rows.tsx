@@ -1,8 +1,8 @@
 // Fork-only: upstream's explorer rows plus the ClipCode actions their context menus read.
 import { useMemo } from 'react'
 import type React from 'react'
-import { FileExplorerVirtualRows } from '../../FileExplorerVirtualRows'
-import type { TreeNode } from '../../file-explorer-types'
+import { FileExplorerVirtualRows } from '../../file-explorer/panel/FileExplorerVirtualRows'
+import type { TreeNode } from '../../file-explorer/tree/file-explorer-types'
 import { DuplicateAsResultRefreshContext } from '../../file-explorer-duplicate-as-result'
 import { ClipcodeExplorerActionsContext } from './clipcode-actions-context'
 import { copyClipcodeExplorerTargets } from './clipcode-copy-action'

@@ -1,6 +1,6 @@
 // Fork-only: walks several branches for the Source Control graph. Upstream's loader stays HEAD-only.
-import { loadGitHistoryFromExecutor } from './git-history'
-import { GIT_HISTORY_COMMIT_FORMAT, parseGitHistoryLog } from './git-history-log-parser'
+import { loadGitHistoryFromExecutor } from './git/history/git-history-execution'
+import { GIT_HISTORY_COMMIT_FORMAT, parseGitHistoryLog } from './git/history/git-history-log-parser'
 import {
   GIT_HISTORY_GRAPH_MAX_LIMIT,
   GIT_HISTORY_GRAPH_REF_LIST_LIMIT,
@@ -12,9 +12,9 @@ import {
   type GitHistoryExecutor,
   type GitHistoryOptions,
   type GitHistoryResult
-} from './git-history-types'
-import { isSafeGitRefName } from './git-status-upstream-ref'
-import { isSafeGitRemoteName } from './git-push-target-validation'
+} from './git/history/git-history-types'
+import { isSafeGitRefName } from './git/status/git-status-upstream-ref'
+import { isSafeGitRemoteName } from './git/remotes/git-push-target-validation'
 
 // Why so strict: these become git argv; a glob, rev syntax or leading dash would widen or redirect the walk.
 function isWalkableRef(ref: string): boolean {

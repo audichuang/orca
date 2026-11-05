@@ -1,6 +1,6 @@
 // Fork-only: which repo worktrees a Git Graph editor tab can show, and which one it opens on.
 import type { AppState } from '@/store/types'
-import type { FolderWorkspace } from '../../../../shared/folder-workspace-types'
+import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
 import type { Repo } from '../../../../shared/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
