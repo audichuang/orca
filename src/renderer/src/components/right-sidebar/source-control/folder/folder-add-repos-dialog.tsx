@@ -12,7 +12,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import type { FolderWorkspace } from '../../../../../../shared/folder-workspace-types'
+import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
 import type { NestedRepoCandidate } from '../../../../../../shared/project-group-types'
 import {
   FOLDER_NESTED_REPO_SCAN_OPTIONS,

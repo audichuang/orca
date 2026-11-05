@@ -3,7 +3,7 @@ import { act, cleanup, render, screen } from '@testing-library/react'
 import { StrictMode, Suspense, type ComponentProps } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { loader } from '@monaco-editor/react'
-import { DiffSectionBody } from './DiffSectionBody'
+import { DiffSectionBody } from './diff/sections/DiffSectionBody'
 
 const { imageChunk } = vi.hoisted(() => {
   let release: () => void = () => {}
@@ -13,15 +13,15 @@ const { imageChunk } = vi.hoisted(() => {
   return { imageChunk: { ready, release: () => release() } }
 })
 
-vi.mock('./ImageDiffViewer', async () => {
+vi.mock('./diff/large-files/ImageDiffViewer', async () => {
   await imageChunk.ready
   return { default: () => <div data-testid="image-diff" /> }
 })
-vi.mock('./diff-editor-word-wrap-options', () => ({
+vi.mock('./diff/monaco-view/diff-editor-word-wrap-options', () => ({
   buildDiffEditorWordWrapOptions: () => ({}),
   syncDiffEditorOriginalWordWrap: () => ({ dispose: () => {} })
 }))
-vi.mock('./diff-editor-shift-wheel-scroll', () => ({
+vi.mock('./diff/monaco-view/diff-editor-shift-wheel-scroll', () => ({
   installDiffEditorShiftWheelScroll: () => () => {}
 }))
 vi.mock('@/i18n/i18n', () => ({ translate: (_key: string, fallback: string) => fallback }))

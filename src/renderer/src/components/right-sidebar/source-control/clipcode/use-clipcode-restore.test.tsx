@@ -27,14 +27,14 @@ vi.mock('@/runtime/runtime-file-read-client', () => ({
 vi.mock('./clipcode-restore-parent-directories', () => ({
   createParentDirectoriesForNewFile: async () => undefined
 }))
-vi.mock('../../file-explorer-operation-owner', () => ({
+vi.mock('../../file-explorer/navigation/file-explorer-operation-owner', () => ({
   captureFileExplorerOperationGuard: () => ({
     route: { target: { kind: 'local' } },
     assertCurrent: () => undefined
   }),
   getFileExplorerOperationOwner: () => undefined
 }))
-vi.mock('@/components/editor/editor-autosave', () => ({
+vi.mock('@/components/editor/autosave/editor-autosave', () => ({
   requestEditorSaveQuiesce: async (target: { worktreeId: string; relativePath: string }) => {
     calls.push(`quiesce ${target.worktreeId}:${target.relativePath}`)
     return () => void calls.push(`release ${target.worktreeId}:${target.relativePath}`)

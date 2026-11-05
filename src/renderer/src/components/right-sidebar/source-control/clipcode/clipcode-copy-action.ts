@@ -9,14 +9,14 @@ import { readRuntimeFileContent } from '@/runtime/runtime-file-read-client'
 import { readRuntimeDirectory } from '@/runtime/runtime-file-mutation-client'
 import { useAppStore } from '@/store'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
-import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
+import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
-import { getWorktreeGitOwnerTarget, requireGitOwnerTarget } from '../../worktree-git-owner-target'
+import { getWorktreeGitOwnerTarget, requireGitOwnerTarget } from '../sync/worktree-git-owner-target'
 import {
   getFileExplorerOperationOwner,
   getFileExplorerOperationRoute,
   getFileExplorerOwnerUnresolvedMessage
-} from '../../file-explorer-operation-owner'
+} from '../../file-explorer/navigation/file-explorer-operation-owner'
 import {
   buildClipcodeGitCopy,
   type ClipcodeContentReaders,
