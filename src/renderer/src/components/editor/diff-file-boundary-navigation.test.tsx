@@ -10,9 +10,9 @@ import {
   useDiffNavigation,
   type DiffEditorRegistrationContextValue,
   type DiffNavigationContextValue
-} from './diff-navigation-context'
+} from './diff/review/diff-navigation-context'
 import type { DiffFilePosition } from './diff-file-sequence'
-import { useDiffViewerFirstChangeAutoScroll } from './useDiffViewerFirstChangeAutoScroll'
+import { useDiffViewerFirstChangeAutoScroll } from './diff/monaco-view/useDiffViewerFirstChangeAutoScroll'
 
 type Change = Pick<editor.ILineChange, 'modifiedStartLineNumber' | 'modifiedEndLineNumber'>
 

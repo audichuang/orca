@@ -1,11 +1,11 @@
 // Fork-only: turns the upstream swimlanes into tracks (one per drawn edge) and decides which tracks fold.
-import type { GitHistoryGraphColorId } from '../../../../../../shared/git-history'
+import type { GitHistoryGraphColorId } from '../../../../../../shared/git/history/git-history-types'
 import {
   getGitHistoryItemColor,
   getGitHistoryItemLaneIndex,
   getGitHistoryMergeParentLaneIndex,
   type GitHistoryItemViewModel
-} from '../../../../../../shared/git-history-graph'
+} from '../../../../../../shared/git/history/git-history-graph'
 
 export type Track = {
   /** Boundary b is the gap below row b; a track occupies a contiguous boundary range. */

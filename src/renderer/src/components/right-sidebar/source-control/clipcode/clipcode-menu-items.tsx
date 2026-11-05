@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button'
 import { ContextMenuItem } from '@/components/ui/context-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
-import type { TreeNode } from '../../file-explorer-types'
+import type { TreeNode } from '../../file-explorer/tree/file-explorer-types'
 import { ActionButton } from '../listing/action-button'
-import type { SourceControlDisplaySection } from '../../../../../../shared/source-control-section-order'
+import type { SourceControlDisplaySection } from '../../../../../../shared/source-control/listing/source-control-section-order'
 import {
   useClipcodeExplorerActions,
   useClipcodeSourceControlActions

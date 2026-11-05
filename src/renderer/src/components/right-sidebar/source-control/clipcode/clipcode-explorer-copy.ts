@@ -3,7 +3,7 @@ import { basename, getRelativePathInsideRoot, joinPath } from '@/lib/path'
 import type { DirEntry } from '../../../../../../shared/filesystem-entry-types'
 import { sortDirEntries } from '../../../../../../shared/file-name-sort'
 import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
-import { shouldIncludeFileExplorerEntry } from '../../file-explorer-entries'
+import { shouldIncludeFileExplorerEntry } from '../../file-explorer/tree/file-explorer-entries'
 import { buildPayload, CLIPCODE_DEFAULTS, type PayloadFile } from './clipcode-clipboard-format'
 import {
   classifyClipcodeEntryContent,

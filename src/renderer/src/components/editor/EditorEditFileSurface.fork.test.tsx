@@ -2,11 +2,11 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { OpenFile } from '@/store/slices/editor'
-import type { useMarkdownDocuments } from './useMarkdownDocuments'
+import type { useMarkdownDocuments } from './markdown/documents/useMarkdownDocuments'
 import { EditorEditFileSurface } from './EditorEditFileSurface'
 
 vi.mock('./ChangesModeView', () => ({ ChangesModeView: () => <div data-testid="changes-view" /> }))
-vi.mock('./CustomEditorExternalChangeBanner', () => ({
+vi.mock('./external-changes/CustomEditorExternalChangeBanner', () => ({
   CustomEditorExternalChangeBanner: () => <div data-testid="external-change-banner" />
 }))
 
