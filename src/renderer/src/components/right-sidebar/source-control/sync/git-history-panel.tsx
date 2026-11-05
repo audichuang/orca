@@ -365,12 +365,7 @@ export function GitHistoryPanel({
               !isBoundaryNode && Boolean(onLoadCommitFiles) && Boolean(onOpenCommitFile)
             const isExpanded = canExpand && expanded.has(item.id)
             const row = (
-              <GitHistorySelectableRow
-                selected={!isBoundaryNode && selection.isSelected(item.id)}
-                onSelectionClick={(event) =>
-                  !isBoundaryNode && selection.handleRowClick(item, event)
-                }
-              >
+              <GitHistorySelectableRow selection={selection} item={isBoundaryNode ? null : item}>
                 <GitHistoryRow
                   viewModel={viewModel}
                   expanded={isExpanded}
