@@ -6,7 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { seedFolderDiffNote, renderedRepoNote } from '../../folder-diff-monaco.test-fixture'
 import { DIFF, ROOT, folderFile } from '../../folder-git-owner.test-fixture'
 import { CombinedDiffSectionList } from './combined-diff-section-list'
-import type { DiffSection } from '../../diff-section-types'
+import type { DiffSection } from '../../diff/sections/diff-section-types'
 
 afterEach(cleanup)
 it('renders the repo review note inside a folder combined diff section', async () => {

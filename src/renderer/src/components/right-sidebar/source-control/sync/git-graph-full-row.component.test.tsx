@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
+import type { GitHistoryItemViewModel } from '../../../../../../shared/git/history/git-history-graph'
 import { getUiRelativeTimeFormatter } from '@/i18n/relative-time-format'
 import { formatGitGraphCompactDate } from './git-graph-date-format'
 import { GitGraphFullRow } from './git-graph-full-row'
