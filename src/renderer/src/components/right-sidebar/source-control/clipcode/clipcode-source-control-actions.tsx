@@ -1,7 +1,7 @@
 // Fork-only: provides Copy Full Source to the source control panel's menu items, bulk bar and section headers.
 import { useCallback, useMemo } from 'react'
 import type React from 'react'
-import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
+import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 import type { FlatEntry } from '../listing/use-selection'
 import type { SourceControlPanelModel } from '../panel/use-panel-model'

@@ -15,7 +15,7 @@ import { setLocalRuntimeCapabilitiesForTests } from '@/runtime/local-runtime-cap
 import { acquireAgentLaunchChoices } from './host-chat-program-acquisition'
 import { agentChoiceMayOpenAsChat, agentsOfferedForLaunch } from './host-chat-program'
 import { resolveDefaultAgentForWorktreeNewTab } from './agent-tab-shortcuts'
-import { sourceControlLaunchAppliesAgentArgs } from '@/components/right-sidebar/source-control-launch-agent-args-applicability'
+import { sourceControlLaunchAppliesAgentArgs } from '@/components/right-sidebar/source-control/ai/source-control-launch-agent-args-applicability'
 
 // Fork: a folder workspace's repo launch starts below the folder root, which only a terminal applies.
 const initial = useAppStore.getState()
