@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import { parseGitHistoryGraphQuery } from './git-history-graph-filter'
 import {
   collectGitHistoryAuthors,

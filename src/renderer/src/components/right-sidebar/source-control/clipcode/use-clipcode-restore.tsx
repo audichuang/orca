@@ -6,7 +6,7 @@ import { readIpcErrorMessage } from '@/lib/ipc-error'
 import { joinPath } from '@/lib/path'
 import { deleteRuntimePath, writeRuntimeFile } from '@/runtime/runtime-file-mutation-client'
 import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
-import { notifyEditorExternalFileChange } from '@/components/editor/editor-autosave'
+import { notifyEditorExternalFileChange } from '@/components/editor/autosave/editor-autosave'
 import {
   releaseEditorSaveHolds,
   requestEditorSaveQuiesceAll
@@ -15,7 +15,7 @@ import { relativePathInsideRoot } from '../../../../../../shared/cross-platform-
 import {
   captureFileExplorerOperationGuard,
   getFileExplorerOperationOwner
-} from '../../file-explorer-operation-owner'
+} from '../../file-explorer/navigation/file-explorer-operation-owner'
 import type { RestoreDirectoryCache } from './clipcode-restore-path-guard'
 import {
   isRestorePathBlocked,

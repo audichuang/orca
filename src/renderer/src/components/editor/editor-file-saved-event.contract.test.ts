@@ -1,12 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ORCA_EDITOR_FILE_SAVED_EVENT, type EditorFileSavedDetail } from './editor-autosave'
-import { createEditorSaveQueue } from './editor-save-queue'
+import {
+  ORCA_EDITOR_FILE_SAVED_EVENT,
+  type EditorFileSavedDetail
+} from './autosave/editor-autosave'
+import { createEditorSaveQueue } from './save/queue/editor-save-queue'
 import {
   createEditorStore,
   createFakeEditorDisk,
   stubEditorWindowWithDisk,
   withLoadedBaselines
-} from './editor-autosave-controller-test-fixture'
+} from './autosave/editor-autosave-controller-test-fixture'
 
 // Fork contract: folder Source Control (use-folder-repo-status-refresh) resolves the saved file from
 // detail.filePath, falling back to openFiles.find(f => f.id === detail.fileId). Pins the producer.

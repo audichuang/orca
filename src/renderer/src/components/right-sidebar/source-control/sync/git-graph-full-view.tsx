@@ -6,12 +6,12 @@ import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
-import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
+import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import {
   buildDefaultGitHistoryColorMap,
   buildGitHistoryViewModels
-} from '../../../../../../shared/git-history-graph'
+} from '../../../../../../shared/git/history/git-history-graph'
 import type { GitHistoryPanelState } from './git-history-panel'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import { GitGraphAutoLoadMore } from './git-graph-auto-load-more'

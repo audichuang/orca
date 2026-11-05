@@ -2,7 +2,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
-import { sourceControlActionRecipeEntry } from '../../../../../../shared/source-control-action-selection'
+import { sourceControlActionRecipeEntry } from '../../../../../../shared/source-control/ai/recipes/source-control-action-selection'
 import {
   cleanupFolderSourceControl,
   FOLDER,

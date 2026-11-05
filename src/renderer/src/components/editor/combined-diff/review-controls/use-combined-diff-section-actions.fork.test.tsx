@@ -11,7 +11,7 @@ import {
   folderFile,
   seedFolderGitOwner
 } from '../../folder-git-owner.test-fixture'
-import type { DiffSection } from '../../diff-section-types'
+import type { DiffSection } from '../../diff/sections/diff-section-types'
 import { useCombinedDiffSectionActions } from './use-combined-diff-section-actions'
 
 beforeEach(seedFolderGitOwner)

@@ -9,7 +9,7 @@ import { selectVisibleSidebarWorktrees } from '../../../../../../shared/sidebar-
 import { buildDesktopWorkspaceRowFactReader } from './desktop-workspace-row-facts'
 import { sidebarWorkspaceRowFilters } from '../controls/sidebar-filter-actions'
 import { getLineageAncestorIndex, getSortedWorktreeRankIndex } from './visible-worktree-indexes'
-import { getSidebarHiddenRepoIds } from '../right-sidebar/source-control/folder/folder-sidebar-hidden-repos'
+import { getSidebarHiddenRepoIds } from '../../../right-sidebar/source-control/folder/folder-sidebar-hidden-repos'
 
 // Separate store binding avoids attention-slice import cycles; shared builders retain the filter rules.
 

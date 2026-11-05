@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it } from 'vitest'
-import { computeVisibleWorktreeIds } from './compute-visible-worktrees'
+import { computeVisibleWorktreeIds } from './worktree-list/listing/compute-visible-worktrees'
 import type { Repo } from '../../../../shared/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
