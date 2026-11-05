@@ -6,11 +6,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
 import { localizedHostedReviewCopy } from '@/i18n/hosted-review-localized-copy'
 import { getDefaultSettings } from '../../../../../../shared/constants'
-import type { CreateHostedReviewResult } from '../../../../../../shared/hosted-review'
+import type { CreateHostedReviewResult } from '../../../../../../shared/source-control/hosted-review/hosted-review-contracts'
 import {
   DEFAULT_SOURCE_CONTROL_AI_PR_CREATION_DEFAULTS,
   getDefaultSourceControlAiSettings
-} from '../../../../../../shared/source-control-ai-settings'
+} from '../../../../../../shared/source-control/ai/settings/source-control-ai-settings'
 import { SourceControlWorktreeScopeContext } from '../folder/worktree-scope'
 import { useSourceControlHostedReviewCreation } from './use-hosted-review-creation'
 

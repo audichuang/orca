@@ -3,8 +3,8 @@ import type { OpenFile } from '@/store/slices/editor'
 import { joinPath, normalizeRelativePath } from '@/lib/path'
 import { getIndexedWorktreeById } from '@/store/worktree-repo-index'
 import { normalizeRuntimePathForComparison } from '../../../../shared/cross-platform-path'
-import type { GitFileStatus, GitStatusEntry } from '../../../../shared/git-status-types'
-import { buildStatusMap } from '../right-sidebar/status-display'
+import type { GitFileStatus, GitStatusEntry } from '../../../../shared/git/status/git-status-types'
+import { buildStatusMap } from '../../lib/git-path-decoration'
 import { selectWorktreesByRepo } from '@/store/workspace-record-selectors'
 
 type EditorTabStatusSource = Pick<OpenFile, 'relativePath'> &
