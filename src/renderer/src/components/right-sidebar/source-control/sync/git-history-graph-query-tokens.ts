@@ -1,5 +1,5 @@
 // Fork-only: reads and rewrites the `author:` / `path:` tokens of the Git Graph search query.
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import {
   getDefaultGitHistoryGraphFilter,
   isGitGraphTabFilterKeyOf,

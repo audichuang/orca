@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseWorkspaceSession } from './workspace-session-schema'
+import { parseWorkspaceSession } from './workspace-session/workspace-session-schema'
 
 // Fork contract: a folder-workspace tab's git owner survives the persisted-session zod parse
 // (zod strips unknown keys, so a schema rewrite that drops the field fails silently otherwise).

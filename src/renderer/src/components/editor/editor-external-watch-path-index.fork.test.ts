@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { OpenFile } from '@/store/slices/editor'
-import { indexEditorExternalWatchBatchPaths } from './editor-external-watch-path-index'
+import { indexEditorExternalWatchBatchPaths } from './external-changes/editor-external-watch-path-index'
 
 describe('editor external watch path batch index in a folder workspace', () => {
   it('matches a folder-scoped diff tab by absolute path, not its repo-relative path', () => {

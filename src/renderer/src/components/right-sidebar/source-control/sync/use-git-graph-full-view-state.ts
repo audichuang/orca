@@ -6,8 +6,8 @@ import type {
   GitHistoryGraphColorId,
   GitHistoryItem,
   GitHistoryResult
-} from '../../../../../../shared/git-history'
-import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
+} from '../../../../../../shared/git/history/git-history-types'
+import type { GitHistoryItemViewModel } from '../../../../../../shared/git/history/git-history-graph'
 import type { GitHistoryGraphRefOption } from '../../../../../../shared/git-history-graph-query-types'
 import {
   computeBranchContainment,

@@ -7,8 +7,8 @@ import type {
   GitHistoryGraphColorId,
   GitHistoryItem,
   GitHistoryItemRef
-} from '../../../../../../shared/git-history'
-import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
+} from '../../../../../../shared/git/history/git-history-types'
+import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git/history/git-history-ref-display'
 import type { GitGraphBranchContainment } from './git-graph-branch-containment'
 import { formatGitHistoryTimestamp } from './git-history-format'
 import { formatGitGraphRelativeDate, formatGitGraphShortDate } from './git-graph-date-format'

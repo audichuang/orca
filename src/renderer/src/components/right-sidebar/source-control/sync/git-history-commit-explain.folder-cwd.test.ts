@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 
 const mocks = vi.hoisted(() => ({
   resolveAgent: vi.fn(),
