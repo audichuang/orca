@@ -1,7 +1,7 @@
 // Fork-only: open/closed/overlay state of the full Git Graph's branch tree.
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { GitHistoryResult } from '../../../../../../shared/git-history'
+import type { GitHistoryResult } from '../../../../../../shared/git/history/git-history-types'
 import type { GitGraphSelectionState } from './use-git-graph-full-view-state'
 
 // Why module scope: closing the tree is a layout choice for the session, not for one dialog.

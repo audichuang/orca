@@ -1,12 +1,15 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import type { GitHistoryItem, GitHistoryItemRef } from '../../../../../../shared/git-history'
+import type {
+  GitHistoryItem,
+  GitHistoryItemRef
+} from '../../../../../../shared/git/history/git-history-types'
 import {
   buildDefaultGitHistoryColorMap,
   buildGitHistoryViewModels,
   getGitHistoryItemLaneIndex,
   type GitHistoryItemViewModel
-} from '../../../../../../shared/git-history-graph'
+} from '../../../../../../shared/git/history/git-history-graph'
 import { buildGitGraphLaneRows, type GitGraphLaneRow } from './git-graph-lane-layout'
 import { GitGraphLaneSvg } from './git-graph-lane-svg'
 

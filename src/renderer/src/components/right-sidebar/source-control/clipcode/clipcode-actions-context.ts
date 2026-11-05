@@ -1,7 +1,7 @@
 // Fork-only: ClipCode copy actions the source control panel and the file explorer provide to their menu items.
 import { createContext, useContext } from 'react'
-import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
-import type { TreeNode } from '../../file-explorer-types'
+import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
+import type { TreeNode } from '../../file-explorer/tree/file-explorer-types'
 
 export type ClipcodeSourceControlActions = {
   copyRowFullSource: (rowKey: string) => void

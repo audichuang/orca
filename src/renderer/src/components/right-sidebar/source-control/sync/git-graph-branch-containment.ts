@@ -1,5 +1,5 @@
 // Fork-only: which loaded branch tips reach each loaded commit (IntelliJ's "In N branches", Fork's lane context).
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 
 /** Branch ref ids (`refs/heads/…`, `refs/remotes/…`) whose tip reaches the commit, in tip order. */
 export type GitGraphBranchContainment = ReadonlyMap<string, readonly string[]>

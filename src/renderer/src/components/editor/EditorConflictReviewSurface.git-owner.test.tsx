@@ -6,8 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StoreApi } from 'zustand'
 import type { AppState } from '@/store'
 import type { OpenFile } from '@/store/slices/editor'
-import type { GitStatusEntry } from '../../../../shared/git-status-types'
-import { createEditorStore } from './editor-autosave-controller-test-fixture'
+import type { GitStatusEntry } from '../../../../shared/git/status/git-status-types'
+import { createEditorStore } from './autosave/editor-autosave-controller-test-fixture'
 import { EditorConflictReviewSurface } from './EditorConflictReviewSurface'
 
 type PanelProps = {

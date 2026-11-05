@@ -1,6 +1,9 @@
 // Fork-only: Cmd/Ctrl-click and Shift-click selection of commits, for multi-commit Copy Full Source.
 import { useCallback, useMemo, useState, type MouseEvent } from 'react'
-import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
+import type {
+  GitHistoryItem,
+  GitHistoryResult
+} from '../../../../../../shared/git/history/git-history-types'
 import type { GitHistoryForkCommitAction } from './git-history-commit-fork-menu'
 
 export type GitHistoryCommitActionHandler = (

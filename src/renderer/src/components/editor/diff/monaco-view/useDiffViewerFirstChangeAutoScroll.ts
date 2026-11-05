@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { RefObject } from 'react'
 import type { editor } from 'monaco-editor'
 import { diffViewStateCache } from '@/components/editor/model-lifetime/retention/editor-view-state-cache'
-import { useDiffEditorRegistration } from './diff-navigation-context'
+import { useDiffEditorRegistration } from '../review/diff-navigation-context'
 
 type DiffViewerFirstChangeAutoScrollInput = {
   diffEditorRef: RefObject<editor.IStandaloneDiffEditor | null>
