@@ -52,8 +52,8 @@
 - 守它的測試：待補
 - 驗證：未驗證（只有審查者 C 的 mutation）
 
-## fork 自身問題（fork 測試的 vi.mock 指向不存在的模組，mock 沒生效）× fork 既有測試 src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts、src/main/ipc/repos-nested-scan-options.test.ts — auto-rebase 2026-11-05
-- 類型：fork 自身問題
+## fork 自身問題（待人判斷，auto-rebase 不要照做：fork 測試的 vi.mock 指向不存在的模組，mock 沒生效；pwsh／wsl 屬 Platform scope，mock 生效後測試行為可能變，改 mock 路徑也沒有會紅的證明）× fork 既有測試 src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts、src/main/ipc/repos-nested-scan-options.test.ts — auto-rebase 2026-11-05
+- 類型：待人判斷
 - 衝突檔：無
 - 連帶症狀：無（v1.4.249 rebase 審查者 A、B、C 都列為 NON-BLOCKING；01f0e84e94 就是如此，測試照樣通過）
 - 處理：`pty-agent-pane-launch.fork.test.ts:30-31` 的 `vi.mock('../../pwsh')`、`vi.mock('../../wsl')` 改成同目錄上游測試用的路徑（`'../../pty/shell-startup/pwsh'` 等，`rg "vi.mock\('.*pwsh'" src/main/ipc/pty` 對照）；`repos-nested-scan-options.test.ts:18-22` 的 `'../git/worktree'`、`'./registered-worktree-roots-cache'`、`'../worktree-root-preparation'` 改成 `./worktrees/removal/registered-worktree-roots-cache` 等現行路徑（`src/main/git/worktree` 不存在，看上游 `repos-nested-scan.test.ts:45` 的寫法決定要不要留）。改完兩支測試仍要綠。pwsh／WSL 只關 Windows，屬 Platform scope，不急。
