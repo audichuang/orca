@@ -366,4 +366,33 @@ describe('Commits graph filter, end to end through the history hook', () => {
     expect(target?.id).toBe(COMMITS[2].id)
     expect(selected?.map((item: GitHistoryItem) => item.id)).toEqual([COMMITS[0].id, COMMITS[2].id])
   })
+
+  it('keeps the commit selection when the Outgoing Changes boundary row is clicked', async () => {
+    mocks.getRuntimeGitHistory.mockImplementation(async () =>
+      result({
+        currentRef: { id: 'refs/heads/main', name: 'main', revision: COMMITS[0].id },
+        remoteRef: {
+          id: 'refs/remotes/origin/main',
+          name: 'origin/main',
+          revision: 'f'.repeat(40)
+        },
+        mergeBase: COMMITS[1].id,
+        hasOutgoingChanges: true
+      })
+    )
+    const onCommitAction = vi.fn()
+    render(<Harness onCommitAction={onCommitAction} />)
+    const modifier = navigator.userAgent.includes('Mac') ? { metaKey: true } : { ctrlKey: true }
+    fireEvent.click(await screen.findByText('Alpha'), modifier)
+    fireEvent.click(screen.getByText('Charlie'), modifier)
+    fireEvent.click(screen.getByText('Outgoing Changes'))
+
+    fireEvent.contextMenu(screen.getByText('Charlie'))
+    const items = await screen.findAllByRole('menuitem')
+    const copyItem = items.find((item) => item.textContent === 'Copy Full Source (2 commits)')
+    expect(copyItem).toBeDefined()
+    fireEvent.click(copyItem!)
+    const [, , selected] = onCommitAction.mock.calls[0] ?? []
+    expect(selected?.map((item: GitHistoryItem) => item.id)).toEqual([COMMITS[0].id, COMMITS[2].id])
+  })
 })
