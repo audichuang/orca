@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
 import type { OpenFile } from '@/store/slices/editor'
-import type { GitStatusEntry } from '../../../../shared/git-status-types'
+import type { GitStatusEntry } from '../../../../shared/git/status/git-status-types'
 import type { DiffContent, FileContent } from './editor-panel-content-types'
 import { useEditorPanelActiveTabContentLoad } from './useEditorPanelActiveTabContentLoad'
 

@@ -1,5 +1,5 @@
 // Fork-only: keeps the Git Graph tab and the right-sidebar Source Control on the same repo.
-import type { GitHistoryItem } from '../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../shared/git/history/git-history-types'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { useAppStore } from '@/store'
 import {

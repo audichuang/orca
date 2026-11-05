@@ -4,7 +4,10 @@ import '@testing-library/jest-dom/vitest'
 import { createRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, screen } from '@testing-library/react'
-import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
+import type {
+  GitHistoryItem,
+  GitHistoryResult
+} from '../../../../../../shared/git/history/git-history-types'
 import { GitGraphAutoLoadMore } from './git-graph-auto-load-more'
 import type { GitHistoryPanelState } from './git-history-panel'
 import {

@@ -2,7 +2,7 @@
 // Fork seam guard: context-menu action -> commit actions hook -> copy -> commit-diff client -> clipboard.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 
 const mocks = vi.hoisted(() => ({
   getRuntimeGitCommitDiff: vi.fn(),

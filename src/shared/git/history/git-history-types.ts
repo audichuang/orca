@@ -1,7 +1,7 @@
 import type {
   GitHistoryGraphApplied,
   GitHistoryGraphRequest
-} from './git-history-graph-query-types'
+} from '../../git-history-graph-query-types'
 
 export type GitHistoryGraphColorId =
   | 'git-graph-ref'

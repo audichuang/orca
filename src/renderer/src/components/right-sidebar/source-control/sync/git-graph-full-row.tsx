@@ -7,9 +7,9 @@ import { initialsFor } from './git-graph-author-initials'
 import {
   GIT_HISTORY_LANE_COLORS,
   type GitHistoryItemRef
-} from '../../../../../../shared/git-history'
-import type { GitHistoryItemViewModel } from '../../../../../../shared/git-history-graph'
-import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git-history-ref-display'
+} from '../../../../../../shared/git/history/git-history-types'
+import type { GitHistoryItemViewModel } from '../../../../../../shared/git/history/git-history-graph'
+import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git/history/git-history-ref-display'
 import { graphColor } from './git-history-graph-svg'
 import { GitGraphLaneConnectors, GitGraphLaneSvg } from './git-graph-lane-svg'
 import { GitGraphRowSubject } from './git-graph-row-subject'

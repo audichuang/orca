@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
-import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
+import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import { SourceControlUncommittedSections } from './uncommitted-sections'
 import {
   ClipcodeSourceControlActionsContext,
@@ -15,7 +15,7 @@ import {
 import type {
   SourceControlDisplaySection,
   SourceControlDisplaySectionId
-} from '../../../../../../shared/source-control-section-order'
+} from '../../../../../../shared/source-control/listing/source-control-section-order'
 
 afterEach(cleanup)
 
