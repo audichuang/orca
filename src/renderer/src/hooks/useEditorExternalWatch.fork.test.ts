@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest'
-import type * as EditorAutosaveModule from '@/components/editor/editor-autosave'
+import type * as EditorAutosaveModule from '@/components/editor/autosave/editor-autosave'
 
 vi.mock('@/store', () => ({
   useAppStore: {
@@ -7,7 +7,7 @@ vi.mock('@/store', () => ({
   }
 }))
 // Why: the node environment has no window; stub the two editor-autosave exports the handler uses.
-vi.mock('@/components/editor/editor-autosave', async (importOriginal) => {
+vi.mock('@/components/editor/autosave/editor-autosave', async (importOriginal) => {
   const actual = await importOriginal<typeof EditorAutosaveModule>()
   return {
     ...actual,
@@ -21,7 +21,7 @@ import { useAppStore } from '@/store'
 import {
   getOpenFilesForExternalFileChange,
   notifyEditorExternalFileChange
-} from '@/components/editor/editor-autosave'
+} from '@/components/editor/autosave/editor-autosave'
 
 describe('createExternalWatchEventHandler for workspaces sharing a root', () => {
   const setExternalMutation = vi.fn()

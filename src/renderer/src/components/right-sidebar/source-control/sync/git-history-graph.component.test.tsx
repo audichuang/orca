@@ -5,7 +5,10 @@ import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
+import type {
+  GitHistoryItem,
+  GitHistoryResult
+} from '../../../../../../shared/git/history/git-history-types'
 import type { GitHistoryGraphApplied } from '../../../../../../shared/git-history-graph-query-types'
 
 const mocks = vi.hoisted(() => ({ getRuntimeGitHistory: vi.fn() }))

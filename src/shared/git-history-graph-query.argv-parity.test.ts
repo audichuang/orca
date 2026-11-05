@@ -1,9 +1,9 @@
 // Fork seam guard: the graph walk must pass every `git log` option upstream's loader passes,
 // because both feed upstream's parser; a new upstream flag the format relies on would otherwise be missed.
 import { describe, expect, it } from 'vitest'
-import { loadGitHistoryFromExecutor } from './git-history'
+import { loadGitHistoryFromExecutor } from './git/history/git-history-execution'
 import { loadGitHistoryGraphFromExecutor } from './git-history-graph-query'
-import type { GitHistoryExecutor } from './git-history-types'
+import type { GitHistoryExecutor } from './git/history/git-history-types'
 
 const HEAD = 'a'.repeat(40)
 
