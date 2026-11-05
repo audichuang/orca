@@ -9,7 +9,7 @@ import {
   STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY as CHAT
 } from '../../../../shared/agent-session/agent-session-runtime-capabilities'
 import { STRUCTURED_AGENT_SESSION_REGISTERED_AGENTS_RUNTIME_CAPABILITY as CATALOG } from '../../../../shared/agent-session/structured-agent-session-surface-capabilities'
-import { canonicalSourceControlActionSelection } from '../../../../shared/source-control-action-selection'
+import { canonicalSourceControlActionSelection } from '../../../../shared/source-control/ai/recipes/source-control-action-selection'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
 
 const rpc = vi.hoisted(() => ({ call: vi.fn(), subscribe: vi.fn() }))
@@ -23,8 +23,8 @@ import { makeFolderWorkspace } from '@/store/slices/worktrees-slice-test-fixture
 import { resetHostStructuredAgentsForTests } from '@/runtime/host-structured-agents'
 import { setLocalRuntimeCapabilitiesForTests } from '@/runtime/local-runtime-capabilities'
 import { clearHostAgentMenuSettingsForTests } from '@/runtime/agent-launch-settings/host-agent-launch-preferences-resource'
-import { useSavedSourceControlActionStart } from './use-saved-source-control-action-start'
-import { useSourceControlAgentActionDialog } from './useSourceControlAgentActionDialog'
+import { useSavedSourceControlActionStart } from './source-control/ai/use-saved-source-control-action-start'
+import { useSourceControlAgentActionDialog } from './source-control/ai/useSourceControlAgentActionDialog'
 
 // Fork: a folder workspace's repo launch starts below the folder root (/work), where only a
 // terminal applies, so a chat-only agent (antigravity: no CLI detected) cannot start there.
