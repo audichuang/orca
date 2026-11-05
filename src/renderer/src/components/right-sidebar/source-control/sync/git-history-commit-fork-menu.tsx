@@ -7,7 +7,7 @@ import {
   ContextMenuSeparator
 } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import {
   GitHistoryCommitContextMenu,
   type GitHistoryCommitAction

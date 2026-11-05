@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { runProcess } from '@orca/process-host'
 import { resolveExecutableCommand } from './node-cli-command-resolution'
 import { loadGitHistoryGraphFromExecutor } from './git-history-graph-query'
-import type { GitHistoryExecutor } from './git-history-types'
+import type { GitHistoryExecutor } from './git/history/git-history-types'
 
 const repositories: string[] = []
 const gitBinary = resolveExecutableCommand(process.env.ORCA_TEST_GIT_BINARY ?? 'git')

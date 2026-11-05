@@ -5,7 +5,7 @@ import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import type { GitHistoryResult } from '../../../../../../shared/git-history'
+import type { GitHistoryResult } from '../../../../../../shared/git/history/git-history-types'
 import type { GitHistoryPanelState } from './git-history-panel'
 
 const mocks = vi.hoisted(() => ({ getRuntimeGitHistory: vi.fn() }))

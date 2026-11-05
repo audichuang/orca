@@ -9,7 +9,7 @@ import {
   getOpenFilesForExternalFileChange,
   ORCA_EDITOR_EXTERNAL_FILE_CHANGE_EVENT,
   type EditorPathMutationTarget
-} from '@/components/editor/editor-autosave'
+} from '@/components/editor/autosave/editor-autosave'
 import { runtimeTargetForOwnerEnvironment } from '@/runtime/runtime-client-target'
 import { useAppStore } from '@/store'
 import { SourceControlWorktreeScopeContext } from '../folder/worktree-scope'

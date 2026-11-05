@@ -8,13 +8,16 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import { makeWorktree } from '../../store/slices/worktrees-slice-test-fixtures'
-import type { TreeNode } from './file-explorer-types'
-import { createFileExplorerRowProjection } from './file-explorer-row-projection'
-import { visit, type ReactElementLike } from './file-explorer-element-tree-test-harness'
+import type { TreeNode } from './file-explorer/tree/file-explorer-types'
+import { createFileExplorerRowProjection } from './file-explorer/tree/file-explorer-row-projection'
+import {
+  visit,
+  type ReactElementLike
+} from './file-explorer/tree/file-explorer-element-tree-test-harness'
 
 const mocks = vi.hoisted(() => ({ readFile: vi.fn(), writeClipboardText: vi.fn() }))
 
-const { FileExplorerFilesTreePane } = await import('./FileExplorerFilesTreePane')
+const { FileExplorerFilesTreePane } = await import('./file-explorer/tree/FileExplorerFilesTreePane')
 const { ClipcodeExplorerVirtualRows } =
   await import('./source-control/clipcode/clipcode-explorer-rows')
 

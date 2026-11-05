@@ -1,8 +1,8 @@
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { FileExplorerRowContextMenu } from './file-explorer-row-context-menu'
-import type { TreeNode } from './file-explorer-types'
+import { FileExplorerRowContextMenu } from './file-explorer/panel/file-explorer-row-context-menu'
+import type { TreeNode } from './file-explorer/tree/file-explorer-types'
 import { ClipcodeExplorerActionsContext } from './source-control/clipcode/clipcode-actions-context'
 
 type ItemProps = { onSelect?: () => void; disabled?: boolean; children?: React.ReactNode }
@@ -65,7 +65,7 @@ vi.mock(import('@/lib/reveal-in-file-manager'), async (importOriginal) => ({
   revealInFileManager
 }))
 
-vi.mock('./file-explorer-row-file-transfer', () => ({
+vi.mock('./file-explorer/panel/file-explorer-row-file-transfer', () => ({
   copyFileToOsClipboard: vi.fn(),
   downloadRemoteFile: vi.fn()
 }))

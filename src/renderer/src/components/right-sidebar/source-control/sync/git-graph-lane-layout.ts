@@ -1,9 +1,12 @@
 // Fork-only: re-lays the upstream swimlanes for the full Git Graph, folding long edges and pinning HEAD's line left.
-import type { GitHistoryGraphColorId, GitHistoryItem } from '../../../../../../shared/git-history'
+import type {
+  GitHistoryGraphColorId,
+  GitHistoryItem
+} from '../../../../../../shared/git/history/git-history-types'
 import {
   getGitHistoryItemColor,
   type GitHistoryItemViewModel
-} from '../../../../../../shared/git-history-graph'
+} from '../../../../../../shared/git/history/git-history-graph'
 import {
   extractTracks,
   foldTracks,
