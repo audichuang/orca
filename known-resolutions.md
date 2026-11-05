@@ -23,6 +23,26 @@
 - 守它的測試：上面 5 支 config/scripts 測試（Linux CI；macOS 的 bash 3.2 讓 pr-auxiliary-preflight-admission 8 例、ci-managed-ssh-execution、dependency-security-release 本機紅，與這個 commit 無關）
 - 驗證（2026-11-05，上游 v1.4.250）：乾淨 v1.4.250 與 Fork CI r1（2d42a0615e，run 42018786601）都是 18 紅；撤回後 CI r2（9f5b5d731a，run 42020999924）全綠，本機 4 檔綠、剩 8 例 bash 3.2。
 
+## 9bd6272fdf4e1f2bbef43ac8c56722cf2ba31641（#38130、refactor(tooling): organize build, CI, and test owners）× fork 的 Makefile、fork-pr.yml、fork-* 腳本與 skill（fork 獨有檔，不會出現衝突）— 2026-11-05 人工檢查
+- 類型：上游改了 fork 依賴的 API
+- 衝突檔：無。下面每個檔都只有 fork 有，rebase／canary 會靜靜合進去，到執行時才壞（`Cannot find module` 或 `No such file`）
+- 連帶症狀：Fork CI 的 diff-base 與 Electron 安裝步驟、`make fork-check*`、`make fork-canary`、`fork-upstream-api.txt` 檢查、fork 腳本的 import 都會失敗。canary 從上游 main 含 #38130 起（2026-11-06 那次）在 `fork-canary.sh:156` 就會先失敗，原因是這條，不是新衝突
+- 處理：適用條件跟 9bd6272fdf 丟 `9f5b5d731a` 那條一樣（`git merge-base --is-ancestor 9bd6272fdf vNEW`），兩條一起做。把 fork 獨有檔裡的舊路徑換成新路徑（新路徑以 vNEW 的 `git ls-tree -r --name-only vNEW config/scripts` 為準，下面是上游 main 6e91427ee7 的位置）：
+  - `config/scripts/ensure-native-runtime.mjs` → `config/scripts/native-build/node-addons/ensure-native-runtime.mjs`：`Makefile`（FORK_VITEST 與兩個 target）、`config/scripts/fork-canary.sh`、`.claude/skills/orca-fork-auto-rebase/SKILL.md`、`.claude/skills/orca-fork-canary/SKILL.md`
+  - `config/scripts/run-vitest.mjs` → `config/scripts/test-runtime/execution-policy/run-vitest.mjs`：`Makefile`
+  - `config/scripts/run-mobile-web-app-checks.mjs` → `config/scripts/mobile-web/check-entry/run-mobile-web-app-checks.mjs`：`Makefile`
+  - `config/scripts/git-pull-request-diff-base.mjs` → `config/scripts/git/pr-diff-base/git-pull-request-diff-base.mjs`：`.github/workflows/fork-pr.yml`
+  - `config/scripts/install-electron-package-binary.mjs` → `config/scripts/electron-installation/platform-layout/install-electron-package-binary.mjs`：`.github/workflows/fork-pr.yml`
+  - `config/scripts/ci-unit-dependency-graph.mjs` → `config/scripts/ci/unit-selection/dependency-graph/ci-unit-dependency-graph.mjs`：`config/fork-upstream-api.txt`、`config/scripts/fork-hunk-guard-scan.mjs`（相對 import）
+  - `config/scripts/pr-code-change-scope.mjs` → `config/scripts/workflow/source-routing/pr-code-change-scope.mjs`：`config/fork-upstream-api.txt`、`config/scripts/fork-pr-scope.mjs`（相對 import）
+  - `config/scripts/ci-unit-files.mjs` → `config/scripts/ci/unit-selection/dependency-graph/ci-unit-files.mjs`：`config/scripts/fork-test-inventory.mjs`
+  - `config/scripts/test-only-source-path.mjs` → `config/scripts/static-analysis/process-boundaries/test-only-source-path.mjs`：`config/scripts/fork-footprint.mjs`、`config/scripts/fork-hunk-guard-scan.mjs`（相對 import）
+  - `config/scripts/run-typecheck-projects-in-parallel.mjs` → `config/scripts/typecheck/project-execution/run-typecheck-projects-in-parallel.mjs`：`config/scripts/fork-upstream-red.test.mjs`
+  - `config/scripts/build-computer-macos.mjs`、`config/scripts/ci-closed-pr-cancellation.test.mjs` → `native-build/macos/`、`ci/workflow-contracts/` 底下：`config/scripts/fork-footprint.test.mjs`
+  fork 自己的 `config/scripts/fork-*` 留在根目錄（上游 main 根目錄已經沒有散檔，但沒找到強制檢查；若 vNEW 有就一起搬）。改完用 `git grep -n -F -f <(git diff --name-status --format= vOLD vNEW -- config/scripts | awk '$1 ~ /^R/ {print $2}') HEAD -- ':!*.md' Makefile '.github/workflows/fork-*' 'config/fork*' 'config/scripts/fork*' '.claude/skills/orca-fork-*'` 確認沒有剩下舊路徑（skill 的 .md 另外 grep）。上面的清單是 2026-11-05 的 develop（9f5b5d731a）掃出來的，之後 fork 新加的引用以 grep 為準。
+- 守它的測試：Fork CI 本身（fork-pr.yml 的步驟）、`make fork-check`、`config/scripts/fork-*.test.mjs`
+- 驗證：未驗證（2026-11-05 對 fork/develop 9f5b5d731a 與上游 9bd6272fdf 的 rename 清單比對掃出；還沒在含 #38130 的版本上跑過）
+
 ## fork 自身問題（待人判斷，auto-rebase 不要照做：folder 層級的外部變更要不要配對到 repo-scoped diff 分頁：兩條路徑不一致）× fork c2a98a82aa（feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229）、71a91a6a02（fix(source-control): folder 分頁的 git/讀檔改由 filePath 推導 repo 相對路徑…）— auto-rebase 2026-10-27（原 sha ebae8279bd、a9b651f3b9，之後 d4ac764be9、4b7966a4eb、8ca8c6583b、0bb7357c8f、cee6406bd7、fa64c71117 都已被 rebase 改寫，canary 2026-11-05 依標題換成目前 develop 的 sha）
 - 類型：待人判斷
 - 衝突檔：無
