@@ -23,10 +23,7 @@ import { getHistory } from '../../git/history'
 import { isGitWorktreeMutationInFlight } from '../../git/command-runner/git-worktree-mutation-state'
 import type { GitMutationInFlight } from '../../../shared/git/commands/git-mutation-in-flight'
 import { checkIgnoredPaths } from '../../git/source-control/check-ignored-paths'
-import {
-  appendFolderToGitignore,
-  findKnownHugeFolderPathsToIgnore
-} from '../../git/huge-folder-ignore'
+import { registerFilesystemGitignoreHandlers } from './filesystem-gitignore-handlers'
 import { resolveRegisteredWorktreePath } from '../worktrees/removal/registered-worktree-roots-cache'
 import { validateGitRelativeFilePath } from './access/filesystem-path-containment'
 import {
@@ -174,21 +171,7 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
     }
   )
 
-  ipcMain.handle(
-    'git:findHugeFoldersToIgnore',
-    async (_event, args: { worktreePath: string }): Promise<string[]> =>
-      readWorktreeGitUnlessWslStopped(store, args.worktreePath, false, (worktreePath, gitOptions) =>
-        findKnownHugeFolderPathsToIgnore(worktreePath, gitOptions)
-      )
-  )
-
-  ipcMain.handle(
-    'git:appendGitignore',
-    async (_event, args: { worktreePath: string; folderName: string }): Promise<boolean> => {
-      const worktreePath = await resolveRegisteredWorktreePath(args.worktreePath, store)
-      return appendFolderToGitignore(worktreePath, args.folderName)
-    }
-  )
+  registerFilesystemGitignoreHandlers(context)
 
   ipcMain.handle(
     'git:history',
