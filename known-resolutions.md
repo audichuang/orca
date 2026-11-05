@@ -14,6 +14,15 @@
 - 驗證（<YYYY-MM-DD>，上游 <sha>）：<跑了什麼、結果>｜未驗證
 ```
 
+## 9bd6272fdf4e1f2bbef43ac8c56722cf2ba31641（#38130、refactor(tooling): organize build, CI, and test owners）× fork 9f5b5d731a（ci(fork): undo v1.4.250's workflow sync so its config/scripts tests read matching workflows）— auto-rebase 2026-11-05
+- 類型：上游修了同一件事（上游 release commit 151d5dda99 把 main 的 `.github/workflows` 同步進 release/v1.4.250、`config/scripts` 留舊版，5 支讀 workflow 的 config/scripts 測試 18 例紅；fork 撤回那次同步。含 #38130 的 release 會讓 workflow 與腳本重新一致）
+- 衝突檔：下一次含 #38130 的 release，rebase 重放 9f5b5d731a 時 39 個 `.github/workflows/*.yml` 幾乎全部衝突（patch-id 跟上游不同，**不會自動略過**）
+- 連帶症狀：不丟的話 workflow 回到 v1.4.249 時代的腳本路徑，讀 workflow 的 config/scripts 測試（adhoc-windows-parallelism、localization-extraction-change-scope、node-server-native-compat-scope、pr-auxiliary-preflight-admission、pr-workflow-parallelism 等）會再紅
+- 處理：適用條件 `git merge-base --is-ancestor 9bd6272fdf vNEW`。成立就照第 1 步「丟 commit」：用標題 `ci(fork): undo v1.4.250's workflow sync so its config/scripts tests read matching workflows` 在 `git log --format='%h %s' vOLD..OLD_DEVELOP` 找到剛好一個，`rebase -i` drop；range-diff 要看到它是 `<`。丟完後 `git diff vNEW HEAD -- .github/workflows` 應只剩 fork 原有的 `fork-pr.yml`、`fork-release.yml`、`ci-closed-pr-caches.yml`。不成立（下一個 release 仍是同步前的腳本版面）就照常重放。
+- canary：從 2026-11-06 起對上游 main 試合，這 39 個 workflow 檔會衝突、fork 欄是這個 commit：採上游就是正解，歸這條，不用另寫條目。
+- 守它的測試：上面 5 支 config/scripts 測試（Linux CI；macOS 的 bash 3.2 讓 pr-auxiliary-preflight-admission 8 例、ci-managed-ssh-execution、dependency-security-release 本機紅，與這個 commit 無關）
+- 驗證（2026-11-05，上游 v1.4.250）：乾淨 v1.4.250 與 Fork CI r1（2d42a0615e，run 42018786601）都是 18 紅；撤回後 CI r2（9f5b5d731a，run 42020999924）全綠，本機 4 檔綠、剩 8 例 bash 3.2。
+
 ## fork 自身問題（待人判斷，auto-rebase 不要照做：folder 層級的外部變更要不要配對到 repo-scoped diff 分頁：兩條路徑不一致）× fork c2a98a82aa（feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229）、71a91a6a02（fix(source-control): folder 分頁的 git/讀檔改由 filePath 推導 repo 相對路徑…）— auto-rebase 2026-10-27（原 sha ebae8279bd、a9b651f3b9，之後 d4ac764be9、4b7966a4eb、8ca8c6583b、0bb7357c8f、cee6406bd7、fa64c71117 都已被 rebase 改寫，canary 2026-11-05 依標題換成目前 develop 的 sha）
 - 類型：待人判斷
 - 衝突檔：無
@@ -43,14 +52,7 @@
 - 處理：上游 e59b843336（v1.4.248）讓筆記改由 `DiffCommentOwner` 決定；`selectDiffCommentView(gitWorktreeId, folderTab)` 走 `resourceEvidence`（`workspace-copy-owner.ts:194-222`），folder 分頁的 `operationProvenance` 沒有 `childRepo`，會用 folder 路由的 authority 去找 repo worktree 的筆記。本機與同一台 runtime/SSH 上 authority 相同、讀碼看會解析成功，但沒有測試證明；解析失敗時 owner 是 null、那個 section 不能新增或刪除筆記。目前的 fork 測試 `combined-diff-section-list.fork.test.tsx` 直接傳 `commentOwner={null}`、`EditorPanelHeader.fork.test.tsx` mock 掉 selector。補一個 `.fork.test`：用真的 store（含 remote repo 的 folder 分頁）斷言 owner 不是 null，且 `addDiffComment` 寫進 repo 那份筆記；加進 config/fork-seam-tests.txt 的「Editor folder git-owner routing…diff review notes」組。
 - 守它的測試：待補
 - 驗證：未驗證（只有審查者 B 讀碼）
-
-## fork 自身問題（Git Graph／commit 清單的 base-ref boundary 列不可選取沒有測試守）× fork 76231d0d54（fix(fork): keep four upstream files within max-lines after upstream's module moves）、GitHistorySelectableRow 的多選接線 — auto-rebase 2026-11-05
-- 類型：fork 自身問題
-- 衝突檔：無
-- 連帶症狀：無（v1.4.249 rebase 審查者 C 的 NON-BLOCKING 1）
-- 處理：`git-history-panel.tsx` 傳 `item={isBoundaryNode ? null : item}` 給 `GitHistorySelectableRow`（76231d0d54 為了 max-lines 從 `selected={!isBoundaryNode && …}`／`onSelectionClick={… !isBoundaryNode && …}` 改寫，等價）。改成 `item={item}` 後 56 支測試全綠，改寫前也沒有測試。補一個 component 測試：有 `result.baseRef` 時 Cmd/Ctrl-click boundary 列不會加入選取、Copy Full Source 不含它；加進 config/fork-seam-tests.txt 的 Git Graph 組。
-- 守它的測試：待補
-- 驗證：未驗證（只有審查者 C 的 mutation）
+- 2026-11-05 auto-rebase v1.4.250（run 371）評估後未做：要用真 store 重建上游 host-authority／ownership catalog（`workspace-copy-owner.ts` 的 `resolveSourceCopy`、indexed owners）的 remote fixture，超出無人值守 rebase 的範圍。適合人工或功能 PR 補。
 
 ## fork 自身問題（待人判斷，auto-rebase 不要照做：fork 測試的 vi.mock 指向不存在的模組，mock 沒生效；pwsh／wsl 屬 Platform scope，mock 生效後測試行為可能變，改 mock 路徑也沒有會紅的證明）× fork 既有測試 src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts、src/main/ipc/repos-nested-scan-options.test.ts — auto-rebase 2026-11-05
 - 類型：待人判斷
