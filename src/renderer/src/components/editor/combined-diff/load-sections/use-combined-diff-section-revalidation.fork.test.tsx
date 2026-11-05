@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { ORCA_EDITOR_EXTERNAL_FILE_CHANGE_EVENT } from '../../editor-autosave'
+import { ORCA_EDITOR_EXTERNAL_FILE_CHANGE_EVENT } from '../../autosave/editor-autosave'
 import { REPO, ROOT, folderFile } from '../../folder-git-owner.test-fixture'
 import { getCombinedDiffFileTreeSectionKey } from '../resolve-changes/combined-diff-section-identity'
 import { useCombinedDiffSectionRevalidation } from './use-combined-diff-section-revalidation'

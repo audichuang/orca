@@ -3,7 +3,7 @@ import {
   installRuntimeFileClientEnvironment,
   runtimeEnvironmentCall
 } from '@/runtime/runtime-file-client-test-harness'
-import { keepTabEditsOverExternalChange } from './ExternalFileChangeBanner'
+import { keepTabEditsOverExternalChange } from './external-changes/ExternalFileChangeBanner'
 
 installRuntimeFileClientEnvironment()
 

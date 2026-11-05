@@ -2,14 +2,14 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it } from 'vitest'
 import { useAppStore } from '@/store'
-import { sourceControlActionRecipeEntry } from '../../../../shared/source-control-action-selection'
+import { sourceControlActionRecipeEntry } from '../../../../shared/source-control/ai/recipes/source-control-action-selection'
 import {
   cleanupFolderSourceControl,
   FOLDER,
   resetFolderSourceControl,
   REPO
 } from './source-control/panel/folder-source-control-test-fixture'
-import { useSourceControlAgentActionStart } from './useSourceControlAgentActionStart'
+import { useSourceControlAgentActionStart } from './source-control/ai/useSourceControlAgentActionStart'
 
 beforeEach(() => {
   resetFolderSourceControl()

@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { useAllWorktrees, useRepoMap } from '@/store/selectors'
 import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
-import type { FolderWorkspace } from '../../../../../../shared/folder-workspace-types'
+import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { getFolderGitWorktrees, type FolderGitWorktree } from './folder-git-worktrees'
 

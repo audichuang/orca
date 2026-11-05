@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useAppStore } from '@/store'
 import type { OpenFile } from '../types/open-file'
-import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
+import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { toOpenConflictMetadata } from '../git/git-status-reconciliation'
 
