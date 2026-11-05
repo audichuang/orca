@@ -12,7 +12,7 @@ import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
 
 vi.mock('sonner', () => ({ toast: { warning: vi.fn(), error: vi.fn(), success: vi.fn() } }))
 
-const { default: FileExplorer } = await import('./FileExplorer')
+const { default: FileExplorer } = await import('./file-explorer/panel/FileExplorer')
 const { ClipcodeExplorerPasteButton } =
   await import('./source-control/clipcode/clipcode-explorer-paste-button')
 

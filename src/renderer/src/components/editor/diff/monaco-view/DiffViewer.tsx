@@ -36,7 +36,7 @@ import {
   applyModelLanguage
 } from '@/lib/monaco-languages/plugin-syntax-editor-options'
 import { useMonacoTheme } from '@/hooks/use-monaco-theme'
-import { syncKeptModelValue } from './diff-kept-model-sync'
+import { syncKeptModelValue } from '../../diff-kept-model-sync'
 
 export default function DiffViewer({
   modelKey,

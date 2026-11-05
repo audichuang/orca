@@ -12,7 +12,7 @@ import { afterAll, afterEach, beforeEach, expect, it, vi } from 'vitest'
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js'
 import { loader } from '@monaco-editor/react'
 import type { editor } from 'monaco-editor'
-import { DiffSectionBody } from './DiffSectionBody'
+import { DiffSectionBody } from './diff/sections/DiffSectionBody'
 
 vi.mock('@/i18n/i18n', () => ({ translate: (_key: string, fallback: string) => fallback }))
 

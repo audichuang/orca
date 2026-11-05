@@ -3,7 +3,7 @@ import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
 import type {
   GitBranchChangeEntry,
   GitDiffResult
-} from '../../../../../../shared/git-diff-compare-types'
+} from '../../../../../../shared/git/diff/git-diff-compare-types'
 import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
 import {
   buildGitPayload,
