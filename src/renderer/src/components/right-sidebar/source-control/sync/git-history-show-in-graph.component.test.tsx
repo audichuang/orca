@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import { GitHistoryPanel } from './git-history-panel'
 import { showCommitInGitGraphSlot } from '../../../git-graph-tab/git-graph-source-control-link'
 

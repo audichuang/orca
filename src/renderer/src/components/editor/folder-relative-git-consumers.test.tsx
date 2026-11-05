@@ -12,7 +12,7 @@ import {
   buildEditorTabGitStatusMap,
   selectEditorTabGitOwnerRoots
 } from '../tab-bar/editor-tab-git-status'
-import { getOpenFilesForExternalFileChange } from './editor-autosave'
+import { getOpenFilesForExternalFileChange } from './autosave/editor-autosave'
 import type { DiffContent, FileContent } from './editor-panel-content-types'
 import { useEditorPanelFileContentLoader } from './useEditorPanelFileContentLoader'
 import { useEditorPanelDiffContentLoader } from './useEditorPanelDiffContentLoader'

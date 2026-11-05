@@ -13,19 +13,19 @@ const FORK_REFERENCE = /'git-graph'|fork-editor-tab-kinds|git-graph-editor-surfa
 /** Files that name check-details only for its own behavior, where the default path is right for git-graph. */
 const ALLOWED = new Map<string, string>([
   [
-    'renderer/src/components/editor/closed-editor-tab-disposal.ts',
+    'renderer/src/components/editor/model-lifetime/retention/closed-editor-tab-disposal.ts',
     'disposes the check-details reading cache; a Git Graph tab has none'
   ],
   [
-    'renderer/src/components/editor/closed-editor-tab-controller.ts',
+    'renderer/src/components/editor/model-lifetime/retention/closed-editor-tab-controller.ts',
     'feeds closed check-details tabs to that cache disposal'
   ],
   [
-    'renderer/src/components/editor/check-details-reading-fixture.ts',
+    'renderer/src/components/editor/check-details/reading/check-details-reading-fixture.ts',
     'test fixture building a check-details open file'
   ],
   [
-    'renderer/src/components/editor/check-details-reading-owner.ts',
+    'renderer/src/components/editor/check-details/reading/check-details-reading-owner.ts',
     'owns the reading cache of one check-details tab'
   ],
   [

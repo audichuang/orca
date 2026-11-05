@@ -1,6 +1,6 @@
 // Fork-only: content rules every ClipCode copy shares (binary, non-UTF-8, size cap).
 import { getUtf8ByteLength, measureUtf8ByteLength } from '../../../../../../shared/utf8-byte-limits'
-import type { GitDiffResult } from '../../../../../../shared/git-diff-compare-types'
+import type { GitDiffResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import {
   CLIPCODE_DEFAULTS,
   formatHeader,

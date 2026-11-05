@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import { GitGraphCommitInfo, type GitGraphCommitContext } from './git-graph-commit-info'
 
 function commit(id: string, parentIds: string[]): GitHistoryItem {

@@ -6,7 +6,7 @@ import { newAgentLaunchRequestId } from '@/lib/agent-launch-request-id'
 import { resolveDefaultAgentForWorktreeNewTab } from '@/lib/agent-tab-shortcuts'
 import { getDetectionTargetIdentityForWorktree } from '@/lib/agent-detection-target-inventory'
 import { translate } from '@/i18n/i18n'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 
 export async function explainCommitWithDefaultAgent(
   worktreeId: string,

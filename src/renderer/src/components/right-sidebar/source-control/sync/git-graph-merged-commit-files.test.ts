@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import { mergeCommitFiles } from './git-graph-merged-commit-files'
 
 function commit(id: string): GitHistoryItem {

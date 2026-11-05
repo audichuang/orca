@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { GitStatusEntry } from '../../../../../../shared/git-status-types'
+import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import { openUncommittedEntry } from './open-uncommitted-entry'
 
 function fakeState() {

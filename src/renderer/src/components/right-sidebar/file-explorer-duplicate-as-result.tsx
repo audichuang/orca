@@ -11,8 +11,8 @@ import { basename, dirname, joinPath } from '@/lib/path'
 import { copyRuntimePath } from '@/runtime/runtime-file-mutation-client'
 import { runtimePathExists } from '@/runtime/runtime-file-metadata-client'
 import { runtimeTargetEnvironmentId } from '@/runtime/runtime-client-target'
-import type { TreeNode } from './file-explorer-types'
-import { captureFileExplorerOperationGuard } from './file-explorer-operation-owner'
+import type { TreeNode } from './file-explorer/tree/file-explorer-types'
+import { captureFileExplorerOperationGuard } from './file-explorer/navigation/file-explorer-operation-owner'
 
 // Copied from useFileDuplicate: strips Electron invoke error wrappers.
 function extractIpcErrorMessage(err: unknown, fallback: string): string {

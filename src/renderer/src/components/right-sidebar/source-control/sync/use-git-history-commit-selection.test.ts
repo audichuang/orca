@@ -1,7 +1,10 @@
 // @vitest-environment happy-dom
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { GitHistoryItem, GitHistoryResult } from '../../../../../../shared/git-history'
+import type {
+  GitHistoryItem,
+  GitHistoryResult
+} from '../../../../../../shared/git/history/git-history-types'
 import { useGitHistoryCommitSelection } from './use-git-history-commit-selection'
 
 const item = (id: string): GitHistoryItem => ({ id, parentIds: [], subject: id, message: id })

@@ -20,7 +20,7 @@ vi.mock('@/store/worktree-diff-comments-selector', async (importOriginal) => ({
 }))
 vi.mock('./EditorPanelHeaderPath', () => ({ EditorPanelHeaderPath: () => null }))
 vi.mock('./EditorPanelActionsMenu', () => ({ EditorPanelActionsMenu: () => null }))
-vi.mock('./diff-navigation-context', () => ({
+vi.mock('./diff/review/diff-navigation-context', () => ({
   useDiffNavigation: () => ({
     changeCount: navigation.changeCount,
     goToPreviousDiff: vi.fn(),

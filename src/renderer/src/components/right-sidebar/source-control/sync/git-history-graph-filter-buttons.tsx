@@ -14,7 +14,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import {
   isGitHistoryGraphFiltered,
   useGitHistoryGraphDraftQuery,
