@@ -169,6 +169,7 @@ export async function runRestoreScenarios(ctx: ExtraScenarioContext): Promise<vo
     await expect(resultToast(/overwritten 1/)).toHaveCount(1, { timeout: 10_000 })
     await expect.poll(onDisk, { timeout: 15_000 }).toContain('restored = 14')
     // Outlive the armed autosave timer (10 s) before judging the final content.
+    // ast-grep-ignore: test-no-real-time-wait -- the real autosave timer is what this proves did not overwrite the restore
     await page.waitForTimeout(12_500)
     const finalText = onDisk()
     ev.push(
