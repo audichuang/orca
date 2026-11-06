@@ -58,6 +58,7 @@ test('the Git Graph tab loads pages on scroll, follows an arrow past them, and w
   testRepoPath,
   registerPostElectronShutdownCleanup
 }) => {
+  // Why: launches Electron and builds a git fixture with many tags.
   test.setTimeout(240_000)
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`
   const branchName = `e2e-graph-deep-${suffix}`
