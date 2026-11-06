@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { applyExclusions, lintStepArgs, runLintSteps } from './fork-lint-run.mjs'
-import { LINT_STEPS } from './run-lint.mjs'
+import { LINT_STEPS } from './preflight/changed-checks/run-lint.mjs'
 
 const STEPS = ['oxlint', 'check:a', 'check:skipped']
 const EXCLUDED = { 'check:skipped': 'reason' }

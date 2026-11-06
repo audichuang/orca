@@ -2,7 +2,7 @@
 // Usage: node config/scripts/fork-footprint.mjs <fork-base> [--json]
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
-import { isTestOnlySourcePath } from './test-only-source-path.mjs'
+import { isTestOnlySourcePath } from './static-analysis/process-boundaries/test-only-source-path.mjs'
 
 const CATEGORIES = ['production', 'test', 'locale', 'baseline', 'other']
 const CODE_FILE = /\.(c|m)?(j|t)sx?$/

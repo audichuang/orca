@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { runProcessSync } from '@orca/process-host'
-import { LINT_STEPS } from './run-lint.mjs'
+import { LINT_STEPS } from './preflight/changed-checks/run-lint.mjs'
 
 // Steps fork-check-lint deliberately skips, with why.
 export const EXCLUDED = {

@@ -87,7 +87,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
 5. 自己解：保留 fork 功能、採上游新結構（FORK.md 的 seam 原則）；locale 兩邊只新增 key 時 driver 已合好、不算衝突；還停在 locale 檔，代表兩邊改了同一個字串（driver 留下衝突標記），兩邊 key 都保留、字串照筆記條目或上游新文案決定，之後 `pnpm run verify:localization-catalogs`。沒把握就 `git rebase --abort`，鎖留著，跳到第 8 步（`## 8.` 那節）：那裡會開 PR 並標 `needs-human`。放掉鎖的話，下一次排程會重跑同一個註定失敗的 rebase，每小時推一次失敗通知。
 6. 適用的「fork 自身問題」條目：rebase 完成後照條目改，一條一個 commit（算 MANUAL），跑條目「守它的測試」確認通過。
 7. `git push --force fork HEAD:refs/heads/rebase/vNEW`，然後馬上開 PR（第 2 步可能跑好幾小時，PR 開了才能留心跳）：`git push fork "vNEW^{commit}:refs/heads/ci-base/vNEW"`（上游 tag 是 annotated tag，不加 `^{commit}` 推不上分支），`gh pr create -R audichuang/orca --base ci-base/vNEW --head rebase/vNEW --title "[不合併] develop rebase 到 vNEW 的 CI 驗證"`，記下編號當 `PR`。body 第一行放 `<!-- auto-rebase:old-develop OLD_DEVELOP 的完整 sha -->`（RESUME 靠它），其餘照 PR #22/#29 的格式（不合併的原因、`develop = vOLD + N 個 fork commit` → `vNEW + …` diff 區塊、每個衝突檔怎麼解、用了哪幾條筆記、額外 commit、Merge Danger），不加任何 attribution 行。之後各步有新的衝突解法或修正就 `gh pr edit` 補進說明。
-8. `make fork-check-lint` 直接讀上游 `config/scripts/run-lint.mjs` 的 `LINT_STEPS` 逐項執行（`config/scripts/fork-lint-run.mjs`），上游增減 lint 項目不用手動同步。只有兩種情況要動它，另外 commit（算 MANUAL）：上游拿掉了 `EXCLUDED` 裡的項目（腳本會報錯要你刪掉那筆排除），或上游換掉 `LINT_STEPS`（`fork-upstream-api.mjs` 會報錯），或上游新增 `oxlint` 以外沒有 package script 的步驟（`lintStepArgs` 會報錯）。
+8. `make fork-check-lint` 直接讀上游 `config/scripts/preflight/changed-checks/run-lint.mjs` 的 `LINT_STEPS` 逐項執行（`config/scripts/fork-lint-run.mjs`），上游增減 lint 項目不用手動同步。只有兩種情況要動它，另外 commit（算 MANUAL）：上游拿掉了 `EXCLUDED` 裡的項目（腳本會報錯要你刪掉那筆排除），或上游換掉 `LINT_STEPS`（`fork-upstream-api.mjs` 會報錯），或上游新增 `oxlint` 以外沒有 package script 的步驟（`lintStepArgs` 會報錯）。
 
 你寫的 commit：message 英文，不加 Co-Authored-By 或任何 attribution 行（cherry-pick 的上游 commit 照原樣保留）。
 
@@ -132,7 +132,7 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 **hunk 掃描由你跑**（C 是 `claude -p`，自己跑會被 Bash 的時間上限打斷）：C 的 worktree（`../ar-$RUN-review-c`）建好後，照「等待」的方式在背景跑：
 
 ```sh
-cd ../ar-$RUN-review-c && { node config/scripts/ensure-native-runtime.mjs --runtime=node && node config/scripts/fork-hunk-guard-scan.mjs vNEW --out "$MAIN/.rebase-review/scan" $(sed 's/^/--only /' "$MAIN/.rebase-review/resolved-files.txt") && node config/scripts/fork-hunk-guard-scan.mjs --report "$MAIN/.rebase-review/scan"; } > "$MAIN/.rebase-review/scan.log" 2>&1; echo $? > "$MAIN/.rebase-review/scan.log.exit"
+cd ../ar-$RUN-review-c && { node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node && node config/scripts/fork-hunk-guard-scan.mjs vNEW --out "$MAIN/.rebase-review/scan" $(sed 's/^/--only /' "$MAIN/.rebase-review/resolved-files.txt") && node config/scripts/fork-hunk-guard-scan.mjs --report "$MAIN/.rebase-review/scan"; } > "$MAIN/.rebase-review/scan.log" 2>&1; echo $? > "$MAIN/.rebase-review/scan.log.exit"
 ```
 
 `ensure-native-runtime` 不能省：`pnpm install` 把原生模組編成 Electron 版，Node 載不到，碰到它們的 fork 測試會在基準就紅、被排除，守的 hunk 變成假缺口。`resolved-files.txt` 是空的（CLEAN）就不跑；RESUME 沒有這份檔，用同一個規則重建：PR 說明列的衝突檔，加上 `extra-commits.diff` 碰到的每個檔。每個 hunk 約十幾秒到一分鐘。回非 0 看 `scan.log`；結果裡的 `error` 對那個檔重跑一次（新的 `--out`，例如 `scan-retry`）。給 C 的提示裡 `$MAIN` 寫成絕對路徑。
