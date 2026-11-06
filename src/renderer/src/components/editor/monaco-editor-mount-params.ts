@@ -8,6 +8,7 @@ import type { MarkdownCommentPopoverState } from './markdown-source-tools/monaco
 
 export type MonacoEditorPropsRef = MutableRefObject<{
   relativePath: string
+  chatRelativePath?: string
   language: string
   onSave: (content: string) => void
   onContentChange: (content: string) => void
