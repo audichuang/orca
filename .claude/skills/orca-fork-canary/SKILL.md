@@ -54,7 +54,7 @@ Shell 是 zsh（macOS）：變數後接 `:` 一律寫 `${v}:`（`$b:config/…` 
 2. 在 `K` 跑 `pnpm tc`，再重跑一次 canary 跑過的那批測試檔：
 
    ```sh
-   node config/scripts/ensure-native-runtime.mjs --runtime=node
+   node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node
    python3 -c "import json,sys;print('\n'.join(sorted({r['name'] for r in json.load(open(sys.argv[1]))['testResults']})))" "$R/logs/vitest.json" \
      | xargs env LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 pnpm exec vitest run --config config/vitest.config.ts
    ```
