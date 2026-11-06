@@ -101,6 +101,7 @@ Upstream changes break fork features silently when they are type-compatible: a r
 - **Fake data must match the real producer.** A fake reader once invented `missingSides`, which upstream `getCommitDiff` never set; the copy treated missing files as empty while its tests stayed green. Pin the producer with its own real-git test.
 - **Persistence**: every fork field written to disk gets a save → reload → restore round trip (`workspace-layout-git-owner-roundtrip.test.ts` is the pattern).
 - **UI interaction**: component tests with the real store (`folder-multi-repo-panel.test.tsx`, `git-history-graph.component.test.tsx`).
+- **Mixed versions**: a field or kind the fork adds on the upstream wire needs a journey against the baseline release in `tests/e2e/cross-version-wire/`; copy `fork-git-optional-params-downgrade.unit.test.ts`. The wire glob collects that folder, so such a test does not go in the seam list.
 - **List it**: a new seam test joins its group in `config/fork-seam-tests.txt`, so `fork-check-seams` runs it and the auto-rebase mutation pass finds it.
 - **Prove the test bites**: remove the fix or mutate the seam and watch it fail before trusting a green run.
 - **Fork cases go in a sibling** `<basename>.fork.test.ts(x)` next to the upstream test, never appended to the upstream file, so rebases do not conflict there. Edit an upstream test only where the fork deliberately changed upstream behavior, and keep that edit minimal.
@@ -109,6 +110,20 @@ Upstream changes break fork features silently when they are type-compatible: a r
 To measure coverage, run `config/scripts/fork-hunk-guard-scan.mjs <FORK_BASE> --out <dir> [--shard i/n]` in a clean checkout, then `--report <dir>`. It puts each fork hunk in an upstream production file back to upstream's side, one at a time, and runs the fork unit tests that import the file or name it. The report lists the hunks no test turns red on, so the gaps get closed before a rebase finds them. Import-, comment- and type-only hunks (the same emitted JavaScript) are skipped and left to `pnpm tc`; one that goes red only by crashing (it declares a name another hunk uses) is listed apart. A full scan takes about 30 minutes in six shards across clean worktrees: run it on a machine with spare cores, not the macmini. A few files with `--only`, as the auto-rebase runs it, are fine anywhere.
 
 The release UI set (ClipCode copy, Paste & Restore, the folder repo list, session restore, the external-change banner, agent launch cwd) runs as fork e2e in a hidden window: `folder-multi-repo-source-control.spec.ts` and `folder-workspace-tab-restart-restore.spec.ts`. A new fork UI behaviour that ships joins that set as an e2e scenario. What only hands-on UI rounds catch: long-session state, real clipboard round trips with the ClipCode plugins, focus, hover and how the change feels; run them for PRs that add or change UI, not before every release.
+
+## Deferred to upstream phase F: git-graph tabs over layout-owner
+
+A fork client pairing with an upstream host can reach two problems only once upstream ships layout-owner (`ORCA_LAYOUT_OWNER=main`). R3: the host publishes or accepts a `git-graph` tab that the other side's zod schema rejects, so the handover is refused and the workspace falls back to the session.tabs mirror, or a new Git Graph tab is rejected and vanishes after the redraw. R4: `EditorFileRecord.gitWorktreeId` is stripped by the release's non-strict schema. Neither is reachable today:
+
+- Packaging refuses the switch: `config/electron-builder.config.cjs` and `config/scripts/build-orcad-template.mjs` call `assertNotDarkBuild` (`config/dark-build-switches.cjs`).
+- A host declares `layout.intents.v1` and registers `layout.apply` only when `ORCA_LAYOUT_OWNER_IS_MAIN` holds (`src/main/runtime/dark-switch-runtime-capabilities.ts`, `src/main/runtime/rpc/methods/index.ts`); a client opens `layout.subscribe` only for a host that declares it (`src/renderer/src/runtime/server-layout-frames.ts`). Mobile takes the session.tabs projection, which already sends git-graph as `[]`.
+- The real topology is a fork client on a release host.
+
+`tests/e2e/cross-version-wire/fork-layout-owner-dark-tripwire.unit.test.ts` goes red on the rebase that changes any of this. Then do the fix, which waits on how phase F gates frames:
+
+- Declare a `fork.layout.gitGraphTab.v1` capability from a fork file (for example `fork-editor-tab-kinds.ts`), next to the other statuses in `orca-runtime-get-status.ts`.
+- Handle its absence on both client paths: `serverLayoutApplyFor` (reject a new Git Graph open with a notice modelled on `hostTooOld`; new strings need all 11 locales) and the handover's `desktopOnlyEditorOpens` (skip the fork kind).
+- Whether the host publishes the kind depends on whether phase F gets client-to-host negotiation. A bare `publishTab` filter would leave dangling `groups[].tabIds`; a gate in the client alone loses desktop-only editor tabs (see `server-layout-editor-handover.ts`).
 
 ## Upstream-file conventions
 
