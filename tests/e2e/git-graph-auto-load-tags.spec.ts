@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { expect, test } from './helpers/orca-app'
 import { waitForSessionReady } from './helpers/store'
+import { OPEN_GIT_GRAPH_CHORD } from './helpers/git-graph-shortcut'
 import { openSourceControlForWorktree } from './helpers/worktree-registration'
 
 const DEEP_COMMITS = 1100
@@ -106,7 +107,7 @@ test('the Git Graph tab loads pages on scroll, follows an arrow past them, and w
   await orcaPage.locator('[cmdk-item]').filter({ hasText: 'All branches' }).first().click()
   await orcaPage.keyboard.press('Escape')
 
-  await orcaPage.keyboard.press('ControlOrMeta+Shift+H')
+  await orcaPage.keyboard.press(OPEN_GIT_GRAPH_CHORD)
   const graph = orcaPage.locator('[data-git-graph-root]')
   await expect(graph).toBeVisible({ timeout: 15_000 })
   const rows = graph.getByTestId('git-graph-full-row')
