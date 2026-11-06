@@ -12,6 +12,7 @@ import { EditorEditFileSurface } from './panel/EditorEditFileSurface'
 import { EditorFileLoadErrorView } from './loading/EditorFileLoadErrorView'
 import { CombinedDiffViewer, MarkdownPreview } from './editor-lazy-views'
 import { forkEditorTabView } from '../git-graph-tab/git-graph-editor-surfaces'
+import { useOpenFileGitRelativePath } from './use-open-file-git-relative-path'
 import { MarkdownPreviewSizeGate } from './markdown-preview/render-tree/MarkdownPreviewSizeGate'
 import {
   HOST_STARTED,
@@ -130,8 +131,9 @@ export function EditorContent({
   const reloadOpenCheckRunDetailsTab = useAppStore((state) => state.reloadOpenCheckRunDetailsTab)
   const markdownDocuments = useMarkdownDocuments(activeFile, isMarkdown, mdViewMode, handleSave)
   const getConflictNavigation = useEditorConflictNavigation()
+  const activeGitRelativePath = useOpenFileGitRelativePath(activeFile)
   const activeConflictEntry =
-    worktreeEntries.find((entry) => entry.path === activeFile.relativePath) ?? null
+    worktreeEntries.find((entry) => entry.path === activeGitRelativePath) ?? null
   const isCombinedDiff =
     activeFile.mode === 'diff' &&
     (activeFile.diffSource === 'combined-all' ||
