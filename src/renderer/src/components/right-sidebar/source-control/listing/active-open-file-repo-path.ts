@@ -22,11 +22,16 @@ export function resolveActiveFileRepoRelativePath(args: {
     return file.relativePath
   }
   if (file.gitWorktreeId) {
-    return file.gitWorktreeId === repoWorktreeId ? file.relativePath : null
+    if (file.gitWorktreeId !== repoWorktreeId) {
+      return null
+    }
+    // Why: an edit tab's relativePath is relative to its folder, not to this repo.
+    return repoPath ? repoRelativePath(repoPath, file.filePath) : file.relativePath
   }
-  if (!repoPath) {
-    return null
-  }
-  const relative = relativePathInsideRoot(repoPath, file.filePath)
+  return repoPath ? repoRelativePath(repoPath, file.filePath) : null
+}
+
+function repoRelativePath(repoPath: string, filePath: string): string | null {
+  const relative = relativePathInsideRoot(repoPath, filePath)
   return relative ? relative.replace(/\\/g, '/') : null
 }
