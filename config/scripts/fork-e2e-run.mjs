@@ -1,9 +1,11 @@
 import { deepStrictEqual, strictEqual } from 'node:assert'
-import { mkdirSync, readFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join, resolve } from 'node:path'
 import { runProcessSync } from '@orca/process-host'
 import { discoverE2eFiles } from './ci/e2e-selection/ci-e2e-shard-plan.mjs'
+import { writeAssignment } from './ci/sharding/ci-shard-assignment.mjs'
+import { planForkE2e } from './fork-e2e-plan.mjs'
 
 const require = createRequire(import.meta.url)
 const cli = require.resolve('@playwright/test/cli')
@@ -49,13 +51,32 @@ function testIds(report) {
   return Object.values(discoverE2eFiles(report)).flat().sort()
 }
 
-const full = testIds(runPlaywright(['--list', '--reporter=json'], 'full-list'))
+const discovery = runPlaywright(['--list', '--reporter=json'], 'full-list')
+const full = testIds(discovery)
+const baseline = JSON.parse(
+  readFileSync(new URL('../fork-e2e-timings.json', import.meta.url), 'utf8')
+)
+const assignment = planForkE2e(discovery, count, baseline)
+writeAssignment(join(directory, 'assignment.json'), { ...assignment, selectedShard: index })
 const shards = []
+const selections = []
 for (let part = 1; part <= count; part++) {
+  const planned = assignment.shards[part - 1]
+  strictEqual(planned.files.length > 0, true, `Empty fork E2E shard ${part}/${count}`)
+  const selection = join(directory, `shard-${part}.txt`)
+  writeFileSync(selection, `${planned.files.join('\n')}\n`)
+  selections.push(`--test-list=${selection}`)
   const ids = testIds(
-    runPlaywright(['--list', '--reporter=json', `--shard=${part}/${count}`], `shard-${part}-list`)
+    runPlaywright(['--list', '--reporter=json', selections[part - 1]], `shard-${part}-list`)
   )
-  console.log(`>> fork e2e shard ${part}/${count}: ${ids.length} test IDs\n${ids.join('\n')}`)
+  deepStrictEqual(
+    ids,
+    planned.files.flatMap((file) => assignment.testsByFile[file]).sort(),
+    'Native Playwright selection differs from fork E2E plan'
+  )
+  console.log(
+    `>> fork e2e shard ${part}/${count}: ${ids.length} test IDs, estimated ${planned.durationMs / 1000}s\n${ids.join('\n')}`
+  )
   shards.push(ids)
 }
 const assigned = shards.flat().sort()
@@ -64,7 +85,7 @@ deepStrictEqual(assigned, full, 'Fork E2E shard union differs from full --list')
 console.log(`>> fork e2e coverage: ${full.length} test IDs, each assigned exactly once`)
 
 if (!listOnly) {
-  const report = runPlaywright([`--shard=${shard}`, '--reporter=list,json'], 'results')
+  const report = runPlaywright([selections[index - 1], '--reporter=list,json'], 'results')
   deepStrictEqual(
     testIds(report),
     shards[index - 1],
