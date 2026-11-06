@@ -1,5 +1,4 @@
 import { app } from 'electron'
-import { isForkDistribution } from '../fork-distribution'
 import type { UpdateCheckOptions, UpdateStatus } from '../../../shared/update-status-types'
 import type {
   RemoteServerUpdateInstallResult,
@@ -17,7 +16,7 @@ export abstract class UpdaterRemoteStatus extends UpdaterNudge {
   }
 
   protected getRemoteServerUpdateSupport(): RemoteServerUpdateSupport {
-    if (!app.isPackaged || isForkDistribution()) {
+    if (!app.isPackaged) {
       return {
         installMode: this.updateInstallMode,
         automatic: false,
