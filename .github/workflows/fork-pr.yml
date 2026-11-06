@@ -246,6 +246,28 @@ jobs:
       - name: make fork-check-e2e
         run: xvfb-run --auto-servernum bash .github/scripts/e2e-with-window-manager.sh env ORCA_E2E_FORWARD_APP_LOGS=1 make fork-check-e2e FORK_E2E_SHARD=${{ matrix.shard }}
 
+      - name: Repeat New Markdown autofocus (20 runs)
+        # Collect A/B results even when the normal shard catches the same bug.
+        if: ${{ !cancelled() && matrix.shard == '1/6' }}
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: out/fork-tabs-repeat/results.json
+        run: |
+          mkdir -p out/fork-tabs-repeat
+          xvfb-run --auto-servernum bash .github/scripts/e2e-with-window-manager.sh env \
+            ORCA_BACKGROUND_LAUNCH=1 ORCA_E2E_FORWARD_APP_LOGS=1 SKIP_BUILD=1 \
+            pnpm exec playwright test tests/e2e/tabs.spec.ts \
+            --config=tests/playwright.config.ts --project=electron-headless \
+            --grep='New Markdown' --repeat-each=20 --workers=1 --retries=0 --reporter=list,json
+
+      - name: Upload New Markdown repeat report
+        if: ${{ always() && matrix.shard == '1/6' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: fork-tabs-repeat-${{ github.run_attempt }}
+          path: out/fork-tabs-repeat/results.json
+          retention-days: 7
+          if-no-files-found: error
+
       - name: Upload Playwright traces
         if: failure() || cancelled()
         uses: actions/upload-artifact@v7
