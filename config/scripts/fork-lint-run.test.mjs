@@ -63,6 +63,7 @@ process.exitCode = await runLintSteps(
     expect(result.code).toBe(1)
     expect(result.stderr).toContain('diagnostic-first')
     expect(result.stderr).toContain('diagnostic-second')
+    expect(result.stderr).toContain('>> pnpm run check:first\n')
     expect(readFileSync(join(root, 'after.txt'), 'utf8')).toBe('completed')
   })
 })
