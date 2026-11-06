@@ -1,6 +1,7 @@
 // Copied from upstream components/tab-bar/tab-create-entry-action.ts createParentDirectoriesForNewFile
 // and isExistsError (module-private there), bound to the runtime clients upstream passes in; re-sync on rebase.
 import { joinPath } from '@/lib/path'
+import { getTabEntryParentNotDirectoryMessage } from '../../../tab-bar/tab-create-entry-copy'
 import { createRuntimePath } from '@/runtime/runtime-file-mutation-client'
 import { statRuntimePath } from '@/runtime/runtime-file-metadata-client'
 import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
@@ -21,8 +22,7 @@ export async function createParentDirectoriesForNewFile(args: {
   for (const segment of directorySegments) {
     currentPath = joinPath(currentPath, segment)
     try {
-      // Why: file creation authorizes the immediate parent before its own mkdir,
-      // so nested new-file paths must materialize parents one level at a time.
+      // Authorize each parent before creating the next nested directory.
       await createRuntimePath(args.context, currentPath, 'directory')
     } catch (error) {
       if (!isExistsError(error)) {
@@ -30,7 +30,7 @@ export async function createParentDirectoriesForNewFile(args: {
       }
       const stat = await statRuntimePath(args.context, currentPath)
       if (!stat.isDirectory) {
-        throw new Error(`Cannot create file because ${currentPath} is not a directory.`)
+        throw new Error(getTabEntryParentNotDirectoryMessage(currentPath))
       }
     }
   }
