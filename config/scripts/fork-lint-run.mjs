@@ -3,6 +3,7 @@ import { runProcess } from '@orca/process-host'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { quotePosixShellUnlessPlain } from '../../src/shared/shell/launch/shell-argument-quoting.ts'
 import { LINT_STEPS } from './preflight/changed-checks/run-lint.mjs'
 import { resolveOxlintInvocation } from './tool-invocation/oxlint-cli-invocation.mjs'
 import { resolvePnpmCliInvocation } from './tool-invocation/pnpm-cli-invocation.mjs'
@@ -79,9 +80,16 @@ export async function runLintSteps(steps, root = process.cwd(), argv = []) {
       }
     })
   )
-  for (const result of results) {
+  for (const [index, result] of results.entries()) {
     if (!result.ok) {
-      console.error(`\n✗ ${result.name} (${result.elapsed})\n${result.output.trimEnd()}`)
+      const { program, args } = commands[index]
+      const command =
+        result.name === 'oxlint'
+          ? [program, ...args].map(quotePosixShellUnlessPlain).join(' ')
+          : `pnpm run ${quotePosixShellUnlessPlain(result.name)}`
+      console.error(
+        `\n✗ ${result.name} (${result.elapsed})\n>> ${command}\n${result.output.trimEnd()}`
+      )
     } else {
       console.log(`✓ ${result.name} (${result.elapsed})`)
     }
