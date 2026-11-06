@@ -30,9 +30,10 @@ const context: RuntimeGitContext = {
   worktreeId: 'repo-1::/work/repo',
   worktreePath: '/work/repo'
 }
-// Shape of the release's GitHistoryResult: no `graph` and no `limit`, which the host never sets here.
+// Shape of the release's GitHistoryResult: always carries `limit`, never `graph`.
 const RELEASE_HISTORY_RESULT = {
   items: [],
+  limit: 50,
   hasIncomingChanges: false,
   hasOutgoingChanges: false,
   hasMore: true
