@@ -4,6 +4,7 @@ import type { Repo } from '../../../../../../shared/repo-types'
 import {
   getSidebarHiddenRepoIds,
   isRepoHiddenFromSidebar,
+  releaseSidebarHiddenReposOfRemovedFolders,
   resetFolderSidebarHiddenReposForTest,
   setReposHiddenFromSidebar,
   subscribeFolderSidebarHiddenRepos
@@ -69,5 +70,37 @@ describe('folder sidebar hidden repos', () => {
     localStorage.setItem('orca.fork.folderSidebarHiddenRepos', '{not json')
 
     expect(getSidebarHiddenRepoIds([repo('hidden', '/work/folder/docs/hidden')]).size).toBe(0)
+  })
+
+  describe('releasing repos of removed folders', () => {
+    const folder = { folderPath: '/work/folder', connectionId: null }
+    const sibling = { folderPath: '/work', connectionId: null }
+
+    it('unhides repos that only the removed folder covered', () => {
+      const hidden = repo('hidden', '/work/folder/docs/hidden')
+      setReposHiddenFromSidebar([hidden], true)
+
+      releaseSidebarHiddenReposOfRemovedFolders([folder], [])
+
+      expect(isRepoHiddenFromSidebar(hidden)).toBe(false)
+    })
+
+    it('keeps repos hidden while another folder still covers them', () => {
+      const hidden = repo('hidden', '/work/folder/docs/hidden')
+      setReposHiddenFromSidebar([hidden], true)
+
+      releaseSidebarHiddenReposOfRemovedFolders([folder, sibling], [sibling])
+
+      expect(isRepoHiddenFromSidebar(hidden)).toBe(true)
+    })
+
+    it('leaves the same path on another host alone', () => {
+      const remote = repo('remote', '/work/folder/docs/hidden', { connectionId: 'ssh-1' })
+      setReposHiddenFromSidebar([remote], true)
+
+      releaseSidebarHiddenReposOfRemovedFolders([folder], [])
+
+      expect(isRepoHiddenFromSidebar(remote)).toBe(true)
+    })
   })
 })
