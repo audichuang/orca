@@ -12,7 +12,7 @@ import { captureEditorFileOperationProvenance } from '@/lib/editor-file-operatio
 import type { AppState } from '../../../types'
 
 /** The runtime owner `openFile` gives a file opened in this workspace; null when it cannot tell. */
-function conflictFileRuntimeOwner(s: AppState, worktreeId: string): string | null {
+export function conflictFileRuntimeOwner(s: AppState, worktreeId: string): string | null {
   try {
     return captureEditorFileOperationProvenance(s, worktreeId, undefined, false).generation.route
       .runtimeEnvironmentId

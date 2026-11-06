@@ -4,6 +4,7 @@ import { joinPath } from '@/lib/path'
 import { resolveEditorFileIdForOwner } from '../file-ids/editor-file-ids'
 import { resolveOpenGitWorktreeId } from '../git/open-file-git-owner'
 import { withFolderFileGitOwner } from '../git/folder-file-git-owner'
+import { conflictFileRuntimeOwner } from './open-conflict-review'
 import type { OpenFile } from '../types/open-file'
 import { toOpenConflictMetadata } from '../git/git-status-reconciliation'
 import { resolveEditorOpenTargetGroupId } from '../tabs/editor-open-target-group'
@@ -55,7 +56,8 @@ export function createOpenConflictFile(
           worktreeId,
           // Why: entry.path is relative to the requested git owner, whatever owner the tab keeps.
           gitWorktreeId,
-          mode: 'edit'
+          mode: 'edit',
+          runtimeEnvironmentId: conflictFileRuntimeOwner(s, worktreeId)
         }).relativePath
 
         if (existing) {
