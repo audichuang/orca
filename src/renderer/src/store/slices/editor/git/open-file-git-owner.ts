@@ -49,6 +49,22 @@ export function getOpenFileGitRelativePath(
   return file.relativePath
 }
 
+/** Root of the git owner worktree holding the file; a folder edit tab's relativePath cannot name it. */
+export function getOpenFileGitRoot(
+  state: Pick<AppState, 'worktreesByRepo'>,
+  file: Pick<OpenFile, 'gitWorktreeId' | 'filePath'>
+): string | null {
+  for (const worktree of getIndexedWorktreesById(
+    selectWorktreesByRepo(state),
+    file.gitWorktreeId ?? ''
+  )) {
+    if (relativePathInsideRoot(worktree.path, file.filePath) !== null) {
+      return worktree.path
+    }
+  }
+  return null
+}
+
 /** Path relative to the tab owner's root; a git-owned tab's relativePath is repo-relative instead. */
 export function resolveTabOwnerRelativePath(
   state: Pick<AppState, 'folderWorkspaces'>,
