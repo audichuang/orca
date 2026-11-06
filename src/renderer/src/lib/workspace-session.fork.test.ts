@@ -82,7 +82,7 @@ function createSnapshot(overrides: Partial<AppState> = {}): AppState {
           canGoBack: false,
           canGoForward: false,
           loadError: null,
-          createdAt: Date.now()
+          createdAt: 1_700_000_000_000
         }
       ]
     },
