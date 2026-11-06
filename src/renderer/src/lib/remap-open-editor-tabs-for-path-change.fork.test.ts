@@ -104,6 +104,59 @@ describe('remapOpenEditorTabsForPathChange for a scoped tab git owner', () => {
     expect(moved?.gitWorktreeId).toBeUndefined()
   })
 
+  it('re-homes a folder-relative edit tab moved out of its git owner', () => {
+    useAppStore.setState({
+      folderWorkspaces: [
+        {
+          id: 'f1',
+          projectGroupId: 'g1',
+          name: 'f',
+          folderPath: '/f',
+          connectionId: null,
+          linkedTask: null,
+          comment: '',
+          isArchived: false,
+          isUnread: false,
+          isPinned: false,
+          sortOrder: 0,
+          createdAt: 0,
+          lastActivityAt: 0,
+          updatedAt: 0
+        }
+      ],
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: owner lookup reads only id, repoId and path.
+      worktreesByRepo: { a: [{ id: 'a-main', repoId: 'a', path: '/f/a' } as never] }
+    })
+    useAppStore.getState().openFile(
+      {
+        filePath: '/f/a/docs/x.ts',
+        relativePath: 'docs/x.ts',
+        worktreeId: 'folder:f1',
+        gitWorktreeId: 'a-main',
+        runtimeEnvironmentId: null,
+        language: 'typescript',
+        mode: 'edit'
+      },
+      { suppressActiveRuntimeFallback: true }
+    )
+    expect(useAppStore.getState().openFiles.find((f) => f.mode === 'edit')?.relativePath).toBe(
+      'a/docs/x.ts'
+    )
+
+    remapOpenEditorTabsForPathChange({
+      fromPath: '/f/a/docs/x.ts',
+      toPath: '/f/b/x.ts',
+      worktreePath: '/f',
+      worktreeId: 'folder:f1',
+      owner: localMoveOwner('folder:f1')
+    })
+
+    const moved = useAppStore.getState().openFiles.find((f) => f.mode === 'edit')
+    expect(moved?.filePath).toBe('/f/b/x.ts')
+    expect(moved?.relativePath).toBe('b/x.ts')
+    expect(moved?.gitWorktreeId).toBeUndefined()
+  })
+
   it('leaves a scoped diff tab alone when its file moves out of the git owner', () => {
     useAppStore
       .getState()
