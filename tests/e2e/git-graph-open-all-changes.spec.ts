@@ -5,6 +5,7 @@ import path from 'node:path'
 import type { Page } from '@stablyai/playwright-test'
 import { expect, test } from './helpers/orca-app'
 import { waitForSessionReady } from './helpers/store'
+import { OPEN_GIT_GRAPH_CHORD } from './helpers/git-graph-shortcut'
 import { openSourceControlForWorktree } from './helpers/worktree-registration'
 
 // Regression for a one-off "InstantiationService has been disposed" workbench crash: graph file diff
@@ -81,7 +82,7 @@ test('graph tab: file diff, back, then Open all changes keeps the workbench aliv
   await waitForSessionReady(orcaPage)
   await openSourceControlForWorktree(orcaPage, testRepoPath, worktreePath)
 
-  await orcaPage.keyboard.press('ControlOrMeta+Shift+H')
+  await orcaPage.keyboard.press(OPEN_GIT_GRAPH_CHORD)
   const graph = orcaPage.locator('[data-git-graph-root]')
   await expect(graph).toBeVisible({ timeout: 15_000 })
   const graphTab = orcaPage.locator('[data-tab-id]').filter({ hasText: 'Git Graph' })

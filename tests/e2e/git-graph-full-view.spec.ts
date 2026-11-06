@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { expect, test } from './helpers/orca-app'
 import { waitForSessionReady } from './helpers/store'
+import { OPEN_GIT_GRAPH_CHORD } from './helpers/git-graph-shortcut'
 import { openSourceControlForWorktree } from './helpers/worktree-registration'
 import { clipboardText, setClipboard } from './helpers/folder-multi-repo-scenario-context'
 
@@ -120,8 +121,8 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
   await orcaPage.keyboard.press('Escape')
   await expect(orcaPage.locator('[cmdk-item]').first()).toBeHidden()
 
-  // Mod+Shift+H opens the graph as an editor tab, not a modal, so the sidebar button is optional.
-  await orcaPage.keyboard.press('ControlOrMeta+Shift+H')
+  // The Open Git Graph chord opens the graph as an editor tab, not a modal, so the sidebar button is optional.
+  await orcaPage.keyboard.press(OPEN_GIT_GRAPH_CHORD)
   const graph = orcaPage.locator('[data-git-graph-root]')
   await expect(graph).toBeVisible({ timeout: 15_000 })
   await expect(orcaPage.getByRole('dialog')).toHaveCount(0)

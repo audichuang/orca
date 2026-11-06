@@ -70,14 +70,14 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-// Mod+Shift+H is Cmd on macOS and Ctrl elsewhere.
+// Cmd+Shift+H on macOS; Ctrl+Shift+K elsewhere, where upstream's Collapse All Projects owns Ctrl+Shift+H.
 it.each([
-  ['darwin', 'Macintosh; Intel Mac OS X 14_0', { metaKey: true }],
-  ['win32', 'Windows NT 10.0', { ctrlKey: true }],
-  ['linux', 'X11; Linux x86_64', { ctrlKey: true }]
+  ['darwin', 'Macintosh; Intel Mac OS X 14_0', { metaKey: true }, 'h'],
+  ['win32', 'Windows NT 10.0', { ctrlKey: true }, 'k'],
+  ['linux', 'X11; Linux x86_64', { ctrlKey: true }, 'k']
 ] as const)(
   'opens the Git Graph tab for the active workspace on its default chord (%s)',
-  (os, userAgent, modifier) => {
+  (os, userAgent, modifier, key) => {
     platform.current = os
     vi.stubGlobal('navigator', { userAgent })
     renderHook(() =>
@@ -87,8 +87,8 @@ it.each([
       })
     )
     const event = new KeyboardEvent('keydown', {
-      key: 'h',
-      code: 'KeyH',
+      key,
+      code: `Key${key.toUpperCase()}`,
       shiftKey: true,
       bubbles: true,
       cancelable: true,
