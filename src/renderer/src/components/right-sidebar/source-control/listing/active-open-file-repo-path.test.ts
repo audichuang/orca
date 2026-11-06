@@ -37,6 +37,17 @@ describe('resolveActiveFileRepoRelativePath', () => {
     ).toBe('index.md')
   })
 
+  it('derives the repo path of a bound tab whose path is folder-relative', () => {
+    expect(
+      resolveActiveFileRepoRelativePath({
+        file: { filePath: '/repo-a/pkg/a.md', relativePath: 'a.md', gitWorktreeId: 'repo-a' },
+        tabWorktreeId: 'folder:pkg',
+        repoWorktreeId: 'repo-a',
+        repoPath: '/repo-a'
+      })
+    ).toBe('pkg/a.md')
+  })
+
   it('derives the repo-relative path for an ownerless folder tab', () => {
     expect(
       resolveActiveFileRepoRelativePath({

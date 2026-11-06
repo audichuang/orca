@@ -104,11 +104,13 @@ export function buildHydratedEditorSessionState(
         pf.gitWorktreeId &&
         pf.gitWorktreeId !== worktreeId &&
         (validGitOwnerIds?.has(pf.gitWorktreeId) ?? true)
-      // Why: a read through the folder selector with a repo-relative path names the wrong file.
-      const reanchoredPath =
-        pf.gitWorktreeId && !ownerIsValid && ownerRoots
+      // Why: sessions saved before edit tabs kept relativePath folder-relative store it repo-relative.
+      const ownerRelative =
+        pf.gitWorktreeId && pf.gitWorktreeId !== worktreeId && ownerRoots
           ? resolveTabOwnerRelativePath(ownerRoots, { ...pf, worktreeId }, null)
           : null
+      // Why: a read through the folder selector with a repo-relative path names the wrong file.
+      const reanchoredPath = !ownerIsValid ? ownerRelative : null
       // Why: with no single owner root, keep the stale owner so reads fail visibly instead of naming another file.
       const keepsGitOwner =
         ownerIsValid ||
@@ -117,7 +119,7 @@ export function buildHydratedEditorSessionState(
           ownerRoots !== undefined &&
           parseWorkspaceKey(worktreeId)?.type === 'folder' &&
           !reanchoredPath)
-      const relativePath = reanchoredPath || pf.relativePath
+      const relativePath = ownerRelative || pf.relativePath
       openFiles.push({
         id,
         filePath: pf.filePath,
