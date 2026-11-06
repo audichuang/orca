@@ -333,7 +333,8 @@ fork-check-mobile:
 	@# Why not on CI: the job's install-mobile-dependencies step already installed and checked the lockfile.
 	$(if $(CI),,cd mobile && pnpm install --frozen-lockfile && git diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml)
 	@# The drawer check also runs on WebKit, the engine of the shell's iOS WebView.
-	pnpm exec playwright-core install $(if $(CI),--with-deps) webkit
+	@# The matching official Playwright image already supplies the OS libraries; still verify/install WebKit.
+	pnpm exec playwright-core install $(if $(CI),$(if $(FORK_MOBILE_PLAYWRIGHT_IMAGE),,--with-deps)) webkit
 	mkdir -p out && node config/scripts/mobile-web/check-entry/run-mobile-web-app-checks.mjs --prepare-route-snapshot "$(MOBILE_ROUTES)"
 	pnpm run build:mobile-web
 	@# Why fail instead of skip: without a browser the render checks skip silently.
