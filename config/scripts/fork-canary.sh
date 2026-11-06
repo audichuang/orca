@@ -252,7 +252,17 @@ list_commits() {
     while IFS=$'\t' read -r kind file commits; do
       [ "$kind" = D ] || continue
       echo "- \`$file\`"
+      git log --diff-filter=D --format='  - upstream deleted in %H %s' "$merge_base..$upstream_sha" -- "$file"
       for c in ${commits//,/ }; do git log -1 --format='  - %h %s' "$c"; done
+    done <"$logs/intermediate.tsv"
+    echo
+    echo "### May revive (upstream deleted, fork re-adds)"
+    echo
+    echo "Not counted in Result: the rebase does not stop, but the file is back in the rebased tree."
+    echo
+    while IFS=$'\t' read -r kind file commits; do
+      [ "$kind" = A ] || continue
+      echo "- \`$file\` ($commits)"
     done <"$logs/intermediate.tsv"
     echo
     echo "### May stop (upstream modifies)"

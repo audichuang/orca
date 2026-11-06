@@ -317,7 +317,7 @@ fork-check-full:
 
 # CI's cross-version wire journeys: old/new clients and servers talking to each other.
 # Explicit paths, because a directory filter overrides --exclude; the inventory's wire mode globs new files in and
-# skips the one upstream file its WIRE_SKIPPED names, so fork-check-lint and this target agree on what runs.
+# skips the one upstream file WIRE_SKIPPED (config/scripts/fork-wire-tests.mjs) names, so fork-check-lint and this target agree on what runs.
 fork-check-wire: export LC_ALL = C
 # Why the guard: the journeys pick their baseline from the newest local vX.Y.Z tag.
 fork-check-wire: fork-base-guard

@@ -77,7 +77,7 @@ Shell 是 zsh（macOS）：變數後接 `:` 一律寫 `${v}:`（`$b:config/…` 
   - **上游改了 fork 依賴的 API**（改名、刪 export、改簽章）→ 寫 fork 這邊要怎麼跟上。
   - **fork 自身問題**（跟上游哪一版無關，develop 現在就壞或不穩，例如 fork 測試的時序）→ 寫清楚怎麼改、哪個測試守它。標題的上游 commit 位置寫「fork 自身問題」：沒有上游 sha，下一次 auto-rebase 不論 vNEW 是哪一版都會在 rebase 後照它改，不必等人處理。條目列的修正已經在 develop 上（有人先改了）就刪掉條目，在 `resolution-history.md` 不用另記。
   - **看不出來** → 照實寫「待人判斷」與已知的事實，不要猜。
-  - 報告「Rebase-only stops」的 `Will stop (upstream deletes)`：合併看不到、auto-rebase 逐 commit 重放才會停的 modify/delete。每個檔照「上游刪掉 fork 改過的上游測試檔（modify/delete）」寫一條，列出要停幾站、各站的 commit 標題（sha 會被改寫，靠標題找）和要 `git rm` 的檔。`May stop (upstream modifies)` 不寫條目。
+  - 報告「Rebase-only stops」的 `Will stop (upstream deletes)`：合併看不到、auto-rebase 逐 commit 重放才會停的 modify/delete。每個檔照類型「兩邊各改各的」（上游整檔刪除，modify/delete）寫一條，列出要停幾站、各站的 commit 標題（sha 會被改寫，靠標題找）和要 `git rm` 的檔；上游 sha 用該檔下印的 `upstream deleted in <sha>`。`May revive` 不寫條目。`May stop (upstream modifies)` 不寫條目。
 - 驗證就是第 2 步那次 `pnpm tc` 和重跑測試。寫下跑了什麼、結果如何、在哪個上游 sha 上跑的；沒驗證的標「未驗證」。
 - 寫進 `$S/known-resolutions.md`，**一個根因一條**，格式照檔案開頭的範本：標題寫上游 commit、fork commit、canary 日期；內容列出衝突檔，以及連帶出現的 typecheck 錯誤檔和失敗測試，這樣 auto-rebase 看到同樣的症狀，就知道是同一件事。上游 commit 一定要寫完整的 sha（fork 自身問題除外）：auto-rebase 用 `git merge-base --is-ancestor <它> vNEW` 判斷條目適不適用。fork commit 寫 sha 也寫標題：develop 每次 rebase 都會改寫 sha，靠標題才找得回來。
 - 已經有條目的根因：這次也驗證過的話，在條目上更新「驗證（日期，上游 sha）」那行，不要另開一條。條目的 fork sha 不在目前的 develop 上（`git merge-base --is-ancestor <sha> fork/develop` 失敗，代表 develop 已被 rebase 改寫過），就用 commit 標題在 `git log --format='%h %s' "$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' fork/develop)"..fork/develop` 找標題完全相同的那一個，把新的 sha 換上；找不到或不只一個，就在條目上註明「fork sha 待人判斷」。條目留著；auto-rebase 移動 develop 後會把它搬進 `resolution-history.md`。
