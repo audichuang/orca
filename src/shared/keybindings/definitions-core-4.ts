@@ -69,7 +69,12 @@ export const KEYBINDING_DEFINITION_CORE_4: readonly KeybindingDefinition[] = [
     group: 'Global',
     scope: 'global',
     searchKeywords: ['shortcut', 'git', 'graph', 'history', 'log', 'commits', 'source control'],
-    defaultBindings: platformBindings(['Mod+Shift+H'])
+    // Why: Collapse / Expand All Projects owns Ctrl+Shift+H on Linux and Windows.
+    defaultBindings: {
+      darwin: ['Mod+Shift+H'],
+      linux: ['Mod+Shift+K'],
+      win32: ['Mod+Shift+K']
+    }
   },
   {
     id: 'terminal.clearPaneTitle',
