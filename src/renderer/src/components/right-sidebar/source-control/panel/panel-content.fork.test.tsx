@@ -2,13 +2,15 @@
 // Fork seam guard: in a folder repo section, every combined view the panel opens lands in the folder
 // with the repo as its git owner. Leaf children are stubbed to hand back their callbacks; the store is real.
 import { cleanup, render } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
+import type { ComponentProps } from 'react'
 import { useAppStore } from '@/store'
 import type { GitBranchCompareSummary } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import type { SourceControlSectionViewAction } from '../../../../../../shared/source-control/listing/source-control-section-order'
 import { SourceControlWorktreeScopeContext } from '../folder/worktree-scope'
 import type { SourceControlPanelReadyProps } from './panel-props'
+import type { SourceControlBranchSection } from '../listing/branch-section'
 import type { GitHistoryPanelState } from '../sync/git-history-panel'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 
@@ -109,6 +111,11 @@ function renderPanel({ showHistory = false } = {}): void {
     </SourceControlWorktreeScopeContext.Provider>
   )
 }
+
+// Why: the panel's openBranchAllDiffs lambda drops a 4th argument silently; widening upstream's prop must fail typecheck here.
+expectTypeOf<
+  Parameters<ComponentProps<typeof SourceControlBranchSection>['openBranchAllDiffs']>
+>().toEqualTypeOf<[string, string, GitBranchCompareSummary]>()
 
 const HISTORY_STATE: GitHistoryPanelState = { status: 'idle' }
 // Why remote: a slot that fell back to a local target would misroute this repo's git reads.

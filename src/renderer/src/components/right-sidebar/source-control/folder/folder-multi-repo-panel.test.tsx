@@ -13,8 +13,8 @@ import { setReposHiddenFromSidebar } from './folder-sidebar-hidden-repos'
 import { useSourceControlWorktreeScope } from './worktree-scope'
 
 // The repo panel is the regular single-repo panel; a stub shows which repo the accordion pinned it to.
-vi.mock('../panel/single-repo-panel', () => ({
-  SourceControlSingleRepoPanel: () => {
+vi.mock('../panel/panel', () => ({
+  SourceControlPanel: () => {
     const scope = useSourceControlWorktreeScope()
     return (
       <div data-testid="repo-panel" data-label={scope?.label} data-color={scope?.color}>
