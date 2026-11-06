@@ -21,6 +21,7 @@ vi.mock('./profile-state-access-identity', async (importOriginal) => ({
   ...(await importOriginal<typeof identity>())
 }))
 
+const staleOwnerPid = process.pid === 12345 ? 12346 : 12345
 const roots: string[] = []
 function root(): string {
   const path = fs.mkdtempSync(join(tmpdir(), 'orca-state-access-'))
@@ -179,7 +180,7 @@ describe('profile state admission and maintenance', () => {
 
 function staleGate(
   path: string,
-  pid = 12345,
+  pid = staleOwnerPid,
   host = hostname(),
   extra: {
     bootIdentity?: string
@@ -228,7 +229,7 @@ describe('profile state owner reclamation', () => {
     vi.spyOn(identity, 'profileStateAccessBootIdentity').mockReturnValue('current-boot')
     vi.spyOn(identity, 'profileStateAccessMachineIdentity').mockReturnValue('cloned-machine')
     vi.spyOn(identity, 'profileStateAccessWrittenThisBoot').mockReturnValue(true)
-    const owner = staleGate(path, 12345, hostname(), {
+    const owner = staleGate(path, staleOwnerPid, hostname(), {
       bootIdentity: 'clone-boot',
       machineIdentity: 'cloned-machine'
     })
@@ -256,7 +257,7 @@ describe('profile state owner reclamation', () => {
       const path = root()
       vi.spyOn(identity, 'profileStateAccessBootIdentity').mockReturnValue(currentBoot)
       vi.spyOn(identity, 'profileStateAccessMachineIdentity').mockReturnValue('cloned-machine')
-      const owner = staleGate(path, 12345, 'another-host', {
+      const owner = staleGate(path, staleOwnerPid, 'another-host', {
         bootIdentity: 'another-boot',
         machineIdentity: 'cloned-machine'
       })
@@ -298,8 +299,8 @@ describe('profile state owner reclamation', () => {
       .spyOn(processStart, 'getProcessStartedAtMs')
       .mockImplementation(() => clock)
     vi.spyOn(fs, 'readFileSync').mockImplementation((file, options) => {
-      if (file === '/proc/12345/stat') {
-        return `12345 (orca daemon) ${fields.join(' ')}`
+      if (file === `/proc/${staleOwnerPid}/stat`) {
+        return `${staleOwnerPid} (orca daemon) ${fields.join(' ')}`
       }
       return read(file, options)
     })
@@ -308,12 +309,12 @@ describe('profile state owner reclamation', () => {
     vi.spyOn(process, 'kill').mockReturnValue(true)
     try {
       Object.defineProperty(process, 'platform', { configurable: true, value: 'linux' })
-      const processStartIdentity = identity.profileStateAccessProcessIdentity(12345)
+      const processStartIdentity = identity.profileStateAccessProcessIdentity(staleOwnerPid)
       expect(processStartIdentity).toBe('linux-start-ticks:987654')
       if (processStartIdentity === null) {
         throw new Error('Expected process identity')
       }
-      const owner = staleGate(path, 12345, hostname(), {
+      const owner = staleGate(path, staleOwnerPid, hostname(), {
         bootIdentity: 'same-boot',
         processStartIdentity
       })
@@ -423,7 +424,9 @@ describe('profile state owner reclamation', () => {
     () => {
       const path = root()
       vi.spyOn(identity, 'profileStateAccessBootIdentity').mockReturnValue('same-boot')
-      const owner = staleGate(path, 12345, 'previous-hostname', { bootIdentity: 'same-boot' })
+      const owner = staleGate(path, staleOwnerPid, 'previous-hostname', {
+        bootIdentity: 'same-boot'
+      })
       vi.spyOn(process, 'kill').mockImplementation(() => {
         throw Object.assign(new Error('exited'), { code: 'ESRCH' })
       })
@@ -435,9 +438,11 @@ describe('profile state owner reclamation', () => {
   it('keeps a differently booted host unverifiable after a hostname change', () => {
     const path = root()
     vi.spyOn(identity, 'profileStateAccessBootIdentity').mockReturnValue('different-boot')
-    const owner = staleGate(path, 12345, 'previous-hostname', { bootIdentity: 'owner-boot' })
+    const owner = staleGate(path, staleOwnerPid, 'previous-hostname', {
+      bootIdentity: 'owner-boot'
+    })
     const kill = vi.spyOn(process, 'kill')
-    expect(() => acquireProfileStateMaintenance(path)).toThrow('verify PID 12345')
+    expect(() => acquireProfileStateMaintenance(path)).toThrow(`verify PID ${staleOwnerPid}`)
     expect(kill).not.toHaveBeenCalled()
     expect(fs.existsSync(owner)).toBe(true)
   })
@@ -528,7 +533,7 @@ describe('profile state owner reclamation', () => {
     const old = staleGate(path)
     const kill = process.kill
     vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
-      if (pid === 12345) {
+      if (pid === staleOwnerPid) {
         throw Object.assign(new Error('exited'), { code: 'ESRCH' })
       }
       return kill(pid, signal)
