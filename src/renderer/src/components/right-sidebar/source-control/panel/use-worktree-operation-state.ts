@@ -14,8 +14,10 @@ import { readCommitDraftForWorktree, type CommitDraftsByWorktree } from '../comm
 import { clearRemoteActionErrorsForCompletedConflictOperations } from '../sync/remote-refresh'
 import {
   loadSessionCommitErrors,
+  loadSessionConflictOperations,
   loadSessionRemoteActionErrors,
   saveSessionCommitErrors,
+  saveSessionConflictOperations,
   saveSessionRemoteActionErrors
 } from './operation-error-session'
 
@@ -44,7 +46,9 @@ export function useSourceControlWorktreeOperationState({
     Record<string, SourceControlActionError | null>
   >(() => loadSessionRemoteActionErrors())
   const remoteActionErrorSequenceByWorktreeRef = useRef<Record<string, number>>({})
-  const previousConflictOperationsRef = useRef<Record<string, GitConflictOperation>>({})
+  const previousConflictOperationsRef = useRef<Record<string, GitConflictOperation>>(
+    loadSessionConflictOperations()
+  )
   // Track commits per worktree so navigation cannot allow a duplicate in-flight commit.
   const [commitInFlightByWorktree, setCommitInFlightByWorktree] = useState<Record<string, boolean>>(
     {}
@@ -197,6 +201,7 @@ export function useSourceControlWorktreeOperationState({
       })
     )
     previousConflictOperationsRef.current = conflictOperationsByWorktree
+    saveSessionConflictOperations(conflictOperationsByWorktree)
   }, [conflictOperationsByWorktree])
 
   return {
