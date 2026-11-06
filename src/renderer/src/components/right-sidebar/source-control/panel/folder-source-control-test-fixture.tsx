@@ -8,7 +8,11 @@ import { clearHostAgentMenuSettingsForTests } from '@/runtime/agent-launch-setti
 import { settleAgentLaunchPaneStart } from '@/lib/agent-launch-pane-start'
 import { ConfirmationDialogProvider } from '@/components/confirmation-dialog'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { saveSessionCommitErrors, saveSessionRemoteActionErrors } from './operation-error-session'
+import {
+  saveSessionCommitErrors,
+  saveSessionConflictOperations,
+  saveSessionRemoteActionErrors
+} from './operation-error-session'
 import { getDefaultSettings } from '../../../../../../shared/constants'
 import { SourceControlWorktreeScopeContext } from '../folder/worktree-scope'
 
@@ -31,6 +35,7 @@ export const WORKTREE = makeWorktree({
 export function resetFolderSourceControl() {
   saveSessionCommitErrors({})
   saveSessionRemoteActionErrors({})
+  saveSessionConflictOperations({})
   useAppStore.setState(useAppStore.getInitialState(), true)
   const settings = getDefaultSettings('/tmp')
   settings.sourceControlAi!.actions = {
