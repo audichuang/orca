@@ -18,3 +18,5 @@ config/scripts/preflight/changed-checks/run-lint.mjs LINT_STEPS
 # Behavior-bearing: fork-hunk-guard-scan.mjs finds the fork tests reaching a file through upstream's unit graph.
 config/scripts/ci/unit-selection/dependency-graph/ci-unit-dependency-graph.mjs collectUnitDependencyGraph
 config/scripts/ci/unit-selection/dependency-graph/ci-unit-dependency-graph.mjs unitConsumers
+# fork-e2e-run.mjs compares native shard and execution identities with complete Playwright discovery.
+config/scripts/ci/e2e-selection/ci-e2e-shard-plan.mjs discoverE2eFiles
