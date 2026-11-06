@@ -40,7 +40,7 @@ jobs:
 
       # Why here: `pnpm lint` checks these links in fork-check-static, which a docs-only PR skips.
       - name: Check README local links
-        run: node config/scripts/check-readme-local-links.mjs
+        run: node config/scripts/static-analysis/repository-layout/check-readme-local-links.mjs
 
       - name: Classify changed paths
         id: scope
@@ -48,7 +48,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
-          DIFF_BASE="$(node config/scripts/git-pull-request-diff-base.mjs "$BASE_SHA")"
+          DIFF_BASE="$(node config/scripts/git/pr-diff-base/git-pull-request-diff-base.mjs "$BASE_SHA")"
           # Why --no-renames: a code file moved under docs/ must still show its code-side deletion.
           CHANGED="$(git diff --name-only --no-renames --diff-filter=ACDMRT "$DIFF_BASE" HEAD)"
           printf '%s\n' "$CHANGED"
@@ -95,7 +95,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1/14, 2/14, 3/14, 4/14, 5/14, 6/14, 7/14, 8/14, 9/14, 10/14, 11/14, 12/14, 13/14, 14/14]
+        shard:
+          [1/14, 2/14, 3/14, 4/14, 5/14, 6/14, 7/14, 8/14, 9/14, 10/14, 11/14, 12/14, 13/14, 14/14]
     steps:
       # Why shallow, like upstream: with history, scripts that diff a PR merge ref against HEAD^1 ignore the base a test passes them.
       - name: Checkout
@@ -110,7 +111,7 @@ jobs:
 
       # The rest mirrors upstream's unit-tests.yml shard job, which runs the full suite on every PR.
       - name: Install Electron package binary for tests
-        run: node config/scripts/install-electron-package-binary.mjs
+        run: node config/scripts/electron-installation/platform-layout/install-electron-package-binary.mjs
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
