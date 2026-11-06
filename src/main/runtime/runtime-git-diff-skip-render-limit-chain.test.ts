@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { OrcaRuntimeService } from './orca-runtime'
 import { RpcDispatcher } from './rpc/dispatcher'
 import { GIT_METHODS } from './rpc/methods/git'
-import { RuntimeGitDiffCommands } from './runtime-git-diff-commands'
+import { RuntimeGitDiffCommands } from './integrations/git/runtime-git-diff-commands'
 
 const getDiff = vi.hoisted(() => vi.fn())
 vi.mock('../git/source-control/file-diff', async (importOriginal) => ({
