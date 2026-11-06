@@ -11,7 +11,7 @@ import {
   LOCAL_EXECUTION_HOST_ID
 } from '../../../../../../shared/execution-host'
 import { copyClipcodeGitChanges } from '../clipcode/clipcode-copy-action'
-import { SourceControlSingleRepoPanel } from '../panel/single-repo-panel'
+import { SourceControlPanel } from '../panel/panel'
 import { selectFolderHiddenWorktreeCount, type FolderGitWorktree } from './folder-git-worktrees'
 import { useFolderGitMembers } from './use-folder-git-members'
 import { FolderAddReposDialog } from './folder-add-repos-dialog'
@@ -389,7 +389,7 @@ function ScopedRepoPanel({
   )
   return (
     <SourceControlWorktreeScopeContext.Provider value={scope}>
-      <SourceControlSingleRepoPanel />
+      <SourceControlPanel />
     </SourceControlWorktreeScopeContext.Provider>
   )
 }
