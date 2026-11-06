@@ -227,6 +227,7 @@ fork-check-lint: fork-base-guard
 	  "node config/scripts/fork-locale-parity.mjs $(FORK_BASE)" \
 	  "node config/scripts/fork-test-inventory.mjs check $(FORK_BASE)" \
 	  "node config/scripts/fork-upstream-api.mjs" \
+  "node config/scripts/fork-upstream-script-refs.mjs" \
 	  "bash .claude/skills/orca-fork-auto-rebase/scripts/precheck.test.sh" \
 	  "bash config/scripts/fork-rebase-continue.test.sh" \
 	  "pnpm run check:daemon-protocol-crossing"; do \
