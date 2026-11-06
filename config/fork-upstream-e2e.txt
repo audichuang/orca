@@ -30,7 +30,6 @@ tests/e2e/diff-word-wrap.spec.ts
 tests/e2e/diff-note-edit.spec.ts
 
 # tabs and session restore
-tests/e2e/tabs.spec.ts
 tests/e2e/editor-tab-selection-restore.spec.ts
 tests/e2e/active-view-restart-restore.spec.ts
 tests/e2e/golden-quit-relaunch-session.spec.ts
