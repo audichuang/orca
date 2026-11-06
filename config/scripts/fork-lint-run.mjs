@@ -1,8 +1,11 @@
-// Fork-only: runs upstream's `pnpm lint` steps (run-lint.mjs LINT_STEPS) one at a time, minus EXCLUDED, naming every failing step so one round shows them all.
+// Fork-only pool adapted from config/scripts/preflight/changed-checks/run-lint.mjs to avoid upstream export changes.
+import { runProcess } from '@orca/process-host'
 import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { runProcessSync } from '@orca/process-host'
 import { LINT_STEPS } from './preflight/changed-checks/run-lint.mjs'
+import { resolveOxlintInvocation } from './tool-invocation/oxlint-cli-invocation.mjs'
+import { resolvePnpmCliInvocation } from './tool-invocation/pnpm-cli-invocation.mjs'
 
 // Steps fork-check-lint deliberately skips, with why.
 export const EXCLUDED = {
@@ -21,49 +24,85 @@ export function applyExclusions(steps, excluded = EXCLUDED) {
   return steps.filter((name) => !excluded[name])
 }
 
-// Package scripts run through `pnpm run`; oxlint, run-lint.mjs's one step without a script, through `pnpm exec`.
-export function lintStepArgs(name, scripts) {
-  if (scripts[name]) {
-    return ['run', name]
-  }
-  if (name === 'oxlint') {
-    return ['exec', 'oxlint']
-  }
-  throw new Error(
-    `fork-lint-run: upstream lint step \`${name}\` has no package script; see run-lint.mjs`
-  )
+function resolveLintCommands(steps, scripts, root) {
+  const pnpm = resolvePnpmCliInvocation()
+  return steps.map((name) => {
+    if (name === 'oxlint') {
+      const { command, prefixArgs } = resolveOxlintInvocation(root)
+      return { name, program: command, args: prefixArgs }
+    }
+    if (!scripts[name]) {
+      throw new Error(`Lint step ${name} has no package.json script.`)
+    }
+    return { name, program: pnpm.command, args: [...pnpm.prefixArgs, 'run', name] }
+  })
 }
 
-export function runLintSteps(steps, run) {
-  const failed = []
-  for (const { name, args } of steps) {
-    console.log(`>> pnpm ${args.join(' ')}`)
-    const code = run(args) ?? 1
-    if (code !== 0) {
-      console.error(`fork-lint-run: \`${name}\` failed with exit code ${code}`)
-      failed.push({ name, code })
+async function runStep({ name, program, args }, root) {
+  const startedAt = performance.now()
+  try {
+    const result = await runProcess({ program, args, cwd: root, timeoutMs: null }, 'tail')
+    return {
+      name,
+      ok: result.code === 0 && !result.signal && !result.timedOut,
+      output: result.stdout + result.stderr,
+      elapsed: `${((performance.now() - startedAt) / 1000).toFixed(1)}s`
+    }
+  } catch (error) {
+    return { name, ok: false, output: error.message ?? String(error), elapsed: 'failed to start' }
+  }
+}
+
+export async function runLintSteps(steps, root = process.cwd(), argv = []) {
+  const startedAt = performance.now()
+  const names = applyExclusions(steps)
+  let concurrency = 2
+  for (const argument of argv) {
+    if (argument === '--' || argument === '--timings') {
+      continue
+    }
+    if (/^--max-?workers=[1-9]\d*$/i.test(argument)) {
+      concurrency = Number(argument.split('=')[1])
+    } else {
+      throw new Error(`Unknown option ${argument}. Use --maxWorkers=<n> or --timings.`)
     }
   }
-  if (failed.length === 0) {
-    return 0
-  }
-  console.error(
-    `fork-lint-run: ${failed.length} step(s) failed: ${failed.map(({ name }) => name).join(', ')}`
+  const { scripts } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
+  const commands = resolveLintCommands(names, scripts, root)
+  const results = []
+  let next = 0
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, commands.length) }, async () => {
+      while (next < commands.length) {
+        const index = next++
+        results[index] = await runStep(commands[index], root)
+      }
+    })
   )
-  return failed[0].code
+  for (const result of results) {
+    if (!result.ok) {
+      console.error(`\n✗ ${result.name} (${result.elapsed})\n${result.output.trimEnd()}`)
+    } else {
+      console.log(`✓ ${result.name} (${result.elapsed})`)
+    }
+  }
+  const failed = results.filter((result) => !result.ok)
+  const elapsed = `${((performance.now() - startedAt) / 1000).toFixed(1)}s`
+  if (failed.length > 0) {
+    console.error(
+      `\n✗ ${failed.length} of ${results.length} lint step(s) failed in ${elapsed}: ${failed.map((result) => result.name).join(', ')}`
+    )
+    return 1
+  }
+  console.log(`✓ ${results.length} lint step(s) passed in ${elapsed}.`)
+  return 0
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const { scripts } = JSON.parse(readFileSync('package.json', 'utf8'))
-  let steps
   try {
-    steps = applyExclusions(LINT_STEPS).map((name) => ({ name, args: lintStepArgs(name, scripts) }))
+    process.exitCode = await runLintSteps(LINT_STEPS, process.cwd(), process.argv.slice(2))
   } catch (error) {
     console.error(error instanceof Error ? error.message : error)
-    process.exit(1)
+    process.exitCode = 1
   }
-  process.exitCode = runLintSteps(
-    steps,
-    (args) => runProcessSync({ program: 'pnpm', args, stdio: 'inherit', timeoutMs: null }).code
-  )
 }
