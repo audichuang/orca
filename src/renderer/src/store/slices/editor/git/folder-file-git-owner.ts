@@ -80,3 +80,16 @@ export function withFolderFileGitOwner<
   const owner = resolveFolderFileGitOwner(state, file.worktreeId, file.filePath)
   return owner ? { ...file, gitWorktreeId: owner.gitWorktreeId } : file
 }
+
+/** The owner and path an open binds to once its host is resolved. */
+export function bindFolderFileGitOwner(
+  state: Pick<AppState, 'folderWorkspaces' | 'worktreesByRepo' | 'repos'>,
+  file: Parameters<typeof withFolderFileGitOwner>[1],
+  runtimeEnvironmentId: string | null | undefined
+): Pick<OpenFile, 'relativePath' | 'gitWorktreeId'> {
+  const { relativePath, gitWorktreeId } = withFolderFileGitOwner(state, {
+    ...file,
+    runtimeEnvironmentId
+  })
+  return { relativePath, gitWorktreeId }
+}
