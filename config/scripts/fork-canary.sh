@@ -156,7 +156,7 @@ if [ -z "$install_failed" ]; then
   else
     echo ">> vitest on $(printf '%s\n' "$tests" | grep -c .) files"
     # Why unquoted: each path is one argument; repo paths contain no whitespace.
-    (cd "$wt" && node config/scripts/ensure-native-runtime.mjs --runtime=node &&
+    (cd "$wt" && node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node &&
       pnpm exec vitest run --config config/vitest.config.ts --reporter=default --reporter=json \
         --outputFile.json="$logs/vitest.json" $tests) >"$logs/vitest.log" 2>&1 || tests_failed=1
   fi

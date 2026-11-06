@@ -41,10 +41,10 @@ describe('fork-upstream-red', () => {
     const present = new Set([
       '/w/src/main/a.ts',
       '/w/.github/workflows/pr.yml',
-      '/w/config/scripts/run-typecheck-projects-in-parallel.mjs'
+      '/w/config/scripts/typecheck/project-execution/run-typecheck-projects-in-parallel.mjs'
     ])
     const output = [
-      '$ node config/scripts/run-typecheck-projects-in-parallel.mjs',
+      '$ node config/scripts/typecheck/project-execution/run-typecheck-projects-in-parallel.mjs',
       '/w/src/main/a.ts(3,1): error TS2322',
       '.github/workflows/pr.yml lacks src/gone.ts'
     ].join('\n')
