@@ -98,6 +98,10 @@ const RESULT: GitHistoryResult = {
 type HistoryArgs = { worktreePath: string; limit?: number; graph?: Record<string, unknown> }
 const history = vi.fn(async (_args: HistoryArgs): Promise<GitHistoryResult> => ({ ...RESULT }))
 // The branch list read (limit 1) runs on mount; only the page read is gated on visibility.
+// Why not a timed wait: a fetch the view would start runs in the effects and microtasks this lets settle.
+const nextMacrotask = async (): Promise<void> => {
+  await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+}
 const pageReads = () => history.mock.calls.filter(([args]) => args.limit === 50)
 
 const scanNested = vi.fn(async (_args: { path: string }): Promise<NestedRepoScanResult> => ({
@@ -217,7 +221,7 @@ describe('Git Graph tab', () => {
         <Host fileId={id} />
       </TooltipProvider>
     )
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await nextMacrotask()
     expect(pageReads()).toEqual([])
 
     useAppStore.setState({ activeWorktreeId: 'wt-api' })
@@ -362,7 +366,7 @@ describe('Git Graph tab filters', () => {
 
     const reads = pageReads().length
     act(() => updateGitHistoryGraphFilter('wt-api', { query: 'sidebar only' }))
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await nextMacrotask()
     expect(pageReads()).toHaveLength(reads)
   })
 
@@ -775,7 +779,7 @@ describe('Git Graph tab and Source Control', () => {
     fireEvent.contextMenu(sidebarRow)
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Show in Git Graph' }))
     // Radix restores focus to the menu's trigger in a timeout after the menu unmounts.
-    await act(() => new Promise((resolve) => setTimeout(resolve, 20)))
+    await nextMacrotask()
     await waitFor(() => expect(graphFocusedCommit()).toBe(older.id))
     // In the app the restore waits out the menu's exit animation, so it can land later still.
     act(() => sidebarRow.focus())

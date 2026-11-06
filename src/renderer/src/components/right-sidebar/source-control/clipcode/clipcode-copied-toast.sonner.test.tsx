@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render } from '@testing-library/react'
 import { Toaster, toast } from 'sonner'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { notifyClipcodeCopied } from './clipcode-copied-toast'
 
 vi.mock('@/i18n/i18n', () => ({
@@ -9,14 +9,22 @@ vi.mock('@/i18n/i18n', () => ({
     fallback.replace(/\{\{(\w+)\}\}/g, (_match, name: string) => String(values?.[name] ?? ''))
 }))
 
+// Why 10ms frames: React flushes sonner's effects (which start its exit timers) when each act ends.
 async function settle(ms: number): Promise<void> {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, ms))
-  })
+  for (let elapsed = 0; elapsed < ms; elapsed += 10) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10)
+    })
+  }
 }
+
+beforeEach(() => {
+  vi.useFakeTimers()
+})
 
 afterEach(() => {
   cleanup()
+  vi.useRealTimers()
 })
 
 describe('Copy Full Source toast', () => {

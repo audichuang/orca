@@ -128,7 +128,14 @@ beforeEach(() => {
   mocks.getRuntimeGitHistory.mockImplementation(async () => ({ ...RESULT }))
 })
 
+// Mirrors the toolbar's debounce; a draft left to expire would write its stale text back after this.
+const SEARCH_DEBOUNCE_MS = 350
+const outwaitSearchDebounce = async (): Promise<void> => {
+  await act(() => vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS + 50))
+}
+
 afterEach(() => {
+  vi.useRealTimers()
   cleanup()
   window.localStorage.removeItem('orca:git-graph-details-collapsed')
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
@@ -687,6 +694,7 @@ describe('full-width Git Graph', () => {
   })
 
   it('User picks a loaded author into the search, and Clear resets every filter', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [])} />)
     await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
     // The narrow sidebar toolbar keeps only the branch filter and the search box.
@@ -719,7 +727,7 @@ describe('full-width Git Graph', () => {
     )
     expect(within(view).queryByRole('button', { name: 'Clear' })).toBeNull()
     // Nothing debounced writes the old text back.
-    await new Promise((resolve) => setTimeout(resolve, 450))
+    await outwaitSearchDebounce()
     expect(mocks.getRuntimeGitHistory.mock.calls.at(-1)?.[1]?.graph).toBeUndefined()
   })
 
@@ -749,6 +757,7 @@ describe('full-width Git Graph', () => {
   })
 
   it('keeps a query typed in the full view when an older sidebar draft is still debouncing', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [])} />)
     await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
     fireEvent.change(screen.getByRole('textbox', { name: 'Search commits' }), {
@@ -760,7 +769,7 @@ describe('full-width Git Graph', () => {
       target: { value: 'fix' }
     })
 
-    await new Promise((resolve) => setTimeout(resolve, 600))
+    await outwaitSearchDebounce()
     expect(within(view).getByRole('textbox', { name: 'Search commits' })).toHaveValue('fix')
     expect(mocks.getRuntimeGitHistory.mock.calls.at(-1)?.[1]).toMatchObject({
       graph: { search: { text: 'fix' } }
@@ -772,6 +781,7 @@ describe('full-width Git Graph', () => {
   })
 
   it('keeps the sidebar search in step with a query typed in the full view', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     render(<Harness onOpenCommitFile={vi.fn()} onLoadCommitFiles={vi.fn(async () => [])} />)
     await waitFor(() => expect(mocks.getRuntimeGitHistory).toHaveBeenCalled())
     fireEvent.click(screen.getByRole('button', { name: 'Open Git Graph' }))
@@ -790,7 +800,7 @@ describe('full-width Git Graph', () => {
       expect(box).toHaveValue('fix')
     }
     // Without the sync the sidebar's stale empty draft would be debounced back over 'fix'.
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    await outwaitSearchDebounce()
     expect(mocks.getRuntimeGitHistory.mock.calls.at(-1)?.[1]).toMatchObject({
       graph: { search: { text: 'fix' } }
     })

@@ -89,14 +89,13 @@ jobs:
     name: fork-check tests (${{ matrix.shard }})
     needs: scope
     if: needs.scope.outputs.scope == 'full'
-    # Why 14: upstream's unit shards use free hosted ARM (pr.yml), and this keeps the run at the free plan's 20 concurrent jobs.
+    # Why 13: upstream's unit shards use free hosted ARM (pr.yml), and this keeps the run at the free plan's 20 concurrent jobs.
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard:
-          [1/14, 2/14, 3/14, 4/14, 5/14, 6/14, 7/14, 8/14, 9/14, 10/14, 11/14, 12/14, 13/14, 14/14]
+        shard: [1/13, 2/13, 3/13, 4/13, 5/13, 6/13, 7/13, 8/13, 9/13, 10/13, 11/13, 12/13, 13/13]
     steps:
       # Why shallow, like upstream: with history, scripts that diff a PR merge ref against HEAD^1 ignore the base a test passes them.
       - name: Checkout
@@ -157,11 +156,11 @@ jobs:
     if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    # Why: the specs run one worker at a time (~8 min in one job); two shards halve the wait without sharing an app.
+    # Why: the specs run one worker at a time (~20 min in one job, with config/fork-upstream-e2e.txt); three shards keep each near 7 min and the run at the free plan's 20 concurrent jobs.
     strategy:
       fail-fast: false
       matrix:
-        shard: [1/2, 2/2]
+        shard: [1/3, 2/3, 3/3]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
