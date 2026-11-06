@@ -1,4 +1,4 @@
-import { getScopedTabIdOwner } from '@/store/slices/editor/git/open-file-git-owner'
+import * as gitOwner from '@/store/slices/editor/git/open-file-git-owner'
 import { useAppStore } from '@/store'
 import { detectLanguage } from '@/lib/language-detect'
 import { basename } from '@/lib/path'
@@ -224,7 +224,8 @@ export function remapOpenEditorTabsForPathChange({
     isGitScoped(file) &&
     file.relativePath !== file.filePath &&
     relativePathInsideRoot(
-      deriveRelativeRootFromOpenFile(file.filePath, file.relativePath),
+      gitOwner.getOpenFileGitRoot(state, file) ??
+        deriveRelativeRootFromOpenFile(file.filePath, file.relativePath),
       updatedPathOf(file)
     ) === null
   const relativeOf = (file: MovedFile): string =>
@@ -323,7 +324,7 @@ export function remapOpenEditorTabsForPathChange({
     rekeys.push({
       oldFileId: file.id,
       newFileId: buildDiffEditorFileId(
-        getScopedTabIdOwner(file.worktreeId, file.gitWorktreeId),
+        gitOwner.getScopedTabIdOwner(file.worktreeId, file.gitWorktreeId),
         file.diffSource,
         newRelativePath,
         file.runtimeEnvironmentId
