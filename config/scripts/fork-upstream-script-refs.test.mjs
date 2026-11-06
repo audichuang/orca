@@ -123,6 +123,23 @@ describe('suggestTargets', () => {
   })
 })
 
+describe('suggestTargets chained moves', () => {
+  it('follows A->B->C to the file that exists and drops vanished intermediates', () => {
+    const renames = [
+      { from: 'config/scripts/b.mjs', to: 'config/scripts/c.mjs' },
+      { from: 'config/scripts/a.mjs', to: 'config/scripts/b.mjs' }
+    ]
+    expect(
+      suggestTargets('config/scripts/a.mjs', { renames, files: ['config/scripts/c.mjs'] })
+    ).toEqual(['config/scripts/c.mjs'])
+  })
+
+  it('omits rename targets that no longer exist', () => {
+    const renames = [{ from: 'config/scripts/a.mjs', to: 'config/scripts/gone.mjs' }]
+    expect(suggestTargets('config/scripts/a.mjs', { renames, files: [] })).toEqual([])
+  })
+})
+
 describe('isForkOwnedPath', () => {
   it.each([
     ['Makefile', true],
