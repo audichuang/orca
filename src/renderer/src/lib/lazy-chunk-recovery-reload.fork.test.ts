@@ -58,6 +58,7 @@ describe('requestLazyChunkRecoveryReload after the installed bundle was replaced
       // The durable checkpoint may take longer than the grace window before main quits.
       const restart = vi.fn(async () => {
         window.dispatchEvent(new Event(ORCA_APP_RESTART_STARTED_EVENT))
+        // ast-grep-ignore: test-no-real-time-wait -- fake timers advance this delay
         await new Promise((resolve) => setTimeout(resolve, 12_000))
       })
       vi.stubGlobal('api', { app: { isBundleReplaced: async () => true, restart } })
