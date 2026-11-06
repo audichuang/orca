@@ -10,6 +10,8 @@
 #      CANARY_UPSTREAM_REF (default <upstream>/main), CANARY_DIR (must not exist; default a fresh ../orca-fork-canary.XXXXXX),
 #      CANARY_OUT (default out/fork-canary), CANARY_KEEP=1.
 # Output: each run writes <CANARY_OUT>/<UTC time>-<pid>/report.md and logs/; <CANARY_OUT>/latest.txt names the newest.
+#         Its "Rebase-only stops" section lists upstream deletes and edits that only an intermediate fork commit touches:
+#         the merge cannot conflict on them, but the auto-rebase stops at each of those commits.
 # Nothing is deleted automatically: the canary removes only the worktree it created; old run dirs stay until rm -rf.
 set -uo pipefail
 export LC_ALL=C ORCA_BACKGROUND_LAUNCH=1
@@ -120,6 +122,12 @@ while IFS= read -r f; do
   fi
 done <<<"$conflicts"
 
+# Why before install and from this checkout: it needs only git, so a failed install still leaves the section.
+intermediate_failed=
+node config/scripts/fork-intermediate-touches.mjs "$base" "$fork_sha" "$merge_base" "$upstream_sha" >"$logs/intermediate.tsv" 2>"$logs/intermediate.err" || intermediate_failed=1
+n_delete_stops=0
+[ -n "$intermediate_failed" ] || n_delete_stops=$(cut -f1 "$logs/intermediate.tsv" | grep -c '^D$')
+
 install_failed=
 install_note=
 tc_failed=
@@ -167,6 +175,8 @@ fi
 
 findings=
 [ -z "$conflicts" ] || findings="$findings, $n_conflicts merge conflicts"
+[ -z "$intermediate_failed" ] || findings="$findings, intermediate fork commit listing failed"
+[ "$n_delete_stops" -eq 0 ] || findings="$findings, $n_delete_stops modify/delete stops in intermediate fork commits"
 [ -z "$install_failed" ] || findings="$findings, pnpm install failed"
 [ -z "$tc_failed" ] || findings="$findings, typecheck errors"
 [ -z "$refs_failed" ] || findings="$findings, fork files reference moved upstream scripts"
@@ -221,6 +231,38 @@ list_commits() {
       echo "  - fork:"
       list_commits "${base}..${fork_sha}" "$f"
     done <<<"$conflicts"
+  fi
+  echo
+  echo "## Rebase-only stops"
+  echo
+  if [ -n "$intermediate_failed" ]; then
+    echo "The listing failed:"
+    echo
+    log_tail "$logs/intermediate.err"
+  elif [ ! -s "$logs/intermediate.tsv" ]; then
+    echo "None."
+  else
+    echo "Upstream files a fork commit touched but the final tree leaves as upstream has them: the merge cannot conflict on them."
+    echo "Commit titles are listed because a rebase rewrites the shas."
+    echo
+    echo "### Will stop (upstream deletes)"
+    echo
+    echo "Each commit's stop needs \`git rm\` of the file."
+    echo
+    while IFS=$'\t' read -r kind file commits; do
+      [ "$kind" = D ] || continue
+      echo "- \`$file\`"
+      for c in ${commits//,/ }; do git log -1 --format='  - %h %s' "$c"; done
+    done <"$logs/intermediate.tsv"
+    echo
+    echo "### May stop (upstream modifies)"
+    echo
+    echo "Not counted in Result: an edit often replays cleanly."
+    echo
+    while IFS=$'\t' read -r kind file commits; do
+      [ "$kind" = M ] || continue
+      echo "- \`$file\` ($commits)"
+    done <"$logs/intermediate.tsv"
   fi
   if [ -n "$conflicts" ] && { [ -n "$tc_failed" ] || [ -n "$tests_failed" ]; }; then
     echo
