@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { i18n, loadRendererUiLanguage } from '@/i18n/i18n'
 import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
 import { createParentDirectoriesForNewFile } from './clipcode-restore-parent-directories'
 
@@ -30,6 +31,10 @@ describe('createParentDirectoriesForNewFile', () => {
     statRuntimePath.mockReset()
   })
 
+  afterEach(async () => {
+    await i18n.changeLanguage('en')
+  })
+
   it('creates each parent one level at a time through the runtime client, with the remote context', async () => {
     await create('a/b/new.ts')
 
@@ -56,6 +61,14 @@ describe('createParentDirectoriesForNewFile', () => {
     await expect(create('a/new.ts')).rejects.toThrow(
       'Cannot create file because /srv/repo/a is not a directory.'
     )
+  })
+
+  it('words the not-a-directory refusal in the UI language', async () => {
+    await i18n.changeLanguage(await loadRendererUiLanguage('zh'))
+    createRuntimePath.mockRejectedValueOnce(new Error('EEXIST'))
+    statRuntimePath.mockResolvedValue({ size: 3, isDirectory: false, mtime: 0 })
+
+    await expect(create('a/new.ts')).rejects.toThrow('无法创建文件，因为 /srv/repo/a 不是目录。')
   })
 
   it('rethrows any other failure without probing', async () => {
