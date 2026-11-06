@@ -19,6 +19,7 @@ describe('pty-connection test environment', () => {
 
     await restoreTerminalTestGlobals()
     restored = true
+    // ast-grep-ignore: test-no-real-time-wait -- the subject is real timers that must not fire in this window
     await new Promise<void>((resolve) => setTimeout(resolve, 120))
 
     expect(fired).toBe(0)
@@ -41,6 +42,7 @@ describe('pty-connection test environment', () => {
     await reloaded.installTerminalTestGlobals()
     await reloaded.restoreTerminalTestGlobals()
     restored = true
+    // ast-grep-ignore: test-no-real-time-wait -- the subject is real timers that must not fire in this window
     await new Promise<void>((resolve) => setTimeout(resolve, 300))
 
     expect(fired).toBe(0)

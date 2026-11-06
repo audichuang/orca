@@ -173,7 +173,9 @@ const fake = createFakeMonaco()
 // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the fake covers every Monaco API the wrapper and body call here.
 loader.config({ monaco: fake.monaco as never })
 
-const flush = () => act(async () => await new Promise((resolve) => setTimeout(resolve, 10)))
+// Why a macrotask: the deferred dispose is a microtask and the loader resolves on promises, so both settle first.
+const yieldMacrotask = () => new Promise((resolve) => setTimeout(resolve, 0))
+const flush = () => act(async () => await yieldMacrotask())
 
 afterEach(() => {
   cleanup()
@@ -204,7 +206,7 @@ describe('DiffSectionBody Monaco lifecycle', () => {
     await act(async () => {
       suspended = null
       resume()
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await yieldMacrotask()
     })
     expect(fake.events).toEqual(['create'])
     expect(onMount).toHaveBeenCalledTimes(1)
@@ -255,7 +257,7 @@ describe('DiffSectionBody Monaco lifecycle', () => {
     expect(screen.queryByTestId('outer-fallback')).toBeNull()
     await act(async () => {
       imageChunk.release()
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await yieldMacrotask()
     })
     expect(await screen.findByTestId('image-diff')).toBeTruthy()
     expect(fake.events).toEqual(['create'])
