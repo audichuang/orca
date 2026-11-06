@@ -1,5 +1,6 @@
 import React from 'react'
-import { SourceControlPanel } from './panel'
+// Fork: folder workspaces route to the multi-repo panel.
+import { FolderAwareSourceControlPanel as SourceControlPanel } from '../folder/folder-aware-source-control-panel'
 
 import '../review/hosted-review-header-chrome'
 
