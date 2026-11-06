@@ -1,7 +1,12 @@
-import { readFileSync } from 'node:fs'
-import { describe, expect, it } from 'vitest'
-import { applyExclusions, lintStepArgs, runLintSteps } from './fork-lint-run.mjs'
-import { LINT_STEPS } from './preflight/changed-checks/run-lint.mjs'
+import { runProcess } from '@orca/process-host'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterAll, describe, expect, it } from 'vitest'
+import { applyExclusions } from './fork-lint-run.mjs'
+
+const root = mkdtempSync(join(tmpdir(), 'fork-lint-run-'))
+afterAll(() => rmSync(root, { recursive: true, force: true }))
 
 const STEPS = ['oxlint', 'check:a', 'check:skipped']
 const EXCLUDED = { 'check:skipped': 'reason' }
@@ -17,28 +22,48 @@ describe('fork-lint-run', () => {
     )
   })
 
-  it('runs package scripts by name and oxlint through pnpm exec', () => {
-    const scripts = { 'check:a': 'node a.mjs && node b.mjs' }
-    expect(lintStepArgs('check:a', scripts)).toEqual(['run', 'check:a'])
-    expect(lintStepArgs('oxlint', scripts)).toEqual(['exec', 'oxlint'])
-    expect(() => lintStepArgs('check:gone', scripts)).toThrow('has no package script')
-  })
-
-  it('runs every step and returns the first failing exit code', () => {
-    const ran = []
-    const steps = ['oxlint', 'check:a', 'check:b'].map((name) => ({ name, args: ['run', name] }))
-    const code = runLintSteps(steps, (args) => {
-      ran.push(args.join(' '))
-      return args.includes('check:a') ? 3 : args.includes('check:b') ? 4 : 0
+  it('reports both failures and still executes a later package script', async () => {
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({
+        scripts: {
+          'check:first': 'node check.mjs first',
+          'check:second': 'node check.mjs second',
+          'check:after': 'node check.mjs after'
+        }
+      })
+    )
+    writeFileSync(
+      join(root, 'check.mjs'),
+      `import { writeFileSync } from 'node:fs'
+const name = process.argv[2]
+if (name === 'after') {
+  writeFileSync('after.txt', 'completed')
+} else {
+  console.error('diagnostic-' + name)
+  process.exit(name === 'first' ? 3 : 4)
+}
+`
+    )
+    writeFileSync(
+      join(root, 'runner.mjs'),
+      `import { runLintSteps } from ${JSON.stringify(new URL('./fork-lint-run.mjs', import.meta.url).href)}
+process.exitCode = await runLintSteps(
+  ['check:first', 'check:second', 'check:after', 'check:path-literal-ratchet'],
+  process.cwd()
+)
+`
+    )
+    const result = await runProcess({
+      program: process.execPath,
+      args: [join(root, 'runner.mjs')],
+      cwd: root,
+      timeoutMs: null
     })
-    expect(code).toBe(3)
-    expect(ran).toEqual(['run oxlint', 'run check:a', 'run check:b'])
-  })
-
-  it("applies this checkout's exclusions to upstream's lint steps", () => {
-    const { scripts } = JSON.parse(readFileSync('package.json', 'utf8'))
-    const steps = applyExclusions(LINT_STEPS)
-    expect(steps.length).toBeGreaterThan(0)
-    expect(() => steps.map((name) => lintStepArgs(name, scripts))).not.toThrow()
+    expect(result.code).toBe(1)
+    expect(result.stderr).toContain('diagnostic-first')
+    expect(result.stderr).toContain('diagnostic-second')
+    expect(result.stderr).toContain('>> pnpm run check:first\n')
+    expect(readFileSync(join(root, 'after.txt'), 'utf8')).toBe('completed')
   })
 })
