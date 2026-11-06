@@ -203,7 +203,7 @@ jobs:
     if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    # Why six: with config/fork-upstream-e2e.txt the specs need ~22 min on one worker; native test-count shards keep each job near 5 min without sharing an Electron worker.
+    # Why six: run 42228204045 has ~1083s of tests; file-level LPT predicts 176-185s per shard plus setup/build, without splitting serial suites.
     strategy:
       fail-fast: false
       matrix:
