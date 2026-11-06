@@ -4,6 +4,7 @@ import { captureEditorFileOperationProvenance } from '@/lib/editor-file-operatio
 import { getRecentlyClosedTabPosition, pushRecentlyClosedTabKind } from '../../recently-closed-tabs'
 import type { AppState } from '../../../types'
 import { nextOpenFileGitWorktreeId } from '../git/open-file-git-owner'
+import { bindFolderFileGitOwner } from '../git/folder-file-git-owner'
 import {
   type ClosedEditorTabSnapshot,
   MAX_RECENT_CLOSED_EDITOR_TABS,
@@ -42,20 +43,21 @@ export type OpenFileApplyScratch = {
 
 export function applyOpenFileToState(
   s: AppState,
-  file: Omit<OpenFile, 'id' | 'isDirty'>,
+  requested: Omit<OpenFile, 'id' | 'isDirty'>,
   options: OpenFileOptions | undefined,
   scratch: OpenFileApplyScratch,
   linkIntent: EditorOpenLinkIntent | null = null
 ): Partial<AppState> | AppState {
-  const worktreeId = file.worktreeId
-  let operationProvenance = file.operationProvenance
-  if (!operationProvenance && file.mode === 'edit' && file.readOnly !== true) {
+  const worktreeId = requested.worktreeId
+  let operationProvenance = requested.operationProvenance
+  if (!operationProvenance && requested.mode === 'edit' && requested.readOnly !== true) {
     try {
       operationProvenance = captureEditorFileOperationProvenance(
         s,
         worktreeId,
-        options?.suppressActiveRuntimeFallback ? null : file.runtimeEnvironmentId,
-        options?.suppressActiveRuntimeFallback === true || file.runtimeEnvironmentId !== undefined
+        options?.suppressActiveRuntimeFallback ? null : requested.runtimeEnvironmentId,
+        options?.suppressActiveRuntimeFallback === true ||
+          requested.runtimeEnvironmentId !== undefined
       )
     } catch (error) {
       toast.error(extractIpcErrorMessage(error, 'Failed to resolve file owner.'))
@@ -64,12 +66,13 @@ export function applyOpenFileToState(
   }
   const runtimeEnvironmentId = operationProvenance
     ? operationProvenance.generation.route.runtimeEnvironmentId
-    : file.runtimeEnvironmentId === null
+    : requested.runtimeEnvironmentId === null
       ? null
-      : (file.runtimeEnvironmentId ??
+      : (requested.runtimeEnvironmentId ??
         (options?.suppressActiveRuntimeFallback
           ? null
           : (s.settings?.activeRuntimeEnvironmentId?.trim() ?? undefined)))
+  const file = { ...requested, ...bindFolderFileGitOwner(s, requested, runtimeEnvironmentId) }
   const reusableOpenFileModes = getReusableOpenFileModes(file.mode)
   const existing = s.openFiles.find(
     (f) =>
