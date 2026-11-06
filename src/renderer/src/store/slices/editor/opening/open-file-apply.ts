@@ -5,7 +5,6 @@ import { captureEditorFileOperationProvenance } from '@/lib/editor/file-operatio
 import { getRecentlyClosedTabPosition } from '../../tabs/recently-closed-tab-position'
 import { pushRecentlyClosedTabKind } from '../../tabs/recently-closed-tabs'
 import type { AppState } from '../../../types'
-import { nextOpenFileGitWorktreeId } from '../git/open-file-git-owner'
 import {
   type ClosedEditorTabSnapshot,
   MAX_RECENT_CLOSED_EDITOR_TABS,
