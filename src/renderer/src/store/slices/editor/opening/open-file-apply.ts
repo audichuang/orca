@@ -5,7 +5,6 @@ import { captureEditorFileOperationProvenance } from '@/lib/editor-file-operatio
 import { getRecentlyClosedTabPosition } from '../../tabs/recently-closed-tab-position'
 import { pushRecentlyClosedTabKind } from '../../tabs/recently-closed-tabs'
 import type { AppState } from '../../../types'
-import { nextOpenFileGitWorktreeId } from '../git/open-file-git-owner'
 import {
   type ClosedEditorTabSnapshot,
   MAX_RECENT_CLOSED_EDITOR_TABS,
@@ -31,7 +30,8 @@ import {
   getReplaceablePreviewFileId,
   removeEditorStateForReplacedPreview
 } from '../tabs/workspace-editor-item'
-import { linkSplitGroupState } from './open-file-link-split'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../../../shared/non-secure-context-uuid'
+import { emptySplitGroup, insertSplitGroup } from '../../tabs/tabs-group-actions'
 
 export type OpenFileApplyScratch = {
   editorItemFileId: string
@@ -103,7 +103,12 @@ export function applyOpenFileToState(
   const isPreview = resolveEditorPreviewIntent(s, options?.preview)
   scratch.editorItemIsPreview = isPreview
   const recordReplacedPreview = options?.recordReplacedPreview ?? false
-  const { splitGroup, splitState } = linkSplitGroupState(s, worktreeId, linkPlacement)
+  const splitGroup =
+    linkPlacement?.kind === 'split' ? emptySplitGroup(worktreeId, createBrowserUuid()) : undefined
+  const splitState =
+    splitGroup && linkPlacement?.kind === 'split'
+      ? insertSplitGroup(s, worktreeId, linkPlacement.split, splitGroup)
+      : undefined
   // Why: resolve the target group up-front so preview replacement is scoped to it (group B open must not evict group A's preview).
   const requestedGroupId =
     splitGroup?.id ??
@@ -145,7 +150,6 @@ export function applyOpenFileToState(
       existing.language !== file.language ||
       existing.relativePath !== file.relativePath ||
       existing.worktreeId !== file.worktreeId ||
-      existing.gitWorktreeId !== nextOpenFileGitWorktreeId(existing, file) ||
       existing.runtimeEnvironmentId !== runtimeEnvironmentId ||
       existing.externalSshTargetId !== nextExternalSshTargetId ||
       existing.terminalArtifactGrantId !== nextGrantId ||
@@ -165,7 +169,6 @@ export function applyOpenFileToState(
               ...f,
               relativePath: file.relativePath,
               worktreeId: file.worktreeId,
-              gitWorktreeId: nextOpenFileGitWorktreeId(f, file),
               language: file.language,
               runtimeEnvironmentId,
               externalSshTargetId: nextExternalSshTargetId,
