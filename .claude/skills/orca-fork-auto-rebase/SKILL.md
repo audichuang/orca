@@ -114,7 +114,11 @@ pnpm run ensure:electron-runtime && LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 npx playwr
 ## 3. 推上去：CI 與盲審並行
 
 - 第 2 步有修正 commit 就 `git push --force fork HEAD:refs/heads/rebase/vNEW`；PR 第 1 步已開（RESUME 沿用既有 PR），CI 跟著 head 跑。**推完不等 CI，先做第 4 步啟動全部審查者**（它們是背景行程），再回來這裡等 CI（約 10 分鐘，通常比審查先完成），CI 結束後才去等審查者。
-- CI：照上面「等待」的方式 `gh-wait pr PR -R audichuang/orca -t 9`（不用先 sleep 或 `gh run list` 找 run id），看「Fork PR checks passed」。有 job 紅：`gh run list -R audichuang/orca --workflow fork-pr.yml --commit <head> --limit 1 --json databaseId` 取 run id，先 `gh run rerun <id> --failed -R audichuang/orca` **自動重跑一次**再 `gh-wait run <id> -R audichuang/orca -t 9`（偶發失敗，例如會讀剪貼簿的 e2e，在 CI 層重跑；fork-check 目標裡不加任何豁免）。同一個 job 第二次還紅才算真的失敗：看 `gh run view <id> --log-failed -R audichuang/orca`，照第 2 步的失敗處理對照；fork e2e 失敗另外照 FORK.md「When a fork e2e goes red」下載 artifact 看 `shots/`。spec 在 vNEW 存在就在 vNEW 跑；是 fork 自己的 spec（上游沒有）就在 OLD_DEVELOP 跑（`git worktree add --detach ../ar-$RUN-olddev OLD_DEVELOP && (cd ../ar-$RUN-olddev && pnpm install --frozen-lockfile)`，只重現那一個 spec，用第 2 步的 playwright 指令）。舊 develop 上也失敗 = fork 既有問題，不擋這次 rebase，但要在通知裡列為「develop 既有紅測試」。修正 commit 換了 head，審查者照第 5 步看修正的部分。重跑過的 job 在第 8 步的通知裡註明。
+- CI：照上面「等待」的方式 `gh-wait pr PR -R audichuang/orca -t 9`，看「Fork PR checks passed」；已全綠的 run 不整輪重跑。有 job 紅才用 `gh run list -R audichuang/orca --workflow fork-pr.yml --commit <head> --limit 1 --json databaseId` 取 run id，依 FORK.md「Who checks what」先分類：
+  - 先讀 `gh run view <id> --log-failed -R audichuang/orca` 與 `gh api repos/audichuang/orca/check-runs/<job_id>/annotations`。判斷有沒有取得 runner 要合看 job 的 `runner_id`、`steps` 與 annotations；API `started_at` 不代表已取得 runner，`runner_id=0`、`steps=[]` 加上取得失敗的 annotation 才能判為未開始執行。
+  - 型別錯誤、缺檔、mock／API 漂移、同錯重複出現等確定性錯誤直接修，照第 2 步做基準對照。原因未知就繼續查，保留紅燈。
+  - 只有已確認的基礎設施暫態（runner 未取得、網路下載失敗；下載要先確認恢復），或已列出測試名稱並附同 SHA fail→pass 證據的不穩定測試，才記錄 job、測試／證據與理由，用 `gh run rerun <id> --failed -R audichuang/orca` 重跑一次，再 `gh-wait run <id> -R audichuang/orca -t 9`。再次失敗就修；fork-check 目標裡不加豁免，required jobs 仍須全部成功。重跑過的 job 在第 8 步通知註明。
+- fork e2e 失敗另外照 FORK.md「When a fork e2e goes red」下載 artifact 看 `shots/`。spec 在 vNEW 存在就在 vNEW 跑；是 fork 自己的 spec（上游沒有）就在 OLD_DEVELOP 跑（`git worktree add --detach ../ar-$RUN-olddev OLD_DEVELOP && (cd ../ar-$RUN-olddev && pnpm install --frozen-lockfile)`，只重現那一個 spec，用第 2 步的 playwright 指令）。舊 develop 上也失敗就記為「develop 既有紅測試」，照第 2 步處理，仍須讓 required gate 全綠。修正 commit 換了 head，審查者照第 5 步看修正的部分。
 - CI 結果（綠，或每個紅 job 與對照）貼成 PR 留言。留言也是心跳：precheck 看 PR 的更新時間判斷這個 run 還活著，所以第 4、5 步每個階段開始時也各留一則短留言（「盲審開始」「第 2 輪審查開始」）。
 
 ## 4. 盲審（第 2 步本機閘門綠、推上去就開始，跟 CI 同時跑）
