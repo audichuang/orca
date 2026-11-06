@@ -203,11 +203,11 @@ jobs:
     if: needs.scope.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    # Why four: native test-count sharding splits the slow graph specs without sharing an Electron worker.
+    # Why six: with config/fork-upstream-e2e.txt the specs need ~22 min on one worker; native test-count shards keep each job near 5 min without sharing an Electron worker.
     strategy:
       fail-fast: false
       matrix:
-        shard: [1/4, 2/4, 3/4, 4/4]
+        shard: [1/6, 2/6, 3/6, 4/6, 5/6, 6/6]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
