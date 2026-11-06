@@ -12,7 +12,7 @@ import { wireTests } from './fork-wire-tests.mjs'
 const OUTPUT_TAIL_LINES = 60
 const MAX_FIX_CANDIDATES = 10
 
-const WORKFLOW_READERS = '\\.github/(workflows|actions)/'
+const WORKFLOW_READERS = '\\.github/(workflows|actions|scripts)/'
 
 function vitestArgs(report, files) {
   return [
@@ -34,23 +34,33 @@ function listLines(root, args) {
 }
 
 // Why a glob pathspec: upstream moves tests between config/scripts subdirectories (#38130).
-function planWorkflowTests({ root, out }) {
-  const { code, lines: files } = listLines(root, [
+export function planWorkflowTests({ root, out }) {
+  const scriptsGlobs = [':(glob)config/scripts/**/*.mjs', ':(glob)config/scripts/**/*.ts']
+  const isTest = (file) => /\.test\.(mjs|ts)$/.test(file)
+  const { code, lines: readers } = listLines(root, [
     'grep',
     '-l',
     '-E',
     WORKFLOW_READERS,
     '--',
-    ':(glob)config/scripts/**/*.test.mjs',
-    ':(glob)config/scripts/**/*.test.ts'
+    ...scriptsGlobs
   ])
-  if (code !== 0 || files.length === 0) {
+  const files = new Set(readers.filter(isTest))
+  // Why: a test can read the workflow only through a module it imports, so select the importers of every reader module.
+  for (const module of readers.filter((file) => !isTest(file))) {
+    const name = path.basename(module).replace(/\.(mjs|ts)$/, '')
+    const importers = listLines(root, ['grep', '-l', '-F', `/${name}`, '--', ...scriptsGlobs])
+    for (const file of importers.lines.filter(isTest)) {
+      files.add(file)
+    }
+  }
+  if (code !== 0 || files.size === 0) {
     return {
-      error: `no config/scripts test reads .github/workflows or actions (git grep exit ${code})`
+      error: `no config/scripts test reads .github/workflows, actions or scripts (git grep exit ${code})`
     }
   }
   const report = `${out}.workflow-tests.vitest.json`
-  return { commands: [{ program: 'pnpm', args: vitestArgs(report, files) }], report }
+  return { commands: [{ program: 'pnpm', args: vitestArgs(report, [...files]) }], report }
 }
 
 // Why ls-files: #38130 moved ensure-native-runtime.mjs into a subdirectory, so its path changes per release.

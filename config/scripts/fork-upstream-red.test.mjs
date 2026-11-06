@@ -1,10 +1,15 @@
+import { execFileSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { EXCLUDED } from './fork-lint-run.mjs'
 import {
   checkFailures,
   mentionedFiles,
   parseRunLintFailures,
-  parseVitestFailures
+  parseVitestFailures,
+  planWorkflowTests
 } from './fork-upstream-red.mjs'
 
 const LINT = { name: 'lint' }
@@ -125,6 +130,35 @@ describe('fork-upstream-red', () => {
           { root: '/w', report }
         )
       ).toEqual([{ step: 'workflow-tests', output: 'vitest crashed', forkSkips: false }])
+    }
+  })
+
+  it('selects tests that read .github/scripts or reach a workflow through an imported module', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'fork-upstream-red-'))
+    try {
+      const files = {
+        'config/scripts/direct.test.mjs': "readFileSync('.github/workflows/pr.yml')\n",
+        'config/scripts/gh-scripts.test.mjs': "import '../../.github/scripts/check.mjs'\n",
+        'config/scripts/via-module.test.mjs': "import { x } from './ctx-reader.mjs'\n",
+        'config/scripts/ctx-reader.mjs': "readFileSync('.github/workflows/pr.yml')\n",
+        'config/scripts/unrelated.test.mjs': "import './other.mjs'\n",
+        'config/scripts/other.mjs': 'export {}\n'
+      }
+      for (const [file, content] of Object.entries(files)) {
+        mkdirSync(path.dirname(path.join(root, file)), { recursive: true })
+        writeFileSync(path.join(root, file), content)
+      }
+      execFileSync('git', ['init', '-q'], { cwd: root })
+      execFileSync('git', ['add', '-A'], { cwd: root })
+      const plan = planWorkflowTests({ root, out: path.join(root, 'out') })
+      const selected = plan.commands[0].args.filter((arg) => arg.startsWith('config/scripts/'))
+      expect(selected.sort()).toEqual([
+        'config/scripts/direct.test.mjs',
+        'config/scripts/gh-scripts.test.mjs',
+        'config/scripts/via-module.test.mjs'
+      ])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
     }
   })
 })
