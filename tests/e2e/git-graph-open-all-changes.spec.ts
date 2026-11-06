@@ -65,6 +65,7 @@ function watchWorkbenchErrors(page: Page): string[] {
 
 async function expectWorkbenchHealthy(page: Page, errors: string[]): Promise<void> {
   // Why a pause: the crash surfaced after the all-changes tab began loading its diff editors.
+  // ast-grep-ignore: test-no-real-time-wait -- absence of a crash after the diff editors load has no event to wait for
   await page.waitForTimeout(2500)
   await expect(page.getByText('The workspace workbench hit an error.')).toHaveCount(0)
   expect(errors.filter((error) => /InstantiationService/.test(error))).toEqual([])
@@ -75,6 +76,7 @@ test('graph tab: file diff, back, then Open all changes keeps the workbench aliv
   testRepoPath,
   registerPostElectronShutdownCleanup
 }) => {
+  // Why: launches Electron, builds a multi-repo git fixture and loads every diff editor.
   test.setTimeout(240_000)
   const worktreePath = await seedWorktree(testRepoPath, registerPostElectronShutdownCleanup)
   const errors = watchWorkbenchErrors(orcaPage)
@@ -117,6 +119,7 @@ test('sidebar Commits: file diff, then Open all changes together keeps the workb
   testRepoPath,
   registerPostElectronShutdownCleanup
 }) => {
+  // Why: launches Electron, builds a multi-repo git fixture and loads every diff editor.
   test.setTimeout(240_000)
   const worktreePath = await seedWorktree(testRepoPath, registerPostElectronShutdownCleanup)
   const errors = watchWorkbenchErrors(orcaPage)
