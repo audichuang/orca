@@ -79,6 +79,7 @@ describe('openConflictFile owner isolation', () => {
     )
     const state = useAppStore.getState()
     state.openConflictFile('folder:f1', '/f/a', entry, 'typescript', { gitWorktreeId: 'repo-a' })
+    expect(useAppStore.getState().openFiles[0]?.relativePath).toBe('a/src/x.ts')
     state.openConflictReviewFile('review', 'folder:f1', '/f/a', entry, 'typescript', {
       gitWorktreeId: 'repo-a'
     })
