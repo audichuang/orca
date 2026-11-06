@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -53,10 +53,10 @@ describe('fork-intermediate-touches', () => {
     expect(output).toBe(`D\ta.test.ts\t${first},${second}\n`)
   })
 
-  function run(forkRef, upstream = 'upstream') {
+  function run(forkRef, upstream = 'upstream', base = 'base2') {
     return execFileSync(
       'node',
-      [SCRIPT, 'base2', forkRef, git('merge-base', 'base2', upstream), upstream],
+      [SCRIPT, base, forkRef, git('merge-base', base, upstream), upstream],
       { cwd: dir, encoding: 'utf8' }
     )
   }
@@ -77,5 +77,41 @@ describe('fork-intermediate-touches', () => {
     expect(run('main', 'upstream2')).toBe(
       `A\tf.ts\t${restored}\nD\tg.ts\t${edited},${editedAgain}\nD\th.ts\t${gone}\n`
     )
+  })
+
+  it('lists a file-type change (T) as a stop when upstream deleted the file', () => {
+    git('switch', '-q', 'main')
+    commit('base3 files', { 'x.ts': 'x0\n' })
+    git('tag', 'base3')
+    git('switch', '-q', '-c', 'upstream3')
+    commit('upstream deletes x', { 'x.ts': null })
+    git('switch', '-q', 'main')
+    unlinkSync(path.join(dir, 'x.ts'))
+    symlinkSync('elsewhere', path.join(dir, 'x.ts'))
+    git('add', '-A')
+    git('commit', '-q', '-m', 'fork turns x into a symlink')
+    const toLink = git('log', '-1', '--format=%h')
+    unlinkSync(path.join(dir, 'x.ts'))
+    const back = commit('fork turns x back into a file', { 'x.ts': 'x0\n' })
+    expect(run('main', 'upstream3', 'base3')).toBe(`D\tx.ts\t${toLink},${back}\n`)
+  })
+
+  it('does not report an edit made after the fork re-added a file upstream deleted', () => {
+    git('switch', '-q', 'main')
+    commit('base4 files', { 'k.ts': 'k0\n' })
+    git('tag', 'base4')
+    git('switch', '-q', '-c', 'upstream4')
+    commit('upstream deletes k', { 'k.ts': null })
+    git('switch', '-q', 'main')
+    commit('fork deletes k', { 'k.ts': null })
+    commit('fork re-adds k', { 'k.ts': 'k1\n' })
+    commit('fork edits k', { 'k.ts': 'k2\n' })
+    commit('fork deletes k again', { 'k.ts': null })
+    const out = execFileSync(
+      'node',
+      [SCRIPT, 'base4', 'main', git('merge-base', 'base4', 'upstream4'), 'upstream4'],
+      { cwd: dir, encoding: 'utf8' }
+    )
+    expect(out).toBe('')
   })
 })

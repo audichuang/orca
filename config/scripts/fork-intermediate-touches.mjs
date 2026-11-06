@@ -25,7 +25,11 @@ export function intermediateOnlyTouches({ upstreamChanges, forkTouched, finalSta
       }
       continue
     }
-    const stops = touches.filter((t) => t.status === 'M').map((t) => t.commit)
+    // Edits after a fork re-add replay cleanly; only M/T before the first A hit the deleted file.
+    const firstAdd = touches.findIndex((t) => t.status === 'A')
+    const stops = (firstAdd === -1 ? touches : touches.slice(0, firstAdd))
+      .filter((t) => t.status === 'M' || t.status === 'T')
+      .map((t) => t.commit)
     if (stops.length > 0) {
       rows.push({ status: 'D', path, commits: stops })
     }
