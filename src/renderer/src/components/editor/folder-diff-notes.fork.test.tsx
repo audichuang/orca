@@ -3,12 +3,74 @@ import { cleanup, render, waitFor } from '@testing-library/react'
 import { Virtualizer } from '@tanstack/react-virtual'
 import { afterEach, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { seedFolderDiffNote, renderedRepoNote } from '../../folder-diff-monaco.test-fixture'
-import { DIFF, ROOT, folderFile } from '../../folder-git-owner.test-fixture'
-import { CombinedDiffSectionList } from './combined-diff-section-list'
-import type { DiffSection } from '../../diff/sections/diff-section-types'
+import {
+  mountedDiffEditors,
+  seedFolderDiffNote,
+  renderedRepoNote
+} from './folder-diff-monaco.test-fixture'
+import { DIFF, ROOT, folderFile } from './folder-git-owner.test-fixture'
+import { ChangesModeView } from './ChangesModeView'
+import { EditorDiffFileSurface } from './EditorDiffFileSurface'
+import { CombinedDiffSectionList } from './combined-diff/scroll-viewport/combined-diff-section-list'
+import type { DiffSection } from './diff/sections/diff-section-types'
 
 afterEach(cleanup)
+it('shows repo notes and restores the live draft into a retained Changes model', async () => {
+  seedFolderDiffNote()
+  render(
+    <ChangesModeView
+      activeFile={folderFile({ mode: 'edit' })}
+      dc={DIFF}
+      modifiedContent="live draft"
+      activeConflictEntry={null}
+      resolvedLanguage="typescript"
+      sideBySide
+      viewStateScopeId="folder"
+      diffViewStateKey="folder-changes"
+      onContentChange={() => {}}
+      onSave={async () => true}
+    />
+  )
+  await waitFor(() => expect(renderedRepoNote()).toContain('Review the repo change'), {
+    timeout: 10000
+  })
+  expect(mountedDiffEditors[0]?.getValue()).toBe('live draft')
+})
+
+it('renders the repo review note on a single-file folder diff', async () => {
+  seedFolderDiffNote()
+  const file = folderFile({ relativePath: 'src/a.ts', diffSource: 'staged' })
+  render(
+    <EditorDiffFileSurface
+      activeFile={file}
+      diffContent={DIFF}
+      editBuffer={undefined}
+      resolvedLanguage="typescript"
+      sideBySide
+      viewStateScopeId="folder"
+      diffViewStateKey="folder-diff"
+      mdViewMode="source"
+      isMarkdown={false}
+      showMarkdownTableOfContents={false}
+      onCloseMarkdownTableOfContents={() => {}}
+      markdownAnnotationsEnabled={false}
+      markdownDocuments={{
+        markdownDocuments: [],
+        openMarkdownDocument: async () => {},
+        onOpenDocLink: () => {},
+        previewProps: { markdownDocuments: [], onOpenDocument: async () => {} },
+        mdSave: async () => true
+      }}
+      onContentChange={() => {}}
+      onSave={async () => true}
+      reloadContent={() => {}}
+    />
+  )
+  await waitFor(() => expect(renderedRepoNote()).toContain('Review the repo change'), {
+    timeout: 10000
+  })
+})
+
 it('renders the repo review note inside a folder combined diff section', async () => {
   seedFolderDiffNote()
   const sections: DiffSection[] = [
