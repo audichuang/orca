@@ -55,12 +55,9 @@ test('Duplicate as _result.txt copies identical bytes and lists the copy, also i
   const row = (name: string): Locator =>
     explorer
       .locator('[data-file-explorer-row]')
-      .filter({
-        has: orcaPage.locator('[data-file-explorer-row-name]', { hasText: name })
-      })
+      .filter({ has: orcaPage.getByText(name, { exact: true }) })
       .first()
-  const nameCells = (name: string): Locator =>
-    explorer.locator('[data-file-explorer-row-name]', { hasText: name })
+  const nameCells = (name: string): Locator => explorer.getByText(name, { exact: true })
 
   await expect(row('query.sql')).toBeVisible({ timeout: 20_000 })
   await duplicateAsResult(orcaPage, row('query.sql'))
