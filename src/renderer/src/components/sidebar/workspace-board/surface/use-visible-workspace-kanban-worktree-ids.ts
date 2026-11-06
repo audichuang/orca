@@ -15,6 +15,7 @@ import {
 import { getStructuredChatWorktreeIds } from '../../worktree-list/listing/visible-worktree-activity-inputs'
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { selectWorktreesByRepo } from '@/store/workspace-record-selectors'
+import { useFolderSidebarHiddenReposVersion } from '../../../right-sidebar/source-control/folder/folder-sidebar-hidden-repos'
 
 type UseVisibleWorkspaceKanbanWorktreeIdsParams = {
   allWorktrees: readonly Worktree[]
@@ -76,7 +77,9 @@ export function useVisibleWorkspaceKanbanWorktreeIds({
       : EMPTY_WORKTREE_ID_SET
   }, [agentStatusEpoch, agentStatusNow, showSleepingWorkspaces, tabsByWorktree])
 
+  const folderHiddenReposVersion = useFolderSidebarHiddenReposVersion()
   return useMemo(() => {
+    void folderHiddenReposVersion
     // Board status ordering differs, but workspace visibility must use the sidebar’s filters.
     const sortedIds = allWorktrees.map((worktree) => worktree.id)
     return new Set(
@@ -110,6 +113,7 @@ export function useVisibleWorkspaceKanbanWorktreeIds({
     allWorktrees,
     browserTabsByWorktree,
     filterRepoIds,
+    folderHiddenReposVersion,
     hideDefaultBranchWorkspace,
     hideAutomationGeneratedWorkspaces,
     hideCliCreatedWorkspaces,

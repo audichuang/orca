@@ -1,14 +1,40 @@
-import { useAppStore } from '@/store'
-import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
-import { FolderMultiRepoPanel } from '../folder/folder-multi-repo-panel'
-import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
-import { SourceControlSingleRepoPanel } from './single-repo-panel'
+import { translate } from '@/i18n/i18n'
+// Fork: wraps the ready panel in ClipCode's actions provider.
+import { ClipcodeSourceControlPanelReady as SourceControlPanelReady } from '../clipcode/clipcode-panel-ready'
+import { useSourceControlPanelModel } from './use-panel-model'
 
 export function SourceControlPanel() {
-  const scope = useSourceControlWorktreeScope()
-  const activeWorktreeId = useAppStore((s) => s.activeWorktreeId)
-  if (!scope && activeWorktreeId && parseWorkspaceKey(activeWorktreeId)?.type === 'folder') {
-    return <FolderMultiRepoPanel key={activeWorktreeId} folderWorkspaceKey={activeWorktreeId} />
+  const model = useSourceControlPanelModel()
+  const { activeRepo, activeWorktree, isFolder, worktreePath } = model
+
+  if (!activeWorktree || !activeRepo || !worktreePath) {
+    return (
+      <div className="flex items-center justify-center h-full text-xs text-muted-foreground px-4 text-center">
+        {translate(
+          'auto.components.right.sidebar.SourceControl.c07b236287',
+          'Select a workspace to view changes'
+        )}
+      </div>
+    )
   }
-  return <SourceControlSingleRepoPanel />
+  if (isFolder) {
+    return (
+      <div className="flex items-center justify-center h-full text-xs text-muted-foreground px-4 text-center">
+        {translate(
+          'auto.components.right.sidebar.SourceControl.e131cd7128',
+          'Source Control is only available for Git repositories'
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <SourceControlPanelReady
+      activeRepo={activeRepo}
+      activeWorktree={activeWorktree}
+      currentWorktreeId={activeWorktree.id}
+      model={model}
+      worktreePath={worktreePath}
+    />
+  )
 }

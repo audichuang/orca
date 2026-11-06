@@ -115,7 +115,6 @@ export async function runBinaryAndKeyboardScenarios(ctx: ExtraScenarioContext): 
     // Right-click a row that is already part of the selection.
     await entry(rows[1]!.area, rows[1]!.p).click({ button: 'right' })
     await expect(page.getByRole('menuitem', { name: 'Copy Full Source' })).toBeVisible()
-    await page.waitForTimeout(400) // menu open animation
     await shot('S19-multi-context-menu')
     await page.getByRole('menuitem', { name: 'Copy Full Source' }).click()
     const { actual, toast } = await copiedPayload()

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildWorkspaceSessionPayload } from './workspace-session'
-import type { AppState } from '../store'
+import { useAppStore, type AppState } from '../store'
 
 function createSnapshot(overrides: Partial<AppState> = {}): AppState {
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: a session snapshot with only the slices the payload builder reads.
@@ -82,7 +82,7 @@ function createSnapshot(overrides: Partial<AppState> = {}): AppState {
           canGoBack: false,
           canGoForward: false,
           loadError: null,
-          createdAt: Date.now()
+          createdAt: 1_700_000_000_000
         }
       ]
     },
@@ -112,5 +112,50 @@ describe('buildWorkspaceSessionPayload for a scoped tab git owner', () => {
     const saved = payload.openFilesByWorktree?.['wt-1']
     expect(saved?.[0]?.gitWorktreeId).toBe('repo-a')
     expect(saved?.[1]?.gitWorktreeId).toBeUndefined()
+  })
+})
+
+describe('a folder edit tab bound to a repo across save and restore', () => {
+  it('saves and restores the folder-relative path with its git owner', () => {
+    useAppStore.setState(useAppStore.getInitialState(), true)
+    useAppStore.setState(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: open and hydrate read only the folder and repo catalogs.
+      {
+        repos: [{ id: 'repo-a', path: '/repo-a', displayName: 'a', badgeColor: '', addedAt: 0 }],
+        worktreesByRepo: {
+          'repo-a': [{ id: 'repo-a::/repo-a', repoId: 'repo-a', path: '/repo-a' }]
+        },
+        folderWorkspaces: [{ id: 'pkg', folderPath: '/repo-a/pkg', projectGroupId: 'g1' }]
+      } as unknown as Partial<AppState>
+    )
+    useAppStore.getState().openFile(
+      {
+        filePath: '/repo-a/pkg/a.md',
+        relativePath: 'a.md',
+        worktreeId: 'folder:pkg',
+        runtimeEnvironmentId: null,
+        language: 'markdown',
+        mode: 'edit'
+      },
+      { suppressActiveRuntimeFallback: true }
+    )
+    const payload = buildWorkspaceSessionPayload(
+      createSnapshot({ openFiles: useAppStore.getState().openFiles })
+    )
+    expect(payload.openFilesByWorktree?.['folder:pkg']?.[0]).toMatchObject({
+      relativePath: 'a.md',
+      gitWorktreeId: 'repo-a::/repo-a'
+    })
+
+    useAppStore.setState({ openFiles: [] })
+    useAppStore.getState().hydrateEditorSession(payload)
+
+    expect(useAppStore.getState().openFiles).toEqual([
+      expect.objectContaining({
+        worktreeId: 'folder:pkg',
+        relativePath: 'a.md',
+        gitWorktreeId: 'repo-a::/repo-a'
+      })
+    ])
   })
 })
