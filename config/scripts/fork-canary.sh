@@ -127,6 +127,7 @@ listing_failed=
 dropped=
 tests_failed=
 lint_failed=
+refs_failed=
 # Why HUSKY=0: husky's prepare script would write hooksPath into the shared .git/config.
 pnpm_install() {
   (cd "$wt" && HUSKY=0 pnpm install "$1") >>"$logs/install.log" 2>&1
@@ -142,6 +143,8 @@ fi
 if [ -z "$install_failed" ]; then
   echo ">> pnpm tc"
   (cd "$wt" && pnpm tc) >"$logs/tc.log" 2>&1 || tc_failed=1
+  # Why first: a moved upstream script makes the inventory and lint steps crash with "Cannot find module"; this lists file:line -> new location.
+  (cd "$wt" && node config/scripts/fork-upstream-script-refs.mjs) >"$logs/script-refs.log" 2>&1 || refs_failed=1
   # Why the merged tree's script: it collects with the merged tree's runner config and skips files the merge removed.
   if ! tests=$(cd "$wt" && node config/scripts/fork-test-inventory.mjs fork-changed "$base" "$fork_sha" 2>"$logs/listing.log") ||
     ! dropped=$(cd "$wt" && node config/scripts/fork-test-inventory.mjs fork-dropped "$base" "$fork_sha" 2>>"$logs/listing.log"); then
@@ -166,6 +169,7 @@ findings=
 [ -z "$conflicts" ] || findings="$findings, $n_conflicts merge conflicts"
 [ -z "$install_failed" ] || findings="$findings, pnpm install failed"
 [ -z "$tc_failed" ] || findings="$findings, typecheck errors"
+[ -z "$refs_failed" ] || findings="$findings, fork files reference moved upstream scripts"
 [ -z "$listing_failed" ] || findings="$findings, test listing failed in the merged tree"
 [ -z "$tests_failed" ] || findings="$findings, failing tests"
 [ -z "$lint_failed" ] || findings="$findings, lint failures"
@@ -241,6 +245,12 @@ list_commits() {
     else
       log_tail "$logs/tc.log"
     fi
+  fi
+  if [ -n "$refs_failed" ]; then
+    echo
+    echo "## Fork files reference upstream scripts that moved"
+    echo
+    log_tail "$logs/script-refs.log"
   fi
   if [ -n "$listing_failed" ]; then
     echo

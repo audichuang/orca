@@ -57,7 +57,23 @@ export function collectScriptRefs(file, text) {
 
 /** New locations for a vanished `path`: git rename records first, then same-named files now under config/scripts. */
 export function suggestTargets(path, { renames = [], files = [] } = {}) {
-  const fromGit = renames.filter((rename) => rename.from === path).map((rename) => rename.to)
+  const present = new Set(files)
+  // Why: `git log --all` records A->B and B->C separately, so follow the chain and keep only files that still exist.
+  const fromGit = []
+  const seen = new Set([path])
+  const queue = [path]
+  while (queue.length > 0) {
+    const current = queue.shift()
+    for (const rename of renames) {
+      if (rename.from === current && !seen.has(rename.to)) {
+        seen.add(rename.to)
+        queue.push(rename.to)
+        if (present.has(rename.to)) {
+          fromGit.push(rename.to)
+        }
+      }
+    }
+  }
   const sameName = files.filter(
     (candidate) => candidate !== path && basename(candidate) === basename(path)
   )
