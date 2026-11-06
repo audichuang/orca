@@ -120,7 +120,7 @@ export function installMonacoEditorInputBindings(params: MonacoEditorInputBindin
       const reference = selections
         .map((selection) =>
           formatSelectionReference({
-            relativePath: propsRef.current.relativePath,
+            relativePath: propsRef.current.chatRelativePath ?? propsRef.current.relativePath,
             language: propsRef.current.language,
             selection,
             selectedText: model.getValueInRange(selection)
