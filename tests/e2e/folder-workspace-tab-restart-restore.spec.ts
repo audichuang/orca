@@ -44,6 +44,7 @@ function apiWorktreeId(page: Page, apiPath: string): Promise<string | null> {
 
 test('a folder edit tab keeps its repo across a restart', async (// oxlint-disable-next-line no-empty-pattern -- Playwright's second fixture arg is testInfo; the first must be an object destructure to opt out of the default fixture set.
 {}, testInfo) => {
+  // Why: the test quits and relaunches Electron once.
   test.setTimeout(300_000)
   const fixtureRoot = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'orca-folder-restart-')))
   const P = execFileSync('bash', [FIXTURE_SCRIPT, path.join(fixtureRoot, 'fixture')], {
