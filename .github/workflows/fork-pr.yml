@@ -83,7 +83,7 @@ jobs:
           bun-version-file: config/.bun-version
 
       - name: make fork-check-static
-        run: make fork-check-static
+        run: /usr/bin/time -v make fork-check-static
 
   fork_check_tests:
     name: fork-check tests (${{ matrix.shard }})
