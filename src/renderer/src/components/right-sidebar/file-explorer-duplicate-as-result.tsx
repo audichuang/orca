@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { ContextMenuItem } from '@/components/ui/context-menu'
 import { useAppStore } from '@/store'
 import { detectLanguage } from '@/lib/language-detect'
+import { extractIpcErrorMessage } from '@/lib/ipc-error'
 import { translate } from '@/i18n/i18n'
 import { basename, dirname, joinPath } from '@/lib/path'
 import { copyRuntimePath } from '@/runtime/runtime-file-mutation-client'
@@ -13,15 +14,6 @@ import { runtimePathExists } from '@/runtime/runtime-file-metadata-client'
 import { runtimeTargetEnvironmentId } from '@/runtime/runtime-client-target'
 import type { TreeNode } from './file-explorer/tree/file-explorer-types'
 import { captureFileExplorerOperationGuard } from './file-explorer/navigation/file-explorer-operation-owner'
-
-// Copied from useFileDuplicate: strips Electron invoke error wrappers.
-function extractIpcErrorMessage(err: unknown, fallback: string): string {
-  if (!(err instanceof Error)) {
-    return fallback
-  }
-  const match = err.message.match(/Error invoking remote method '[^']*': (?:Error: )?(.+)/)
-  return match ? match[1] : err.message
-}
 
 /** Appends to the full name, so the original extension stays: `a.sql` -> `a.sql_result.txt`, then `_result_2.txt`. */
 export function resultCopyName(name: string, attempt: number): string {
