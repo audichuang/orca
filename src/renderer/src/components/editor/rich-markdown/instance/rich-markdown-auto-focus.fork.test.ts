@@ -3,7 +3,7 @@
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { afterEach, expect, it, vi } from 'vitest'
-import { autoFocusRichEditor } from '../../src/renderer/src/components/editor/rich-markdown/instance/rich-markdown-auto-focus'
+import { autoFocusRichEditor } from './rich-markdown-auto-focus'
 
 afterEach(() => {
   vi.unstubAllGlobals()
