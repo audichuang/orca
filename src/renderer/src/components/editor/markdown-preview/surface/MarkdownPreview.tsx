@@ -17,6 +17,7 @@ import { readMarkdownPreviewChatSelection } from '../review/markdown-preview-cha
 import { SelectionAddToChatPopover } from '../../../native-chat/selection-quotes/SelectionAddToChatPopover'
 import { openAddToChatMenuAt } from '../../../native-chat/selection-quotes/add-to-chat-point-menu'
 import { formatNativeChatQuote } from '../../../../../../shared/native-chat/input/quotes/native-chat-quote-selection'
+import { useChatQuoteRelativePath } from '../../use-chat-quote-relative-path'
 
 const EMPTY_MARKDOWN_DOCUMENTS: MarkdownDocument[] = []
 
@@ -90,7 +91,12 @@ export default function MarkdownPreview({
 
   // The open file's own workspace and path, so folder workspaces get the action too.
   const chatWorktreeId = sourceWorktreeId
-  const chatRelativePath = sourceRelativePath
+  const chatRelativePath = useChatQuoteRelativePath(
+    sourceWorktreeId,
+    filePath,
+    sourceRuntimeEnvironmentId,
+    sourceRelativePath
+  )
 
   return (
     <MarkdownPreviewAnnotationContext value={annotationRenderers}>
