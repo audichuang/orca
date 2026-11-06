@@ -1,4 +1,4 @@
-import { createElement, useMemo, useState } from 'react'
+import { createElement } from 'react'
 import type React from 'react'
 import { ArrowUpRight, RefreshCw } from 'lucide-react'
 import { STATUS_COLORS } from '../../../../lib/git-path-decoration'
@@ -13,20 +13,10 @@ import { basename, dirname } from '@/lib/path'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import { formatGitHistoryTimestamp } from './git-history-format'
-import {
-  buildSourceControlTree,
-  compactSourceControlTree,
-  flattenSourceControlTree
-} from '../../../../../../shared/source-control/listing/source-control-tree'
-import type { BranchSourceControlTreeNode } from '../listing/directory-action-paths'
-import { SourceControlBranchTreeDirectoryRow } from '../listing/tree-directory-rows'
-import {
-  SOURCE_CONTROL_TREE_FILE_PADDING_PX,
-  SOURCE_CONTROL_TREE_INDENT_PX
-} from '../listing/row-layout'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitFileStatus } from '../../../../../../shared/git/status/git-status-types'
 import type { GitHistoryCommitFilesMenuRenderer } from './git-history-panel-slots'
+import { useCommitFilesTreeLayout, type CommitFilesTreeRows } from './git-history-commit-files-tree'
 
 export type GitHistoryCommitFilesState =
   | { status: 'loading' }
@@ -36,36 +26,30 @@ export type GitHistoryCommitFilesState =
 function CommitFileRow({
   entry,
   selected,
-  depth,
+  indentPx,
   onOpen
 }: {
   entry: GitBranchChangeEntry
   selected: boolean
-  /** Tree depth; the folder rows above carry the path, so the hint is dropped. */
-  depth?: number
+  /** Tree indent; the folder rows above carry the path, so the hint is dropped. */
+  indentPx?: number
   onOpen: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
 }): React.JSX.Element {
   const status = entry.status as GitFileStatus
   const fileName = basename(entry.path)
   const parentDir = dirname(entry.path)
-  const dirPath = depth !== undefined || parentDir === '.' ? '' : parentDir
+  const dirPath = indentPx !== undefined || parentDir === '.' ? '' : parentDir
 
   return (
     <button
       type="button"
       className={cn(
         'group flex w-full min-w-0 cursor-pointer items-center gap-1 py-1 pr-3 text-left text-xs transition-colors',
-        depth === undefined && 'pl-9',
+        indentPx === undefined && 'pl-9',
         // Why: the selected look (main.css) must not be washed out by the plain hover tint.
         !selected && 'hover:bg-accent/40'
       )}
-      style={
-        depth === undefined
-          ? undefined
-          : {
-              paddingLeft: `${depth * SOURCE_CONTROL_TREE_INDENT_PX + SOURCE_CONTROL_TREE_FILE_PADDING_PX}px`
-            }
-      }
+      style={indentPx === undefined ? undefined : { paddingLeft: `${indentPx}px` }}
       title={entry.path}
       data-testid="git-history-commit-file"
       data-commit-file-path={entry.path}
@@ -95,60 +79,16 @@ function CommitFileRow({
 
 const NO_SELECTION: ReadonlySet<string> = new Set()
 
-function CommitFilesTree({
-  roots,
-  selectedPaths,
-  onOpenFile
-}: {
-  roots: readonly BranchSourceControlTreeNode[]
-  selectedPaths: ReadonlySet<string>
-  onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
-}): React.JSX.Element {
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(NO_SELECTION)
-  const toggle = (key: string): void =>
-    setCollapsed((prev) => {
-      const next = new Set(prev)
-      if (!next.delete(key)) {
-        next.add(key)
-      }
-      return next
-    })
-  return (
-    <>
-      {flattenSourceControlTree(roots, collapsed).map((node) =>
-        node.type === 'directory' ? (
-          // Why the wrapper: the files menu finds a right-clicked folder by this attribute.
-          <div key={node.key} data-commit-dir-path={node.path}>
-            <SourceControlBranchTreeDirectoryRow
-              node={node}
-              isCollapsed={collapsed.has(node.key)}
-              onToggle={() => toggle(node.key)}
-            />
-          </div>
-        ) : (
-          <CommitFileRow
-            key={node.key}
-            entry={node.entry}
-            depth={node.depth}
-            selected={selectedPaths.has(node.entry.path)}
-            onOpen={onOpenFile}
-          />
-        )
-      )}
-    </>
-  )
-}
-
 function CommitFilesBody({
   state,
-  treeRoots,
+  renderRows,
   selectedPaths = NO_SELECTION,
   onOpenFile,
   onOpenAll
 }: {
   state: GitHistoryCommitFilesState
   /** Set in tree layout once the files are ready. */
-  treeRoots?: readonly BranchSourceControlTreeNode[]
+  renderRows?: CommitFilesTreeRows
   selectedPaths?: ReadonlySet<string>
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   onOpenAll?: () => void
@@ -188,18 +128,24 @@ function CommitFilesBody({
 
   return (
     <>
-      {treeRoots ? (
-        <CommitFilesTree roots={treeRoots} selectedPaths={selectedPaths} onOpenFile={onOpenFile} />
-      ) : (
-        state.entries.map((entry) => (
-          <CommitFileRow
-            key={entry.path}
-            entry={entry}
-            selected={selectedPaths.has(entry.path)}
-            onOpen={onOpenFile}
-          />
-        ))
-      )}
+      {renderRows
+        ? renderRows((entry, indentPx) => (
+            <CommitFileRow
+              key={entry.path}
+              entry={entry}
+              indentPx={indentPx}
+              selected={selectedPaths.has(entry.path)}
+              onOpen={onOpenFile}
+            />
+          ))
+        : state.entries.map((entry) => (
+            <CommitFileRow
+              key={entry.path}
+              entry={entry}
+              selected={selectedPaths.has(entry.path)}
+              onOpen={onOpenFile}
+            />
+          ))}
       {onOpenAll && (
         <button
           type="button"
@@ -243,28 +189,14 @@ export function GitHistoryCommitFiles({
   renderFilesMenu?: GitHistoryCommitFilesMenuRenderer
   className?: string
 }): React.JSX.Element {
-  const treeRoots = useMemo(
-    () =>
-      layout === 'tree' && state.status === 'ready'
-        ? compactSourceControlTree(buildSourceControlTree('branch', state.entries))
-        : undefined,
-    [layout, state]
-  )
-  // Why tree order: shift-click ranges must follow the rows as shown, not git's path order.
-  const menuEntries = useMemo(() => {
-    if (treeRoots) {
-      return flattenSourceControlTree(treeRoots, NO_SELECTION).flatMap((node) =>
-        node.type === 'file' ? [node.entry] : []
-      )
-    }
-    return state.status === 'ready' ? state.entries : []
-  }, [treeRoots, state])
+  const { entries: menuEntries, renderRows } = useCommitFilesTreeLayout(layout, state)
   const openFile = (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent): void =>
     onOpenFile(entry, event, { entries: menuEntries })
-  const body = (
+  const renderBody = (selectedPaths?: ReadonlySet<string>): React.JSX.Element => (
     <CommitFilesBody
       state={state}
-      treeRoots={treeRoots}
+      renderRows={renderRows}
+      selectedPaths={selectedPaths}
       onOpenFile={openFile}
       onOpenAll={onOpenAll}
     />
@@ -275,17 +207,9 @@ export function GitHistoryCommitFiles({
       {meta && <div className="py-1 pl-9 pr-3 text-[11px] text-muted-foreground">{meta}</div>}
       {renderFilesMenu
         ? renderFilesMenu(menuEntries, openFile, (selectedPaths) => (
-            <div>
-              <CommitFilesBody
-                state={state}
-                treeRoots={treeRoots}
-                selectedPaths={selectedPaths}
-                onOpenFile={openFile}
-                onOpenAll={onOpenAll}
-              />
-            </div>
+            <div>{renderBody(selectedPaths)}</div>
           ))
-        : body}
+        : renderBody()}
     </div>
   )
 }
