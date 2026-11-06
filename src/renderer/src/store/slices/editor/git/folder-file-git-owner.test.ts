@@ -41,17 +41,16 @@ const folderState: Pick<AppState, 'folderWorkspaces' | 'worktreesByRepo' | 'repo
 }
 
 describe('resolveFolderFileGitOwner', () => {
-  it('binds a folder file to the repo holding it, repo-relative', () => {
+  it('binds a folder file to the repo holding it', () => {
     expect(resolveFolderFileGitOwner(folderState, 'folder:f1', '/p/web/src/a.ts')).toEqual({
-      gitWorktreeId: 'web-main',
-      relativePath: 'src/a.ts'
+      gitWorktreeId: 'web-main'
     })
   })
 
   it('prefers the deepest nested repo', () => {
     expect(
       resolveFolderFileGitOwner(folderState, 'folder:f1', '/p/web/plugins/inner/index.md')
-    ).toEqual({ gitWorktreeId: 'inner-main', relativePath: 'index.md' })
+    ).toEqual({ gitWorktreeId: 'inner-main' })
   })
 
   it('leaves untitled notes on the folder owner', () => {
@@ -89,9 +88,55 @@ describe('openFile in a folder workspace', () => {
   it('gives an Explorer open the git owner Source Control would', () => {
     useAppStore.getState().openFile(explorerOpen, { suppressActiveRuntimeFallback: true })
     expect(useAppStore.getState().openFiles[0]).toMatchObject({
-      relativePath: 'README.md',
+      relativePath: 'web/README.md',
       gitWorktreeId: 'web-main'
     })
+  })
+
+  it('stores a Source Control open folder-relative', () => {
+    useAppStore
+      .getState()
+      .openFile(
+        { ...explorerOpen, relativePath: 'README.md', gitWorktreeId: 'web-main' },
+        { suppressActiveRuntimeFallback: true }
+      )
+    expect(useAppStore.getState().openFiles[0]).toMatchObject({
+      relativePath: 'web/README.md',
+      gitWorktreeId: 'web-main'
+    })
+  })
+
+  it('keeps a Source Control open outside the folder root repo-relative', () => {
+    useAppStore.setState({
+      repos: [repo('mono', '/m')],
+      worktreesByRepo: { mono: [worktree('mono-main', 'mono', '/m')] },
+      folderWorkspaces: [{ ...folderState.folderWorkspaces[0], folderPath: '/m/pkg' }]
+    })
+    useAppStore.getState().openFile(
+      {
+        ...explorerOpen,
+        filePath: '/m/tools/build.ts',
+        relativePath: 'tools/build.ts',
+        gitWorktreeId: 'mono-main'
+      },
+      { suppressActiveRuntimeFallback: true }
+    )
+    expect(useAppStore.getState().openFiles[0]).toMatchObject({
+      relativePath: 'tools/build.ts',
+      gitWorktreeId: 'mono-main'
+    })
+  })
+
+  it('leaves an absolute open unbound so its reads stay in the folder', () => {
+    useAppStore
+      .getState()
+      .openFile(
+        { ...explorerOpen, relativePath: '/p/web/README.md' },
+        { suppressActiveRuntimeFallback: true }
+      )
+    const [file] = useAppStore.getState().openFiles
+    expect(file.relativePath).toBe('/p/web/README.md')
+    expect(file.gitWorktreeId).toBeUndefined()
   })
 
   it('keeps one tab and its owner when Source Control and Explorer alternate', () => {
@@ -103,6 +148,6 @@ describe('openFile in a folder workspace', () => {
     state.openFile(explorerOpen, { suppressActiveRuntimeFallback: true })
     const files = useAppStore.getState().openFiles
     expect(files).toHaveLength(1)
-    expect(files[0]).toMatchObject({ relativePath: 'README.md', gitWorktreeId: 'web-main' })
+    expect(files[0]).toMatchObject({ relativePath: 'web/README.md', gitWorktreeId: 'web-main' })
   })
 })

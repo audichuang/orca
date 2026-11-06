@@ -173,6 +173,10 @@ src/renderer/src/components/editor/markdown-preview/surface/MarkdownPreview.chat
 src/renderer/src/components/editor/MonacoEditor.chat-quote.fork.test.tsx
 src/renderer/src/components/editor/monaco-editor-input-bindings.add-to-chat.fork.test.ts
 src/renderer/src/components/editor/diff-file-boundary-navigation.test.tsx
+src/renderer/src/store/slices/editor/git/folder-file-git-owner.test.ts
+src/renderer/src/hooks/editor-external-watch-overflow.folder-owner.fork.test.ts
+src/renderer/src/components/quick-open-file-history.fork.test.ts
+src/renderer/src/store/slices/store-session-editor-hydration.fork.test.ts
 
 # Folder source-control action routing: real panel, recovery dialogs, notes and discard failures
 src/renderer/src/components/right-sidebar/source-control/panel/use-panel-model.fork.test.tsx

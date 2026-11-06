@@ -21,6 +21,10 @@ The user decided not to fix these. A review finding that falls under one is NON-
 
 - ClipCode output on files that git transforms for display. ClipCode is used for source code and docs. Nobody copies or restores PDFs, Office files or other formats that get a `diff=X` textconv driver, and none of the user's repos or machines configure one. Upstream v1.4.247 (#37105) reads the staged and commit diff sides with `cat-file --textconv`, so ClipCode's staged and commit copies of such a file carry the converted text, and Paste & Restore would write that text back (PR #111). The same class covers git filters (`filter=`), smudge/clean and other attribute-driven conversions of what ClipCode copies or restores. Fix only if the user reports hitting it; the cheap fix is to refuse the copy when the path has a textconv driver.
 
+## Deliberate departures from upstream behavior
+
+- A folder-workspace edit tab keeps upstream's `relativePath`, relative to `worktreeId`; its fork `gitWorktreeId` names the repo backing its git state, and fork readers derive the repo-relative path from `filePath` (`getOpenFileGitRelativePath`). Two cases stay repo-relative on purpose: diff, conflict-review and combined-diff tabs, which only fork Source Control opens, and a Source Control edit open of a file outside the folder root (a folder inside a repo listing a sibling file), which has no folder-relative path. Upstream readers (external-watch reload, runtime reads, quick-open history, mobile) see a repo-relative path there.
+
 ## Merge gate
 
 - Fork CI (below) is the merge gate for every rebase and every merge into `develop`; it runs upstream's full unit suite (`FORK_TESTS=all`), like upstream's own PR CI. Locally, `make fork-check` is the fast pre-check: `pnpm tc`, `vitest --changed $(FORK_BASE)`, the changed-code quality gate and `fork-check-lint`.
