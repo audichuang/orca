@@ -36,6 +36,16 @@ jobs:
         with:
           # Why depth 2: the diff is HEAD^1..HEAD of the pull request merge commit.
           fetch-depth: 2
+          # Keep the full index for README link checks and path diffs, but fetch only scope inputs.
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /config/scripts/fork-pr-scope.mjs
+            /config/scripts/workflow/source-routing/
+            /config/scripts/git/pr-diff-base/
+            /config/scripts/static-analysis/repository-layout/check-readme-local-links.mjs
+            /README.md
+            /package.json
+            /docs/readme/
           persist-credentials: false
 
       # Why here: `pnpm lint` checks these links in fork-check-static, which a docs-only PR skips.
