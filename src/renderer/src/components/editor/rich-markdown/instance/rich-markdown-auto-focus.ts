@@ -29,10 +29,8 @@ export function autoFocusRichEditor(
     if (!canTakeFocus) {
       return
     }
-    // Preserve typing that began after synchronous focus but before this frame.
-    nextEditor.commands.focus(active === nextEditor.view.dom ? null : 'start', {
-      scrollIntoView: false
-    })
+    // Use start for a TextSelection instead of an empty document’s AllSelection; disable scrolling to preserve tab-switch restoration.
+    nextEditor.commands.focus('start', { scrollIntoView: false })
   })
   return () => {
     if (frameId !== null) {
