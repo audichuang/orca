@@ -18,6 +18,7 @@ type PanelProps = {
 
 const storeRef = vi.hoisted((): { current: StoreApi<AppState> | null } => ({ current: null }))
 const panel = vi.hoisted((): { current: PanelProps | null } => ({ current: null }))
+const banner = vi.hoisted((): { current: GitStatusEntry | null } => ({ current: null }))
 const retries = vi.hoisted((): { current: (() => void)[] } => ({ current: [] }))
 
 vi.mock('@/store', () => {
@@ -36,7 +37,10 @@ vi.mock('./EditorFileLoadErrorView', () => ({
   }
 }))
 vi.mock('./ConflictComponents', () => ({
-  ConflictBanner: () => null,
+  ConflictBanner: ({ entry }: { entry: GitStatusEntry | null }) => {
+    banner.current = entry
+    return null
+  },
   ConflictPlaceholderView: () => null,
   ConflictReviewPanel: (props: PanelProps) => {
     panel.current = props
@@ -145,5 +149,69 @@ describe('conflict review surface in a folder workspace', () => {
       expect.objectContaining({ worktreeId: FOLDER, gitWorktreeId: 'repo-a' }),
       expect.anything()
     )
+  })
+
+  it('matches a folder-relative selected tab to its repo-relative status entry', () => {
+    const store = createEditorStore()
+    storeRef.current = store
+    store.setState({
+      worktreesByRepo: {
+        a: [
+          // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: owner lookup reads only id, repoId and path.
+          { id: 'repo-a', repoId: 'a', path: '/f/a' } as never
+        ]
+      }
+    })
+    banner.current = null
+    const selected: OpenFile = {
+      id: 'sel',
+      filePath: '/f/a/src/x.ts',
+      relativePath: 'a/src/x.ts',
+      worktreeId: FOLDER,
+      gitWorktreeId: 'repo-a',
+      language: 'typescript',
+      isDirty: false,
+      mode: 'edit',
+      conflict: {
+        kind: 'conflict-editable',
+        conflictKind: 'both_modified',
+        conflictStatus: 'unresolved',
+        conflictStatusSource: 'git'
+      }
+    }
+    const review: OpenFile = {
+      id: 'review',
+      filePath: '/f/a',
+      relativePath: '/f/a',
+      worktreeId: FOLDER,
+      gitWorktreeId: 'repo-a',
+      language: 'plaintext',
+      isDirty: false,
+      mode: 'conflict-review',
+      conflictReview: {
+        source: 'live-summary',
+        timestamp: 0,
+        entries: [{ path: ENTRY.path, conflictKind: 'both_modified' }],
+        selectedFileId: 'sel'
+      }
+    }
+    act(() => {
+      root!.render(
+        createElement(EditorConflictReviewSurface, {
+          activeFile: review,
+          viewStateScopeId: 'panel-1',
+          fileContents: { sel: { content: '', isBinary: false } },
+          editBuffers: {},
+          openFiles: [selected],
+          worktreeEntries: [ENTRY],
+          pendingEditorReveal: null,
+          getConflictNavigation: () => undefined,
+          handleContentChangeForFile: () => {},
+          handleSaveForFile: async () => true,
+          reloadContent: () => {}
+        })
+      )
+    })
+    expect(banner.current).toBe(ENTRY)
   })
 })
