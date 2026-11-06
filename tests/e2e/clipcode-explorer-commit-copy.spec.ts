@@ -82,7 +82,7 @@ test('explorer Copy Full Source copies a folder recursively and a multi-selectio
   const row = (name: string): Locator =>
     explorer
       .locator('[data-file-explorer-row]')
-      .filter({ has: orcaPage.locator('[data-file-explorer-row-name]', { hasText: name }) })
+      .filter({ has: orcaPage.getByText(name, { exact: true }) })
       .first()
   await expect(row('clip-other')).toBeVisible({ timeout: 20_000 })
 
