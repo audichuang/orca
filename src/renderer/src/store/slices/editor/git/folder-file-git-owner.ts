@@ -2,11 +2,15 @@ import { getFolderGitWorktrees } from '@/components/right-sidebar/source-control
 import { getIndexedAllWorktrees, getIndexedRepoMap } from '../../../worktree-repo-index'
 import type { AppState } from '../../../types'
 import type { OpenFile } from '../types/open-file'
-import { relativePathInsideRoot } from '../../../../../../shared/cross-platform-path'
+import {
+  isRuntimePathAbsolute,
+  relativePathInsideRoot
+} from '../../../../../../shared/cross-platform-path'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
+import { resolveTabOwnerRelativePath } from './open-file-git-owner'
 
-type FolderFileGitOwner = { gitWorktreeId: string; relativePath: string }
+type FolderFileGitOwner = { gitWorktreeId: string }
 
 /** Repo worktree under a folder workspace that holds `filePath`; the deepest one wins for nested repos. */
 export function resolveFolderFileGitOwner(
@@ -32,29 +36,47 @@ export function resolveFolderFileGitOwner(
     getIndexedRepoMap(state.repos)
   )
   for (const { worktree } of members) {
-    const relativePath = relativePathInsideRoot(worktree.path, filePath)
-    if (!relativePath) {
+    if (!relativePathInsideRoot(worktree.path, filePath)) {
       continue
     }
     const depth = worktree.path.length
     if (!best || depth > best.depth) {
-      best = { gitWorktreeId: worktree.id, relativePath, depth }
+      best = { gitWorktreeId: worktree.id, depth }
     }
   }
-  return best ? { gitWorktreeId: best.gitWorktreeId, relativePath: best.relativePath } : null
+  return best ? { gitWorktreeId: best.gitWorktreeId } : null
 }
 
-/** Folder-workspace opens that arrive without a git owner (Explorer, links, quick open) bind to the repo holding the file. */
+/**
+ * Edit tabs keep relativePath relative to worktreeId, as upstream reads it. Folder opens without a
+ * git owner (Explorer, links, quick open) bind to the repo holding the file; Source Control opens
+ * with a repo-relative path are re-anchored to the folder root when the file lies inside it.
+ */
 export function withFolderFileGitOwner<
   T extends Pick<
     OpenFile,
-    'filePath' | 'worktreeId' | 'gitWorktreeId' | 'relativePath' | 'mode' | 'isUntitled'
+    | 'filePath'
+    | 'worktreeId'
+    | 'gitWorktreeId'
+    | 'relativePath'
+    | 'mode'
+    | 'isUntitled'
+    | 'runtimeEnvironmentId'
   >
 >(state: Pick<AppState, 'folderWorkspaces' | 'worktreesByRepo' | 'repos'>, file: T): T {
   // Why: untitled notes are folder-scoped placeholders; cleanup deletes them by the tab owner's relative path.
-  if (file.gitWorktreeId !== undefined || file.mode !== 'edit' || file.isUntitled) {
+  if (file.mode !== 'edit' || file.isUntitled) {
+    return file
+  }
+  if (file.gitWorktreeId !== undefined) {
+    // Why: outside the folder root there is no folder-relative path, so the repo-relative one stays.
+    const relativePath = resolveTabOwnerRelativePath(state, file, null)
+    return relativePath && relativePath !== file.relativePath ? { ...file, relativePath } : file
+  }
+  // Why: an absolute tab stays unbound so upstream's same-workspace re-own still matches its reads.
+  if (isRuntimePathAbsolute(file.relativePath)) {
     return file
   }
   const owner = resolveFolderFileGitOwner(state, file.worktreeId, file.filePath)
-  return owner ? { ...file, ...owner } : file
+  return owner ? { ...file, gitWorktreeId: owner.gitWorktreeId } : file
 }
