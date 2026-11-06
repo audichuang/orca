@@ -70,7 +70,7 @@ describe('collectScriptRefs', () => {
 
   it('treats fixture strings in a test as text, but not its real imports', () => {
     const text =
-      "import { a } from './run-lint.mjs'\nconst s = \"export * from './b.js'\"\n'config/scripts/x.mjs'\n"
+      "import { a } from './run-lint.mjs'\nconst s = \"export * from './b.js'\"\nawait import('./c.mjs')\n'config/scripts/x.mjs'\n"
     expect(collectScriptRefs('config/scripts/fork-a.test.mjs', text)).toEqual([
       { path: 'config/scripts/run-lint.mjs', line: 1 }
     ])
