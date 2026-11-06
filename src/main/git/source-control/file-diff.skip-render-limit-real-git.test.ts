@@ -20,7 +20,7 @@ const BIG_INDEX_TEXT = 'i\n'.repeat(130_000)
 
 /** Backdate every file past the stamp's racy-write margin so the settled diff cache stores reads. */
 function settle(dir: string): void {
-  const past = new Date(Date.now() - 60_000)
+  const past = new Date('2020-01-01T00:00:00Z')
   for (const entry of readdirSync(dir, { withFileTypes: true, recursive: true })) {
     utimesSync(path.join(entry.parentPath, entry.name), past, past)
   }

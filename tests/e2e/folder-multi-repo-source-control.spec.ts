@@ -44,6 +44,7 @@ const FIXTURE_SCRIPT = path.join(__dirname, 'helpers', 'folder-multi-repo-fixtur
 test('folder workspace multi-repo source control, copy and restore', async ({
   orcaPage: page
 }, testInfo) => {
+  // Why: this walks every scenario of the folder multi-repo matrix in one app launch.
   test.setTimeout(10 * 60_000)
   const fixtureRoot = realpathSync(
     process.env.ORCA_MR_FIXTURE_ROOT
@@ -68,7 +69,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   const shot = async (name: string) => {
     const p = path.join(shots, `${name}.png`)
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve(null))))
-    await page.screenshot({ path: p })
+    await page.screenshot({ path: p, animations: 'disabled' })
     return p
   }
   const only = process.env.ORCA_MR_ONLY ? new RegExp(process.env.ORCA_MR_ONLY) : null
@@ -277,6 +278,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     await expect(entry(apiOnly.area, apiOnly.path)).toHaveCount(0)
     await refreshBtn.click()
     await waitSettled()
+    // ast-grep-ignore: test-no-real-time-wait -- asserts the active repo stays put across a refresh that finishes settling
     await page.waitForTimeout(1500)
     await expect(header(H.web).first()).toHaveAttribute('aria-current', 'true')
     await expect(header(H.api).first()).not.toHaveAttribute('aria-current', 'true')
@@ -506,7 +508,6 @@ test('folder workspace multi-repo source control, copy and restore', async ({
       await entry(c.area, c.p).click({ button: 'right' })
       if (c.area === 'staged' && c.p === 'src/partial.ts') {
         await expect(page.getByRole('menuitem', { name: 'Copy Full Source' })).toBeVisible()
-        await page.waitForTimeout(400) // menu open animation
         await shot('S9a-context-menu')
       }
       await page.getByRole('menuitem', { name: 'Copy Full Source' }).click()
@@ -787,6 +788,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     await expect.poll(activeWt).toBe(webWt)
     await expect(page.getByRole('button', { name: 'Refresh all repositories' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Copy all changes' })).toHaveCount(0)
+    // ast-grep-ignore: test-no-real-time-wait -- asserts the panel stays absent for a stretch after the workspace switch
     await page.waitForTimeout(1000)
     await expect(page.getByRole('button', { name: 'Refresh all repositories' })).toHaveCount(0)
     const rel = 'src/unstaged-mod.ts'
