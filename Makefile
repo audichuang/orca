@@ -33,7 +33,7 @@ help:
 	@echo "  make typecheck  full type check (optional safety gate)"
 	@echo "  make clean      remove dist/ and out/"
 	@echo "  make fork-check       after a rebase: typecheck + tests the fork's changes reach + lint + quality gate"
-	@echo "  make fork-check-e2e   the fork's headless e2e specs (CI runs it on every PR)"
+	@echo "  make fork-check-e2e   the fork's headless e2e specs plus config/fork-upstream-e2e.txt (CI runs it on every PR)"
 	@echo "  make fork-check-full  before pushing: every fork CI job but the full unit suite and the macOS build"
 	@echo "  make fork-check-seams the fork seam contract tests in config/fork-seam-tests.txt"
 	@echo "  make fork-footprint   the fork's diff on upstream files since FORK_BASE (JSON=1 for --json)"
@@ -343,7 +343,7 @@ fork-check-mobile:
 	  ORCA_MOBILE_WEB_APP_DEPS_REQUIRED=1 ORCA_MOBILE_WEB_PREPARED_ROUTE_SNAPSHOT="$(MOBILE_ROUTES)" ORCA_MOBILE_WEB_RENDER_BROWSER="$$chrome" \
 	    node config/scripts/mobile-web/check-entry/run-mobile-web-app-checks.mjs
 
-# The folder multi-repo e2e plus every spec the fork added or changed since FORK_BASE.
+# The folder multi-repo e2e, config/fork-upstream-e2e.txt, and every spec the fork added or changed since FORK_BASE.
 fork-check-e2e: export LC_ALL = C
 fork-check-e2e: export ORCA_BACKGROUND_LAUNCH = 1
 fork-check-e2e: fork-base-guard
@@ -351,7 +351,8 @@ fork-check-e2e: fork-base-guard
 	$(if $(CI),,node config/scripts/fork-wait-for-quiet-machine.mjs)
 	@# Why the diff alone: piped into sort its failure was lost; --no-renames avoids blob fetches in a blob:none clone.
 	changed=$$(git diff --name-only --no-renames --diff-filter=d $(FORK_BASE) HEAD -- 'tests/e2e/*.spec.ts') && \
-	  specs=$$(printf '%s\n' tests/e2e/folder-multi-repo-source-control.spec.ts $$changed | sort -u) && \
+	  listed=$$(grep -v '^#' config/fork-upstream-e2e.txt | grep .) && \
+	  specs=$$(printf '%s\n' tests/e2e/folder-multi-repo-source-control.spec.ts $$changed $$listed | sort -u) && \
 	  for spec in $$specs; do \
 	    case "$$spec" in *[!A-Za-z0-9._/-]*) echo "fork-check-e2e: rename $$spec; playwright reads spec arguments as regexes"; exit 1;; esac; \
 	    test -f "$$spec" || { echo "fork-check-e2e: $$spec is missing; playwright would skip it silently"; exit 1; }; \
