@@ -85,7 +85,7 @@ describe('updater in a packaged fork distribution', () => {
     expect(getRemoteServerUpdateSupport()).toEqual({
       installMode: 'interactive',
       automatic: false,
-      reason: 'unpackaged-build'
+      reason: 'updater-unavailable'
     })
   })
 })
