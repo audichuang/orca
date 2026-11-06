@@ -128,3 +128,36 @@
 - 處理：照 resolution-history 的老做法：採上游，把 fork 的 19 行（`git diff <merge-base> <fork> -- config/flaky-test-pattern-baseline.txt` 的 `+` 行）依 `rule:path` 插到第一個 key 比它大的上游行前面，不重排上游行；插之前確認 fork 行指的檔還在（這次 19 個都在）。合好的檔在 `~/.cache/orca-fork-canary/20261105T213133Z-41033/resolution/files/config/flaky-test-pattern-baseline.txt`。
 - 守它的測試：`pnpm run lint:ast-grep-gates`（flaky-test-pattern ratchet）
 - 驗證（2026-11-06，上游 c53f5cd23f61828c6c0fad5a4869fa78c6c2dd15）：`fork-lint-run.mjs` 的 `lint:ast-grep-gates` 與其他上游 lint 步驟全過。
+
+## 46be7e06bb7fad682297067fd812b4feb6bfb0cd（#38366、test: remove low-value editor prop and helper tests）× fork 3f318a49e8（feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229）、b47facaed9（test: move fork cases out of upstream test files into .fork.test siblings）— auto-rebase 2026-11-06
+- 類型：兩邊各改各的（上游整檔刪除，modify/delete）
+- 衝突檔：src/renderer/src/components/editor/autosave/editor-autosave.test.ts（兩個停點）
+- 連帶症狀：無
+- 處理：兩站都 `git rm`。fork 在 3f318a49e8 加的兩例，b47facaed9 已搬到 src/renderer/src/components/editor/editor-autosave.fork.test.ts（舊 develop 對這個上游檔 diff 為空）。
+- 守它的測試：editor-autosave.fork.test.ts（`matches a folder-owned diff tab by the repo worktree…`）
+- 驗證（2026-11-06，上游 v1.4.251）：PR #120 照做；`editor-autosave.ts:152` 拿掉 `gitWorktreeId` 比對 → 那一例紅。
+
+## b5b6e01a094467872bc1f3e5410cfb34eb5162dc（#38634、Add collapse and expand all projects controls）× fork 2094a9a1dd（feat(source-control): Git Graph 改成編輯器分頁,可切換 repo,並加上快捷鍵與 Cmd+J 進入點）— auto-rebase 2026-11-06
+- 類型：上游改了 fork 依賴的 API（預設快捷鍵撞鍵）
+- 衝突檔：無（rebase 乾淨，CI 全套單元測試才紅）
+- 連帶症狀：失敗測試 src/shared/keybindings-conflicts.test.ts › keeps every default binding conflict-free on all platforms（`Mod+Shift+H` 同時是 `sidebar.projects.toggleCollapse` 與 `sourceControl.openGitGraph`，只在 linux/win32）；改鍵後 fork e2e（git-graph-auto-load-tags、git-graph-full-view、git-graph-open-all-changes）在 Linux 要按新鍵
+- 處理：rebase 完 cherry-pick PR #120 的 `fix(fork): move Open Git Graph off Ctrl+Shift+H on Linux and Windows`（rebase/v1.4.251 上是 a7e4c03847；develop 移動過就用標題在 `git log` 找）：`definitions-core-4.ts` 的 openGitGraph 改 darwin `Mod+Shift+H`、linux/win32 `Mod+Shift+K`；`git-graph-shortcut.keybindings.test.ts` 依平台按鍵；新 helper `tests/e2e/helpers/git-graph-shortcut.ts` 的 `OPEN_GIT_GRAPH_CHORD` 給三支 e2e。
+- 守它的測試：keybindings-conflicts.test.ts、src/renderer/src/app-shell/git-graph-shortcut.keybindings.test.ts（config/fork-seam-tests.txt 的 Keybinding 組）
+- 驗證（2026-11-06，上游 v1.4.251）：改回 `platformBindings(['Mod+Shift+H'])` → 兩支都紅；CI run 42185952930 綠。
+
+## 66bb93395c42b99994516d8836a51eb9c0af1f53（#38321、fix(file-explorer): keep fast folder clicks as toggles instead of rename）× fork e2e tests/e2e/clipcode-explorer-commit-copy.spec.ts、tests/e2e/explorer-duplicate-as-result.spec.ts — auto-rebase 2026-11-06
+- 類型：上游改了 fork 依賴的 API（DOM 屬性 `data-file-explorer-row-name` 拿掉）
+- 衝突檔：無（只在 CI 的 fork e2e 紅）
+- 連帶症狀：失敗測試 clipcode-explorer-commit-copy.spec.ts:58、explorer-duplicate-as-result.spec.ts:28（`expect(locator).toBeVisible()`，找不到 row）
+- 處理：cherry-pick PR #120 的 `test(fork): find explorer rows by exact name after upstream dropped the row-name attribute`（rebase/v1.4.251 上是 d66306cccd）：`.filter({ has: orcaPage.getByText(name, { exact: true }) })`、`explorer.getByText(name, { exact: true })`，照上游自己 spec 的改法。
+- 守它的測試：上面兩支 e2e（CI fork e2e job）
+- 驗證（2026-11-06，上游 v1.4.251）：CI run 42185952930 的 fork e2e 綠。
+
+## 1ad67cd23798f91a7a54f5623f6a3fc482f7200e（#38251、Add a file, markdown preview or terminal selection to the chat）× fork folder 分頁的 repo 相對 relativePath（withFolderFileGitOwner，R1 那一類）— auto-rebase 2026-11-06
+- 類型：上游改了 fork 依賴的 API（上游新入口拿 `OpenFile.relativePath` 當相對 tab owner 的路徑）
+- 衝突檔：無（Codex 審查找到）
+- 連帶症狀：folder 分頁開巢狀 repo 的檔，Markdown preview 與 Monaco 的 Add to chat 引用 `README.md:1` 而不是 `repo-a/README.md:1`
+- 處理：cherry-pick PR #120 的 `fix(fork): quote folder tabs' files relative to the folder in Add to chat`（rebase/v1.4.251 上是 574b738143）：新 fork hook `src/renderer/src/components/editor/use-chat-quote-relative-path.ts`；`open-file-git-owner.ts` 抽出 `folderOwnerRelativePath`；`MarkdownPreview.tsx` 的 `chatRelativePath`、`MonacoEditor.tsx` propsRef 加 `chatRelativePath`、`monaco-editor-mount-params.ts` 型別、`monaco-editor-input-bindings.ts:123` 用它；3 支 fork 測試進 seam 清單。
+- 待人判斷（auto-rebase 不要自己選）：folder 是已匯入 repo 的子目錄時（folder 面板會列 folder 外的變更：`folder-git-worktrees.ts:24`），開父 repo 的 folder 外檔案，`folderOwnerRelativePath` 回 null、hook 退回 repo 相對路徑，引用會被 chat 解讀成 folder 底下的同名檔。選項：folder 外引用 `filePath` 絕對路徑，或 `../` 相對路徑；與 `fork-opt/r1-relative-path` 的模型重做一起決定。Codex 重現的情境：folder `/workspace/repo-a/docs`、檔案 `/workspace/repo-a/README.md`。
+- 守它的測試：MarkdownPreview.chat-quote.fork.test.tsx、MonacoEditor.chat-quote.fork.test.tsx、monaco-editor-input-bindings.add-to-chat.fork.test.ts（Editor folder git-owner routing 組）
+- 驗證（2026-11-06，上游 v1.4.251）：三處改回上游都紅；CI run 42185952930 綠；folder 外情境未修（Codex r2 NOT ACCEPTABLE）。
