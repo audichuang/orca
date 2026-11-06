@@ -61,9 +61,20 @@ export function resolveTabOwnerRelativePath(
   if (!file.gitWorktreeId || file.gitWorktreeId === file.worktreeId) {
     return file.relativePath
   }
+  if (parseWorkspaceKey(file.worktreeId)?.type !== 'folder') {
+    return worktreePath ? relativePathInsideRoot(worktreePath, file.filePath) : null
+  }
+  return folderOwnerRelativePath(state, file)
+}
+
+/** filePath relative to the root of its folder tab owner on the tab's host; null when the owner is no folder or the root is ambiguous. */
+export function folderOwnerRelativePath(
+  state: Pick<AppState, 'folderWorkspaces'>,
+  file: Pick<OpenFile, 'worktreeId' | 'filePath' | 'runtimeEnvironmentId'>
+): string | null {
   const scope = parseWorkspaceKey(file.worktreeId)
   if (scope?.type !== 'folder') {
-    return worktreePath ? relativePathInsideRoot(worktreePath, file.filePath) : null
+    return null
   }
   // Why: hosts can share a folder id with different (even nested) roots; only the tab's host's root holding filePath is its owner.
   const runtimeHostId = file.runtimeEnvironmentId
