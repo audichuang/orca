@@ -1,8 +1,44 @@
 import { describe, expect, it } from 'vitest'
 import { EXCLUDED } from './fork-lint-run.mjs'
-import { checkFailures, mentionedFiles, parseRunLintFailures } from './fork-upstream-red.mjs'
+import {
+  checkFailures,
+  mentionedFiles,
+  parseRunLintFailures,
+  parseVitestFailures
+} from './fork-upstream-red.mjs'
 
 const LINT = { name: 'lint' }
+const WORKFLOW_TESTS = { name: 'workflow-tests' }
+const VITEST_REPORT = JSON.stringify({
+  testResults: [
+    {
+      name: '/w/config/scripts/a.test.mjs',
+      status: 'failed',
+      message: '',
+      assertionResults: [
+        { status: 'passed', fullName: 'a passes', failureMessages: [] },
+        {
+          status: 'failed',
+          fullName: 'a reads the workflow',
+          failureMessages: ['AssertionError: expected 1 to be 2\n\n    at a.test.mjs:9']
+        }
+      ]
+    },
+    {
+      name: '/w/config/scripts/b.test.mjs',
+      status: 'failed',
+      message: "Error: Cannot find module '/w/config/scripts/gone.mjs'\nat load",
+      assertionResults: []
+    },
+    {
+      name: '/w/config/scripts/c.test.mjs',
+      status: 'passed',
+      message: '',
+      assertionResults: [{ status: 'passed', fullName: 'c passes', failureMessages: [] }]
+    }
+  ]
+})
+
 const excludedStep = Object.keys(EXCLUDED)[0]
 
 // Shape run-lint.mjs prints: a `✗ <step> (<secs>)` block per failure, then one summary line.
@@ -52,5 +88,43 @@ describe('fork-upstream-red', () => {
       'src/main/a.ts',
       '.github/workflows/pr.yml'
     ])
+  })
+
+  it('turns a vitest report into one failure per failing file and drops the passing ones', () => {
+    expect(parseVitestFailures(VITEST_REPORT, '/w')).toEqual([
+      {
+        step: 'config/scripts/a.test.mjs',
+        file: 'config/scripts/a.test.mjs',
+        output: 'a reads the workflow\nAssertionError: expected 1 to be 2'
+      },
+      {
+        step: 'config/scripts/b.test.mjs',
+        file: 'config/scripts/b.test.mjs',
+        output: "Error: Cannot find module '/w/config/scripts/gone.mjs'\nat load"
+      }
+    ])
+    expect(
+      checkFailures(
+        WORKFLOW_TESTS,
+        { code: 1, stdout: '', stderr: '' },
+        { root: '/w', report: VITEST_REPORT }
+      ).map(({ step, forkSkips }) => [step, forkSkips])
+    ).toEqual([
+      ['workflow-tests: config/scripts/a.test.mjs', false],
+      ['workflow-tests: config/scripts/b.test.mjs', false]
+    ])
+  })
+
+  it('reports a vitest failure it cannot parse as red, never as green', () => {
+    expect(parseVitestFailures('not json', '/w')).toBeNull()
+    for (const report of ['not json', JSON.stringify({ testResults: [] })]) {
+      expect(
+        checkFailures(
+          WORKFLOW_TESTS,
+          { code: 1, stdout: 'vitest crashed', stderr: '' },
+          { root: '/w', report }
+        )
+      ).toEqual([{ step: 'workflow-tests', output: 'vitest crashed', forkSkips: false }])
+    }
   })
 })

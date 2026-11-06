@@ -10,12 +10,10 @@
 //   fork-dropped <fork-base> <ref>  print `<reason>\t<path>` for each of those tests missing here or not collected
 //   wire                         print the cross-version wire tests fork-check-wire runs
 import { execFileSync } from 'node:child_process'
-import { existsSync, globSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
-import {
-  CROSS_VERSION_WIRE_DIR,
-  discoverUnitFiles
-} from './ci/unit-selection/dependency-graph/ci-unit-files.mjs'
+import { discoverUnitFiles } from './ci/unit-selection/dependency-graph/ci-unit-files.mjs'
+import { wireTests } from './fork-wire-tests.mjs'
 
 const LIST = 'config/fork-seam-tests.txt'
 const E2E_LIST = 'config/fork-upstream-e2e.txt'
@@ -23,15 +21,6 @@ const FLAKY_BASELINE = 'config/flaky-test-pattern-baseline.txt'
 const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/
 // Why: fork-check-e2e selects e2e specs by its own diff (`tests/e2e/*.spec.ts` pathspec, which spans directories).
 const E2E_SPEC = /^tests\/e2e\/.+\.spec\.ts$/
-// Why skipped: at the fork base this upstream test reads isStructuredTab from a module that no longer exports it.
-const WIRE_SKIPPED = 'cross-version-registered-agents.unit.test.ts'
-
-function wireTests() {
-  return globSync(`${CROSS_VERSION_WIRE_DIR}**/*.test.ts`)
-    .map((file) => file.replaceAll('\\', '/'))
-    .filter((file) => file.split('/').at(-1) !== WIRE_SKIPPED)
-    .sort()
-}
 
 function usage() {
   console.error(
