@@ -190,7 +190,7 @@ describe('conflict review surface in a folder workspace', () => {
       mode: 'conflict-review',
       conflictReview: {
         source: 'live-summary',
-        timestamp: 0,
+        snapshotTimestamp: 0,
         entries: [{ path: ENTRY.path, conflictKind: 'both_modified' }],
         selectedFileId: 'sel'
       }
