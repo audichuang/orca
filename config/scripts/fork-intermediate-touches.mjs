@@ -1,18 +1,40 @@
-// Fork-only: lists upstream files a fork commit touched mid-history but left unchanged in the final tree. A merge
-// shows no conflict for them, but a commit-by-commit rebase stops at each of those commits.
+// Fork-only: lists upstream files a fork commit touched mid-history but left as upstream-compatible in the final tree. A
+// merge shows no conflict for them, but a commit-by-commit rebase can stop at each of those commits.
 // Usage: node config/scripts/fork-intermediate-touches.mjs <fork-base> <fork-ref> <upstream-merge-base> <upstream-ref>
-// Output: `D|M<TAB>path<TAB>fork commit short shas, oldest first`. D: upstream deleted the file, so the rebase stops
-// to `git rm` it at each listed commit. M: upstream modified it, which stops the rebase only sometimes.
+// Output: `D|M|A<TAB>path<TAB>fork commit short shas, oldest first`.
+// D: upstream deleted the file and these fork commits modify it, so the rebase stops to `git rm` it at each.
+// M: upstream modified it; the listed commits may stop the rebase (an edit often replays cleanly, a fork delete does not).
+// A: upstream deleted the file and these fork commits re-add it, so the rebased tree revives it (no stop).
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 
 const COMMIT_MARK = '\u0001'
 
-// Only D and M: rename detection usually carries a fork edit across an upstream rename.
-export function intermediateOnlyTouches({ upstreamChanges, forkTouched, finalUnchanged }) {
-  return upstreamChanges
-    .filter(({ path }) => forkTouched.has(path) && finalUnchanged.has(path))
-    .map(({ status, path }) => ({ status, path, commits: forkTouched.get(path) }))
+// finalState: path -> 'unchanged' | 'absent' | 'changed' versus the fork base. Rename detection is off for the fork side.
+export function intermediateOnlyTouches({ upstreamChanges, forkTouched, finalState }) {
+  const rows = []
+  for (const { status, path } of upstreamChanges) {
+    const touches = forkTouched.get(path)
+    const state = finalState.get(path)
+    if (!touches || !state) {
+      continue
+    }
+    if (status === 'M') {
+      if (state === 'unchanged') {
+        rows.push({ status: 'M', path, commits: touches.map((t) => t.commit) })
+      }
+      continue
+    }
+    const stops = touches.filter((t) => t.status === 'M').map((t) => t.commit)
+    if (stops.length > 0) {
+      rows.push({ status: 'D', path, commits: stops })
+    }
+    const revived = touches.filter((t) => t.status === 'A').map((t) => t.commit)
+    if (state === 'unchanged' && revived.length > 0) {
+      rows.push({ status: 'A', path, commits: revived })
+    }
+  }
+  return rows
 }
 
 function git(args) {
@@ -34,21 +56,27 @@ export function parseForkTouched(log) {
     if (line.startsWith(COMMIT_MARK)) {
       commit = line.slice(COMMIT_MARK.length)
     } else if (line) {
-      touched.set(line, [...(touched.get(line) ?? []), commit])
+      const [status, path] = line.split('\t')
+      touched.set(path, [...(touched.get(path) ?? []), { commit, status }])
     }
   }
   return touched
 }
 
-function unchangedInFinalTree(base, ref, path) {
+function finalTreeState(base, ref, path) {
   try {
     execFileSync('git', ['diff', '--quiet', base, ref, '--', path])
-    return true
+    return 'unchanged'
   } catch (error) {
-    if (error.status === 1) {
-      return false
+    if (error.status !== 1) {
+      throw error
     }
-    throw error
+  }
+  try {
+    execFileSync('git', ['cat-file', '-e', `${ref}:${path}`], { stdio: 'ignore' })
+    return 'changed'
+  } catch {
+    return 'absent'
   }
 }
 
@@ -68,19 +96,26 @@ function main([forkBase, forkRef, mergeBase, upstreamRef]) {
       'log',
       '--reverse',
       '--no-renames',
-      '--name-only',
+      '--name-status',
       `--format=${COMMIT_MARK}%h`,
       `${forkBase}..${forkRef}`
     ])
   )
-  const candidates = upstreamChanges.filter(({ path }) => forkTouched.has(path))
-  const finalUnchanged = new Set(
-    candidates
-      .map(({ path }) => path)
-      .filter((path) => unchangedInFinalTree(forkBase, forkRef, path))
+  const finalState = new Map(
+    upstreamChanges
+      .filter(({ path }) => forkTouched.has(path))
+      .map(({ path }) => [path, finalTreeState(forkBase, forkRef, path)])
   )
-  const rows = intermediateOnlyTouches({ upstreamChanges, forkTouched, finalUnchanged })
-  for (const { status, path, commits } of rows.sort((a, b) => a.path.localeCompare(b.path))) {
+  // A file both sides deleted still stops the rebase at the fork commit that modified it.
+  for (const { status, path } of upstreamChanges) {
+    if (status === 'M' && finalState.get(path) !== 'unchanged') {
+      finalState.delete(path)
+    }
+  }
+  const rows = intermediateOnlyTouches({ upstreamChanges, forkTouched, finalState })
+  for (const { status, path, commits } of rows.sort(
+    (a, b) => a.path.localeCompare(b.path) || a.status.localeCompare(b.status)
+  )) {
     console.log(`${status}\t${path}\t${commits.join(',')}`)
   }
   return 0

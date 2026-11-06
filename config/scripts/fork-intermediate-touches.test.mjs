@@ -52,4 +52,30 @@ describe('fork-intermediate-touches', () => {
     )
     expect(output).toBe(`D\ta.test.ts\t${first},${second}\n`)
   })
+
+  function run(forkRef, upstream = 'upstream') {
+    return execFileSync(
+      'node',
+      [SCRIPT, 'base2', forkRef, git('merge-base', 'base2', upstream), upstream],
+      { cwd: dir, encoding: 'utf8' }
+    )
+  }
+
+  it('does not report a delete-then-restore as a stop, and flags the revived file', () => {
+    git('switch', '-q', 'main')
+    commit('base2 files', { 'f.ts': 'f0\n', 'g.ts': 'g0\n', 'h.ts': 'h0\n' })
+    git('tag', 'base2')
+    git('switch', '-q', '-c', 'upstream2')
+    commit('upstream deletes f, g and h', { 'f.ts': null, 'g.ts': null, 'h.ts': null })
+    git('switch', '-q', 'main')
+    commit('fork deletes f', { 'f.ts': null })
+    const restored = commit('fork restores f', { 'f.ts': 'f0\n' })
+    const edited = commit('fork edits g', { 'g.ts': 'g-fork\n' })
+    const editedAgain = commit('fork restores g', { 'g.ts': 'g0\n' })
+    const gone = commit('fork edits h', { 'h.ts': 'h-fork\n' })
+    commit('fork deletes h for good', { 'h.ts': null })
+    expect(run('main', 'upstream2')).toBe(
+      `A\tf.ts\t${restored}\nD\tg.ts\t${edited},${editedAgain}\nD\th.ts\t${gone}\n`
+    )
+  })
 })
