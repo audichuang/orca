@@ -3,7 +3,7 @@
 // only when this job succeeded and said `docs`.
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
-import { isDocsOnlyPath } from './pr-code-change-scope.mjs'
+import { isDocsOnlyPath } from './workflow/source-routing/pr-code-change-scope.mjs'
 
 // Why FORK.md here: it is the fork's own rules doc, which upstream's list cannot name.
 const FORK_DOCS_ONLY_FILES = new Set(['FORK.md'])
