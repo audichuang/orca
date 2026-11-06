@@ -1,4 +1,4 @@
-import { getScopedTabIdOwner } from '@/store/slices/editor/git/open-file-git-owner'
+import * as gitOwner from '@/store/slices/editor/git/open-file-git-owner'
 import { useAppStore } from '@/store'
 import { detectLanguage } from '@/lib/language-detect'
 import { basename } from '@/lib/path'
@@ -7,6 +7,7 @@ import {
   buildDiffEditorFileId,
   buildOwnedEditorFileId,
   resolveEditorFileIdForOwner,
+  type OpenFile,
   type OpenFilePathRekey,
   type RekeyOpenFilesResult
 } from '@/store/slices/editor'
@@ -209,25 +210,26 @@ export function remapOpenEditorTabsForPathChange({
   // Atomically rekey the edit session to preserve OpenFile/id-keyed state and close the close/reopen watcher race.
   const updatedPathOf = (file: { filePath: string }): string =>
     computeMovedPath(fromPath, toPath, file.filePath)
-  type MovedFile = {
-    filePath: string
-    relativePath: string
-    worktreeId: string
-    gitWorktreeId?: string
-  }
-  const isGitScoped = (file: MovedFile): boolean =>
+  const isGitScoped = (file: OpenFile): boolean =>
     file.gitWorktreeId !== undefined && file.gitWorktreeId !== file.worktreeId
   // A scoped tab moved out of its git owner's root can no longer be addressed relative to that owner.
-  const leavesGitOwner = (file: MovedFile): boolean =>
+  const leavesGitOwner = (file: OpenFile): boolean =>
     isGitScoped(file) &&
     file.relativePath !== file.filePath &&
     relativePathInsideRoot(
-      deriveRelativeRootFromOpenFile(file.filePath, file.relativePath),
+      gitOwner.getOpenFileGitRoot(state, file) ??
+        deriveRelativeRootFromOpenFile(file.filePath, file.relativePath),
       updatedPathOf(file)
     ) === null
-  const relativeOf = (file: MovedFile): string =>
+  // Why: the move may come from another (e.g. nested) workspace; a re-homed tab stays relative to its own owner's root.
+  const tabOwnerRootOf = (file: OpenFile): string =>
+    file.worktreeId === worktreeId
+      ? worktreePath
+      : (gitOwner.getTabOwnerRoot(state, file) ??
+        deriveRelativeRootFromOpenFile(file.filePath, file.relativePath))
+  const relativeOf = (file: OpenFile): string =>
     leavesGitOwner(file)
-      ? getRelativePathFromRoot(worktreePath, updatedPathOf(file))
+      ? getRelativePathFromRoot(tabOwnerRootOf(file), updatedPathOf(file))
       : getUpdatedRelativePath({
           filePath: file.filePath,
           relativePath: file.relativePath,
@@ -321,7 +323,7 @@ export function remapOpenEditorTabsForPathChange({
     rekeys.push({
       oldFileId: file.id,
       newFileId: buildDiffEditorFileId(
-        getScopedTabIdOwner(file.worktreeId, file.gitWorktreeId),
+        gitOwner.getScopedTabIdOwner(file.worktreeId, file.gitWorktreeId),
         file.diffSource,
         newRelativePath,
         file.runtimeEnvironmentId

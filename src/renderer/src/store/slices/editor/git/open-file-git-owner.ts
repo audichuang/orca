@@ -49,6 +49,22 @@ export function getOpenFileGitRelativePath(
   return file.relativePath
 }
 
+/** Root of the git owner worktree holding the file; a folder edit tab's relativePath cannot name it. */
+export function getOpenFileGitRoot(
+  state: Pick<AppState, 'worktreesByRepo'>,
+  file: Pick<OpenFile, 'gitWorktreeId' | 'filePath'>
+): string | null {
+  for (const worktree of getIndexedWorktreesById(
+    selectWorktreesByRepo(state),
+    file.gitWorktreeId ?? ''
+  )) {
+    if (relativePathInsideRoot(worktree.path, file.filePath) !== null) {
+      return worktree.path
+    }
+  }
+  return null
+}
+
 /** Path relative to the tab owner's root; a git-owned tab's relativePath is repo-relative instead. */
 export function resolveTabOwnerRelativePath(
   state: Pick<AppState, 'folderWorkspaces'>,
@@ -61,14 +77,33 @@ export function resolveTabOwnerRelativePath(
   if (!file.gitWorktreeId || file.gitWorktreeId === file.worktreeId) {
     return file.relativePath
   }
-  if (parseWorkspaceKey(file.worktreeId)?.type !== 'folder') {
-    return worktreePath ? relativePathInsideRoot(worktreePath, file.filePath) : null
-  }
-  return folderOwnerRelativePath(state, file)
+  const root =
+    parseWorkspaceKey(file.worktreeId)?.type === 'folder'
+      ? getTabOwnerFolderRoot(state, file)
+      : worktreePath
+  return root ? relativePathInsideRoot(root, file.filePath) : null
+}
+
+/** Root of the workspace owning the tab (its folder, else its worktree), not of its git owner. */
+export function getTabOwnerRoot(
+  state: Pick<AppState, 'folderWorkspaces' | 'worktreesByRepo'>,
+  file: Pick<OpenFile, 'worktreeId' | 'filePath' | 'runtimeEnvironmentId'>
+): string | null {
+  return parseWorkspaceKey(file.worktreeId)?.type === 'folder'
+    ? getTabOwnerFolderRoot(state, file)
+    : getOpenFileGitRoot(state, { gitWorktreeId: file.worktreeId, filePath: file.filePath })
 }
 
 /** filePath relative to the root of its folder tab owner on the tab's host; null when the owner is no folder or the root is ambiguous. */
 export function folderOwnerRelativePath(
+  state: Pick<AppState, 'folderWorkspaces'>,
+  file: Pick<OpenFile, 'worktreeId' | 'filePath' | 'runtimeEnvironmentId'>
+): string | null {
+  const root = getTabOwnerFolderRoot(state, file)
+  return root ? relativePathInsideRoot(root, file.filePath) : null
+}
+
+function getTabOwnerFolderRoot(
   state: Pick<AppState, 'folderWorkspaces'>,
   file: Pick<OpenFile, 'worktreeId' | 'filePath' | 'runtimeEnvironmentId'>
 ): string | null {
@@ -91,9 +126,8 @@ export function folderOwnerRelativePath(
     ) {
       continue
     }
-    const relativePath = relativePathInsideRoot(workspace.folderPath, file.filePath)
-    if (relativePath) {
-      candidates.add(relativePath)
+    if (relativePathInsideRoot(workspace.folderPath, file.filePath)) {
+      candidates.add(workspace.folderPath)
     }
   }
   return candidates.size === 1 ? [...candidates][0] : null
