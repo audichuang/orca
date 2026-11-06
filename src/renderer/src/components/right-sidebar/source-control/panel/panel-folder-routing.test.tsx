@@ -12,8 +12,8 @@ import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { useSourceControlWorktreeContext } from '../listing/use-worktree-context'
 
 // Leaf stub: reports what the real scoped worktree context resolves, so the store/selector seam stays real.
-vi.mock('./single-repo-panel', () => ({
-  SourceControlSingleRepoPanel: () => {
+vi.mock('./panel', () => ({
+  SourceControlPanel: () => {
     const ctx = useSourceControlWorktreeContext()
     return (
       <div data-testid="repo-panel">
@@ -26,7 +26,7 @@ vi.mock('../folder/use-folder-repo-status-refresh', () => ({
   useFolderRepoStatusRefresh: () => async () => {}
 }))
 
-const { SourceControlPanel } = await import('./panel')
+const { default: SourceControl } = await import('./SourceControl')
 
 function repo(name: string): Repo {
   return {
@@ -101,7 +101,7 @@ describe('SourceControlPanel in a folder workspace', () => {
     })
     render(
       <TooltipProvider>
-        <SourceControlPanel />
+        <SourceControl />
       </TooltipProvider>
     )
     expect(screen.getByRole('group', { name: 'Repositories' })).toBeInTheDocument()
