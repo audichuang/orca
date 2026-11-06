@@ -195,6 +195,15 @@ describe('Duplicate as _result.txt menu item', () => {
     expect(mocks.refreshDir).not.toHaveBeenCalled()
   })
 
+  it('shows the underlying cause of an ipc handler failure, not the wrapper text', async () => {
+    mocks.copy.mockRejectedValue(
+      new Error("Error occurred in handler for 'fs:copy': Error: EACCES: permission denied")
+    )
+    renderMenu(node('x.sql'))
+    fireEvent.click(await screen.findByRole('menuitem', { name: LABEL }))
+    await vi.waitFor(() => expect(toast.error).toHaveBeenCalledWith('EACCES: permission denied'))
+  })
+
   it('is disabled, like Duplicate, on a row listed through an outside folder link', async () => {
     renderMenu({ ...node('x.sql'), outsideProject: true })
     expect(await screen.findByRole('menuitem', { name: /^Duplicate$/ })).toHaveAttribute(
