@@ -1,0 +1,45 @@
+# Upstream e2e specs that fork-check-e2e runs next to the fork's own (CI shards them in fork-pr.yml's fork_e2e job).
+# They guard upstream UI flows the fork edits; none had run on fork code before. Single worker, about 14 min in total.
+# One repo-relative path per line; fork-check-lint (config/scripts/fork-test-inventory.mjs check) fails on a missing,
+# duplicate or fork-added entry, or one tagged @headful. When upstream deletes a listed spec, delete its line here.
+# Never edit an upstream spec to make one pass. A spec that fails on a deliberate fork behavior leaves the list, with a
+# comment naming that behavior.
+#
+# Left out on purpose (silent test.skip or env-dependent, which would pass as a false green):
+#   layout-compat-old-desktop-on-new-server, layout-compat-new-desktop-on-old-server: skip without a packaged executable
+#   golden-tab-bar-agent-launch: runs on win32 only
+#   workspace-layout-oracle-headless: fails on CI without out/orcad, which fork_e2e does not build
+#   persisted-session-production-upgrade: two cases skip silently without PACKAGED_OLD_EXECUTABLE_ENV
+#   update-*: the updater is guarded by the seam list and the release checks
+
+# right-sidebar source control
+tests/e2e/golden-source-control-commit.spec.ts
+tests/e2e/golden-source-control-open-diff.spec.ts
+tests/e2e/source-control-discard-confirmation.spec.ts
+tests/e2e/source-control-staged-rename.spec.ts
+tests/e2e/source-control-operation-recovery.spec.ts
+tests/e2e/source-control-commit-draft-persistence.spec.ts
+tests/e2e/source-control-large-file-count.spec.ts
+tests/e2e/git-history-tooltip-wrap.spec.ts
+
+# diff and combined diff
+tests/e2e/combined-diff-scroll-restore.spec.ts
+tests/e2e/combined-diff-invalidation-freeze-repro.spec.ts
+tests/e2e/large-diff-freeze-repro.spec.ts
+tests/e2e/diff-word-wrap.spec.ts
+tests/e2e/diff-note-edit.spec.ts
+
+# tabs and session restore
+tests/e2e/tabs.spec.ts
+tests/e2e/editor-tab-selection-restore.spec.ts
+tests/e2e/active-view-restart-restore.spec.ts
+tests/e2e/golden-quit-relaunch-session.spec.ts
+tests/e2e/workspace-session-corrupt-tab-salvage.spec.ts
+
+# file save and explorer
+tests/e2e/golden-file-open-edit-save.spec.ts
+tests/e2e/file-explorer-watch-refresh.spec.ts
+
+# folder workspaces
+tests/e2e/folder-setup.spec.ts
+tests/e2e/sidebar-folder-keyboard-navigation.spec.ts
