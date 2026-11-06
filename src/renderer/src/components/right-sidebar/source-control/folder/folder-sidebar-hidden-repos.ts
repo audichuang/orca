@@ -1,11 +1,15 @@
 import { useSyncExternalStore } from 'react'
-import { normalizeRuntimePathForComparison } from '../../../../../../shared/cross-platform-path'
+import {
+  isPathInsideOrEqual,
+  normalizeRuntimePathForComparison
+} from '../../../../../../shared/cross-platform-path'
 import {
   getRepoExecutionHostId,
   getRepoSshConnectionId
 } from '../../../../../../shared/execution-host'
 import { isGitRepoKind } from '../../../../../../shared/repo-kind'
 import type { Repo } from '../../../../../../shared/repo-types'
+import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
 
 // Why its own module with no store import: the sidebar's visible-worktree filter runs inside the
 // store's attention slice, so importing the store here would close an import cycle.
@@ -45,6 +49,19 @@ export function isRepoHiddenFromSidebar(repo: RepoOwnerFields): boolean {
   return getHiddenKeys().has(folderSidebarHiddenRepoKey(repo))
 }
 
+function commitHiddenKeys(keys: Set<string>): void {
+  hiddenKeys = keys
+  version++
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...keys]))
+  } catch {
+    // Storage can be unavailable; the choice still holds for this session.
+  }
+  for (const listener of listeners) {
+    listener()
+  }
+}
+
 export function setReposHiddenFromSidebar(repos: readonly RepoOwnerFields[], hidden: boolean) {
   const keys = new Set(getHiddenKeys())
   for (const repo of repos) {
@@ -55,15 +72,36 @@ export function setReposHiddenFromSidebar(repos: readonly RepoOwnerFields[], hid
       keys.delete(key)
     }
   }
-  hiddenKeys = keys
-  version++
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...keys]))
-  } catch {
-    // Storage can be unavailable; the choice still holds for this session.
+  commitHiddenKeys(keys)
+}
+
+type FolderCoverageFields = Pick<FolderWorkspace, 'folderPath' | 'connectionId' | 'executionHostId'>
+
+function folderCoversHiddenKey(folder: FolderCoverageFields, key: string): boolean {
+  const split = key.indexOf('\n')
+  const owner = `${getRepoExecutionHostId(folder)}|${getRepoSshConnectionId(folder) ?? ''}`
+  return (
+    key.slice(0, split) === owner && isPathInsideOrEqual(folder.folderPath, key.slice(split + 1))
+  )
+}
+
+// Why: a hidden repo is only reachable through a folder's Source Control, so deleting the last
+// covering folder would strand it out of the sidebar for good.
+export function releaseSidebarHiddenReposOfRemovedFolders(
+  before: readonly FolderCoverageFields[],
+  after: readonly FolderCoverageFields[]
+): void {
+  const keys = new Set(getHiddenKeys())
+  for (const key of getHiddenKeys()) {
+    if (
+      before.some((folder) => folderCoversHiddenKey(folder, key)) &&
+      !after.some((folder) => folderCoversHiddenKey(folder, key))
+    ) {
+      keys.delete(key)
+    }
   }
-  for (const listener of listeners) {
-    listener()
+  if (keys.size !== getHiddenKeys().size) {
+    commitHiddenKeys(keys)
   }
 }
 
