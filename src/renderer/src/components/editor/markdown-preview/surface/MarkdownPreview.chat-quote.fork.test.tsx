@@ -49,7 +49,10 @@ const storeState = {
   keybindings: {},
   worktreesByRepo: {},
   repos: [],
-  folderWorkspaces: [{ id: 'f', folderPath: '/workspace', executionHostId: 'local' as const }],
+  folderWorkspaces: [
+    { id: 'f', folderPath: '/workspace', executionHostId: 'local' as const },
+    { id: 'docs', folderPath: '/workspace/repo-a/docs', executionHostId: 'local' as const }
+  ],
   projectGroups: [],
   openFiles,
   activeFileIdByWorktree,
@@ -111,7 +114,7 @@ afterEach(() => {
   container.remove()
 })
 
-it('quotes a nested repo file relative to the folder that receives the chat', () => {
+function quotedPathFor(filePath: string, sourceWorktreeId: string, sourceRelativePath: string) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -119,15 +122,25 @@ it('quotes a nested repo file relative to the folder that receives the chat', ()
     root.render(
       <MarkdownPreview
         content="# selected"
-        filePath="/workspace/repo-a/README.md"
-        sourceWorktreeId="folder:f"
-        sourceRelativePath="README.md"
+        filePath={filePath}
+        sourceWorktreeId={sourceWorktreeId}
+        sourceRelativePath={sourceRelativePath}
         scrollCacheKey="chat-quote"
       />
     )
   })
-
   chat.readQuotable?.(container)
+  return chat.quotedPath
+}
 
-  expect(chat.quotedPath).toBe('repo-a/README.md')
+it('quotes a nested repo file relative to the folder that receives the chat', () => {
+  expect(quotedPathFor('/workspace/repo-a/README.md', 'folder:f', 'README.md')).toBe(
+    'repo-a/README.md'
+  )
+})
+
+it('quotes a parent repo file outside the folder by its absolute path', () => {
+  expect(quotedPathFor('/workspace/repo-a/README.md', 'folder:docs', 'README.md')).toBe(
+    '/workspace/repo-a/README.md'
+  )
 })
