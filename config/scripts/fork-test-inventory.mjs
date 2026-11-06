@@ -10,7 +10,10 @@
 //   wire                         print the cross-version wire tests fork-check-wire runs
 import { execFileSync } from 'node:child_process'
 import { existsSync, globSync, readFileSync } from 'node:fs'
-import { CROSS_VERSION_WIRE_DIR, discoverUnitFiles } from './ci-unit-files.mjs'
+import {
+  CROSS_VERSION_WIRE_DIR,
+  discoverUnitFiles
+} from './ci/unit-selection/dependency-graph/ci-unit-files.mjs'
 
 const LIST = 'config/fork-seam-tests.txt'
 const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/
@@ -53,7 +56,7 @@ function listProblems(paths, collected) {
       problems.push(`${path}: listed in ${LIST} but missing (renamed or deleted?)`)
     } else if (!collected.has(path)) {
       problems.push(
-        `${path}: listed in ${LIST} but not collected by config/scripts/ci-unit-files.mjs`
+        `${path}: listed in ${LIST} but not collected by config/scripts/ci/unit-selection/dependency-graph/ci-unit-files.mjs`
       )
     }
     seen.add(path)
