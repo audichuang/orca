@@ -4,9 +4,9 @@ import { classifyUpstreamFile } from './fork-footprint.mjs'
 describe('classifyUpstreamFile', () => {
   it.each([
     ['src/renderer/src/components/editor/EditorPanel.tsx', 'production'],
-    ['config/scripts/build-computer-macos.mjs', 'production'],
+    ['config/scripts/native-build/macos/build-computer-macos.mjs', 'production'],
     ['src/main/git/history.test.ts', 'test'],
-    ['config/scripts/ci-closed-pr-cancellation.test.mjs', 'test'],
+    ['config/scripts/ci/workflow-contracts/ci-closed-pr-cancellation.test.mjs', 'test'],
     ['tests/e2e/folder.spec.ts', 'test'],
     ['src/renderer/src/components/terminal-pane/pty-connection-test-environment.ts', 'test'],
     ['src/main/updater/latest-version.ts', 'production'],

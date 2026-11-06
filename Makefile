@@ -188,7 +188,7 @@ FORK_BASE := $(FORK_BASE)
 FORK_MAX_COMMITS ?= 1000
 
 # Vitest on the unit config after restoring Node-built native modules; append the files.
-FORK_VITEST = node config/scripts/ensure-native-runtime.mjs --runtime=node && pnpm exec vitest run --config config/vitest.config.ts
+FORK_VITEST = node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node && pnpm exec vitest run --config config/vitest.config.ts
 
 # fork-check = fork-check-static + fork-check-tests; CI runs the halves as parallel jobs, tests in FORK_TEST_SHARD slices.
 FORK_TEST_SHARD ?=
@@ -243,9 +243,9 @@ fork-check-tests: export ORCA_BACKGROUND_LAUNCH = 1
 fork-check-tests: $(if $(filter all,$(FORK_TESTS)),,fork-base-guard)
 	@test -z "$(FORK_TESTS)" -o "$(FORK_TESTS)" = all || { echo "fork-check-tests: FORK_TESTS must be empty or all, not $(FORK_TESTS)"; exit 1; }
 	@# Why: fork-check-e2e leaves Electron-built native modules behind, which vitest cannot load.
-	node config/scripts/ensure-native-runtime.mjs --runtime=node
+	node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node
 ifeq ($(FORK_TESTS),all)
-	node config/scripts/run-vitest.mjs run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD))
+	node config/scripts/test-runtime/execution-policy/run-vitest.mjs run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD))
 else
 	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) --changed $(FORK_BASE)
 endif
@@ -321,7 +321,7 @@ fork-check-full:
 fork-check-wire: export LC_ALL = C
 # Why the guard: the journeys pick their baseline from the newest local vX.Y.Z tag.
 fork-check-wire: fork-base-guard
-	node config/scripts/ensure-native-runtime.mjs --runtime=node
+	node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node
 	$(if $(CI),,node config/scripts/fork-wait-for-quiet-machine.mjs)
 	files=$$(node config/scripts/fork-test-inventory.mjs wire) && test -n "$$files" && \
 	  pnpm exec vitest run --config config/vitest.config.ts $$files
@@ -334,14 +334,14 @@ fork-check-mobile:
 	$(if $(CI),,cd mobile && pnpm install --frozen-lockfile && git diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml)
 	@# The drawer check also runs on WebKit, the engine of the shell's iOS WebView.
 	pnpm exec playwright-core install $(if $(CI),--with-deps) webkit
-	mkdir -p out && node config/scripts/run-mobile-web-app-checks.mjs --prepare-route-snapshot "$(MOBILE_ROUTES)"
+	mkdir -p out && node config/scripts/mobile-web/check-entry/run-mobile-web-app-checks.mjs --prepare-route-snapshot "$(MOBILE_ROUTES)"
 	pnpm run build:mobile-web
 	@# Why fail instead of skip: without a browser the render checks skip silently.
 	@chrome=$${ORCA_MOBILE_WEB_RENDER_BROWSER:-$$(command -v google-chrome || command -v google-chrome-stable || command -v "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")}; \
 	  test -n "$$chrome" || { echo "fork-check-mobile: no Google Chrome; the render check would silently skip"; exit 1; }; \
 	  "$$chrome" --version && \
 	  ORCA_MOBILE_WEB_APP_DEPS_REQUIRED=1 ORCA_MOBILE_WEB_PREPARED_ROUTE_SNAPSHOT="$(MOBILE_ROUTES)" ORCA_MOBILE_WEB_RENDER_BROWSER="$$chrome" \
-	    node config/scripts/run-mobile-web-app-checks.mjs
+	    node config/scripts/mobile-web/check-entry/run-mobile-web-app-checks.mjs
 
 # The folder multi-repo e2e plus every spec the fork added or changed since FORK_BASE.
 fork-check-e2e: export LC_ALL = C
