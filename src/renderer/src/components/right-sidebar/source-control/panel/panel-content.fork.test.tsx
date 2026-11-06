@@ -8,6 +8,10 @@ import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'v
 import type { ComponentProps } from 'react'
 import { useAppStore } from '@/store'
 import type { GitBranchCompareSummary } from '../../../../../../shared/git/diff/git-diff-compare-types'
+import {
+  resetGitHistoryGraphFiltersForTest,
+  updateGitHistoryGraphFilter
+} from '../sync/git-history-graph-filter'
 import type { GitHistoryResult } from '../../../../../../shared/git/history/git-history-types'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import type {
@@ -80,9 +84,15 @@ beforeEach(() => {
   })
   vi.mocked(toastBottomClearanceRef).mockClear()
 })
-afterEach(cleanupFolderSourceControl)
+afterEach(() => {
+  cleanupFolderSourceControl()
+  resetGitHistoryGraphFiltersForTest()
+})
 
-function renderPanel({ showHistory = false } = {}) {
+function renderPanel({
+  showHistory = false,
+  history = HISTORY
+}: { showHistory?: boolean; history?: GitHistoryResult } = {}) {
   const hook = renderHook(useSourceControlPanelModel, { wrapper: FolderScope })
   const byId = new Map<SourceControlDisplaySectionId, SourceControlDisplaySection>(
     SECTIONS.map((section) => [section.id, section])
@@ -99,7 +109,7 @@ function renderPanel({ showHistory = false } = {}) {
     filteredBranchEntries: BRANCH_ENTRIES,
     collapsedSections: new Set<string>(),
     isGitHistoryVisible: showHistory,
-    gitHistoryState: { status: 'ready', result: HISTORY }
+    gitHistoryState: { status: 'ready', result: history }
   }
   render(
     <FolderScope>
@@ -177,6 +187,17 @@ describe("the Commits dock carries the fork's slots (fork)", () => {
     expect(await screen.findByText('Fix the thing')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open Git Graph' })).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Branch filter' })).toBeInTheDocument()
+  })
+
+  it('plugs the load-more footer into the dock when more commits exist', async () => {
+    renderPanel({ showHistory: true, history: { ...HISTORY, hasMore: true } })
+    expect(await screen.findByRole('button', { name: 'Load more commits' })).toBeInTheDocument()
+  })
+
+  it('plugs the no-match message into the dock when a filter hides every commit', async () => {
+    updateGitHistoryGraphFilter(WORKTREE.id, { query: 'author:nobody' })
+    renderPanel({ showHistory: true, history: { ...HISTORY, items: [] } })
+    expect(await screen.findByText('No commits match this filter')).toBeInTheDocument()
   })
 
   it("opens a commit's Show in Git Graph in the folder, on this repo", async () => {
