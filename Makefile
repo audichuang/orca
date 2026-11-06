@@ -6,7 +6,6 @@ EB_CONFIG    := config/electron-builder.config.cjs
 DIST_APP     := dist/mac-arm64/Orca.app
 DMG          := dist/orca-macos-arm64.dmg
 APP          := /Applications/Orca.app
-COMPUTER_USE := native/computer-use-macos/.build/release/Orca Computer Use.app
 LOG          := $(HOME)/orca.log
 DOCTOR       := $(HOME)/orca-doctor.txt
 # Optional reachability probe: make doctor HOST=192.168.31.65 PORT=6768
@@ -44,15 +43,9 @@ help:
 install:
 	pnpm install
 
-# One-time native Swift helper. electron-builder REQUIRES this artifact
-# (config extraResources). Slow (~40s+); only needs to run once, then reused.
+# electron-builder requires this helper; SwiftPM rechecks cached build inputs.
 computer-use:
-	@if [ ! -d "$(COMPUTER_USE)" ]; then \
-		echo ">> building macOS computer-use helper (one-time)"; \
-		pnpm run build:computer-macos; \
-	else \
-		echo ">> reusing existing computer-use helper"; \
-	fi
+	pnpm run build:computer-macos
 	@# Small Swift helpers packaging copies into Contents/MacOS (swift build is incremental).
 	@# Why --single-arch: every target here packages arm64 only, so the x86_64 slice was dead weight.
 	pnpm run build:keyboard-layout-macos -- --single-arch
