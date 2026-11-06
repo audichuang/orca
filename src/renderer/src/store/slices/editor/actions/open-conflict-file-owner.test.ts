@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useAppStore } from '@/store'
+import type { AppState } from '@/store/types'
 
 const entry = {
   path: 'src/x.ts',
@@ -67,5 +68,25 @@ describe('openConflictFile owner isolation', () => {
         conflict: expect.objectContaining({ conflictStatus: 'unresolved' })
       })
     ])
+  })
+
+  it('stores a folder conflict tab relative to the folder, as other edit tabs are', () => {
+    useAppStore.setState(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the folder-root lookup reads only the folder catalog.
+      {
+        folderWorkspaces: [{ id: 'f1', folderPath: '/f', projectGroupId: 'g1' }]
+      } as unknown as Partial<AppState>
+    )
+    const state = useAppStore.getState()
+    state.openConflictFile('folder:f1', '/f/a', entry, 'typescript', { gitWorktreeId: 'repo-a' })
+    state.openConflictReviewFile('review', 'folder:f1', '/f/a', entry, 'typescript', {
+      gitWorktreeId: 'repo-a'
+    })
+    expect(useAppStore.getState().openFiles).toEqual([
+      expect.objectContaining({ relativePath: 'a/src/x.ts', gitWorktreeId: 'repo-a' })
+    ])
+    expect(useAppStore.getState().trackedConflictPathsByWorktree['repo-a']).toEqual({
+      'src/x.ts': 'both_modified'
+    })
   })
 })

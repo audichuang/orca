@@ -3,6 +3,7 @@ import type { EditorSlice } from '../types/editor-slice'
 import { joinPath } from '@/lib/path'
 import { resolveEditorFileIdForOwner } from '../file-ids/editor-file-ids'
 import { resolveOpenGitWorktreeId } from '../git/open-file-git-owner'
+import { withFolderFileGitOwner } from '../git/folder-file-git-owner'
 import type { OpenFile } from '../types/open-file'
 import { toOpenConflictMetadata } from '../git/git-status-reconciliation'
 import { resolveEditorOpenTargetGroupId } from '../tabs/editor-open-target-group'
@@ -26,6 +27,7 @@ export function createOpenConflictFile(
       const trackedKey = gitWorktreeId ?? worktreeId
       let openedConflictFile = true
       let editorFileId = absolutePath
+      let relativePath = entry.path
       set((s) => {
         const id = resolveEditorFileIdForOwner(s, absolutePath, worktreeId, undefined, ['edit'])
         editorFileId = id
@@ -47,6 +49,15 @@ export function createOpenConflictFile(
           return s
         }
 
+        relativePath = withFolderFileGitOwner(s, {
+          filePath: absolutePath,
+          relativePath: entry.path,
+          worktreeId,
+          // Why: entry.path is relative to the requested git owner, whatever owner the tab keeps.
+          gitWorktreeId,
+          mode: 'edit'
+        }).relativePath
+
         if (existing) {
           const updatedPreview = isPreview ? existing.isPreview : false
           return {
@@ -56,7 +67,7 @@ export function createOpenConflictFile(
                     ...f,
                     mode: 'edit' as const,
                     language,
-                    relativePath: entry.path,
+                    relativePath,
                     filePath: absolutePath,
                     conflict,
                     diffSource: undefined,
@@ -81,7 +92,7 @@ export function createOpenConflictFile(
         const newFile: OpenFile = {
           id,
           filePath: absolutePath,
-          relativePath: entry.path,
+          relativePath,
           worktreeId,
           gitWorktreeId,
           language,
@@ -134,7 +145,7 @@ export function createOpenConflictFile(
         get(),
         editorFileId,
         worktreeId,
-        entry.path,
+        relativePath,
         'editor',
         isPreview,
         editorItemTargetGroupId
