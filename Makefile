@@ -194,12 +194,15 @@ FORK_VITEST = node config/scripts/native-build/node-addons/ensure-native-runtime
 FORK_TEST_SHARD ?=
 # all: upstream CI's full unit suite; empty: the fast local --changed pre-check.
 FORK_TESTS ?=
+# Empty keeps the complete local lint gate; CI runs both halves of the upstream lint pool.
+FORK_LINT_SHARD ?=
 
 fork-check: export LC_ALL = C
 fork-check: fork-check-static fork-check-tests
 
 fork-check-static: export LC_ALL = C
 fork-check-static: fork-check-static-types fork-check-quality fork-check-lint
+fork-check-static-types fork-check-quality fork-check-lint: export LC_ALL = C
 
 fork-base-guard:
 	@# Why stderr: fork-footprint --json shares stdout.
@@ -221,7 +224,7 @@ fork-check-quality: fork-base-guard
 # check:daemon-protocol-crossing is here too: a branch goes red in CI once upstream releases a daemon protocol bump.
 fork-check-lint: fork-base-guard
 	@failed=; for cmd in \
-	  "node config/scripts/fork-lint-run.mjs" \
+	  "node config/scripts/fork-lint-run.mjs $(if $(FORK_LINT_SHARD),--shard=$(FORK_LINT_SHARD))" \
 	  "node config/scripts/fork-pr-gate-needs.mjs" \
 	  "node config/scripts/fork-mac-helpers.mjs" \
 	  "node config/scripts/fork-locale-parity.mjs $(FORK_BASE)" \

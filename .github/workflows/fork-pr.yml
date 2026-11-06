@@ -64,7 +64,7 @@ jobs:
           printf '%s\n' "$CHANGED"
           printf '%s\n' "$CHANGED" | node config/scripts/fork-pr-scope.mjs | tee -a "$GITHUB_OUTPUT"
 
-  # `make fork-check` split in two so its halves run in parallel; together they cover exactly the same checks.
+  # Static types/quality and two lint pools run on separate runners; local fork-check-static stays serial.
   fork_check_static:
     name: fork-check typecheck and quality
     needs: scope
@@ -87,13 +87,42 @@ jobs:
         with:
           native-runtime: node
 
+      - name: make fork-check-static-types fork-check-quality
+        run: /usr/bin/time -v make fork-check-static-types fork-check-quality
+
+  fork_check_lint:
+    name: fork-check lint (${{ matrix.shard }})
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/2, 2/2]
+    steps:
+      # Why full history: skill-bundle-manifest checks historical blobs; fork checks need FORK_BASE.
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      - name: Fetch upstream release tags
+        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+
       # Why: verify:localization-catalogs runs under bun.
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: config/.bun-version
 
-      - name: make fork-check-static
-        run: /usr/bin/time -v make fork-check-static
+      - name: make fork-check-lint
+        run: /usr/bin/time -v make fork-check-lint FORK_LINT_SHARD=${{ matrix.shard }}
 
   fork_check_tests:
     name: fork-check tests (${{ matrix.shard }})
@@ -192,7 +221,7 @@ jobs:
         with:
           native-runtime: node
 
-      # The daemon protocol crossing check runs in fork-check-lint (fork_check_static).
+      # The daemon protocol crossing check runs in fork-check-lint (fork_check_lint).
       - name: make fork-check-wire
         run: make fork-check-wire
 
@@ -314,6 +343,7 @@ jobs:
     needs:
       - scope
       - fork_check_static
+      - fork_check_lint
       - fork_check_tests
       - cross_version_wire
       - fork_e2e

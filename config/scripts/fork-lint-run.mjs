@@ -14,6 +14,14 @@ export const EXCLUDED = {
     "a release tag can carry main's workflow files, which name main-only paths (v1.4.230)"
 }
 
+// Run 42228204045 timings predict 98.5s here and 133.5s for the remainder, with two workers each.
+const FIRST_SHARD_STEPS = [
+  'audit:code-quality:type-aware',
+  'verify:localization-catalogs',
+  'lint:ast-grep-gates',
+  'verify:skill-bundle-manifest'
+]
+
 // Throws on a stale exclusion so EXCLUDED cannot silently outlive the upstream step.
 export function applyExclusions(steps, excluded = EXCLUDED) {
   const stale = Object.keys(excluded).filter((name) => !steps.includes(name))
@@ -23,6 +31,23 @@ export function applyExclusions(steps, excluded = EXCLUDED) {
     )
   }
   return steps.filter((name) => !excluded[name])
+}
+
+export function selectLintShard(steps, shard) {
+  if (shard === undefined) {
+    return steps
+  }
+  if (shard !== '1/2' && shard !== '2/2') {
+    throw new Error('fork-lint-run: --shard must be 1/2 or 2/2.')
+  }
+  const stale = FIRST_SHARD_STEPS.filter((name) => !steps.includes(name))
+  if (stale.length > 0) {
+    throw new Error(
+      `fork-lint-run: upstream lint no longer runs ${stale.join(', ')}; rebalance shards`
+    )
+  }
+  // New upstream steps join shard 2 automatically; neither shard can drop them.
+  return steps.filter((name) => FIRST_SHARD_STEPS.includes(name) === (shard === '1/2'))
 }
 
 function resolveLintCommands(steps, scripts, root) {
@@ -56,18 +81,23 @@ async function runStep({ name, program, args }, root) {
 
 export async function runLintSteps(steps, root = process.cwd(), argv = []) {
   const startedAt = performance.now()
-  const names = applyExclusions(steps)
   let concurrency = 2
+  let shard
   for (const argument of argv) {
     if (argument === '--' || argument === '--timings') {
       continue
     }
     if (/^--max-?workers=[1-9]\d*$/i.test(argument)) {
       concurrency = Number(argument.split('=')[1])
+    } else if (argument.startsWith('--shard=')) {
+      shard = argument.slice('--shard='.length)
     } else {
-      throw new Error(`Unknown option ${argument}. Use --maxWorkers=<n> or --timings.`)
+      throw new Error(
+        `Unknown option ${argument}. Use --maxWorkers=<n>, --timings or --shard=<1/2|2/2>.`
+      )
     }
   }
+  const names = selectLintShard(applyExclusions(steps), shard)
   const { scripts } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
   const commands = resolveLintCommands(names, scripts, root)
   const results = []
