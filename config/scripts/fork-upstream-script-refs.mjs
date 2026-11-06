@@ -7,8 +7,9 @@ import { pathToFileURL } from 'node:url'
 const SCRIPTS_DIR = 'config/scripts/'
 const PATH_PATTERN = /config\/scripts\/([A-Za-z0-9_./-]+)/g
 // Why anchored at line start: a test fixture's source text sits inside a string and is not an import of this file.
-const IMPORT_PATTERN =
-  /(?:^[ \t]*(?:import|export)\b[^'"]*?\bfrom\s*|^[ \t]*import\s*|\bimport\s*\(\s*|\brequire\s*\(\s*)['"](\.\.?\/[^'"]+)['"]/gm
+const STATIC_IMPORT_PATTERN =
+  /(?:^[ \t]*(?:import|export)\b[^'"]*?\bfrom\s*|^[ \t]*import\s*)['"](\.\.?\/[^'"]+)['"]/gm
+const DYNAMIC_IMPORT_PATTERN = /(?:\bimport\s*\(\s*|\brequire\s*\(\s*)['"](\.\.?\/[^'"]+)['"]/g
 const FORK_OWNED = [
   /^Makefile$/,
   /^\.github\/workflows\/fork-[^/]+$/,
@@ -40,7 +41,11 @@ export function collectScriptRefs(file, text) {
     }
   }
   if (file.startsWith(SCRIPTS_DIR) && /\.(?:[cm]?js|ts)$/.test(file)) {
-    for (const match of text.matchAll(IMPORT_PATTERN)) {
+    // Why: tests quote dynamic imports in fixture strings, so only their static imports are real.
+    const patterns = isTestFile(file)
+      ? [STATIC_IMPORT_PATTERN]
+      : [STATIC_IMPORT_PATTERN, DYNAMIC_IMPORT_PATTERN]
+    for (const match of patterns.flatMap((pattern) => [...text.matchAll(pattern)])) {
       const path = posix.join(posix.dirname(file), match[1])
       if (path.startsWith(SCRIPTS_DIR) && isConcretePath(path) && !isForkScript(path)) {
         refs.push({ path, line: lineOf(text, match.index) })
