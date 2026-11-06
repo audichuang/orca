@@ -9,8 +9,11 @@ import { join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import ts from 'typescript-api'
 import { classifyUpstreamFile } from './fork-footprint.mjs'
-import { isTestOnlySourcePath } from './test-only-source-path.mjs'
-import { collectUnitDependencyGraph, unitConsumers } from './ci-unit-dependency-graph.mjs'
+import { isTestOnlySourcePath } from './static-analysis/process-boundaries/test-only-source-path.mjs'
+import {
+  collectUnitDependencyGraph,
+  unitConsumers
+} from './ci/unit-selection/dependency-graph/ci-unit-dependency-graph.mjs'
 
 const UNIT_TEST = /\.test\.[cm]?[jt]sx?$/
 const RUN_TIMEOUT_MS = 10 * 60 * 1000
