@@ -99,8 +99,9 @@ type HistoryArgs = { worktreePath: string; limit?: number; graph?: Record<string
 const history = vi.fn(async (_args: HistoryArgs): Promise<GitHistoryResult> => ({ ...RESULT }))
 // The branch list read (limit 1) runs on mount; only the page read is gated on visibility.
 // Why not a timed wait: a fetch the view would start runs in the effects and microtasks this lets settle.
-const nextMacrotask = (): Promise<void> =>
-  act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+const nextMacrotask = async (): Promise<void> => {
+  await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+}
 const pageReads = () => history.mock.calls.filter(([args]) => args.limit === 50)
 
 const scanNested = vi.fn(async (_args: { path: string }): Promise<NestedRepoScanResult> => ({

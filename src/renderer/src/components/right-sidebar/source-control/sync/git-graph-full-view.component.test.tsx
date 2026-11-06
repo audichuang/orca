@@ -130,8 +130,9 @@ beforeEach(() => {
 
 // Mirrors the toolbar's debounce; a draft left to expire would write its stale text back after this.
 const SEARCH_DEBOUNCE_MS = 350
-const outwaitSearchDebounce = (): Promise<void> =>
-  act(() => vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS + 50))
+const outwaitSearchDebounce = async (): Promise<void> => {
+  await act(() => vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS + 50))
+}
 
 afterEach(() => {
   vi.useRealTimers()
