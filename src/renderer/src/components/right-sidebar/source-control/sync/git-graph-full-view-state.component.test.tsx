@@ -10,10 +10,10 @@ import type {
   GitHistoryItem,
   GitHistoryResult
 } from '../../../../../../shared/git/history/git-history-types'
-import type * as WorktreeRuntimeOwner from '@/lib/worktree-runtime-owner'
+import type * as WorktreeRuntimeOwner from '@/lib/workspace/ownership/worktree-runtime-owner'
 
 const mocks = vi.hoisted(() => ({ getRuntimeGitHistory: vi.fn(), executionHostId: 'local' }))
-vi.mock('@/lib/worktree-runtime-owner', async (importOriginal) => ({
+vi.mock('@/lib/workspace/ownership/worktree-runtime-owner', async (importOriginal) => ({
   ...(await importOriginal<typeof WorktreeRuntimeOwner>()),
   // The execution host the store resolves for the worktree (local, ssh:…, runtime:…).
   getExecutionHostIdForWorktree: () => mocks.executionHostId
