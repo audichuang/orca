@@ -38,7 +38,7 @@ vi.mock('@/components/ui/context-menu', async () => {
 vi.mock('@/store', () => ({
   useAppStore: (selector: (state: typeof storeState) => unknown) => selector(storeState)
 }))
-vi.mock('@/lib/worktree-runtime-owner', () => ({
+vi.mock('@/lib/workspace/ownership/worktree-runtime-owner', () => ({
   runtimeEnvironmentIdOrLocalUnlessTwin: () => null
 }))
 vi.mock('@/i18n/i18n', () => ({
