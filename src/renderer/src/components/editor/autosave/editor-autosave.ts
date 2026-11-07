@@ -1,6 +1,5 @@
 import { joinPath } from '@/lib/path'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
-import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 import { areLocalWindowsWslPathAliases } from '../../../../../shared/cross-platform-path'
 import { externalChangePathKeyFor } from '@/store/slices/editor/buffers/editor-buffer-identity'
 import { isLocalWindowsDesktopClient } from '@/lib/desktop-window-chrome'
@@ -174,9 +173,7 @@ export function getOpenFilesForExternalFileChange(
         // Why: a folder-scoped diff's relativePath may not be relative to its repo; its filePath is unambiguous.
         (file.gitWorktreeId && file.gitWorktreeId !== file.worktreeId
           ? pathKey(file.filePath) === absolutePathKey
-          : file.relativePath === target.relativePath) &&
-        // Why: repos sharing a folder editor reuse relative paths; only the owning repo's diff is affected.
-        getOpenFileGitWorktreeId(file) === target.worktreeId
+          : file.relativePath === target.relativePath)
       )
     }
     return false
