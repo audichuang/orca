@@ -14,7 +14,9 @@ const mocks = vi.hoisted(() => {
   }
 })
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError, success: vi.fn() } }))
-vi.mock('@/lib/launch-agent-in-new-tab', () => ({ launchAgentInNewTab: mocks.launchAgentInNewTab }))
+vi.mock('@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab', () => ({
+  launchAgentInNewTab: mocks.launchAgentInNewTab
+}))
 vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => null }))
 // By default the host offers codex as a chat although its CLI was not detected.
 vi.mock('@/lib/host-chat-program-acquisition', () => ({

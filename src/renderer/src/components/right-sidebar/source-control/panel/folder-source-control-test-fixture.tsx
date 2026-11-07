@@ -5,7 +5,7 @@ import { useAppStore } from '@/store'
 import { makeFolderWorkspace, makeWorktree } from '@/store/slices/worktrees-slice-test-fixtures'
 import { setLocalRuntimeCapabilitiesForTests } from '@/runtime/local-runtime-capabilities'
 import { clearHostAgentMenuSettingsForTests } from '@/runtime/agent-launch-settings/host-agent-launch-preferences-resource'
-import { settleAgentLaunchPaneStart } from '@/lib/agent-launch-pane-start'
+import { settleAgentLaunchPaneStart } from '@/lib/agent-session/launch/pane/agent-launch-pane-start'
 import { ConfirmationDialogProvider } from '@/components/confirmation-dialog'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
