@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { OpenFile } from '@/store/slices/editor'
 import { getOpenFilesForExternalFileChange } from './autosave/editor-autosave'
+import { indexEditorExternalWatchBatchPaths } from './external-changes/editor-external-watch-path-index'
 
 function makeOpenFile(overrides: Partial<OpenFile> = {}): OpenFile {
   return {
@@ -67,6 +68,37 @@ describe('getOpenFilesForExternalFileChange in a folder workspace', () => {
         worktreeId: 'wt-1',
         worktreePath: 'C:/Repo',
         relativePath: 'file.ts'
+      }).map((file) => file.id)
+    ).toEqual(['folder-diff'])
+  })
+
+  it('matches a repo-scoped diff tab when the folder itself reports the change, like the batch index', () => {
+    const folderDiff = makeOpenFile({
+      id: 'folder-diff',
+      filePath: '/folder/repo-a/file.ts',
+      relativePath: 'file.ts',
+      worktreeId: 'folder:f1',
+      gitWorktreeId: 'repo-a',
+      mode: 'diff',
+      diffSource: 'unstaged'
+    })
+    const folderScope = { worktreeId: 'folder:f1', worktreePath: '/folder' }
+    const index = indexEditorExternalWatchBatchPaths(
+      {
+        worktreePath: '/folder',
+        events: [{ kind: 'update', absolutePath: '/folder/repo-a/file.ts' }]
+      },
+      [folderDiff],
+      { ...folderScope, runtimeEnvironmentId: null }
+    )
+
+    expect(index.matchingOpenFiles(index.changes[0]).map((file) => file.id)).toEqual([
+      'folder-diff'
+    ])
+    expect(
+      getOpenFilesForExternalFileChange([folderDiff], {
+        ...folderScope,
+        relativePath: 'repo-a/file.ts'
       }).map((file) => file.id)
     ).toEqual(['folder-diff'])
   })
