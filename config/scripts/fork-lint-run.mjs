@@ -14,6 +14,51 @@ export const EXCLUDED = {
     "a release tag can carry main's workflow files, which name main-only paths (v1.4.230)"
 }
 
+// Why: each runs oxlint --type-aware over the repo (~14 GB RSS); two at once exhaust the 16 GB CI runner on a rebase PR.
+export const EXCLUSIVE_STEPS = new Set([
+  'audit:code-quality:type-aware',
+  'check:code-quality:changed'
+])
+
+// Runs commands on `concurrency` workers, never two exclusive ones at once; results keep command order.
+export async function runStepPool(commands, concurrency, run, isExclusive) {
+  const results = []
+  const pending = commands.map((_, index) => index)
+  let exclusiveRunning = false
+  let wake = () => {}
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, commands.length) }, async () => {
+      while (pending.length > 0) {
+        const at = pending.findIndex((index) => !(exclusiveRunning && isExclusive(commands[index])))
+        if (at === -1) {
+          await new Promise((resolve) => {
+            const previous = wake
+            wake = () => {
+              previous()
+              resolve()
+            }
+          })
+          continue
+        }
+        const [index] = pending.splice(at, 1)
+        const exclusive = isExclusive(commands[index])
+        exclusiveRunning ||= exclusive
+        try {
+          results[index] = await run(commands[index])
+        } finally {
+          if (exclusive) {
+            exclusiveRunning = false
+          }
+          const waiting = wake
+          wake = () => {}
+          waiting()
+        }
+      }
+    })
+  )
+  return results
+}
+
 // Throws on a stale exclusion so EXCLUDED cannot silently outlive the upstream step.
 export function applyExclusions(steps, excluded = EXCLUDED) {
   const stale = Object.keys(excluded).filter((name) => !steps.includes(name))
@@ -70,15 +115,15 @@ export async function runLintSteps(steps, root = process.cwd(), argv = []) {
   }
   const { scripts } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
   const commands = resolveLintCommands(names, scripts, root)
-  const results = []
-  let next = 0
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, commands.length) }, async () => {
-      while (next < commands.length) {
-        const index = next++
-        results[index] = await runStep(commands[index], root)
-      }
-    })
+  const results = await runStepPool(
+    commands,
+    concurrency,
+    (command) => {
+      // Why: output is buffered until the end, so a runner kill would otherwise name no step.
+      console.log(`>> ${command.name} started`)
+      return runStep(command, root)
+    },
+    (command) => EXCLUSIVE_STEPS.has(command.name)
   )
   for (const [index, result] of results.entries()) {
     if (!result.ok) {
