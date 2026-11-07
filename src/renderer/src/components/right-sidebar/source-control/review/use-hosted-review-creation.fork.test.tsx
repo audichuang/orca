@@ -18,7 +18,7 @@ const { openAppHttpLink, toastSuccess } = vi.hoisted(() => ({
   openAppHttpLink: vi.fn(),
   toastSuccess: vi.fn()
 }))
-vi.mock('@/lib/app-http-link-open', async (importOriginal) => ({
+vi.mock('@/lib/browser/navigation/app-http-link-open', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   openAppHttpLink
 }))

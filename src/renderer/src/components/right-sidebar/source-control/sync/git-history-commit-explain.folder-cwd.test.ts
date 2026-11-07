@@ -9,7 +9,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/agent-tab-shortcuts', () => ({
   resolveDefaultAgentForWorktreeNewTab: mocks.resolveAgent
 }))
-vi.mock('@/lib/launch-agent-in-new-tab', () => ({ launchAgentInNewTab: mocks.launchAgentInNewTab }))
+vi.mock('@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab', () => ({
+  launchAgentInNewTab: mocks.launchAgentInNewTab
+}))
 vi.mock('@/lib/agent-detection-target-inventory', () => ({
   getDetectionTargetIdentityForWorktree: () => 'local'
 }))

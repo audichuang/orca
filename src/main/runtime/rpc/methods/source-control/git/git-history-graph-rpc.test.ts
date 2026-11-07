@@ -1,7 +1,7 @@
-import '../unused-default-rpc-methods.test-fixture'
+import '../../../unused-default-rpc-methods.test-fixture'
 import { describe, expect, it, vi } from 'vitest'
-import { RpcDispatcher } from '../dispatcher'
-import type { OrcaRuntimeService } from '../../orca-runtime'
+import { RpcDispatcher } from '../../../dispatcher'
+import type { OrcaRuntimeService } from '../../../../orca-runtime'
 import { GIT_METHODS } from './git'
 
 function dispatcherWith(getRuntimeGitHistory: ReturnType<typeof vi.fn>): RpcDispatcher {
