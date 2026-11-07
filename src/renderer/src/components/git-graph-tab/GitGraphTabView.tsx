@@ -13,6 +13,7 @@ import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared
 import type { Repo } from '../../../../shared/repo-types'
 import type { GitHistoryGraphSavedFilter } from '../../../../shared/git-history-graph-query-types'
 import type { Worktree } from '../../../../shared/worktree/types'
+import { getWorktreeGitIdentityDisplay } from '../../../../shared/worktree/git-identity-display'
 import { GitGraphFullView } from '../right-sidebar/source-control/sync/git-graph-full-view'
 import { useSourceControlGitHistory } from '../right-sidebar/source-control/sync/use-git-history'
 import { useGitGraphTabFilter } from './use-git-graph-tab-filter'
@@ -29,6 +30,12 @@ import { openSourceControlOnRepo } from './git-graph-source-control-link'
 import { useGitGraphTabReveal } from './use-git-graph-tab-reveal'
 import { consumeGitGraphFocusRequest, useGitGraphFocusRequest } from './git-graph-focus-request'
 import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
+
+// Upstream keys history reloads on the branch name; a detached tab passes '' like the sidebar.
+function worktreeBranchName(worktree: Worktree): string {
+  const identity = getWorktreeGitIdentityDisplay(worktree)
+  return identity?.kind === 'branch' ? identity.branchName : ''
+}
 
 function GitGraphTabBody({
   fileId,
@@ -63,6 +70,7 @@ function GitGraphTabBody({
     activeRepoTarget: target,
     activeWorktreeId: worktree.id,
     worktreePath: worktree.path,
+    branchName: worktreeBranchName(worktree),
     compareBaseRef: null,
     isFolder: false,
     isBranchVisible: isVisible,
