@@ -55,7 +55,7 @@ import {
 import { composeWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getRuntimeTargetHostId } from '@/runtime/runtime-client-target'
 import { useAppStore } from '@/store'
-import { getExecutionHostIdForWorktree } from '@/lib/worktree-runtime-owner'
+import { getExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
 import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
 import { useGitGraphCommitFiles } from './use-git-graph-commit-files'
 import type { OpenCommitFileHandler } from './commit-file-sequence'

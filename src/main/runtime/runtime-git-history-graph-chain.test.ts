@@ -3,7 +3,7 @@ import './rpc/unused-default-rpc-methods.test-fixture'
 import { describe, expect, it, vi } from 'vitest'
 import type { OrcaRuntimeService } from './orca-runtime'
 import { RpcDispatcher } from './rpc/dispatcher'
-import { GIT_METHODS } from './rpc/methods/git'
+import { GIT_METHODS } from './rpc/methods/source-control/git/git'
 import { RuntimeGitStatusCommands } from './integrations/git/runtime-git-status-commands'
 
 const getHistory = vi.hoisted(() => vi.fn())
