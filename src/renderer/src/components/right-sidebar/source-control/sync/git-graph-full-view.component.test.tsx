@@ -81,6 +81,7 @@ function Harness({
     activeRepoTarget: { kind: 'local' },
     activeWorktreeId: WORKTREE,
     worktreePath: '/repo',
+    branchName: 'main',
     compareBaseRef: null,
     isFolder: false,
     isBranchVisible: true,
