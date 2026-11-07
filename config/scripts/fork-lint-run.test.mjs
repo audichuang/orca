@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { applyExclusions } from './fork-lint-run.mjs'
+import { applyExclusions, EXCLUSIVE_STEPS, runStepPool } from './fork-lint-run.mjs'
 
 const root = mkdtempSync(join(tmpdir(), 'fork-lint-run-'))
 afterAll(() => rmSync(root, { recursive: true, force: true }))
@@ -20,6 +20,46 @@ describe('fork-lint-run', () => {
     expect(() => applyExclusions(['oxlint', 'check:a'], EXCLUDED)).toThrow(
       'EXCLUDED names check:skipped, which upstream lint no longer runs'
     )
+  })
+
+  it('never runs the two type-aware oxlint steps at once and keeps the other worker busy', async () => {
+    const started = []
+    const finish = {}
+    const commands = [
+      'audit:code-quality:type-aware',
+      'check:code-quality:changed',
+      'check:a',
+      'check:b'
+    ].map((name) => ({ name }))
+    const flush = async () => {
+      for (let i = 0; i < 20; i++) {
+        await Promise.resolve()
+      }
+    }
+    const pool = runStepPool(
+      commands,
+      2,
+      ({ name }) => {
+        started.push(name)
+        return new Promise((resolve) => {
+          finish[name] = () => resolve(name)
+        })
+      },
+      ({ name }) => EXCLUSIVE_STEPS.has(name)
+    )
+    await flush()
+    expect(started).toEqual(['audit:code-quality:type-aware', 'check:a'])
+    finish['check:a']()
+    await flush()
+    expect(started).toEqual(['audit:code-quality:type-aware', 'check:a', 'check:b'])
+    finish['check:b']()
+    await flush()
+    expect(started).toHaveLength(3)
+    finish['audit:code-quality:type-aware']()
+    await flush()
+    expect(started.at(-1)).toBe('check:code-quality:changed')
+    finish['check:code-quality:changed']()
+    expect(await pool).toEqual(commands.map(({ name }) => name))
   })
 
   it('reports both failures and still executes a later package script', async () => {
