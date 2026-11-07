@@ -17,7 +17,9 @@ vi.mock('@/runtime/runtime-rpc-client', () => ({ callRuntimeRpc: rpc.call }))
 vi.mock('@/runtime/runtime-rpc-subscribe', () => ({ subscribeRuntimeRpc: rpc.subscribe }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 const { launchAgent } = vi.hoisted(() => ({ launchAgent: vi.fn() }))
-vi.mock('@/lib/launch-agent-in-new-tab', () => ({ launchAgentInNewTab: launchAgent }))
+vi.mock('@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab', () => ({
+  launchAgentInNewTab: launchAgent
+}))
 import { useAppStore } from '@/store'
 import { makeFolderWorkspace } from '@/store/slices/worktrees-slice-test-fixtures'
 import { resetHostStructuredAgentsForTests } from '@/runtime/host-structured-agents'
