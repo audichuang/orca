@@ -19,7 +19,7 @@ it('shows repo notes and restores the live draft into a retained Changes model',
   seedFolderDiffNote()
   render(
     <ChangesModeView
-      activeFile={folderFile({ mode: 'edit', relativePath: 'src/a.ts' })}
+      activeFile={folderFile({ mode: 'edit' })}
       dc={DIFF}
       modifiedContent="live draft"
       activeConflictEntry={null}
