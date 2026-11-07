@@ -1,5 +1,5 @@
 import { runProcess } from '@orca/process-host'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -60,6 +60,59 @@ describe('fork-lint-run', () => {
     expect(started.at(-1)).toBe('check:code-quality:changed')
     finish['check:code-quality:changed']()
     expect(await pool).toEqual(commands.map(({ name }) => name))
+  })
+
+  it('keeps the two type-aware package scripts apart while another step runs beside them', async () => {
+    const dir = mkdtempSync(join(root, 'exclusive-'))
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({
+        scripts: {
+          'audit:code-quality:type-aware': 'node step.mjs type-aware',
+          'check:code-quality:changed': 'node step.mjs changed',
+          'check:release': 'node step.mjs release'
+        }
+      })
+    )
+    // Each exclusive step holds until it sees the other running (overlap) or the plain step ran.
+    writeFileSync(
+      join(dir, 'step.mjs'),
+      `import { existsSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+const name = process.argv[2]
+if (name === 'release') {
+  writeFileSync('released', '')
+} else {
+  writeFileSync(name + '.running', '')
+  for (;;) {
+    if (readdirSync('.').some((file) => file.endsWith('.running') && file !== name + '.running')) {
+      writeFileSync('overlap', name)
+      break
+    }
+    if (existsSync('released')) break
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  rmSync(name + '.running')
+}
+`
+    )
+    writeFileSync(
+      join(dir, 'runner.mjs'),
+      `import { runLintSteps } from ${JSON.stringify(new URL('./fork-lint-run.mjs', import.meta.url).href)}
+process.exitCode = await runLintSteps(
+  ['audit:code-quality:type-aware', 'check:code-quality:changed', 'check:release', 'check:path-literal-ratchet'],
+  process.cwd()
+)
+`
+    )
+    const result = await runProcess({
+      program: process.execPath,
+      args: [join(dir, 'runner.mjs')],
+      cwd: dir,
+      timeoutMs: null
+    })
+    expect(result.code).toBe(0)
+    expect(existsSync(join(dir, 'overlap'))).toBe(false)
+    expect(existsSync(join(dir, 'released'))).toBe(true)
   })
 
   it('reports both failures and still executes a later package script', async () => {
