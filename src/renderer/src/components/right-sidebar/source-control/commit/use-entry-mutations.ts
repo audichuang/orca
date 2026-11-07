@@ -7,14 +7,15 @@ import {
   editorFileHoldKey,
   pathMutationHoldKeys
 } from '@/components/editor/autosave/editor-autosave-holds'
+import { requestEditorFileSave } from '@/components/editor/autosave/editor-autosave'
 import {
-  notifyEditorExternalFileChange,
-  requestEditorFileSave,
-  requestEditorSaveQuiesce
-} from '@/components/editor/autosave/editor-autosave'
+  notifyEditorExternalFileChangeForOwners,
+  requestEditorSaveQuiesceForOwners
+} from '../folder/repo-editor-owner-save-holds'
 import { getConnectionId } from '@/lib/connection-context'
 import { basename } from '@/lib/path'
 import { useAppStore } from '@/store'
+import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 import {
   bulkDiscardRuntimeGitPaths,
   bulkUnstageRuntimeGitPaths,
@@ -40,6 +41,7 @@ export function useSourceControlEntryMutations({
   worktreePath: string | null
   refreshActiveGitStatusAfterMutation: () => Promise<void>
 }) {
+  const editorWorktreeId = useSourceControlWorktreeScope()?.editorWorktreeId
   // Name the callback so Retry can reenter the same attempt.
   const runEntryMutation = useCallback(
     async function runEntryMutation(
@@ -70,6 +72,7 @@ export function useSourceControlEntryMutations({
           error,
           worktreeId: activeWorktreeId,
           worktreeName: worktreePath ? basename(worktreePath) : null,
+          foregroundWorkspaceId: editorWorktreeId,
           onRetry: () => {
             void runEntryMutation(operation, filePath, mutate)
           }
@@ -81,7 +84,13 @@ export function useSourceControlEntryMutations({
       // Refresh outside the mutation catch so its errors cannot be mislabeled as stage failures.
       await refreshActiveGitStatusAfterMutation()
     },
-    [activeRepoTarget, worktreePath, activeWorktreeId, refreshActiveGitStatusAfterMutation]
+    [
+      activeRepoTarget,
+      worktreePath,
+      activeWorktreeId,
+      editorWorktreeId,
+      refreshActiveGitStatusAfterMutation
+    ]
   )
 
   const handleStage = useCallback(
@@ -137,10 +146,13 @@ export function useSourceControlEntryMutations({
           return
         }
         // Hold autosave so an open tab cannot recreate the file the host removes.
-        const releaseAutoSave = await requestEditorSaveQuiesce(editorTarget)
+        const releaseAutoSave = await requestEditorSaveQuiesceForOwners(
+          editorWorktreeId,
+          editorTarget
+        )
         try {
           await resolveRuntimeGitConflict(context, filePath, resolution)
-          notifyEditorExternalFileChange(editorTarget)
+          notifyEditorExternalFileChangeForOwners(editorWorktreeId, editorTarget)
         } finally {
           releaseAutoSave()
         }
@@ -150,7 +162,7 @@ export function useSourceControlEntryMutations({
         resolvingConflictKeysRef.current.delete(resolvingKey)
       })
     },
-    [activeRepoTarget, activeWorktreeId, runEntryMutation, worktreePath]
+    [activeRepoTarget, activeWorktreeId, editorWorktreeId, runEntryMutation, worktreePath]
   )
 
   // Throw for bulk callers to aggregate; per-row callers report their own failures.
@@ -162,7 +174,7 @@ export function useSourceControlEntryMutations({
       const runtimeEnvironmentId =
         activeRepoTarget?.kind === 'environment' ? activeRepoTarget.environmentId : null
       // Hold pending autosaves so delayed writes cannot recreate edits after Git restores the file.
-      const releaseAutoSave = await requestEditorSaveQuiesce({
+      const releaseAutoSave = await requestEditorSaveQuiesceForOwners(editorWorktreeId, {
         worktreeId: activeWorktreeId,
         worktreePath,
         relativePath: filePath,
@@ -181,7 +193,7 @@ export function useSourceControlEntryMutations({
           },
           filePath
         )
-        notifyEditorExternalFileChange({
+        notifyEditorExternalFileChangeForOwners(editorWorktreeId, {
           worktreeId: activeWorktreeId,
           worktreePath,
           relativePath: filePath,
@@ -191,7 +203,7 @@ export function useSourceControlEntryMutations({
         releaseAutoSave()
       }
     },
-    [activeRepoTarget, activeWorktreeId, worktreePath]
+    [activeRepoTarget, activeWorktreeId, editorWorktreeId, worktreePath]
   )
 
   const discardMany = useCallback(
@@ -202,27 +214,13 @@ export function useSourceControlEntryMutations({
       const runtimeEnvironmentId =
         activeRepoTarget?.kind === 'environment' ? activeRepoTarget.environmentId : null
       // Quiesce matching editors so delayed autosaves cannot recreate edits after Git mutates files.
-      const quiesced = await Promise.allSettled(
-        filePaths.map((relativePath) =>
-          requestEditorSaveQuiesce({
-            worktreeId: activeWorktreeId,
-            worktreePath,
-            relativePath,
-            runtimeEnvironmentId
-          })
-        )
-      )
-      const releases = quiesced.flatMap((result) =>
-        result.status === 'fulfilled' ? [result.value] : []
-      )
-      const failed = quiesced.find((result) => result.status === 'rejected')
-      // If any path cannot quiesce, stop the whole discard and release all holds already acquired.
-      if (failed) {
-        for (const release of releases) {
-          release()
-        }
-        throw failed.reason
-      }
+      const targets = filePaths.map((relativePath) => ({
+        worktreeId: activeWorktreeId,
+        worktreePath,
+        relativePath,
+        runtimeEnvironmentId
+      }))
+      const releaseAutoSaves = await requestEditorSaveQuiesceForOwners(editorWorktreeId, targets)
       try {
         const connectionId = getConnectionId(activeWorktreeId) ?? undefined
         await bulkDiscardRuntimeGitPaths(
@@ -235,21 +233,12 @@ export function useSourceControlEntryMutations({
           },
           filePaths
         )
-        for (const relativePath of filePaths) {
-          notifyEditorExternalFileChange({
-            worktreeId: activeWorktreeId,
-            worktreePath,
-            relativePath,
-            runtimeEnvironmentId
-          })
-        }
+        notifyEditorExternalFileChangeForOwners(editorWorktreeId, targets)
       } finally {
-        for (const release of releases) {
-          release()
-        }
+        releaseAutoSaves()
       }
     },
-    [activeRepoTarget, activeWorktreeId, worktreePath]
+    [activeRepoTarget, activeWorktreeId, editorWorktreeId, worktreePath]
   )
 
   return {

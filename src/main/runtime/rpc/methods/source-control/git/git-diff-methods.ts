@@ -5,6 +5,7 @@ import {
   GitCommitDiff,
   GitDiff
 } from '../../../../../../shared/rpc-contract/git-params'
+import { gitDiffReadArgs } from '../../../../../git/source-control/git-diff-read-options'
 
 // Only WebSocket callers set clientKind; local/in-process diffs retain uncapped fidelity.
 function remoteDiffContentBudget(
@@ -26,7 +27,7 @@ export const GIT_DIFF_METHODS = [
         params.staged,
         params.compareAgainstHead,
         remoteDiffContentBudget(clientKind, requestId),
-        ...(params.oldPath ? ([params.oldPath] as const) : [])
+        ...gitDiffReadArgs(params)
       )
   }),
   defineMethod({

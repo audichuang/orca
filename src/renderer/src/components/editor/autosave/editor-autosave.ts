@@ -1,5 +1,6 @@
 import { joinPath } from '@/lib/path'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
+import { getOpenFileGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
 import { areLocalWindowsWslPathAliases } from '../../../../../shared/cross-platform-path'
 import { externalChangePathKeyFor } from '@/store/slices/editor/buffers/editor-buffer-identity'
 import { isLocalWindowsDesktopClient } from '@/lib/desktop-window-chrome'
@@ -79,6 +80,8 @@ export type EditorFileSavedDetail = {
   content: string
   /** Every view of the saved record, read when the write landed: the saving view may close. */
   recordViewIds?: readonly string[]
+  /** The written path; when every view of the file has closed, listeners can't look it up. */
+  filePath?: string
 }
 
 export type EditorRequestFileCloseDetail = {
@@ -146,7 +149,7 @@ export function getOpenFilesForExternalFileChange(
   const hasRuntimeOwnerFilter = Object.hasOwn(target, 'runtimeEnvironmentId')
   const targetRuntimeOwner = target.runtimeEnvironmentId?.trim() || null
   return openFiles.filter((file) => {
-    if (file.worktreeId !== target.worktreeId) {
+    if (file.worktreeId !== target.worktreeId && file.gitWorktreeId !== target.worktreeId) {
       return false
     }
     if (
@@ -166,7 +169,12 @@ export function getOpenFilesForExternalFileChange(
     if (file.mode === 'diff') {
       return (
         (file.diffSource === 'unstaged' || file.diffSource === 'staged') &&
-        file.relativePath === target.relativePath
+        // Why: a folder-scoped diff's relativePath may not be relative to its repo; its filePath is unambiguous.
+        (file.gitWorktreeId && file.gitWorktreeId !== file.worktreeId
+          ? pathKey(file.filePath) === absolutePathKey
+          : file.relativePath === target.relativePath) &&
+        // Why: repos sharing a folder editor reuse relative paths; only the owning repo's diff is affected.
+        getOpenFileGitWorktreeId(file) === target.worktreeId
       )
     }
     return false

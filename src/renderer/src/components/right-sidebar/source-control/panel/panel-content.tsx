@@ -1,4 +1,5 @@
 import { GitHistoryPanel } from '../sync/git-history-panel'
+import { sourceControlHistorySlots } from './source-control-history-slots'
 import { shouldShowSourceControlCompareUnavailableCard } from './header-toolbar'
 import { shouldRenderCommitArea } from '../commit/component-gates'
 import { SourceControlBranchSection } from '../listing/branch-section'
@@ -7,10 +8,14 @@ import { SourceControlUncommittedSections } from '../listing/uncommitted-section
 import { CompareUnavailable } from '../sync/compare-summary'
 import { SourceControlCommitSurface } from './commit-surface'
 import { SourceControlForkPushNotice } from './fork-push-notice'
+import { useSourceControlOwners } from '../folder/worktree-scope'
 import type { SourceControlPanelReadyProps } from './panel-props'
+import { toastBottomClearanceRef } from '@/lib/toast-bottom-clearance'
 
 export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
   const { activeWorktree, currentWorktreeId, model, worktreePath } = props
+  // Why: in a folder repo section, combined diffs open in the folder's editor but read this repo's git state.
+  const { tabOwnerId, gitOwnerId } = useSourceControlOwners(currentWorktreeId)
   const {
     activeConnectionId,
     activeOpenRowKeys,
@@ -102,10 +107,11 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
         onResolveWithAi={() => void handleResolveConflictsWithAI()}
         onReviewConflicts={() => {
           openConflictReview(
-            currentWorktreeId,
+            tabOwnerId,
             worktreePath,
             unresolvedConflictReviewEntries,
-            'live-summary'
+            'live-summary',
+            { gitWorktreeId: gitOwnerId }
           )
         }}
         repositoryHuge={repositoryHuge}
@@ -140,18 +146,20 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
           onViewSection={(sectionViewAction) => {
             if (sectionViewAction.kind === 'conflict-review') {
               openConflictReview(
-                currentWorktreeId,
+                tabOwnerId,
                 worktreePath,
                 sectionViewAction.entries,
-                'live-summary'
+                'live-summary',
+                { gitWorktreeId: gitOwnerId }
               )
             } else {
               openAllDiffs(
-                currentWorktreeId,
+                tabOwnerId,
                 worktreePath,
                 undefined,
                 sectionViewAction.area,
-                sectionViewAction.entries
+                sectionViewAction.entries,
+                { gitWorktreeId: gitOwnerId }
               )
             }
           }}
@@ -217,14 +225,20 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
           revealInExplorer={revealInExplorer}
           activeConnectionId={activeConnectionId}
           openCommittedDiff={openCommittedDiff}
-          openBranchAllDiffs={openBranchAllDiffs}
+          openBranchAllDiffs={(_worktreeId, path, summary) =>
+            openBranchAllDiffs(tabOwnerId, path, summary, undefined, { gitWorktreeId: gitOwnerId })
+          }
           diffCommentCountByPath={diffCommentCountByPath}
         />
       )}
 
       {isGitHistoryVisible && (
         // Dock history as reference context while the rest of the pane scrolls.
-        <div className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-sidebar/95 backdrop-blur-sm">
+        <div
+          ref={toastBottomClearanceRef}
+          data-git-history-dock
+          className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-sidebar/95 backdrop-blur-sm"
+        >
           <GitHistoryPanel
             state={gitHistoryState}
             collapsed={collapsedSections.has('history')}
@@ -234,6 +248,12 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
             onLoadCommitFiles={loadCommitFiles}
             onOpenCommitFile={openCommitFile}
             onCommitAction={handleCommitAction}
+            {...sourceControlHistorySlots({
+              model,
+              tabOwnerId,
+              repoWorktreeId: currentWorktreeId,
+              worktreePath
+            })}
           />
         </div>
       )}

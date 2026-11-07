@@ -1,0 +1,194 @@
+# Fork seam contract tests, grouped by seam: each turns red when an upstream change silently drops a fork wiring.
+# The groups are the seam map for the auto-rebase reviewer's mutation pass; `make fork-check-seams` runs them.
+# One repo-relative path per line; fork-check-lint (config/scripts/fork-test-inventory.mjs check) fails on a missing or
+# duplicate entry. A new seam test joins its group.
+
+# skipRenderLimit: IPC, web preload, runtime client, RPC + zod, provider
+src/main/git/source-control/file-diff.skip-render-limit-real-git.test.ts
+src/main/ipc/filesystem/filesystem-git-diff-skip-render-limit-ipc.test.ts
+src/main/runtime/rpc/methods/source-control/git/git-diff-skip-render-limit.test.ts
+src/main/runtime/runtime-git-diff-skip-render-limit-chain.test.ts
+src/renderer/src/runtime/runtime-git-diff-skip-render-limit-client.test.ts
+src/renderer/src/web/preload-api/web-git-diff-skip-render-limit.test.ts
+
+# git.history graph option: IPC, web preload, RPC, runtime chain, renderer client, dispatch
+src/main/git/history-graph-dispatch.real-git.test.ts
+src/main/ipc/filesystem/filesystem-git-history-graph-ipc.test.ts
+src/main/runtime/rpc/methods/source-control/git/git-history-graph-rpc.test.ts
+src/main/runtime/runtime-git-history-graph-chain.test.ts
+src/renderer/src/web/preload-api/web-git-history-graph.test.ts
+src/renderer/src/runtime/runtime-git-history-graph-client.test.ts
+
+# missingSides and blob absence feeding ClipCode copy
+src/main/git/source-control/blob-absence-real-git.test.ts
+src/main/git/source-control/blob-absence-real-git.fork.test.ts
+src/main/git/source-control/file-diff.read-failure.test.ts
+src/main/git/source-control/commit-diff-missing-sides.real-git.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-commit-copy.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-explorer-copy.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-git-copy.test.ts
+
+# WSL wake (E9) on fork user acts: Git Graph Refresh, ClipCode copy reads
+src/renderer/src/components/git-graph-tab/GitGraphTabView.component.test.tsx
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-copy-action.wsl-wake.test.ts
+
+# ClipCode clipboard and preview contracts
+src/main/ipc/filesystem/filesystem-svg-preview-clipcode-contract.test.ts
+src/renderer/src/components/right-sidebar/file-explorer-clipcode-copy.wiring.test.tsx
+src/renderer/src/components/right-sidebar/file-explorer-clipcode-paste.wiring.test.tsx
+src/renderer/src/components/right-sidebar/source-control/panel/panel-clipcode-actions.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/commit/bulk-action-bar.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-format.contract.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-restore.contract.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-target-state.ipc-edge.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-preview-dialog.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-copy-wiring.test.tsx
+src/renderer/src/components/right-sidebar/file-explorer-row-context-menu.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/listing/section-action-buttons.fork.test.tsx
+
+# Explorer: Duplicate as _result.txt menu item, naming, exclusive copy, open
+src/renderer/src/components/right-sidebar/file-explorer-duplicate-as-result.fork.test.tsx
+
+# gitWorktreeId persistence: save, reload, restore (layout and session)
+src/renderer/src/lib/workspace/persistence/workspace-session-hydration-keys.fork.test.ts
+src/renderer/src/lib/workspace/persistence/workspace-session.fork.test.ts
+src/renderer/src/store/slices/editor-read-only-tabs.fork.test.ts
+src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts
+src/shared/workspace-layout/layout-editor-view.fork.test.ts
+src/shared/workspace-layout/workspace-layout-fact-locations.test.ts
+src/shared/workspace-session-schema.git-owner.test.ts
+src/main/ssh/orcad-migration-path-rewrite.fork.test.ts
+
+# gitWorktreeId on editor open actions: panel, combined view, history, status reconcile
+src/renderer/src/components/editor/combined-diff/CombinedDiffViewer.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/panel/panel-content.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/notes/use-note-opening.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/listing/use-row-opening.fork.test.tsx
+src/renderer/src/store/slices/editor/actions/git-status-actions.fork.test.ts
+src/renderer/src/store/slices/editor-open-diff.fork.test.ts
+src/renderer/src/components/right-sidebar/source-control/listing/open-uncommitted-entry.fork.test.ts
+src/renderer/src/components/editor/EditorConflictReviewSurface.git-owner.test.tsx
+src/renderer/src/components/editor/conflict-review-folder-owner.test.tsx
+src/renderer/src/components/editor/ExternalFileChangeBanner.git-owner.test.ts
+
+# Source-control row split-open modifiers and Open to the Side
+src/renderer/src/components/right-sidebar/source-control/listing/split-open.test.ts
+
+# git-graph tab type: hydration, editor tabs, layout, runtime graph sync
+src/renderer/src/runtime/sync-runtime-graph-git-graph-tab.test.ts
+src/renderer/src/store/slices/editor-git-graph-tabs.test.ts
+src/renderer/src/store/slices/editor-git-graph-split-open.test.ts
+src/renderer/src/store/slices/editor/tabs/open-file-layout-view.fork.test.ts
+src/renderer/src/store/slices/tabs-hydration-git-graph.test.ts
+src/renderer/src/components/tab-group/TabGroupPanel.git-graph-button.test.tsx
+src/shared/fork-editor-kind-sites.guard.test.ts
+src/renderer/src/components/git-graph-tab/git-graph-tab-kind-seams.test.ts
+src/renderer/src/components/cmd-j/git-graph-quick-action.test.ts
+src/renderer/src/components/editor/EditorContent.fork.test.tsx
+src/renderer/src/components/tab-bar/EditorFileTab.fork.test.tsx
+src/renderer/src/components/tab-bar/RecentTabSwitcher.fork.test.tsx
+src/shared/workspace-layout/old-client/old-client-session-tabs-projection.fork.test.ts
+
+# Upstream component slots and folder routing
+src/main/project-groups/nested-repo-discovery.fork.test.ts
+src/renderer/src/components/right-sidebar/right-sidebar-activity-visibility.fork.test.ts
+# (the Commits dock slots and toast clearance: panel-content.fork.test.tsx, listed under gitWorktreeId on editor open actions)
+src/renderer/src/components/right-sidebar/source-control/panel/panel-folder-routing.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/git-graph-full-view.component.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph.component.test.tsx
+src/renderer/src/components/right-sidebar/source-control/folder/folder-multi-repo-panel.test.tsx
+src/renderer/src/components/right-sidebar/source-control/folder/use-folder-repo-status-refresh.test.ts
+src/renderer/src/components/right-sidebar/source-control/folder/use-folder-repo-status-refresh.store.test.ts
+src/renderer/src/components/right-sidebar/source-control/commit/folder-discard-autosave-holds.test.tsx
+src/renderer/src/components/right-sidebar/source-control/commit/folder-keep-deletion-autosave-holds.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/commit/use-entry-mutations.fork.test.tsx
+src/renderer/src/components/right-sidebar/SourceControl.preview-open.fork.test.tsx
+src/renderer/src/components/editor/editor-autosave.fork.test.ts
+src/renderer/src/components/editor/folder-relative-git-consumers.test.tsx
+src/renderer/src/components/editor/editor-external-watch-path-index.fork.test.ts
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files-menu.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.test.tsx
+src/renderer/src/components/tab-bar/tab-bar-item-model.git-status.fork.test.ts
+src/renderer/src/components/right-sidebar/source-control-entry-context-menu.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/review/use-hosted-review-creation.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/panel/header-toolbar.fork.test.tsx
+src/renderer/src/components/editor/EditorPanelHeader.fork.test.tsx
+src/renderer/src/components/editor/EditorEditFileSurface.fork.test.tsx
+
+# Editor save event
+src/renderer/src/components/editor/editor-file-saved-event.contract.test.ts
+
+# Keybinding
+src/renderer/src/app-shell/git-graph-command-handler.test.ts
+src/renderer/src/app-shell/git-graph-shortcut.keybindings.test.ts
+
+# Updater: fork distribution
+src/main/updater/updater.fork-distribution.test.ts
+src/main/updater/fork-distribution.test.ts
+src/main/updater/updater-nudge.fork.test.ts
+
+# Hidden folder repos
+src/renderer/src/components/right-sidebar/source-control/folder/folder-sidebar-hidden-repos.test.ts
+src/renderer/src/components/sidebar/visible-worktrees-folder-hidden-repos.test.ts
+src/renderer/src/components/sidebar/workspace-actions/deletion/folder-workspace-delete.fork.test.ts
+src/renderer/src/components/sidebar/workspace-board/surface/use-visible-workspace-kanban-worktree-ids.fork.test.tsx
+
+# Toast clearance
+src/renderer/src/lib/toast-bottom-clearance.test.tsx
+src/renderer/src/components/ui/sonner.fork.test.tsx
+
+# App bundle replaced while running
+src/main/app-bundle-replacement.test.ts
+src/main/ipc/app-bundle-replacement-ipc.fork.test.ts
+src/preload/api/app-bridge.fork.test.ts
+src/renderer/src/lib/lazy-chunk-recovery-reload.fork.test.ts
+src/main/asar-transparent-stat.electron.test.ts
+
+# Agent launch cwd in folder repos: route input, offered agents, recovery, AI conflicts, dialog, main pane launch
+src/renderer/src/lib/folder-repo-launch-chat-route.test.ts
+src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.folder-cwd.test.ts
+src/renderer/src/components/right-sidebar/source-control/ai/use-ai.folder-cwd.test.tsx
+src/renderer/src/components/right-sidebar/SourceControlAgentActionDialog.folder-cwd.test.tsx
+src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts
+
+# Editor folder git-owner routing, mounted owner changes, and diff review notes
+src/renderer/src/store/slices/editor/actions/open-history-diff.fork.test.ts
+src/renderer/src/store/slices/editor/tabs/untitled-file-cleanup.fork.test.ts
+src/renderer/src/store/slices/editor/actions/open-conflict-file-owner.test.ts
+src/renderer/src/store/slices/editor/actions/open-file-git-owner-merge.test.ts
+src/renderer/src/store/slices/editor/git/git-status-reconciliation.staged-rename.fork.test.ts
+src/renderer/src/components/editor/editor-file-read-git-owner.fork.test.ts
+src/renderer/src/lib/remap-open-editor-tabs-for-path-change.fork.test.ts
+src/renderer/src/components/editor/combined-diff/load-sections/fetch-combined-diff-section.fork.test.ts
+src/renderer/src/components/editor/combined-diff/load-sections/use-combined-diff-section-revalidation.fork.test.tsx
+src/renderer/src/components/editor/combined-diff/review-controls/use-combined-diff-section-actions.fork.test.tsx
+src/renderer/src/components/editor/useEditorPanelDiffContentLoader.fork.test.tsx
+src/renderer/src/components/tab-bar/use-tab-bar-runtime-model.fork.test.tsx
+src/renderer/src/components/editor/folder-diff-notes.fork.test.tsx
+src/renderer/src/components/editor/EditorPanel.fork.test.tsx
+src/renderer/src/components/editor/ExternalFileChangeCompareDialog.fork.test.tsx
+src/renderer/src/components/editor/useDiffViewerFirstChangeAutoScroll.fork.test.tsx
+src/renderer/src/components/editor/markdown-preview/surface/MarkdownPreview.chat-quote.fork.test.tsx
+src/renderer/src/components/editor/MonacoEditor.chat-quote.fork.test.tsx
+src/renderer/src/components/editor/monaco-editor-input-bindings.add-to-chat.fork.test.ts
+src/renderer/src/components/editor/diff-file-boundary-navigation.test.tsx
+src/renderer/src/store/slices/editor/git/folder-file-git-owner.test.ts
+src/renderer/src/hooks/editor-external-watch-overflow.folder-owner.fork.test.ts
+src/renderer/src/components/quick-open-file-history.fork.test.ts
+src/renderer/src/store/slices/store-session-editor-hydration.fork.test.ts
+
+# Folder source-control action routing: real panel, recovery dialogs, notes and discard failures
+src/renderer/src/components/right-sidebar/source-control/panel/use-panel-model.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/commit/source-control-entry-failure-toast.fork.test.ts
+src/renderer/src/components/right-sidebar/source-control/panel/commit-surface.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/panel/use-worktree-operation-state.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/panel/panel-dialogs.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/ai/use-recovery-ai.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/notes/notes-shelf.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/commit/use-discard-confirmation.fork.test.tsx
+src/renderer/src/components/right-sidebar/useSourceControlAgentActionStart.fork.test.tsx
+
+# Monaco diff editor deferred dispose: StrictMode Suspense reconnect
+src/renderer/src/components/editor/DiffSectionBody.real-monaco-strict-reveal.test.tsx
+src/renderer/src/components/editor/DiffSectionBody.monaco-strict-reveal.test.tsx

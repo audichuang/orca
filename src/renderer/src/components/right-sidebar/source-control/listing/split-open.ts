@@ -11,12 +11,9 @@ type SourceControlOpenModifierKeys = Pick<
   'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey'
 >
 
-export function isSourceControlSplitOpenModifier(
-  event: SourceControlRowOpenEvent,
-  isMac: boolean
-): boolean {
-  const platformPrimary = isMac ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey
-  return platformPrimary || event.shiftKey || event.altKey
+// Why: Ctrl/Cmd and Shift build the multi-selection (bulk actions); only Alt/Option opens a split.
+export function isSourceControlSplitOpenModifier(event: SourceControlRowOpenEvent): boolean {
+  return event.altKey
 }
 
 export function shouldOpenSourceControlRowAsPreview(

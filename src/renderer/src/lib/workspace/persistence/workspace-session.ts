@@ -1,4 +1,3 @@
-import { pendingAgentLaunchPane } from '../../../../../shared/agent-launch/contracts/agent-launch-pane-verdict'
 import type { WorkspaceVisibleTabType } from '../../../../../shared/tab-types'
 import type {
   PersistedOpenFile,
@@ -16,6 +15,9 @@ import { buildActiveConnectionIdsAtShutdown } from './workspace-session-reconnec
 import { withoutStagedBrowserTabs } from './workspace-session-staged-browser-tabs'
 import { buildBrowserSessionData } from './workspace-session-browser-tabs'
 import { pickCloseIntents, type CloseIntentFields } from './workspace-session-close-intents'
+import { buildSanitizedTabsByWorktree } from './workspace-session-sanitized-terminal-tabs'
+
+export { buildSanitizedTabsByWorktree }
 
 /** Why (issue #1158): require both flags so a hydration failure can't overwrite orca-data.json with empty error-path state. */
 export function shouldPersistWorkspaceSession(
@@ -142,6 +144,7 @@ export function buildEditorSessionData(
       runtimeEnvironmentId: f.runtimeEnvironmentId,
       ...(f.mirroredFromRuntimeSession === true ? { mirroredFromRuntimeSession: true } : {}),
       externalSshTargetId: f.externalSshTargetId,
+      gitWorktreeId: f.gitWorktreeId === f.worktreeId ? undefined : f.gitWorktreeId,
       // Why: persist readOnly only when true; absence is the writable default on restore.
       ...(f.readOnly === true ? { readOnly: true } : {}),
       ...(f.readOnly === true && f.liveTail === true ? { liveTail: true } : {}),
@@ -196,33 +199,6 @@ export function buildEditorSessionData(
     activeTabTypeByWorktree: persistedActiveTabTypeByWorktree,
     markdownFrontmatterVisible: persistedMarkdownFrontmatterVisible
   }
-}
-
-export function buildSanitizedTabsByWorktree(
-  tabsByWorktree: WorkspaceSessionSnapshot['tabsByWorktree']
-): WorkspaceSessionState['tabsByWorktree'] {
-  // Why: strip transient pendingActivationSpawn — session:set persists without Zod re-parse, so a stale flag would drop the first PTY spawn on restart.
-  // Same for the recovery ledger: it describes a mounted pane's in-flight heal, so a persisted one would refuse the first recovery after restart.
-  // A launch pane's outcome is not saved: a reload asks main again, which keeps it until it quits; after a restart the pane spawns like any other.
-  return Object.fromEntries(
-    Object.entries(tabsByWorktree).map(([worktreeId, tabs]) => [
-      worktreeId,
-      tabs.map((tab) => {
-        const {
-          pendingActivationSpawn: _unused,
-          recovery: _recovery,
-          restoredFromSession: _restored,
-          ...rest
-        } = tab
-        void _unused
-        void _recovery
-        void _restored
-        return rest.agentLaunchPane
-          ? { ...rest, agentLaunchPane: pendingAgentLaunchPane(rest.agentLaunchPane) }
-          : rest
-      })
-    ])
-  )
 }
 
 export function buildTerminalSessionData(

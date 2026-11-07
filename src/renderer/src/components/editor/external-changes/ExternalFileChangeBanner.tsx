@@ -9,6 +9,10 @@ import { getRuntimeTargetForFileOwner } from '@/lib/file-owner-runtime-target'
 import { useAppStore } from '@/store/index'
 import { translate } from '@/i18n/i18n'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
+import {
+  getOpenFileGitRelativePath,
+  getOpenFileGitWorktreeId
+} from '@/store/slices/editor/git/open-file-git-owner'
 import { ExternalFileChangeCompareDialog } from './ExternalFileChangeCompareDialog'
 import { getDiskBaselineSignature } from '../../../../../shared/disk-baseline-signature'
 import { trackExternalChangeConflictAction } from './editor-external-change-telemetry'
@@ -99,8 +103,8 @@ export function keepTabEditsOverExternalChange(file: OpenFile): void {
   const restamp = readRuntimeFileContent({
     target,
     filePath: file.filePath,
-    relativePath: file.relativePath,
-    worktreeId: file.worktreeId,
+    relativePath: getOpenFileGitRelativePath(state, file),
+    worktreeId: getOpenFileGitWorktreeId(file),
     connectionId: getConnectionIdForFile(file.worktreeId, file.filePath) ?? undefined,
     expectedExternalSshTargetId: file.externalSshTargetId,
     access: editorTabFileAccess(state, file),

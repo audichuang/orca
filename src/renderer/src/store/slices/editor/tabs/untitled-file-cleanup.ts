@@ -3,6 +3,7 @@ import type { OpenFile } from '../types/open-file'
 import { mayShareEditorBackingFile } from '../file-ids/editor-file-ids'
 import { findWorktreeById } from '../../worktree-helpers'
 import { getEditorFileOperationContext } from '@/lib/editor-file-operation-owner'
+import { resolveTabOwnerRelativePath } from '../git/open-file-git-owner'
 import { getDiskBaselineSignature } from '../../../../../../shared/disk-baseline-signature'
 import {
   deleteRuntimePath,
@@ -32,7 +33,9 @@ export function deleteUntouchedUntitledFile(getState: () => AppState, file: Open
       if (stat.size !== 0 || hasRetainedView()) {
         return
       }
-      const deletedRemotely = await deleteRuntimeRelativePath(context, file.relativePath)
+      const ownerRelativePath = resolveTabOwnerRelativePath(state, file, worktree?.path ?? null)
+      const deletedRemotely =
+        ownerRelativePath !== null && (await deleteRuntimeRelativePath(context, ownerRelativePath))
       if (!deletedRemotely && !owningRuntimeEnvironmentId && !hasRetainedView()) {
         await deleteRuntimePath(context, file.filePath)
       }

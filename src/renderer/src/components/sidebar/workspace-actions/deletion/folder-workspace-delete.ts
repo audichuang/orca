@@ -6,6 +6,7 @@ import { getExecutionHostIdForFolderWorkspace } from '@/lib/folder-workspace-run
 import '../../../../../../shared/folder-workspaces/folder-workspace-execution-host'
 import { getFolderWorkspaceHostId } from '../../../../../../shared/folder-workspaces/folder-workspace-host-id'
 import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
+import { releaseSidebarHiddenReposOfRemovedFolders } from '../../../right-sidebar/source-control/folder/folder-sidebar-hidden-repos'
 
 /** Mirrors deleteFolderWorkspace: its tabs close only when no same-id folder survives elsewhere. */
 export function folderWorkspaceDeleteClosesTabs(
@@ -42,10 +43,14 @@ export function deleteFolderWorkspaceUnlessUnsaved(
   ) {
     return null
   }
+  const foldersBefore = selectFolderWorkspaces(getState())
   return getState()
     .deleteFolderWorkspace(folderWorkspaceId, executionHostId ? { executionHostId } : undefined)
     .then((deleted) => {
       const current = getState()
+      if (deleted) {
+        releaseSidebarHiddenReposOfRemovedFolders(foldersBefore, selectFolderWorkspaces(current))
+      }
       if (
         deleted &&
         current.activeWorktreeId === workspaceKey &&

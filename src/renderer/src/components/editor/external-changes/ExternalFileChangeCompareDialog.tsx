@@ -20,6 +20,7 @@ import {
 } from '@/lib/file-owner-runtime-target'
 import { useAppStore } from '@/store/index'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
+import { getOpenFileGitRelativePath } from '@/store/slices/editor/git/open-file-git-owner'
 import { translate } from '@/i18n/i18n'
 
 const DiffViewer = lazy(() => import('../diff/monaco-view/DiffViewer'))
@@ -69,8 +70,13 @@ export function ExternalFileChangeCompareDialog({
     void readRuntimeFileContent({
       target,
       filePath: file.filePath,
-      relativePath: file.relativePath,
-      worktreeId: file.worktreeId,
+      relativePath: getOpenFileGitRelativePath(useAppStore.getState(), {
+        filePath: file.filePath,
+        relativePath: file.relativePath,
+        worktreeId: file.worktreeId,
+        gitWorktreeId: file.gitWorktreeId
+      }),
+      worktreeId: file.gitWorktreeId ?? file.worktreeId,
       connectionId: getConnectionIdForFile(file.worktreeId, file.filePath) ?? undefined,
       expectedExternalSshTargetId: file.externalSshTargetId,
       access,
@@ -101,6 +107,7 @@ export function ExternalFileChangeCompareDialog({
     file.filePath,
     file.relativePath,
     file.worktreeId,
+    file.gitWorktreeId,
     file.runtimeEnvironmentId,
     file.externalSshTargetId,
     file.terminalArtifactGrantId,

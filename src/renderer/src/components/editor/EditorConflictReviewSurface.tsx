@@ -3,6 +3,7 @@ import { conflictOverviewView } from '@/store/slices/editor/buffers/editor-buffe
 import { detectLanguage } from '@/lib/language-detect'
 import { joinPath } from '@/lib/path'
 import { useAppStore } from '@/store'
+import { getOpenFileGitRelativePath } from '@/store/slices/editor/git/open-file-git-owner'
 import type { OpenFile, PendingEditorReveal } from '@/store/slices/editor'
 import type { GitStatusEntry } from '../../../../shared/git/status/git-status-types'
 import { ConflictBanner, ConflictPlaceholderView, ConflictReviewPanel } from './ConflictComponents'
@@ -61,10 +62,17 @@ export function EditorConflictReviewSurface({
         activeFile.worktreeId,
         activeFile.filePath,
         entry,
-        detectLanguage(entry.path)
+        detectLanguage(entry.path),
+        { gitWorktreeId: activeFile.gitWorktreeId }
       )
     },
-    [activeFile.filePath, activeFile.id, activeFile.worktreeId, openConflictReviewFile]
+    [
+      activeFile.filePath,
+      activeFile.gitWorktreeId,
+      activeFile.id,
+      activeFile.worktreeId,
+      openConflictReviewFile
+    ]
   )
 
   const createContentFile = (
@@ -108,6 +116,7 @@ export function EditorConflictReviewSurface({
         filePath: recordView?.filePath ?? absolutePath,
         relativePath: entry.path,
         worktreeId: activeFile.worktreeId,
+        gitWorktreeId: activeFile.gitWorktreeId,
         language: detectLanguage(entry.path),
         isDirty: false,
         mode: 'edit',
@@ -251,7 +260,9 @@ export function EditorConflictReviewSurface({
 
   const renderSelectedContent = (selectedFile: OpenFile): React.JSX.Element => {
     const selectedConflictEntry =
-      worktreeEntries.find((entry) => entry.path === selectedFile.relativePath) ?? null
+      worktreeEntries.find(
+        (entry) => entry.path === getOpenFileGitRelativePath(useAppStore.getState(), selectedFile)
+      ) ?? null
     return renderEditorContent({
       contentFile: selectedFile,
       entry: selectedConflictEntry,
@@ -306,7 +317,8 @@ export function EditorConflictReviewSurface({
           worktreeEntries
             .filter((entry) => entry.conflictStatus === 'unresolved' && entry.conflictKind)
             .map((entry) => ({ path: entry.path, conflictKind: entry.conflictKind! })),
-          'live-summary'
+          'live-summary',
+          { gitWorktreeId: activeFile.gitWorktreeId }
         )
       }
       onReturnToSourceControl={() => setRightSidebarTab('source-control')}

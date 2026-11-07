@@ -89,6 +89,8 @@ export function getDefaultSourceControlRecoveryLaunchCopy(
 
 export async function launchSourceControlRecoveryAgentWithDefault({
   activeWorktreeId,
+  editorWorktreeId,
+  worktreePath,
   activeGroupId,
   activeSourceControlLaunchPlatform,
   sourceRepoConnectionId,
@@ -100,6 +102,9 @@ export async function launchSourceControlRecoveryAgentWithDefault({
   copy
 }: {
   activeWorktreeId: string
+  /** Workspace that owns the agent terminal when it differs from the repo (folder workspace section). */
+  editorWorktreeId?: string | null
+  worktreePath?: string | null
   activeGroupId: string | null | undefined
   activeSourceControlLaunchPlatform: NodeJS.Platform | undefined
   sourceRepoConnectionId?: string | null
@@ -157,14 +162,19 @@ export async function launchSourceControlRecoveryAgentWithDefault({
     return false
   }
 
-  // A saved or default agent may open as a chat without its CLI.
+  const launchWorktreeId = editorWorktreeId ?? activeWorktreeId
+  // Why: the folder root is not the repo, so the agent must start inside it.
+  const initialCwd = launchWorktreeId !== activeWorktreeId ? worktreePath : undefined
+  // A saved or default agent may open as a chat without its CLI, judged where it actually launches.
+  const launchWorkspace = worktreeLaunchWorkspace(launchWorktreeId)
   const opensAsChat = (agent: TuiAgent): boolean =>
     agentChoiceMayOpenAsChat(
       useAppStore.getState(),
       agent,
-      workspace,
+      launchWorkspace,
       choices.detected,
-      resolveSourceControlActionPreferredSurface(savedRecipe, agent)
+      resolveSourceControlActionPreferredSurface(savedRecipe, agent),
+      { cwd: initialCwd }
     )
   const savedAgent = readSourceControlLaunchRecipeAgentId(savedRecipe)
   if (
@@ -197,8 +207,9 @@ export async function launchSourceControlRecoveryAgentWithDefault({
   const result = launchAgentInNewTab({
     requestId: newAgentLaunchRequestId(),
     agent,
-    worktreeId: activeWorktreeId,
-    groupId: activeGroupId ?? activeWorktreeId,
+    worktreeId: launchWorktreeId,
+    groupId: activeGroupId ?? launchWorktreeId,
+    initialCwd,
     prompt: commandInput,
     ...projection,
     promptDelivery: 'submit-after-ready',

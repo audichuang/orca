@@ -47,7 +47,9 @@ export function createOpenFileAction(
       get(),
       scratch.editorItemFileId,
       editorItemWorktreeId,
-      file.relativePath,
+      // Why: applying the open binds a folder file's git owner, which can re-anchor its path.
+      get().openFiles.find((f) => f.id === scratch.editorItemFileId)?.relativePath ??
+        file.relativePath,
       editorTabContentTypeForMode(file.mode),
       scratch.editorItemIsPreview,
       scratch.editorItemTargetGroupId,

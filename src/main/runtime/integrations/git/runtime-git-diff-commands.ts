@@ -6,6 +6,7 @@ import type {
 import { assertGitDiffWithinTransportBudget } from '../../../../shared/git/diff/git-diff-transport-budget'
 import { getBranchDiff } from '../../../git/source-control/branch-diff'
 import type { GitAdmissionTier } from '../../../../shared/rpc-contract/git-admission-tier-params'
+import type { GitDiffReadOptions } from '../../../git/source-control/git-diff-read-options'
 import { normalizeRuntimeRelativePath } from '../../files/paths/runtime-relative-paths'
 import {
   localGitOptionsForTarget,
@@ -25,7 +26,8 @@ export class RuntimeGitDiffCommands {
     staged: boolean,
     compareAgainstHead?: boolean,
     maxContentBytes?: number,
-    oldPath?: string
+    oldPath?: string,
+    readOptions?: GitDiffReadOptions
   ): Promise<GitDiffResult> {
     const target = await this.host.resolveRuntimeGitTarget(worktreeSelector)
     const relativePath = normalizeRuntimeGitRelativePath(filePath)
@@ -36,7 +38,8 @@ export class RuntimeGitDiffCommands {
         relativePath,
         staged,
         compareAgainstHead,
-        oldRelativePath
+        oldRelativePath,
+        readOptions
       ),
       maxContentBytes
     )

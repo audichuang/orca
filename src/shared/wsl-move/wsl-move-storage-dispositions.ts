@@ -3,6 +3,7 @@ import {
   notApplicableDisposition,
   type WslMoveFieldDisposition
 } from './wsl-move-dispositions'
+import { FORK_LOCAL_STORAGE_MODULE_DISPOSITIONS } from './fork-local-storage-dispositions'
 
 /** Census tests require a disposition for each renderer module using localStorage. */
 export const LOCAL_STORAGE_MODULE_DISPOSITIONS: Record<string, WslMoveFieldDisposition> = {
@@ -47,6 +48,7 @@ export const LOCAL_STORAGE_MODULE_DISPOSITIONS: Record<string, WslMoveFieldDispo
       32,
       'Web client only; the desktop keeps visit recency in the session.'
     ),
+  ...FORK_LOCAL_STORAGE_MODULE_DISPOSITIONS,
   ...Object.fromEntries(
     [
       'src/renderer/src/components/browser-pane/annotate/use-markup-draw-hint.ts',

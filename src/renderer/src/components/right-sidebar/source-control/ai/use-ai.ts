@@ -33,6 +33,7 @@ import { useSourceControlRecoveryAi } from './use-recovery-ai'
 import { useConflictRecoveryComposer } from './use-conflict-recovery-composer'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
+import { folderRepoAgentPlacement } from '../folder/worktree-scope'
 
 export function getSourceControlAiControllerDiscoveryHostKey(
   target: SourceControlAiControllerParams['target'],
@@ -48,6 +49,7 @@ export function useSourceControlAi({
   target,
   activeRepo,
   activeWorktreeId,
+  editorWorktreeId,
   activeConnectionId,
   activeGroupId,
   activeSourceControlLaunchPlatform,
@@ -183,7 +185,7 @@ export function useSourceControlAi({
         }),
         recoveryContext,
         baseCommandInput: resolveConflictsPrompt,
-        worktreeId: activeWorktreeId,
+        ...folderRepoAgentPlacement(editorWorktreeId, activeWorktreeId, worktreePath),
         groupId: activeGroupId,
         connectionId: activeConnectionId,
         repoId: activeRepo?.id,
@@ -227,6 +229,7 @@ export function useSourceControlAi({
     handleFixPushFailureWithAI
   } = useSourceControlRecoveryAi({
     activeWorktreeId,
+    editorWorktreeId,
     activeGroupId,
     activeSourceControlLaunchPlatform,
     sourceRepoConnectionId: activeRepo?.connectionId,

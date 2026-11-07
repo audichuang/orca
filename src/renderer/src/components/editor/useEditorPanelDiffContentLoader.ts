@@ -15,6 +15,10 @@ import type { EditorPanelContentLoadOptions } from './external-changes/useEditor
 import { stampCleanTabDiskBaseline } from './external-changes/editor-clean-tab-disk-baseline'
 import { translate } from '@/i18n/i18n'
 import { isWslDistroNotRunningRefusal } from '../../../../shared/wsl-distro-not-running-refusal'
+import {
+  getOpenFileGitRelativePath,
+  getOpenFileGitWorktreeId
+} from '@/store/slices/editor/git/open-file-git-owner'
 
 const inFlightDiffReads = new Map<string, InFlightContentRead<DiffContent>>()
 
@@ -62,16 +66,18 @@ export function useEditorPanelDiffContentLoader({
       diffReadGenerationRef.current[file.id] = generation
       outstandingDiffReadsRef.current[file.id] = generation
       try {
+        const gitRelativePath = getOpenFileGitRelativePath(useAppStore.getState(), file)
         const worktreePath = file.filePath.slice(
           0,
-          file.filePath.length - file.relativePath.length - 1
+          file.filePath.length - gitRelativePath.length - 1
         )
         const branchCompare =
           file.branchCompare?.baseOid && file.branchCompare.headOid && file.branchCompare.mergeBase
             ? file.branchCompare
             : null
         const commitCompare = file.commitCompare?.commitOid ? file.commitCompare : null
-        const connectionId = getConnectionIdForFile(file.worktreeId, file.filePath) ?? undefined
+        const gitWorktreeId = getOpenFileGitWorktreeId(file)
+        const connectionId = getConnectionIdForFile(gitWorktreeId, file.filePath) ?? undefined
         const fileTarget = requireRuntimeTargetForFileOwner(
           useAppStore.getState(),
           file.worktreeId,
@@ -105,14 +111,14 @@ export function useEditorPanelDiffContentLoader({
                 ? getRuntimeGitCommitDiff(
                     {
                       target: fileTarget,
-                      worktreeId: file.worktreeId,
+                      worktreeId: gitWorktreeId,
                       worktreePath,
                       connectionId
                     },
                     {
                       commitOid: commitCompare.commitOid,
                       parentOid: commitCompare.parentOid,
-                      filePath: file.relativePath,
+                      filePath: gitRelativePath,
                       oldPath: file.branchOldPath
                     },
                     wake
@@ -122,7 +128,7 @@ export function useEditorPanelDiffContentLoader({
                 ? getRuntimeGitBranchDiff(
                     {
                       target: fileTarget,
-                      worktreeId: file.worktreeId,
+                      worktreeId: gitWorktreeId,
                       worktreePath,
                       connectionId
                     },
@@ -133,7 +139,7 @@ export function useEditorPanelDiffContentLoader({
                         headOid: branchCompare.headOid!,
                         mergeBase: branchCompare.mergeBase!
                       },
-                      filePath: file.relativePath,
+                      filePath: gitRelativePath,
                       oldPath: file.branchOldPath
                     },
                     wake
@@ -141,12 +147,12 @@ export function useEditorPanelDiffContentLoader({
                 : getRuntimeGitDiff(
                     {
                       target: fileTarget,
-                      worktreeId: file.worktreeId,
+                      worktreeId: gitWorktreeId,
                       worktreePath,
                       connectionId
                     },
                     {
-                      filePath: file.relativePath,
+                      filePath: gitRelativePath,
                       staged: effectiveDiffSource === 'staged',
                       compareAgainstHead,
                       ...(effectiveDiffSource === 'staged' && file.branchOldPath

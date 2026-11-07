@@ -12910,7 +12910,8 @@
             "clipboardStagingUnavailable": "Orca の一時ストレージが利用できないため、ファイルをコピーできませんでした",
             "revealInFinder": "Finderで表示",
             "openContainingFolder": "含まれているフォルダーを開く",
-            "revealInFileExplorer": "ファイルエクスプローラーで表示"
+            "revealInFileExplorer": "ファイルエクスプローラーで表示",
+            "duplicateAsResult": "_result.txt として複製"
           },
           "FileExplorerToolbar": {
             "d238264654": "Git で無視されたファイルを表示",
@@ -13295,7 +13296,9 @@
             "clearNotesFromFile_other": "{{path}} から {{count}} 件のメモを削除しますか？",
             "markResolved": "解決済みとしてマーク",
             "keepFile": "ファイルを残す",
-            "keepDeletion": "削除を維持"
+            "keepDeletion": "削除を維持",
+            "commitHashes": "コミットハッシュ",
+            "commitMessages": "コミットメッセージ"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "選択した Agent を開始できませんでした。",
@@ -13910,7 +13913,138 @@
                   "0904be2505": "メッセージをクリアして再生成します。",
                   "1ea9ba37aa": "[設定] -> [Git] -> [ソース管理 AI] で Agent を選択します。"
                 },
-                "completeMergeFailed": "マージを完了できませんでした"
+                "completeMergeFailed": "マージを完了できませんでした",
+                "bulk": {
+                  "action": {
+                    "bar": {
+                      "8a434c829f": "ソース全体をコピー",
+                      "4139bc5679": "選択を解除"
+                    }
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "multi": {
+                    "repo": {
+                      "panel": {
+                        "4c62351467": "このフォルダーにはインポート済みの Git リポジトリがありません。中のリポジトリを Orca に追加すると、ここに変更が表示されます。",
+                        "a044a830f1": "すべてのリポジトリを更新",
+                        "c023ba6838": "このフォルダーはインポート済みリポジトリの中にあるため、フォルダー外の変更も表示されます。",
+                        "efd34a4169": "{{value0}} の変更一覧は切り詰められているため、コピーは不完全です。",
+                        "d98e7b731c": "すべての変更をコピー",
+                        "5de321918e": "このフォルダー内の非表示のワークツリーは含まれていません（{{value0}}）。",
+                        "ab32287003": "リポジトリ",
+                        "addRepos": "このフォルダー内のリポジトリを追加",
+                        "filterRepos": "リポジトリを絞り込む",
+                        "clearFilter": "絞り込みをクリア",
+                        "filterNoMatch": "一致するリポジトリはありません",
+                        "groupChanges": "変更あり",
+                        "groupNoChanges": "変更なし"
+                      }
+                    }
+                  },
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "title": "このフォルダー内のリポジトリを追加",
+                        "description": "{{value0}} 配下の Git リポジトリ（他のリポジトリ内にネストされたものを含む）。",
+                        "scanning": "リポジトリをスキャンしています...",
+                        "failed": "このフォルダーをスキャンできませんでした。",
+                        "none": "このフォルダー内のリポジトリはすべて追加済みです。",
+                        "truncated": "スキャンが途中で終了したため、一部のリポジトリが表示されていない可能性があります。",
+                        "hide": "このフォルダー内にのみ表示し、サイドバーのプロジェクトにはしない",
+                        "cancel": "キャンセル",
+                        "add": "追加（{{value0}}）"
+                      }
+                    }
+                  },
+                  "repo": {
+                    "row": {
+                      "showInSidebar": "サイドバーに非表示。サイドバーのプロジェクトとして表示する",
+                      "hideFromSidebar": "サイドバーに表示中。このフォルダー内にのみ表示する"
+                    }
+                  }
+                }
+              },
+              "clipcode": {
+                "clipcode": {
+                  "copy": {
+                    "action": {
+                      "2749202819": "（{{value0}} 件読み取り不可）",
+                      "e6cdc3a753": "{{value0}} トークンを超えています。",
+                      "21758e255e": "コピーする Git の変更がありません。",
+                      "7828c565da": "（{{value0}} 件をスキップ: サイズ超過）",
+                      "65b422bbd1": "{{value0}} 件の Git ファイルをコピーしました",
+                      "7c6daaf4fa": "ソース全体のコピーに失敗しました",
+                      "9c3f952874": "{{value0}} 件の Git ファイルを読み取れませんでした。",
+                      "binarySkipped": "（{{value0}} 件をスキップ: バイナリ）",
+                      "onlyBinarySkipped": "コピーするものがありません: バイナリファイル {{value0}} 件をスキップしました。",
+                      "filesCopied": "{{value0}} 個のファイルをコピーしました",
+                      "filesUnreadable": "{{value0}} 個のファイルを読み取れませんでした。",
+                      "noFiles": "コピーするファイルがありません。",
+                      "onlyUnsafeNamesSkipped": "コピーする内容がありません：安全に復元できない名前のファイル {{value0}} 個をスキップしました。",
+                      "unsafeNamesSkipped": "（安全でないファイル名のため {{value0}} 個をスキップ）",
+                      "tokenCount": "~{{value0}} トークン",
+                      "payloadDetails": "{{lines}} 行 · {{chars}} 文字 · {{words}} 語"
+                    }
+                  },
+                  "restore": {
+                    "preview": {
+                      "dialog": {
+                        "2c06a4e179": "貼り付けて復元",
+                        "87832cd30d": "クリップボードのファイルがこのフォルダーに書き込まれます。",
+                        "813199296f": "パスを調整（{{value0}}）",
+                        "9a421f14d8": "作成",
+                        "d469ff3b81": "上書き",
+                        "9cf3526c1f": "削除",
+                        "0d87b3b39d": "スキップ",
+                        "80224f9095": "既存のファイルを上書き",
+                        "677bf0ade9": "キャンセル",
+                        "c0b1b53e49": "復元",
+                        "9bd78385ce": "安全でないパス",
+                        "85d6d805ca": "フォルダーの外",
+                        "67e63b0749": "すでに存在しません",
+                        "becf17b643": "フォルダーです",
+                        "4acb11ed21": "コピー時に内容がスキップされました",
+                        "ef509f9991": ".git は保護されています",
+                        "1f409f3dd6": "パスがシンボリックリンクを経由しています",
+                        "parentIsFile": "親フォルダーがファイルです",
+                        "targetUnreadable": "既存のファイルを確認できませんでした",
+                        "caseConflict": "大文字小文字だけが異なる同じパス",
+                        "nonUtf8Target": "既存のファイルが UTF-8 ではありません"
+                      }
+                    }
+                  }
+                },
+                "use": {
+                  "clipcode": {
+                    "restore": {
+                      "b124e9c64e": "クリップボードが空か、テキストが含まれていません。",
+                      "1847420a23": "クリップボードに Snipcode のファイルヘッダーが見つかりません。",
+                      "af5c90f593": "貼り付けと復元に失敗しました",
+                      "ae1ec38ef1": "作成 {{value0}}、上書き {{value1}}、削除 {{value2}}、スキップ {{value3}}。",
+                      "19a6f378aa": "…ほか {{value0}} 件",
+                      "c9af35dc2d": "失敗 {{value0}} 件。"
+                    }
+                  }
+                }
+              },
+              "listing": {
+                "entry": {
+                  "context": {
+                    "menu": {
+                      "9137d88b9f": "ソース全体をコピー",
+                      "ce8235a6a4": "横に開く",
+                      "showFileHistory": "ファイル履歴を表示"
+                    }
+                  }
+                },
+                "uncommitted": {
+                  "sections": {
+                    "1a59d5a05b": "ソース全体をコピー"
+                  }
+                }
               }
             }
           },
@@ -14140,7 +14274,12 @@
             "7b1c4e9a02": "コミットをブラウザで開く",
             "8c2d5fab13": "コミットハッシュをコピー",
             "9d3e60bc24": "コミットメッセージをコピー",
-            "ae4f71cd35": "変更を説明"
+            "ae4f71cd35": "変更を説明",
+            "copyFullSource": "完全なソースをコピー",
+            "copyFullSourceMany": "完全なソースをコピー（{{value0}} 件のコミット）",
+            "copyHashMany": "コミットハッシュをコピー（{{value0}} 件のコミット）",
+            "copyMessageMany": "コミットメッセージをコピー（{{value0}} 件のコミット）",
+            "showInGraph": "Git Graph で表示"
           },
           "pull": {
             "policy": {
@@ -14323,6 +14462,89 @@
             "createInProgress": "PR を作成中…",
             "workspaceHostUnresolved": "ワークスペースのホストを特定できません。ワークスペースを更新して再試行してください。",
             "branchDiscoveryFailed": "ブランチの検出に失敗しました。"
+          },
+          "GitHistoryGraph": {
+            "allBranches": "すべてのブランチ",
+            "branchCount": "{{value0}} 個のブランチ",
+            "currentBranch": "現在のブランチ",
+            "branchFilter": "ブランチフィルター",
+            "searchBranches": "ブランチを検索...",
+            "scope": "表示",
+            "sources": "ソース",
+            "localBranches": "ローカルブランチ",
+            "loadingBranches": "ブランチを読み込み中...",
+            "hostTooOld": "このリポジトリのホストは古い Orca のため、現在のブランチのみ表示されます。",
+            "branchesFailed": "ブランチを読み込めませんでした",
+            "searchCommits": "コミットを検索（author: path:）",
+            "searchCommitsLabel": "コミットを検索",
+            "loadMore": "さらにコミットを読み込む",
+            "noMatchingCommits": "このフィルターに一致するコミットはありません",
+            "clearAllFilters": "フィルターをクリア",
+            "local": "ローカル",
+            "showAllBranches": "すべてのブランチを表示",
+            "userFilter": "ユーザー",
+            "pathsFilter": "パス",
+            "clearUserFilter": "ユーザーフィルターをクリア",
+            "searchUsers": "ユーザーを検索...",
+            "noUsers": "読み込まれたコミットにユーザーがいません。",
+            "clearPathFilter": "パスフィルターをクリア",
+            "typePath": "リポジトリ相対のファイルまたはフォルダーのパス",
+            "typePathHint": "パスを入力して Enter を押してください。",
+            "filterByPath": "{{value0}} で絞り込む",
+            "recentPaths": "最近",
+            "clearFilters": "クリア",
+            "searchCommitMessages": "コミットメッセージを検索",
+            "tags": "タグ"
+          },
+          "GitGraphFullView": {
+            "open": "Git Graph を開く",
+            "description": "現在のリポジトリのコミットグラフ。",
+            "message": "メッセージ",
+            "author": "作成者",
+            "date": "日付",
+            "commit": "コミット",
+            "selectCommit": "コミットを選択すると詳細と変更されたファイルが表示されます。",
+            "resizeDetails": "コミット詳細の幅を変更",
+            "copyFullSource": "すべての変更ファイルの完全なソースをコピー",
+            "filesInCommits": "変更ファイル ({{files}}) · {{commits}} 件のコミット",
+            "filesChanged": "変更ファイル ({{files}})",
+            "toggleBranches": "ブランチパネルの切り替え",
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "{{count}} 行下の {{sha}} {{subject}} に続きます。クリックで移動します。",
+            "laneComesFromAbove": "{{count}} 行上の {{sha}} {{subject}} から続いています。クリックで移動します。",
+            "laneContinuesPastLoaded": "読み込まれていない以前のコミットに続きます。さらに読み込むと移動できます。",
+            "openAllChanges": "すべての変更を開く",
+            "hideDetails": "詳細を隠す",
+            "enterKey": "Enter",
+            "showDetails": "詳細を表示",
+            "detailsStrip": "詳細",
+            "listOptions": "リストのオプション",
+            "columns": "列",
+            "twoLineRows": "2 行で表示",
+            "resetList": "既定に戻す",
+            "columnTooNarrow": "リストの幅が足りません",
+            "laneContinuesPastLoadedJump": "読み込まれていないコミット {{sha}} に続きます。クリックで読み込んで移動します。",
+            "loadingMore": "さらにコミットを読み込み中...",
+            "loadCapReached": "グラフが読み込める上限の {{count}} 件を表示しています。Branch、User、Paths で絞り込んでください。"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "ローカル",
+            "tags": "タグ",
+            "label": "ブランチとタグ",
+            "empty": "ブランチはまだ読み込まれていません。",
+            "showRef": "現在の一覧にありません — クリックでこのブランチのみ表示"
+          },
+          "GitGraphCommitInfo": {
+            "author": "作成者",
+            "date": "日付",
+            "copySha": "コミット SHA をコピー",
+            "parents": "親コミット",
+            "refs": "参照",
+            "containedIn": "含まれるブランチ",
+            "moreBranches": "他 {{count}} 件",
+            "containedInHint": "読み込み済みの一覧に先端コミットがあるブランチのみ。一覧外のブランチは含まれません。",
+            "children": "子コミット",
+            "childrenHint": "読み込まれた一覧のうち、このコミットを親に持つコミット。"
           }
         }
       },
@@ -16247,6 +16469,11 @@
           "tooLarge": "{{value0}} は大きすぎるため {{value1}} で開けません（{{value2}}、上限は {{value3}}）。",
           "unsupported": "{{value0}} はこのファイルの保存場所から読み取れません。ホストしている Orca サーバーをアップデートするか、ソースに切り替えてください。",
           "readFailed": "{{value1}} 用に {{value0}} を読み取れませんでした。{{value2}}"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} ファイル",
+          "pressAgainNext": "もう一度押すと次のファイルへ移動します",
+          "pressAgainPrevious": "もう一度押すと前のファイルへ移動します"
         }
       },
       "diff": {
@@ -16557,7 +16784,10 @@
                 "removeWorktree": "ワークツリーを削除する",
                 "trashWorktree": "ワークツリーをゴミ箱へ移動",
                 "addQuickCommand": "クイックコマンドを追加",
-                "newQuickCommand": "新規クイックコマンド"
+                "newQuickCommand": "新規クイックコマンド",
+                "openGitGraph": "git graph を開く",
+                "gitLog": "git ログ",
+                "commitHistory": "コミット履歴"
               }
             }
           },
@@ -18300,7 +18530,8 @@
           "workspaceDisconnected": "「{{action}}」を実行できません。ワークスペースが切断されています。",
           "noTabGroup": "「{{action}}」を実行できません。利用可能なタブグループがありません。",
           "noMovableChat": "「{{action}}」を実行できません。移動できるアクティブなチャットがありません。",
-          "clientUnsupported": "「{{action}}」を実行できません。このクライアントとランタイムは対応していません。"
+          "clientUnsupported": "「{{action}}」を実行できません。このクライアントとランタイムは対応していません。",
+          "noGitRepo": "「{{action}}」を実行できません。利用できる Git リポジトリがありません。"
         }
       },
       "plugins": {
@@ -18322,6 +18553,18 @@
         "pluginNameDisambiguation": {
           "nameWithPublisher": "{{value0}}（{{value1}}）"
         }
+      },
+      "gitGraphTab": {
+        "noRepo": "このワークスペースで利用できる Git リポジトリはありません。",
+        "repoSwitcher": "リポジトリ",
+        "selectRepo": "リポジトリを選択",
+        "searchRepos": "リポジトリを検索...",
+        "noRepos": "リポジトリが見つかりません。",
+        "addRepos": "リポジトリを追加...",
+        "addReposMissing": "未追加 {{value0}} 件",
+        "addReposButton": "このフォルダ内のリポジトリを追加",
+        "openInSourceControl": "ソース管理で開く",
+        "revealNotLoaded": "そのコミットは読み込まれた履歴にありません。"
       }
     },
     "i18n": {
@@ -22174,7 +22417,8 @@
       "terminalSplitDown": "ターミナルを下に分割",
       "terminalSwitchInputSource": "入力ソース / 言語を切り替え（ネイティブ）",
       "newAgentTab": "新規 {{agent}} タブ",
-      "viewPlugins": "プラグインを開く"
+      "viewPlugins": "プラグインを開く",
+      "sourceControlOpenGitGraph": "Git Graph を開く"
     },
     "group": {
       "global": "グローバル",

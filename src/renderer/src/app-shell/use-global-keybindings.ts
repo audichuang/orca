@@ -224,6 +224,12 @@ export function useGlobalKeybindings(args: {
         return
       }
       if (
+        matchAppShortcut('sourceControl.openGitGraph') &&
+        handlers.get('sourceControl.openGitGraph')?.()
+      ) {
+        return
+      }
+      if (
         matchAppShortcut('sidebar.childWorkspaces.toggle') &&
         handlers.get('sidebar.childWorkspaces.toggle')?.()
       ) {

@@ -1,6 +1,10 @@
 import type { EditorGet, EditorSet } from '../types/editor-set-get'
 import type { EditorSlice } from '../types/editor-slice'
 import { joinPath } from '@/lib/path'
+import { resolveEditorFileIdForOwner } from '../file-ids/editor-file-ids'
+import { resolveOpenGitWorktreeId } from '../git/open-file-git-owner'
+import { withFolderFileGitOwner } from '../git/folder-file-git-owner'
+import { conflictFileRuntimeOwner } from './open-conflict-review'
 import type { OpenFile } from '../types/open-file'
 import { toOpenConflictMetadata } from '../git/git-status-reconciliation'
 import { resolveEditorOpenTargetGroupId } from '../tabs/editor-open-target-group'
@@ -20,9 +24,14 @@ export function createOpenConflictFile(
       const absolutePath = joinPath(worktreePath, entry.path)
       const isPreview = resolveEditorPreviewIntent(get(), options?.preview)
       let editorItemTargetGroupId = options?.targetGroupId
+      const gitWorktreeId = resolveOpenGitWorktreeId(worktreeId, options)
+      const trackedKey = gitWorktreeId ?? worktreeId
       let openedConflictFile = true
+      let editorFileId = absolutePath
+      let relativePath = entry.path
       set((s) => {
-        const id = absolutePath
+        const id = resolveEditorFileIdForOwner(s, absolutePath, worktreeId, undefined, ['edit'])
+        editorFileId = id
         const conflict = toOpenConflictMetadata(entry)
         const targetGroupId =
           resolveEditorOpenTargetGroupId(s, worktreeId, options?.targetGroupId) ?? undefined
@@ -31,15 +40,25 @@ export function createOpenConflictFile(
         const nextTracked =
           entry.conflictStatus === 'unresolved' && entry.conflictKind
             ? {
-                ...s.trackedConflictPathsByWorktree[worktreeId],
+                ...s.trackedConflictPathsByWorktree[trackedKey],
                 [entry.path]: entry.conflictKind
               }
-            : s.trackedConflictPathsByWorktree[worktreeId]
+            : s.trackedConflictPathsByWorktree[trackedKey]
 
         if (!conflict) {
           openedConflictFile = false
           return s
         }
+
+        relativePath = withFolderFileGitOwner(s, {
+          filePath: absolutePath,
+          relativePath: entry.path,
+          worktreeId,
+          // Why: entry.path is relative to the requested git owner, whatever owner the tab keeps.
+          gitWorktreeId,
+          mode: 'edit',
+          runtimeEnvironmentId: conflictFileRuntimeOwner(s, worktreeId)
+        }).relativePath
 
         if (existing) {
           const updatedPreview = isPreview ? existing.isPreview : false
@@ -50,12 +69,13 @@ export function createOpenConflictFile(
                     ...f,
                     mode: 'edit' as const,
                     language,
-                    relativePath: entry.path,
+                    relativePath,
                     filePath: absolutePath,
                     conflict,
                     diffSource: undefined,
                     skippedConflicts: undefined,
                     conflictReview: undefined,
+                    gitWorktreeId: gitWorktreeId ?? f.gitWorktreeId,
                     isPreview: updatedPreview
                   }
                 : f
@@ -65,17 +85,18 @@ export function createOpenConflictFile(
             activeFileIdByWorktree: { ...s.activeFileIdByWorktree, [worktreeId]: id },
             activeTabTypeByWorktree: { ...s.activeTabTypeByWorktree, [worktreeId]: 'editor' },
             trackedConflictPathsByWorktree:
-              nextTracked === s.trackedConflictPathsByWorktree[worktreeId]
+              nextTracked === s.trackedConflictPathsByWorktree[trackedKey]
                 ? s.trackedConflictPathsByWorktree
-                : { ...s.trackedConflictPathsByWorktree, [worktreeId]: nextTracked }
+                : { ...s.trackedConflictPathsByWorktree, [trackedKey]: nextTracked }
           }
         }
 
         const newFile: OpenFile = {
           id,
           filePath: absolutePath,
-          relativePath: entry.path,
+          relativePath,
           worktreeId,
+          gitWorktreeId,
           language,
           isDirty: false,
           mode: 'edit',
@@ -99,9 +120,9 @@ export function createOpenConflictFile(
               activeFileIdByWorktree: { ...s.activeFileIdByWorktree, [worktreeId]: id },
               activeTabTypeByWorktree: { ...s.activeTabTypeByWorktree, [worktreeId]: 'editor' },
               trackedConflictPathsByWorktree:
-                nextTracked === s.trackedConflictPathsByWorktree[worktreeId]
+                nextTracked === s.trackedConflictPathsByWorktree[trackedKey]
                   ? s.trackedConflictPathsByWorktree
-                  : { ...s.trackedConflictPathsByWorktree, [worktreeId]: nextTracked }
+                  : { ...s.trackedConflictPathsByWorktree, [trackedKey]: nextTracked }
             }
           }
         }
@@ -113,9 +134,9 @@ export function createOpenConflictFile(
           activeFileIdByWorktree: { ...s.activeFileIdByWorktree, [worktreeId]: id },
           activeTabTypeByWorktree: { ...s.activeTabTypeByWorktree, [worktreeId]: 'editor' },
           trackedConflictPathsByWorktree:
-            nextTracked === s.trackedConflictPathsByWorktree[worktreeId]
+            nextTracked === s.trackedConflictPathsByWorktree[trackedKey]
               ? s.trackedConflictPathsByWorktree
-              : { ...s.trackedConflictPathsByWorktree, [worktreeId]: nextTracked }
+              : { ...s.trackedConflictPathsByWorktree, [trackedKey]: nextTracked }
         }
       })
       // Why: no conflict metadata means no OpenFile was added, so a workspace tab would point at nothing.
@@ -124,9 +145,9 @@ export function createOpenConflictFile(
       }
       openWorkspaceEditorItem(
         get(),
-        absolutePath,
+        editorFileId,
         worktreeId,
-        entry.path,
+        relativePath,
         'editor',
         isPreview,
         editorItemTargetGroupId

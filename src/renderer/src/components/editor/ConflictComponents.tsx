@@ -18,6 +18,7 @@ import type {
   GitStatusEntry
 } from '../../../../shared/git/status/git-status-types'
 import { ConflictReviewFileTree } from './ConflictReviewFileTree'
+import { useOpenFileGitRelativePath } from './use-open-file-git-relative-path'
 import { getIntlLocale, translate } from '@/i18n/i18n'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 
@@ -243,6 +244,7 @@ export function ConflictReviewPanel({
   const [fileTreeCollapsed, setFileTreeCollapsedState] = React.useState(
     () => conflictReviewFileTreeCollapsedPreference
   )
+  const selectedGitPath = useOpenFileGitRelativePath(selectedFile)
   const snapshotEntries = file.conflictReview?.entries ?? EMPTY_CONFLICT_REVIEW_ENTRIES
   const liveEntriesByPath = React.useMemo(
     () => new Map(liveEntries.map((entry) => [entry.path, entry])),
@@ -306,7 +308,7 @@ export function ConflictReviewPanel({
         entries={treeEntries}
         collapsed={fileTreeCollapsed}
         onCollapsedChange={setFileTreeCollapsed}
-        selectedPath={selectedFile?.relativePath ?? null}
+        selectedPath={selectedGitPath ?? null}
         onOpenEntry={onOpenEntry}
       />
       <div className="flex min-w-0 flex-1 flex-col">

@@ -12,6 +12,8 @@ import type {
   GitCommitCompareSummary
 } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
+import type { GitOwnerOpenOptions } from '../git/open-file-git-owner'
+import type { GitGraphTabSlice } from './git-graph-tab-slice'
 import type { WorkspaceVisibleTabType } from '../../../../../../shared/tab-types'
 import type {
   BranchCompareLike,
@@ -47,7 +49,7 @@ export type OpenFileOptions = {
   groupIndex?: number
 }
 
-export type EditorFilesSlice = {
+export type EditorFilesSlice = GitGraphTabSlice & {
   openFiles: OpenFile[]
   /** Buffer state per record (file identity, or tab id for views that never share); views mirror it. */
   editorBuffers: EditorBufferRecords
@@ -185,7 +187,8 @@ export type EditorFilesSlice = {
     worktreePath: string,
     alternate?: CombinedDiffAlternate,
     areaFilter?: string,
-    entriesSnapshot?: GitStatusEntry[]
+    entriesSnapshot?: GitStatusEntry[],
+    gitOwner?: GitOwnerOpenOptions
   ) => void
   openConflictFile: (
     worktreeId: string,
@@ -199,13 +202,15 @@ export type EditorFilesSlice = {
     worktreeId: string,
     worktreePath: string,
     entry: GitStatusEntry,
-    language: string
+    language: string,
+    gitOwner?: GitOwnerOpenOptions
   ) => void
   openConflictReview: (
     worktreeId: string,
     worktreePath: string,
     entries: ConflictReviewEntry[],
-    source: ConflictReviewState['source']
+    source: ConflictReviewState['source'],
+    gitOwner?: GitOwnerOpenOptions
   ) => void
   openCheckRunDetails: (
     worktreeId: string,
@@ -224,7 +229,8 @@ export type EditorFilesSlice = {
     worktreeId: string,
     worktreePath: string,
     compare: GitBranchCompareSummary,
-    alternate?: CombinedDiffAlternate
+    alternate?: CombinedDiffAlternate,
+    gitOwner?: GitOwnerOpenOptions
   ) => void
   openCommitAllDiffs: (
     worktreeId: string,
@@ -232,6 +238,7 @@ export type EditorFilesSlice = {
     compare: GitCommitCompareSummary,
     entries: GitBranchChangeEntry[],
     subject?: string,
-    message?: string
+    message?: string,
+    gitOwner?: GitOwnerOpenOptions
   ) => void
 }

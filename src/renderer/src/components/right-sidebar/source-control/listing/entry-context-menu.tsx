@@ -10,6 +10,7 @@ import {
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { LocalOnlyMenuHint } from '@/components/local-only-menu-hint'
+import type { SourceControlEntryContextMenuSlots } from './entry-context-menu-slots'
 import {
   getRevealInFileManagerLabel,
   getWorkspaceFileRevealOwner,
@@ -35,7 +36,7 @@ type SourceControlEntryContextMenuProps = {
   onRevealInExplorer: (worktreeId: string, absolutePath: string) => void
   onOpenChange?: (open: boolean) => void
   children: React.ReactNode
-}
+} & SourceControlEntryContextMenuSlots
 
 export function SourceControlEntryContextMenu({
   currentWorktreeId,
@@ -46,6 +47,8 @@ export function SourceControlEntryContextMenu({
   onView,
   conflictResolutions,
   onResolveConflict,
+  viewItems,
+  copyItems,
   onRevealInExplorer,
   onOpenChange,
   children
@@ -97,6 +100,7 @@ export function SourceControlEntryContextMenu({
             'View'
           )}
         </ContextMenuItem>
+        {viewItems}
         {onResolveConflict && conflictResolutions && conflictResolutions.length > 0 ? (
           <>
             <ContextMenuSeparator />
@@ -123,6 +127,7 @@ export function SourceControlEntryContextMenu({
             'Copy Relative Path'
           )}
         </ContextMenuItem>
+        {copyItems}
         <ContextMenuSeparator />
         <OpenInContextSubmenu
           path={absolutePath}

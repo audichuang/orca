@@ -15,6 +15,10 @@ import { HostedReviewHeaderLink, HostedReviewIcon } from '../review/hosted-revie
 import { SourceControlBranchContextRow } from './branch-context-row'
 import { shouldShowSourceControlBranchContextChrome } from './branch-context-stats'
 import { SourceControlHeaderOverflowMenu } from './header-overflow-menu'
+import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
+import { FolderScopeLabel } from '../folder/folder-scope-label'
+// Fork-only: always-visible Git Graph entry.
+import { RepoWorkspaceGitGraphButton } from '../sync/git-graph-tab-launcher'
 
 type SourceControlHeaderToolbarProps = {
   filterQuery: string
@@ -165,6 +169,7 @@ export function SourceControlHeaderToolbar({
   manualReviewUrl,
   branchLineTotal
 }: SourceControlHeaderToolbarProps): React.JSX.Element {
+  const scope = useSourceControlWorktreeScope()
   const filterInputRef = useRef<HTMLInputElement>(null)
   const normalizedFilter = filterQuery.trim()
   const showCollapsedToolbar = !filterExpanded
@@ -207,7 +212,7 @@ export function SourceControlHeaderToolbar({
     : translate('auto.components.right.sidebar.SourceControl.b3c8f1a902', 'Filter files by name')
 
   return (
-    <div className="border-b border-border px-3 pt-1.5 pb-1">
+    <div className="@container/sc-toolbar border-b border-border px-3 pt-1.5 pb-1">
       <div
         className={cn('flex min-w-0 items-center gap-1', filterExpanded && 'w-full gap-1.5')}
         data-filter-expanded={filterExpanded ? 'true' : 'false'}
@@ -231,6 +236,8 @@ export function SourceControlHeaderToolbar({
                 isCreatingPr={isCreatingPr}
                 onClick={onCreatePrHeaderClick}
               />
+            ) : scope?.label ? (
+              <FolderScopeLabel label={scope.label} color={scope.color} />
             ) : (
               <span className="min-w-0 flex-1" aria-hidden="true" />
             )}
@@ -238,6 +245,7 @@ export function SourceControlHeaderToolbar({
               // Pin filter/overflow right without stretching Create PR.
               <span className="min-w-0 flex-1" aria-hidden="true" />
             ) : null}
+            <RepoWorkspaceGitGraphButton />
             <button
               type="button"
               data-testid="source-control-filter-toggle"

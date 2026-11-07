@@ -24,6 +24,7 @@ import type { CommitMessageDraftContext } from '../../shared/source-control/ai/g
 import type { ConflictResolution } from '../../shared/source-control/listing/source-control-entry-actions'
 import type { GitProviderStatusOptions } from './git-provider-status-options'
 import type { GitAdmissionTier } from '../git/command-runner/git-exec-options'
+import type { GitDiffReadOptions } from '../git/source-control/git-diff-read-options'
 
 export type { GitProviderStatusOptions } from './git-provider-status-options'
 
@@ -44,7 +45,8 @@ export type IGitProvider = {
     filePath: string,
     staged: boolean,
     compareAgainstHead?: boolean,
-    oldPath?: string
+    oldPath?: string,
+    readOptions?: GitDiffReadOptions
   ): Promise<GitDiffResult>
   stageFile(worktreePath: string, filePath: string): Promise<void>
   resolveConflict(

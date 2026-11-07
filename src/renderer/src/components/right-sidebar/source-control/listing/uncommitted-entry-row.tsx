@@ -27,6 +27,8 @@ import {
 } from '../../../../../../shared/source-control/listing/source-control-entry-actions'
 import { isSubmoduleWorktreeOnlyChange } from '../../../../../../shared/source-control/listing/source-control-discard-all-sequence'
 import { toPermanentSourceControlRowOpenEvent, type SourceControlRowOpenEvent } from './split-open'
+import { OpenToSideMenuItem } from './entry-context-menu-slots'
+import { ClipcodeEntryCopyItem } from '../clipcode/clipcode-menu-items'
 import {
   getSourceControlRowHighlightClass,
   SOURCE_CONTROL_ROW_ACTION_OVERLAY_CLASS,
@@ -106,6 +108,8 @@ export const UncommittedEntryRow = React.memo(function UncommittedEntryRow({
       onView={() => onOpen(entry)}
       conflictResolutions={conflictResolutions}
       onResolveConflict={(resolution) => void onResolveConflict(entry, resolution)}
+      viewItems={<OpenToSideMenuItem onOpen={(event) => onOpen(entry, event)} />}
+      copyItems={<ClipcodeEntryCopyItem rowKey={entryKey} />}
       onRevealInExplorer={onRevealInExplorer}
       onOpenChange={(open) => {
         if (open && onContextMenu) {

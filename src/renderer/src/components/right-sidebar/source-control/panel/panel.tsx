@@ -1,5 +1,6 @@
 import { translate } from '@/i18n/i18n'
-import { SourceControlPanelReady } from './panel-ready'
+// Fork: wraps the ready panel in ClipCode's actions provider.
+import { ClipcodeSourceControlPanelReady as SourceControlPanelReady } from '../clipcode/clipcode-panel-ready'
 import { useSourceControlPanelModel } from './use-panel-model'
 
 export function SourceControlPanel() {

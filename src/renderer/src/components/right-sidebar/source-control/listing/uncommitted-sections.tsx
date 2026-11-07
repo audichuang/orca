@@ -26,6 +26,7 @@ import type {
   RenderableSubmoduleListItem
 } from './submodule-expansion'
 import type { SourceControlRowOpenEvent } from './split-open'
+import { ClipcodeSectionCopyButton } from '../clipcode/clipcode-menu-items'
 
 const SECTION_LABELS: Record<SourceControlDisplaySectionArea, { key: string; fallback: string }> = {
   staged: {
@@ -115,6 +116,10 @@ export function SourceControlUncommittedSections(props: {
               onToggle={() => props.toggleSection(id)}
               actions={
                 <div className="flex items-center">
+                  <ClipcodeSectionCopyButton
+                    section={actionSection}
+                    filter={props.normalizedFilter}
+                  />
                   {canRevertAll && (
                     <ActionButton
                       icon={Undo2}

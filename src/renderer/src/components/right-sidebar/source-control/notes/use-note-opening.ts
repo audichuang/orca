@@ -13,6 +13,7 @@ import {
   cancelSourceControlEditorRevealFrames,
   requestSourceControlEditorRevealFrame
 } from './editor-reveal-frames'
+import { resolveTabOwners } from '../folder/worktree-scope'
 
 export type SourceControlNoteOpening = {
   handleOpenComment: (comment: DiffComment) => void
@@ -21,6 +22,7 @@ export type SourceControlNoteOpening = {
 
 export function useSourceControlNoteOpening({
   activeWorktreeId,
+  editorWorktreeId,
   worktreePath,
   entries,
   branchEntries,
@@ -30,6 +32,8 @@ export function useSourceControlNoteOpening({
   sourceControlRef
 }: {
   activeWorktreeId: string | null
+  /** Folder editor that owns tabs opened from a scoped repo section. */
+  editorWorktreeId?: string | null
   worktreePath: string | null
   entries: GitStatusEntry[]
   branchEntries: GitBranchChangeEntry[]
@@ -62,6 +66,7 @@ export function useSourceControlNoteOpening({
         return
       }
       const filePath = comment.filePath
+      const { tabOwnerId, gitOwnerId } = resolveTabOwners(editorWorktreeId, activeWorktreeId)
       const commentId = comment.id
       // Clear any dangling prior scroll request; only the diff branches below re-stamp it.
       cancelSourceControlEditorRevealFrames(pendingCommentEditorRevealFrameIdsRef)
@@ -74,7 +79,8 @@ export function useSourceControlNoteOpening({
         openFile({
           filePath: absPath,
           relativePath: filePath,
-          worktreeId: activeWorktreeId,
+          worktreeId: tabOwnerId,
+          gitWorktreeId: gitOwnerId,
           language,
           mode: 'edit'
         })
@@ -118,7 +124,8 @@ export function useSourceControlNoteOpening({
       openFile({
         filePath: absPath,
         relativePath: filePath,
-        worktreeId: activeWorktreeId,
+        worktreeId: tabOwnerId,
+        gitWorktreeId: gitOwnerId,
         language,
         mode: 'edit'
       })
@@ -129,6 +136,7 @@ export function useSourceControlNoteOpening({
     },
     [
       activeWorktreeId,
+      editorWorktreeId,
       branchEntries,
       branchSummary,
       entries,

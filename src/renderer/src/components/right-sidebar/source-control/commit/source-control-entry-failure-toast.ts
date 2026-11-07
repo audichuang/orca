@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { readIpcErrorMessage } from '@/lib/ipc-error'
 import { useAppStore } from '@/store'
+import { readGitCommandFailureMessage } from './git-command-failure-message'
 
 export type SourceControlEntryOperation = 'stage' | 'unstage' | 'discard'
 
@@ -60,6 +60,7 @@ export function showSourceControlEntryFailureToast({
   error,
   worktreeId,
   worktreeName,
+  foregroundWorkspaceId,
   onRetry
 }: {
   operation: SourceControlEntryOperation
@@ -71,14 +72,19 @@ export function showSourceControlEntryFailureToast({
   worktreeId: string | null
   /** Shown only when the toast no longer belongs to the active worktree. */
   worktreeName: string | null
+  /** Workspace that shows this worktree when it is not itself the active one (a folder workspace's repo section). */
+  foregroundWorkspaceId?: string | null
   onRetry?: () => void
 }): void {
-  const isActiveWorktree = useAppStore.getState().activeWorktreeId === worktreeId
+  const shownIn = foregroundWorkspaceId ?? worktreeId
+  const isActiveWorktree = useAppStore.getState().activeWorktreeId === shownIn
   const title = entryFailureTitle(operation, filePath, deletesFile)
   const offerRetry = Boolean(onRetry) && isActiveWorktree
+  // Why: a folder workspace lists several repos with the same file names, so always say which repo failed.
+  const namesRepo = !isActiveWorktree || Boolean(foregroundWorkspaceId)
   entryFailureSlotOwner = { worktreeId }
   toast.error(
-    isActiveWorktree || !worktreeName
+    !namesRepo || !worktreeName
       ? title
       : translate(
           'auto.components.right.sidebar.SourceControl.entryFailedInWorkspace',
@@ -87,7 +93,7 @@ export function showSourceControlEntryFailureToast({
         ),
     {
       id: ENTRY_FAILURE_TOAST_ID,
-      description: readIpcErrorMessage(error),
+      description: readGitCommandFailureMessage(error),
       // Allow time to read the path and reach Retry before Sonner dismisses the toast.
       duration: offerRetry ? 10000 : undefined,
       action:
@@ -97,7 +103,7 @@ export function showSourceControlEntryFailureToast({
               onClick: (event) => {
                 // Own dismissal instead of Sonner's delayed ID removal, which could erase a fast retry failure in the same slot.
                 event.preventDefault()
-                if (useAppStore.getState().activeWorktreeId !== worktreeId) {
+                if (useAppStore.getState().activeWorktreeId !== shownIn) {
                   dismissSourceControlEntryFailureToast(worktreeId)
                   return
                 }

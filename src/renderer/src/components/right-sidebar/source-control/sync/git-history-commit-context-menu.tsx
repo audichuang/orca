@@ -14,10 +14,13 @@ export type GitHistoryCommitAction = 'open-remote' | 'copy-hash' | 'copy-message
 
 export function GitHistoryCommitContextMenu({
   item,
-  onAction
+  onAction,
+  children
 }: {
   item: GitHistoryItem
   onAction: (action: GitHistoryCommitAction, item: GitHistoryItem) => void
+  /** Fork: extra items after the copy actions (`git-history-commit-fork-menu.tsx`). */
+  children?: React.ReactNode
 }): React.JSX.Element {
   const managedBrowserCreationEnabled = useAppStore(
     (state) =>
@@ -49,6 +52,7 @@ export function GitHistoryCommitContextMenu({
           'Copy commit message'
         )}
       </ContextMenuItem>
+      {children}
       <ContextMenuSeparator />
       <ContextMenuItem onSelect={() => onAction('explain', item)}>
         <Sparkles className="size-3.5" />

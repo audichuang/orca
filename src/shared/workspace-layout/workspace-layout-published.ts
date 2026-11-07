@@ -84,6 +84,7 @@ export type PublishedEditorFile = Pick<
   | 'liveTail'
   | 'runtimeEnvironmentId'
   | 'externalSshTargetId'
+  | 'gitWorktreeId'
 >
 
 /** `createdAt` is optional on the wire: a host from before it was published omits it. */
@@ -109,7 +110,12 @@ export function publishEditorView(editorView: LayoutEditorView): LayoutEditorVie
       filePath: file.filePath,
       relativePath: file.relativePath,
       language: file.language,
-      ...pickStoredFields(file, ['runtimeEnvironmentId', 'externalSshTargetId', 'readOnly'])
+      ...pickStoredFields(file, [
+        'runtimeEnvironmentId',
+        'externalSshTargetId',
+        'readOnly',
+        'gitWorktreeId'
+      ])
     }
   }
 }
@@ -123,7 +129,8 @@ export function publishEditorFile(file: LayoutEditorFile): PublishedEditorFile {
       'readOnly',
       'liveTail',
       'runtimeEnvironmentId',
-      'externalSshTargetId'
+      'externalSshTargetId',
+      'gitWorktreeId'
     ])
   }
 }

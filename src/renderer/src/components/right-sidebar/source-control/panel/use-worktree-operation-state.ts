@@ -12,6 +12,14 @@ import {
 import type { CreatePrIntentNotice } from '../commit/commit-area-types'
 import { readCommitDraftForWorktree, type CommitDraftsByWorktree } from '../commit/commit-drafts'
 import { clearRemoteActionErrorsForCompletedConflictOperations } from '../sync/remote-refresh'
+import {
+  loadSessionCommitErrors,
+  loadSessionConflictOperations,
+  loadSessionRemoteActionErrors,
+  saveSessionCommitErrors,
+  saveSessionConflictOperations,
+  saveSessionRemoteActionErrors
+} from './operation-error-session'
 
 /** Prune per-worktree drafts/errors/in-flight records when worktrees disappear so reused IDs inherit no stale state. */
 export function useSourceControlWorktreeOperationState({
@@ -30,13 +38,17 @@ export function useSourceControlWorktreeOperationState({
     loadSessionCommitDrafts()
   )
   const commitDraftsRef = useRef<CommitDraftsByWorktree>(commitDrafts)
-  const commitErrorsRef = useRef<Record<string, string | null>>({})
-  const [commitErrors, setCommitErrors] = useState<Record<string, string | null>>({})
+  const commitErrorsRef = useRef<Record<string, string | null>>(loadSessionCommitErrors())
+  const [commitErrors, setCommitErrors] = useState<Record<string, string | null>>(() =>
+    loadSessionCommitErrors()
+  )
   const [remoteActionErrors, setRemoteActionErrors] = useState<
     Record<string, SourceControlActionError | null>
-  >({})
+  >(() => loadSessionRemoteActionErrors())
   const remoteActionErrorSequenceByWorktreeRef = useRef<Record<string, number>>({})
-  const previousConflictOperationsRef = useRef<Record<string, GitConflictOperation>>({})
+  const previousConflictOperationsRef = useRef<Record<string, GitConflictOperation>>(
+    loadSessionConflictOperations()
+  )
   // Track commits per worktree so navigation cannot allow a duplicate in-flight commit.
   const [commitInFlightByWorktree, setCommitInFlightByWorktree] = useState<Record<string, boolean>>(
     {}
@@ -171,6 +183,14 @@ export function useSourceControlWorktreeOperationState({
   }, [commitDrafts])
 
   useEffect(() => {
+    saveSessionCommitErrors(commitErrors)
+  }, [commitErrors])
+
+  useEffect(() => {
+    saveSessionRemoteActionErrors(remoteActionErrors)
+  }, [remoteActionErrors])
+
+  useEffect(() => {
     // Terminal conflict resolution must clear stale failure banners once status observes the operation ending.
     const previousConflictOperations = previousConflictOperationsRef.current
     setRemoteActionErrors((prev) =>
@@ -181,6 +201,7 @@ export function useSourceControlWorktreeOperationState({
       })
     )
     previousConflictOperationsRef.current = conflictOperationsByWorktree
+    saveSessionConflictOperations(conflictOperationsByWorktree)
   }, [conflictOperationsByWorktree])
 
   return {

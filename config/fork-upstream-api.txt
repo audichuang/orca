@@ -1,0 +1,22 @@
+# Exports in upstream files the fork reads and cannot copy (behavior-bearing or coupled to upstream internals):
+# upstream's own, which its dead-code passes may un-export since they can't see fork readers, or ones the fork
+# added, which a rebase may lose. fork-check-lint (config/scripts/fork-upstream-api.mjs) fails when one is no
+# longer exported from its file.
+# One `<repo-relative path> <symbol>` per line. On a failure, restore the export (or re-home the fork reader).
+
+# Remote-name path-traversal rule; the fork's git graph query filters remotes with it.
+src/shared/git/remotes/git-push-target-validation.ts isSafeGitRemoteName
+
+# The full Git Graph's lane renderer draws upstream's commit dot inside a band of upstream's geometry.
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-svg.tsx GitHistoryGraphNodeMarker
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-svg.tsx SWIMLANE_HEIGHT
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-svg.tsx SWIMLANE_WIDTH
+# Behavior-bearing: fork-pr-scope.mjs follows upstream's docs-only list as it changes, so it imports, not copies.
+config/scripts/workflow/source-routing/pr-code-change-scope.mjs isDocsOnlyPath
+# fork-lint-run.mjs follows upstream's lint step list.
+config/scripts/preflight/changed-checks/run-lint.mjs LINT_STEPS
+# Behavior-bearing: fork-hunk-guard-scan.mjs finds the fork tests reaching a file through upstream's unit graph.
+config/scripts/ci/unit-selection/dependency-graph/ci-unit-dependency-graph.mjs collectUnitDependencyGraph
+config/scripts/ci/unit-selection/dependency-graph/ci-unit-dependency-graph.mjs unitConsumers
+# fork-e2e-run.mjs compares native shard and execution identities with complete Playwright discovery.
+config/scripts/ci/e2e-selection/ci-e2e-shard-plan.mjs discoverE2eFiles

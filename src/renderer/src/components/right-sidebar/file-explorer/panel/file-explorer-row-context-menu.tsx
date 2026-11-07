@@ -48,6 +48,8 @@ import {
 } from './file-explorer-row-action-visibility'
 import { copyFileToOsClipboard, downloadRemoteFile } from './file-explorer-row-file-transfer'
 import { fileExplorerNodeTabRelativePath } from '../tree/file-explorer-directory-listing'
+import { ClipcodeExplorerCopyItem } from '../../source-control/clipcode/clipcode-menu-items'
+import { DuplicateAsResultItem } from '../../file-explorer-duplicate-as-result'
 
 const isMac = navigator.userAgent.includes('Mac')
 
@@ -193,12 +195,14 @@ export function FileExplorerRowContextMenu({
           <ContextMenuShortcut>{copyRelativePathShortcutLabel}</ContextMenuShortcut>
         ) : null}
       </ContextMenuItem>
+      <ClipcodeExplorerCopyItem node={node} />
       {!node.isDirectory && (
         <ContextMenuItem disabled={writesBlocked} onSelect={() => onDuplicate(node)}>
           <Files />
           {translate('auto.components.right.sidebar.FileExplorerRow.0fec99bfd7', 'Duplicate')}
         </ContextMenuItem>
       )}
+      <DuplicateAsResultItem node={node} />
       {canAddAsProject && (
         <ContextMenuItem onSelect={onAddFolderAsProject}>
           <FolderPlus />

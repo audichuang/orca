@@ -8,6 +8,7 @@ export const EditorFileRecord = z.object({
   language: z.string(),
   runtimeEnvironmentId: z.string().nullable().optional(),
   externalSshTargetId: z.string().min(1).optional(),
+  gitWorktreeId: z.string().min(1).optional(),
   readOnly: z.literal(true).optional(),
   liveTail: z.literal(true).optional()
 })
@@ -17,7 +18,8 @@ const EDITOR_VIEW_MODES: ReadonlySet<unknown> = new Set<EditorTabView['mode']>([
   'diff',
   'markdown-preview',
   'conflict-review',
-  'check-details'
+  'check-details',
+  'git-graph'
 ])
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

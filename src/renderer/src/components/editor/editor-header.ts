@@ -4,6 +4,7 @@ import type { GitStatusEntry } from '../../../../shared/git/status/git-status-ty
 import { getEditorDisplayLabel } from './editor-labels'
 import { translate } from '@/i18n/i18n'
 import { isVirtualEditorFile } from '@/store/slices/editor/tabs/editor-tab-content-type'
+import { forkEditorHeaderCopyState } from '../git-graph-tab/git-graph-editor-surfaces'
 
 export type EditorHeaderCopyState = {
   copyText: string | null
@@ -47,6 +48,11 @@ export function getEditorHeaderCopyState(file: OpenFile): EditorHeaderCopyState 
       pathLabel: label,
       pathTitle: label
     }
+  }
+
+  const forkCopyState = forkEditorHeaderCopyState(file)
+  if (forkCopyState) {
+    return forkCopyState
   }
 
   const isCombinedDiff =
