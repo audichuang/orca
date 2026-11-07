@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   installTerminalTestGlobals,
   restoreTerminalTestGlobals
-} from './pty-connection-test-environment'
+} from './pty-connection/test-fixtures/pty-connection-test-environment'
 
 describe('pty-connection test environment', () => {
   it('stops real timers a test leaves behind so they cannot fire into the next test', async () => {
@@ -38,7 +38,7 @@ describe('pty-connection test environment', () => {
     }, 200)
 
     vi.resetModules()
-    const reloaded = await import('./pty-connection-test-environment')
+    const reloaded = await import('./pty-connection/test-fixtures/pty-connection-test-environment')
     await reloaded.installTerminalTestGlobals()
     await reloaded.restoreTerminalTestGlobals()
     restored = true
