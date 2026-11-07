@@ -1,5 +1,6 @@
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useMemo } from 'react'
 import { resolveOpenGitWorktreeId } from '@/store/slices/editor/git/open-file-git-owner'
+import { createdReviewIsForeground } from '../../hosted-review/creation/created-review-foreground'
 
 /** Pins a Source Control panel to one repo of a folder workspace instead of the active worktree. */
 export type SourceControlWorktreeScope = {
@@ -40,13 +41,23 @@ export function useSourceControlOwners(repoWorktreeId: string): TabOwners {
   return resolveTabOwners(useSourceControlWorktreeScope()?.editorWorktreeId, repoWorktreeId)
 }
 
-/** The panel's scope and the worktree that shows what it opens: the folder workspace when scoped. */
-export function useSourceControlForeground<W>(activeWorktreeId: W): {
-  scope: SourceControlWorktreeScope | null
-  foreground: string | W
+/** Where a review created from the panel shows: links follow the folder workspace when scoped; Checks only unscoped. */
+export function useSourceControlReviewForeground(activeWorktreeId: string | null): {
+  foreground: string | null
+  isForeground: () => boolean
+  opensChecks: () => boolean
 } {
   const scope = useSourceControlWorktreeScope()
-  return { scope, foreground: scope?.editorWorktreeId ?? activeWorktreeId }
+  const foreground = scope?.editorWorktreeId ?? activeWorktreeId
+  return useMemo(
+    () => ({
+      foreground,
+      isForeground: () => createdReviewIsForeground(foreground),
+      // Why: the Checks tab is hidden in folder workspaces, so a scoped section never switches to it.
+      opensChecks: () => !scope && createdReviewIsForeground(activeWorktreeId)
+    }),
+    [activeWorktreeId, foreground, scope]
+  )
 }
 
 /** Where a folder repo section's agent launches: the folder workspace, started inside the repo. */
