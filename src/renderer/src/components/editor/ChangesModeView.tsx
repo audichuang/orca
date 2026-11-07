@@ -88,6 +88,7 @@ export function ChangesModeView({
           relativePath={activeFile.relativePath}
           sideBySide={sideBySide}
           editable={true}
+          syncKeptModifiedModelOnMount
           worktreeId={activeFile.worktreeId}
           noteSource={activeFile}
           onContentChange={onContentChange}
