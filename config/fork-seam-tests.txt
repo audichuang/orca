@@ -6,7 +6,7 @@
 # skipRenderLimit: IPC, web preload, runtime client, RPC + zod, provider
 src/main/git/source-control/file-diff.skip-render-limit-real-git.test.ts
 src/main/ipc/filesystem/filesystem-git-diff-skip-render-limit-ipc.test.ts
-src/main/runtime/rpc/methods/git-diff-skip-render-limit.test.ts
+src/main/runtime/rpc/methods/source-control/git/git-diff-skip-render-limit.test.ts
 src/main/runtime/runtime-git-diff-skip-render-limit-chain.test.ts
 src/renderer/src/runtime/runtime-git-diff-skip-render-limit-client.test.ts
 src/renderer/src/web/preload-api/web-git-diff-skip-render-limit.test.ts
@@ -14,7 +14,7 @@ src/renderer/src/web/preload-api/web-git-diff-skip-render-limit.test.ts
 # git.history graph option: IPC, web preload, RPC, runtime chain, renderer client, dispatch
 src/main/git/history-graph-dispatch.real-git.test.ts
 src/main/ipc/filesystem/filesystem-git-history-graph-ipc.test.ts
-src/main/runtime/rpc/methods/git-history-graph-rpc.test.ts
+src/main/runtime/rpc/methods/source-control/git/git-history-graph-rpc.test.ts
 src/main/runtime/runtime-git-history-graph-chain.test.ts
 src/renderer/src/web/preload-api/web-git-history-graph.test.ts
 src/renderer/src/runtime/runtime-git-history-graph-client.test.ts
@@ -50,8 +50,8 @@ src/renderer/src/components/right-sidebar/source-control/listing/section-action-
 src/renderer/src/components/right-sidebar/file-explorer-duplicate-as-result.fork.test.tsx
 
 # gitWorktreeId persistence: save, reload, restore (layout and session)
-src/renderer/src/lib/workspace-session-hydration-keys.fork.test.ts
-src/renderer/src/lib/workspace-session.fork.test.ts
+src/renderer/src/lib/workspace/persistence/workspace-session-hydration-keys.fork.test.ts
+src/renderer/src/lib/workspace/persistence/workspace-session.fork.test.ts
 src/renderer/src/store/slices/editor-read-only-tabs.fork.test.ts
 src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts
 src/shared/workspace-layout/layout-editor-view.fork.test.ts
