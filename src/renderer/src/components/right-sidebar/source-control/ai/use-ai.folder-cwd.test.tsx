@@ -7,7 +7,9 @@ import type { TuiAgent } from '../../../../../../shared/agent-launch/catalog/tui
 import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
 
 const { launchAgent } = vi.hoisted(() => ({ launchAgent: vi.fn() }))
-vi.mock('@/lib/launch-agent-in-new-tab', () => ({ launchAgentInNewTab: launchAgent }))
+vi.mock('@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab', () => ({
+  launchAgentInNewTab: launchAgent
+}))
 vi.mock('@/lib/focus-terminal-tab-surface', () => ({ focusTerminalTabSurface: vi.fn() }))
 vi.mock('@/runtime/runtime-git-status-client', async (importOriginal) => ({
   ...(await importOriginal<object>()),
