@@ -20,6 +20,7 @@ vi.mock('./profile-state-access-identity', async (importOriginal) => ({
   ...(await importOriginal<typeof identity>())
 }))
 
+const fakeOwnerPid = process.pid === 12345 ? 12346 : 12345
 const roots: string[] = []
 function root(): string {
   const path = fs.mkdtempSync(join(tmpdir(), 'orca-state-access-'))
@@ -41,7 +42,7 @@ afterEach(() => {
 
 function staleGate(
   path: string,
-  pid = 12345,
+  pid = fakeOwnerPid,
   host = hostname(),
   extra: {
     bootIdentity?: string
@@ -75,7 +76,7 @@ describe('profile state owner reclamation', () => {
     vi.spyOn(identity, 'profileStateAccessBootIdentity').mockReturnValue('current-boot')
     vi.spyOn(identity, 'profileStateAccessMachineIdentity').mockReturnValue('cloned-machine')
     vi.spyOn(identity, 'profileStateAccessWrittenThisBoot').mockReturnValue(true)
-    const owner = staleGate(path, 12345, hostname(), {
+    const owner = staleGate(path, fakeOwnerPid, hostname(), {
       bootIdentity: 'clone-boot',
       machineIdentity: 'cloned-machine'
     })
@@ -122,7 +123,7 @@ describe('profile state owner reclamation', () => {
     const old = staleGate(path)
     const kill = process.kill
     vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
-      if (pid === 12345) {
+      if (pid === fakeOwnerPid) {
         throw Object.assign(new Error('exited'), { code: 'ESRCH' })
       }
       return kill(pid, signal)

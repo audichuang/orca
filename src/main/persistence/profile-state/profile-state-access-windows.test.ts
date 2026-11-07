@@ -28,6 +28,7 @@ vi.mock('./profile-state-access-identity', () => ({
   profileStateAccessProcessIdentity: identity.process
 }))
 
+const fakeOwnerPid = process.pid === 12345 ? 12346 : 12345
 const platform = Object.getOwnPropertyDescriptor(process, 'platform')
 let root: string
 
@@ -60,7 +61,7 @@ function writeOwner(overrides: Record<string, unknown> = {}, exclusive = true): 
     path,
     JSON.stringify({
       token,
-      pid: 12345,
+      pid: fakeOwnerPid,
       host: hostname(),
       platform: 'win32',
       pidNamespace: null,
@@ -95,7 +96,7 @@ it.each([true, false])(
     const path = writeOwner({}, exclusive)
     acquireProfileStateMaintenance(root).release()
     expect(existsSync(path)).toBe(false)
-    expect(identity.process).toHaveBeenCalledWith(12345)
+    expect(identity.process).toHaveBeenCalledWith(fakeOwnerPid)
   }
 )
 
@@ -153,8 +154,8 @@ it('does not infer PID reuse from an unavailable local machine identity', () => 
   const path = writeOwner()
   identity.machine.mockReturnValue(null)
   expect(() => acquireProfileStateMaintenance(root)).toThrow('unverifiable')
-  expect(process.kill).toHaveBeenCalledWith(12345, 0)
-  expect(identity.process).not.toHaveBeenCalledWith(12345)
+  expect(process.kill).toHaveBeenCalledWith(fakeOwnerPid, 0)
+  expect(identity.process).not.toHaveBeenCalledWith(fakeOwnerPid)
   expect(existsSync(path)).toBe(true)
 })
 
@@ -185,7 +186,7 @@ it.each([null, undefined])(
   (machineIdentity) => {
     const path = writeOwner({ machineIdentity })
     expect(() => acquireProfileStateMaintenance(root)).toThrow('unverifiable')
-    expect(identity.process).not.toHaveBeenCalledWith(12345)
+    expect(identity.process).not.toHaveBeenCalledWith(fakeOwnerPid)
     expect(existsSync(path)).toBe(true)
   }
 )
