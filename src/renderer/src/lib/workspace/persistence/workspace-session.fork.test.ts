@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildWorkspaceSessionPayload } from './workspace-session'
-import { useAppStore, type AppState } from '../store'
+import { useAppStore, type AppState } from '../../../store'
 
 function createSnapshot(overrides: Partial<AppState> = {}): AppState {
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: a session snapshot with only the slices the payload builder reads.
