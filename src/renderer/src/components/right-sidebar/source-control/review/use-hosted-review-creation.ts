@@ -21,9 +21,8 @@ import type { SourceControlHostedReviewState } from './use-hosted-review-state'
 import type { SourceControlPullRequestGeneration } from './use-pull-request-generation'
 import type { PullRequestGenerationFields } from '@/store/slices/pull-request-generation'
 import { useGenerateBeforeCreatePullRequest } from '../../hosted-review/creation/use-generate-before-create-pull-request'
-import { createdReviewIsForeground } from '../../hosted-review/creation/created-review-foreground'
 import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
-import { useSourceControlForeground } from '../folder/worktree-scope'
+import { useSourceControlReviewForeground } from '../folder/worktree-scope'
 
 /** Already-open and partial-stack failures can leave a real review that still needs linking. */
 export function useSourceControlHostedReviewCreation({
@@ -85,7 +84,7 @@ export function useSourceControlHostedReviewCreation({
   settings: SourceControlWorktreeContext['settings']
   worktreePath: string | null
 }) {
-  const { scope, foreground } = useSourceControlForeground(activeWorktreeId)
+  const review = useSourceControlReviewForeground(activeWorktreeId)
   const createPullRequest = useCallback(
     async (stacked = false, generated?: PullRequestGenerationFields): Promise<void> => {
       if (
@@ -145,8 +144,7 @@ export function useSourceControlHostedReviewCreation({
         repoId: activeRepo.id,
         branch: branchName,
         worktreeId: activeWorktreeId,
-        // Why: the Checks tab is hidden in folder workspaces, so a scoped section never switches to it.
-        openChecks: !scope && createdReviewIsForeground(activeWorktreeId)
+        openChecks: review.opensChecks()
       })
       try {
         const createInput = {
@@ -175,8 +173,8 @@ export function useSourceControlHostedReviewCreation({
             },
             context
           )
-          if (createdReviewIsForeground(foreground) && resolvedPrCreationDefaults.openAfterCreate) {
-            openAppHttpLink(result.url, { worktreeId: foreground })
+          if (review.isForeground() && resolvedPrCreationDefaults.openAfterCreate) {
+            openAppHttpLink(result.url, { worktreeId: review.foreground })
           }
           return
         }
@@ -203,7 +201,7 @@ export function useSourceControlHostedReviewCreation({
                   { value0: hostedReviewCreateCopy.providerName }
                 ),
                 onClick: () =>
-                  openAppHttpLink(result.existingReview!.url, { worktreeId: foreground })
+                  openAppHttpLink(result.existingReview!.url, { worktreeId: review.foreground })
               }
             }
           )
@@ -253,8 +251,7 @@ export function useSourceControlHostedReviewCreation({
       branchName,
       createHostedReview,
       createStackedHostedReview,
-      foreground,
-      scope,
+      review,
       handlePullRequestCreated,
       hostedReviewCreation,
       hostedReviewCreateCopy.providerName,
