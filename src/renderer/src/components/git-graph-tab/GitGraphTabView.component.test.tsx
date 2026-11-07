@@ -255,15 +255,21 @@ describe('Git Graph tab', () => {
         <Host fileId={id} />
       </TooltipProvider>
     )
-    await waitFor(() => expect(pageReads()).toHaveLength(1))
+    expect(await screen.findByTestId('git-graph-full-row')).toHaveTextContent('Initial commit')
 
+    history.mockImplementation(async () => ({
+      ...RESULT,
+      items: [{ ...RESULT.items[0]!, id: 'b'.repeat(40), subject: 'Feature work' }]
+    }))
     useAppStore.setState((s) => ({
       worktreesByRepo: {
         ...s.worktreesByRepo,
         'repo-api': [{ ...worktree('api'), branch: 'refs/heads/feature' }]
       }
     }))
-    await waitFor(() => expect(pageReads()).toHaveLength(2))
+    await waitFor(() =>
+      expect(screen.getByTestId('git-graph-full-row')).toHaveTextContent('Feature work')
+    )
   })
 
   it('lets only its Refresh button start a stopped WSL distro, like the sidebar Commits Refresh', async () => {
