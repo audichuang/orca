@@ -50,7 +50,7 @@ vi.mock('@/store', () => ({
   useAppStore: (selector: (state: typeof storeState) => unknown) => selector(storeState)
 }))
 
-vi.mock('@/lib/worktree-runtime-owner', () => ({
+vi.mock('@/lib/workspace/ownership/worktree-runtime-owner', () => ({
   runtimeEnvironmentIdOrLocalUnlessTwin: () => ownerRuntime.environmentId
 }))
 
