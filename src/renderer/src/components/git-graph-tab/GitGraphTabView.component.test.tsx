@@ -248,6 +248,24 @@ describe('Git Graph tab', () => {
     await waitFor(() => expect(pageReads()).toHaveLength(3))
   })
 
+  it('refetches when the repo switches branch without moving HEAD, like git switch -c', async () => {
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    render(
+      <TooltipProvider>
+        <Host fileId={id} />
+      </TooltipProvider>
+    )
+    await waitFor(() => expect(pageReads()).toHaveLength(1))
+
+    useAppStore.setState((s) => ({
+      worktreesByRepo: {
+        ...s.worktreesByRepo,
+        'repo-api': [{ ...worktree('api'), branch: 'refs/heads/feature' }]
+      }
+    }))
+    await waitFor(() => expect(pageReads()).toHaveLength(2))
+  })
+
   it('lets only its Refresh button start a stopped WSL distro, like the sidebar Commits Refresh', async () => {
     const id = useAppStore.getState().openGitGraphTab('wt-api')!
     render(
