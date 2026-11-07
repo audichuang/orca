@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { OpenFile } from '@/store/slices/editor'
 import { getEditorHeaderCopyState } from '@/components/editor/editor-header'
-import { isWorkspaceTabContentType } from '@/lib/workspace-tab-palette-content-type'
+import { isWorkspaceTabContentType } from '@/lib/workspace/search/tabs/workspace-tab-palette-content-type'
 import { closeMobileSessionTabInStore } from '@/runtime/mobile-session-tab-close'
 import { reconcileOpenFilesForStatus } from '@/store/slices/editor/git/git-status-reconciliation'
 

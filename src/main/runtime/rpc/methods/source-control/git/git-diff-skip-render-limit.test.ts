@@ -1,11 +1,11 @@
 // Draft: src/main/runtime/rpc/methods/git-diff-skip-render-limit.test.ts
 // Pins every hop the fork's ClipCode staged-copy flag travels: RPC params -> runtime -> provider.
-import '../unused-default-rpc-methods.test-fixture'
+import '../../../unused-default-rpc-methods.test-fixture'
 import { describe, expect, it, vi } from 'vitest'
-import { RpcDispatcher } from '../dispatcher'
-import type { OrcaRuntimeService } from '../../orca-runtime'
+import { RpcDispatcher } from '../../../dispatcher'
+import type { OrcaRuntimeService } from '../../../../orca-runtime'
 import { GIT_METHODS } from './git'
-import { GitDiff } from '../../../../shared/rpc-contract/git-params'
+import { GitDiff } from '../../../../../../shared/rpc-contract/git-params'
 
 const diffResult = {
   kind: 'text',
