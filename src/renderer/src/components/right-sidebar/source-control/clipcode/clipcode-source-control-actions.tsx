@@ -2,7 +2,7 @@
 import { useCallback, useMemo } from 'react'
 import type React from 'react'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
-import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
+import { useSourceControlScope } from '../panel/worktree-scope'
 import type { FlatEntry } from '../listing/use-selection'
 import type { SourceControlPanelModel } from '../panel/use-panel-model'
 import { copyClipcodeGitChanges, getClipcodeRootPath } from './clipcode-copy-action'
@@ -24,7 +24,8 @@ function useClipcodeFullSourceCopy({
   copySelectionFullSource: () => void
   copySectionFullSource: (entries: readonly GitStatusEntry[], area: GitStatusEntry['area']) => void
 } {
-  const editorWorktreeId = useSourceControlWorktreeScope()?.editorWorktreeId ?? null
+  // Why placement: in a folder card, paths are relative to the folder, like the explorer's copies.
+  const placementWorkspaceId = useSourceControlScope()?.placementWorkspaceId ?? null
 
   const copyEntries = useCallback(
     (entries: readonly GitStatusEntry[], forceIndexForStaged: boolean) => {
@@ -32,13 +33,13 @@ function useClipcodeFullSourceCopy({
         return
       }
       void copyClipcodeGitChanges({
-        rootPath: getClipcodeRootPath(editorWorktreeId, worktreePath),
+        rootPath: getClipcodeRootPath(placementWorkspaceId, worktreePath),
         requests: [
           { worktree: { id: worktreeId, path: worktreePath }, entries, forceIndexForStaged }
         ]
       })
     },
-    [editorWorktreeId, worktreeId, worktreePath]
+    [placementWorkspaceId, worktreeId, worktreePath]
   )
 
   const copySelectionFullSource = useCallback(() => {
