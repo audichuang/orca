@@ -8,8 +8,10 @@ import {
   parseExecutionHostId,
   toRuntimeExecutionHostId
 } from '../../../../../../shared/execution-host'
-import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
-import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 
 /** Worktree whose git state backs a tab; differs from the tab owner for folder-workspace repo sections. */
 export function getOpenFileGitWorktreeId(

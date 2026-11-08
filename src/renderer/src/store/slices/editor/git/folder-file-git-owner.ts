@@ -8,8 +8,10 @@ import {
   relativePathInsideRoot
 } from '../../../../../../shared/cross-platform-path'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
-import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
-import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 import { resolveTabOwnerRelativePath } from './open-file-git-owner'
 
 type FolderFileGitOwner = { gitWorktreeId: string }

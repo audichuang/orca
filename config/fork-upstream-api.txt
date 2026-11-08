@@ -4,10 +4,6 @@
 # longer exported from its file.
 # One `<repo-relative path> <symbol>` per line. On a failure, restore the export (or re-home the fork reader).
 
-# The full Git Graph's lane renderer draws upstream's commit dot inside a band of upstream's geometry.
-src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-svg.tsx GitHistoryGraphNodeMarker
-src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-svg.tsx SWIMLANE_HEIGHT
-src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-svg.tsx SWIMLANE_WIDTH
 # Behavior-bearing: fork-pr-scope.mjs follows upstream's docs-only list as it changes, so it imports, not copies.
 config/scripts/workflow/source-routing/pr-code-change-scope.mjs isDocsOnlyPath
 # fork-lint-run.mjs follows upstream's lint step list.
