@@ -15179,6 +15179,13 @@
             "containedInHint": "Uçları yüklenen listede olan branch'ler; liste dışındaki branch'ler sayılmaz.",
             "children": "Alt commit'ler",
             "childrenHint": "Yüklenen listede, üst commit'i bu commit olan commit'ler."
+          },
+          "RemotePluginPanel": {
+            "declarative": "This panel shows only this computer. It cannot show data from {{host}}.",
+            "loading": "Connecting to {{plugin}} on {{host}}...",
+            "unreachable": "Could not reach {{host}}.",
+            "missing": "{{plugin}} is not installed or not enabled on {{host}}. Install and enable it there to see that host here.",
+            "versionMismatch": "{{plugin}} is {{remote}} on {{host}} and {{local}} here. Install the same version on both."
           }
         }
       },
