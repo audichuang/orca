@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createEditorStore } from './editor-slice-test-harness'
+import { createEditorStore } from './editor/editor-slice-test-harness'
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
-vi.mock('@/runtime/close-mirrored-editor-tab', () => ({
+vi.mock('@/runtime/web-session-tabs-sync/closing/close-mirrored-editor-tab', () => ({
   notifyHostOfMirroredEditorClose: vi.fn()
 }))
 
