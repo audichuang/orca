@@ -16,7 +16,7 @@ import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
 
 const mocks = vi.hoisted(() => ({ getRuntimeGitHistory: vi.fn() }))
-vi.mock('@/runtime/runtime-git-status-client', () => ({
+vi.mock('@/runtime/source-control/git/runtime-git-status-client', () => ({
   getRuntimeGitHistory: mocks.getRuntimeGitHistory
 }))
 vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => undefined }))

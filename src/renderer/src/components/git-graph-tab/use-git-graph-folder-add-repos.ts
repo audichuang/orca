@@ -14,7 +14,7 @@ import {
   selectDetectedWorktreesByRepo,
   selectFolderWorkspaces,
   selectWorktreesByRepo
-} from '@/store/workspace-record-selectors'
+} from '@/store/workspaces/catalog/workspace-record-fields'
 
 type Scanned = { folderPath: string; repos: NestedRepoCandidate[]; partial: boolean }
 
