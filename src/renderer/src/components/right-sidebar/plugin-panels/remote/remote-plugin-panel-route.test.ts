@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PluginHostListEntry } from '../../../../../../shared/plugins/plugin-list-entry'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
-import { callRemotePanelAction, remotePanelAvailability } from './remote-plugin-panel-route'
+import {
+  callRemotePanelAction,
+  focusedPanelOwnerKey,
+  openCheckedRemotePanelSession,
+  remotePanelAvailability
+} from './remote-plugin-panel-route'
 
 vi.mock('@/runtime/runtime-rpc-client', () => ({ callRuntimeRpc: vi.fn() }))
 
@@ -91,6 +96,18 @@ describe('callRemotePanelAction', () => {
     expect(reopen).toHaveBeenCalledTimes(1)
   })
 
+  it('does not resend a call when the reopened session is refused', async () => {
+    vi.mocked(callRuntimeRpc).mockResolvedValueOnce({
+      outcome: { ok: false, code: 'unavailable', error: 'panel session is no longer available' }
+    })
+    const outcome = await callRemotePanelAction('server-a', call, {
+      current: () => 'old-token',
+      reopen: vi.fn().mockResolvedValue(null)
+    })
+    expect(outcome.ok).toBe(false)
+    expect(callRuntimeRpc).toHaveBeenCalledTimes(1)
+  })
+
   it('answers unavailable when the server cannot be reached', async () => {
     vi.mocked(callRuntimeRpc).mockRejectedValueOnce(new Error('socket closed'))
     const outcome = await callRemotePanelAction('server-a', call, {
@@ -98,5 +115,43 @@ describe('callRemotePanelAction', () => {
       reopen: vi.fn()
     })
     expect(outcome).toEqual({ ok: false, code: 'unavailable', error: 'socket closed' })
+  })
+})
+
+describe('focusedPanelOwnerKey', () => {
+  const unresolved = {
+    repos: [],
+    worktreesByRepo: {},
+    activeWorktreeId: 'repo-1::/srv/app',
+    runtimeEnvironments: [{ id: 'server-a' }],
+    runtimeEnvironmentCatalogHydrated: true
+  }
+
+  it('waits for an unhydrated workspace the session puts on a server instead of going local', () => {
+    expect(
+      focusedPanelOwnerKey({ ...unresolved, activeWorkspaceExecutionHostId: 'runtime:server-a' })
+    ).toBe('pending:server-a')
+    expect(focusedPanelOwnerKey({ ...unresolved, activeWorkspaceExecutionHostId: 'ssh:box' })).toBe(
+      'local'
+    )
+    expect(focusedPanelOwnerKey({ ...unresolved, activeWorktreeId: null })).toBe('local')
+  })
+})
+
+describe('openCheckedRemotePanelSession', () => {
+  it('opens no session when the server copy changed version', async () => {
+    vi.mocked(callRuntimeRpc).mockResolvedValueOnce([plugin({ version: '2.0.0' })])
+    const opened = await openCheckedRemotePanelSession(
+      'server-a',
+      { pluginKey: 'sample.monitor', id: 'main', tabKey: TAB },
+      '1.0.0'
+    )
+    expect(opened).toEqual({
+      availability: { kind: 'version-mismatch', localVersion: '1.0.0', remoteVersion: '2.0.0' },
+      token: null
+    })
+    expect(vi.mocked(callRuntimeRpc).mock.calls).toEqual([
+      [{ kind: 'environment', environmentId: 'server-a' }, 'plugins.list']
+    ])
   })
 })

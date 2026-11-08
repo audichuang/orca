@@ -8,6 +8,26 @@ import { collectActivePluginPanels } from '@/store/plugin-panels'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { translate } from '@/i18n/i18n'
 import type { PanelActionCall } from '../../../plugins/frames/plugin-frame-host'
+import { parseExecutionHostId } from '../../../../../../shared/execution-host'
+import { getActiveWorkspaceOwnerTarget } from '@/lib/resolved-worktree-execution-host'
+import type { WorktreeRuntimeOwnerState } from '@/lib/workspace/ownership/worktree-runtime-owner-state'
+
+/**
+ * Who serves the focused workspace's panels: `local` (this computer, also direct SSH), a paired
+ * server, or `pending` while a workspace the session puts on a server has no hydrated owner yet;
+ * treating that as local would show this computer's data under the server's workspace.
+ */
+export function focusedPanelOwnerKey(state: WorktreeRuntimeOwnerState): string {
+  const owner = getActiveWorkspaceOwnerTarget(state)
+  if (owner?.kind === 'environment') {
+    return `remote:${owner.environmentId}`
+  }
+  if (owner || !state.activeWorktreeId) {
+    return 'local'
+  }
+  const hinted = parseExecutionHostId(state.activeWorkspaceExecutionHostId)
+  return hinted?.kind === 'runtime' ? `pending:${hinted.environmentId}` : 'local'
+}
 
 export type RemotePanelAvailability =
   | { kind: 'ready' }
@@ -51,6 +71,24 @@ export async function openRemotePanelSession(
   return entry?.sessionToken ?? null
 }
 
+/** Checks the server's copy, then opens a session only when it can serve this panel's UI. */
+export async function openCheckedRemotePanelSession(
+  environmentId: string,
+  panel: { pluginKey: string; id: string; tabKey: string },
+  localVersion: string | null
+): Promise<{ availability: RemotePanelAvailability; token: string | null }> {
+  const availability = remotePanelAvailability(
+    await listRemotePlugins(environmentId),
+    panel.tabKey,
+    localVersion
+  )
+  const token =
+    availability.kind === 'ready'
+      ? await openRemotePanelSession(environmentId, panel.pluginKey, panel.id)
+      : null
+  return { availability, token }
+}
+
 // The server's answers when the token's connection is gone, or its plugin was updated or re-enabled.
 const DEAD_SESSION_ERRORS = new Set([
   'invalid_request\0invalid panel session',
@@ -58,6 +96,17 @@ const DEAD_SESSION_ERRORS = new Set([
 ])
 function isDeadSession(outcome: PluginHostCallOutcome): boolean {
   return !outcome.ok && DEAD_SESSION_ERRORS.has(`${outcome.code}\0${outcome.error}`)
+}
+
+function sessionUnavailable(): PluginHostCallOutcome {
+  return {
+    ok: false,
+    code: 'unavailable',
+    error: translate(
+      'auto.components.right.sidebar.RemotePluginPanel.sessionUnavailable',
+      'The plugin is not available on that host.'
+    )
+  }
 }
 
 /**
@@ -80,21 +129,15 @@ export async function callRemotePanelAction(
   try {
     const token = session.current() ?? (await session.reopen())
     if (!token) {
-      return {
-        ok: false,
-        code: 'unavailable',
-        error: translate(
-          'auto.components.right.sidebar.RemotePluginPanel.sessionUnavailable',
-          'The plugin is not available on that host.'
-        )
-      }
+      return sessionUnavailable()
     }
     const outcome = await send(token)
     if (!isDeadSession(outcome)) {
       return outcome
     }
+    // Reopening rechecks the server's copy; a changed version must not get this UI's call.
     const fresh = await session.reopen()
-    return fresh ? await send(fresh) : outcome
+    return fresh ? await send(fresh) : sessionUnavailable()
   } catch (error) {
     return {
       ok: false,
