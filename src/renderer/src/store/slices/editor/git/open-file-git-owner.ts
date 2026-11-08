@@ -1,6 +1,6 @@
 import type { AppState } from '../../../types'
 import type { EditorOpenTargetOptions, OpenFile } from '../types/open-file'
-import { getIndexedWorktreesById } from '../../../worktree-repo-index'
+import { getIndexedWorktreesById } from '../../worktrees/listing/worktree-catalog-index'
 import { relativePathInsideRoot } from '../../../../../../shared/cross-platform-path'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import {
@@ -8,7 +8,10 @@ import {
   parseExecutionHostId,
   toRuntimeExecutionHostId
 } from '../../../../../../shared/execution-host'
-import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 
 /** Worktree whose git state backs a tab; differs from the tab owner for folder-workspace repo sections. */
 export function getOpenFileGitWorktreeId(

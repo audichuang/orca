@@ -1,8 +1,8 @@
 import { joinPath } from '@/lib/path'
-import { isMissingRuntimePathError } from '@/runtime/runtime-file-metadata-client'
-import { readRuntimeDirectory } from '@/runtime/runtime-file-mutation-client'
-import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
-import type { DirEntry } from '../../../../../../shared/filesystem-entry-types'
+import { isMissingRuntimePathError } from '@/runtime/files/metadata/runtime-file-metadata-client'
+import { readRuntimeDirectory } from '@/runtime/files/reads/runtime-directory-read'
+import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
+import type { DirEntry } from '../../../../../../shared/file-listing/directory-entry'
 
 export type RestoreDirectoryCache = Map<string, Promise<DirEntry[] | null>>
 
