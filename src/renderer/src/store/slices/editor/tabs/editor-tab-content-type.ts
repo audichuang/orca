@@ -1,6 +1,5 @@
 import type { Tab } from '../../../../../../shared/tab-types'
 import type { OpenFile } from '../types/open-file'
-import { isForkEditorTabKind } from '../../../../../../shared/fork-editor-tab-kinds'
 
 export type EditorTabContentType = Extract<
   Tab['contentType'],
@@ -25,8 +24,10 @@ export function isVirtualEditorFile(file: Pick<OpenFile, 'mode'>): boolean {
 }
 
 export function editorTabContentTypeForMode(mode: OpenFile['mode']): EditorTabContentType {
-  if (isForkEditorTabKind(mode)) {
-    return mode
-  }
-  return mode === 'conflict-review' || mode === 'check-details' || mode === 'diff' ? mode : 'editor'
+  return mode === 'conflict-review' ||
+    mode === 'check-details' ||
+    mode === 'git-graph' ||
+    mode === 'diff'
+    ? mode
+    : 'editor'
 }
