@@ -7,7 +7,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ConfirmationDialogContext } from '@/components/confirmation-dialog-context'
 import { useAppStore } from '@/store'
-import { makeWorktree } from '../../store/slices/worktrees-slice-test-fixtures'
+import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
 
 vi.mock('sonner', () => ({ toast: { warning: vi.fn(), error: vi.fn(), success: vi.fn() } }))

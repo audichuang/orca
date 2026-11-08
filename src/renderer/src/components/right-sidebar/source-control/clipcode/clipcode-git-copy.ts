@@ -1,5 +1,5 @@
 import { getRelativePathInsideRoot, basename, joinPath } from '@/lib/path'
-import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
+import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
 import type { GitDiffResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import {
