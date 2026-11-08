@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
-import { makeWorktree } from '../../store/slices/worktrees-slice-test-fixtures'
+import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
 import type { TreeNode } from './file-explorer/tree/file-explorer-types'
 import { createFileExplorerRowProjection } from './file-explorer/tree/file-explorer-row-projection'
 import {
@@ -175,8 +175,10 @@ describe('explorer Copy Full Source wiring', () => {
 
   it('the tree pane renders its rows with ClipCode actions for the worktree', () => {
     const refreshDir = vi.fn()
+    // Why a probe component: the pane calls hooks, so it must run inside a render.
+    let element: unknown
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: element-tree fixture; only the fields the pane reads before rendering rows are supplied.
-    const element = FileExplorerFilesTreePane({
+    const props = {
       worktreePath: '/repo',
       displayRootPath: '/repo',
       explorerView: 'files',
@@ -193,7 +195,12 @@ describe('explorer Copy Full Source wiring', () => {
         deletion: {},
         dragDrop: { rootDragHandlers: {} }
       }
-    } as unknown as ComponentProps<typeof FileExplorerFilesTreePane>)
+    } as unknown as ComponentProps<typeof FileExplorerFilesTreePane>
+    function Probe(): null {
+      element = FileExplorerFilesTreePane(props)
+      return null
+    }
+    render(<Probe />)
     let rows: ReactElementLike | undefined
     visit(element, (entry) => {
       if (entry.type === ClipcodeExplorerVirtualRows) {
