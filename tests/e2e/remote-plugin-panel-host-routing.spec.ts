@@ -103,7 +103,6 @@ test('a plugin panel follows the host of the focused workspace', async ({
   const root = await mkdtemp(join(tmpdir(), 'orca-e2e-host-marker-'))
   let client: PairedElectronClient | null = null
   try {
-    await enableDevPlugins(orcaPage, [await writeMarkerPlugin(root, 'server')])
     client = await launchPairedElectronClient(
       await createRuntimeDesktopPairingOffer(orcaPage),
       testInfo,
@@ -145,6 +144,13 @@ test('a plugin panel follows the host of the focused workspace', async ({
 
     await focusWorkspace(page, remoteWorktreeId, `runtime:${environmentId}`)
     await page.getByRole('button', { name: PANEL_TITLE, exact: true }).click()
+    // Not on the server yet: the panel says so, then recovers once it is, without a switch.
+    await expect(
+      page.getByText(/Remote plugin panel.*Host Marker|Host Marker.*Remote plugin panel/)
+    ).toBeVisible({
+      timeout: 30_000
+    })
+    await enableDevPlugins(orcaPage, [await writeMarkerPlugin(root, 'server')])
     await expect.poll(() => readMarker(page), { timeout: 30_000 }).toBe('server')
     await page.screenshot({ path: testInfo.outputPath('remote-workspace.png') })
 

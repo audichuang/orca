@@ -15051,7 +15051,8 @@
             "loading": "正在連線到 {{host}} 上的 {{plugin}}...",
             "unreachable": "無法連線到 {{host}}。",
             "missing": "{{host}} 上沒有安裝或沒有啟用 {{plugin}}。請在那台安裝並啟用，才能在這裡看到它的資料。",
-            "versionMismatch": "{{plugin}} 在 {{host}} 上是 {{remote}}，這台是 {{local}}。請在兩台安裝相同版本。"
+            "versionMismatch": "{{plugin}} 在 {{host}} 上是 {{remote}}，這台是 {{local}}。請在兩台安裝相同版本。",
+            "sessionUnavailable": "那台主機上沒有可用的這個外掛。"
           }
         }
       },

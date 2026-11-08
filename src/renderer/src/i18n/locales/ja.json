@@ -14578,7 +14578,8 @@
             "loading": "{{host}} の {{plugin}} に接続しています...",
             "unreachable": "{{host}} に接続できませんでした。",
             "missing": "{{host}} に {{plugin}} がインストールされていないか、有効になっていません。そのホストでインストールして有効にしてください。",
-            "versionMismatch": "{{plugin}} は {{host}} では {{remote}}、ここでは {{local}} です。両方に同じバージョンをインストールしてください。"
+            "versionMismatch": "{{plugin}} は {{host}} では {{remote}}、ここでは {{local}} です。両方に同じバージョンをインストールしてください。",
+            "sessionUnavailable": "そのホストではこのプラグインを利用できません。"
           }
         }
       },

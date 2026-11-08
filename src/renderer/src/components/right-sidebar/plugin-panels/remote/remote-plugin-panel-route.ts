@@ -6,6 +6,7 @@ import type { PluginFrameEntry } from '../../../../../../shared/plugins/frames/p
 import type { PluginHostListEntry } from '../../../../../../shared/plugins/plugin-list-entry'
 import { collectActivePluginPanels } from '@/store/plugin-panels'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { translate } from '@/i18n/i18n'
 import type { PanelActionCall } from '../../../plugins/frames/plugin-frame-host'
 
 export type RemotePanelAvailability =
@@ -50,11 +51,13 @@ export async function openRemotePanelSession(
   return entry?.sessionToken ?? null
 }
 
-// The server's answer when the token's connection or plugin revision is gone.
+// The server's answers when the token's connection is gone, or its plugin was updated or re-enabled.
+const DEAD_SESSION_ERRORS = new Set([
+  'invalid_request\0invalid panel session',
+  'unavailable\0panel session is no longer available'
+])
 function isDeadSession(outcome: PluginHostCallOutcome): boolean {
-  return (
-    !outcome.ok && outcome.code === 'invalid_request' && outcome.error === 'invalid panel session'
-  )
+  return !outcome.ok && DEAD_SESSION_ERRORS.has(`${outcome.code}\0${outcome.error}`)
 }
 
 /**
@@ -77,7 +80,14 @@ export async function callRemotePanelAction(
   try {
     const token = session.current() ?? (await session.reopen())
     if (!token) {
-      return { ok: false, code: 'unavailable', error: 'The plugin is not available on that host.' }
+      return {
+        ok: false,
+        code: 'unavailable',
+        error: translate(
+          'auto.components.right.sidebar.RemotePluginPanel.sessionUnavailable',
+          'The plugin is not available on that host.'
+        )
+      }
     }
     const outcome = await send(token)
     if (!isDeadSession(outcome)) {
