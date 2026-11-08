@@ -273,7 +273,7 @@ export function SourceControlHeaderToolbar({
   }
 
   return (
-    <div className="@container/sc-toolbar border-b border-border px-3 pt-1.5 pb-1">
+    <div className="border-b border-border px-3 pt-1.5 pb-1">
       <div
         className={cn('flex min-w-0 items-center gap-1', filterExpanded && 'w-full gap-1.5')}
         data-filter-expanded={filterExpanded ? 'true' : 'false'}
