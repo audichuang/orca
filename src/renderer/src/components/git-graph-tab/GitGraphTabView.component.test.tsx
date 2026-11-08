@@ -31,6 +31,17 @@ import GitGraphTabView from './GitGraphTabView'
 import { showCommitInGitGraphSlot } from './git-graph-source-control-link'
 import { GitHistoryPanel } from '../right-sidebar/source-control/sync/git-history-panel'
 
+// Why: happy-dom lays nothing out, so upstream's virtualized Commits list would render no rows.
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 28,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({ index, key: index, start: index * 28 })),
+    measureElement: vi.fn(),
+    scrollToIndex: vi.fn()
+  })
+}))
+
 type ToastOptions = { action?: { label: string; onClick: () => void } }
 const toastInfo = vi.hoisted(() => vi.fn<(message: string, options?: ToastOptions) => void>())
 vi.mock('sonner', () => ({

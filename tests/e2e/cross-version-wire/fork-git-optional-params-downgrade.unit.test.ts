@@ -18,7 +18,7 @@ import {
 } from './release-checkout'
 
 const callRuntimeRpc = vi.hoisted(() => vi.fn())
-vi.mock('../../../src/renderer/src/runtime/runtime-rpc-client', () => ({
+vi.mock('../../../src/renderer/src/runtime/rpc/calls/runtime-rpc-call', () => ({
   callRuntimeRpc,
   runtimeEnvironmentSupportsCapability: vi.fn()
 }))

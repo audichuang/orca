@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getRuntimeGitHistory } from './source-control/git/runtime-git-status-client'
 
 const callRuntimeRpc = vi.hoisted(() => vi.fn())
-vi.mock('./runtime-rpc-client', () => ({
+vi.mock('./rpc/calls/runtime-rpc-call', () => ({
   callRuntimeRpc,
   runtimeEnvironmentSupportsCapability: vi.fn()
 }))

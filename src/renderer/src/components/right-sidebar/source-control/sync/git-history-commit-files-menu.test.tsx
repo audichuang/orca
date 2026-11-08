@@ -49,6 +49,8 @@ const { GitHistoryPanel } = await import('./git-history-panel')
 const { getGitHistoryGraphFilter, gitGraphTabFilterKey, resetGitHistoryGraphFiltersForTest } =
   await import('./git-history-graph-filter')
 const { buildGitGraphTabId } = await import('../../../git-graph-tab/git-graph-tab-model')
+const { SourceControlScopeProvider } = await import('../panel/worktree-scope')
+const { makeWorktree } = await import('@/store/slices/worktrees/worktree.test-fixture')
 
 const item: GitHistoryItem = {
   id: 'a'.repeat(40),
@@ -69,8 +71,12 @@ const defaultModel = {
   revealInExplorer: vi.fn()
 }
 
-function renderMenu(model = defaultModel, onOpenFile = vi.fn()): void {
-  render(
+function renderMenu(
+  model = defaultModel,
+  onOpenFile = vi.fn(),
+  placementWorkspaceId?: string
+): void {
+  const menu = (
     <GitHistoryCommitFilesMenu
       {...{ model, entries, onOpenFile }}
       items={[item]}
@@ -97,6 +103,27 @@ function renderMenu(model = defaultModel, onOpenFile = vi.fn()): void {
         </div>
       )}
     />
+  )
+  if (!placementWorkspaceId) {
+    render(menu)
+    return
+  }
+  const worktree = makeWorktree({ id: 'repo-wt', repoId: 'repo-1', path: '/repo' })
+  const repo = { id: 'repo-1', path: '/repo', displayName: 'repo', badgeColor: '#000', addedAt: 0 }
+  render(
+    <SourceControlScopeProvider
+      owner={{
+        worktreeId: worktree.id,
+        repoId: repo.id,
+        executionHostId: 'local',
+        worktree,
+        attachedAt: 0,
+        repo,
+        placementWorkspaceId
+      }}
+    >
+      {menu}
+    </SourceControlScopeProvider>
   )
 }
 
@@ -198,7 +225,8 @@ describe('GitHistoryCommitFilesMenu', () => {
   it('Show File History filters the Git Graph to the right-clicked file or folder', () => {
     const openGitGraphTab = vi.fn()
     useAppStore.setState({ openGitGraphTab })
-    renderMenu()
+    // In a folder's repo card the tab opens in the folder.
+    renderMenu(defaultModel, vi.fn(), 'folder-1')
     expect(showFileHistoryItem()).toBeUndefined()
 
     fireEvent.contextMenu(screen.getByText('src/two.ts'))

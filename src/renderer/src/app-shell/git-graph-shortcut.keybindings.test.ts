@@ -9,7 +9,7 @@ import { useFloatingWorkspacePanel } from '@/app-shell/use-floating-workspace-pa
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 
-vi.mock('@/store/plugin-panels', () => ({
+vi.mock('@/store/plugins/catalog/plugin-contribution-catalog', () => ({
   usePluginCommands: () => [],
   usePluginPanelsStore: { getState: () => ({ plugins: [] }) },
   collectActivePluginCommands: () => []
