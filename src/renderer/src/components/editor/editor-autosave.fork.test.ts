@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { getOpenFilesForExternalFileChange } from './autosave/editor-autosave'
 import { indexEditorExternalWatchBatchPaths } from './external-changes/editor-external-watch-path-index'
 
