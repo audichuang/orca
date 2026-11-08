@@ -23,12 +23,7 @@ export const ROLE_ALIASES = {
 export const UI_TEXT = {
   sourceControlTab: 'Source Control',
   explorerTab: 'Explorer',
-  refreshAll: 'Refresh all repositories',
-  copyAllChanges: 'Copy all changes',
   pasteRestore: 'Paste & Restore',
-  addReposInFolder: 'Add repositories in this folder',
-  openGitGraph: 'Open Git Graph',
-  openAllCommitChanges: 'Open all changes',
   detailStart: 'Filter files by name',
   copyFullSource: 'Copy Full Source',
   viewAll: 'View all',
@@ -50,8 +45,7 @@ export const UI_TEXT = {
   sectionChanges: 'Changes',
   sectionStaged: 'Staged Changes',
   sectionCommitted: 'Committed on Branch',
-  sectionCommits: 'Commits',
-  groupNoChanges: 'No changes'
+  sectionCommits: 'Commits'
 }
 
 /** Sections that no longer exist on their own; v1.4.238 lists untracked files inside CHANGES. */
@@ -90,8 +84,6 @@ export const RE = {
     new RegExp(`^按鈕 ${esc(name)} \\(${branch ? esc(branch) : '[^)]*'}\\) \\d+$`),
   // A path (an editor tab's "/Users/… (diff) 0" button) is not a repo row
   anyRepoRow: /^按鈕 (?!\/)[\w./-]+ \([^)]*\) \d+$/,
-  // Repos without changes sit in their own group, collapsed by default
-  repoGroupHeader: new RegExp(`^按鈕 ${esc(UI_TEXT.groupNoChanges.toUpperCase())} \\d+$`),
   sectionHeader: (name) => new RegExp(`^按鈕 ${esc(name)} \\d+$`),
   anySectionHeader: new RegExp(
     `^按鈕 (${['sectionChanges', 'sectionStaged', 'sectionCommitted', 'sectionCommits']
@@ -116,16 +108,6 @@ export function openRepoName(lines) {
   const i = detailStartIndex(lines)
   // A single-repo workspace's panel has no name line there
   const t = i > 1 ? lines[i - 2][1] : ''
-  return t.startsWith('文字 ') ? t.slice(3) : null
-}
-
-/** The folder workspace whose Source Control is showing: the name heading the row of Open Git Graph … Refresh all. */
-export function folderPanelName(lines) {
-  const refresh = lines.findIndex(([, t]) => t === `按鈕 ${UI_TEXT.refreshAll}`)
-  const graph = lines.findLastIndex(
-    ([, t], i) => i < refresh && i > refresh - 8 && t === `按鈕 ${UI_TEXT.openGitGraph}`
-  )
-  const t = graph > 0 ? lines[graph - 1][1] : ''
   return t.startsWith('文字 ') ? t.slice(3) : null
 }
 
