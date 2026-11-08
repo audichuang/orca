@@ -15,13 +15,13 @@ export async function copyHistoryCommitsFullSource(args: {
   items: readonly GitHistoryItem[]
   worktreeId: string
   worktreePath: string
-  /** Folder workspace owning the panel; paths are then relative to the folder, like Copy Full Source. */
-  editorWorktreeId: string | null
+  /** Folder workspace the panel is placed in; paths are then relative to the folder, like Copy Full Source. */
+  placementWorkspaceId: string | null
   activeRepoTarget: RuntimeClientTarget | null
   loadCommitFiles: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
 }): Promise<void> {
   await copyClipcodeCommitChanges({
-    rootPath: getClipcodeRootPath(args.editorWorktreeId, args.worktreePath),
+    rootPath: getClipcodeRootPath(args.placementWorkspaceId, args.worktreePath),
     context: {
       // Why: route reads by the repo OWNER host, not the focused runtime.
       target: requireGitOwnerTarget(args.activeRepoTarget),
