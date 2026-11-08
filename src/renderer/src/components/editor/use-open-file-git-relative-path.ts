@@ -1,6 +1,6 @@
 import { useAppStore } from '@/store'
 import { getOpenFileGitRelativePath } from '@/store/slices/editor/git/open-file-git-owner'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 
 /** Repo-relative path of a tab, for matching git status entries and repo-scoped notes. */
 export function useOpenFileGitRelativePath(
