@@ -15,6 +15,7 @@ import {
 import { ISOLATED_FRAMES_E2E, pluginGuest, readInGuest } from './helpers/plugin-frame-guest'
 import { enableDevPlugins } from './helpers/plugin-smoke'
 import { waitForActiveWorktree, waitForSessionReady } from './helpers/store'
+import type { ExecutionHostId } from '../../src/shared/execution-host'
 
 test.use(ISOLATED_FRAMES_E2E)
 
@@ -66,12 +67,16 @@ setInterval(ask, 1000)\n`
   return dir
 }
 
-async function focusWorkspace(page: Page, worktreeId: string, hostId: string): Promise<void> {
+async function focusWorkspace(
+  page: Page,
+  worktreeId: string,
+  hostId: ExecutionHostId
+): Promise<void> {
   await page.evaluate(
     ({ id, host }) => {
       const state = window.__store!.getState()
       state.closeSettingsPage()
-      state.setActiveWorktree(id, host as never)
+      state.setActiveWorktree(id, host)
       if (!state.rightSidebarOpen) {
         state.toggleRightSidebar()
       }
