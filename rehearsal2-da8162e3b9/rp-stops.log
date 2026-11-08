@@ -1,0 +1,282 @@
+== stop 13eb18b435 feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229
+  OURS src/renderer/src/components/editor/ChangesModeView.tsx
+  OURS src/renderer/src/components/editor/combined-diff/CombinedDiffViewer.tsx
+  OURS src/renderer/src/components/editor/combined-diff/review-controls/use-combined-diff-section-actions.ts
+  OURS src/renderer/src/components/editor/combined-diff/scroll-viewport/combined-diff-section-list.tsx
+  OURS src/renderer/src/components/editor/useEditorPanelDiffContentLoader.ts
+  T src/renderer/src/components/editor/useEditorPanelFileContentLoader.ts
+  OURS src/renderer/src/components/right-sidebar/right-sidebar-activity-visibility.ts
+  OURS src/renderer/src/components/right-sidebar/right-sidebar-titlebar-drag-regions.render.test.tsx
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/SourceControlAgentActionDialog.tsx
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/runSourceControlAgentActionStart.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/use-recovery-ai.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/useSourceControlAgentActionDialog.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/useSourceControlAgentActionStart.ts
+  T src/renderer/src/components/right-sidebar/source-control/commit/bulk-action-bar.tsx
+  T src/renderer/src/components/right-sidebar/source-control/commit/source-control-entry-failure-toast.test.ts
+  T src/renderer/src/components/right-sidebar/source-control/commit/source-control-entry-failure-toast.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/commit/use-entry-mutations.ts
+  T src/renderer/src/components/right-sidebar/source-control/listing/entry-context-menu.tsx
+  OURS src/renderer/src/components/right-sidebar/source-control/listing/open-uncommitted-entry.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/listing/use-row-opening.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/listing/use-worktree-context.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/notes/notes-shelf.tsx
+  OURS src/renderer/src/components/right-sidebar/source-control/notes/use-note-opening.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/panel/header-toolbar.tsx
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel.tsx
+  OURS src/renderer/src/components/right-sidebar/source-control/panel/use-panel-view-state.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/review/use-hosted-review-creation.ts
+  T src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.ts
+  T src/renderer/src/lib/remap-open-editor-tabs-for-path-change.test.ts
+  T src/renderer/src/store/slices/editor/git/open-combined-diff.ts
+  DROP src/renderer/src/store/slices/editor/git/open-conflict-file-owner.test.ts
+  T src/renderer/src/store/slices/editor/git/open-conflict-file.ts
+  T src/renderer/src/store/slices/editor/git/open-conflict-review.ts
+  DROP src/renderer/src/store/slices/editor/git/open-file-git-owner-merge.test.ts
+  T src/renderer/src/store/slices/editor/git/open-history-diff.ts
+  T src/renderer/src/store/slices/editor/git/open-unstaged-diff.ts
+  T src/renderer/src/store/slices/editor/types/editor-files-slice.ts
+== stop c8ba709e1f fix(source-control): 修正 folder workspace 多 repo 與 ClipCode 交叉測試找到的問題
+  OURS src/renderer/src/components/editor/ChangesModeView.tsx
+  T src/renderer/src/components/editor/EditorPanel.tsx
+  T src/renderer/src/components/editor/diff/monaco-view/DiffViewer.tsx
+  T src/renderer/src/components/right-sidebar/source-control/commit/source-control-entry-failure-toast.test.ts
+  T src/renderer/src/components/right-sidebar/source-control/commit/source-control-entry-failure-toast.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/listing/use-row-opening.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/panel/use-worktree-operation-state.ts
+  OURS src/renderer/src/components/tab-bar/tab-bar-item-model.ts
+  T src/renderer/src/store/slices/editor/opening/open-file-action.ts
+  OURS src/renderer/src/store/slices/editor/tabs/untitled-file-cleanup.ts
+== stop 3d454bce4a feat(source-control): git 歷史支援多分支、分支篩選與 git 端搜尋(後端)
+  T src/main/git/history.ts
+  T src/main/ipc/filesystem/filesystem-git-status-handlers.ts
+  T src/main/runtime/rpc/methods/source-control/git/git.ts
+  T src/renderer/src/web/preload-api/web-git-api.ts
+  T src/shared/rpc-contract/git-params.ts
+== stop 70339496a1 feat(source-control): Commits 區的分支篩選、git 端搜尋、載入更多與複製 commit 異動
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  OURS src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-context-menu.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-panel.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.ts
+== stop fcd9c9800b fix(source-control): 分支選擇器每次打開都重讀清單,搜尋無結果不再顯示 No commits yet
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-panel.tsx
+== stop be653d47f1 refactor(source-control): 依 /simplify 與發行前審查整理 Git Graph 與 commit 複製
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.ts
+== stop 4c244b9cc7 feat(source-control): folder 裡的 repo 可以只在 folder 顯示，不佔側邊欄
+  OURS src/renderer/src/components/sidebar/worktree-list/listing/use-visible-worktrees.ts
+== stop 343bd50d95 feat(source-control): Commits 區加全螢幕 Git Graph 檢視(全寬圖、完整分支/tag 標籤、commit 詳情與檔案)
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+== stop fa111b5f83 fix(source-control): folder 分頁的 git/讀檔改由 filePath 推導 repo 相對路徑，還原時丟掉失效 git owner 會重算 relativePath
+  OURS src/renderer/src/components/editor/external-changes/ExternalFileChangeCompareDialog.tsx
+  OURS src/renderer/src/components/editor/useEditorPanelDiffContentLoader.ts
+  T src/renderer/src/components/editor/useEditorPanelFileContentLoader.ts
+  OURS src/renderer/src/components/tab-bar/tab-bar-item-model.ts
+  OURS src/renderer/src/store/slices/editor/tabs/untitled-file-cleanup.ts
+== stop 329781bf13 feat(source-control): Commits 展開後的檔案列加右鍵選單,可 Copy Path / Copy Relative Path / Copy Full Source
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-panel.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.ts
+== stop 10c3feec45 feat(source-control): Git Graph 全螢幕檢視的 commit 檔案也接上右鍵選單
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+== stop 26931b8891 refactor(source-control): commit 檔案選單收進 fork 檔,縮小上游檔 diff 並補接線測試
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.ts
+  COMMIT-C 26931b889126c7c4490fa7923acc5eb45d2c3d8e
+== stop 11893efa32 test(terminal-pane): 測試結束時清掉真實 timer,不再滲進下一個測試的 stub
+  T src/renderer/src/components/terminal-pane/pty-connection/test-fixtures/pty-connection-test-environment.ts
+== stop adea4d7986 test(terminal-pane): 同步上游 PR #30502 最終版,timer registry 改放 globalThis 並補回歸測試
+  T src/renderer/src/components/terminal-pane/pty-connection/test-fixtures/pty-connection-test-environment.ts
+== stop 6278543816 feat(source-control): Commits 展開後的檔案可 Cmd/Ctrl/Shift 多選,一次 Copy Full Source
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.tsx
+== stop cb56e24514 fix(clipcode): 擋下會被還原成其他指令的檔名、讀檔後立即丟棄超量內容、切換 commit 時清掉多選;commit 檔案選取改用檔案總管的高亮樣式並補 e2e
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.tsx
+  COMMIT-C cb56e24514bf82db5d161b024b6f41b47635d8ca
+== stop 4e53056ec9 feat(source-control): Git Graph 全螢幕改成 IntelliJ 式佈局,可多選 commit 合併檢視與複製變更檔案
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-panel.tsx
+== stop 7eb311ddaa feat(source-control): Git Graph 改成編輯器分頁,可切換 repo,並加上快捷鍵與 Cmd+J 進入點
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  OURS src/renderer/src/components/tab-bar/EditorFileTab.tsx
+  OURS src/renderer/src/components/tab-bar/RecentTabSwitcher.tsx
+  OURS-DEL src/renderer/src/runtime/mobile-session-tab-close.ts
+  T src/renderer/src/store/slices/editor/create-editor-slice.ts
+  T src/renderer/src/store/slices/editor/git/git-graph-tab-actions.ts
+== stop 64ec386b3c fix(source-control): Git Graph 依實機 QA 修正:欄位改由同一套 JS 規則決定、切回分頁保留多選、Commits 標題列常駐開啟按鈕、commit 右鍵選單
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-panel.tsx
+== stop be3df0afc5 fix(source-control): 依第二輪 QA 修正:combined diff 在 dev StrictMode 不再 crash、多選複製 hash/訊息涵蓋全部選取、Git Graph 可在旁邊開 diff
+  OURS src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-context-menu.tsx
+== stop 663165dbc4 fix(source-control): Git Graph 實機操作微調:Outgoing/Incoming 列不顯示 0000000、commit 右鍵選單加寬不換行、窄詳情欄的多選摘要讓主旨優先
+  OURS src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-context-menu.tsx
+== stop 2905e49899 feat(source-control): Source Control 頂端常駐 Git Graph 按鈕
+  OURS src/renderer/src/components/right-sidebar/source-control/panel/header-toolbar.tsx
+== stop 205df056fa feat(source-control): Git Graph 摺疊很長的分支連線,目前分支固定在最左
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-svg.tsx
+== stop e5b0064560 feat(source-control): Git Graph 的 Changed files 改成依資料夾分層的樹狀顯示
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.tsx
+== stop 0df1493f52 test(source-control): folder 分頁搬移測試補上 v1.4.233 新增的必填 owner
+  T src/renderer/src/lib/remap-open-editor-tabs-for-path-change.test.ts
+== stop f7e871e6c8 feat(source-control): Git Graph 的資料夾右鍵、repo 色塊切換器、branch 依 Local/remote 分區
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.tsx
+== stop bf3f9a3420 feat(source-control): Git 介面順手度優化第一批
+  T src/renderer/src/components/right-sidebar/source-control/listing/entry-context-menu.tsx
+  OURS src/renderer/src/components/right-sidebar/source-control/panel/header-toolbar.tsx
+== stop d39c24069e fix(source-control): 實機測試後的修正:repo 自動配色、選中 repo 標題、搜尋框不重複篩選
+  OURS src/renderer/src/components/right-sidebar/source-control/panel/header-toolbar.tsx
+== stop 96280b890c feat(source-control): Git Graph 版面讓出訊息空間、分頁篩選獨立並預設全部分支
+  T src/renderer/src/store/slices/editor/git/git-graph-tab-actions.ts
+== stop c85edc1433 feat(source-control): 側邊欄與 Git Graph 同步選中 repo,加 Show in Git Graph 與在 Source Control 開啟
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  OURS src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-context-menu.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-panel.tsx
+  T src/renderer/src/store/slices/editor/git/git-graph-tab-actions.ts
+== stop c1cc88915a fix(source-control): 主動開啟或 Show in Git Graph 時把鍵盤焦點交給 Graph
+  T src/renderer/src/store/slices/editor/git/git-graph-tab-actions.ts
+== stop 7f2f2b929f fix(source-control): release autosave holds after fork discard and ClipCode restore
+  OURS src/renderer/src/components/right-sidebar/source-control/commit/use-entry-mutations.ts
+== stop 251e574cd1 ci(fork): run upstream's whole lint and the source-scan tests in fork-check
+  T config/renderer-layout-writer-baseline.txt
+== stop 0b1e3ad43f fix(source-control): keep toasts above the bulk action bar
+  T src/renderer/src/components/right-sidebar/source-control/commit/bulk-action-bar.tsx
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+== stop 10f8b21148 test(e2e): S16c also checks the settled toast clears the Git History dock
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+== stop 1eac241f04 fix(editor): make the context-copied confirmation easier to notice
+  T src/renderer/src/components/editor/useContextualCopySetup.tsx
+== stop 33085ad370 feat(diff): step into the next file at the last change, IntelliJ-style
+  T src/renderer/src/components/editor/EditorPanel.tsx
+  T src/renderer/src/components/editor/EditorPanelHeader.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-panel.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.ts
+  T src/renderer/src/store/slices/editor/git/open-history-diff.ts
+== stop e0c72c1fde fix(rebase): carry fork fields through upstream v1.4.238's editor tab views
+  OURS src/shared/workspace-layout/workspace-layout-published.ts
+== stop a20647f4de test(fork): pin fork seams the v1.4.238 rebase review found untested
+  OURS-DEL src/renderer/src/store/slices/editor/actions/open-conflict-file-owner.test.ts
+== stop 36856407e1 refactor(source-control): move the fork's commit menu entries into a slot
+  OURS src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-context-menu.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-panel.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.ts
+== stop 72eeee341c fix(source-control): judge chat eligibility with the folder repo launch's start directory
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/use-source-control-action-agent-choice.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/useSourceControlAgentActionDialog.ts
+== stop 39e1c3c5a6 test: move fork cases out of upstream test files into .fork.test siblings
+  T src/renderer/src/components/right-sidebar/source-control/commit/source-control-entry-failure-toast.test.ts
+  T src/renderer/src/lib/remap-open-editor-tabs-for-path-change.test.ts
+== stop 98ef5bfb5a refactor: carry fork values in options objects instead of trailing positional params
+  T src/main/git/source-control/diff-result.ts
+  OURS src/renderer/src/components/editor/combined-diff/CombinedDiffViewer.tsx
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/recovery-launch.ts
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.ts
+  T src/renderer/src/store/slices/editor/git/open-combined-diff.ts
+  T src/renderer/src/store/slices/editor/git/open-conflict-file.ts
+  T src/renderer/src/store/slices/editor/git/open-conflict-review.ts
+  T src/renderer/src/store/slices/editor/git/open-history-diff.ts
+  T src/renderer/src/store/slices/editor/git/open-unstaged-diff.ts
+  T src/renderer/src/store/slices/editor/types/editor-files-slice.ts
+== stop c7f1a5d748 refactor: finish moving fork params into options objects and pin the remaining hops
+  T src/main/git/source-control/diff-result.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/listing/open-uncommitted-entry.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/listing/use-row-opening.ts
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-panel.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.ts
+  T src/renderer/src/store/slices/editor/git/git-status-actions.fork.test.ts
+  T src/renderer/src/store/slices/editor/git/open-combined-diff.ts
+  T src/renderer/src/store/slices/editor/git/open-conflict-review.ts
+  T src/renderer/src/store/slices/editor/types/editor-files-slice.ts
+== stop 17235c1aba refactor(source-control): derive folder tab and git owners in one fork helper
+  OURS src/renderer/src/components/right-sidebar/source-control/commit/use-entry-mutations.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/listing/use-row-opening.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/notes/use-note-opening.ts
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.ts
+== stop ba12229c4b test(source-control): guard folder discard notices, markdown notes and branch rows
+  OURS src/renderer/src/components/right-sidebar/source-control/commit/use-entry-mutations.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/listing/use-row-opening.ts
+== stop 2bb24eb416 refactor(source-control): let the folder save-hold helpers take one target or a list
+  OURS src/renderer/src/components/right-sidebar/source-control/commit/use-entry-mutations.ts
+  COMMIT-C 2bb24eb416230ef719b86913f046645b83309c42
+== stop d1bf09924a refactor(clipcode): move Copy Full Source out of upstream components into fork slots
+  T src/renderer/src/components/right-sidebar/source-control/commit/bulk-action-bar.tsx
+  T src/renderer/src/components/right-sidebar/source-control/listing/entry-context-menu.tsx
+== stop 94e77229e3 refactor(fork): stop exporting upstream internals the fork reads
+  T src/renderer/src/store/slices/editor/git/open-history-diff.ts
+== stop 8bef7cf6e7 refactor(git-graph-tab): route upstream editor-kind sites through fork-editor-tab-kinds
+  OURS src/renderer/src/components/tab-bar/EditorFileTab.tsx
+  OURS src/renderer/src/components/tab-bar/RecentTabSwitcher.tsx
+  OURS-DEL src/renderer/src/runtime/mobile-session-tab-close.ts
+== stop 54fafc6de8 test(git-graph-tab): pin lazy retry and old-client exclusion; rename editor-kind modules
+  OURS src/renderer/src/components/tab-bar/RecentTabSwitcher.tsx
+== stop f2e0243d3a fix(source-control): route folder repo AI conflict starts through upstream's saved-start path
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/use-ai.ts
+== stop e11aadf5d2 refactor(editor): move the fork's file-read git owner out of the loaders upstream grew to max-lines
+  OURS src/renderer/src/components/editor/combined-diff/CombinedDiffViewer.tsx
+  T src/renderer/src/components/editor/useEditorPanelFileContentLoader.ts
+== stop 8e0594d565 test(fork): 守住 Git Graph 快捷鍵與 Commits dock 的 fork slot，slot 收進一個 builder
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel-content.tsx
+== stop 6d69b34ea6 test(fork): 守住資料夾編輯分頁的 owner 更新與路徑搬移
+  OURS-DEL src/renderer/src/store/slices/editor/actions/open-conflict-file-owner.test.ts
+  OURS-DEL src/renderer/src/store/slices/editor/actions/open-file-git-owner-merge.test.ts
+  DROP src/renderer/src/store/slices/editor/git/open-history-diff.fork.test.ts
+== stop c1b18ce0fc test(fork): 排除 owner 自動推導與 preview 更新掩蓋的接縫
+  OURS-DEL src/renderer/src/store/slices/editor/actions/open-file-git-owner-merge.test.ts
+== stop 4a80a67e45 refactor(fork): 縮小 fork 在上游檔的接線，先吸收下一版的衝突
+  OURS src/renderer/src/components/editor/combined-diff/CombinedDiffViewer.tsx
+== stop 668245b869 fix(rebase): import the changed-file tree from src/shared after upstream moved it
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.tsx
+== stop d399b46fdf fix(rebase): move upstream's link split-group setup out of open-file-apply.ts
+  MOVE src/renderer/src/store/slices/editor/git/open-file-link-split.ts -> src/renderer/src/store/slices/editor/opening/open-file-link-split.ts
+== stop e0c1118de8 fix(source-control): hold folder tabs' autosave when resolving a conflict by deletion
+  OURS src/renderer/src/components/right-sidebar/source-control/commit/use-entry-mutations.ts
+== stop b83dc918cb fix(fork): follow upstream's module moves (#37990, #38033, #38037, #38101, #38023, #37915, …)
+  T src/renderer/src/components/editor/diff/monaco-view/DiffViewer.tsx
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.tsx
+== stop 43bb4a26d6 fix(fork): keep four upstream files within max-lines after upstream's module moves
+  OURS src/renderer/src/components/right-sidebar/source-control/ai/use-ai.ts
+  OURS src/renderer/src/components/right-sidebar/source-control/review/use-hosted-review-creation.ts
+  T src/renderer/src/components/right-sidebar/source-control/sync/git-history-panel.tsx
+== stop 99e0b1ce0e fix(fork): quote folder tabs' files relative to the folder in Add to chat
+  T src/renderer/src/components/editor/markdown-preview/surface/MarkdownPreview.tsx
+== stop 2dd17cd98d refactor(fork): panel.tsx 與 git-history-commit-files.tsx 回到上游本體，fork 邏輯移到獨立檔
+  T src/renderer/src/components/right-sidebar/source-control/panel/panel.tsx
+== stop 05f1d4ead5 fix(fork): remount 後仍能清掉衝突已結束的 remote 錯誤卡片
+  OURS src/renderer/src/components/right-sidebar/source-control/panel/use-worktree-operation-state.ts
+== stop 7f0f9d441b fix(fork): 刪除 folder 後把只由它涵蓋的隱藏 repo 放回側邊欄
+  OURS src/renderer/src/components/sidebar/workspace-actions/deletion/folder-workspace-delete.ts
+  COMMIT-C 7f0f9d441b911afed54e44f59d94c99bda9d38f7
+== stop 85928d0cf6 fix(fork): kanban 的可見 worktree memo 補上 folder 隱藏 repo 的版本 dep
+  OURS src/renderer/src/components/sidebar/workspace-board/surface/use-visible-workspace-kanban-worktree-ids.ts
+== stop 02b35a0082 fix(fork): folder 編輯分頁的 relativePath 恢復為相對 folder
+  OURS-DEL src/renderer/src/store/slices/editor/actions/open-conflict-file-owner.test.ts
+  T src/renderer/src/store/slices/editor/git/open-conflict-file.ts
+  T src/renderer/src/store/slices/editor/git/open-conflict-review.ts
+== stop 87e5e61d76 test(fork): conflict 兩個入口各自釘住 folder 相對路徑，quick-open 測試改用 OpenFile 型別
+  OURS-DEL src/renderer/src/store/slices/editor/actions/open-conflict-file-owner.test.ts
+== stop e6f2e87085 fix(fork): folder 編輯分頁以 repo 相對路徑對照 git 狀態、AI notes 與 conflict entry
+  OURS src/renderer/src/components/editor/ChangesModeView.tsx
+  OURS src/renderer/src/components/editor/ConflictComponents.tsx
+  OURS src/renderer/src/components/editor/EditorConflictReviewSurface.tsx
+== stop 906eba117c fix(fork): folder 編輯分頁的 git owner 在解析出 host 後才綁定，runtime 主機的 Source Control 開檔也存 folder 相對路徑
+  T src/renderer/src/store/slices/editor/git/open-conflict-file.ts
+  T src/renderer/src/store/slices/editor/git/open-conflict-review.ts
+  DROP src/renderer/src/store/slices/editor/git/open-file-runtime-folder-owner.fork.test.ts
+  T src/renderer/src/store/slices/editor/opening/open-file-action.ts
+  T src/renderer/src/store/slices/editor/opening/open-file-apply.ts
+== stop 032f415603 fix(fork): 從別的 folder 搬出 repo 時，以分頁自己 folder 的根重算 relativePath
+  OURS src/renderer/src/lib/remap-open-editor-tabs-for-path-change.ts
+== stop 5482709825 refactor(fork): Git Graph slice 型別移出 editor-files-slice
+  T src/renderer/src/store/slices/editor/types/editor-files-slice.ts
+== stop a810f79892 fix(fork): move EditorPanel's diff file wiring to a fork file to keep it within max-lines (upstream c5383afb6c)
+  T src/renderer/src/components/editor/EditorPanel.tsx
+== stop 454c0c0ee2 fix(fork): move hosted review foreground wiring into worktree-scope to keep use-hosted-review-creation within max-lines
+  OURS src/renderer/src/components/right-sidebar/source-control/review/use-hosted-review-creation.ts
