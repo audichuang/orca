@@ -1,6 +1,6 @@
 // Fork-only: kept out of useEditorPanelFileContentLoader.ts, which sits at upstream's max-lines limit.
 import { useAppStore } from '@/store'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import {
   getOpenFileGitRelativePath,
   getOpenFileGitWorktreeId

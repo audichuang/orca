@@ -3,10 +3,13 @@ import { translate } from '@/i18n/i18n'
 import { getConnectionId } from '@/lib/connection-context'
 import { readIpcErrorMessage } from '@/lib/ipc-error'
 import { getRelativePathInsideRoot, joinPath } from '@/lib/path'
-import { getRuntimeGitCommitDiff, getRuntimeGitDiff } from '@/runtime/runtime-git-diff-client'
-import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
-import { readRuntimeFileContent } from '@/runtime/runtime-file-read-client'
-import { readRuntimeDirectory } from '@/runtime/runtime-file-mutation-client'
+import {
+  getRuntimeGitCommitDiff,
+  getRuntimeGitDiff
+} from '@/runtime/source-control/git/runtime-git-diff-client'
+import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
+import { readRuntimeFileContent } from '@/runtime/files/reads/runtime-file-read-client'
+import { readRuntimeDirectory } from '@/runtime/files/reads/runtime-directory-read'
 import { useAppStore } from '@/store'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
@@ -35,7 +38,7 @@ import {
   type ClipcodeExplorerReaders,
   type ClipcodeExplorerTarget
 } from './clipcode-explorer-copy'
-import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
+import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
 
 export type ClipcodeCopyRequest = {
   worktree: Pick<Worktree, 'id' | 'path'>
