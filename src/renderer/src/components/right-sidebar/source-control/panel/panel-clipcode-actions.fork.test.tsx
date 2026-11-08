@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   readRuntimeFileContent: vi.fn(),
   writeClipboardText: vi.fn()
 }))
-vi.mock('@/runtime/runtime-file-read-client', async (importOriginal) => ({
+vi.mock('@/runtime/files/reads/runtime-file-read-client', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   readRuntimeFileContent: mocks.readRuntimeFileContent
 }))

@@ -8,10 +8,15 @@ import type {
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import { toCommitCompareSnapshot } from '@/store/slices/editor/git/git-status-reconciliation'
 import { registerDiffFileSequence } from '../../../editor/diff-file-sequence'
-import { commitDiffTabId } from '@/store/slices/editor/git/open-file-git-owner'
 import { detectLanguage } from '@/lib/language-detect'
 import type { CommitCompareLike } from '@/store/slices/editor/types/open-file'
 import type { EditorFilesSlice } from '@/store/slices/editor/types/editor-files-slice'
+import type { EditorOpenTargetOptions } from '@/store/slices/editor/types/open-file'
+import { useAppStore } from '@/store'
+import {
+  editorOpenOwner,
+  qualifyEditorContentId
+} from '@/store/slices/editor/git/editor-open-owner'
 
 /**
  * One row of a commit file list. Across a multi-commit selection a path diffs
@@ -70,22 +75,26 @@ export function openCommitFileInSequence({
   item,
   entry,
   sequence,
-  tabOwnerId,
-  gitWorktreeId,
+  worktreeId,
   worktreePath,
   summaryFor,
   openCommitDiff,
+  ownerOptions,
   targetGroupId,
   preview
 }: {
   item: GitHistoryItem
   entry: GitBranchChangeEntry
   sequence: readonly CommitFileTarget[] | undefined
-  tabOwnerId: string
-  gitWorktreeId: string | undefined
+  worktreeId: string
   worktreePath: string
   summaryFor: (commitId: string) => GitCommitCompareResult['summary'] | undefined
   openCommitDiff: OpenCommitDiff
+  /** Upstream's placement and host options, passed through to every open. */
+  ownerOptions: Pick<
+    EditorOpenTargetOptions,
+    'placementWorkspaceId' | 'executionHostId' | 'runtimeEnvironmentId'
+  >
   targetGroupId: string | undefined
   preview: boolean
 }): void {
@@ -104,22 +113,20 @@ export function openCommitFileInSequence({
     options: { targetGroupId: string | undefined; preview: boolean }
   ): void =>
     openCommitDiff(
-      tabOwnerId,
+      worktreeId,
       worktreePath,
       target.entry,
       compare,
       detectLanguage(target.entry.path),
-      {
-        ...options,
-        gitWorktreeId
-      }
+      { ...ownerOptions, ...options }
     )
+  // Why mirror openCommitDiff's id: the diff's change arrows look the file list up by tab id.
+  const owner = editorOpenOwner(useAppStore.getState(), worktreeId, ownerOptions)
   const tabIdOf = (target: CommitFileTarget, compare: CommitFileCompare): string =>
-    commitDiffTabId(
-      tabOwnerId,
-      gitWorktreeId,
-      toCommitCompareSnapshot(compare).compareVersion,
-      target.entry.path
+    qualifyEditorContentId(
+      `${worktreeId}::diff::commit::${toCommitCompareSnapshot(compare).compareVersion}::${target.entry.path}`,
+      owner.runtimeEnvironmentId,
+      owner.operationProvenance?.generation.route.executionHostId ?? undefined
     )
   const steps = (sequence ?? []).flatMap((target) => {
     const compare = resolveCompare(target, summaryFor)

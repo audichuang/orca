@@ -11,7 +11,7 @@ vi.mock('@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab', () => ({
   launchAgentInNewTab: launchAgent
 }))
 vi.mock('@/lib/focus-terminal-tab-surface', () => ({ focusTerminalTabSurface: vi.fn() }))
-vi.mock('@/runtime/runtime-git-status-client', async (importOriginal) => ({
+vi.mock('@/runtime/source-control/git/runtime-git-status-client', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getRuntimeGitMutationInFlight: async () => ({ inFlight: false })
 }))

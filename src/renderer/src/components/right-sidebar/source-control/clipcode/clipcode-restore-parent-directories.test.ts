@@ -8,8 +8,8 @@ const { createRuntimePath, statRuntimePath } = vi.hoisted(() => ({
   statRuntimePath: vi.fn()
 }))
 // Why these modules: they are the runtime file clients upstream's tab-create-entry-action uses.
-vi.mock('@/runtime/runtime-file-mutation-client', () => ({ createRuntimePath }))
-vi.mock('@/runtime/runtime-file-metadata-client', () => ({ statRuntimePath }))
+vi.mock('@/runtime/files/mutations/runtime-file-mutation-client', () => ({ createRuntimePath }))
+vi.mock('@/runtime/files/metadata/runtime-file-metadata-client', () => ({ statRuntimePath }))
 
 const remote: RuntimeFileOperationArgs = {
   target: { kind: 'environment', environmentId: 'env-1' },

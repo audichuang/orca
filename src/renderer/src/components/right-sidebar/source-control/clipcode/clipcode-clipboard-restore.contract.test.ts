@@ -25,7 +25,7 @@ import { readCandidateState } from './clipcode-restore-target-state'
 // Runs the plugins' frozen pathCases / restoreCases through the real planner and target-state
 // reader on a real temp tree. Orca restores into ONE root (the plugins' primary root `project`).
 
-vi.mock('@/runtime/runtime-file-mutation-client', () => ({
+vi.mock('@/runtime/files/mutations/runtime-file-mutation-client', () => ({
   readRuntimeDirectory: async (_context: unknown, dirPath: string) =>
     (await readdir(dirPath, { withFileTypes: true })).map((entry) => ({
       name: entry.name,
@@ -33,7 +33,7 @@ vi.mock('@/runtime/runtime-file-mutation-client', () => ({
       isSymlink: entry.isSymbolicLink()
     }))
 }))
-vi.mock('@/runtime/runtime-file-metadata-client', () => ({
+vi.mock('@/runtime/files/metadata/runtime-file-metadata-client', () => ({
   statRuntimePath: async (_context: unknown, filePath: string) => ({
     isDirectory: (await stat(filePath)).isDirectory(),
     size: 0,
@@ -42,7 +42,7 @@ vi.mock('@/runtime/runtime-file-metadata-client', () => ({
   isMissingRuntimePathError: (error: unknown) => String(error).includes('ENOENT')
 }))
 // Mirrors the host read: lenient UTF-8 decode, NUL means binary.
-vi.mock('@/runtime/runtime-file-read-client', () => ({
+vi.mock('@/runtime/files/reads/runtime-file-read-client', () => ({
   readRuntimeFileContent: async ({ filePath }: { filePath: string }) => {
     const bytes = await readFile(filePath)
     return { content: bytes.toString('utf8'), isBinary: bytes.includes(0) }

@@ -6,8 +6,10 @@ import { STRUCTURED_AGENT_SESSION_REGISTERED_AGENTS_RUNTIME_CAPABILITY as CATALO
 import { folderWorkspaceKey } from '../../../shared/workspace-scope'
 
 const rpc = vi.hoisted(() => ({ call: vi.fn(), subscribe: vi.fn() }))
-vi.mock('@/runtime/runtime-rpc-client', () => ({ callRuntimeRpc: rpc.call }))
-vi.mock('@/runtime/runtime-rpc-subscribe', () => ({ subscribeRuntimeRpc: rpc.subscribe }))
+vi.mock('@/runtime/rpc/calls/runtime-rpc-call', () => ({ callRuntimeRpc: rpc.call }))
+vi.mock('@/runtime/rpc/subscriptions/runtime-rpc-subscribe', () => ({
+  subscribeRuntimeRpc: rpc.subscribe
+}))
 import { useAppStore } from '@/store'
 import { makeFolderWorkspace } from '@/store/folder-workspaces/folder-workspace.test-fixture'
 import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'

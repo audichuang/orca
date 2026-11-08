@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 
 const readRuntimeDirectory = vi.fn()
-vi.mock('@/runtime/runtime-file-mutation-client', () => ({
+vi.mock('@/runtime/files/mutations/runtime-file-mutation-client', () => ({
   readRuntimeDirectory: (...args: unknown[]) => readRuntimeDirectory(...args)
 }))
-vi.mock('@/runtime/runtime-file-metadata-client', () => ({
+vi.mock('@/runtime/files/metadata/runtime-file-metadata-client', () => ({
   isMissingRuntimePathError: (error: unknown) => String(error).includes('ENOENT')
 }))
 

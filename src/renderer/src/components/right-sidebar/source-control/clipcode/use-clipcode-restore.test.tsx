@@ -11,17 +11,17 @@ const statRuntimePath = vi.fn()
 const readRuntimeFileContent = vi.fn()
 
 vi.mock('sonner', () => ({ toast: { warning: vi.fn(), error: vi.fn(), success: vi.fn() } }))
-vi.mock('@/runtime/runtime-file-mutation-client', () => ({
+vi.mock('@/runtime/files/mutations/runtime-file-mutation-client', () => ({
   readRuntimeDirectory: (...args: unknown[]) => readRuntimeDirectory(...args),
   writeRuntimeFile: async (_c: unknown, path: string) => void calls.push(`write ${path}`),
   deleteRuntimePath: async (_c: unknown, path: string) => void calls.push(`delete ${path}`),
   createRuntimePath: async () => undefined
 }))
-vi.mock('@/runtime/runtime-file-metadata-client', () => ({
+vi.mock('@/runtime/files/metadata/runtime-file-metadata-client', () => ({
   statRuntimePath: (...args: unknown[]) => statRuntimePath(...args),
   isMissingRuntimePathError: (error: unknown) => String(error).includes('ENOENT')
 }))
-vi.mock('@/runtime/runtime-file-read-client', () => ({
+vi.mock('@/runtime/files/reads/runtime-file-read-client', () => ({
   readRuntimeFileContent: (...args: unknown[]) => readRuntimeFileContent(...args)
 }))
 vi.mock('./clipcode-restore-parent-directories', () => ({

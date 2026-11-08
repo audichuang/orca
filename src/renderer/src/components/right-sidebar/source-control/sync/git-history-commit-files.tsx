@@ -11,9 +11,12 @@ import {
 import { FileTypeIcon } from '@/components/FileTypeIcon'
 import { basename, dirname } from '@/lib/path'
 import { useIntlLocale, useTranslate } from '@/i18n/use-translate'
+import { cn } from '@/lib/utils'
 import { formatGitHistoryTimestamp } from './git-history-format'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitFileStatus } from '../../../../../../shared/git/status/git-status-types'
+import type { GitHistoryCommitFilesMenuRenderer } from './git-history-panel-slots'
+import { useCommitFilesTreeLayout, type CommitFilesTreeRows } from './git-history-commit-files-tree'
 
 export type GitHistoryCommitFilesState =
   | { status: 'loading' }
@@ -22,22 +25,36 @@ export type GitHistoryCommitFilesState =
 
 function CommitFileRow({
   entry,
+  selected,
+  indentPx,
   onOpen
 }: {
   entry: GitBranchChangeEntry
+  selected: boolean
+  /** Tree indent; the folder rows above carry the path, so the hint is dropped. */
+  indentPx?: number
   onOpen: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
 }): React.JSX.Element {
   const status = entry.status as GitFileStatus
   const fileName = basename(entry.path)
   const parentDir = dirname(entry.path)
-  const dirPath = parentDir === '.' ? '' : parentDir
+  const dirPath = indentPx !== undefined || parentDir === '.' ? '' : parentDir
 
   return (
     <button
       type="button"
-      className="group flex w-full min-w-0 cursor-pointer items-center gap-1 py-1 pl-9 pr-3 text-left text-xs transition-colors hover:bg-accent/40"
+      className={cn(
+        'group flex w-full min-w-0 cursor-pointer items-center gap-1 py-1 pr-3 text-left text-xs transition-colors',
+        indentPx === undefined && 'pl-9',
+        // Why: the selected look (main.css) must not be washed out by the plain hover tint.
+        !selected && 'hover:bg-accent/40'
+      )}
+      style={indentPx === undefined ? undefined : { paddingLeft: `${indentPx}px` }}
       title={entry.path}
       data-testid="git-history-commit-file"
+      data-commit-file-path={entry.path}
+      data-selected={selected ? 'true' : undefined}
+      aria-pressed={selected || undefined}
       onClick={(event) => onOpen(entry, toSourceControlRowOpenEvent(event))}
       onDoubleClick={(event) => onOpen(entry, toPermanentSourceControlRowOpenEvent(event))}
     >
@@ -75,12 +92,19 @@ function CommitFileRow({
   )
 }
 
+const NO_SELECTION: ReadonlySet<string> = new Set()
+
 function CommitFilesBody({
   state,
+  renderRows,
+  selectedPaths = NO_SELECTION,
   onOpenFile,
   onOpenAll
 }: {
   state: GitHistoryCommitFilesState
+  /** Set in tree layout once the files are ready. */
+  renderRows?: CommitFilesTreeRows
+  selectedPaths?: ReadonlySet<string>
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   onOpenAll?: () => void
 }): React.JSX.Element {
@@ -110,9 +134,24 @@ function CommitFilesBody({
 
   return (
     <>
-      {state.entries.map((entry) => (
-        <CommitFileRow key={entry.path} entry={entry} onOpen={onOpenFile} />
-      ))}
+      {renderRows
+        ? renderRows((entry, indentPx) => (
+            <CommitFileRow
+              key={entry.path}
+              entry={entry}
+              indentPx={indentPx}
+              selected={selectedPaths.has(entry.path)}
+              onOpen={onOpenFile}
+            />
+          ))
+        : state.entries.map((entry) => (
+            <CommitFileRow
+              key={entry.path}
+              entry={entry}
+              selected={selectedPaths.has(entry.path)}
+              onOpen={onOpenFile}
+            />
+          ))}
       {onOpenAll && (
         <button
           type="button"
@@ -137,22 +176,49 @@ export function GitHistoryCommitFiles({
   author,
   timestamp,
   onOpenFile,
-  onOpenAll
+  onOpenAll,
+  renderFilesMenu,
+  layout = 'list',
+  className
 }: {
   state: GitHistoryCommitFilesState
+  layout?: 'list' | 'tree'
   author?: string
   timestamp?: number
-  onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
+  /** `shown.entries` is the list in display order, so a diff can step to its neighbours. */
+  onOpenFile: (
+    entry: GitBranchChangeEntry,
+    event: SourceControlRowOpenEvent,
+    shown: { entries: readonly GitBranchChangeEntry[] }
+  ) => void
   onOpenAll?: () => void
+  renderFilesMenu?: GitHistoryCommitFilesMenuRenderer
+  className?: string
 }): React.JSX.Element {
+  const { entries: menuEntries, renderRows } = useCommitFilesTreeLayout(layout, state)
+  const openFile = (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent): void =>
+    onOpenFile(entry, event, { entries: menuEntries })
+  const renderBody = (selectedPaths?: ReadonlySet<string>): React.JSX.Element => (
+    <CommitFilesBody
+      state={state}
+      renderRows={renderRows}
+      selectedPaths={selectedPaths}
+      onOpenFile={openFile}
+      onOpenAll={onOpenAll}
+    />
+  )
   const intlLocale = useIntlLocale()
   const meta = [author, formatGitHistoryTimestamp(timestamp, intlLocale)]
     .filter(Boolean)
     .join(' · ')
   return (
-    <div className="border-l border-border/60 bg-muted/20">
+    <div className={cn('border-l border-border/60 bg-muted/20', className)}>
       {meta && <div className="py-1 pl-9 pr-3 text-[11px] text-muted-foreground">{meta}</div>}
-      <CommitFilesBody state={state} onOpenFile={onOpenFile} onOpenAll={onOpenAll} />
+      {renderFilesMenu
+        ? renderFilesMenu(menuEntries, openFile, (selectedPaths) => (
+            <div>{renderBody(selectedPaths)}</div>
+          ))
+        : renderBody()}
     </div>
   )
 }

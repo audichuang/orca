@@ -23,7 +23,7 @@ vi.mock('@/components/editor/autosave/editor-autosave', () => ({
   notifyEditorExternalFileChange: mocks.notify,
   requestEditorFileSave: vi.fn()
 }))
-vi.mock('@/runtime/runtime-git-working-tree-client', () => ({
+vi.mock('@/runtime/source-control/git/runtime-git-working-tree-client', () => ({
   resolveRuntimeGitConflict: mocks.resolve,
   discardRuntimeGitPath: vi.fn(),
   bulkDiscardRuntimeGitPaths: vi.fn(),

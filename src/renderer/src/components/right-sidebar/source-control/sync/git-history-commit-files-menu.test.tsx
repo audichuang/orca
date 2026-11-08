@@ -24,6 +24,14 @@ const mocks = vi.hoisted((): { menuProps: MenuProps | null; copy: ReturnType<typ
   menuProps: null,
   copy: vi.fn()
 }))
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 28,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({ index, key: index, start: index * 28 })),
+    measureElement: vi.fn()
+  })
+}))
 vi.mock('../listing/entry-context-menu', () => ({
   SourceControlEntryContextMenu: (props: MenuProps) => {
     mocks.menuProps = props
@@ -54,7 +62,6 @@ const entries: GitBranchChangeEntry[] = [
 const defaultModel = {
   activeConnectionId: null,
   activeRepoTarget: { kind: 'local' as const },
-  editorWorktreeId: 'folder-1',
   revealInExplorer: vi.fn()
 }
 
@@ -133,7 +140,6 @@ describe('GitHistoryCommitFilesMenu', () => {
     const model = {
       activeConnectionId: null,
       activeRepoTarget: { kind: 'local' as const },
-      editorWorktreeId: 'folder-1',
       revealInExplorer: vi.fn()
     }
     renderMenu(model, onOpenFile)
@@ -156,13 +162,13 @@ describe('GitHistoryCommitFilesMenu', () => {
       expect.objectContaining({ altKey: true })
     )
     mocks.menuProps?.onRevealInExplorer('repo-wt', '/repo/src/two.ts')
-    expect(model.revealInExplorer).toHaveBeenCalledWith('folder-1', '/repo/src/two.ts')
+    expect(model.revealInExplorer).toHaveBeenCalledWith('repo-wt', '/repo/src/two.ts')
     copyFullSource()
     const args = mocks.copy.mock.calls[0]?.[0]
     expect(args).toMatchObject({
       items: [item],
       worktreeId: 'repo-wt',
-      editorWorktreeId: 'folder-1'
+      placementWorkspaceId: null
     })
     await expect(args.loadCommitFiles(item)).resolves.toEqual([entries[1]])
   })

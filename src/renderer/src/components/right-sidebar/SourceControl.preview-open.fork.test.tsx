@@ -80,7 +80,7 @@ vi.mock('@/components/confirmation-dialog-context', () => ({
   useConfirmationDialog: () => vi.fn().mockResolvedValue(true)
 }))
 
-vi.mock('@/runtime/runtime-git-working-tree-client', async (importOriginal) => {
+vi.mock('@/runtime/source-control/git/runtime-git-working-tree-client', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
   return {
     ...actual,
