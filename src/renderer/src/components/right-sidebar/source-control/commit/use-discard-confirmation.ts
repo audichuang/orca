@@ -13,13 +13,14 @@ import {
   type DiscardAllArea
 } from '../../../../../../shared/source-control/listing/source-control-discard-all-sequence'
 import { discardDeletesEntryFile } from './discard-confirmation'
-import { readIpcErrorMessage } from '@/lib/ipc-error'
+import { readGitCommandFailureMessage } from './git-command-failure-message'
 import {
   dismissSourceControlEntryFailureToast,
   showSourceControlEntryFailureToast
 } from './source-control-entry-failure-toast'
 import type { PendingDiscardConfirmation } from './discard-dialog'
 import type { SourceControlEntryGroups } from '../../../../../../shared/source-control/listing/source-control-section-order'
+import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 
 export function useSourceControlDiscardConfirmation({
   activeRepoTarget,
@@ -53,6 +54,7 @@ export function useSourceControlDiscardConfirmation({
     setPendingDiscard(null)
   }
 
+  const scope = useSourceControlWorktreeScope()
   const handleDiscard = useCallback(
     async (entry: GitStatusEntry): Promise<void> => {
       // Catch only discard; later refresh failure must not claim a successful discard failed.
@@ -67,14 +69,21 @@ export function useSourceControlDiscardConfirmation({
           deletesFile: discardDeletesEntryFile(entry),
           error,
           worktreeId: activeWorktreeId,
-          worktreeName: worktreePath ? basename(worktreePath) : null
+          worktreeName: worktreePath ? basename(worktreePath) : null,
+          foregroundWorkspaceId: scope?.editorWorktreeId
         })
         return
       }
       dismissSourceControlEntryFailureToast(activeWorktreeId)
       await refreshActiveGitStatusAfterMutation()
     },
-    [activeWorktreeId, discardSingle, refreshActiveGitStatusAfterMutation, worktreePath]
+    [
+      activeWorktreeId,
+      scope?.editorWorktreeId,
+      discardSingle,
+      refreshActiveGitStatusAfterMutation,
+      worktreePath
+    ]
   )
 
   // Bulk discard preserves unresolved/local resolutions; shared sequencing also supports older SSH per-file fallback.
@@ -117,11 +126,11 @@ export function useSourceControlDiscardConfirmation({
               'auto.components.right.sidebar.SourceControl.a5e5a11090',
               'Discard all failed — unable to unstage files before discard'
             ),
-            { description: readIpcErrorMessage(errors[0]) }
+            { description: readGitCommandFailureMessage(errors[0]) }
           )
         } else if (result.failed.length > 0) {
           // Limit bulk failures to the first error and sample paths so the toast stays readable.
-          const firstMsg = readIpcErrorMessage(errors[0])
+          const firstMsg = readGitCommandFailureMessage(errors[0])
           const sample = result.failed.slice(0, 3).join(', ')
           const hiddenCount = result.failed.length - 3
           const samplePaths =

@@ -1,4 +1,6 @@
 import { translate } from '@/i18n/i18n'
+import { getOpenFileGitWorktreeId, type StatusReconcileGitOptions } from './open-file-git-owner'
+import { isForkEditorTabKind } from '../../../../../../shared/fork-editor-tab-kinds'
 import type {
   GitConflictKind,
   GitStatusEntry,
@@ -128,7 +130,8 @@ export function reconcileOpenFilesForStatus(
   openFiles: OpenFile[],
   worktreeId: string,
   nextEntries: GitStatusEntry[],
-  statusIsComplete: boolean
+  statusIsComplete: boolean,
+  { gitRelativePathOf = (file) => file.relativePath }: StatusReconcileGitOptions = {}
 ): OpenFile[] {
   let entriesByPath: Map<string, GitStatusEntry> | undefined
   let stagedEntriesByPath: Map<string, GitStatusEntry> | undefined
@@ -136,7 +139,7 @@ export function reconcileOpenFilesForStatus(
 
   const nextOpenFiles = openFiles.flatMap((originalFile) => {
     let file = originalFile
-    if (file.worktreeId !== worktreeId) {
+    if (getOpenFileGitWorktreeId(file) !== worktreeId) {
       return [file]
     }
 
@@ -145,6 +148,9 @@ export function reconcileOpenFilesForStatus(
       file.mode === 'check-details' ||
       file.mode === 'git-graph'
     ) {
+      return [file]
+    }
+    if (isForkEditorTabKind(file.mode)) {
       return [file]
     }
 
@@ -157,7 +163,7 @@ export function reconcileOpenFilesForStatus(
           }
         }
       }
-      const entry = stagedEntriesByPath.get(file.relativePath)
+      const entry = stagedEntriesByPath.get(gitRelativePathOf(file))
       if (entry) {
         const oldPath = entry.status === 'renamed' ? entry.oldPath : undefined
         if (file.branchOldPath !== oldPath) {
@@ -173,7 +179,7 @@ export function reconcileOpenFilesForStatus(
 
     // Most refreshes have no open conflicts and need no status-path index.
     entriesByPath ??= new Map(nextEntries.map((entry) => [entry.path, entry]))
-    const entry = entriesByPath.get(file.relativePath)
+    const entry = entriesByPath.get(gitRelativePathOf(file))
 
     // Why: a capped snapshot cannot prove that an omitted conflict was resolved.
     if (!entry && !statusIsComplete) {

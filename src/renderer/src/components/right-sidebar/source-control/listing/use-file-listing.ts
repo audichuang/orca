@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { deriveSourceControlPushRecovery } from '../sync/push-recovery'
-import { isSourceControlSplitOpenModifier, type SourceControlRowOpenEvent } from './split-open'
+import { isSourceControlSplitOpenModifier } from './split-open'
 import { useSourceControlSelection } from './use-selection'
 import { useSourceControlSubmoduleStatus } from './use-submodule-status'
 import type { SourceControlActionError } from '../sync/action-error'
@@ -27,7 +27,6 @@ export function useSourceControlFileListing({
   isBranchVisible,
   isFolder,
   isGitHistoryExpanded,
-  isMac,
   refreshActiveGitStatusAfterMutation,
   remoteActionError,
   repositoryHuge,
@@ -52,7 +51,6 @@ export function useSourceControlFileListing({
   isBranchVisible: boolean
   isFolder: boolean
   isGitHistoryExpanded: boolean
-  isMac: boolean
   refreshActiveGitStatusAfterMutation: SourceControlStatusRefresh['refreshActiveGitStatusAfterMutation']
   remoteActionError: SourceControlActionError | null
   repositoryHuge: SourceControlWorktreeContext['repositoryHuge']
@@ -121,7 +119,6 @@ export function useSourceControlFileListing({
   // Modifier-click opens a right split to preserve the current pane.
   const { resolveSplitTargetGroupId, activeOpenRowKeys, handleOpenDiff, openCommittedDiff } =
     useSourceControlRowOpening({
-      isMac,
       activeWorktreeId,
       worktreePath,
       visibleSelectionEntries,
@@ -129,15 +126,11 @@ export function useSourceControlFileListing({
       branchSummary
     })
 
-  const shouldOpenAsSplit = useCallback(
-    (event: SourceControlRowOpenEvent) => isSourceControlSplitOpenModifier(event, isMac),
-    [isMac]
-  )
   const { selectedKeys, handleSelect, handleContextMenu, clearSelection } =
     useSourceControlSelection({
       flatEntries: visibleSelectionEntries,
       onOpenDiff: handleOpenDiff,
-      shouldOpenAsSplit,
+      shouldOpenAsSplit: isSourceControlSplitOpenModifier,
       containerRef: sourceControlRef
     })
 

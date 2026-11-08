@@ -15,6 +15,7 @@ import type {
   ConflictReviewState,
   DiffSource,
   OpenCheckRunDetailsState,
+  OpenGitGraphState,
   OpenConflictMetadata
 } from '../../../../../../shared/editor-tab-view-types'
 
@@ -39,6 +40,8 @@ export type OpenFile = {
   filePath: string
   relativePath: string
   worktreeId: string
+  /** Worktree that owns this tab's git state when it differs from `worktreeId` (folder-workspace repo sections); persisted with the session. An edit tab's `relativePath` stays relative to `worktreeId`; diff, conflict-review and combined tabs, and Source Control opens outside the folder root, are relative to this repo. */
+  gitWorktreeId?: string
   language: string
   isDirty: boolean
   // Why: remote untitled cleanup must target the creating environment even if the user later switches runtime.
@@ -83,6 +86,8 @@ export type OpenFile = {
   fileContentReloadNonce?: number
   /** Why: CI check-details tabs are virtual editor tabs backed by fetched PR check-run metadata, not a file on disk. */
   checkRunDetails?: OpenCheckRunDetailsState
+  /** Fork: the repo a Git Graph tab shows; the tab itself stays owned by `worktreeId`. */
+  gitGraph?: OpenGitGraphState
   // Only host-mirrored tabs may be culled on omission; locally opened tabs survive.
   mirroredFromRuntimeSession?: boolean
   // Read-only is orthogonal to mode: logs cannot edit/autosave/rename; persist only true.
@@ -126,4 +131,6 @@ export type EditorOpenTargetOptions = {
   preview?: boolean
   runtimeEnvironmentId?: string | null
   forceContentReload?: boolean
+  /** Repo worktree backing the tab's git reads when `worktreeId` is a folder workspace. */
+  gitWorktreeId?: string
 }

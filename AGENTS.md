@@ -64,3 +64,11 @@ Every change must consider these areas:
 ## Git / GitHub
 
 If changing code around `git`, `gh`, source-control, or review behavior read [`docs/agents-md-refs/git-workflow.md`](./docs/agents-md-refs/git-workflow.md).
+
+# Fork Maintenance
+
+This checkout is a personal fork. Before creating a branch, pushing, opening a PR, rebasing onto an upstream release, merging into `develop`, releasing, or adding tests for fork features, read `FORK.md`. Where these lines differ from the sections above, they win in this fork:
+
+- The `$electron` skill named above is not installed here; for rendered UI checks use the e2e harness (`tests/e2e/helpers/orca-app.ts`) with Playwright CDP.
+- Hands-on UI rounds the user asks for (the `orca-lcu-ui-test` skill, or Codex desktop) drive the visible Orca Dev window; automated tests still follow the hidden-window, no-computer-use rules above.
+- Pass the fork base to the quality gate: `pnpm run check:code-quality:changed <tag>` (FORK.md says which tag). The bare form diffs against upstream `main`.

@@ -22,6 +22,7 @@ import {
 import { useTranslate } from '@/i18n/use-translate'
 import { addAppKeyListener, removeAppKeyListener } from '@/lib/app-keyboard-router'
 import { cn } from '@/lib/utils'
+import { forkEditorTabIconElement } from '@/components/git-graph-tab/git-graph-editor-surfaces'
 
 type SwitcherState = {
   items: RecentTabSwitcherItem[]
@@ -52,7 +53,7 @@ function TabIcon({ item }: { item: RecentTabSwitcherItem }): React.JSX.Element {
   ) {
     return <GitCompare className={className} />
   }
-  return <FileText className={className} />
+  return forkEditorTabIconElement(item.contentType, className) ?? <FileText className={className} />
 }
 
 export default function RecentTabSwitcher(): React.JSX.Element | null {

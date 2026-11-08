@@ -7,5 +7,18 @@
   "enabledPlugins": {
     "orca-typescript@orca-agent-plugins": true,
     "typescript-lsp@claude-plugins-official": false
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/config/scripts/zsh-colon-modifier-guard.mjs\"; [ -f \"$f\" ] || f=\"$CLAUDE_PROJECT_DIR/.rebase-review/zsh-colon-modifier-guard.mjs\"; [ -f \"$f\" ] || exit 0; exec node \"$f\""
+          }
+        ]
+      }
+    ]
   }
 }

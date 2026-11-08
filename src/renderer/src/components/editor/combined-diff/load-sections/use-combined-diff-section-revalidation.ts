@@ -13,6 +13,7 @@ import {
   type CombinedDiffFileTreeMode
 } from '../resolve-changes/combined-diff-section-identity'
 import type { CombinedDiffSectionLoadRegistry } from './combined-diff-section-load-registry'
+import { resolveCombinedDiffChangedSectionPath } from './combined-diff-external-change-path'
 
 // Share status and disk-write watches so both apply identical eligibility rules.
 export function useCombinedDiffSectionRevalidation({
@@ -76,7 +77,10 @@ export function useCombinedDiffSectionRevalidation({
     }
     const handler = (event: Event): void => {
       const detail = (event as CustomEvent<EditorPathMutationTarget>).detail
-      if (!detail || detail.worktreeId !== file.worktreeId) {
+      if (
+        !detail ||
+        (detail.worktreeId !== file.worktreeId && detail.worktreeId !== file.gitWorktreeId)
+      ) {
         return
       }
       const hasRuntimeOwnerFilter = Object.hasOwn(detail, 'runtimeEnvironmentId')
@@ -85,9 +89,13 @@ export function useCombinedDiffSectionRevalidation({
       if (hasRuntimeOwnerFilter && targetRuntimeOwner !== fileRuntimeOwner) {
         return
       }
+      const sectionPath = resolveCombinedDiffChangedSectionPath(file.filePath, detail)
+      if (!sectionPath) {
+        return
+      }
       for (const area of ['unstaged', 'staged', 'untracked'] as const) {
         const key = getCombinedDiffFileTreeSectionKey('uncommitted', {
-          path: detail.relativePath,
+          path: sectionPath,
           status: 'modified',
           area
         })
@@ -101,6 +109,8 @@ export function useCombinedDiffSectionRevalidation({
     return () =>
       window.removeEventListener(ORCA_EDITOR_EXTERNAL_FILE_CHANGE_EVENT, handler as EventListener)
   }, [
+    file.filePath,
+    file.gitWorktreeId,
     file.runtimeEnvironmentId,
     file.worktreeId,
     requestSectionReload,

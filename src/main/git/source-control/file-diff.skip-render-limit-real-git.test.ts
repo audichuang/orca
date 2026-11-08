@@ -1,0 +1,146 @@
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, readdirSync, utimesSync } from 'node:fs'
+import { rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import * as path from 'node:path'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type {
+  GitDiffResult,
+  GitDiffTextResult
+} from '../../../shared/git/diff/git-diff-compare-types'
+import { createLocalGitProvider } from '../../providers/local-git-provider'
+import { getDiff } from './file-diff'
+import { invalidateGitReadCaches, settledDiffCache } from './git-read-cache-invalidation'
+
+function git(dir: string, args: string[]): void {
+  execFileSync('git', args, { cwd: dir, stdio: 'pipe' })
+}
+
+const BIG_INDEX_TEXT = 'i\n'.repeat(130_000)
+
+/** Backdate every file past the stamp's racy-write margin so the settled diff cache stores reads. */
+function settle(dir: string): void {
+  const past = new Date('2020-01-01T00:00:00Z')
+  for (const entry of readdirSync(dir, { withFileTypes: true, recursive: true })) {
+    utimesSync(path.join(entry.parentPath, entry.name), past, past)
+  }
+}
+
+describe('staged diff with skipRenderLimit', () => {
+  let repo: string
+
+  beforeEach(async () => {
+    repo = mkdtempSync(path.join(tmpdir(), 'orca-skip-render-limit-'))
+    git(repo, ['init'])
+    git(repo, ['config', 'user.email', 'test@example.com'])
+    git(repo, ['config', 'user.name', 'Test User'])
+    invalidateGitReadCaches()
+    await writeFile(path.join(repo, 'big.txt'), 'base\n')
+    git(repo, ['add', '.'])
+    git(repo, ['commit', '-m', 'initial'])
+    await writeFile(path.join(repo, 'big.txt'), BIG_INDEX_TEXT)
+    git(repo, ['add', 'big.txt'])
+    await writeFile(path.join(repo, 'big.txt'), `${BIG_INDEX_TEXT}worktree-tail\n`)
+  })
+
+  afterEach(async () => {
+    invalidateGitReadCaches()
+    await rm(repo, { recursive: true, force: true })
+  })
+
+  async function diff(
+    host: 'native' | 'provider',
+    skipRenderLimit: boolean
+  ): Promise<GitDiffTextResult> {
+    const result = await rawDiff(host, skipRenderLimit)
+    if (result.kind !== 'text') {
+      throw new Error('expected a text diff')
+    }
+    return result
+  }
+
+  async function rawDiff(
+    host: 'native' | 'provider',
+    skipRenderLimit: boolean
+  ): Promise<GitDiffResult> {
+    if (host === 'native') {
+      return getDiff(repo, 'big.txt', true, false, { skipRenderLimit })
+    }
+    // Why: runtime RPC and IPC diffs reach git through the provider, so it must forward the flag.
+    return createLocalGitProvider().getDiff(repo, 'big.txt', true, false, undefined, {
+      skipRenderLimit
+    })
+  }
+
+  it.each(['native', 'provider'] as const)(
+    'returns the full index text on %s without leaking it into limited reads',
+    async (host) => {
+      const limitedFirst = await diff(host, false)
+      expect(limitedFirst.largeDiffRenderLimit?.limited).toBe(true)
+      expect(limitedFirst.modifiedContent).toBe('')
+
+      const full = await diff(host, true)
+      expect(full.largeDiffRenderLimit).toBeUndefined()
+      expect(full.modifiedContent).toBe(BIG_INDEX_TEXT)
+
+      const limitedAgain = await diff(host, false)
+      expect(limitedAgain.largeDiffRenderLimit?.limited).toBe(true)
+      expect(limitedAgain.modifiedContent).toBe('')
+    }
+  )
+
+  // Why: a repo idle past the racy-write margin caches the viewer's limited read; Copy Full Source must not get it.
+  it.each(['native', 'provider'] as const)(
+    'keeps limited and full reads apart in the settled cache on %s',
+    async (host) => {
+      settle(repo)
+      settledDiffCache.resetStatsForTests()
+
+      expect((await diff(host, false)).modifiedContent).toBe('')
+      expect((await diff(host, true)).modifiedContent).toBe(BIG_INDEX_TEXT)
+      expect((await diff(host, false)).modifiedContent).toBe('')
+      expect(settledDiffCache.stats().hits).toBe(1)
+    }
+  )
+})
+
+describe('a moved submodule gitlink with skipRenderLimit', () => {
+  let root: string
+
+  beforeEach(async () => {
+    root = mkdtempSync(path.join(tmpdir(), 'orca-skip-render-limit-submodule-'))
+    const inner = path.join(root, 'inner')
+    const outer = path.join(root, 'outer')
+    for (const dir of [inner, outer]) {
+      git(root, ['init', dir])
+      git(dir, ['config', 'user.email', 'test@example.com'])
+      git(dir, ['config', 'user.name', 'Test User'])
+    }
+    invalidateGitReadCaches()
+    await writeFile(path.join(inner, 'big.txt'), 'base\n')
+    git(inner, ['add', '.'])
+    git(inner, ['commit', '-m', 'initial'])
+    git(outer, ['-c', 'protocol.file.allow=always', 'submodule', 'add', inner, 'sub'])
+    git(outer, ['commit', '-m', 'add submodule'])
+    // Commit inside the submodule only: the working gitlink moves while its worktree stays clean.
+    const sub = path.join(outer, 'sub')
+    git(sub, ['config', 'user.email', 'test@example.com'])
+    git(sub, ['config', 'user.name', 'Test User'])
+    await writeFile(path.join(sub, 'big.txt'), BIG_INDEX_TEXT)
+    git(sub, ['commit', '-am', 'grow'])
+  })
+
+  afterEach(async () => {
+    invalidateGitReadCaches()
+    await rm(root, { recursive: true, force: true })
+  })
+
+  it("returns the inner file's full committed text", async () => {
+    const outer = path.join(root, 'outer')
+    const limited = await getDiff(outer, 'sub/big.txt', false)
+    expect(limited.kind === 'text' && limited.largeDiffRenderLimit?.limited).toBe(true)
+
+    const full = await getDiff(outer, 'sub/big.txt', false, false, { skipRenderLimit: true })
+    expect(full).toMatchObject({ kind: 'text', modifiedContent: BIG_INDEX_TEXT })
+  })
+})

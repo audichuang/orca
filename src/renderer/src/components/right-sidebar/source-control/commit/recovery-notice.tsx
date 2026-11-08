@@ -34,6 +34,7 @@ type SourceControlRecoveryNoticeProps = {
   prompt: string | null
   worktreeId: string | null
   groupId: string | null
+  initialCwd?: string | null
   connectionId?: string | null
   repoId?: string | null
   launchPlatform?: NodeJS.Platform
@@ -176,6 +177,7 @@ export function SourceControlRecoveryNotice({
   prompt,
   worktreeId,
   groupId,
+  initialCwd,
   connectionId,
   repoId,
   launchPlatform,
@@ -231,6 +233,7 @@ export function SourceControlRecoveryNotice({
     chevronAriaLabel: copy.chooseAgentAriaLabel,
     worktreeId,
     groupId,
+    initialCwd,
     connectionId,
     repoId,
     launchPlatform,

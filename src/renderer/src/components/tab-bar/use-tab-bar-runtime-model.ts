@@ -5,7 +5,11 @@ import type { GlobalSettings } from '../../../../shared/global-settings-types'
 import type { Tab } from '../../../../shared/tab-types'
 import type { ProjectExecutionRuntimeResolution } from '../../../../shared/execution-host/project-execution-runtime'
 import { useAppStore } from '../../store'
-import { buildStatusMap } from '../../lib/git-path-decoration'
+import {
+  buildEditorTabGitStatusMap,
+  selectEditorTabGitOwnerRoots,
+  selectEditorTabGitStatusByOwner
+} from './editor-tab-git-status'
 import type { AgentDetectionTarget } from '@/hooks/useDetectedAgents'
 import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
 import { getConnectionIdFromState } from '@/lib/connection-context'
@@ -211,7 +215,14 @@ export function useTabBarRuntimeModel({
   ])
   const projectRuntimeShellMenuMode = getProjectRuntimeShellMenuMode(localProjectRuntime)
   const resolvedGroupId = groupId ?? activeGroupIdForWorktree ?? worktreeId
-  const statusByRelativePath = useMemo(() => buildStatusMap(gitStatusEntries), [gitStatusEntries])
+  const gitStatusByOwner = useAppStore(
+    useShallow((s) => selectEditorTabGitStatusByOwner(s, worktreeId))
+  )
+  const gitOwnerRoots = useAppStore(useShallow((s) => selectEditorTabGitOwnerRoots(s, worktreeId)))
+  const statusByRelativePath = useMemo(
+    () => buildEditorTabGitStatusMap(gitStatusEntries, gitStatusByOwner, gitOwnerRoots),
+    [gitStatusEntries, gitStatusByOwner, gitOwnerRoots]
+  )
   const unifiedTabByVisibleId = useMemo(
     () => createUnifiedTabLookup(unifiedTabs, resolvedGroupId),
     [resolvedGroupId, unifiedTabs]

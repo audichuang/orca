@@ -12909,7 +12909,8 @@
             "clipboardStagingUnavailable": "无法复制文件，因为 Orca 的临时存储不可用",
             "revealInFinder": "在 Finder 中显示",
             "openContainingFolder": "打开包含的文件夹",
-            "revealInFileExplorer": "在文件资源管理器中显示"
+            "revealInFileExplorer": "在文件资源管理器中显示",
+            "duplicateAsResult": "复制为 _result.txt"
           },
           "FileExplorerToolbar": {
             "d238264654": "显示 Git 忽略的文件",
@@ -13294,7 +13295,9 @@
             "markResolved": "标记为已解决",
             "keepFile": "保留文件",
             "keepDeletion": "保留删除",
-            "refreshAll": "全部刷新"
+            "refreshAll": "全部刷新",
+            "commitHashes": "提交哈希",
+            "commitMessages": "提交信息"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "无法启动选定的智能体。",
@@ -13908,7 +13911,138 @@
                   "0904be2505": "清除消息以重新生成。",
                   "1ea9ba37aa": "在“设置”->“Git”->“源代码管理 AI”中选择一个智能体。"
                 },
-                "completeMergeFailed": "无法完成合并"
+                "completeMergeFailed": "无法完成合并",
+                "bulk": {
+                  "action": {
+                    "bar": {
+                      "8a434c829f": "复制完整源码",
+                      "4139bc5679": "清除选择"
+                    }
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "multi": {
+                    "repo": {
+                      "panel": {
+                        "4c62351467": "此文件夹下没有已导入的 Git 仓库。将其中的仓库添加到 Orca 后即可在此查看更改。",
+                        "a044a830f1": "刷新所有仓库",
+                        "c023ba6838": "此文件夹位于已导入的仓库内，因此也会列出文件夹之外的变更。",
+                        "efd34a4169": "{{value0}} 的变更列表已截断，复制内容不完整。",
+                        "d98e7b731c": "复制所有变更",
+                        "5de321918e": "此文件夹下的隐藏工作树未包含在内（{{value0}}）。",
+                        "ab32287003": "代码仓库",
+                        "addRepos": "添加此文件夹中的仓库",
+                        "filterRepos": "筛选仓库",
+                        "clearFilter": "清除筛选",
+                        "filterNoMatch": "没有匹配的仓库",
+                        "groupChanges": "有更改",
+                        "groupNoChanges": "无更改"
+                      }
+                    }
+                  },
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "title": "添加此文件夹中的仓库",
+                        "description": "{{value0}} 下的 Git 仓库，包括嵌套在其他仓库中的仓库。",
+                        "scanning": "正在扫描仓库...",
+                        "failed": "无法扫描此文件夹。",
+                        "none": "此文件夹中的所有仓库都已添加。",
+                        "truncated": "扫描提前结束，可能遗漏了部分仓库。",
+                        "hide": "只在此文件夹中显示，不作为侧边栏项目",
+                        "cancel": "取消",
+                        "add": "添加（{{value0}}）"
+                      }
+                    }
+                  },
+                  "repo": {
+                    "row": {
+                      "showInSidebar": "已从侧边栏隐藏。改为显示为侧边栏项目",
+                      "hideFromSidebar": "显示在侧边栏中。改为只在此文件夹中显示"
+                    }
+                  }
+                }
+              },
+              "clipcode": {
+                "clipcode": {
+                  "copy": {
+                    "action": {
+                      "2749202819": "（{{value0}} 个无法读取）",
+                      "e6cdc3a753": "超过 {{value0}} 个 token。",
+                      "21758e255e": "没有可复制的 Git 变更。",
+                      "7828c565da": "（{{value0}} 个因超出大小限制被跳过）",
+                      "65b422bbd1": "已复制 {{value0}} 个 Git 文件",
+                      "7c6daaf4fa": "复制完整源码失败",
+                      "9c3f952874": "{{value0}} 个 Git 文件无法读取。",
+                      "binarySkipped": "（{{value0}} 个二进制文件已跳过）",
+                      "onlyBinarySkipped": "没有可复制的内容：已跳过 {{value0}} 个二进制文件。",
+                      "filesCopied": "已复制 {{value0}} 个文件",
+                      "filesUnreadable": "{{value0}} 个文件无法读取。",
+                      "noFiles": "没有可复制的文件。",
+                      "onlyUnsafeNamesSkipped": "没有可复制的内容：已跳过 {{value0}} 个无法安全还原名称的文件。",
+                      "unsafeNamesSkipped": "（{{value0}} 个文件因名称不安全已跳过）",
+                      "tokenCount": "~{{value0}} 个 token",
+                      "payloadDetails": "{{lines}} 行 · {{chars}} 个字符 · {{words}} 个词"
+                    }
+                  },
+                  "restore": {
+                    "preview": {
+                      "dialog": {
+                        "2c06a4e179": "粘贴并还原",
+                        "87832cd30d": "剪贴板中的文件将写入此文件夹。",
+                        "813199296f": "调整路径（{{value0}}）",
+                        "9a421f14d8": "创建",
+                        "d469ff3b81": "覆盖",
+                        "9cf3526c1f": "删除",
+                        "0d87b3b39d": "跳过",
+                        "80224f9095": "覆盖已有文件",
+                        "677bf0ade9": "取消",
+                        "c0b1b53e49": "还原",
+                        "9bd78385ce": "路径不安全",
+                        "85d6d805ca": "位于文件夹之外",
+                        "67e63b0749": "已不存在",
+                        "becf17b643": "是文件夹",
+                        "4acb11ed21": "复制时已跳过内容",
+                        "ef509f9991": ".git 受保护",
+                        "1f409f3dd6": "路径经过符号链接",
+                        "parentIsFile": "上层路径是文件",
+                        "targetUnreadable": "无法检查现有文件",
+                        "caseConflict": "路径相同但大小写不同",
+                        "nonUtf8Target": "现有文件不是 UTF-8"
+                      }
+                    }
+                  }
+                },
+                "use": {
+                  "clipcode": {
+                    "restore": {
+                      "b124e9c64e": "剪贴板为空或不含文本。",
+                      "1847420a23": "剪贴板中未找到 Snipcode 文件头。",
+                      "af5c90f593": "粘贴并还原失败",
+                      "ae1ec38ef1": "已创建 {{value0}}，已覆盖 {{value1}}，已删除 {{value2}}，已跳过 {{value3}}。",
+                      "19a6f378aa": "…另外还有 {{value0}} 项",
+                      "c9af35dc2d": "失败 {{value0}} 项。"
+                    }
+                  }
+                }
+              },
+              "listing": {
+                "entry": {
+                  "context": {
+                    "menu": {
+                      "9137d88b9f": "复制完整源码",
+                      "ce8235a6a4": "在侧边打开",
+                      "showFileHistory": "显示文件历史记录"
+                    }
+                  }
+                },
+                "uncommitted": {
+                  "sections": {
+                    "1a59d5a05b": "复制完整源码"
+                  }
+                }
               }
             }
           },
@@ -14138,7 +14272,12 @@
             "7b1c4e9a02": "在浏览器中打开提交",
             "8c2d5fab13": "复制提交哈希",
             "9d3e60bc24": "复制提交信息",
-            "ae4f71cd35": "解释更改"
+            "ae4f71cd35": "解释更改",
+            "copyFullSource": "复制完整源码",
+            "copyFullSourceMany": "复制完整源码（{{value0}} 个提交）",
+            "copyHashMany": "复制提交哈希（{{value0}} 个提交）",
+            "copyMessageMany": "复制提交信息（{{value0}} 个提交）",
+            "showInGraph": "在 Git Graph 中显示"
           },
           "pull": {
             "policy": {
@@ -14321,6 +14460,89 @@
             "createInProgress": "正在创建 PR...",
             "workspaceHostUnresolved": "无法解析工作区主机。请刷新工作区后重试。",
             "branchDiscoveryFailed": "分支发现失败。"
+          },
+          "GitHistoryGraph": {
+            "allBranches": "所有分支",
+            "branchCount": "{{value0}} 个分支",
+            "currentBranch": "当前分支",
+            "branchFilter": "分支筛选",
+            "searchBranches": "搜索分支...",
+            "scope": "显示",
+            "sources": "来源",
+            "localBranches": "本地分支",
+            "loadingBranches": "正在加载分支...",
+            "hostTooOld": "此仓库所在主机的 Orca 版本较旧，只能显示当前分支。",
+            "branchesFailed": "无法加载分支",
+            "searchCommits": "搜索提交（author: path:）",
+            "searchCommitsLabel": "搜索提交",
+            "loadMore": "加载更多提交",
+            "noMatchingCommits": "没有符合此筛选条件的提交",
+            "clearAllFilters": "清除筛选",
+            "local": "本地",
+            "showAllBranches": "显示所有分支",
+            "userFilter": "用户",
+            "pathsFilter": "路径",
+            "clearUserFilter": "清除用户筛选",
+            "searchUsers": "搜索用户...",
+            "noUsers": "已加载的提交中没有用户。",
+            "clearPathFilter": "清除路径筛选",
+            "typePath": "相对于仓库的文件或文件夹路径",
+            "typePathHint": "输入路径，然后按 Enter。",
+            "filterByPath": "按 {{value0}} 筛选",
+            "recentPaths": "最近",
+            "clearFilters": "清除",
+            "searchCommitMessages": "搜索提交信息",
+            "tags": "标签"
+          },
+          "GitGraphFullView": {
+            "open": "打开 Git Graph",
+            "description": "当前仓库的提交图。",
+            "message": "提交信息",
+            "author": "作者",
+            "date": "日期",
+            "commit": "提交",
+            "selectCommit": "选择一个提交以查看详情和变更的文件。",
+            "resizeDetails": "调整提交详情宽度",
+            "copyFullSource": "复制所有变更文件的完整源码",
+            "filesInCommits": "变更文件 ({{files}}) · {{commits}} 个提交",
+            "filesChanged": "变更文件 ({{files}})",
+            "toggleBranches": "切换分支面板",
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "往下 {{count}} 列接到 {{sha}} {{subject}}。點一下跳過去。",
+            "laneComesFromAbove": "從上方 {{count}} 列的 {{sha}} {{subject}} 接過來。點一下跳過去。",
+            "laneContinuesPastLoaded": "接到尚未載入的更早 commit。載入更多 commit 後即可跳過去。",
+            "openAllChanges": "打开所有更改",
+            "hideDetails": "隐藏详情",
+            "enterKey": "Enter",
+            "showDetails": "显示详情",
+            "detailsStrip": "详情",
+            "listOptions": "列表选项",
+            "columns": "栏",
+            "twoLineRows": "双行显示",
+            "resetList": "恢复默认",
+            "columnTooNarrow": "列表太窄",
+            "laneContinuesPastLoadedJump": "接到尚未加载的提交 {{sha}}。点击即可加载并跳过去。",
+            "loadingMore": "正在加载更多提交...",
+            "loadCapReached": "已显示前 {{count}} 个提交，这是图表加载的上限。请用 Branch、User 或 Paths 缩小范围。"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "本地",
+            "tags": "标签",
+            "label": "分支与标签",
+            "empty": "尚未加载分支。",
+            "showRef": "不在当前列表中 — 点击以只显示此分支"
+          },
+          "GitGraphCommitInfo": {
+            "author": "作者",
+            "date": "日期",
+            "copySha": "复制提交 SHA",
+            "parents": "父提交",
+            "refs": "引用",
+            "containedIn": "所在分支",
+            "moreBranches": "还有 {{count}} 个",
+            "containedInHint": "只计算末端提交在已加载列表中的分支;列表外的分支不计入。",
+            "children": "子提交",
+            "childrenHint": "已載入的清單中,以這個 commit 為父提交的 commit。"
           }
         }
       },
@@ -16245,6 +16467,11 @@
           "tooLarge": "{{value0}} 过大，无法在 {{value1}} 中打开（{{value2}}；上限为 {{value3}}）。",
           "unsupported": "{{value0}} 无法从此文件的存储位置读取它。请更新托管该文件的 Orca 服务器，或切换到源代码。",
           "readFailed": "无法为 {{value1}} 读取 {{value0}}。{{value2}}"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} 个文件",
+          "pressAgainNext": "再按一次前往下一个文件",
+          "pressAgainPrevious": "再按一次前往上一个文件"
         }
       },
       "diff": {
@@ -16560,7 +16787,10 @@
                 "removeWorktree": "删除工作树",
                 "trashWorktree": "垃圾工作树",
                 "addQuickCommand": "添加快捷命令",
-                "newQuickCommand": "新的快捷命令"
+                "newQuickCommand": "新的快捷命令",
+                "openGitGraph": "打开 git graph",
+                "gitLog": "git 日志",
+                "commitHistory": "提交历史"
               }
             }
           },
@@ -18310,7 +18540,8 @@
           "workspaceDisconnected": "无法运行“{{action}}” — 工作区已断开连接。",
           "noTabGroup": "无法运行“{{action}}” — 没有可用的标签页组。",
           "noMovableChat": "无法运行“{{action}}” — 没有活动且可移动的聊天。",
-          "clientUnsupported": "无法运行“{{action}}” — 此客户端和运行时不支持该操作。"
+          "clientUnsupported": "无法运行“{{action}}” — 此客户端和运行时不支持该操作。",
+          "noGitRepo": "无法运行“{{action}}” — 没有可用的 Git 仓库。"
         }
       },
       "plugins": {
@@ -18345,6 +18576,18 @@
         "setting-global-off": "已在智能体设置中关闭文件夹信任，因此智能体总会询问。",
         "keyword-trust": "信任",
         "keyword-hooks": "钩子"
+      },
+      "gitGraphTab": {
+        "noRepo": "此工作区没有可用的 Git 仓库。",
+        "repoSwitcher": "仓库",
+        "selectRepo": "选择仓库",
+        "searchRepos": "搜索仓库...",
+        "noRepos": "未找到仓库。",
+        "addRepos": "添加仓库...",
+        "addReposMissing": "{{value0}} 个未添加",
+        "addReposButton": "添加此文件夹中的仓库",
+        "openInSourceControl": "在源代码管理中打开",
+        "revealNotLoaded": "该提交不在已加载的历史记录中。"
       }
     },
     "i18n": {
@@ -22282,7 +22525,8 @@
       "terminalSplitDown": "向下拆分终端",
       "terminalSwitchInputSource": "切换输入法/语言（原生）",
       "newAgentTab": "新建 {{agent}} 标签页",
-      "viewPlugins": "打开插件"
+      "viewPlugins": "打开插件",
+      "sourceControlOpenGitGraph": "打开 Git Graph"
     },
     "group": {
       "global": "全局",
