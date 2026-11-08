@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 
 const readRuntimeDirectory = vi.fn()
-vi.mock('@/runtime/files/mutations/runtime-file-mutation-client', () => ({
+vi.mock('@/runtime/files/reads/runtime-directory-read', () => ({
   readRuntimeDirectory: (...args: unknown[]) => readRuntimeDirectory(...args)
 }))
 vi.mock('@/runtime/files/metadata/runtime-file-metadata-client', () => ({

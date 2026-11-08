@@ -43,21 +43,15 @@ src/renderer/src/components/right-sidebar/file-explorer-duplicate-as-result.fork
 # gitWorktreeId persistence: save, reload, restore (layout and session)
 src/renderer/src/store/slices/editor/tabs/open-file-layout-view.fork.test.ts
 src/renderer/src/lib/workspace/persistence/workspace-session-hydration-keys.fork.test.ts
-src/renderer/src/lib/workspace/persistence/workspace-session.fork.test.ts
 src/renderer/src/store/slices/editor-read-only-tabs.fork.test.ts
-src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts
-src/shared/workspace-layout/layout-editor-view.fork.test.ts
 src/shared/workspace-layout/workspace-layout-fact-locations.test.ts
 src/shared/workspace-session-schema.git-owner.test.ts
 src/main/ssh/orcad-migration-path-rewrite.fork.test.ts
 
 # gitWorktreeId on editor open actions: panel, combined view, history, status reconcile
-src/renderer/src/components/editor/combined-diff/CombinedDiffViewer.fork.test.tsx
 src/renderer/src/components/right-sidebar/source-control/panel/panel-content.fork.test.tsx
 src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.fork.test.tsx
 src/renderer/src/store/slices/editor/git/git-status-actions.fork.test.ts
-src/renderer/src/store/slices/editor-open-diff.fork.test.ts
-src/renderer/src/components/editor/EditorConflictReviewSurface.git-owner.test.tsx
 src/renderer/src/components/editor/ExternalFileChangeBanner.git-owner.test.ts
 
 # Source-control row split-open modifiers and Open to the Side
@@ -69,11 +63,9 @@ src/main/project-groups/nested-repo-discovery.fork.test.ts
 src/renderer/src/components/right-sidebar/right-sidebar-activity-visibility.fork.test.ts
 # (the Commits dock slots and toast clearance: panel-content.fork.test.tsx, listed under gitWorktreeId on editor open actions)
 src/renderer/src/components/editor/editor-autosave.fork.test.ts
-src/renderer/src/components/editor/folder-relative-git-consumers.test.tsx
 src/renderer/src/components/editor/editor-external-watch-path-index.fork.test.ts
 src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files-menu.test.tsx
 src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.test.tsx
-src/renderer/src/components/tab-bar/tab-bar-item-model.git-status.fork.test.ts
 src/renderer/src/components/right-sidebar/source-control-entry-context-menu.fork.test.tsx
 src/renderer/src/components/editor/EditorPanelHeader.fork.test.tsx
 src/renderer/src/components/editor/EditorEditFileSurface.fork.test.tsx
@@ -99,31 +91,19 @@ src/main/asar-transparent-stat.electron.test.ts
 
 # Agent launch cwd in folder repos: route input, offered agents, recovery, AI conflicts, dialog, main pane launch
 src/renderer/src/lib/folder-repo-launch-chat-route.test.ts
-src/renderer/src/components/right-sidebar/source-control/ai/use-ai.folder-cwd.test.tsx
 src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts
 
 # Editor folder git-owner routing, mounted owner changes, and diff review notes
-src/renderer/src/store/slices/editor/git/open-history-diff.fork.test.ts
-src/renderer/src/store/slices/editor/tabs/untitled-file-cleanup.fork.test.ts
-src/renderer/src/store/slices/editor/git/open-file-git-owner-merge.test.ts
 src/renderer/src/store/slices/editor/git/git-status-reconciliation.staged-rename.fork.test.ts
 src/renderer/src/components/editor/editor-file-read-git-owner.fork.test.ts
-src/renderer/src/lib/remap-open-editor-tabs-for-path-change.fork.test.ts
 src/renderer/src/components/editor/combined-diff/load-sections/fetch-combined-diff-section.fork.test.ts
 src/renderer/src/components/editor/combined-diff/load-sections/use-combined-diff-section-revalidation.fork.test.tsx
-src/renderer/src/components/editor/combined-diff/review-controls/use-combined-diff-section-actions.fork.test.tsx
-src/renderer/src/components/editor/useEditorPanelDiffContentLoader.fork.test.tsx
-src/renderer/src/components/tab-bar/use-tab-bar-runtime-model.fork.test.tsx
-src/renderer/src/components/editor/folder-diff-notes.fork.test.tsx
 src/renderer/src/components/editor/EditorPanel.fork.test.tsx
-src/renderer/src/components/editor/ExternalFileChangeCompareDialog.fork.test.tsx
 src/renderer/src/components/editor/useDiffViewerFirstChangeAutoScroll.fork.test.tsx
 src/renderer/src/components/editor/markdown-preview/surface/MarkdownPreview.chat-quote.fork.test.tsx
 src/renderer/src/components/editor/MonacoEditor.chat-quote.fork.test.tsx
 src/renderer/src/components/editor/monaco-editor-input-bindings.add-to-chat.fork.test.ts
 src/renderer/src/components/editor/diff-file-boundary-navigation.test.tsx
-src/renderer/src/store/slices/editor/git/folder-file-git-owner.test.ts
-src/renderer/src/hooks/editor-external-watch-overflow.folder-owner.fork.test.ts
 src/renderer/src/components/quick-open-file-history.fork.test.ts
 src/renderer/src/store/slices/store-session-editor-hydration.fork.test.ts
 
