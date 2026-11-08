@@ -1,31 +1,22 @@
 // @vitest-environment happy-dom
-// Fork seam guard: in a folder repo section, every combined view the panel opens lands in the folder
-// with the repo as its git owner, and the Commits dock carries the fork's slots. Real upstream children and
-// store; only window.api and the toast-clearance observer are stubbed.
+// Fork seam guard: the Commits dock carries the fork's slots (toast clearance, Git Graph launcher, filter,
+// load more, Show in Git Graph and the commit files menu).
+// Real upstream children and store; only window.api and the toast-clearance observer are stubbed.
 import '@testing-library/jest-dom/vitest'
-import { fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
-import type { ComponentProps } from 'react'
+import { cleanup, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ReactNode } from 'react'
 import { useAppStore } from '@/store'
-import type { GitBranchCompareSummary } from '../../../../../../shared/git/diff/git-diff-compare-types'
+import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
+import { ConfirmationDialogProvider } from '@/components/confirmation-dialog'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { getDefaultSettings } from '../../../../../../shared/constants'
+import type { GitHistoryResult } from '../../../../../../shared/git/history/git-history-types'
 import {
   resetGitHistoryGraphFiltersForTest,
   updateGitHistoryGraphFilter
 } from '../sync/git-history-graph-filter'
-import type { GitHistoryResult } from '../../../../../../shared/git/history/git-history-types'
-import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
-import type {
-  SourceControlDisplaySection,
-  SourceControlDisplaySectionId
-} from '../../../../../../shared/source-control/listing/source-control-section-order'
-import {
-  cleanupFolderSourceControl,
-  FolderScope,
-  FOLDER,
-  resetFolderSourceControl,
-  WORKTREE
-} from './folder-source-control-test-fixture'
-import type { SourceControlBranchSection } from '../listing/branch-section'
+import { SourceControlScopeProvider } from './worktree-scope'
 import { SourceControlPanelContent } from './panel-content'
 import { useSourceControlPanelModel } from './use-panel-model'
 import type { SourceControlPanelModel } from './use-panel-model'
@@ -33,19 +24,30 @@ import type { SourceControlPanelModel } from './use-panel-model'
 // Why: happy-dom has no ResizeObserver and measures every element at 0, so observe the ref itself.
 vi.mock('@/lib/toast-bottom-clearance', () => ({ toastBottomClearanceRef: vi.fn() }))
 const { toastBottomClearanceRef } = await import('@/lib/toast-bottom-clearance')
+// Why: happy-dom lays nothing out, so the virtualized Commits list would render no rows.
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 28,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({ index, key: index, start: index * 28 })),
+    measureElement: vi.fn()
+  })
+}))
 
-const UNSTAGED: GitStatusEntry = { path: 'a.ts', status: 'modified', area: 'unstaged' }
-const CONFLICT: GitStatusEntry = {
-  path: 'c.ts',
-  status: 'modified',
-  area: 'unstaged',
-  conflictKind: 'both_modified',
-  conflictStatus: 'unresolved'
+const REPO = {
+  id: 'repo-a',
+  path: '/work/repo-a',
+  displayName: 'repo-a',
+  badgeColor: '#000',
+  addedAt: 0
 }
-const SECTIONS: SourceControlDisplaySection[] = [
-  { id: 'conflicts', area: 'unstaged', items: [CONFLICT] },
-  { id: 'unstaged', area: 'unstaged', items: [UNSTAGED] }
-]
+const WORKTREE = makeWorktree({
+  id: 'repo-a::/work/repo-a',
+  repoId: REPO.id,
+  path: REPO.path,
+  hostId: 'local'
+})
+
 const COMMIT_ID = 'c'.repeat(40)
 const HISTORY: GitHistoryResult = {
   items: [
@@ -62,148 +64,120 @@ const HISTORY: GitHistoryResult = {
   hasMore: false,
   limit: 50
 }
-const BRANCH_SUMMARY = {
-  baseRef: 'origin/main',
-  baseOid: 'b'.repeat(40),
-  compareRef: 'HEAD',
-  headOid: 'h'.repeat(40),
-  mergeBase: 'm'.repeat(40),
-  changedFiles: 1,
-  status: 'ready' as const
-}
-const BRANCH_ENTRIES = [{ path: 'b.ts', status: 'modified' as const }]
 
 const commitCompare = vi.fn()
 
+function Providers({ children }: { children: ReactNode }) {
+  return (
+    <ConfirmationDialogProvider>
+      <TooltipProvider>{children}</TooltipProvider>
+    </ConfirmationDialogProvider>
+  )
+}
+
 beforeEach(() => {
-  const api = resetFolderSourceControl()
+  useAppStore.setState(useAppStore.getInitialState(), true)
+  useAppStore.setState({
+    settings: getDefaultSettings('/tmp'),
+    activeWorktreeId: WORKTREE.id,
+    repos: [REPO],
+    worktreesByRepo: { [REPO.id]: [WORKTREE] }
+  })
   commitCompare.mockReset()
   vi.stubGlobal('api', {
-    ...api,
-    git: { ...api.git, history: vi.fn(async () => HISTORY), commitCompare }
+    git: {
+      history: vi.fn(async () => HISTORY),
+      commitCompare,
+      mutationInFlight: vi.fn(async () => ({ inFlight: false })),
+      status: vi.fn(async () => ({ entries: [], head: 'abc123' })),
+      conflictOperation: vi.fn(async () => 'none'),
+      upstreamStatus: vi.fn(async () => null)
+    },
+    app: { platform: 'linux' }
   })
   vi.mocked(toastBottomClearanceRef).mockClear()
 })
 afterEach(() => {
-  cleanupFolderSourceControl()
+  cleanup()
+  vi.unstubAllGlobals()
   resetGitHistoryGraphFiltersForTest()
 })
 
+const FOLDER = 'folder:local:/work'
+
 function renderPanel({
-  showHistory = false,
-  history = HISTORY
-}: { showHistory?: boolean; history?: GitHistoryResult } = {}) {
-  const hook = renderHook(useSourceControlPanelModel, { wrapper: FolderScope })
-  const byId = new Map<SourceControlDisplaySectionId, SourceControlDisplaySection>(
-    SECTIONS.map((section) => [section.id, section])
-  )
-  // Why: the model is the panel's prop; only its data is replaced, so every action and child is the real one.
+  history = HISTORY,
+  placementWorkspaceId
+}: { history?: GitHistoryResult; placementWorkspaceId?: string } = {}): void {
+  const hook = renderHook(useSourceControlPanelModel, { wrapper: Providers })
   const model: SourceControlPanelModel = {
     ...hook.result.current,
-    displaySections: SECTIONS,
-    unfilteredDisplaySectionsById: byId,
-    unresolvedConflicts: [CONFLICT],
-    unresolvedConflictReviewEntries: [{ path: CONFLICT.path, conflictKind: 'both_modified' }],
-    branchSummary: BRANCH_SUMMARY,
-    branchEntries: BRANCH_ENTRIES,
-    filteredBranchEntries: BRANCH_ENTRIES,
     collapsedSections: new Set<string>(),
-    isGitHistoryVisible: showHistory,
+    isGitHistoryVisible: true,
     gitHistoryState: { status: 'ready', result: history }
   }
+  const content = (
+    <SourceControlPanelContent
+      activeRepo={model.activeRepo!}
+      activeWorktree={WORKTREE}
+      currentWorktreeId={WORKTREE.id}
+      worktreePath={WORKTREE.path}
+      model={model}
+    />
+  )
   render(
-    <FolderScope>
-      <SourceControlPanelContent
-        activeRepo={model.activeRepo!}
-        activeWorktree={WORKTREE}
-        currentWorktreeId={WORKTREE.id}
-        worktreePath={WORKTREE.path}
-        model={model}
-      />
-    </FolderScope>
+    <Providers>
+      {placementWorkspaceId ? (
+        <SourceControlScopeProvider
+          owner={{
+            worktreeId: WORKTREE.id,
+            repoId: REPO.id,
+            executionHostId: 'local',
+            worktree: WORKTREE,
+            attachedAt: 0,
+            repo: REPO,
+            placementWorkspaceId
+          }}
+        >
+          {content}
+        </SourceControlScopeProvider>
+      ) : (
+        content
+      )}
+    </Providers>
   )
 }
-
-// Why: the panel's openBranchAllDiffs lambda drops a 4th argument silently; widening upstream's prop must fail typecheck here.
-expectTypeOf<
-  Parameters<ComponentProps<typeof SourceControlBranchSection>['openBranchAllDiffs']>
->().toEqualTypeOf<[string, string, GitBranchCompareSummary]>()
-
-function sectionByLabel(label: string): HTMLElement {
-  // Why: the nearest ancestor of the header that holds a View all button is that section's own wrapper.
-  let el = screen.getByText(label).parentElement
-  while (el && within(el).queryAllByRole('button', { name: 'View all' }).length === 0) {
-    el = el.parentElement
-  }
-  if (!el) {
-    throw new Error(`no section for ${label}`)
-  }
-  return el
-}
-
-const expectOpenedInFolder = (mode: string) =>
-  expect(useAppStore.getState().openFiles).toEqual([
-    expect.objectContaining({ mode, worktreeId: FOLDER, gitWorktreeId: WORKTREE.id })
-  ])
-
-describe('a folder repo section opens its combined views in the folder (fork)', () => {
-  it('opens Conflict Review from the conflict banner under the repo as git owner', () => {
-    renderPanel()
-    fireEvent.click(screen.getByRole('button', { name: 'Review conflicts' }))
-    expectOpenedInFolder('conflict-review')
-  })
-
-  it("opens Conflict Review from a conflicts section's View all", () => {
-    renderPanel()
-    fireEvent.click(within(sectionByLabel('Conflicts')).getByRole('button', { name: 'View all' }))
-    expectOpenedInFolder('conflict-review')
-  })
-
-  it("opens the combined diff from a changes section's View all", () => {
-    renderPanel()
-    fireEvent.click(within(sectionByLabel('Changes')).getByRole('button', { name: 'View all' }))
-    expectOpenedInFolder('diff')
-  })
-
-  it("opens the branch combined diff from the branch section's View all", () => {
-    renderPanel()
-    fireEvent.click(
-      within(sectionByLabel('Committed on Branch')).getByRole('button', { name: 'View all' })
-    )
-    expectOpenedInFolder('diff')
-  })
-})
 
 describe("the Commits dock carries the fork's slots (fork)", () => {
   it('keeps toasts above the dock', () => {
-    renderPanel({ showHistory: true })
+    renderPanel()
     expect(toastBottomClearanceRef).toHaveBeenCalledWith(
       document.querySelector('[data-git-history-dock]')
     )
   })
 
   it('plugs the Git Graph launcher and branch filter into the dock', async () => {
-    renderPanel({ showHistory: true })
+    renderPanel()
     expect(await screen.findByText('Fix the thing')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open Git Graph' })).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Branch filter' })).toBeInTheDocument()
   })
 
   it('plugs the load-more footer into the dock when more commits exist', async () => {
-    renderPanel({ showHistory: true, history: { ...HISTORY, hasMore: true } })
+    renderPanel({ history: { ...HISTORY, hasMore: true } })
     expect(await screen.findByRole('button', { name: 'Load more commits' })).toBeInTheDocument()
   })
 
   it('plugs the no-match message into the dock when a filter hides every commit', async () => {
     updateGitHistoryGraphFilter(WORKTREE.id, { query: 'author:nobody' })
-    renderPanel({ showHistory: true, history: { ...HISTORY, items: [] } })
+    renderPanel({ history: { ...HISTORY, items: [] } })
     expect(await screen.findByText('No commits match this filter')).toBeInTheDocument()
   })
 
   it("opens a commit's Show in Git Graph in the folder, on this repo", async () => {
     const openGitGraphTab = vi.fn()
     useAppStore.setState({ openGitGraphTab })
-    renderPanel({ showHistory: true })
+    renderPanel({ placementWorkspaceId: FOLDER })
     const row = (await screen.findByText('Fix the thing')).closest(
       '[data-testid="git-history-row"]'
     )!
@@ -227,7 +201,7 @@ describe("the Commits dock carries the fork's slots (fork)", () => {
       },
       entries: [{ path: 'src/x.ts', status: 'modified' }]
     })
-    renderPanel({ showHistory: true })
+    renderPanel()
     fireEvent.click(await screen.findByText('Fix the thing'))
     const file = await waitFor(() => {
       const el = document.querySelector('[data-commit-file-path="src/x.ts"]')

@@ -46,3 +46,11 @@ export function getGitGraphQuickActions(): CmdJQuickAction[] {
     }
   ]
 }
+
+/** Fork: the fork's Git Graph entry takes the place of upstream's, so Cmd+J lists one Git Graph. */
+export function withForkGitGraphQuickAction(actions: CmdJQuickAction[]): CmdJQuickAction[] {
+  const at = actions.findIndex((action) => action.id === 'git-graph')
+  return at === -1
+    ? [...actions, ...getGitGraphQuickActions()]
+    : [...actions.slice(0, at), ...getGitGraphQuickActions(), ...actions.slice(at + 1)]
+}
