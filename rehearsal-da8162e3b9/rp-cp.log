@@ -1,0 +1,57 @@
+== cp 20e83e76b9 fix(rebase): follow upstream's renderer module moves and removed barrels
+  DEL src/renderer/src/components/editor/EditorConflictReviewSurface.git-owner.test.tsx
+  DEL src/renderer/src/components/editor/EditorContent.fork.test.tsx
+  DEL src/renderer/src/components/editor/combined-diff/CombinedDiffViewer.fork.test.tsx
+  DEL src/renderer/src/components/editor/conflict-review-folder-owner.test.tsx
+  DEL src/renderer/src/components/editor/folder-relative-git-consumers.test.tsx
+  DEL src/renderer/src/components/git-graph-tab/GitGraphTabView.tsx
+  DEL src/renderer/src/components/git-graph-tab/git-graph-editor-surfaces.tsx
+  DEL src/renderer/src/components/git-graph-tab/git-graph-tab-kind-seams.test.ts
+  DEL src/renderer/src/components/git-graph-tab/git-graph-tab-model.ts
+  DEL src/renderer/src/components/git-graph-tab/use-git-graph-folder-add-repos.ts
+  DEL src/renderer/src/components/right-sidebar/SourceControlAgentActionDialog.folder-cwd.test.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/ai/use-ai.folder-cwd.test.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/commit/folder-discard-autosave-holds.test.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/commit/folder-keep-deletion-autosave-holds.fork.test.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/commit/use-discard-confirmation.fork.test.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/commit/use-entry-mutations.fork.test.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/folder/folder-multi-repo-panel.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/folder/folder-nested-repo-candidates.ts
+  DEL src/renderer/src/components/right-sidebar/source-control/folder/folder-repo-filter.ts
+  DEL src/renderer/src/components/right-sidebar/source-control/panel/folder-source-control-test-fixture.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/panel/header-toolbar.fork.test.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/sync/git-graph-full-view.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/sync/git-graph-tab-launcher.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-toolbar.tsx
+  DEL src/renderer/src/components/tab-bar/EditorFileTab.fork.test.tsx
+  DEL src/renderer/src/lib/remap-open-editor-tabs-for-path-change.fork.test.ts
+  DEL src/renderer/src/runtime/runtime-git-history-graph-client.test.ts
+  DEL src/renderer/src/runtime/sync-runtime-graph-git-graph-tab.test.ts
+  DEL src/renderer/src/store/slices/editor-git-graph-split-open.test.ts
+  DEL src/renderer/src/store/slices/editor-git-graph-tabs.test.ts
+  DEL src/renderer/src/store/slices/editor-open-diff.fork.test.ts
+  DEL src/renderer/src/store/slices/tabs-hydration-git-graph.test.ts
+  DEL src/renderer/src/store/workspace-layout-git-owner-roundtrip.test.ts
+== cp bdbc906739 refactor(fork): drop the fork's Git Graph tab in favor of upstream's (#6746)
+  DEL src/shared/workspace-layout/layout-editor-view.fork.test.ts
+  DEL src/shared/wsl-move/fork-local-storage-dispositions.ts
+== cp 231d5f7374 fix(fork): rewire skipRenderLimit and the Commits dock slots onto upstream's fi
+  DEL src/renderer/src/components/right-sidebar/SourceControl.preview-open.fork.test.tsx
+  DEL src/renderer/src/components/right-sidebar/SourceControlAgentActionDialog.folder-cwd.test.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/ai/use-ai.folder-cwd.test.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/commit/folder-discard-autosave-holds.test.tsx
+  DEL src/renderer/src/components/right-sidebar/source-control/commit/folder-keep-deletion-autosave-holds.fork.test.tsx
+  DEL src/renderer/src/lib/remap-open-editor-tabs-for-path-change.fork.test.ts
+  DEL src/renderer/src/store/slices/editor-open-diff.fork.test.ts
+== cp 3fa505582a refactor(fork): drop the fork's folder Source Control panel in favor of upstrea
+  DEL src/renderer/src/components/editor/EditorConflictReviewSurface.git-owner.test.tsx
+  DEL src/renderer/src/lib/workspace/persistence/workspace-session.fork.test.ts
+== cp a38d587420 feat(fork): list a folder's registered repos in upstream's folder Source Contro
+== cp 122a755779 fix(fork): restore ClipCode panel wiring and drop tests of the removed folder g
+== cp ef15854c9e test(fork): warm the pty-connection restore graph before the real-timer tests
+== cp 4c810daf31 test(ui-rounds): drop lcu cases that drive the removed fork folder panel and Gi
+== cp 5a0d1e8242 test(fork): render upstream's folder Source Control to guard the folder-path re
+== cp 5ecb72c831 refactor(fork): drop the session conflict-operation memo upstream's operation s
+  SKIP-EMPTY
+== cp a052987212 fix(fork): clear the static gate after the Git Graph and folder panel removal
+DONE
