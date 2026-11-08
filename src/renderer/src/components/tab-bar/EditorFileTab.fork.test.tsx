@@ -3,7 +3,7 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 
 vi.mock('@dnd-kit/sortable', () => ({
   useSortable: () => ({ attributes: {}, listeners: {}, setNodeRef: vi.fn() })

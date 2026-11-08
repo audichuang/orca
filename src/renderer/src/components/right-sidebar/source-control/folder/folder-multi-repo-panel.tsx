@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { useRepoMap } from '@/store/selectors'
+import { useRepoMap } from '@/store/repos/use-repository-catalog'
 import {
   getRepoExecutionHostId,
   LOCAL_EXECUTION_HOST_ID

@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createEditorStore } from './editor-slice-test-harness'
+import { createEditorStore } from './editor/editor-slice-test-harness'
 
 vi.mock('@/runtime/runtime-rpc-client', async (importOriginal) =>
   (
-    await import('@/runtime/layout-apply-test-transport.test-fixture')
+    await import('@/runtime/workspace-layout/testing/layout-apply-test-transport.test-fixture')
   ).runtimeRpcClientWithLayoutApply(await importOriginal())
 )
 vi.mock('@/runtime/runtime-layout-client', async (importOriginal) =>
   (
-    await import('@/runtime/layout-apply-test-transport.test-fixture')
+    await import('@/runtime/workspace-layout/testing/layout-apply-test-transport.test-fixture')
   ).runtimeLayoutClientWithTestFrames(await importOriginal())
 )
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))

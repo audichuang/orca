@@ -17,12 +17,10 @@ vi.mock('@/runtime/runtime-git-status-client', async (importOriginal) => ({
 }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), message: vi.fn() } }))
 import { useAppStore } from '@/store'
-import { setLocalRuntimeCapabilitiesForTests } from '@/runtime/local-runtime-capabilities'
-import {
-  makeFolderWorkspace,
-  makeWorktree,
-  TEST_REPO
-} from '@/store/slices/worktrees-slice-test-fixtures'
+import { setLocalRuntimeCapabilitiesForTests } from '@/runtime/hosts/capabilities/local-runtime-capabilities'
+import { makeFolderWorkspace } from '@/store/folder-workspaces/folder-workspace.test-fixture'
+import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
+import { TEST_REPO } from '@/store/repos/repo.test-fixture'
 import { clearHostAgentMenuSettingsForTests } from '@/runtime/agent-launch-settings/host-agent-launch-preferences-resource'
 import { useSourceControlAi } from './use-ai'
 

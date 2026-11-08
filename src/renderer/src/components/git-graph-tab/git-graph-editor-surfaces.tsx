@@ -1,7 +1,7 @@
 // Fork-only: how upstream editor-tab sites draw the fork's editor tab kinds (the Git Graph tab).
 
 import { GitGraph, type LucideIcon } from 'lucide-react'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import type { EditorHeaderCopyState } from '@/components/editor/editor-header'
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
 

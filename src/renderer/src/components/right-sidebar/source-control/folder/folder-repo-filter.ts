@@ -1,7 +1,7 @@
 import {
   pathMatchesFileNameFilterTokens,
   splitFileNameFilterTokens
-} from '../../../../../../shared/file-name-filter-tokens'
+} from '../../../../../../shared/file-listing/file-name-filter-tokens'
 
 /** Below this many repos the list fits at a glance, so the filter box would only add clutter. */
 export const FOLDER_REPO_FILTER_MIN_REPOS = 6

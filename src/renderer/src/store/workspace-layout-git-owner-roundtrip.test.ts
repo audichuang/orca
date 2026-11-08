@@ -6,7 +6,7 @@ import { publishWorkspaceLayout } from '../../../shared/workspace-layout/workspa
 import { GIT_KEY } from '../../../shared/workspace-layout/workspace-layout-session.test-fixture'
 import type { OpenFile } from './slices/editor/types/open-file'
 import { restorableEditorFile } from './slices/editor/tabs/editor-tab-layout-owner'
-import { buildLayoutFrameSlices } from './workspace-layout-frame-slices'
+import { buildLayoutFrameSlices } from './workspace-layout/frames/workspace-layout-frame-slices'
 import { useAppStore } from '.'
 import type { AppState } from './types'
 

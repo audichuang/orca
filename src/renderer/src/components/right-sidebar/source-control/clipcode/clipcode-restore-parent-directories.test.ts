@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n, loadRendererUiLanguage } from '@/i18n/i18n'
-import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
+import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 import { createParentDirectoriesForNewFile } from './clipcode-restore-parent-directories'
 
 const { createRuntimePath, statRuntimePath } = vi.hoisted(() => ({

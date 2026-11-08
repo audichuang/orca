@@ -1,8 +1,11 @@
 import { readIpcErrorMessage } from '@/lib/ipc-error'
 import { joinPath } from '@/lib/path'
-import { isMissingRuntimePathError, statRuntimePath } from '@/runtime/runtime-file-metadata-client'
-import { readRuntimeFileContent } from '@/runtime/runtime-file-read-client'
-import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
+import {
+  isMissingRuntimePathError,
+  statRuntimePath
+} from '@/runtime/files/metadata/runtime-file-metadata-client'
+import { readRuntimeFileContent } from '@/runtime/files/reads/runtime-file-read-client'
+import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 import {
   findRestorePathObstacle,
   restorePathCrossesSymlink,

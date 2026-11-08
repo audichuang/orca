@@ -3,9 +3,10 @@ import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import type { GitBranchCompareSummary } from '../../../../../shared/git/diff/git-diff-compare-types'
-import { makeWorktree, TEST_REPO } from '@/store/slices/worktrees-slice-test-fixtures'
+import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
+import { TEST_REPO } from '@/store/repos/repo.test-fixture'
 import type { GitStatusEntry } from '../../../../../shared/git/status/git-status-types'
 
 vi.mock('@monaco-editor/react', () => ({ DiffEditor: () => null }))

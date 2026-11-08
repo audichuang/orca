@@ -21,9 +21,9 @@ vi.mock('@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab', () => ({
   launchAgentInNewTab: launchAgent
 }))
 import { useAppStore } from '@/store'
-import { makeFolderWorkspace } from '@/store/slices/worktrees-slice-test-fixtures'
-import { resetHostStructuredAgentsForTests } from '@/runtime/host-structured-agents'
-import { setLocalRuntimeCapabilitiesForTests } from '@/runtime/local-runtime-capabilities'
+import { makeFolderWorkspace } from '@/store/folder-workspaces/folder-workspace.test-fixture'
+import { resetHostStructuredAgentsForTests } from '@/runtime/native-chat/agent-catalogs/host-structured-agents'
+import { setLocalRuntimeCapabilitiesForTests } from '@/runtime/hosts/capabilities/local-runtime-capabilities'
 import { clearHostAgentMenuSettingsForTests } from '@/runtime/agent-launch-settings/host-agent-launch-preferences-resource'
 import { useSavedSourceControlActionStart } from './source-control/ai/use-saved-source-control-action-start'
 import { useSourceControlAgentActionDialog } from './source-control/ai/useSourceControlAgentActionDialog'

@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it } from 'vitest'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { runtimeTargetForOwnerEnvironment } from '@/runtime/runtime-client-target'
+import { runtimeTargetForOwnerEnvironment } from '@/runtime/rpc/targets/runtime-client-target'
 import {
   cleanupFolderSourceControl,
   FolderScope,

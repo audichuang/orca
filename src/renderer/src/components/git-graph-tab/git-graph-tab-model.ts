@@ -5,13 +5,15 @@ import type { Repo } from '../../../../shared/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
-import { getIndexedAllWorktrees, getIndexedRepoMap } from '@/store/worktree-repo-index'
+import { getIndexedAllWorktrees } from '@/store/slices/worktrees/listing/worktree-catalog-index'
+import { getIndexedRepoMap } from '@/store/repos/repository-catalog-index'
 import {
   getFilesystemOwnerKey,
   getFolderGitWorktrees
 } from '../right-sidebar/source-control/folder/folder-git-worktrees'
 import { getRememberedFolderRepo } from '../right-sidebar/source-control/folder/folder-repo-selection'
-import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
+import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
+import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 
 export const GIT_GRAPH_TAB_LABEL = 'Git Graph'
 

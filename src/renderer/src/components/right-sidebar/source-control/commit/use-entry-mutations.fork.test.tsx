@@ -10,7 +10,7 @@ import {
   ORCA_EDITOR_EXTERNAL_FILE_CHANGE_EVENT,
   type EditorPathMutationTarget
 } from '@/components/editor/autosave/editor-autosave'
-import { runtimeTargetForOwnerEnvironment } from '@/runtime/runtime-client-target'
+import { runtimeTargetForOwnerEnvironment } from '@/runtime/rpc/targets/runtime-client-target'
 import { useAppStore } from '@/store'
 import { SourceControlWorktreeScopeContext } from '../folder/worktree-scope'
 import { useSourceControlEntryMutations } from './use-entry-mutations'

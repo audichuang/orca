@@ -3,10 +3,10 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as RuntimeFileReadClient from '@/runtime/runtime-file-read-client'
+import type * as RuntimeFileReadClient from '@/runtime/files/reads/runtime-file-read-client'
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { resolveEditorTabGitStatus } from '../tab-bar/tab-bar-item-model'
 import {
   buildEditorTabGitStatusMap,
@@ -18,7 +18,7 @@ import { useEditorPanelFileContentLoader } from './useEditorPanelFileContentLoad
 import { useEditorPanelDiffContentLoader } from './useEditorPanelDiffContentLoader'
 
 const mocks = vi.hoisted(() => ({ readRuntimeFileContent: vi.fn() }))
-vi.mock('@/runtime/runtime-file-read-client', async (importOriginal) => ({
+vi.mock('@/runtime/files/reads/runtime-file-read-client', async (importOriginal) => ({
   ...(await importOriginal<typeof RuntimeFileReadClient>()),
   readRuntimeFileContent: mocks.readRuntimeFileContent
 }))

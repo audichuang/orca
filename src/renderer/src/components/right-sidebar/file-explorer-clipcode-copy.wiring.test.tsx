@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
-import { makeWorktree } from '../../store/slices/worktrees-slice-test-fixtures'
+import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
 import type { TreeNode } from './file-explorer/tree/file-explorer-types'
 import { createFileExplorerRowProjection } from './file-explorer/tree/file-explorer-row-projection'
 import {

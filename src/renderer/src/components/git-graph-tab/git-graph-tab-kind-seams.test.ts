@@ -1,9 +1,9 @@
 // Seams where upstream editor-kind code calls into fork-editor-tab-kinds for the Git Graph tab.
 import { describe, expect, it, vi } from 'vitest'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { getEditorHeaderCopyState } from '@/components/editor/editor-header'
 import { isWorkspaceTabContentType } from '@/lib/workspace/search/tabs/workspace-tab-palette-content-type'
-import { closeMobileSessionTabInStore } from '@/runtime/mobile-session-tab-close'
+import { closeMobileSessionTabInStore } from '@/runtime/web-session-tabs-sync/closing/mobile-session-tab-close'
 import { reconcileOpenFilesForStatus } from '@/store/slices/editor/git/git-status-reconciliation'
 
 const WORKTREE_ID = 'repo-1::/repo'

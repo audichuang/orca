@@ -4,7 +4,7 @@ import { act, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EditorPathMutationTarget } from '@/components/editor/autosave/editor-autosave'
-import { runtimeTargetForOwnerEnvironment } from '@/runtime/runtime-client-target'
+import { runtimeTargetForOwnerEnvironment } from '@/runtime/rpc/targets/runtime-client-target'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import { SourceControlWorktreeScopeContext } from '../folder/worktree-scope'
 

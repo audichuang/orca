@@ -7,7 +7,7 @@ import {
   Smartphone,
   type LucideIcon
 } from 'lucide-react'
-import type { OpenFile } from '../../store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { forkEditorTabIcon } from '@/components/git-graph-tab/git-graph-editor-surfaces'
 
 /** A mode's fixed icon, or null for the file-type (icon theme) icon. */

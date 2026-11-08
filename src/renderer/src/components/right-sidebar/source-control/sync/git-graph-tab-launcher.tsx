@@ -14,7 +14,8 @@ import {
   resolveGitGraphDefaultRepoWorktreeId
 } from '../../../git-graph-tab/git-graph-tab-model'
 import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
-import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
+import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
+import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 
 function openGitGraphLabel(): string {
   return translate('auto.components.right.sidebar.GitGraphFullView.open', 'Open Git Graph')
