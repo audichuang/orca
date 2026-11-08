@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { buildMobileSessionTabSnapshots } from './sync-runtime-graph/mobile-session-snapshots'
-import { createEditorTabsStore } from '../store/slices/editor-slice-test-harness'
+import { createEditorTabsStore } from '../store/slices/editor/editor-slice-test-harness'
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 

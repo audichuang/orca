@@ -1,9 +1,9 @@
 // Fork seam guard: the renderer's git history client must pass `graph` on the local IPC and remote RPC routes.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getRuntimeGitHistory } from './runtime-git-status-client'
+import { getRuntimeGitHistory } from './source-control/git/runtime-git-status-client'
 
 const callRuntimeRpc = vi.hoisted(() => vi.fn())
-vi.mock('./runtime-rpc-client', () => ({
+vi.mock('./rpc/calls/runtime-rpc-call', () => ({
   callRuntimeRpc,
   runtimeEnvironmentSupportsCapability: vi.fn()
 }))
