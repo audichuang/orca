@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { installWindowVisibilityTimeoutPoller } from '@/lib/window-visibility-timeout-poller'
 import { usePluginPanelsStore } from '@/store/plugin-panels'
@@ -54,25 +54,27 @@ export function useRemotePluginPanelRoute(
   const sessionRef = useRef<{ environmentId: string; token: string | null } | null>(null)
   const pollerRef = useRef<{ refresh: () => void } | null>(null)
   const readyRef = useRef(false)
-  const routeKey = environmentId && tabKey && !ownerPending ? `${environmentId}\0${tabKey}` : null
-  // A check for a route the panel already left must not touch the current route's state.
-  const routeKeyRef = useRef(routeKey)
-  useLayoutEffect(() => {
-    routeKeyRef.current = routeKey
-  }, [routeKey])
+  // The local version is part of it: a check made for another local UI version is not this one's.
+  const routeKey =
+    environmentId && tabKey && !ownerPending
+      ? `${environmentId}\0${tabKey}\0${localVersion ?? ''}`
+      : null
+  // Bumped whenever the route or the local version changes; older checks then change nothing.
+  const generationRef = useRef(0)
 
   // One path for the first open, the retries and a reopen after the server dropped the session.
   const openChecked = useCallback(async (): Promise<string | null> => {
     if (!environmentId || !pluginKey || !panelId || !tabKey || !routeKey) {
       return null
     }
+    const generation = generationRef.current
     const { availability: value, token } = await openCheckedRemotePanelSession(
       environmentId,
       { pluginKey, id: panelId, tabKey },
       localVersion
     )
-    if (routeKeyRef.current !== routeKey) {
-      return token
+    if (generationRef.current !== generation) {
+      return null
     }
     sessionRef.current = { environmentId, token }
     readyRef.current = value.kind === 'ready'
@@ -87,13 +89,17 @@ export function useRemotePluginPanelRoute(
     if (!routeKey) {
       return
     }
-    let cancelled = false
+    generationRef.current += 1
+    const generation = generationRef.current
+    // The previous route's or version's token must not serve a single call of this one.
+    sessionRef.current = null
     readyRef.current = false
+    let cancelled = false
     const check = async (): Promise<void> => {
       try {
         await openChecked()
       } catch {
-        if (!cancelled && routeKeyRef.current === routeKey) {
+        if (!cancelled && generationRef.current === generation) {
           readyRef.current = false
           setAvailability({ key: routeKey, value: 'unreachable' })
         }
@@ -106,6 +112,7 @@ export function useRemotePluginPanelRoute(
     pollerRef.current = poller
     return () => {
       cancelled = true
+      generationRef.current += 1
       pollerRef.current = null
       poller()
     }
