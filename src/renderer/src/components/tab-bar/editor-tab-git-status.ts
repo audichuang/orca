@@ -1,9 +1,11 @@
 import type { AppState } from '@/store/types'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { joinPath } from '@/lib/path'
-import { normalizeRelativePath } from '../../../../shared/cross-platform-path'
+import {
+  normalizeRelativePath,
+  normalizeRuntimePathForComparison
+} from '../../../../shared/cross-platform-path'
 import { getIndexedWorktreeById } from '@/store/slices/worktrees/listing/worktree-catalog-index'
-import { normalizeRuntimePathForComparison } from '../../../../shared/cross-platform-path'
 import type { GitFileStatus, GitStatusEntry } from '../../../../shared/git/status/git-status-types'
 import { buildStatusMap } from '../../lib/git-path-decoration'
 import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'

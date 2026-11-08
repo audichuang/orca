@@ -175,9 +175,9 @@ describe('explorer Copy Full Source wiring', () => {
 
   it('the tree pane renders its rows with ClipCode actions for the worktree', () => {
     const refreshDir = vi.fn()
-    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: element-tree fixture; only the fields the pane reads before rendering rows are supplied.
     // Why a probe component: the pane calls hooks, so it must run inside a render.
     let element: unknown
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: element-tree fixture; only the fields the pane reads before rendering rows are supplied.
     const props = {
       worktreePath: '/repo',
       displayRootPath: '/repo',
