@@ -10,6 +10,17 @@ import type { GitHistoryItem } from '../../../../../../shared/git/history/git-hi
 import { GitHistoryPanel } from './git-history-panel'
 import { showCommitInGitGraphSlot } from '../../../git-graph-tab/git-graph-source-control-link'
 
+// Why: happy-dom lays nothing out, so upstream's virtualized Commits list would render no rows.
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 28,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({ index, key: index, start: index * 28 })),
+    measureElement: vi.fn(),
+    scrollToIndex: vi.fn()
+  })
+}))
+
 const COMMIT: GitHistoryItem = {
   id: 'a'.repeat(40),
   parentIds: [],

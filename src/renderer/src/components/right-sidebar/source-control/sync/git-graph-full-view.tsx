@@ -53,7 +53,7 @@ import {
   useGitGraphRequestedFocus
 } from './use-git-graph-open-focus'
 import { composeWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
-import { getRuntimeTargetHostId } from '@/runtime/runtime-client-target'
+import { getRuntimeTargetHostId } from '@/runtime/rpc/targets/runtime-client-target'
 import { useAppStore } from '@/store'
 import { getExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
 import type { GitHistoryCommitActionHandler } from './use-git-history-commit-selection'
