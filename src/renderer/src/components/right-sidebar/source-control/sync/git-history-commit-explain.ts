@@ -10,14 +10,10 @@ import type { GitHistoryItem } from '../../../../../../shared/git/history/git-hi
 
 export async function explainCommitWithDefaultAgent(
   worktreeId: string,
-  item: GitHistoryItem,
-  launch: { tabOwnerId: string; initialCwd: string | undefined }
+  item: GitHistoryItem
 ): Promise<void> {
   const detectionTarget = getDetectionTargetIdentityForWorktree(useAppStore.getState(), worktreeId)
-  const agent = await resolveDefaultAgentForWorktreeNewTab(useAppStore.getState, worktreeId, {
-    worktreeId: launch.tabOwnerId,
-    cwd: launch.initialCwd
-  })
+  const agent = await resolveDefaultAgentForWorktreeNewTab(useAppStore.getState, worktreeId)
   // The agent belongs to the detected host; abort if the workspace moved.
   if (
     getDetectionTargetIdentityForWorktree(useAppStore.getState(), worktreeId) !== detectionTarget
@@ -43,8 +39,7 @@ export async function explainCommitWithDefaultAgent(
   launchAgentInNewTab({
     requestId: newAgentLaunchRequestId(),
     agent,
-    worktreeId: launch.tabOwnerId,
-    initialCwd: launch.initialCwd,
+    worktreeId,
     prompt: explainPrompt,
     promptDelivery: 'submit-after-ready'
   })
