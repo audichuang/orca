@@ -12,7 +12,6 @@ import {
 import type { NativeChatSplitDirection } from '@/components/native-chat/pane/routing/native-chat-pane-shortcut'
 import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 import type { TabSplitDirection } from '@/store/slices/tabs/tabs-slice-contract'
-import { buildGitGraphQuickActionContext } from '@/components/git-graph-tab/git-graph-tab-model'
 
 export type CmdJUnavailableReason =
   | 'loading'
@@ -21,7 +20,6 @@ export type CmdJUnavailableReason =
   | 'no-active-group'
   | 'no-active-chat'
   | 'client-action-unsupported'
-  | 'no-git-repo'
 
 export type CmdJQuickActionAvailability =
   | { available: true }
@@ -50,8 +48,6 @@ export type CmdJQuickActionContext = {
   openAddQuickCommand: () => void
   canSplitActiveChat?: boolean
   splitActiveChat?: (direction: NativeChatSplitDirection) => boolean
-  canOpenGitGraph?: boolean
-  openGitGraph?: () => void
 }
 
 export function resolveCmdJActiveGroupId(
@@ -207,8 +203,7 @@ export function buildCmdJQuickActionContext(args: {
     openAddQuickCommand: args.openAddQuickCommand,
     canSplitActiveChat: canRunNativeChatSplitTarget(args.state, activeChatTarget),
     splitActiveChat: (direction) =>
-      runActiveNativeChatSplit(activeWorktreeId, activeGroupId, direction),
-    ...buildGitGraphQuickActionContext(args.state, activeWorktreeId)
+      runActiveNativeChatSplit(activeWorktreeId, activeGroupId, direction)
   }
 }
 
@@ -253,12 +248,6 @@ export function getUnavailableQuickActionMessage(
       return translate(
         'auto.components.cmdJ.quickActionUnavailable.clientUnsupported',
         'Can’t run “{{action}}” — this client and runtime do not support it.',
-        options
-      )
-    case 'no-git-repo':
-      return translate(
-        'auto.components.cmdJ.quickActionUnavailable.noGitRepo',
-        'Can’t run “{{action}}” — no Git repository is available.',
         options
       )
   }
