@@ -25,7 +25,7 @@ import { readCandidateState } from './clipcode-restore-target-state'
 // Runs the plugins' frozen pathCases / restoreCases through the real planner and target-state
 // reader on a real temp tree. Orca restores into ONE root (the plugins' primary root `project`).
 
-vi.mock('@/runtime/files/mutations/runtime-file-mutation-client', () => ({
+vi.mock('@/runtime/files/reads/runtime-directory-read', () => ({
   readRuntimeDirectory: async (_context: unknown, dirPath: string) =>
     (await readdir(dirPath, { withFileTypes: true })).map((entry) => ({
       name: entry.name,
