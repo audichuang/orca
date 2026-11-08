@@ -1,7 +1,7 @@
 import { beforeEach, expect, it } from 'vitest'
 import { useAppStore } from '@/store'
-import type { OpenFile } from '@/store/slices/editor'
-import { makeWorktree } from '@/store/slices/worktrees-slice-test-fixtures'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
+import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
 import { fileMatchesReadOwner } from './editor-file-read-git-owner'
 
 const FOLDER = 'folder:f1'
