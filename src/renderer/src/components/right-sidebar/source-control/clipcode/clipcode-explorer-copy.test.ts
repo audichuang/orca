@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { DirEntry } from '../../../../../../shared/filesystem-entry-types'
+import type { DirEntry } from '../../../../../../shared/file-listing/directory-entry'
 import { buildPayload, CLIPCODE_DEFAULTS, parseClipboard } from './clipcode-clipboard-format'
 import { buildClipcodeExplorerCopy, type ClipcodeExplorerReaders } from './clipcode-explorer-copy'
 import { planClipcodeRestore } from './clipcode-restore-plan'
