@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import type { useMarkdownDocuments } from './markdown/documents/useMarkdownDocuments'
 import { EditorEditFileSurface } from './EditorEditFileSurface'
 

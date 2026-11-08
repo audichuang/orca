@@ -7,7 +7,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { ConfirmationDialogProvider } from '@/components/confirmation-dialog'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
-import { makeWorktree } from '../../../../store/slices/worktrees-slice-test-fixtures'
+import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
 import { SourceControlPanel } from './panel'
 
 beforeEach(() => {
