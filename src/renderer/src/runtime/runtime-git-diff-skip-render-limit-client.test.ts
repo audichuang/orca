@@ -1,9 +1,9 @@
 // Fork seam guard: the renderer diff client forwards skipRenderLimit on both the local IPC and remote RPC routes.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getRuntimeGitDiff } from './runtime-git-diff-client'
+import { getRuntimeGitDiff } from './source-control/git/runtime-git-diff-client'
 
 const callRuntimeRpc = vi.hoisted(() => vi.fn())
-vi.mock('./runtime-rpc-client', () => ({
+vi.mock('./rpc/calls/runtime-rpc-call', () => ({
   callRuntimeRpc,
   runtimeEnvironmentSupportsCapability: vi.fn()
 }))
