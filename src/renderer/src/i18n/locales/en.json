@@ -16055,6 +16055,13 @@
             "containedInHint": "Branches whose tips are in the loaded list; branches outside it are not counted.",
             "children": "Children",
             "childrenHint": "Commits in the loaded list whose parent is this commit."
+          },
+          "RemotePluginPanel": {
+            "declarative": "This panel shows only this computer. It cannot show data from {{host}}.",
+            "loading": "Connecting to {{plugin}} on {{host}}...",
+            "unreachable": "Could not reach {{host}}.",
+            "missing": "{{plugin}} is not installed or not enabled on {{host}}. Install and enable it there to see that host here.",
+            "versionMismatch": "{{plugin}} is {{remote}} on {{host}} and {{local}} here. Install the same version on both."
           }
         }
       },
