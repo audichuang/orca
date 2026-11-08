@@ -32,15 +32,11 @@ vi.mock('../listing/entry-context-menu', () => ({
 }))
 vi.mock('./git-history-commit-copy', () => ({ copyHistoryCommitsFullSource: mocks.copy }))
 
-const { OpenToSideMenuItem, ShowFileHistoryMenuItem } =
-  await import('../listing/entry-context-menu-slots')
+const { OpenToSideMenuItem } = await import('../listing/entry-context-menu-slots')
 const { ClipcodeCopyFullSourceMenuItem } = await import('../clipcode/clipcode-menu-items')
 const { GitHistoryCommitFilesMenu, commitFilesMenuSlot } =
   await import('./git-history-commit-files-menu')
 const { GitHistoryPanel } = await import('./git-history-panel')
-const { getGitHistoryGraphFilter, gitGraphTabFilterKey, resetGitHistoryGraphFiltersForTest } =
-  await import('./git-history-graph-filter')
-const { buildGitGraphTabId } = await import('../../../git-graph-tab/git-graph-tab-model')
 
 const item: GitHistoryItem = {
   id: 'a'.repeat(40),
@@ -121,16 +117,13 @@ function action(props: Record<string, unknown> | undefined, name: string): () =>
 }
 const copyFullSourceItem = () =>
   slotItem(mocks.menuProps?.copyItems, ClipcodeCopyFullSourceMenuItem)
-const showFileHistoryItem = () => slotItem(mocks.menuProps?.viewItems, ShowFileHistoryMenuItem)
 const openToSideItem = () => slotItem(mocks.menuProps?.viewItems, OpenToSideMenuItem)
 const copyFullSource = (): void => action(copyFullSourceItem(), 'onSelect')()
-const showFileHistory = (): void => action(showFileHistoryItem(), 'onSelect')()
 
 afterEach(() => {
   cleanup()
   mocks.menuProps = null
   vi.clearAllMocks()
-  resetGitHistoryGraphFiltersForTest()
   useAppStore.setState(useAppStore.getInitialState(), true)
 })
 
@@ -187,32 +180,6 @@ describe('GitHistoryCommitFilesMenu', () => {
     copyFullSource()
     const args = mocks.copy.mock.calls[0]?.[0]
     await expect(args.loadCommitFiles(item)).resolves.toEqual(entries)
-  })
-
-  it('Show File History filters the Git Graph to the right-clicked file or folder', () => {
-    const openGitGraphTab = vi.fn()
-    useAppStore.setState({ openGitGraphTab })
-    renderMenu()
-    expect(showFileHistoryItem()).toBeUndefined()
-
-    fireEvent.contextMenu(screen.getByText('src/two.ts'))
-    showFileHistory()
-    // The Git Graph tab's own filter, not the sidebar Commits panel's.
-    const tabKey = gitGraphTabFilterKey(buildGitGraphTabId('folder-1'), 'repo-wt')
-    expect(getGitHistoryGraphFilter(tabKey)).toMatchObject({
-      scope: 'all',
-      query: 'path:src/two.ts'
-    })
-    expect(getGitHistoryGraphFilter('repo-wt').query).toBe('')
-    expect(openGitGraphTab).toHaveBeenLastCalledWith('folder-1', {
-      repoWorktreeId: 'repo-wt',
-      filter: expect.objectContaining({ scope: 'all', query: 'path:src/two.ts' })
-    })
-
-    fireEvent.contextMenu(screen.getByText('src folder'))
-    showFileHistory()
-    expect(getGitHistoryGraphFilter(tabKey).query).toBe('path:src')
-    expect(openGitGraphTab).toHaveBeenCalledTimes(2)
   })
 
   it('Cmd/Ctrl-click builds a selection without opening, and Copy Full Source copies all of it', async () => {

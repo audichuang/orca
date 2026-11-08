@@ -8,10 +8,6 @@ import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'v
 import type { ComponentProps } from 'react'
 import { useAppStore } from '@/store'
 import type { GitBranchCompareSummary } from '../../../../../../shared/git/diff/git-diff-compare-types'
-import {
-  resetGitHistoryGraphFiltersForTest,
-  updateGitHistoryGraphFilter
-} from '../sync/git-history-graph-filter'
 import type { GitHistoryResult } from '../../../../../../shared/git/history/git-history-types'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import type {
@@ -86,7 +82,6 @@ beforeEach(() => {
 })
 afterEach(() => {
   cleanupFolderSourceControl()
-  resetGitHistoryGraphFiltersForTest()
 })
 
 function renderPanel({
@@ -180,39 +175,6 @@ describe("the Commits dock carries the fork's slots (fork)", () => {
     expect(toastBottomClearanceRef).toHaveBeenCalledWith(
       document.querySelector('[data-git-history-dock]')
     )
-  })
-
-  it('plugs the Git Graph launcher and branch filter into the dock', async () => {
-    renderPanel({ showHistory: true })
-    expect(await screen.findByText('Fix the thing')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Open Git Graph' })).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: 'Branch filter' })).toBeInTheDocument()
-  })
-
-  it('plugs the load-more footer into the dock when more commits exist', async () => {
-    renderPanel({ showHistory: true, history: { ...HISTORY, hasMore: true } })
-    expect(await screen.findByRole('button', { name: 'Load more commits' })).toBeInTheDocument()
-  })
-
-  it('plugs the no-match message into the dock when a filter hides every commit', async () => {
-    updateGitHistoryGraphFilter(WORKTREE.id, { query: 'author:nobody' })
-    renderPanel({ showHistory: true, history: { ...HISTORY, items: [] } })
-    expect(await screen.findByText('No commits match this filter')).toBeInTheDocument()
-  })
-
-  it("opens a commit's Show in Git Graph in the folder, on this repo", async () => {
-    const openGitGraphTab = vi.fn()
-    useAppStore.setState({ openGitGraphTab })
-    renderPanel({ showHistory: true })
-    const row = (await screen.findByText('Fix the thing')).closest(
-      '[data-testid="git-history-row"]'
-    )!
-    fireEvent.contextMenu(row)
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Show in Git Graph' }))
-    expect(openGitGraphTab).toHaveBeenCalledWith(FOLDER, {
-      repoWorktreeId: WORKTREE.id,
-      revealCommit: COMMIT_ID
-    })
   })
 
   it("offers the files menu on a commit's files, read from this repo", async () => {

@@ -1352,7 +1352,6 @@
         "jira": {
           "856083302c": "Die Jira-Verbindung wurde durch eine neuere Anfrage ersetzt."
         },
-        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "Profil konnte nicht erstellt werden",
@@ -14677,8 +14676,7 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "Vollständigen Quellcode kopieren",
-                      "ce8235a6a4": "An der Seite öffnen",
-                      "showFileHistory": "Dateiverlauf anzeigen"
+                      "ce8235a6a4": "An der Seite öffnen"
                     }
                   }
                 },
@@ -14928,8 +14926,7 @@
             "copyFullSource": "Vollständigen Quellcode kopieren",
             "copyFullSourceMany": "Vollständigen Quellcode kopieren ({{value0}} Commits)",
             "copyHashMany": "Commit-Hashes kopieren ({{value0}} Commits)",
-            "copyMessageMany": "Commit-Nachrichten kopieren ({{value0}} Commits)",
-            "showInGraph": "Im Git Graph anzeigen"
+            "copyMessageMany": "Commit-Nachrichten kopieren ({{value0}} Commits)"
           },
           "pull": {
             "policy": {
@@ -15119,89 +15116,6 @@
             "createInProgress": "PR wird erstellt...",
             "workspaceHostUnresolved": "Der Host des Arbeitsbereichs konnte nicht ermittelt werden. Den Arbeitsbereich aktualisieren und erneut versuchen.",
             "branchDiscoveryFailed": "Branch-Erkennung fehlgeschlagen."
-          },
-          "GitHistoryGraph": {
-            "allBranches": "Alle Branches",
-            "branchCount": "{{value0}} Branches",
-            "currentBranch": "Aktueller Branch",
-            "branchFilter": "Branch-Filter",
-            "searchBranches": "Branches suchen...",
-            "scope": "Anzeigen",
-            "sources": "Quellen",
-            "localBranches": "Lokale Branches",
-            "loadingBranches": "Branches werden geladen...",
-            "hostTooOld": "Der Host dieses Repositorys führt eine ältere Orca-Version aus, die nur den aktuellen Branch anzeigt.",
-            "branchesFailed": "Branches konnten nicht geladen werden",
-            "searchCommits": "Commits suchen (author: path:)",
-            "searchCommitsLabel": "Commits suchen",
-            "loadMore": "Weitere Commits laden",
-            "noMatchingCommits": "Keine Commits entsprechen diesem Filter",
-            "clearAllFilters": "Filter leeren",
-            "local": "Lokal",
-            "showAllBranches": "Alle Branches anzeigen",
-            "userFilter": "Benutzer",
-            "pathsFilter": "Pfade",
-            "clearUserFilter": "Benutzerfilter leeren",
-            "searchUsers": "Benutzer suchen...",
-            "noUsers": "Keine Benutzer in den geladenen Commits.",
-            "clearPathFilter": "Pfadfilter leeren",
-            "typePath": "Datei- oder Ordnerpfad relativ zum Repository",
-            "typePathHint": "Pfad eingeben und Enter drücken.",
-            "filterByPath": "Nach {{value0}} filtern",
-            "recentPaths": "Zuletzt verwendet",
-            "clearFilters": "Leeren",
-            "searchCommitMessages": "Commit-Nachrichten durchsuchen",
-            "tags": "Tags"
-          },
-          "GitGraphFullView": {
-            "open": "Git Graph öffnen",
-            "description": "Commit-Graph des aktuellen Repositorys.",
-            "message": "Nachricht",
-            "author": "Autor",
-            "date": "Datum",
-            "commit": "Commit",
-            "selectCommit": "Einen Commit auswählen, um Details und geänderte Dateien zu sehen.",
-            "resizeDetails": "Größe der Commit-Details ändern",
-            "copyFullSource": "Vollständigen Quellcode aller geänderten Dateien kopieren",
-            "filesInCommits": "Geänderte Dateien ({{files}}) · {{commits}} Commits",
-            "filesChanged": "Geänderte Dateien ({{files}})",
-            "toggleBranches": "Branches ein-/ausblenden",
-            "openShort": "Git Graph",
-            "laneContinuesBelow": "Setzt sich {{count}} Zeilen weiter unten bei {{sha}} {{subject}} fort. Zum Springen klicken.",
-            "laneComesFromAbove": "Kommt von {{sha}} {{subject}}, {{count}} Zeilen weiter oben. Zum Springen klicken.",
-            "laneContinuesPastLoaded": "Setzt sich über die geladenen Commits hinaus fort. Weitere Commits laden, um ihm zu folgen.",
-            "openAllChanges": "Alle Änderungen öffnen",
-            "hideDetails": "Details ausblenden",
-            "enterKey": "Enter",
-            "showDetails": "Details anzeigen",
-            "detailsStrip": "Details",
-            "listOptions": "Listenoptionen",
-            "columns": "Spalten",
-            "twoLineRows": "Zweizeilige Einträge",
-            "resetList": "Auf Standard zurücksetzen",
-            "columnTooNarrow": "Liste zu schmal",
-            "laneContinuesPastLoadedJump": "Setzt sich über die geladenen Commits hinaus bei {{sha}} fort. Zum Laden und Springen klicken.",
-            "loadingMore": "Weitere Commits werden geladen...",
-            "loadCapReached": "Die ersten {{count}} Commits werden angezeigt – mehr lädt der Graph nicht. Über Branch, Benutzer oder Pfade eingrenzen."
-          },
-          "GitGraphBranchSidebar": {
-            "local": "Lokal",
-            "tags": "Tags",
-            "label": "Branches und Tags",
-            "empty": "Noch keine Branches geladen.",
-            "showRef": "Nicht in der aktuellen Liste – klicken, um nur diesen Branch anzuzeigen"
-          },
-          "GitGraphCommitInfo": {
-            "author": "Autor",
-            "date": "Datum",
-            "copySha": "Commit-SHA kopieren",
-            "parents": "Eltern-Commits",
-            "refs": "Refs",
-            "containedIn": "In Branches",
-            "moreBranches": "+{{count}} weitere",
-            "containedInHint": "Branches, deren Spitzen in der geladenen Liste liegen; Branches außerhalb werden nicht mitgezählt.",
-            "children": "Kind-Commits",
-            "childrenHint": "Commits in der geladenen Liste, deren Eltern-Commit dieser Commit ist."
           }
         }
       },
@@ -17466,10 +17380,7 @@
                 "removeWorktree": "Worktree entfernen",
                 "trashWorktree": "Worktree in den Papierkorb verschieben",
                 "addQuickCommand": "Schnellbefehl hinzufügen",
-                "newQuickCommand": "Neuen Schnellbefehl erstellen",
-                "openGitGraph": "git graph öffnen",
-                "gitLog": "git log",
-                "commitHistory": "Commit-Verlauf"
+                "newQuickCommand": "Neuen Schnellbefehl erstellen"
               }
             }
           },
@@ -19201,8 +19112,7 @@
           "workspaceDisconnected": "„{{action}}“ kann nicht ausgeführt werden — der Arbeitsbereich ist nicht verbunden.",
           "noTabGroup": "„{{action}}“ kann nicht ausgeführt werden — keine Tab-Gruppe verfügbar.",
           "noMovableChat": "„{{action}}“ kann nicht ausgeführt werden — kein verschiebbarer Chat ist aktiv.",
-          "clientUnsupported": "„{{action}}“ kann nicht ausgeführt werden — dieser Client und diese Laufzeitumgebung unterstützen die Aktion nicht.",
-          "noGitRepo": "„{{action}}“ kann nicht ausgeführt werden — kein Git-Repository ist verfügbar."
+          "clientUnsupported": "„{{action}}“ kann nicht ausgeführt werden — dieser Client und diese Laufzeitumgebung unterstützen die Aktion nicht."
         }
       },
       "plugins": {
@@ -19237,18 +19147,6 @@
         "setting-global-off": "Das Ordnervertrauen ist in den Agenten-Einstellungen ausgeschaltet, daher fragen Agenten immer nach.",
         "keyword-trust": "vertrauen",
         "keyword-hooks": "Hooks"
-      },
-      "gitGraphTab": {
-        "noRepo": "Für diesen Arbeitsbereich ist kein Git-Repository verfügbar.",
-        "repoSwitcher": "Repository",
-        "selectRepo": "Repository auswählen",
-        "searchRepos": "Repositorys suchen...",
-        "noRepos": "Keine Repositorys gefunden.",
-        "addRepos": "Repositorys hinzufügen...",
-        "addReposMissing": "{{value0}} nicht hinzugefügt",
-        "addReposButton": "Repositorys in diesem Ordner hinzufügen",
-        "openInSourceControl": "In Quellcodeverwaltung öffnen",
-        "revealNotLoaded": "Dieser Commit befindet sich nicht im geladenen Verlauf."
       }
     },
     "i18n": {
@@ -22965,8 +22863,7 @@
       "terminalSplitDown": "Terminal nach unten teilen",
       "terminalSwitchInputSource": "Eingabequelle / Sprache wechseln (nativ)",
       "newAgentTab": "Neuen Tab für {{agent}} öffnen",
-      "viewPlugins": "Plugins öffnen",
-      "sourceControlOpenGitGraph": "Git Graph öffnen"
+      "viewPlugins": "Plugins öffnen"
     },
     "group": {
       "global": "Global",

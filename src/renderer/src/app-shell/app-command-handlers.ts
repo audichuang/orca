@@ -22,7 +22,6 @@ import { isGitRepoKind } from '../../../shared/repo-kind'
 import { openPluginsSettings } from '@/lib/open-plugins-settings'
 import { resolveActiveTabRenameTarget } from './active-tab-rename-target'
 import { createPluginsSettingsShortcutHandler } from './plugin-settings-shortcut-handler'
-import { createGitGraphCommandHandler } from './git-graph-command-handler'
 import type {
   KeybindingActionId,
   KeybindingContext,
@@ -262,7 +261,6 @@ export function createAppCommandHandlers(
         return claim('view.tasks', () => store.openTaskPage())
       }
     ],
-    createGitGraphCommandHandler(activeView, claim),
     [
       'view.plugins',
       createPluginsSettingsShortcutHandler(input?.target, () =>

@@ -1,6 +1,5 @@
 import { translate } from '@/i18n/i18n'
 import { getOpenFileGitWorktreeId, type StatusReconcileGitOptions } from './open-file-git-owner'
-import { isForkEditorTabKind } from '../../../../../../shared/fork-editor-tab-kinds'
 import type {
   GitConflictKind,
   GitStatusEntry,
@@ -148,9 +147,6 @@ export function reconcileOpenFilesForStatus(
       file.mode === 'check-details' ||
       file.mode === 'git-graph'
     ) {
-      return [file]
-    }
-    if (isForkEditorTabKind(file.mode)) {
       return [file]
     }
 

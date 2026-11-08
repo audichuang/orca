@@ -1,6 +1,6 @@
 // Fork-only: the commit context menu — upstream's with the fork's entries, or the fork's own for a multi-selection.
 import type React from 'react'
-import { ClipboardCopy, Copy, GitGraph, Hash, Sparkles } from 'lucide-react'
+import { ClipboardCopy, Copy, Hash, Sparkles } from 'lucide-react'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -20,19 +20,16 @@ type ForkMenuProps = {
   onAction: (action: GitHistoryForkCommitAction, item: GitHistoryItem) => void
   /** Commits a multi-commit action covers; >1 only when the right-clicked row is in the selection. */
   selectedCount?: number
-  /** Opens the commit in the Git Graph tab; the entry shows only when set. */
-  onShowInGraph?: (item: GitHistoryItem) => void
 }
 
 export function GitHistoryCommitForkMenu(props: ForkMenuProps): React.JSX.Element {
-  const { item, onAction, onShowInGraph } = props
+  const { item, onAction } = props
   if ((props.selectedCount ?? 1) > 1) {
     return <MultiCommitMenu {...props} />
   }
   return (
     <GitHistoryCommitContextMenu item={item} onAction={onAction}>
       <CopyFullSourceItem item={item} onAction={onAction} />
-      <ShowInGraphItem item={item} onShowInGraph={onShowInGraph} />
     </GitHistoryCommitContextMenu>
   )
 }
@@ -59,32 +56,9 @@ function CopyFullSourceItem({
   )
 }
 
-function ShowInGraphItem({
-  item,
-  onShowInGraph
-}: Pick<ForkMenuProps, 'item' | 'onShowInGraph'>): React.JSX.Element | null {
-  if (!onShowInGraph) {
-    return null
-  }
-  return (
-    <ContextMenuItem onSelect={() => onShowInGraph(item)}>
-      <GitGraph className="size-3.5" />
-      {translate(
-        'auto.components.right.sidebar.GitHistoryCommitContextMenu.showInGraph',
-        'Show in Git Graph'
-      )}
-    </ContextMenuItem>
-  )
-}
-
 // Why a copy: upstream's menu hard-codes one-commit labels. Mirrors git-history-commit-context-menu.tsx
 // minus Open in browser (one commit only); re-sync its entries on each upstream rebase.
-function MultiCommitMenu({
-  item,
-  onAction,
-  selectedCount,
-  onShowInGraph
-}: ForkMenuProps): React.JSX.Element {
+function MultiCommitMenu({ item, onAction, selectedCount }: ForkMenuProps): React.JSX.Element {
   const count = { value0: selectedCount }
   return (
     // Why wider than upstream's w-56: the counted labels run longer.
@@ -106,7 +80,6 @@ function MultiCommitMenu({
         )}
       </ContextMenuItem>
       <CopyFullSourceItem item={item} onAction={onAction} selectedCount={selectedCount} />
-      <ShowInGraphItem item={item} onShowInGraph={onShowInGraph} />
       <ContextMenuSeparator />
       <ContextMenuItem onSelect={() => onAction('explain', item)}>
         <Sparkles className="size-3.5" />

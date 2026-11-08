@@ -102,7 +102,6 @@ export type KeybindingActionId =
   | 'editor.nextChange'
   | 'editor.addReviewNote'
   | 'sourceControl.sendReviewNotes'
-  | 'sourceControl.openGitGraph'
   | 'fileExplorer.undo'
   | 'fileExplorer.redo'
   | 'fileExplorer.copyPath'

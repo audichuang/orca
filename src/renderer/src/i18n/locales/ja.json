@@ -894,7 +894,6 @@
         "jira": {
           "856083302c": "Jira 接続は新規リクエストに置き換えられました。"
         },
-        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "プロファイルの作成に失敗しました",
@@ -14033,8 +14032,7 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "ソース全体をコピー",
-                      "ce8235a6a4": "横に開く",
-                      "showFileHistory": "ファイル履歴を表示"
+                      "ce8235a6a4": "横に開く"
                     }
                   }
                 },
@@ -14276,8 +14274,7 @@
             "copyFullSource": "完全なソースをコピー",
             "copyFullSourceMany": "完全なソースをコピー（{{value0}} 件のコミット）",
             "copyHashMany": "コミットハッシュをコピー（{{value0}} 件のコミット）",
-            "copyMessageMany": "コミットメッセージをコピー（{{value0}} 件のコミット）",
-            "showInGraph": "Git Graph で表示"
+            "copyMessageMany": "コミットメッセージをコピー（{{value0}} 件のコミット）"
           },
           "pull": {
             "policy": {
@@ -14460,89 +14457,6 @@
             "createInProgress": "PR を作成中…",
             "workspaceHostUnresolved": "ワークスペースのホストを特定できません。ワークスペースを更新して再試行してください。",
             "branchDiscoveryFailed": "ブランチの検出に失敗しました。"
-          },
-          "GitHistoryGraph": {
-            "allBranches": "すべてのブランチ",
-            "branchCount": "{{value0}} 個のブランチ",
-            "currentBranch": "現在のブランチ",
-            "branchFilter": "ブランチフィルター",
-            "searchBranches": "ブランチを検索...",
-            "scope": "表示",
-            "sources": "ソース",
-            "localBranches": "ローカルブランチ",
-            "loadingBranches": "ブランチを読み込み中...",
-            "hostTooOld": "このリポジトリのホストは古い Orca のため、現在のブランチのみ表示されます。",
-            "branchesFailed": "ブランチを読み込めませんでした",
-            "searchCommits": "コミットを検索（author: path:）",
-            "searchCommitsLabel": "コミットを検索",
-            "loadMore": "さらにコミットを読み込む",
-            "noMatchingCommits": "このフィルターに一致するコミットはありません",
-            "clearAllFilters": "フィルターをクリア",
-            "local": "ローカル",
-            "showAllBranches": "すべてのブランチを表示",
-            "userFilter": "ユーザー",
-            "pathsFilter": "パス",
-            "clearUserFilter": "ユーザーフィルターをクリア",
-            "searchUsers": "ユーザーを検索...",
-            "noUsers": "読み込まれたコミットにユーザーがいません。",
-            "clearPathFilter": "パスフィルターをクリア",
-            "typePath": "リポジトリ相対のファイルまたはフォルダーのパス",
-            "typePathHint": "パスを入力して Enter を押してください。",
-            "filterByPath": "{{value0}} で絞り込む",
-            "recentPaths": "最近",
-            "clearFilters": "クリア",
-            "searchCommitMessages": "コミットメッセージを検索",
-            "tags": "タグ"
-          },
-          "GitGraphFullView": {
-            "open": "Git Graph を開く",
-            "description": "現在のリポジトリのコミットグラフ。",
-            "message": "メッセージ",
-            "author": "作成者",
-            "date": "日付",
-            "commit": "コミット",
-            "selectCommit": "コミットを選択すると詳細と変更されたファイルが表示されます。",
-            "resizeDetails": "コミット詳細の幅を変更",
-            "copyFullSource": "すべての変更ファイルの完全なソースをコピー",
-            "filesInCommits": "変更ファイル ({{files}}) · {{commits}} 件のコミット",
-            "filesChanged": "変更ファイル ({{files}})",
-            "toggleBranches": "ブランチパネルの切り替え",
-            "openShort": "Git Graph",
-            "laneContinuesBelow": "{{count}} 行下の {{sha}} {{subject}} に続きます。クリックで移動します。",
-            "laneComesFromAbove": "{{count}} 行上の {{sha}} {{subject}} から続いています。クリックで移動します。",
-            "laneContinuesPastLoaded": "読み込まれていない以前のコミットに続きます。さらに読み込むと移動できます。",
-            "openAllChanges": "すべての変更を開く",
-            "hideDetails": "詳細を隠す",
-            "enterKey": "Enter",
-            "showDetails": "詳細を表示",
-            "detailsStrip": "詳細",
-            "listOptions": "リストのオプション",
-            "columns": "列",
-            "twoLineRows": "2 行で表示",
-            "resetList": "既定に戻す",
-            "columnTooNarrow": "リストの幅が足りません",
-            "laneContinuesPastLoadedJump": "読み込まれていないコミット {{sha}} に続きます。クリックで読み込んで移動します。",
-            "loadingMore": "さらにコミットを読み込み中...",
-            "loadCapReached": "グラフが読み込める上限の {{count}} 件を表示しています。Branch、User、Paths で絞り込んでください。"
-          },
-          "GitGraphBranchSidebar": {
-            "local": "ローカル",
-            "tags": "タグ",
-            "label": "ブランチとタグ",
-            "empty": "ブランチはまだ読み込まれていません。",
-            "showRef": "現在の一覧にありません — クリックでこのブランチのみ表示"
-          },
-          "GitGraphCommitInfo": {
-            "author": "作成者",
-            "date": "日付",
-            "copySha": "コミット SHA をコピー",
-            "parents": "親コミット",
-            "refs": "参照",
-            "containedIn": "含まれるブランチ",
-            "moreBranches": "他 {{count}} 件",
-            "containedInHint": "読み込み済みの一覧に先端コミットがあるブランチのみ。一覧外のブランチは含まれません。",
-            "children": "子コミット",
-            "childrenHint": "読み込まれた一覧のうち、このコミットを親に持つコミット。"
           }
         }
       },
@@ -16787,10 +16701,7 @@
                 "removeWorktree": "ワークツリーを削除する",
                 "trashWorktree": "ワークツリーをゴミ箱へ移動",
                 "addQuickCommand": "クイックコマンドを追加",
-                "newQuickCommand": "新規クイックコマンド",
-                "openGitGraph": "git graph を開く",
-                "gitLog": "git ログ",
-                "commitHistory": "コミット履歴"
+                "newQuickCommand": "新規クイックコマンド"
               }
             }
           },
@@ -18540,8 +18451,7 @@
           "workspaceDisconnected": "「{{action}}」を実行できません。ワークスペースが切断されています。",
           "noTabGroup": "「{{action}}」を実行できません。利用可能なタブグループがありません。",
           "noMovableChat": "「{{action}}」を実行できません。移動できるアクティブなチャットがありません。",
-          "clientUnsupported": "「{{action}}」を実行できません。このクライアントとランタイムは対応していません。",
-          "noGitRepo": "「{{action}}」を実行できません。利用できる Git リポジトリがありません。"
+          "clientUnsupported": "「{{action}}」を実行できません。このクライアントとランタイムは対応していません。"
         }
       },
       "plugins": {
@@ -18576,18 +18486,6 @@
         "setting-global-off": "Agent 設定でフォルダーの信頼がオフになっているため、Agent は常に確認します。",
         "keyword-trust": "信頼",
         "keyword-hooks": "フック"
-      },
-      "gitGraphTab": {
-        "noRepo": "このワークスペースで利用できる Git リポジトリはありません。",
-        "repoSwitcher": "リポジトリ",
-        "selectRepo": "リポジトリを選択",
-        "searchRepos": "リポジトリを検索...",
-        "noRepos": "リポジトリが見つかりません。",
-        "addRepos": "リポジトリを追加...",
-        "addReposMissing": "未追加 {{value0}} 件",
-        "addReposButton": "このフォルダ内のリポジトリを追加",
-        "openInSourceControl": "ソース管理で開く",
-        "revealNotLoaded": "そのコミットは読み込まれた履歴にありません。"
       }
     },
     "i18n": {
@@ -22472,8 +22370,7 @@
       "terminalSplitDown": "ターミナルを下に分割",
       "terminalSwitchInputSource": "入力ソース / 言語を切り替え（ネイティブ）",
       "newAgentTab": "新規 {{agent}} タブ",
-      "viewPlugins": "プラグインを開く",
-      "sourceControlOpenGitGraph": "Git Graph を開く"
+      "viewPlugins": "プラグインを開く"
     },
     "group": {
       "global": "グローバル",
