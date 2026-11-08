@@ -24,6 +24,14 @@ const mocks = vi.hoisted((): { menuProps: MenuProps | null; copy: ReturnType<typ
   menuProps: null,
   copy: vi.fn()
 }))
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 28,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({ index, key: index, start: index * 28 })),
+    measureElement: vi.fn()
+  })
+}))
 vi.mock('../listing/entry-context-menu', () => ({
   SourceControlEntryContextMenu: (props: MenuProps) => {
     mocks.menuProps = props
@@ -41,6 +49,8 @@ const { GitHistoryPanel } = await import('./git-history-panel')
 const { getGitHistoryGraphFilter, gitGraphTabFilterKey, resetGitHistoryGraphFiltersForTest } =
   await import('./git-history-graph-filter')
 const { buildGitGraphTabId } = await import('../../../git-graph-tab/git-graph-tab-model')
+const { SourceControlScopeProvider } = await import('../panel/worktree-scope')
+const { makeWorktree } = await import('@/store/slices/worktrees/worktree.test-fixture')
 
 const item: GitHistoryItem = {
   id: 'a'.repeat(40),
@@ -58,12 +68,15 @@ const entries: GitBranchChangeEntry[] = [
 const defaultModel = {
   activeConnectionId: null,
   activeRepoTarget: { kind: 'local' as const },
-  editorWorktreeId: 'folder-1',
   revealInExplorer: vi.fn()
 }
 
-function renderMenu(model = defaultModel, onOpenFile = vi.fn()): void {
-  render(
+function renderMenu(
+  model = defaultModel,
+  onOpenFile = vi.fn(),
+  placementWorkspaceId?: string
+): void {
+  const menu = (
     <GitHistoryCommitFilesMenu
       {...{ model, entries, onOpenFile }}
       items={[item]}
@@ -90,6 +103,27 @@ function renderMenu(model = defaultModel, onOpenFile = vi.fn()): void {
         </div>
       )}
     />
+  )
+  if (!placementWorkspaceId) {
+    render(menu)
+    return
+  }
+  const worktree = makeWorktree({ id: 'repo-wt', repoId: 'repo-1', path: '/repo' })
+  const repo = { id: 'repo-1', path: '/repo', displayName: 'repo', badgeColor: '#000', addedAt: 0 }
+  render(
+    <SourceControlScopeProvider
+      owner={{
+        worktreeId: worktree.id,
+        repoId: repo.id,
+        executionHostId: 'local',
+        worktree,
+        attachedAt: 0,
+        repo,
+        placementWorkspaceId
+      }}
+    >
+      {menu}
+    </SourceControlScopeProvider>
   )
 }
 
@@ -140,7 +174,6 @@ describe('GitHistoryCommitFilesMenu', () => {
     const model = {
       activeConnectionId: null,
       activeRepoTarget: { kind: 'local' as const },
-      editorWorktreeId: 'folder-1',
       revealInExplorer: vi.fn()
     }
     renderMenu(model, onOpenFile)
@@ -163,13 +196,13 @@ describe('GitHistoryCommitFilesMenu', () => {
       expect.objectContaining({ altKey: true })
     )
     mocks.menuProps?.onRevealInExplorer('repo-wt', '/repo/src/two.ts')
-    expect(model.revealInExplorer).toHaveBeenCalledWith('folder-1', '/repo/src/two.ts')
+    expect(model.revealInExplorer).toHaveBeenCalledWith('repo-wt', '/repo/src/two.ts')
     copyFullSource()
     const args = mocks.copy.mock.calls[0]?.[0]
     expect(args).toMatchObject({
       items: [item],
       worktreeId: 'repo-wt',
-      editorWorktreeId: 'folder-1'
+      placementWorkspaceId: null
     })
     await expect(args.loadCommitFiles(item)).resolves.toEqual([entries[1]])
   })
@@ -192,7 +225,8 @@ describe('GitHistoryCommitFilesMenu', () => {
   it('Show File History filters the Git Graph to the right-clicked file or folder', () => {
     const openGitGraphTab = vi.fn()
     useAppStore.setState({ openGitGraphTab })
-    renderMenu()
+    // In a folder's repo card the tab opens in the folder.
+    renderMenu(defaultModel, vi.fn(), 'folder-1')
     expect(showFileHistoryItem()).toBeUndefined()
 
     fireEvent.contextMenu(screen.getByText('src/two.ts'))
