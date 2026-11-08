@@ -9,7 +9,6 @@ import { getDiffFilePosition } from '../../../editor/diff-file-sequence'
 import { commitFileTargets } from './commit-file-sequence'
 import { useGitHistoryCommitActions } from './use-git-history-commit-actions'
 
-const FOLDER = 'folder:f1'
 const REPO = 'repo-1::/work/repo-1'
 const COMMIT = 'c'.repeat(40)
 const ENTRIES = [
@@ -53,7 +52,6 @@ function renderActions() {
   return renderHook(() =>
     useGitHistoryCommitActions({
       activeWorktreeId: REPO,
-      editorWorktreeId: FOLDER,
       worktreePath: '/work/repo-1',
       activeRepoTarget: { kind: 'local' },
       resolveSplitTargetGroupId: () => undefined
@@ -61,22 +59,7 @@ function renderActions() {
   )
 }
 
-describe("a folder repo's commit combined diff (fork)", () => {
-  it('opens in the folder and keeps the repo as its git owner', async () => {
-    const { result } = renderActions()
-
-    await result.current.openHistoryCommitDiff(ITEM)
-
-    expect(useAppStore.getState().openFiles).toEqual([
-      expect.objectContaining({
-        mode: 'diff',
-        worktreeId: FOLDER,
-        gitWorktreeId: REPO,
-        commitCompare: expect.objectContaining({ commitOid: COMMIT })
-      })
-    ])
-  })
-
+describe('commit file sequence from the Commits panel (fork)', () => {
   it('opens a commit file that can step to the next file in the list it was shown in', async () => {
     const { result } = renderActions()
     await result.current.loadCommitFiles(ITEM)
@@ -86,7 +69,7 @@ describe("a folder repo's commit combined diff (fork)", () => {
     })
 
     const [tab] = useAppStore.getState().openFiles
-    expect(tab).toMatchObject({ worktreeId: FOLDER, gitWorktreeId: REPO, relativePath: 'a.ts' })
+    expect(tab).toMatchObject({ worktreeId: REPO, relativePath: 'a.ts' })
     expect(getDiffFilePosition(tab!)).toMatchObject({ index: 0, total: 2 })
   })
 })
