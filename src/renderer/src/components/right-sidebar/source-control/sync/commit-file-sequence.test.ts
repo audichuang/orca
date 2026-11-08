@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import type { GitCommitCompareResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import { getDiffFilePosition } from '../../../editor/diff-file-sequence'
-import { commitDiffTabId } from '@/store/slices/editor/git/open-file-git-owner'
 import { openCommitFileInSequence, type CommitFileTarget } from './commit-file-sequence'
 
 function commit(id: string): GitHistoryItem {
@@ -41,10 +40,10 @@ describe('openCommitFileInSequence', () => {
     base
   })
   // The diff tab openCommitDiff would create for one of its calls.
-  const tabOf = ([worktreeId, , entry, compare, , options]: Parameters<OpenCommitDiff>) => {
+  const tabOf = ([worktreeId, , entry, compare]: Parameters<OpenCommitDiff>) => {
     const compareVersion = `${compare.parentOid ?? 'empty-tree'}:${compare.commitOid}`
     return {
-      id: commitDiffTabId(worktreeId, options?.gitWorktreeId, compareVersion, entry.path),
+      id: `${worktreeId}::diff::commit::${compareVersion}::${entry.path}`,
       mode: 'diff' as const,
       diffSource: 'commit' as const
     }
@@ -59,8 +58,8 @@ describe('openCommitFileInSequence', () => {
       item: clicked.head,
       entry: clicked.entry,
       sequence,
-      tabOwnerId: 'wt-1',
-      gitWorktreeId: 'wt-1@repo',
+      worktreeId: 'wt-1',
+      ownerOptions: {},
       worktreePath: '/repo',
       summaryFor: (id) => summaries.get(id),
       openCommitDiff,
@@ -84,7 +83,7 @@ describe('openCommitFileInSequence', () => {
         subject: undefined
       }),
       expect.any(String),
-      { targetGroupId: 'group-split', preview: false, gitWorktreeId: 'wt-1@repo' }
+      { targetGroupId: 'group-split', preview: false }
     )
     const position = getDiffFilePosition(tabOf(openCommitDiff.mock.calls[0]!), () => 'group-1')
     expect(position).toMatchObject({ index: 0, total: 2 })
@@ -96,7 +95,7 @@ describe('openCommitFileInSequence', () => {
       single.entry,
       expect.objectContaining({ commitOid: oldest.id, parentOid: '0000000000' }),
       expect.any(String),
-      { targetGroupId: 'group-1', preview: true, gitWorktreeId: 'wt-1@repo' }
+      { targetGroupId: 'group-1', preview: true }
     )
     expect(getDiffFilePosition(tabOf(openCommitDiff.mock.calls[1]!))).toMatchObject({ index: 1 })
   })
