@@ -1,4 +1,4 @@
-import type { AppState } from '@/store'
+import type { AppState } from '@/store/types'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { joinPath } from '@/lib/path'
 import { normalizeRelativePath } from '../../../../shared/cross-platform-path'

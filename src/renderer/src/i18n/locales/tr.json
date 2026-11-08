@@ -14548,50 +14548,6 @@
                   }
                 }
               },
-              "folder": {
-                "folder": {
-                  "multi": {
-                    "repo": {
-                      "panel": {
-                        "4c62351467": "Bu klasörde içe aktarılmış Git repository'si yok. Değişikliklerini burada görmek için içindeki repository'leri Orca'ya ekleyin.",
-                        "a044a830f1": "Tüm repository'leri yenile",
-                        "c023ba6838": "Bu klasör içe aktarılmış bir repository'nin içinde olduğundan klasör dışındaki değişiklikler de listelenir.",
-                        "efd34a4169": "{{value0}} için değişiklik listesi kesildi; kopya eksik.",
-                        "d98e7b731c": "Tüm değişiklikleri kopyala",
-                        "5de321918e": "Bu klasördeki gizli worktree'ler dahil edilmedi ({{value0}}).",
-                        "ab32287003": "Repository'ler",
-                        "addRepos": "Bu klasördeki repository'leri ekle",
-                        "filterRepos": "Repository'leri filtrele",
-                        "clearFilter": "Filtreyi temizle",
-                        "filterNoMatch": "Eşleşen repository yok",
-                        "groupChanges": "Değişiklik olanlar",
-                        "groupNoChanges": "Değişiklik olmayanlar"
-                      }
-                    }
-                  },
-                  "add": {
-                    "repos": {
-                      "dialog": {
-                        "title": "Bu klasördeki repository'leri ekle",
-                        "description": "{{value0}} altındaki Git repository'leri, diğer repository'lerin içinde yer alanlar dahil.",
-                        "scanning": "Repository'ler taranıyor...",
-                        "failed": "Bu klasör taranamadı.",
-                        "none": "Bu klasördeki tüm repository'ler zaten eklendi.",
-                        "truncated": "Tarama erken durduğu için bazı repository'ler eksik olabilir.",
-                        "hide": "Yalnızca bu klasörde göster, kenar çubuğunda proje olarak gösterme",
-                        "cancel": "İptal",
-                        "add": "Ekle ({{value0}})"
-                      }
-                    }
-                  },
-                  "repo": {
-                    "row": {
-                      "showInSidebar": "Kenar çubuğunda gizli. Kenar çubuğu projesi olarak göster",
-                      "hideFromSidebar": "Kenar çubuğunda gösteriliyor. Yalnızca bu klasörde tut"
-                    }
-                  }
-                }
-              },
               "clipcode": {
                 "clipcode": {
                   "copy": {
