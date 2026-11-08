@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { indexEditorExternalWatchBatchPaths } from './external-changes/editor-external-watch-path-index'
 
 describe('editor external watch path batch index in a folder workspace', () => {

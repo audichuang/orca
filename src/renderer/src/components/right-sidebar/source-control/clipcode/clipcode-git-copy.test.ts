@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
+import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
 import type { GitDiffResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import { DELETED_FILE_MARKER } from './clipcode-clipboard-format'
