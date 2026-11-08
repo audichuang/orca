@@ -1,5 +1,6 @@
 import { getFolderGitWorktrees } from '@/components/right-sidebar/source-control/folder/folder-git-worktrees'
-import { getIndexedAllWorktrees, getIndexedRepoMap } from '../../../worktree-repo-index'
+import { getIndexedAllWorktrees } from '../../worktrees/listing/worktree-catalog-index'
+import { getIndexedRepoMap } from '@/store/repos/repository-catalog-index'
 import type { AppState } from '../../../types'
 import type { OpenFile } from '../types/open-file'
 import {
@@ -7,7 +8,10 @@ import {
   relativePathInsideRoot
 } from '../../../../../../shared/cross-platform-path'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
-import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 import { resolveTabOwnerRelativePath } from './open-file-git-owner'
 
 type FolderFileGitOwner = { gitWorktreeId: string }

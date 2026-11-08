@@ -1,7 +1,7 @@
 // Fork-only: ClipCode "Copy to Clipboard" for file explorer selections (files and whole folders).
 import { basename, getRelativePathInsideRoot, joinPath } from '@/lib/path'
-import type { DirEntry } from '../../../../../../shared/filesystem-entry-types'
-import { sortDirEntries } from '../../../../../../shared/file-name-sort'
+import type { DirEntry } from '../../../../../../shared/file-listing/directory-entry'
+import { sortDirEntries } from '../../../../../../shared/file-listing/file-name-sort'
 import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
 import { shouldIncludeFileExplorerEntry } from '../../file-explorer/tree/file-explorer-entries'
 import { buildPayload, CLIPCODE_DEFAULTS, type PayloadFile } from './clipcode-clipboard-format'
