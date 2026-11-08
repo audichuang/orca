@@ -4,8 +4,11 @@ import { createParentDirectoriesForNewFile } from './clipcode-restore-parent-dir
 import { translate } from '@/i18n/i18n'
 import { readIpcErrorMessage } from '@/lib/ipc-error'
 import { joinPath } from '@/lib/path'
-import { deleteRuntimePath, writeRuntimeFile } from '@/runtime/runtime-file-mutation-client'
-import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
+import {
+  deleteRuntimePath,
+  writeRuntimeFile
+} from '@/runtime/files/mutations/runtime-file-mutation-client'
+import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 import { notifyEditorExternalFileChange } from '@/components/editor/autosave/editor-autosave'
 import {
   releaseEditorSaveHolds,

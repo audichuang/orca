@@ -1,5 +1,5 @@
 import { basename, getRelativePathInsideRoot, joinPath } from '@/lib/path'
-import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
+import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
 import type {
   GitBranchChangeEntry,
   GitDiffResult
