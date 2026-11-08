@@ -142,7 +142,12 @@ export function EditorContent({
       activeFile.diffSource === 'combined-commit')
 
   if (activeFile.mode === 'git-graph') {
-    return <GitGraphTab key={activeFile.worktreeId} worktreeId={activeFile.worktreeId} />
+    // Fork: the fork's Git Graph view draws the tab.
+    return (
+      forkEditorTabView(activeFile) ?? (
+        <GitGraphTab key={activeFile.worktreeId} worktreeId={activeFile.worktreeId} />
+      )
+    )
   }
 
   if (activeFile.mode === 'check-details') {
@@ -172,11 +177,6 @@ export function EditorContent({
         }}
       />
     )
-  }
-
-  const forkView = forkEditorTabView(activeFile)
-  if (forkView) {
-    return forkView
   }
 
   if (activeFile.mode === 'conflict-review') {
