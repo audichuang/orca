@@ -2,6 +2,20 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-11-08 人工 PR #146（merge e60ddceb5b）— 決定 folder 外部變更配對
+
+- 使用者選「跟 batch index 路徑一致」：刪掉 `getOpenFilesForExternalFileChange` fallback 路徑的 `getOpenFileGitWorktreeId(file) === target.worktreeId`（現在在 `components/editor/autosave/editor-autosave.ts`），folder 本身回報外部變更時 repo-scoped diff 分頁也會被配對到。
+- 守它的測試：`editor-autosave.fork.test.ts`「matches a repo-scoped diff tab when the folder itself reports the change, like the batch index」（同時斷言 index 與 fallback 路徑；條件加回去 → `expected [] to deeply equal [ 'folder-diff' ]`）。Fork CI 30/30 綠。
+- 用掉的 known-resolutions 條目（整段搬過來）：
+
+### fork 自身問題（待人判斷，auto-rebase 不要照做：folder 層級的外部變更要不要配對到 repo-scoped diff 分頁：兩條路徑不一致）× fork 9874363ab9（feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229）、e7ac556628（fix(source-control): folder 分頁的 git/讀檔改由 filePath 推導 repo 相對路徑…）— auto-rebase 2026-10-27（原 sha ebae8279bd、a9b651f3b9，之後 d4ac764be9、4b7966a4eb、8ca8c6583b、0bb7357c8f、cee6406bd7、fa64c71117、c2a98a82aa、71a91a6a02 都已被 rebase 改寫，canary 2026-11-06 依標題換過一次；3f318a49e8、5ce39b632f 也已被 rebase 改寫，canary 2026-11-07 再依標題換成目前 develop 的 sha）
+- 類型：待人判斷
+- 衝突檔：無
+- 連帶症狀：無（審查者 C 的 mutation：拿掉 `editor-autosave.ts:177` 的 `getOpenFileGitWorktreeId(file) === target.worktreeId`，所有測試仍綠）
+- 處理（2026-11-05：上游 8d0e7a1bc6 把 `editor-autosave.ts` 搬到 `components/editor/autosave/editor-autosave.ts`、`editor-external-watch-path-index.ts` 搬到 `components/editor/external-changes/`，行號以搬家前為準）：`getOpenFilesForExternalFileChange` 的 fallback 路徑（沒有 `indexedOpenFiles` 時）用第 177 行排除「target 是 folder 本身、分頁是 repo-scoped diff」的情境；`editor-external-watch-path-index.ts` 的 index 路徑在同一情境以 `filePath` 配對、會包含它。第 177 行原本是為了 relativePath 撞名（8da7b7c407 之前用 relativePath 比對），現在 scoped 分頁已改用 filePath 比對，這個目的已由第 174 行達成。要使用者決定：刪掉第 177 行（跟 index 路徑一致），或讓 index 路徑也排除；決定後在 `editor-autosave.fork.test.ts` 補一個會咬的測試。不要在 auto-rebase 裡自己選一邊。
+- 守它的測試：待補（editor-autosave.fork.test.ts）
+- 驗證：未驗證（只有讀程式碼與 C 的 mutation 結果）
+
 ## 2026-11-08 auto-rebase v1.4.252 → v1.4.253（PR #145）— develop 已移動並發 v1.4.253-fork.1
 
 - RUN=20261108T001734Z（run 429），NEW。OLD_DEVELOP f8e749eb3e → develop f0c7bba863，備份 `backup/develop-v1.4.252-20261108T001734Z`。
