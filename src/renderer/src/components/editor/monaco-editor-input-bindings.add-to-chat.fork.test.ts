@@ -17,7 +17,7 @@ vi.mock('./editor-shortcuts', () => ({
   installMonacoEditorFindShortcut: () => () => undefined,
   installEditorAddReviewNoteShortcut: () => () => undefined
 }))
-vi.mock('../native-chat/add-to-chat-point-menu', () => ({
+vi.mock('../native-chat/selection-quotes/add-to-chat-point-menu', () => ({
   openAddToChatMenuAt: (menu: { quote: string }) => {
     chatMenu.quote = menu.quote
   }
