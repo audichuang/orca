@@ -3,7 +3,7 @@
 import { act, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 
 const viewImport = vi.hoisted(() => ({ attempts: 0 }))
 
