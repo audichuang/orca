@@ -14,7 +14,7 @@ const chat = vi.hoisted(() => {
   } = { readQuotable: null, quotedPath: null }
   return state
 })
-vi.mock('../../../native-chat/SelectionAddToChatPopover', () => ({
+vi.mock('../../../native-chat/selection-quotes/SelectionAddToChatPopover', () => ({
   SelectionAddToChatPopover: (props: { readQuotable: (root: HTMLElement) => unknown }) => {
     chat.readQuotable = props.readQuotable
     return null
@@ -81,7 +81,7 @@ vi.mock('@/lib/file-owner-runtime-target', () => {
       getRuntimeTargetForFileOwner(state, worktreeId, undefined)
   }
 })
-vi.mock('@/runtime/use-worktree-runtime-target', () => ({
+vi.mock('@/runtime/rpc/targets/use-worktree-runtime-target', () => ({
   useFileOwnerRuntimeTarget: (_worktreeId: unknown, runtimeEnvironmentId?: string | null) =>
     runtimeEnvironmentId
       ? { kind: 'environment', environmentId: runtimeEnvironmentId }

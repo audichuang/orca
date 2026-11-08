@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n, loadRendererUiLanguage } from '@/i18n/i18n'
-import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
+import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 import { createParentDirectoriesForNewFile } from './clipcode-restore-parent-directories'
 
 const { createRuntimePath, statRuntimePath } = vi.hoisted(() => ({
@@ -8,8 +8,8 @@ const { createRuntimePath, statRuntimePath } = vi.hoisted(() => ({
   statRuntimePath: vi.fn()
 }))
 // Why these modules: they are the runtime file clients upstream's tab-create-entry-action uses.
-vi.mock('@/runtime/runtime-file-mutation-client', () => ({ createRuntimePath }))
-vi.mock('@/runtime/runtime-file-metadata-client', () => ({ statRuntimePath }))
+vi.mock('@/runtime/files/mutations/runtime-file-mutation-client', () => ({ createRuntimePath }))
+vi.mock('@/runtime/files/metadata/runtime-file-metadata-client', () => ({ statRuntimePath }))
 
 const remote: RuntimeFileOperationArgs = {
   target: { kind: 'environment', environmentId: 'env-1' },
