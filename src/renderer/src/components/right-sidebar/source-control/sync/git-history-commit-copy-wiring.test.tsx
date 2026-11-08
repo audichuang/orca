@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   getRuntimeGitCommitCompare: vi.fn(),
   writeClipboardText: vi.fn()
 }))
-vi.mock('@/runtime/runtime-git-diff-client', async (importOriginal) => ({
+vi.mock('@/runtime/source-control/git/runtime-git-diff-client', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getRuntimeGitCommitDiff: mocks.getRuntimeGitCommitDiff,
   getRuntimeGitCommitCompare: mocks.getRuntimeGitCommitCompare
@@ -57,7 +57,6 @@ describe('Copy Full Source from the Commits context menu (fork wiring)', () => {
     const { result } = renderHook(() =>
       useGitHistoryCommitActions({
         activeWorktreeId: 'wt-1',
-        editorWorktreeId: 'wt-1',
         worktreePath: '/repo',
         activeRepoTarget: { kind: 'local' },
         resolveSplitTargetGroupId: () => undefined
@@ -88,7 +87,6 @@ describe('Copy Full Source from the Commits context menu (fork wiring)', () => {
     const { result } = renderHook(() =>
       useGitHistoryCommitActions({
         activeWorktreeId: 'wt-1',
-        editorWorktreeId: 'wt-1',
         worktreePath: '/repo',
         activeRepoTarget: { kind: 'local' },
         resolveSplitTargetGroupId: () => undefined
@@ -105,36 +103,5 @@ describe('Copy Full Source from the Commits context menu (fork wiring)', () => {
       'a\n\nb',
       b.id
     ])
-  })
-})
-
-describe("a folder repo commit's combined diff (fork wiring)", () => {
-  it('opens in the folder with the repo as its git owner', async () => {
-    const { useAppStore } = await import('@/store')
-    const summary = { status: 'ready' }
-    const entries = [{ path: 'a.txt', status: 'modified' }]
-    mocks.getRuntimeGitCommitCompare.mockResolvedValue({ summary, entries })
-    const a = item('a', 2000)
-    const { result } = renderHook(() =>
-      useGitHistoryCommitActions({
-        activeWorktreeId: 'repo-1::/work/repo-1',
-        editorWorktreeId: 'folder:f1',
-        worktreePath: '/work/repo-1',
-        activeRepoTarget: { kind: 'local' },
-        resolveSplitTargetGroupId: () => undefined
-      })
-    )
-
-    await result.current.openHistoryCommitDiff(a)
-
-    expect(useAppStore.getState().openCommitAllDiffs).toHaveBeenCalledWith(
-      'folder:f1',
-      '/work/repo-1',
-      summary,
-      entries,
-      'a',
-      'a',
-      { gitWorktreeId: 'repo-1::/work/repo-1' }
-    )
   })
 })
