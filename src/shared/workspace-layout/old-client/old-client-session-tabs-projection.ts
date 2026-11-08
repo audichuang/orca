@@ -160,7 +160,6 @@ function projectTab(tab: LayoutTab, scope: Scope): RuntimeMobileSessionSnapshotT
       return []
     // A simulator needs the desktop to draw it; the window lists none either.
     case 'simulator':
-    case 'git-graph':
       return []
     // Old clients have no room view; a room reopens from its sidebar row.
     case 'room':
