@@ -84,7 +84,6 @@ export type PublishedEditorFile = Pick<
   | 'liveTail'
   | 'runtimeEnvironmentId'
   | 'externalSshTargetId'
-  | 'gitWorktreeId'
 >
 
 /** `createdAt` is optional on the wire: a host from before it was published omits it. */
@@ -129,8 +128,7 @@ export function publishEditorFile(file: LayoutEditorFile): PublishedEditorFile {
       'readOnly',
       'liveTail',
       'runtimeEnvironmentId',
-      'externalSshTargetId',
-      'gitWorktreeId'
+      'externalSshTargetId'
     ])
   }
 }
