@@ -7,6 +7,7 @@ import type { GitDiffResult } from '../../../../shared/git/diff/git-diff-compare
 import type { GitStatusEntry } from '../../../../shared/git/status/git-status-types'
 import { CheckRunDetailsPanel } from './check-details/panel/CheckRunDetailsPanel'
 import { CombinedDiffViewer, MarkdownPreview } from './editor-lazy-views'
+import { forkEditorTabView } from '../git-graph-tab/git-graph-editor-surfaces'
 import { useOpenFileGitRelativePath } from './use-open-file-git-relative-path'
 import { EditorConflictReviewSurface } from './EditorConflictReviewSurface'
 import { EditorDiffFileSurface } from './EditorDiffFileSurface'
@@ -167,6 +168,11 @@ export function EditorContent({
         }}
       />
     )
+  }
+
+  const forkView = forkEditorTabView(activeFile)
+  if (forkView) {
+    return forkView
   }
 
   if (activeFile.mode === 'conflict-review') {

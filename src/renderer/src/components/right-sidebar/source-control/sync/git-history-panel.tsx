@@ -268,7 +268,7 @@ export function GitHistoryPanel({
             {result && <span className="text-[10px] font-medium tabular-nums">{count}</span>}
             {result?.hasMore && <span className="text-[10px] font-medium">+</span>}
           </button>
-          {worktreeId && <GitGraphOpenButton worktreeId={worktreeId} />}
+          {slots.headerActions ?? (worktreeId && <GitGraphOpenButton worktreeId={worktreeId} />)}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -323,6 +323,7 @@ export function GitHistoryPanel({
           </Tooltip>
         </div>
       </div>
+      {!collapsed && slots.toolbar}
       {!collapsed && state.status === 'error' && !result && (
         <div
           className={cn(expandedBodyClassName, 'px-6 py-2 text-[11px] text-destructive')}
@@ -339,7 +340,8 @@ export function GitHistoryPanel({
           className={cn(expandedBodyClassName, 'px-6 py-2 text-[11px] text-muted-foreground')}
           style={expandedBodyStyle}
         >
-          {t('auto.components.right.sidebar.GitHistoryPanel.cf7cad58d2', 'No commits yet')}
+          {slots.emptyMessage ??
+            t('auto.components.right.sidebar.GitHistoryPanel.cf7cad58d2', 'No commits yet')}
         </div>
       )}
       {!collapsed && viewModels.length > 0 && (
@@ -378,6 +380,7 @@ export function GitHistoryPanel({
                       <GitHistoryCommitForkMenu
                         item={item}
                         selectedCount={selection.itemsFor(item).length}
+                        onShowInGraph={slots.onShowCommitInGraph}
                         onAction={(action, target) =>
                           onCommitAction(action, target, selection.itemsFor(target))
                         }
@@ -404,6 +407,7 @@ export function GitHistoryPanel({
               )
             })}
           </div>
+          {slots.footer}
         </div>
       )}
     </div>

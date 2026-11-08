@@ -16,7 +16,8 @@ import { toastBottomClearanceRef } from '@/lib/toast-bottom-clearance'
 export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
   const { activeWorktree, currentWorktreeId, model, worktreePath } = props
   // Folder sections sit in cards, so the dock matches the card instead of the sidebar.
-  const dockBackground = useSourceControlScope() ? 'bg-card/95' : 'bg-sidebar/95'
+  const scope = useSourceControlScope()
+  const dockBackground = scope ? 'bg-card/95' : 'bg-sidebar/95'
   const {
     activeConnectionId,
     activeOpenRowKeys,
@@ -253,6 +254,7 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
             {...(currentWorktreeId
               ? sourceControlHistorySlots({
                   model,
+                  tabOwnerId: scope?.placementWorkspaceId ?? currentWorktreeId,
                   repoWorktreeId: currentWorktreeId,
                   worktreePath
                 })

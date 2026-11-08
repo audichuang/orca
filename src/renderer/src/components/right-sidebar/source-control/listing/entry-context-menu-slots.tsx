@@ -1,6 +1,6 @@
 // Fork-only: items the fork plugs into upstream's source control file context menu.
 import type React from 'react'
-import { PanelRight } from 'lucide-react'
+import { History, PanelRight } from 'lucide-react'
 import { ContextMenuItem, ContextMenuShortcut } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
 import type { SourceControlRowOpenEvent } from './split-open'
@@ -10,7 +10,7 @@ import {
 } from './split-open-to-side'
 
 export type SourceControlEntryContextMenuSlots = {
-  /** After View: Open to the Side. */
+  /** After View: Open to the Side, Show File History. */
   viewItems?: React.ReactNode
   /** After Copy Relative Path: ClipCode Copy Full Source. */
   copyItems?: React.ReactNode
@@ -34,6 +34,18 @@ export function OpenToSideMenuItem({
       )}
       {/* Why: Alt-click is the pointer shortcut; Ctrl/Cmd/Shift-click only multi-selects. */}
       <ContextMenuShortcut>{getSourceControlSplitOpenShortcutLabel()}</ContextMenuShortcut>
+    </ContextMenuItem>
+  )
+}
+
+export function ShowFileHistoryMenuItem({ onSelect }: { onSelect: () => void }): React.JSX.Element {
+  return (
+    <ContextMenuItem onSelect={onSelect}>
+      <History className="size-3.5" />
+      {translate(
+        'auto.components.right.sidebar.source.control.listing.entry.context.menu.showFileHistory',
+        'Show File History'
+      )}
     </ContextMenuItem>
   )
 }

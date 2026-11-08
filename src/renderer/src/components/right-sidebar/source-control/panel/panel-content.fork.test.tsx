@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Fork seam guard: the Commits dock carries the fork's slots (toast clearance and the commit files menu).
+// Fork seam guard: the Commits dock carries the fork's slots (toast clearance, Git Graph launcher, filter,
+// load more, Show in Git Graph and the commit files menu).
 // Real upstream children and store; only window.api and the toast-clearance observer are stubbed.
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
@@ -11,6 +12,11 @@ import { ConfirmationDialogProvider } from '@/components/confirmation-dialog'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { getDefaultSettings } from '../../../../../../shared/constants'
 import type { GitHistoryResult } from '../../../../../../shared/git/history/git-history-types'
+import {
+  resetGitHistoryGraphFiltersForTest,
+  updateGitHistoryGraphFilter
+} from '../sync/git-history-graph-filter'
+import { SourceControlScopeProvider } from './worktree-scope'
 import { SourceControlPanelContent } from './panel-content'
 import { useSourceControlPanelModel } from './use-panel-model'
 import type { SourceControlPanelModel } from './use-panel-model'
@@ -94,25 +100,50 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  resetGitHistoryGraphFiltersForTest()
 })
 
-function renderPanel(): void {
+const FOLDER = 'folder:local:/work'
+
+function renderPanel({
+  history = HISTORY,
+  placementWorkspaceId
+}: { history?: GitHistoryResult; placementWorkspaceId?: string } = {}): void {
   const hook = renderHook(useSourceControlPanelModel, { wrapper: Providers })
   const model: SourceControlPanelModel = {
     ...hook.result.current,
     collapsedSections: new Set<string>(),
     isGitHistoryVisible: true,
-    gitHistoryState: { status: 'ready', result: HISTORY }
+    gitHistoryState: { status: 'ready', result: history }
   }
+  const content = (
+    <SourceControlPanelContent
+      activeRepo={model.activeRepo!}
+      activeWorktree={WORKTREE}
+      currentWorktreeId={WORKTREE.id}
+      worktreePath={WORKTREE.path}
+      model={model}
+    />
+  )
   render(
     <Providers>
-      <SourceControlPanelContent
-        activeRepo={model.activeRepo!}
-        activeWorktree={WORKTREE}
-        currentWorktreeId={WORKTREE.id}
-        worktreePath={WORKTREE.path}
-        model={model}
-      />
+      {placementWorkspaceId ? (
+        <SourceControlScopeProvider
+          owner={{
+            worktreeId: WORKTREE.id,
+            repoId: REPO.id,
+            executionHostId: 'local',
+            worktree: WORKTREE,
+            attachedAt: 0,
+            repo: REPO,
+            placementWorkspaceId
+          }}
+        >
+          {content}
+        </SourceControlScopeProvider>
+      ) : (
+        content
+      )}
     </Providers>
   )
 }
@@ -123,6 +154,39 @@ describe("the Commits dock carries the fork's slots (fork)", () => {
     expect(toastBottomClearanceRef).toHaveBeenCalledWith(
       document.querySelector('[data-git-history-dock]')
     )
+  })
+
+  it('plugs the Git Graph launcher and branch filter into the dock', async () => {
+    renderPanel()
+    expect(await screen.findByText('Fix the thing')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open Git Graph' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Branch filter' })).toBeInTheDocument()
+  })
+
+  it('plugs the load-more footer into the dock when more commits exist', async () => {
+    renderPanel({ history: { ...HISTORY, hasMore: true } })
+    expect(await screen.findByRole('button', { name: 'Load more commits' })).toBeInTheDocument()
+  })
+
+  it('plugs the no-match message into the dock when a filter hides every commit', async () => {
+    updateGitHistoryGraphFilter(WORKTREE.id, { query: 'author:nobody' })
+    renderPanel({ history: { ...HISTORY, items: [] } })
+    expect(await screen.findByText('No commits match this filter')).toBeInTheDocument()
+  })
+
+  it("opens a commit's Show in Git Graph in the folder, on this repo", async () => {
+    const openGitGraphTab = vi.fn()
+    useAppStore.setState({ openGitGraphTab })
+    renderPanel({ placementWorkspaceId: FOLDER })
+    const row = (await screen.findByText('Fix the thing')).closest(
+      '[data-testid="git-history-row"]'
+    )!
+    fireEvent.contextMenu(row)
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Show in Git Graph' }))
+    expect(openGitGraphTab).toHaveBeenCalledWith(FOLDER, {
+      repoWorktreeId: WORKTREE.id,
+      revealCommit: COMMIT_ID
+    })
   })
 
   it("offers the files menu on a commit's files, read from this repo", async () => {

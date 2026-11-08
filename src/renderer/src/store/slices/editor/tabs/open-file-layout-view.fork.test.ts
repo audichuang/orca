@@ -5,7 +5,7 @@ import { layoutEditorViewOfOpenFile, openFileOfLayoutEditorView } from './open-f
 const FOLDER = 'folder:abc'
 const REPO = 'repo-2::/work/inner'
 
-// Fork fields on an editor tab's view: a folder tab's git owner.
+// Fork fields on an editor tab's view: a folder tab's git owner and the Git Graph tab.
 const FILES: [string, OpenFile][] = [
   [
     "a folder diff tab with its repo's git owner",
@@ -19,6 +19,20 @@ const FILES: [string, OpenFile][] = [
       isDirty: false,
       diffSource: 'unstaged',
       mode: 'diff'
+    }
+  ],
+  [
+    'a Git Graph tab',
+    {
+      id: `${FOLDER}::git-graph`,
+      filePath: `${FOLDER}::git-graph`,
+      relativePath: 'Git Graph',
+      worktreeId: FOLDER,
+      language: 'plaintext',
+      isDirty: false,
+      runtimeEnvironmentId: null,
+      gitGraph: { repoWorktreeId: REPO },
+      mode: 'git-graph'
     }
   ]
 ]

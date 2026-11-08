@@ -1,4 +1,4 @@
-// Red here means upstream shipped layout-owner: R3/R4 can now trigger, see FORK.md "Deferred to upstream phase F".
+// Red here means upstream shipped layout-owner (or accepts git-graph tabs): R3/R4 can now trigger, see FORK.md "Deferred to upstream phase F".
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -98,6 +98,18 @@ describe('upstream layout-owner is still dark (R3/R4 unreachable)', () => {
 
   it('the baseline release host does not advertise layout.intents.v1', () => {
     expect(releaseCapabilities).not.toContain(LAYOUT_INTENTS_CAPABILITY)
+  })
+
+  it('the baseline layout.apply rejects a fork Git Graph open', () => {
+    const file = openFile({
+      mode: 'git-graph',
+      gitGraph: { repoWorktreeId: 'repo-2::/work/inner' }
+    })
+    const command = openEditorTab('git-graph', editorTabContent(file))
+    expect(command.command.view).toBeDefined()
+    const parsed = layoutApply.safeParse(command)
+    expect(parsed.success).toBe(false)
+    expect(parsed.error?.issues.some((issue) => issue.path.includes('contentType'))).toBe(true)
   })
 
   it('the baseline layout.apply drops gitWorktreeId from an editor file record', () => {

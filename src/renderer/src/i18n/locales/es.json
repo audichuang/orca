@@ -937,7 +937,8 @@
               }
             }
           }
-        }
+        },
+        "linear": {}
       },
       "pluginNewFile": {
         "unavailable": "{{value0}} ya no está disponible. Vuelve a activar su plugin.",
@@ -14340,7 +14341,8 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "Copiar código fuente completo",
-                      "ce8235a6a4": "Abrir al lado"
+                      "ce8235a6a4": "Abrir al lado",
+                      "showFileHistory": "Mostrar historial del archivo"
                     }
                   }
                 },
@@ -14598,7 +14600,8 @@
             "copyFullSource": "Copiar código fuente completo",
             "copyFullSourceMany": "Copiar código fuente completo ({{value0}} commits)",
             "copyHashMany": "Copiar hashes de commit ({{value0}} commits)",
-            "copyMessageMany": "Copiar mensajes de commit ({{value0}} commits)"
+            "copyMessageMany": "Copiar mensajes de commit ({{value0}} commits)",
+            "showInGraph": "Mostrar en Git Graph"
           },
           "pull": {
             "policy": {
@@ -14780,6 +14783,89 @@
             "createInProgress": "Creación del PR en curso...",
             "workspaceHostUnresolved": "No se ha podido resolver el host del espacio de trabajo. Actualiza el espacio de trabajo e inténtalo de nuevo.",
             "branchDiscoveryFailed": "No se pudieron detectar las ramas."
+          },
+          "GitHistoryGraph": {
+            "allBranches": "Todas las ramas",
+            "branchCount": "{{value0}} ramas",
+            "currentBranch": "Rama actual",
+            "branchFilter": "Filtro de ramas",
+            "searchBranches": "Buscar ramas...",
+            "scope": "Mostrar",
+            "sources": "Orígenes",
+            "localBranches": "Ramas locales",
+            "loadingBranches": "Cargando ramas...",
+            "hostTooOld": "El host de este repositorio usa una versión antigua de Orca que solo muestra la rama actual.",
+            "branchesFailed": "No se pudieron cargar las ramas",
+            "searchCommits": "Buscar commits (author: path:)",
+            "searchCommitsLabel": "Buscar commits",
+            "loadMore": "Cargar más commits",
+            "noMatchingCommits": "Ningún commit coincide con este filtro",
+            "clearAllFilters": "Borrar filtros",
+            "local": "Local",
+            "showAllBranches": "Mostrar todas las ramas",
+            "userFilter": "Usuario",
+            "pathsFilter": "Rutas",
+            "clearUserFilter": "Borrar filtro de usuario",
+            "searchUsers": "Buscar usuarios...",
+            "noUsers": "No hay usuarios en los commits cargados.",
+            "clearPathFilter": "Borrar filtro de ruta",
+            "typePath": "Ruta de archivo o carpeta relativa al repositorio",
+            "typePathHint": "Escribe una ruta y pulsa Intro.",
+            "filterByPath": "Filtrar por {{value0}}",
+            "recentPaths": "Recientes",
+            "clearFilters": "Borrar",
+            "searchCommitMessages": "Buscar en mensajes de commit",
+            "tags": "Etiquetas"
+          },
+          "GitGraphFullView": {
+            "open": "Abrir Git Graph",
+            "description": "Gráfico de commits del repositorio actual.",
+            "message": "Mensaje",
+            "author": "Autor",
+            "date": "Fecha",
+            "commit": "Commit",
+            "selectCommit": "Selecciona un commit para ver sus detalles y los archivos modificados.",
+            "resizeDetails": "Cambiar el ancho de los detalles del commit",
+            "copyFullSource": "Copiar el código completo de todos los archivos modificados",
+            "filesInCommits": "Archivos modificados ({{files}}) · {{commits}} commits",
+            "filesChanged": "Archivos modificados ({{files}})",
+            "toggleBranches": "Mostrar u ocultar ramas",
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "Continúa {{count}} filas más abajo en {{sha}} {{subject}}. Haz clic para ir.",
+            "laneComesFromAbove": "Viene de {{sha}} {{subject}}, {{count}} filas más arriba. Haz clic para ir.",
+            "laneContinuesPastLoaded": "Continúa más allá de los commits cargados. Carga más commits para seguirla.",
+            "openAllChanges": "Abrir todos los cambios",
+            "hideDetails": "Ocultar detalles",
+            "enterKey": "Intro",
+            "showDetails": "Mostrar detalles",
+            "detailsStrip": "Detalles",
+            "listOptions": "Opciones de la lista",
+            "columns": "Columnas",
+            "twoLineRows": "Filas de dos líneas",
+            "resetList": "Restablecer valores predeterminados",
+            "columnTooNarrow": "Lista demasiado estrecha",
+            "laneContinuesPastLoadedJump": "Continúa más allá de los commits cargados, en {{sha}}. Haz clic para cargar y saltar.",
+            "loadingMore": "Cargando más commits...",
+            "loadCapReached": "Se muestran los primeros {{count}} commits, el máximo que carga el gráfico. Acótalo con Branch, User o Paths."
+          },
+          "GitGraphBranchSidebar": {
+            "local": "Locales",
+            "tags": "Etiquetas",
+            "label": "Ramas y etiquetas",
+            "empty": "Todavía no se han cargado ramas.",
+            "showRef": "No está en la lista actual: haz clic para mostrar solo esta rama"
+          },
+          "GitGraphCommitInfo": {
+            "author": "Autor",
+            "date": "Fecha",
+            "copySha": "Copiar el SHA del commit",
+            "parents": "Padres",
+            "refs": "Referencias",
+            "containedIn": "En las ramas",
+            "moreBranches": "+{{count}} más",
+            "containedInHint": "Ramas cuyo último commit está en la lista cargada; no se cuentan las ramas fuera de ella.",
+            "children": "Hijos",
+            "childrenHint": "Commits de la lista cargada cuyo padre es este commit."
           }
         }
       },
@@ -17066,7 +17152,10 @@
                 "removeWorktree": "quitar worktree",
                 "trashWorktree": "mandar worktree a la papelera",
                 "addQuickCommand": "agregar comando rápido",
-                "newQuickCommand": "nuevo comando rápido"
+                "newQuickCommand": "nuevo comando rápido",
+                "openGitGraph": "abrir git graph",
+                "gitLog": "registro de git",
+                "commitHistory": "historial de commits"
               }
             }
           },
@@ -18881,7 +18970,8 @@
           "workspaceDisconnected": "No se puede ejecutar «{{action}}» — el espacio de trabajo está desconectado.",
           "noTabGroup": "No se puede ejecutar «{{action}}» — no hay ningún grupo de pestañas disponible.",
           "noMovableChat": "No se puede ejecutar «{{action}}» — no hay ningún chat activo que se pueda mover.",
-          "clientUnsupported": "No se puede ejecutar «{{action}}» — este cliente y este entorno de ejecución no lo admiten."
+          "clientUnsupported": "No se puede ejecutar «{{action}}» — este cliente y este entorno de ejecución no lo admiten.",
+          "noGitRepo": "No se puede ejecutar «{{action}}» — no hay ningún repositorio Git disponible."
         }
       },
       "plugins": {
@@ -18916,6 +19006,18 @@
         "setting-global-off": "La confianza de carpetas está desactivada en los ajustes de Agentes, así que los agentes siempre preguntan.",
         "keyword-trust": "confianza",
         "keyword-hooks": "hooks"
+      },
+      "gitGraphTab": {
+        "noRepo": "No hay ningún repositorio Git disponible para este espacio de trabajo.",
+        "repoSwitcher": "Repositorio",
+        "selectRepo": "Seleccionar repositorio",
+        "searchRepos": "Buscar repositorios...",
+        "noRepos": "No se encontraron repositorios.",
+        "addRepos": "Añadir repositorios...",
+        "addReposMissing": "{{value0}} sin añadir",
+        "addReposButton": "Añadir repositorios de esta carpeta",
+        "openInSourceControl": "Abrir en Control de código fuente",
+        "revealNotLoaded": "Ese commit no está en el historial cargado."
       }
     },
     "i18n": {
@@ -23006,7 +23108,8 @@
       "terminalSplitDown": "Dividir terminal hacia abajo",
       "terminalSwitchInputSource": "Cambiar fuente de entrada / idioma (nativo)",
       "newAgentTab": "Nueva pestaña de {{agent}}",
-      "viewPlugins": "Abrir plugins"
+      "viewPlugins": "Abrir plugins",
+      "sourceControlOpenGitGraph": "Abrir Git Graph"
     },
     "group": {
       "global": "Global",

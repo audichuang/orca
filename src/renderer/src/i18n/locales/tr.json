@@ -1363,7 +1363,8 @@
               }
             }
           }
-        }
+        },
+        "linear": {}
       },
       "pluginNewFile": {
         "unavailable": "{{value0}} artık kullanılamıyor. Eklentisini yeniden açın.",
@@ -14616,7 +14617,8 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "Tam kaynağı kopyala",
-                      "ce8235a6a4": "Yan tarafta aç"
+                      "ce8235a6a4": "Yan tarafta aç",
+                      "showFileHistory": "Dosya geçmişini göster"
                     }
                   }
                 },
@@ -14866,7 +14868,8 @@
             "copyFullSource": "Tam kaynağı kopyala",
             "copyFullSourceMany": "Tam kaynağı kopyala ({{value0}} commit)",
             "copyHashMany": "Commit hash'lerini kopyala ({{value0}} commit)",
-            "copyMessageMany": "Commit mesajlarını kopyala ({{value0}} commit)"
+            "copyMessageMany": "Commit mesajlarını kopyala ({{value0}} commit)",
+            "showInGraph": "Git Graph'ta göster"
           },
           "pull": {
             "policy": {
@@ -15056,6 +15059,89 @@
             "createInProgress": "PR oluşturuluyor...",
             "workspaceHostUnresolved": "Çalışma alanının sunucusu çözümlenemedi. Çalışma alanını yenileyip tekrar deneyin.",
             "branchDiscoveryFailed": "Branch'ler keşfedilemedi."
+          },
+          "GitHistoryGraph": {
+            "allBranches": "Tüm branch'ler",
+            "branchCount": "{{value0}} branch",
+            "currentBranch": "Geçerli branch",
+            "branchFilter": "Branch filtresi",
+            "searchBranches": "Branch'lerde ara...",
+            "scope": "Göster",
+            "sources": "Kaynaklar",
+            "localBranches": "Yerel branch'ler",
+            "loadingBranches": "Branch'ler yükleniyor...",
+            "hostTooOld": "Bu repository'nin barındığı ana makinede yalnızca geçerli branch'i gösteren eski bir Orca sürümü çalışıyor.",
+            "branchesFailed": "Branch'ler yüklenemedi",
+            "searchCommits": "Commit'lerde ara (author: path:)",
+            "searchCommitsLabel": "Commit'lerde ara",
+            "loadMore": "Daha fazla commit yükle",
+            "noMatchingCommits": "Bu filtreyle eşleşen commit yok",
+            "clearAllFilters": "Filtreleri temizle",
+            "local": "Yerel",
+            "showAllBranches": "Tüm branch'leri göster",
+            "userFilter": "Kullanıcı",
+            "pathsFilter": "Yollar",
+            "clearUserFilter": "Kullanıcı filtresini temizle",
+            "searchUsers": "Kullanıcı ara...",
+            "noUsers": "Yüklenen commit'lerde kullanıcı yok.",
+            "clearPathFilter": "Yol filtresini temizle",
+            "typePath": "Repository'ye göre göreli dosya veya klasör yolu",
+            "typePathHint": "Bir yol yazın, ardından Enter'a basın.",
+            "filterByPath": "{{value0}} ile filtrele",
+            "recentPaths": "Son Kullanılanlar",
+            "clearFilters": "Temizle",
+            "searchCommitMessages": "Commit mesajlarında ara",
+            "tags": "Tag'ler"
+          },
+          "GitGraphFullView": {
+            "open": "Git Graph'ı aç",
+            "description": "Geçerli repository'nin commit grafiği.",
+            "message": "Mesaj",
+            "author": "Yazar",
+            "date": "Tarih",
+            "commit": "Commit",
+            "selectCommit": "Ayrıntılarını ve değişen dosyaları görmek için bir commit seçin.",
+            "resizeDetails": "Commit ayrıntılarını yeniden boyutlandır",
+            "copyFullSource": "Tüm değişen dosyaların tam kaynağını kopyala",
+            "filesInCommits": "Değişen dosyalar ({{files}}) · {{commits}} commit",
+            "filesChanged": "Değişen dosyalar ({{files}})",
+            "toggleBranches": "Branch'leri göster/gizle",
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "{{count}} satır aşağıda {{sha}} {{subject}} ile devam ediyor. Atlamak için tıklayın.",
+            "laneComesFromAbove": "{{count}} satır yukarıdaki {{sha}} {{subject}} öğesinden geliyor. Atlamak için tıklayın.",
+            "laneContinuesPastLoaded": "Yüklenen commit'lerin ötesinde devam ediyor. Takip etmek için daha fazla commit yükleyin.",
+            "openAllChanges": "Tüm değişiklikleri aç",
+            "hideDetails": "Ayrıntıları gizle",
+            "enterKey": "Enter",
+            "showDetails": "Ayrıntıları göster",
+            "detailsStrip": "Ayrıntılar",
+            "listOptions": "Liste seçenekleri",
+            "columns": "Sütunlar",
+            "twoLineRows": "İki satırlı görünüm",
+            "resetList": "Varsayılanlara sıfırla",
+            "columnTooNarrow": "Liste çok dar",
+            "laneContinuesPastLoadedJump": "Yüklenen commit'lerin ötesinde {{sha}} konumunda devam ediyor. Yüklemek ve atlamak için tıklayın.",
+            "loadingMore": "Daha fazla commit yükleniyor...",
+            "loadCapReached": "İlk {{count}} commit gösteriliyor; grafiğin yükleyebileceği en fazla sayı bu. Branch, Kullanıcı veya Yollar ile daraltın."
+          },
+          "GitGraphBranchSidebar": {
+            "local": "Yerel",
+            "tags": "Tag'ler",
+            "label": "Branch'ler ve tag'ler",
+            "empty": "Henüz branch yüklenmedi.",
+            "showRef": "Geçerli listede yok — yalnızca bu branch'i göstermek için tıklayın"
+          },
+          "GitGraphCommitInfo": {
+            "author": "Yazar",
+            "date": "Tarih",
+            "copySha": "Commit SHA'sını kopyala",
+            "parents": "Üst commit'ler",
+            "refs": "Ref'ler",
+            "containedIn": "Branch'lerde",
+            "moreBranches": "+{{count}} tane daha",
+            "containedInHint": "Uçları yüklenen listede olan branch'ler; liste dışındaki branch'ler sayılmaz.",
+            "children": "Alt commit'ler",
+            "childrenHint": "Yüklenen listede, üst commit'i bu commit olan commit'ler."
           }
         }
       },
@@ -17320,7 +17406,10 @@
                 "removeWorktree": "worktree kaldır",
                 "trashWorktree": "worktree'yi çöpe at",
                 "addQuickCommand": "hızlı komut ekle",
-                "newQuickCommand": "yeni hızlı komut"
+                "newQuickCommand": "yeni hızlı komut",
+                "openGitGraph": "git graph aç",
+                "gitLog": "git log",
+                "commitHistory": "commit geçmişi"
               }
             }
           },
@@ -19052,7 +19141,8 @@
           "workspaceDisconnected": "“{{action}}” çalıştırılamıyor — çalışma alanının bağlantısı kesildi.",
           "noTabGroup": "“{{action}}” çalıştırılamıyor — kullanılabilir sekme grubu yok.",
           "noMovableChat": "“{{action}}” çalıştırılamıyor — taşınabilir etkin sohbet yok.",
-          "clientUnsupported": "“{{action}}” çalıştırılamıyor — bu istemci ve çalışma zamanı bunu desteklemiyor."
+          "clientUnsupported": "“{{action}}” çalıştırılamıyor — bu istemci ve çalışma zamanı bunu desteklemiyor.",
+          "noGitRepo": "“{{action}}” çalıştırılamıyor — kullanılabilir Git deposu yok."
         }
       },
       "plugins": {
@@ -19087,6 +19177,18 @@
         "setting-global-off": "Klasör güveni Ajanlar ayarlarında kapalı olduğundan ajanlar her zaman sorar.",
         "keyword-trust": "güven",
         "keyword-hooks": "kancalar"
+      },
+      "gitGraphTab": {
+        "noRepo": "Bu çalışma alanı için kullanılabilir Git repository'si yok.",
+        "repoSwitcher": "Repository",
+        "selectRepo": "Repository seç",
+        "searchRepos": "Repository'lerde ara...",
+        "noRepos": "Repository bulunamadı.",
+        "addRepos": "Repository ekle...",
+        "addReposMissing": "{{value0}} eklenmedi",
+        "addReposButton": "Bu klasördeki repository'leri ekle",
+        "openInSourceControl": "Source Control'de aç",
+        "revealNotLoaded": "Bu commit yüklenen geçmişte yok."
       }
     },
     "i18n": {
@@ -22643,7 +22745,8 @@
       "terminalSplitDown": "Terminali aşağı böl",
       "terminalSwitchInputSource": "Giriş kaynağını / dilini değiştir (yerel)",
       "newAgentTab": "Yeni {{agent}} sekmesi",
-      "viewPlugins": "Eklentileri Aç"
+      "viewPlugins": "Eklentileri Aç",
+      "sourceControlOpenGitGraph": "Git Graph'ı aç"
     },
     "group": {
       "global": "Genel",

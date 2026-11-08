@@ -7,8 +7,8 @@ import {
   type GitHistoryItemViewModel
 } from '../../../../../../shared/git/history/git-history-graph'
 
-const SWIMLANE_HEIGHT = 24
-const SWIMLANE_WIDTH = 11
+export const SWIMLANE_HEIGHT = 24
+export const SWIMLANE_WIDTH = 11
 const SWIMLANE_CURVE_RADIUS = 5
 const SWIMLANE_NODE_Y = SWIMLANE_HEIGHT / 2
 const CIRCLE_RADIUS = 3.5
@@ -131,12 +131,7 @@ export function GitHistoryGraphSvg({
     })
   }
 
-  const cx = SWIMLANE_WIDTH * (circleIndex + 1)
-  const cy = SWIMLANE_NODE_Y
   const width = SWIMLANE_WIDTH * (Math.max(inputSwimlanes.length, outputSwimlanes.length, 1) + 1)
-  const isBoundaryNode =
-    viewModel.kind === 'incoming-changes' || viewModel.kind === 'outgoing-changes'
-  const isMergeNode = historyItem.parentIds.length > 1
 
   return (
     <svg
@@ -149,6 +144,31 @@ export function GitHistoryGraphSvg({
       {paths.map((path) => (
         <GraphPath key={path.d} d={path.d} color={path.color} />
       ))}
+      <GitHistoryGraphNodeMarker
+        viewModel={viewModel}
+        cx={SWIMLANE_WIDTH * (circleIndex + 1)}
+        color={circleColor}
+      />
+    </svg>
+  )
+}
+
+/** The commit dot (HEAD ring, boundary dashes, merge hollow); fork: shared with the full Git Graph's lane renderer. */
+export function GitHistoryGraphNodeMarker({
+  viewModel,
+  cx,
+  color: circleColor
+}: {
+  viewModel: GitHistoryItemViewModel
+  cx: number
+  color: GitHistoryGraphColorId
+}): React.JSX.Element {
+  const cy = SWIMLANE_NODE_Y
+  const isBoundaryNode =
+    viewModel.kind === 'incoming-changes' || viewModel.kind === 'outgoing-changes'
+  const isMergeNode = viewModel.historyItem.parentIds.length > 1
+  return (
+    <>
       {viewModel.kind === 'HEAD' && (
         <>
           <circle
@@ -200,6 +220,6 @@ export function GitHistoryGraphSvg({
       {!isBoundaryNode && viewModel.kind !== 'HEAD' && !isMergeNode && (
         <circle cx={cx} cy={cy} r={CIRCLE_RADIUS} fill={graphColor(circleColor)} />
       )}
-    </svg>
+    </>
   )
 }

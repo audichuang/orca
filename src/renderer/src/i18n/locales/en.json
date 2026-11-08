@@ -1240,7 +1240,8 @@
       "saving": "Saving…",
       "save": "Save formatter",
       "placeholder": "npx --no-install prettier --stdin-filepath \"${file}\""
-    }
+    },
+    "experimental": {}
   },
   "menu": {
     "checkForUpdates": "Check for Updates...",
@@ -1614,7 +1615,8 @@
               }
             }
           }
-        }
+        },
+        "linear": {}
       },
       "pluginAutoUpdates": {
         "one": "{{value0}} updated to {{value1}}",
@@ -15020,7 +15022,8 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "Copy Full Source",
-                      "ce8235a6a4": "Open to the Side"
+                      "ce8235a6a4": "Open to the Side",
+                      "showFileHistory": "Show File History"
                     }
                   }
                 },
@@ -15270,7 +15273,8 @@
             "copyFullSource": "Copy Full Source",
             "copyFullSourceMany": "Copy Full Source ({{value0}} commits)",
             "copyHashMany": "Copy commit hashes ({{value0}} commits)",
-            "copyMessageMany": "Copy commit messages ({{value0}} commits)"
+            "copyMessageMany": "Copy commit messages ({{value0}} commits)",
+            "showInGraph": "Show in Git Graph"
           },
           "pull": {
             "policy": {
@@ -15464,6 +15468,89 @@
             "createInProgress": "Create PR in progress...",
             "workspaceHostUnresolved": "The workspace host is unresolved. Refresh the workspace and retry.",
             "branchDiscoveryFailed": "Branch discovery failed."
+          },
+          "GitHistoryGraph": {
+            "allBranches": "All branches",
+            "branchCount": "{{value0}} branches",
+            "currentBranch": "Current branch",
+            "branchFilter": "Branch filter",
+            "searchBranches": "Search branches...",
+            "scope": "Show",
+            "sources": "Sources",
+            "localBranches": "Local branches",
+            "loadingBranches": "Loading branches...",
+            "hostTooOld": "This repository host runs an older Orca that only shows the current branch.",
+            "branchesFailed": "Failed to load branches",
+            "searchCommits": "Search commits (author: path:)",
+            "searchCommitsLabel": "Search commits",
+            "loadMore": "Load more commits",
+            "noMatchingCommits": "No commits match this filter",
+            "clearAllFilters": "Clear filters",
+            "local": "Local",
+            "showAllBranches": "Show all branches",
+            "userFilter": "User",
+            "pathsFilter": "Paths",
+            "clearUserFilter": "Clear user filter",
+            "searchUsers": "Search users...",
+            "noUsers": "No users in the loaded commits.",
+            "clearPathFilter": "Clear path filter",
+            "typePath": "Repo-relative file or folder path",
+            "typePathHint": "Type a path, then press Enter.",
+            "filterByPath": "Filter by {{value0}}",
+            "recentPaths": "Recent",
+            "clearFilters": "Clear",
+            "searchCommitMessages": "Search commit messages",
+            "tags": "Tags"
+          },
+          "GitGraphFullView": {
+            "open": "Open Git Graph",
+            "description": "Commit graph for the current repository.",
+            "message": "Message",
+            "author": "Author",
+            "date": "Date",
+            "commit": "Commit",
+            "selectCommit": "Select a commit to see its details and changed files.",
+            "resizeDetails": "Resize commit details",
+            "copyFullSource": "Copy Full Source of all changed files",
+            "filesInCommits": "Changed files ({{files}}) · {{commits}} commits",
+            "filesChanged": "Changed files ({{files}})",
+            "toggleBranches": "Toggle branches",
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "Continues {{count}} rows below at {{sha}} {{subject}}. Click to jump.",
+            "laneComesFromAbove": "Comes from {{sha}} {{subject}}, {{count}} rows above. Click to jump.",
+            "laneContinuesPastLoaded": "Continues past the loaded commits. Load more commits to follow it.",
+            "openAllChanges": "Open all changes",
+            "hideDetails": "Hide details",
+            "enterKey": "Enter",
+            "showDetails": "Show details",
+            "detailsStrip": "Details",
+            "listOptions": "List options",
+            "columns": "Columns",
+            "twoLineRows": "Two-line rows",
+            "resetList": "Reset to defaults",
+            "columnTooNarrow": "List too narrow",
+            "laneContinuesPastLoadedJump": "Continues past the loaded commits at {{sha}}. Click to load and jump.",
+            "loadingMore": "Loading more commits...",
+            "loadCapReached": "Showing the first {{count}} commits, the most the graph loads. Narrow it with Branch, User or Paths."
+          },
+          "GitGraphBranchSidebar": {
+            "local": "Local",
+            "tags": "Tags",
+            "label": "Branches and tags",
+            "empty": "No branches loaded yet.",
+            "showRef": "Not in the current list — click to show only this branch"
+          },
+          "GitGraphCommitInfo": {
+            "author": "Author",
+            "date": "Date",
+            "copySha": "Copy commit SHA",
+            "parents": "Parents",
+            "refs": "Refs",
+            "containedIn": "In branches",
+            "moreBranches": "+{{count}} more",
+            "containedInHint": "Branches whose tips are in the loaded list; branches outside it are not counted.",
+            "children": "Children",
+            "childrenHint": "Commits in the loaded list whose parent is this commit."
           }
         }
       },
@@ -17754,7 +17841,10 @@
                 "newQuickCommand": "new quick command",
                 "browserRight": "browser right",
                 "splitBrowser": "split browser",
-                "browserSplit": "browser split"
+                "browserSplit": "browser split",
+                "openGitGraph": "open git graph",
+                "gitLog": "git log",
+                "commitHistory": "commit history"
               },
               "newBrowserTabSplitRight": "New Browser Tab in Right Split",
               "newBrowserTabSplitRightDescription": "Open a browser tab in a new split to the right."
@@ -19503,7 +19593,8 @@
           "workspaceDisconnected": "Can’t run “{{action}}” — workspace is disconnected.",
           "noTabGroup": "Can’t run “{{action}}” — no tab group is available.",
           "noMovableChat": "Can’t run “{{action}}” — no movable chat is active.",
-          "clientUnsupported": "Can’t run “{{action}}” — this client and runtime do not support it."
+          "clientUnsupported": "Can’t run “{{action}}” — this client and runtime do not support it.",
+          "noGitRepo": "Can’t run “{{action}}” — no Git repository is available."
         }
       },
       "plugins": {
@@ -19564,6 +19655,18 @@
         "setting-global-off": "Folder trust is turned off in Agents settings, so agents always ask.",
         "keyword-trust": "trust",
         "keyword-hooks": "hooks"
+      },
+      "gitGraphTab": {
+        "noRepo": "No Git repository is available for this workspace.",
+        "repoSwitcher": "Repository",
+        "selectRepo": "Select repository",
+        "searchRepos": "Search repositories...",
+        "noRepos": "No repositories found.",
+        "addRepos": "Add repositories...",
+        "addReposMissing": "{{value0}} not added",
+        "addReposButton": "Add repositories in this folder",
+        "openInSourceControl": "Open in Source Control",
+        "revealNotLoaded": "That commit is not in the loaded history."
       }
     },
     "i18n": {
@@ -23575,7 +23678,8 @@
       "newAgentTab": "New {{agent}} tab",
       "tabNewBrowserSplitRight": "New browser tab in right split",
       "viewPlugins": "Open Plugins",
-      "sidebarProjectsToggleCollapse": "Collapse / Expand All Projects"
+      "sidebarProjectsToggleCollapse": "Collapse / Expand All Projects",
+      "sourceControlOpenGitGraph": "Open Git Graph"
     },
     "group": {
       "global": "Global",

@@ -11,6 +11,14 @@ src/main/runtime/runtime-git-diff-skip-render-limit-chain.test.ts
 src/renderer/src/runtime/runtime-git-diff-skip-render-limit-client.test.ts
 src/renderer/src/web/preload-api/web-git-diff-skip-render-limit.test.ts
 
+# git.history graph option: IPC, web preload, RPC, runtime chain, renderer client, dispatch
+src/main/git/history-graph-dispatch.real-git.test.ts
+src/main/ipc/filesystem/filesystem-git-history-graph-ipc.test.ts
+src/main/runtime/rpc/methods/source-control/git/git-history-graph-rpc.test.ts
+src/main/runtime/runtime-git-history-graph-chain.test.ts
+src/renderer/src/web/preload-api/web-git-history-graph.test.ts
+src/renderer/src/runtime/runtime-git-history-graph-client.test.ts
+
 # missingSides and blob absence feeding ClipCode copy
 src/main/git/source-control/blob-absence-real-git.test.ts
 src/main/git/source-control/blob-absence-real-git.fork.test.ts
@@ -20,7 +28,8 @@ src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-commi
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-explorer-copy.test.ts
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-git-copy.test.ts
 
-# WSL wake (E9) on fork user acts: ClipCode copy reads
+# WSL wake (E9) on fork user acts: Git Graph Refresh, ClipCode copy reads
+src/renderer/src/components/git-graph-tab/GitGraphTabView.component.test.tsx
 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-copy-action.wsl-wake.test.ts
 
 # ClipCode clipboard and preview contracts
@@ -41,7 +50,6 @@ src/renderer/src/components/right-sidebar/source-control/listing/section-action-
 src/renderer/src/components/right-sidebar/file-explorer-duplicate-as-result.fork.test.tsx
 
 # gitWorktreeId persistence: save, reload, restore (layout and session)
-src/renderer/src/store/slices/editor/tabs/open-file-layout-view.fork.test.ts
 src/renderer/src/lib/workspace/persistence/workspace-session-hydration-keys.fork.test.ts
 src/renderer/src/store/slices/editor-read-only-tabs.fork.test.ts
 src/shared/workspace-layout/workspace-layout-fact-locations.test.ts
@@ -57,12 +65,25 @@ src/renderer/src/components/editor/ExternalFileChangeBanner.git-owner.test.ts
 # Source-control row split-open modifiers and Open to the Side
 src/renderer/src/components/right-sidebar/source-control/listing/split-open.test.ts
 
+# git-graph tab type: hydration, editor tabs, layout, runtime graph sync
+src/renderer/src/runtime/sync-runtime-graph-git-graph-tab.test.ts
+src/renderer/src/store/slices/editor-git-graph-tabs.test.ts
+src/renderer/src/store/slices/editor-git-graph-split-open.test.ts
+src/renderer/src/store/slices/editor/tabs/open-file-layout-view.fork.test.ts
+src/renderer/src/store/slices/tabs-hydration-git-graph.test.ts
+src/renderer/src/components/tab-group/TabGroupPanel.git-graph-button.test.tsx
+src/renderer/src/components/cmd-j/git-graph-quick-action.test.ts
+src/renderer/src/components/editor/EditorContent.fork.test.tsx
+src/shared/workspace-layout/old-client/old-client-session-tabs-projection.fork.test.ts
+
 # Upstream component slots and folder routing
 src/renderer/src/components/right-sidebar/source-control/folder/folder-path-repo-owners.test.ts
 src/renderer/src/components/right-sidebar/FolderWorkspaceSourceControlPanel.folder-path-repos.fork.test.tsx
 src/main/project-groups/nested-repo-discovery.fork.test.ts
 src/renderer/src/components/right-sidebar/right-sidebar-activity-visibility.fork.test.ts
 # (the Commits dock slots and toast clearance: panel-content.fork.test.tsx, listed under gitWorktreeId on editor open actions)
+src/renderer/src/components/right-sidebar/source-control/sync/git-graph-full-view.component.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph.component.test.tsx
 src/renderer/src/components/editor/editor-autosave.fork.test.ts
 src/renderer/src/components/editor/editor-external-watch-path-index.fork.test.ts
 src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files-menu.test.tsx
@@ -73,6 +94,10 @@ src/renderer/src/components/editor/EditorEditFileSurface.fork.test.tsx
 
 # Editor save event
 src/renderer/src/components/editor/editor-file-saved-event.contract.test.ts
+
+# Keybinding
+src/renderer/src/app-shell/git-graph-command-handler.test.ts
+src/renderer/src/app-shell/git-graph-shortcut.keybindings.test.ts
 
 # Updater: fork distribution
 src/main/updater/updater.fork-distribution.test.ts

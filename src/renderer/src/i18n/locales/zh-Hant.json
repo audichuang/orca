@@ -1335,7 +1335,8 @@
               }
             }
           }
-        }
+        },
+        "linear": {}
       },
       "pluginNewFile": {
         "unavailable": "{{value0}} 已無法使用。請重新開啟其外掛。",
@@ -14437,7 +14438,8 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "複製完整原始碼",
-                      "ce8235a6a4": "在側邊開啟"
+                      "ce8235a6a4": "在側邊開啟",
+                      "showFileHistory": "顯示檔案歷史記錄"
                     }
                   }
                 },
@@ -14679,7 +14681,8 @@
             "copyFullSource": "複製完整原始碼",
             "copyFullSourceMany": "複製完整原始碼（{{value0}} 個提交）",
             "copyHashMany": "複製提交雜湊（{{value0}} 個提交）",
-            "copyMessageMany": "複製提交訊息（{{value0}} 個提交）"
+            "copyMessageMany": "複製提交訊息（{{value0}} 個提交）",
+            "showInGraph": "在 Git Graph 中顯示"
           },
           "pull": {
             "policy": {
@@ -14862,6 +14865,89 @@
             "createInProgress": "正在建立 PR...",
             "workspaceHostUnresolved": "無法解析工作區主機。請重新整理工作區後再試。",
             "branchDiscoveryFailed": "分支偵測失敗。"
+          },
+          "GitHistoryGraph": {
+            "allBranches": "所有分支",
+            "branchCount": "{{value0}} 個分支",
+            "currentBranch": "目前分支",
+            "branchFilter": "分支篩選",
+            "searchBranches": "搜尋分支...",
+            "scope": "顯示",
+            "sources": "來源",
+            "localBranches": "本機分支",
+            "loadingBranches": "正在載入分支...",
+            "hostTooOld": "此存放庫所在主機執行的是較舊版本的 Orca，只能顯示目前分支。",
+            "branchesFailed": "無法載入分支",
+            "searchCommits": "搜尋提交（author: path:）",
+            "searchCommitsLabel": "搜尋提交",
+            "loadMore": "載入更多提交",
+            "noMatchingCommits": "沒有符合此篩選條件的提交",
+            "clearAllFilters": "清除篩選",
+            "local": "本機",
+            "showAllBranches": "顯示所有分支",
+            "userFilter": "使用者",
+            "pathsFilter": "路徑",
+            "clearUserFilter": "清除使用者篩選",
+            "searchUsers": "搜尋使用者...",
+            "noUsers": "已載入的提交中沒有使用者。",
+            "clearPathFilter": "清除路徑篩選",
+            "typePath": "相對於存放庫的檔案或資料夾路徑",
+            "typePathHint": "輸入路徑，然後按 Enter。",
+            "filterByPath": "依 {{value0}} 篩選",
+            "recentPaths": "最近的",
+            "clearFilters": "清除",
+            "searchCommitMessages": "搜尋提交訊息",
+            "tags": "標籤"
+          },
+          "GitGraphFullView": {
+            "open": "開啟 Git Graph",
+            "description": "目前存放庫的提交圖。",
+            "message": "訊息",
+            "author": "作者",
+            "date": "日期",
+            "commit": "提交",
+            "selectCommit": "選取一個提交以查看詳情和變更的檔案。",
+            "resizeDetails": "調整提交詳情寬度",
+            "copyFullSource": "複製所有變更檔案的完整原始碼",
+            "filesInCommits": "變更檔案 ({{files}}) · {{commits}} 個提交",
+            "filesChanged": "變更檔案 ({{files}})",
+            "toggleBranches": "切換分支面板",
+            "openShort": "Git Graph",
+            "laneContinuesBelow": "往下 {{count}} 列接到 {{sha}} {{subject}}。點一下跳過去。",
+            "laneComesFromAbove": "從上方 {{count}} 列的 {{sha}} {{subject}} 接過來。點一下跳過去。",
+            "laneContinuesPastLoaded": "接到尚未載入的更早提交。載入更多提交後即可跳過去。",
+            "openAllChanges": "開啟所有變更",
+            "hideDetails": "隱藏詳情",
+            "enterKey": "Enter",
+            "showDetails": "顯示詳情",
+            "detailsStrip": "詳情",
+            "listOptions": "清單選項",
+            "columns": "欄",
+            "twoLineRows": "雙行顯示",
+            "resetList": "重設為預設",
+            "columnTooNarrow": "清單太窄",
+            "laneContinuesPastLoadedJump": "接到尚未載入的提交 {{sha}}。點一下即可載入並跳過去。",
+            "loadingMore": "正在載入更多提交...",
+            "loadCapReached": "已顯示前 {{count}} 個提交，這是圖表載入的上限。請用「分支」、「使用者」或「路徑」縮小範圍。"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "本機",
+            "tags": "標籤",
+            "label": "分支與標籤",
+            "empty": "尚未載入分支。",
+            "showRef": "不在目前清單中 — 點一下即可只顯示此分支"
+          },
+          "GitGraphCommitInfo": {
+            "author": "作者",
+            "date": "日期",
+            "copySha": "複製提交 SHA",
+            "parents": "父提交",
+            "refs": "參照",
+            "containedIn": "所在分支",
+            "moreBranches": "+{{count}} 個",
+            "containedInHint": "只計入末端提交位於已載入清單中的分支；清單外的分支不計入。",
+            "children": "子提交",
+            "childrenHint": "已載入的清單中，以這個提交為父提交的提交。"
           }
         }
       },
@@ -17106,7 +17192,10 @@
                 "removeWorktree": "刪除工作樹",
                 "trashWorktree": "將工作樹移至垃圾桶",
                 "addQuickCommand": "新增快速命令",
-                "newQuickCommand": "新的快速命令"
+                "newQuickCommand": "新的快速命令",
+                "openGitGraph": "開啟 git graph",
+                "gitLog": "git log",
+                "commitHistory": "提交歷史記錄"
               }
             }
           },
@@ -18807,7 +18896,8 @@
           "workspaceDisconnected": "無法執行「{{action}}」— 工作區已中斷連線。",
           "noTabGroup": "無法執行「{{action}}」— 沒有可用的分頁群組。",
           "noMovableChat": "無法執行「{{action}}」— 沒有作用中且可移動的聊天。",
-          "clientUnsupported": "無法執行「{{action}}」— 此用戶端與執行環境不支援此操作。"
+          "clientUnsupported": "無法執行「{{action}}」— 此用戶端與執行環境不支援此操作。",
+          "noGitRepo": "無法執行「{{action}}」— 沒有可用的 Git 存放庫。"
         }
       },
       "plugins": {
@@ -18842,6 +18932,18 @@
         "setting-global-off": "已在代理程式設定中關閉資料夾信任，因此代理程式一律會詢問。",
         "keyword-trust": "信任",
         "keyword-hooks": "鉤子"
+      },
+      "gitGraphTab": {
+        "noRepo": "此工作區沒有可用的 Git 存放庫。",
+        "repoSwitcher": "存放庫",
+        "selectRepo": "選取存放庫",
+        "searchRepos": "搜尋存放庫...",
+        "noRepos": "找不到存放庫。",
+        "addRepos": "新增存放庫...",
+        "addReposMissing": "{{value0}} 個未新增",
+        "addReposButton": "新增此資料夾中的存放庫",
+        "openInSourceControl": "在原始碼控制中開啟",
+        "revealNotLoaded": "該提交不在已載入的歷史記錄中。"
       }
     },
     "i18n": {
@@ -22328,7 +22430,8 @@
       "terminalSplitDown": "向下分割終端機",
       "terminalSwitchInputSource": "切換輸入來源／語言（原生）",
       "newAgentTab": "新增 {{agent}} 分頁",
-      "viewPlugins": "開啟外掛程式"
+      "viewPlugins": "開啟外掛程式",
+      "sourceControlOpenGitGraph": "開啟 Git Graph"
     },
     "group": {
       "global": "全域",

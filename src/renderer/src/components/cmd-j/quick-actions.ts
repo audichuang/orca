@@ -19,6 +19,7 @@ import {
 import { translate } from '@/i18n/i18n'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import { getNativeChatSplitQuickActions } from './native-chat-split-quick-actions'
+import { withForkGitGraphQuickAction } from './git-graph-quick-action'
 
 export type CmdJQuickActionRunResult =
   | { status: 'ok' }
@@ -80,7 +81,7 @@ export async function runBrowserWorkspaceAction(
 }
 
 // Keep context-heavy imports in Settings, where explanatory UI and failure states fit.
-export const getCmdJQuickActions = createLocalizedCatalog((): CmdJQuickAction[] => [
+const getUpstreamCmdJQuickActions = createLocalizedCatalog((): CmdJQuickAction[] => [
   {
     id: 'git-graph',
     kind: 'action',
@@ -245,3 +246,8 @@ export const getCmdJQuickActions = createLocalizedCatalog((): CmdJQuickAction[] 
     }
   }
 ])
+
+// Fork: one Git Graph entry, the fork's.
+export const getCmdJQuickActions = createLocalizedCatalog(() =>
+  withForkGitGraphQuickAction(getUpstreamCmdJQuickActions())
+)
