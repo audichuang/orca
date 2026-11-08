@@ -19,10 +19,6 @@ import {
   getNewNestedRepoCandidatesFromState,
   nestedRepoRelativeLabel
 } from './folder-nested-repo-candidates'
-import {
-  folderSidebarHiddenRepoKey,
-  setReposHiddenFromSidebar
-} from './folder-sidebar-hidden-repos'
 
 type ScanState =
   | { phase: 'scanning' }
@@ -39,7 +35,6 @@ export function FolderAddReposDialog({
 }): React.JSX.Element {
   const [scan, setScan] = useState<ScanState>({ phase: 'scanning' })
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
-  const [hideFromSidebar, setHideFromSidebar] = useState(true)
   const [adding, setAdding] = useState(false)
   const { folderPath } = folderWorkspace
 
@@ -84,21 +79,7 @@ export function FolderAddReposDialog({
     setAdding(true)
     const { addRepoPath, fetchWorktrees } = useAppStore.getState()
     for (const path of selected) {
-      const guess = { ...folderWorkspace, path }
-      if (hideFromSidebar) {
-        // Why before the add: the sidebar would otherwise flash the new project for a frame.
-        setReposHiddenFromSidebar([guess], true)
-      }
       const repo = await addRepoPath(path, 'git', { runtimeEnvironmentId: null })
-      if (
-        hideFromSidebar &&
-        (!repo || folderSidebarHiddenRepoKey(repo) !== folderSidebarHiddenRepoKey(guess))
-      ) {
-        setReposHiddenFromSidebar([guess], false)
-        if (repo) {
-          setReposHiddenFromSidebar([repo], true)
-        }
-      }
       if (repo) {
         await fetchWorktrees(repo.id)
       }
@@ -189,20 +170,6 @@ export function FolderAddReposDialog({
               )}
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="folder-add-repos-hide"
-              checked={hideFromSidebar}
-              disabled={adding}
-              onCheckedChange={(checked) => setHideFromSidebar(checked === true)}
-            />
-            <Label htmlFor="folder-add-repos-hide">
-              {translate(
-                'auto.components.right.sidebar.source.control.folder.folder.add.repos.dialog.hide',
-                'Show only in this folder, not as sidebar projects'
-              )}
-            </Label>
-          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" disabled={adding} onClick={onClose}>

@@ -41,8 +41,7 @@ const TAB_ID_RULES: Record<TabContentType, 'terminal' | 'kept'> = {
   'git-graph': 'kept',
   'agent-session': 'kept',
   browser: 'kept',
-  simulator: 'kept',
-  'git-graph': 'kept'
+  simulator: 'kept'
 }
 
 function isKnownTabKind(kind: string): kind is TabContentType {

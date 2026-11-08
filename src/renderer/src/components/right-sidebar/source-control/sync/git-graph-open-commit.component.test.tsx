@@ -11,8 +11,19 @@ import type {
 } from '../../../../../../shared/git/history/git-history-types'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
 
+// Why: happy-dom lays nothing out, so upstream's virtualized Commits list would render no rows.
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 28,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({ index, key: index, start: index * 28 })),
+    measureElement: vi.fn(),
+    scrollToIndex: vi.fn()
+  })
+}))
+
 const mocks = vi.hoisted(() => ({ getRuntimeGitHistory: vi.fn() }))
-vi.mock('@/runtime/runtime-git-status-client', () => ({
+vi.mock('@/runtime/source-control/git/runtime-git-status-client', () => ({
   getRuntimeGitHistory: mocks.getRuntimeGitHistory
 }))
 vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => undefined }))
