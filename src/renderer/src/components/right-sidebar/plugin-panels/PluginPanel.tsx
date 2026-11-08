@@ -20,6 +20,8 @@ import {
 } from '@/store/plugins/catalog/plugin-contribution-catalog'
 import { useTranslate } from '@/i18n/use-translate'
 import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
+import { useRemotePluginPanelRoute } from './remote/use-remote-plugin-panel-route'
+import { remotePluginPanelNotice } from './remote/remote-plugin-panel-notice'
 
 type PluginPanelProps = {
   tabKey: string
@@ -54,15 +56,22 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
     () => (panelShell ? fillPluginPanelShell(panelShell) : null),
     [panelShell]
   )
-  const panelFrameKey = entry.status === 'ready' ? `${tabKey}:${entry.revision}` : null
+  const route = useRemotePluginPanelRoute(panel)
+  const remoteNotice = panel ? remotePluginPanelNotice(route, panel.pluginName, declarative) : null
+  // Fork: a host switch remounts the frame so no state from the previous host's data lingers.
+  const panelFrameKey =
+    entry.status === 'ready'
+      ? `${route.kind === 'remote' ? `${route.environmentId}:` : ''}${tabKey}:${entry.revision}`
+      : null
   const { onFrameLoad } = usePluginFrameHost({
     surface: 'panel',
     frameRef,
     // Why null: a declarative panel's own host wires its hidden guest instead.
-    frameKey: declarative ? null : panelFrameKey,
+    frameKey: declarative || remoteNotice ? null : panelFrameKey,
     sessionToken: entry.status === 'ready' ? entry.sessionToken : null,
     onUnresponsive: markUnresponsive,
-    onGuestGone: remountGone
+    onGuestGone: remountGone,
+    remoteHostCall: route.kind === 'remote' ? route.callHostMethod : undefined
   })
 
   useEffect(() => {
@@ -118,6 +127,10 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
         )}
       </PluginPanelMessage>
     )
+  }
+
+  if (remoteNotice) {
+    return <PluginPanelMessage>{remoteNotice}</PluginPanelMessage>
   }
 
   if (declarative) {
