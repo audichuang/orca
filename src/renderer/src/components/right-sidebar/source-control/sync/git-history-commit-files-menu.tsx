@@ -10,6 +10,7 @@ import { OpenToSideMenuItem } from '../listing/entry-context-menu-slots'
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import { ClipcodeCopyFullSourceMenuItem } from '../clipcode/clipcode-menu-items'
 import type { SourceControlPanelModel } from '../panel/use-panel-model'
+import { useSourceControlScope } from '../panel/worktree-scope'
 import { copyHistoryCommitsFullSource } from './git-history-commit-copy'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import {
@@ -38,7 +39,7 @@ export function GitHistoryCommitFilesMenu({
 }: {
   model: Pick<
     SourceControlPanelModel,
-    'activeConnectionId' | 'activeRepoTarget' | 'editorWorktreeId' | 'revealInExplorer'
+    'activeConnectionId' | 'activeRepoTarget' | 'revealInExplorer'
   >
   worktreeId: string
   worktreePath: string
@@ -49,6 +50,7 @@ export function GitHistoryCommitFilesMenu({
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   renderList: (selectedPaths: ReadonlySet<string>) => React.JSX.Element
 }): React.JSX.Element {
+  const placementWorkspaceId = useSourceControlScope()?.placementWorkspaceId ?? null
   const [entry, setEntry] = useState<GitBranchChangeEntry | null>(null)
   const [dirPath, setDirPath] = useState<string | null>(null)
   const [selection, setSelection] = useState(EMPTY_COMMIT_FILE_SELECTION)
@@ -106,7 +108,7 @@ export function GitHistoryCommitFilesMenu({
       items,
       worktreeId,
       worktreePath,
-      editorWorktreeId: model.editorWorktreeId ?? null,
+      placementWorkspaceId,
       activeRepoTarget: model.activeRepoTarget,
       // Why a narrowed loader: the commits' Copy Full Source, limited to the selected files.
       loadCommitFiles: async (item) =>
@@ -139,7 +141,7 @@ export function GitHistoryCommitFilesMenu({
       }
       // Why: in a folder workspace the explorer belongs to the folder, not this child repo.
       onRevealInExplorer={(_repoId, path) =>
-        model.revealInExplorer(model.editorWorktreeId ?? worktreeId, path)
+        model.revealInExplorer(placementWorkspaceId ?? worktreeId, path)
       }
     >
       <div onClickCapture={handleClickCapture} onContextMenuCapture={handleContextMenuCapture}>

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getRuntimeGitDiff } from './source-control/git/runtime-git-diff-client'
 
 const callRuntimeRpc = vi.hoisted(() => vi.fn())
-vi.mock('./runtime-rpc-client', () => ({
+vi.mock('./rpc/calls/runtime-rpc-call', () => ({
   callRuntimeRpc,
   runtimeEnvironmentSupportsCapability: vi.fn()
 }))
