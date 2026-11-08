@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ComponentProps } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import type { DiffDirection } from './diff-change-boundary'
 import { EditorPanelHeader } from './EditorPanelHeader'
 
@@ -14,7 +14,7 @@ vi.mock('@/store', () => ({
   useAppStore: (selector: (state: Record<string, unknown>) => unknown) =>
     selector({ activeGroupIdByWorktree: {}, settings: {}, updateSettings: vi.fn() })
 }))
-vi.mock('@/store/worktree-diff-comments-selector', async (importOriginal) => ({
+vi.mock('@/store/slices/diff-comments/worktree-diff-comments-selector', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   selectWorktreeDiffCommentsOrEmpty: () => []
 }))
@@ -52,7 +52,7 @@ const props = {
   hasEditorToggle: false,
   availableEditorToggleModes: [],
   effectiveToggleValue: 'edit',
-  canOpenPreviewToSide: false,
+  canOpenPreview: false,
   canShowMarkdownPreview: false,
   canShowMarkdownTableOfContents: false,
   isMarkdownTableOfContentsDisabled: false,
@@ -65,7 +65,7 @@ const props = {
   openFileState: { canOpen: false },
   onCopyPath: vi.fn(),
   onOpenDiffTargetFile: vi.fn(),
-  onOpenPreviewToSide: vi.fn(),
+  onOpenPreview: vi.fn(),
   onOpenMarkdownPreview: vi.fn(),
   onToggleSideBySide: vi.fn(),
   onEditorToggleChange: vi.fn(),

@@ -22,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { getWorktreeGitIdentityDisplay } from '../../../../shared/worktree/git-identity-display'
 import { isFolderRepo } from '../../../../shared/repo-kind'
 import { SourceControlPanel } from './source-control/panel/panel'
+import { withFolderPathRepoOwners } from './source-control/folder/folder-path-repo-owners'
 import {
   SourceControlScopeProvider,
   type SourceControlScope
@@ -209,13 +210,13 @@ export default function FolderWorkspaceSourceControlPanel() {
   )
   const owners = useMemo(
     () =>
-      resolution.owners.flatMap((owner) => {
+      withFolderPathRepoOwners(resolution, worktreesByRepo, repos).flatMap((owner) => {
         const repo = resolveReviewRepository(repos, owner.worktree)
         return repo && resolution.folderWorkspace
           ? [{ ...owner, repo, placementWorkspaceId: `folder:${resolution.folderWorkspace.id}` }]
           : []
       }),
-    [resolution, repos]
+    [resolution, repos, worktreesByRepo]
   )
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null)
   const [refreshers] = useState(() => new Set<() => void>())
