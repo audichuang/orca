@@ -13950,7 +13950,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "Open commit {{value0}}: {{value1}}",
             "e5e81e59a6": "Resize commits",
-            "6d1e0a7c3b": "Failed to load commit files"
+            "6d1e0a7c3b": "Failed to load commit files",
+            "781a8bcf7b": "Loading graph..."
           },
           "HostedReviewActions": {
             "9845a71e17": "More actions",
@@ -14957,25 +14958,6 @@
               },
               "folder": {
                 "folder": {
-                  "multi": {
-                    "repo": {
-                      "panel": {
-                        "4c62351467": "No imported Git repositories under this folder. Add the repositories inside it to Orca to see their changes here.",
-                        "a044a830f1": "Refresh all repositories",
-                        "c023ba6838": "This folder sits inside an imported repository, so changes outside the folder are listed too.",
-                        "efd34a4169": "Changes list for {{value0}} is truncated; copy is incomplete.",
-                        "d98e7b731c": "Copy all changes",
-                        "5de321918e": "Hidden worktrees under this folder are not included ({{value0}}).",
-                        "ab32287003": "Repositories",
-                        "addRepos": "Add repositories in this folder",
-                        "filterRepos": "Filter repositories",
-                        "clearFilter": "Clear filter",
-                        "filterNoMatch": "No repositories match",
-                        "groupChanges": "Changes",
-                        "groupNoChanges": "No changes"
-                      }
-                    }
-                  },
                   "add": {
                     "repos": {
                       "dialog": {
@@ -14985,16 +14967,9 @@
                         "failed": "Could not scan this folder.",
                         "none": "Every repository in this folder is already added.",
                         "truncated": "The scan stopped early, so some repositories may be missing.",
-                        "hide": "Show only in this folder, not as sidebar projects",
                         "cancel": "Cancel",
                         "add": "Add ({{value0}})"
                       }
-                    }
-                  },
-                  "repo": {
-                    "row": {
-                      "showInSidebar": "Hidden from the sidebar. Show it as a sidebar project",
-                      "hideFromSidebar": "Shown in the sidebar. Keep it in this folder only"
                     }
                   }
                 }

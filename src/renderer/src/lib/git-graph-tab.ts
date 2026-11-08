@@ -120,6 +120,10 @@ export function gitGraphUpdateMessage(worktreeId: string, t: Translate = transla
 }
 
 export async function openGitGraph(worktreeId: string): Promise<void> {
+  // Fork: upstream's entry points open the fork's Git Graph tab (same tab id and kind).
+  if (useAppStore.getState().openGitGraphTab(worktreeId)) {
+    return
+  }
   const supported = await probeGitGraphSupport(worktreeId)
   if (!supported) {
     return

@@ -13,8 +13,10 @@ import {
   listGitGraphRepoChoicesFromState,
   resolveGitGraphDefaultRepoWorktreeId
 } from '../../../git-graph-tab/git-graph-tab-model'
-import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
-import { selectFolderWorkspaces, selectWorktreesByRepo } from '@/store/workspace-record-selectors'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 
 function openGitGraphLabel(): string {
   return translate('auto.components.right.sidebar.GitGraphFullView.open', 'Open Git Graph')
@@ -108,15 +110,6 @@ export function GitGraphOpenButton({
         </span>
       </Button>
     </GitGraphShortcutTooltip>
-  )
-}
-
-/** Repo workspace header slot; folder workspaces show the button in their own toolbar instead. */
-export function RepoWorkspaceGitGraphButton(): React.JSX.Element | null {
-  const inFolder = useSourceControlWorktreeScope() !== null
-  const activeWorktreeId = useAppStore((s) => s.activeWorktreeId)
-  return inFolder || !activeWorktreeId ? null : (
-    <GitGraphOpenButton workspaceId={activeWorktreeId} />
   )
 }
 
