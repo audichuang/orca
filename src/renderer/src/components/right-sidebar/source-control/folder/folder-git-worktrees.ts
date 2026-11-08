@@ -9,7 +9,7 @@ import type { Repo } from '../../../../../../shared/repo-types'
 import { getHiddenExternalWorktrees } from '../../../../../../shared/external-worktree-inbox'
 import type { DetectedWorktreeListResult, Worktree } from '../../../../../../shared/worktree/types'
 import type { AppState } from '@/store/types'
-import { selectDetectedWorktreesByRepo } from '@/store/workspace-record-selectors'
+import { selectDetectedWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 
 type FilesystemOwnerFields = Pick<Repo, 'connectionId' | 'executionHostId'>
 

@@ -1,13 +1,11 @@
 import { vi } from 'vitest'
 import { useAppStore } from '@/store'
-import {
-  makeFolderWorkspace,
-  makeWorktree,
-  TEST_REPO
-} from '@/store/slices/worktrees-slice-test-fixtures'
-import { clearRuntimeCompatibilityCache } from '@/runtime/runtime-rpc-client'
-import { createCompatibleRuntimeStatusResponse } from '@/runtime/runtime-compatibility-test-fixture'
-import type { OpenFile } from '@/store/slices/editor'
+import { makeFolderWorkspace } from '@/store/folder-workspaces/folder-workspace.test-fixture'
+import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
+import { TEST_REPO } from '@/store/repos/repo.test-fixture'
+import { clearRuntimeCompatibilityCache } from '@/runtime/rpc/compatibility/runtime-compatibility-cache'
+import { createCompatibleRuntimeStatusResponse } from '@/runtime/rpc/testing/runtime-compatibility-test-fixture'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 
 export const FOLDER = 'folder:folder'
 export const REPO = 'repo-a::/work/folder/repo-a'
