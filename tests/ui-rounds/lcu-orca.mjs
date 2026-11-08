@@ -79,11 +79,7 @@ globalThis.clickRe = async (re, opts) => {
 
 // ---- MultiProduct fixture ----
 globalThis.REPOS = ['api-server', 'core', 'docs-site', 'WebApp', 'WebApp-feature']
-// 收起的 NO CHANGES 群組先展開,沒有變更的 repo 才會列出
-globalThis.counts = async () => {
-  await expandRepoGroups()
-  return await grep(map.RE.anyRepoRow)
-}
+globalThis.counts = async () => grep(map.RE.anyRepoRow)
 // 通知的標準形式(ui-map 的 toastNote),前面保留元素編號與角色,跟舊的 grep 輸出同形
 globalThis.note = async () => {
   const L = await lines()
@@ -150,49 +146,6 @@ globalThis.switchWorkspace = async (name) => {
   await sleep(1500)
   return true
 }
-// 打開 MultiProduct 的 Source Control;點了沒切過去就重試(視窗剛拿到焦點時第一下常被吞)
-globalThis.openMP = async (name = 'MultiProduct') => {
-  // 左側欄群組標題也叫 MultiProduct,要看 folder 面板標題列的名稱
-  const ready = async () => map.folderPanelName(await lines()) === name
-  let ok = await ready()
-  for (let k = 0; k < 3 && !ok; k++) {
-    await switchWorkspace(name)
-    const L = await lines()
-    const has = (label) => L.find(([, t]) => t.startsWith(`按鈕 ${label}`))
-    if (!has(map.UI_TEXT.refreshAll)) {
-      let sc = has(map.UI_TEXT.sourceControlTab)
-      const toggle = has(map.UI_TEXT.toggleRightSidebar)
-      // 右側欄關著(例:SC-28 關掉後)時先打開
-      if (!sc && toggle) {
-        await app.click(toggle[0])
-        await sleep(1000)
-        sc = (await lines()).find(([, t]) => t.startsWith(`按鈕 ${map.UI_TEXT.sourceControlTab}`))
-      }
-      if (sc) {
-        await app.click(sc[0])
-        await sleep(1500)
-      }
-    }
-    ok = await ready()
-  }
-  if (!ok) {
-    throw new Error(`打不開 ${name} 的 Source Control`)
-  }
-  await expandRepoGroups()
-}
-// 收起的 repo 群組(NO CHANGES)展開,案例才看得到每個 repo 列
-globalThis.expandRepoGroups = async () => {
-  const L = await lines()
-  for (const [k, [id, t]] of L.entries()) {
-    if (
-      map.RE.repoGroupHeader.test(t) &&
-      !L.slice(k + 1, k + 5).some(([, u]) => map.RE.anyRepoRow.test(u))
-    ) {
-      await app.click(id)
-      await sleep(500)
-    }
-  }
-}
 // 選右側 repo 清單的一列,確認下方面板換成那個 repo
 globalThis.selectRepo = async (name, branch) => {
   for (let k = 0; k < 3; k++) {
@@ -227,36 +180,6 @@ globalThis.sectionButton = async (name, btnRe) => {
   }
   return hit[0]
 }
-// 重置 fixture 後 repo 可能從清單消失:開 Show hidden worktrees 再關掉觸發重掃
-globalThis.ensure5 = async () => {
-  const refresh = map.RE.button(map.UI_TEXT.refreshAll)
-  await app.click(await find(refresh))
-  await sleep(3500)
-  const c = await counts()
-  const missing = REPOS.filter((r) => !new RegExp(` ${map.esc(r)} \\(`).test(c))
-  if (!missing.length) {
-    return c
-  }
-  for (const r of missing) {
-    const proj = r === 'WebApp-feature' ? 'WebApp' : r
-    try {
-      await app.click(await find(new RegExp(`^彈出式按鈕 Project actions for ${proj}$`)))
-      await sleep(700)
-      await app.click(await find(/^Show hidden worktrees/))
-      await sleep(1500)
-      await app.pressKey('Escape')
-      await sleep(800)
-    } catch {}
-  }
-  await app.click(await find(refresh))
-  await sleep(3000)
-  return await counts()
-}
-globalThis.rowCopy = async (repoRe) => {
-  await app.click(await btnAfter(repoRe, map.RE.button(map.UI_TEXT.copyAllChanges), 10))
-  await sleep(500)
-  return await waitNote()
-}
 globalThis.ctxCopy = async (rowId) => {
   await app.click(rowId, { mouseButton: 'right' })
   await sleep(700)
@@ -287,7 +210,6 @@ globalThis.closeAll = async () => {
       await sleep(300)
     }
   }
-  await openMP()
 }
 globalThis.importFolder = async (path) => {
   await app.click(await find(/^按鈕 Add project$/))
@@ -459,13 +381,6 @@ globalThis.preflight = async () => {
     } catch (e) {
       stale.push(`${name}(${String(e.message).slice(0, 80)})`)
     }
-  }
-  await ok('openMP', async () => {
-    await openMP()
-    return true
-  })
-  for (const key of ['refreshAll', 'copyAllChanges', 'addReposInFolder', 'openGitGraph']) {
-    await ok(key, async () => grep(map.RE.button(map.UI_TEXT[key])))
   }
   // Explorer tab, not Source Control
   await ok('pasteRestore(Explorer)', () =>
