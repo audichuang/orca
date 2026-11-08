@@ -2,6 +2,19 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-11-08 auto-rebase v1.4.252 → v1.4.253（PR #145）— develop 已移動並發 v1.4.253-fork.1
+
+- RUN=20261108T001734Z（run 429），NEW。OLD_DEVELOP f8e749eb3e → develop f0c7bba863，備份 `backup/develop-v1.4.252-20261108T001734Z`。
+- CLEAN：501 個 fork commit range-diff 全 `=`，沒有衝突、沒有 rerere 重放、沒有丟 commit、沒有修正 commit。上游 v1.4.252..v1.4.253 只有 4 個 commit（#39340 host-status 不重建 title catalog／`remote-runtime/host-store` 讀取快取、#39439 daemon 快取 Linux CLK_TCK、#39369 native chat rail 調暗、release），16 個檔與 fork 改動／新增的 808 個檔交集為空，`seam-upstream.diff`、`importer-sweep.txt` 都是空的。
+- 上游基準（fork-upstream-red）：tc、lint、daemon-protocol-crossing 全綠，沒有要 cherry-pick 的。
+- 本機閘門：`make -k fork-check-static` 第 1 輪綠；`make fork-check-seams` 147 檔／700 測試綠。footprint：production 190 檔 +1625 -644。
+- CI：fork-pr.yml run 42429331281，30 個 job 全 success，沒有重跑。
+- 審查：A、B、C（claude -p opus）與 Codex（thread 01a1b88c-6b91-7280-89e1-fa72c400d5ab）第 1 輪全 ACCEPTABLE、0 發現。C 用 `throw` 探針確認 11 個上游改動檔中只有 `daemon-process-start-time.ts` 被 seam 測試間接載入（skipRenderLimit、git.history graph、Agent launch cwd 三組 7 檔），並做 mutation：刪 `filesystem-git-status-handlers.ts:192` 的 `graph` → `× forwards graph to getHistory`；`:302` 的 `skipRenderLimit` → `× forwards skipRenderLimit to getDiff`；`git.ts:87` 的 `graph` → `× forwards the graph request to the runtime`。Codex 另外改回 `app.ts` bundle replacement IPC、`spawn-agent-launch.ts` launch cwd、`git-diff-methods.ts` skipRenderLimit、`git.ts` graph，都以斷言失敗。B 確認 host-store 讀取快取以三個檔的實際內容與 WSL 開關為 key、每次重讀比對，fork 不寫這些檔，不會讀到舊資料。
+- 用到的 `known-resolutions.md` 條目：無。待人判斷的 2 條（folder 外部變更配對、vi.mock 路徑）照條目不做；「folder 筆記 owner 在 remote 情境」那條照 run 371 前例不做（超出無人值守範圍）。三條都留在 known-resolutions。
+- 發版：v1.4.253-fork.1（release run 42430373337 success，tap 1.4.253-fork.1）。MacBook 上 Orca Fork 開著，未自動升級（仍是 1.4.252-fork.1）。
+- 耗時：rebase 00:17:34 → 開 PR 00:20:46（約 3 分）；本機閘門 00:20:52 → 約 00:25（static、seams 一次綠）；CI 00:20:50 → 00:29:00（約 8 分）；盲審 00:25:28 → Codex 完成約 00:34（Claude A/B/C 在 00:27–00:28 交卷，Codex 7 分半）；發版 release run 00:34:38 → 00:44:11（約 10 分，上一條約 10 分）。從 run 開始到發版完成約 27 分。
+- canary 效益：沒用到。這次沒有衝突也沒有閘門紅；最新的 canary 快取 `20261106T213052Z-55140` 是對 v1.4.251 時期的上游 main，跟這版無關。上一次（v1.4.252）canary 條目用了 6 條，所以不算連續沒用。
+
 ## 2026-11-07 auto-rebase v1.4.251 → v1.4.252（PR #144）— develop 已移動並發 v1.4.252-fork.1
 - 兩次 run：run 408（RUN=20261107T041730Z）做完 rebase、開 PR、本機閘門與 A／B／Codex 第 1 輪，在 04:47Z 因 `API Error: Connection lost mid-response` 中斷；中間人工修了 CI（fcd1dc2932，見下）；run 427（RUN=20261107T225957Z）第 0 步判 RESUME（PR 開著、沒有 verified／needs-human／develop-moved），從第 2 步接手。上游這時已發 v1.4.253，照技能仍先做完 v1.4.252，下一次排程再做 v1.4.253。
 - 結果：develop 37d8486fb8 → f8e749eb3e（備份 `backup/develop-v1.4.251-20261107T225957Z`），tag `v1.4.252-fork.1`（main dd33b5a83b → f8e749eb3e），release run 42427320152 成功，tap 1.4.252-fork.1。MacBook 上 Orca Fork 開著，沒升級（wrapup 顯示 1.4.251-fork.2）。
