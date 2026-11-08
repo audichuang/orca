@@ -894,7 +894,6 @@
         "jira": {
           "856083302c": "Jira 连接已被新的请求取代。"
         },
-        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "创建配置文件失败",
@@ -14033,8 +14032,7 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "复制完整源码",
-                      "ce8235a6a4": "在侧边打开",
-                      "showFileHistory": "显示文件历史记录"
+                      "ce8235a6a4": "在侧边打开"
                     }
                   }
                 },
@@ -14276,8 +14274,7 @@
             "copyFullSource": "复制完整源码",
             "copyFullSourceMany": "复制完整源码（{{value0}} 个提交）",
             "copyHashMany": "复制提交哈希（{{value0}} 个提交）",
-            "copyMessageMany": "复制提交信息（{{value0}} 个提交）",
-            "showInGraph": "在 Git Graph 中显示"
+            "copyMessageMany": "复制提交信息（{{value0}} 个提交）"
           },
           "pull": {
             "policy": {
@@ -14460,89 +14457,6 @@
             "createInProgress": "正在创建 PR...",
             "workspaceHostUnresolved": "无法解析工作区主机。请刷新工作区后重试。",
             "branchDiscoveryFailed": "分支发现失败。"
-          },
-          "GitHistoryGraph": {
-            "allBranches": "所有分支",
-            "branchCount": "{{value0}} 个分支",
-            "currentBranch": "当前分支",
-            "branchFilter": "分支筛选",
-            "searchBranches": "搜索分支...",
-            "scope": "显示",
-            "sources": "来源",
-            "localBranches": "本地分支",
-            "loadingBranches": "正在加载分支...",
-            "hostTooOld": "此仓库所在主机的 Orca 版本较旧，只能显示当前分支。",
-            "branchesFailed": "无法加载分支",
-            "searchCommits": "搜索提交（author: path:）",
-            "searchCommitsLabel": "搜索提交",
-            "loadMore": "加载更多提交",
-            "noMatchingCommits": "没有符合此筛选条件的提交",
-            "clearAllFilters": "清除筛选",
-            "local": "本地",
-            "showAllBranches": "显示所有分支",
-            "userFilter": "用户",
-            "pathsFilter": "路径",
-            "clearUserFilter": "清除用户筛选",
-            "searchUsers": "搜索用户...",
-            "noUsers": "已加载的提交中没有用户。",
-            "clearPathFilter": "清除路径筛选",
-            "typePath": "相对于仓库的文件或文件夹路径",
-            "typePathHint": "输入路径，然后按 Enter。",
-            "filterByPath": "按 {{value0}} 筛选",
-            "recentPaths": "最近",
-            "clearFilters": "清除",
-            "searchCommitMessages": "搜索提交信息",
-            "tags": "标签"
-          },
-          "GitGraphFullView": {
-            "open": "打开 Git Graph",
-            "description": "当前仓库的提交图。",
-            "message": "提交信息",
-            "author": "作者",
-            "date": "日期",
-            "commit": "提交",
-            "selectCommit": "选择一个提交以查看详情和变更的文件。",
-            "resizeDetails": "调整提交详情宽度",
-            "copyFullSource": "复制所有变更文件的完整源码",
-            "filesInCommits": "变更文件 ({{files}}) · {{commits}} 个提交",
-            "filesChanged": "变更文件 ({{files}})",
-            "toggleBranches": "切换分支面板",
-            "openShort": "Git Graph",
-            "laneContinuesBelow": "往下 {{count}} 列接到 {{sha}} {{subject}}。點一下跳過去。",
-            "laneComesFromAbove": "從上方 {{count}} 列的 {{sha}} {{subject}} 接過來。點一下跳過去。",
-            "laneContinuesPastLoaded": "接到尚未載入的更早 commit。載入更多 commit 後即可跳過去。",
-            "openAllChanges": "打开所有更改",
-            "hideDetails": "隐藏详情",
-            "enterKey": "Enter",
-            "showDetails": "显示详情",
-            "detailsStrip": "详情",
-            "listOptions": "列表选项",
-            "columns": "栏",
-            "twoLineRows": "双行显示",
-            "resetList": "恢复默认",
-            "columnTooNarrow": "列表太窄",
-            "laneContinuesPastLoadedJump": "接到尚未加载的提交 {{sha}}。点击即可加载并跳过去。",
-            "loadingMore": "正在加载更多提交...",
-            "loadCapReached": "已显示前 {{count}} 个提交，这是图表加载的上限。请用 Branch、User 或 Paths 缩小范围。"
-          },
-          "GitGraphBranchSidebar": {
-            "local": "本地",
-            "tags": "标签",
-            "label": "分支与标签",
-            "empty": "尚未加载分支。",
-            "showRef": "不在当前列表中 — 点击以只显示此分支"
-          },
-          "GitGraphCommitInfo": {
-            "author": "作者",
-            "date": "日期",
-            "copySha": "复制提交 SHA",
-            "parents": "父提交",
-            "refs": "引用",
-            "containedIn": "所在分支",
-            "moreBranches": "还有 {{count}} 个",
-            "containedInHint": "只计算末端提交在已加载列表中的分支;列表外的分支不计入。",
-            "children": "子提交",
-            "childrenHint": "已載入的清單中,以這個 commit 為父提交的 commit。"
           }
         }
       },
@@ -16787,10 +16701,7 @@
                 "removeWorktree": "删除工作树",
                 "trashWorktree": "垃圾工作树",
                 "addQuickCommand": "添加快捷命令",
-                "newQuickCommand": "新的快捷命令",
-                "openGitGraph": "打开 git graph",
-                "gitLog": "git 日志",
-                "commitHistory": "提交历史"
+                "newQuickCommand": "新的快捷命令"
               }
             }
           },
@@ -18540,8 +18451,7 @@
           "workspaceDisconnected": "无法运行“{{action}}” — 工作区已断开连接。",
           "noTabGroup": "无法运行“{{action}}” — 没有可用的标签页组。",
           "noMovableChat": "无法运行“{{action}}” — 没有活动且可移动的聊天。",
-          "clientUnsupported": "无法运行“{{action}}” — 此客户端和运行时不支持该操作。",
-          "noGitRepo": "无法运行“{{action}}” — 没有可用的 Git 仓库。"
+          "clientUnsupported": "无法运行“{{action}}” — 此客户端和运行时不支持该操作。"
         }
       },
       "plugins": {
@@ -18576,18 +18486,6 @@
         "setting-global-off": "已在智能体设置中关闭文件夹信任，因此智能体总会询问。",
         "keyword-trust": "信任",
         "keyword-hooks": "钩子"
-      },
-      "gitGraphTab": {
-        "noRepo": "此工作区没有可用的 Git 仓库。",
-        "repoSwitcher": "仓库",
-        "selectRepo": "选择仓库",
-        "searchRepos": "搜索仓库...",
-        "noRepos": "未找到仓库。",
-        "addRepos": "添加仓库...",
-        "addReposMissing": "{{value0}} 个未添加",
-        "addReposButton": "添加此文件夹中的仓库",
-        "openInSourceControl": "在源代码管理中打开",
-        "revealNotLoaded": "该提交不在已加载的历史记录中。"
       }
     },
     "i18n": {
@@ -22525,8 +22423,7 @@
       "terminalSplitDown": "向下拆分终端",
       "terminalSwitchInputSource": "切换输入法/语言（原生）",
       "newAgentTab": "新建 {{agent}} 标签页",
-      "viewPlugins": "打开插件",
-      "sourceControlOpenGitGraph": "打开 Git Graph"
+      "viewPlugins": "打开插件"
     },
     "group": {
       "global": "全局",

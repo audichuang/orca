@@ -3,16 +3,14 @@ import { useState } from 'react'
 import type React from 'react'
 import { joinPath } from '@/lib/path'
 import { getShortcutPlatform } from '@/lib/shortcut-platform'
-import { useAppStore } from '@/store'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import { SourceControlEntryContextMenu } from '../listing/entry-context-menu'
-import { OpenToSideMenuItem, ShowFileHistoryMenuItem } from '../listing/entry-context-menu-slots'
+import { OpenToSideMenuItem } from '../listing/entry-context-menu-slots'
 import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import { ClipcodeCopyFullSourceMenuItem } from '../clipcode/clipcode-menu-items'
 import type { SourceControlPanelModel } from '../panel/use-panel-model'
 import { copyHistoryCommitsFullSource } from './git-history-commit-copy'
-import { showGitGraphPathHistory } from './git-history-graph-path-query'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import {
   applyCommitFileClick,
@@ -129,21 +127,7 @@ export function GitHistoryCommitFilesMenu({
       connectionId={model.activeConnectionId}
       onView={entry ? () => onOpenFile(entry, PLAIN_OPEN_EVENT) : undefined}
       viewItems={
-        <>
-          <OpenToSideMenuItem onOpen={entry ? (event) => onOpenFile(entry, event) : undefined} />
-          {targetPath !== undefined && (
-            <ShowFileHistoryMenuItem
-              onSelect={() =>
-                showGitGraphPathHistory({
-                  workspaceId: model.editorWorktreeId ?? worktreeId,
-                  repoWorktreeId: worktreeId,
-                  path: targetPath,
-                  openGitGraphTab: useAppStore.getState().openGitGraphTab
-                })
-              }
-            />
-          )}
-        </>
+        <OpenToSideMenuItem onOpen={entry ? (event) => onOpenFile(entry, event) : undefined} />
       }
       copyItems={
         copyTargets && (

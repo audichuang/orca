@@ -894,7 +894,6 @@
         "jira": {
           "856083302c": "더 새로운 요청이 있어 Jira 연결 요청을 건너뛰었습니다."
         },
-        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "프로필을 생성하지 못했습니다",
@@ -14033,8 +14032,7 @@
                   "context": {
                     "menu": {
                       "9137d88b9f": "전체 소스 복사",
-                      "ce8235a6a4": "옆에 열기",
-                      "showFileHistory": "파일 기록 보기"
+                      "ce8235a6a4": "옆에 열기"
                     }
                   }
                 },
@@ -14276,8 +14274,7 @@
             "copyFullSource": "전체 소스 복사",
             "copyFullSourceMany": "전체 소스 복사 (커밋 {{value0}}개)",
             "copyHashMany": "Commit 해시 복사 (커밋 {{value0}}개)",
-            "copyMessageMany": "Commit 메시지 복사 (커밋 {{value0}}개)",
-            "showInGraph": "Git Graph에서 보기"
+            "copyMessageMany": "Commit 메시지 복사 (커밋 {{value0}}개)"
           },
           "pull": {
             "policy": {
@@ -14460,89 +14457,6 @@
             "createInProgress": "PR 생성 중...",
             "workspaceHostUnresolved": "워크스페이스 호스트를 확인할 수 없습니다. 워크스페이스를 새로 고친 후 다시 시도하세요.",
             "branchDiscoveryFailed": "브랜치를 감지하지 못했습니다."
-          },
-          "GitHistoryGraph": {
-            "allBranches": "모든 브랜치",
-            "branchCount": "브랜치 {{value0}}개",
-            "currentBranch": "현재 브랜치",
-            "branchFilter": "브랜치 필터",
-            "searchBranches": "브랜치 검색...",
-            "scope": "표시",
-            "sources": "소스",
-            "localBranches": "로컬 브랜치",
-            "loadingBranches": "브랜치 불러오는 중...",
-            "hostTooOld": "이 저장소 호스트의 Orca가 오래되어 현재 브랜치만 표시됩니다.",
-            "branchesFailed": "브랜치를 불러오지 못했습니다",
-            "searchCommits": "커밋 검색 (author: path:)",
-            "searchCommitsLabel": "커밋 검색",
-            "loadMore": "커밋 더 불러오기",
-            "noMatchingCommits": "이 필터와 일치하는 커밋이 없습니다",
-            "clearAllFilters": "필터 지우기",
-            "local": "로컬",
-            "showAllBranches": "모든 브랜치 보기",
-            "userFilter": "사용자",
-            "pathsFilter": "경로",
-            "clearUserFilter": "사용자 필터 지우기",
-            "searchUsers": "사용자 검색...",
-            "noUsers": "불러온 커밋에 사용자가 없습니다.",
-            "clearPathFilter": "경로 필터 지우기",
-            "typePath": "저장소 기준 파일 또는 폴더 경로",
-            "typePathHint": "경로를 입력한 후 Enter를 누르세요.",
-            "filterByPath": "{{value0}}(으)로 필터",
-            "recentPaths": "최근",
-            "clearFilters": "지우기",
-            "searchCommitMessages": "커밋 메시지 검색",
-            "tags": "태그"
-          },
-          "GitGraphFullView": {
-            "open": "Git Graph 열기",
-            "description": "현재 저장소의 커밋 그래프입니다.",
-            "message": "메시지",
-            "author": "작성자",
-            "date": "날짜",
-            "commit": "커밋",
-            "selectCommit": "커밋을 선택하면 세부 정보와 변경된 파일이 표시됩니다.",
-            "resizeDetails": "커밋 세부 정보 크기 조정",
-            "copyFullSource": "변경된 모든 파일의 전체 소스 복사",
-            "filesInCommits": "변경된 파일 ({{files}}) · 커밋 {{commits}}개",
-            "filesChanged": "변경된 파일 ({{files}})",
-            "toggleBranches": "브랜치 패널 전환",
-            "openShort": "Git Graph",
-            "laneContinuesBelow": "{{count}}행 아래 {{sha}} {{subject}}(으)로 이어집니다. 클릭하면 이동합니다.",
-            "laneComesFromAbove": "{{count}}행 위 {{sha}} {{subject}}에서 이어집니다. 클릭하면 이동합니다.",
-            "laneContinuesPastLoaded": "아직 불러오지 않은 이전 커밋으로 이어집니다. 커밋을 더 불러오면 이동할 수 있습니다.",
-            "openAllChanges": "모든 변경 사항 열기",
-            "hideDetails": "세부 정보 숨기기",
-            "enterKey": "Enter",
-            "showDetails": "세부 정보 보기",
-            "detailsStrip": "세부 정보",
-            "listOptions": "목록 옵션",
-            "columns": "열",
-            "twoLineRows": "두 줄로 표시",
-            "resetList": "기본값으로 재설정",
-            "columnTooNarrow": "목록이 너무 좁음",
-            "laneContinuesPastLoadedJump": "로드되지 않은 커밋 {{sha}}(으)로 이어집니다. 클릭하면 불러와서 이동합니다.",
-            "loadingMore": "커밋을 더 불러오는 중...",
-            "loadCapReached": "그래프가 불러오는 최대치인 처음 {{count}}개 커밋을 표시합니다. Branch, User, Paths로 범위를 좁히세요."
-          },
-          "GitGraphBranchSidebar": {
-            "local": "로컬",
-            "tags": "태그",
-            "label": "브랜치 및 태그",
-            "empty": "아직 불러온 브랜치가 없습니다.",
-            "showRef": "현재 목록에 없음 — 클릭하면 이 브랜치만 표시"
-          },
-          "GitGraphCommitInfo": {
-            "author": "작성자",
-            "date": "날짜",
-            "copySha": "커밋 SHA 복사",
-            "parents": "부모 커밋",
-            "refs": "참조",
-            "containedIn": "포함된 브랜치",
-            "moreBranches": "외 {{count}}개",
-            "containedInHint": "불러온 목록에 끝 커밋이 있는 브랜치만 표시하며, 목록 밖의 브랜치는 포함되지 않습니다.",
-            "children": "자식 커밋",
-            "childrenHint": "불러온 목록에서 이 커밋을 부모로 둔 커밋입니다."
           }
         }
       },
@@ -16787,10 +16701,7 @@
                 "removeWorktree": "작업 트리 제거",
                 "trashWorktree": "워크트리 휴지통으로 이동",
                 "addQuickCommand": "빠른 명령 추가",
-                "newQuickCommand": "새로운 빠른 명령",
-                "openGitGraph": "git graph 열기",
-                "gitLog": "git 로그",
-                "commitHistory": "커밋 기록"
+                "newQuickCommand": "새로운 빠른 명령"
               }
             }
           },
@@ -18540,8 +18451,7 @@
           "workspaceDisconnected": "“{{action}}” 실행 불가 — 워크스페이스 연결이 끊어졌습니다.",
           "noTabGroup": "“{{action}}” 실행 불가 — 사용 가능한 탭 그룹이 없습니다.",
           "noMovableChat": "“{{action}}” 실행 불가 — 이동 가능한 활성 채팅이 없습니다.",
-          "clientUnsupported": "“{{action}}” 실행 불가 — 이 클라이언트와 런타임에서 지원하지 않습니다.",
-          "noGitRepo": "“{{action}}” 실행 불가 — 사용 가능한 Git 저장소가 없습니다."
+          "clientUnsupported": "“{{action}}” 실행 불가 — 이 클라이언트와 런타임에서 지원하지 않습니다."
         }
       },
       "plugins": {
@@ -18576,18 +18486,6 @@
         "setting-global-off": "에이전트 설정에서 폴더 신뢰가 꺼져 있으므로 에이전트가 항상 확인을 요청합니다.",
         "keyword-trust": "신뢰",
         "keyword-hooks": "훅"
-      },
-      "gitGraphTab": {
-        "noRepo": "이 워크스페이스에서 사용할 수 있는 Git 저장소가 없습니다.",
-        "repoSwitcher": "저장소",
-        "selectRepo": "저장소 선택",
-        "searchRepos": "저장소 검색...",
-        "noRepos": "저장소를 찾을 수 없습니다.",
-        "addRepos": "저장소 추가...",
-        "addReposMissing": "{{value0}}개 미추가",
-        "addReposButton": "이 폴더의 저장소 추가",
-        "openInSourceControl": "소스 제어에서 열기",
-        "revealNotLoaded": "해당 커밋이 불러온 기록에 없습니다."
       }
     },
     "i18n": {
@@ -22472,8 +22370,7 @@
       "terminalSplitDown": "터미널 아래로 분할",
       "terminalSwitchInputSource": "입력 소스/언어 전환(네이티브)",
       "newAgentTab": "새 {{agent}} 탭",
-      "viewPlugins": "플러그인 열기",
-      "sourceControlOpenGitGraph": "Git Graph 열기"
+      "viewPlugins": "플러그인 열기"
     },
     "group": {
       "global": "글로벌",
