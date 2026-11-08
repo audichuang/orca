@@ -902,7 +902,6 @@
         "jira": {
           "856083302c": "La conexión de Jira fue reemplazada por una solicitud más reciente."
         },
-        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "Error al crear perfil",
@@ -938,7 +937,8 @@
               }
             }
           }
-        }
+        },
+        "linear": {}
       },
       "pluginNewFile": {
         "unavailable": "{{value0}} ya no está disponible. Vuelve a activar su plugin.",
@@ -13240,7 +13240,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "Abrir commit {{value0}}: {{value1}}",
             "e5e81e59a6": "Cambiar tamaño del panel de commits",
-            "6d1e0a7c3b": "No se pudieron cargar los archivos del commit"
+            "6d1e0a7c3b": "No se pudieron cargar los archivos del commit",
+            "781a8bcf7b": "Cargando gráfico…"
           },
           "HostedReviewActions": {
             "9845a71e17": "Más acciones",
@@ -14273,50 +14274,6 @@
                   }
                 }
               },
-              "folder": {
-                "folder": {
-                  "multi": {
-                    "repo": {
-                      "panel": {
-                        "4c62351467": "No hay repositorios Git importados en esta carpeta. Añade a Orca los repositorios que contiene para ver aquí sus cambios.",
-                        "a044a830f1": "Actualizar todos los repositorios",
-                        "c023ba6838": "Esta carpeta está dentro de un repositorio importado, por lo que también se muestran los cambios fuera de la carpeta.",
-                        "efd34a4169": "La lista de cambios de {{value0}} está truncada; la copia está incompleta.",
-                        "d98e7b731c": "Copiar todos los cambios",
-                        "5de321918e": "No se incluyen los worktrees ocultos de esta carpeta ({{value0}}).",
-                        "ab32287003": "Repositorios",
-                        "addRepos": "Añadir repositorios de esta carpeta",
-                        "filterRepos": "Filtrar repositorios",
-                        "clearFilter": "Borrar filtro",
-                        "filterNoMatch": "Ningún repositorio coincide",
-                        "groupChanges": "Cambios",
-                        "groupNoChanges": "Sin cambios"
-                      }
-                    }
-                  },
-                  "add": {
-                    "repos": {
-                      "dialog": {
-                        "title": "Añadir repositorios de esta carpeta",
-                        "description": "Repositorios Git dentro de {{value0}}, incluidos los anidados en otros repositorios.",
-                        "scanning": "Buscando repositorios...",
-                        "failed": "No se pudo analizar esta carpeta.",
-                        "none": "Todos los repositorios de esta carpeta ya están añadidos.",
-                        "truncated": "El análisis se detuvo antes de tiempo; pueden faltar repositorios.",
-                        "hide": "Mostrar solo en esta carpeta, no como proyectos de la barra lateral",
-                        "cancel": "Cancelar",
-                        "add": "Añadir ({{value0}})"
-                      }
-                    }
-                  },
-                  "repo": {
-                    "row": {
-                      "showInSidebar": "Oculto en la barra lateral. Mostrarlo como proyecto de la barra lateral",
-                      "hideFromSidebar": "Visible en la barra lateral. Mostrarlo solo en esta carpeta"
-                    }
-                  }
-                }
-              },
               "clipcode": {
                 "clipcode": {
                   "copy": {
@@ -14393,6 +14350,24 @@
                 "uncommitted": {
                   "sections": {
                     "1a59d5a05b": "Copiar código fuente completo"
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "add": "Añadir ({{value0}})",
+                        "cancel": "Cancelar",
+                        "description": "Repositorios Git dentro de {{value0}}, incluidos los anidados en otros repositorios.",
+                        "failed": "No se pudo analizar esta carpeta.",
+                        "none": "Todos los repositorios de esta carpeta ya están añadidos.",
+                        "scanning": "Buscando repositorios...",
+                        "title": "Añadir repositorios de esta carpeta",
+                        "truncated": "El análisis se detuvo antes de tiempo; pueden faltar repositorios."
+                      }
+                    }
                   }
                 }
               }

@@ -2129,7 +2129,6 @@
         "jira": {
           "856083302c": "A conexão com o Jira foi substituída por uma solicitação mais recente."
         },
-        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "Falha ao criar o perfil",
@@ -2165,7 +2164,8 @@
               }
             }
           }
-        }
+        },
+        "linear": {}
       },
       "pluginNewFile": {
         "unavailable": "{{value0}} não está mais disponível. Ative o plugin dele novamente.",
@@ -10503,50 +10503,6 @@
                   }
                 }
               },
-              "folder": {
-                "folder": {
-                  "multi": {
-                    "repo": {
-                      "panel": {
-                        "4c62351467": "Nenhum repositório Git importado nesta pasta. Adicione ao Orca os repositórios dentro dela para ver as alterações aqui.",
-                        "a044a830f1": "Atualizar todos os repositórios",
-                        "c023ba6838": "Esta pasta está dentro de um repositório importado, então as alterações fora da pasta também são listadas.",
-                        "efd34a4169": "A lista de alterações de {{value0}} está truncada; a cópia está incompleta.",
-                        "d98e7b731c": "Copiar todas as alterações",
-                        "5de321918e": "Worktrees ocultas nesta pasta não são incluídas ({{value0}}).",
-                        "ab32287003": "Repositórios",
-                        "addRepos": "Adicionar repositórios desta pasta",
-                        "filterRepos": "Filtrar repositórios",
-                        "clearFilter": "Limpar filtro",
-                        "filterNoMatch": "Nenhum repositório corresponde",
-                        "groupChanges": "Alterações",
-                        "groupNoChanges": "Sem alterações"
-                      }
-                    }
-                  },
-                  "add": {
-                    "repos": {
-                      "dialog": {
-                        "title": "Adicionar repositórios desta pasta",
-                        "description": "Repositórios Git em {{value0}}, incluindo os aninhados dentro de outros repositórios.",
-                        "scanning": "Procurando repositórios...",
-                        "failed": "Não foi possível examinar esta pasta.",
-                        "none": "Todos os repositórios desta pasta já foram adicionados.",
-                        "truncated": "A busca parou antes do fim, então alguns repositórios podem estar faltando.",
-                        "hide": "Mostrar só nesta pasta, não como projetos da barra lateral",
-                        "cancel": "Cancelar",
-                        "add": "Adicionar ({{value0}})"
-                      }
-                    }
-                  },
-                  "repo": {
-                    "row": {
-                      "showInSidebar": "Oculto na barra lateral. Mostrar como projeto da barra lateral",
-                      "hideFromSidebar": "Exibido na barra lateral. Manter só nesta pasta"
-                    }
-                  }
-                }
-              },
               "clipcode": {
                 "clipcode": {
                   "copy": {
@@ -10623,6 +10579,24 @@
                 "uncommitted": {
                   "sections": {
                     "1a59d5a05b": "Copiar código-fonte completo"
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "add": "Adicionar ({{value0}})",
+                        "cancel": "Cancelar",
+                        "description": "Repositórios Git em {{value0}}, incluindo os aninhados dentro de outros repositórios.",
+                        "failed": "Não foi possível examinar esta pasta.",
+                        "none": "Todos os repositórios desta pasta já foram adicionados.",
+                        "scanning": "Procurando repositórios...",
+                        "title": "Adicionar repositórios desta pasta",
+                        "truncated": "A busca parou antes do fim, então alguns repositórios podem estar faltando."
+                      }
+                    }
                   }
                 }
               }
@@ -11123,7 +11097,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "Abrir commit {{value0}}: {{value1}}",
             "e5e81e59a6": "Redimensionar commits",
-            "6d1e0a7c3b": "Falha ao carregar os arquivos do commit"
+            "6d1e0a7c3b": "Falha ao carregar os arquivos do commit",
+            "781a8bcf7b": "Carregando gráfico..."
           },
           "pull": {
             "policy": {

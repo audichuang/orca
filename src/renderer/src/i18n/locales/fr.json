@@ -1123,7 +1123,6 @@
         "jira": {
           "856083302c": "La connexion Jira a été remplacée par une requête plus récente."
         },
-        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "Échec de la création du profil",
@@ -1159,7 +1158,8 @@
               }
             }
           }
-        }
+        },
+        "linear": {}
       },
       "pluginNewFile": {
         "unavailable": "{{value0}} n’est plus disponible. Réactivez son plugin.",
@@ -13465,7 +13465,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "Ouvrir le commit {{value0}} : {{value1}}",
             "e5e81e59a6": "Redimensionner les commits",
-            "6d1e0a7c3b": "Échec du chargement des fichiers du commit"
+            "6d1e0a7c3b": "Échec du chargement des fichiers du commit",
+            "781a8bcf7b": "Chargement du graphe..."
           },
           "HostedReviewActions": {
             "9845a71e17": "Plus d'actions",
@@ -14498,50 +14499,6 @@
                   }
                 }
               },
-              "folder": {
-                "folder": {
-                  "multi": {
-                    "repo": {
-                      "panel": {
-                        "4c62351467": "Aucun dépôt Git importé dans ce dossier. Ajoutez à Orca les dépôts qu'il contient pour voir leurs modifications ici.",
-                        "a044a830f1": "Actualiser tous les dépôts",
-                        "c023ba6838": "Ce dossier se trouve dans un dépôt importé : les modifications hors du dossier sont aussi listées.",
-                        "efd34a4169": "La liste des modifications de {{value0}} est tronquée ; la copie est incomplète.",
-                        "d98e7b731c": "Copier toutes les modifications",
-                        "5de321918e": "Les worktrees masqués de ce dossier ne sont pas inclus ({{value0}}).",
-                        "ab32287003": "Dépôts",
-                        "addRepos": "Ajouter les dépôts de ce dossier",
-                        "filterRepos": "Filtrer les dépôts",
-                        "clearFilter": "Effacer le filtre",
-                        "filterNoMatch": "Aucun dépôt ne correspond",
-                        "groupChanges": "Modifications",
-                        "groupNoChanges": "Aucune modification"
-                      }
-                    }
-                  },
-                  "add": {
-                    "repos": {
-                      "dialog": {
-                        "title": "Ajouter les dépôts de ce dossier",
-                        "description": "Dépôts Git sous {{value0}}, y compris ceux imbriqués dans d’autres dépôts.",
-                        "scanning": "Recherche des dépôts...",
-                        "failed": "Impossible d’analyser ce dossier.",
-                        "none": "Tous les dépôts de ce dossier sont déjà ajoutés.",
-                        "truncated": "L’analyse s’est arrêtée tôt ; certains dépôts peuvent manquer.",
-                        "hide": "Afficher uniquement dans ce dossier, pas comme projets de la barre latérale",
-                        "cancel": "Annuler",
-                        "add": "Ajouter ({{value0}})"
-                      }
-                    }
-                  },
-                  "repo": {
-                    "row": {
-                      "showInSidebar": "Masqué dans la barre latérale. L’afficher comme projet de la barre latérale",
-                      "hideFromSidebar": "Affiché dans la barre latérale. Le garder uniquement dans ce dossier"
-                    }
-                  }
-                }
-              },
               "clipcode": {
                 "clipcode": {
                   "copy": {
@@ -14618,6 +14575,24 @@
                 "uncommitted": {
                   "sections": {
                     "1a59d5a05b": "Copier la source complète"
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "add": "Ajouter ({{value0}})",
+                        "cancel": "Annuler",
+                        "description": "Dépôts Git sous {{value0}}, y compris ceux imbriqués dans d’autres dépôts.",
+                        "failed": "Impossible d’analyser ce dossier.",
+                        "none": "Tous les dépôts de ce dossier sont déjà ajoutés.",
+                        "scanning": "Recherche des dépôts...",
+                        "title": "Ajouter les dépôts de ce dossier",
+                        "truncated": "L’analyse s’est arrêtée tôt ; certains dépôts peuvent manquer."
+                      }
+                    }
                   }
                 }
               }

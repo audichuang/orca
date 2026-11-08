@@ -18,7 +18,7 @@ vi.mock('@/lib/workspace/ownership/worktree-runtime-owner', async (importOrigina
   // The execution host the store resolves for the worktree (local, ssh:…, runtime:…).
   getExecutionHostIdForWorktree: () => mocks.executionHostId
 }))
-vi.mock('@/runtime/runtime-git-status-client', () => ({
+vi.mock('@/runtime/source-control/git/runtime-git-status-client', () => ({
   getRuntimeGitHistory: mocks.getRuntimeGitHistory
 }))
 vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => undefined }))
