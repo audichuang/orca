@@ -13569,7 +13569,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "Commit {{value0}} öffnen: {{value1}}",
             "e5e81e59a6": "Größe des Commit-Bereichs ändern",
-            "6d1e0a7c3b": "Commit-Dateien konnten nicht geladen werden"
+            "6d1e0a7c3b": "Commit-Dateien konnten nicht geladen werden",
+            "781a8bcf7b": "Graph wird geladen…"
           },
           "HostedReviewActions": {
             "9845a71e17": "Weitere Aktionen",
@@ -14574,25 +14575,6 @@
               },
               "folder": {
                 "folder": {
-                  "multi": {
-                    "repo": {
-                      "panel": {
-                        "4c62351467": "Unter diesem Ordner gibt es keine importierten Git-Repositorys. Die darin enthaltenen Repositorys zu Orca hinzufügen, um ihre Änderungen hier zu sehen.",
-                        "a044a830f1": "Alle Repositorys aktualisieren",
-                        "c023ba6838": "Dieser Ordner liegt in einem importierten Repository, daher werden auch Änderungen außerhalb des Ordners aufgelistet.",
-                        "efd34a4169": "Die Änderungsliste für {{value0}} ist abgeschnitten; die Kopie ist unvollständig.",
-                        "d98e7b731c": "Alle Änderungen kopieren",
-                        "5de321918e": "Ausgeblendete Worktrees unter diesem Ordner sind nicht enthalten ({{value0}}).",
-                        "ab32287003": "Repositorys",
-                        "addRepos": "Repositorys in diesem Ordner hinzufügen",
-                        "filterRepos": "Repositorys filtern",
-                        "clearFilter": "Filter leeren",
-                        "filterNoMatch": "Keine passenden Repositorys",
-                        "groupChanges": "Mit Änderungen",
-                        "groupNoChanges": "Ohne Änderungen"
-                      }
-                    }
-                  },
                   "add": {
                     "repos": {
                       "dialog": {
@@ -14602,16 +14584,9 @@
                         "failed": "Dieser Ordner konnte nicht durchsucht werden.",
                         "none": "Alle Repositorys in diesem Ordner wurden bereits hinzugefügt.",
                         "truncated": "Der Scan wurde vorzeitig beendet, daher fehlen möglicherweise einige Repositorys.",
-                        "hide": "Nur in diesem Ordner anzeigen, nicht als Seitenleisten-Projekte",
                         "cancel": "Abbrechen",
                         "add": "Hinzufügen ({{value0}})"
                       }
-                    }
-                  },
-                  "repo": {
-                    "row": {
-                      "showInSidebar": "In der Seitenleiste ausgeblendet. Als Seitenleisten-Projekt anzeigen",
-                      "hideFromSidebar": "In der Seitenleiste sichtbar. Nur in diesem Ordner behalten"
                     }
                   }
                 }
