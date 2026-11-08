@@ -76,6 +76,21 @@ describe('callRemotePanelAction', () => {
     ])
   })
 
+  it('reopens once the server updated or re-enabled the plugin', async () => {
+    vi.mocked(callRuntimeRpc)
+      .mockResolvedValueOnce({
+        outcome: { ok: false, code: 'unavailable', error: 'panel session is no longer available' }
+      })
+      .mockResolvedValueOnce({ outcome: { ok: true, value: 'after update' } })
+    const reopen = vi.fn().mockResolvedValue('fresh-token')
+    const outcome = await callRemotePanelAction('server-a', call, {
+      current: () => 'old-token',
+      reopen
+    })
+    expect(outcome).toEqual({ ok: true, value: 'after update' })
+    expect(reopen).toHaveBeenCalledTimes(1)
+  })
+
   it('answers unavailable when the server cannot be reached', async () => {
     vi.mocked(callRuntimeRpc).mockRejectedValueOnce(new Error('socket closed'))
     const outcome = await callRemotePanelAction('server-a', call, {
