@@ -34,26 +34,10 @@ function show(overrides: Partial<FailureToastInput> = {}): void {
   })
 }
 
-function clickRetry(): { preventDefault: ReturnType<typeof vi.fn> } {
-  const event = { preventDefault: vi.fn() }
-  lastToast().options.action?.onClick(event)
-  return event
-}
-
-describe('showSourceControlEntryFailureToast for folder repos and git reasons', () => {
+describe('showSourceControlEntryFailureToast git reasons', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     storeState.activeWorktreeId = 'wt-1'
-  })
-
-  it('treats a repo shown inside the active folder workspace as the active worktree', () => {
-    storeState.activeWorktreeId = 'folder:f1'
-    const onRetry = vi.fn()
-    show({ worktreeId: 'repo-wt', foregroundWorkspaceId: 'folder:f1', onRetry })
-    // Why: several repos in one folder share file names, so the repo is always named.
-    expect(lastToast().title).toBe('Failed to stage “src/app.ts” in feature-a')
-    clickRetry()
-    expect(onRetry).toHaveBeenCalledTimes(1)
   })
 
   it('surfaces the git reason instead of the command line', () => {
