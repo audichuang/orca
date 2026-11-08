@@ -20,7 +20,6 @@ import {
 } from './source-control-entry-failure-toast'
 import type { PendingDiscardConfirmation } from './discard-dialog'
 import type { SourceControlEntryGroups } from '../../../../../../shared/source-control/listing/source-control-section-order'
-import { useSourceControlWorktreeScope } from '../folder/worktree-scope'
 
 export function useSourceControlDiscardConfirmation({
   activeRepoTarget,
@@ -54,7 +53,6 @@ export function useSourceControlDiscardConfirmation({
     setPendingDiscard(null)
   }
 
-  const scope = useSourceControlWorktreeScope()
   const handleDiscard = useCallback(
     async (entry: GitStatusEntry): Promise<void> => {
       // Catch only discard; later refresh failure must not claim a successful discard failed.
@@ -69,21 +67,14 @@ export function useSourceControlDiscardConfirmation({
           deletesFile: discardDeletesEntryFile(entry),
           error,
           worktreeId: activeWorktreeId,
-          worktreeName: worktreePath ? basename(worktreePath) : null,
-          foregroundWorkspaceId: scope?.editorWorktreeId
+          worktreeName: worktreePath ? basename(worktreePath) : null
         })
         return
       }
       dismissSourceControlEntryFailureToast(activeWorktreeId)
       await refreshActiveGitStatusAfterMutation()
     },
-    [
-      activeWorktreeId,
-      scope?.editorWorktreeId,
-      discardSingle,
-      refreshActiveGitStatusAfterMutation,
-      worktreePath
-    ]
+    [activeWorktreeId, discardSingle, refreshActiveGitStatusAfterMutation, worktreePath]
   )
 
   // Bulk discard preserves unresolved/local resolutions; shared sequencing also supports older SSH per-file fallback.
