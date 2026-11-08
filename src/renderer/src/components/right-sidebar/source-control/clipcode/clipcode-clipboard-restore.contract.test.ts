@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
+import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 import { parseClipboard, type ChangeTypeLabel, type ParsedEntry } from './clipcode-clipboard-format'
 import {
   planClipcodeRestore,
@@ -128,7 +128,11 @@ const REASON_ALIASES: Record<string, string> = {
   PROTECTED_GIT: 'UNRESOLVED_PATH'
 }
 
-const context: RuntimeFileOperationArgs = { target: { kind: 'local' }, worktreeId: null, worktreePath: null }
+const context: RuntimeFileOperationArgs = {
+  target: { kind: 'local' },
+  worktreeId: null,
+  worktreePath: null
+}
 
 async function createLayout(layout: Layout): Promise<string> {
   const parent = await realpath(await mkdtemp(path.join(os.tmpdir(), 'clipcode-contract-')))

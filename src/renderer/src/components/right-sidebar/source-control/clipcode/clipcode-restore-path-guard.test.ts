@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
+import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 
 const readRuntimeDirectory = vi.fn()
 vi.mock('@/runtime/runtime-file-mutation-client', () => ({
@@ -10,7 +10,11 @@ vi.mock('@/runtime/runtime-file-metadata-client', () => ({
 }))
 
 const { findRestorePathObstacle } = await import('./clipcode-restore-path-guard')
-const context: RuntimeFileOperationArgs = { target: { kind: 'local' }, worktreeId: 'f', worktreePath: '/f' }
+const context: RuntimeFileOperationArgs = {
+  target: { kind: 'local' },
+  worktreeId: 'f',
+  worktreePath: '/f'
+}
 
 describe('findRestorePathObstacle', () => {
   it('reports a file used as a parent folder, but not a file at the leaf', async () => {

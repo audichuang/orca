@@ -9,9 +9,10 @@ const rpc = vi.hoisted(() => ({ call: vi.fn(), subscribe: vi.fn() }))
 vi.mock('@/runtime/runtime-rpc-client', () => ({ callRuntimeRpc: rpc.call }))
 vi.mock('@/runtime/runtime-rpc-subscribe', () => ({ subscribeRuntimeRpc: rpc.subscribe }))
 import { useAppStore } from '@/store'
-import { makeFolderWorkspace, makeWorktree } from '@/store/slices/worktrees-slice-test-fixtures'
-import { resetHostStructuredAgentsForTests } from '@/runtime/host-structured-agents'
-import { setLocalRuntimeCapabilitiesForTests } from '@/runtime/local-runtime-capabilities'
+import { makeFolderWorkspace } from '@/store/folder-workspaces/folder-workspace.test-fixture'
+import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
+import { resetHostStructuredAgentsForTests } from '@/runtime/native-chat/agent-catalogs/host-structured-agents'
+import { setLocalRuntimeCapabilitiesForTests } from '@/runtime/hosts/capabilities/local-runtime-capabilities'
 import { acquireAgentLaunchChoices } from './host-chat-program-acquisition'
 import { agentChoiceMayOpenAsChat, agentsOfferedForLaunch } from './host-chat-program'
 import { resolveDefaultAgentForWorktreeNewTab } from './agent-tab-shortcuts'

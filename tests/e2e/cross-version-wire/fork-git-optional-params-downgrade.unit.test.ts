@@ -5,11 +5,11 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { canGrowGitHistoryGraph } from '../../../src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-host-status'
 import { loadRefOptions } from '../../../src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-toolbar'
 import { buildClipcodeGitCopy } from '../../../src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-git-copy'
-import { getRuntimeGitDiff } from '../../../src/renderer/src/runtime/runtime-git-diff-client'
-import { getRuntimeGitHistory } from '../../../src/renderer/src/runtime/runtime-git-status-client'
+import { getRuntimeGitDiff } from '../../../src/renderer/src/runtime/source-control/git/runtime-git-diff-client'
+import { getRuntimeGitHistory } from '../../../src/renderer/src/runtime/source-control/git/runtime-git-status-client'
 import { GIT_HISTORY_GRAPH_MAX_LIMIT } from '../../../src/shared/git-history-graph-query-types'
 import type { GitDiffResult } from '../../../src/shared/git/diff/git-diff-compare-types'
-import type { RuntimeGitContext } from '../../../src/renderer/src/runtime/runtime-git-client-context'
+import type { RuntimeGitContext } from '../../../src/renderer/src/runtime/source-control/git/runtime-git-client-context'
 import {
   importReleaseCheckoutModule,
   materializeReleaseCheckout,
