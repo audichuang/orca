@@ -1,10 +1,16 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   installTerminalTestGlobals,
   restoreTerminalTestGlobals
 } from './pty-connection/test-fixtures/pty-connection-test-environment'
 
 describe('pty-connection test environment', () => {
+  // Why: upstream's restore (#39711) cold-imports a dozen terminal modules; pay that once here, not inside a timed test.
+  beforeAll(async () => {
+    await installTerminalTestGlobals()
+    await restoreTerminalTestGlobals()
+  }, 120_000)
+
   it('stops real timers a test leaves behind so they cannot fire into the next test', async () => {
     await installTerminalTestGlobals()
     let restored = false
