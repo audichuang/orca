@@ -99,11 +99,9 @@ globalThis.defineCase = (id, { title, mutates = false, pre, manual, raw = false,
   CASES[id] = { id, title, mutates, pre, manual, raw, run }
 }
 
-/** 重置後的第一步:打開 MultiProduct 並確認 5 個 repo 都在。 */
+/** 重置後的第一步:收掉通知。(fork folder 面板移除後,打開 MultiProduct 與確認 repo 數的步驟待針對上游 UI 補回。) */
 globalThis.afterReset = async () => {
   await dismissToasts()
-  await openMP()
-  return await ensure5()
 }
 
 /** sel:ID 陣列或組別前綴。ran:這批 Bash 已經跑過 pre 腳本的案例(例:['CC-05'])。
@@ -126,7 +124,6 @@ globalThis.runCases = async (sel, { ran = [] } = {}) => {
         // 前一案可能留在別的 workspace 或留下通知
         if (!c.raw) {
           await dismissToasts()
-          await openMP()
         }
         line = `${id} | PASS | ${(await c.run()) ?? ''} | 腳本`
       } catch (e) {
