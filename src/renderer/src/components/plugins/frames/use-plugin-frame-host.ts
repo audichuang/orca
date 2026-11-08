@@ -10,7 +10,8 @@ import {
   createPluginFrameEnvelopeHandler,
   createPluginFrameMessageHandler,
   type PluginFrameDeclarativeChannel,
-  type PluginFrameEditorChannel
+  type PluginFrameEditorChannel,
+  type PluginFrameHostOptions
 } from './plugin-frame-host'
 import {
   pluginFrameWindowOf,
@@ -36,6 +37,8 @@ export function usePluginFrameHost(options: {
   onUnresponsive: () => void
   /** The guest's WebContents went away under an unchanged document (closed, crashed). */
   onGuestGone?: () => void
+  /** Fork: sends host calls to the plugin on a paired server, which has no push channel here. */
+  remoteHostCall?: PluginFrameHostOptions['callHostMethod']
 }): { onFrameLoad: () => void } {
   const {
     surface,
@@ -45,7 +48,8 @@ export function usePluginFrameHost(options: {
     editor,
     declarative,
     consumeHostActivation,
-    trackHostCall
+    trackHostCall,
+    remoteHostCall
   } = options
   const [loadedFrameKey, setLoadedFrameKey] = useState<string | null>(null)
   const onUnresponsiveRef = useRef(options.onUnresponsive)
@@ -86,7 +90,8 @@ export function usePluginFrameHost(options: {
       editor,
       declarative,
       consumeHostActivation,
-      trackHostCall
+      trackHostCall,
+      callHostMethod: remoteHostCall
     }
     if (element instanceof HTMLIFrameElement) {
       const handler = createPluginFrameMessageHandler(hostOptions)
@@ -138,6 +143,7 @@ export function usePluginFrameHost(options: {
     frameKey,
     frameRef,
     getFrameWindow,
+    remoteHostCall,
     surface,
     trackHostCall,
     watchdog
@@ -146,7 +152,7 @@ export function usePluginFrameHost(options: {
   // Worker posts, subscribed events and data changes for this panel, while its document lives.
   useEffect(() => {
     const subscribe = window.api?.plugins?.subscribePanelPush
-    if (!frameKey || !sessionToken || !subscribe) {
+    if (!frameKey || !sessionToken || !subscribe || remoteHostCall) {
       return
     }
     return subscribe(sessionToken, (raw) => {
@@ -155,7 +161,7 @@ export function usePluginFrameHost(options: {
         getFrameWindow()?.postMessage(pluginEvent(FRAME_EVENTS.push, push.data), '*')
       }
     })
-  }, [frameKey, getFrameWindow, sessionToken])
+  }, [frameKey, getFrameWindow, remoteHostCall, sessionToken])
 
   useEffect(() => {
     if (!frameKey || loadedFrameKey !== frameKey) {
