@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
+import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 import { parseClipboard, type ChangeTypeLabel, type ParsedEntry } from './clipcode-clipboard-format'
 import {
   planClipcodeRestore,
@@ -25,7 +25,7 @@ import { readCandidateState } from './clipcode-restore-target-state'
 // Runs the plugins' frozen pathCases / restoreCases through the real planner and target-state
 // reader on a real temp tree. Orca restores into ONE root (the plugins' primary root `project`).
 
-vi.mock('@/runtime/runtime-file-mutation-client', () => ({
+vi.mock('@/runtime/files/reads/runtime-directory-read', () => ({
   readRuntimeDirectory: async (_context: unknown, dirPath: string) =>
     (await readdir(dirPath, { withFileTypes: true })).map((entry) => ({
       name: entry.name,
@@ -33,7 +33,7 @@ vi.mock('@/runtime/runtime-file-mutation-client', () => ({
       isSymlink: entry.isSymbolicLink()
     }))
 }))
-vi.mock('@/runtime/runtime-file-metadata-client', () => ({
+vi.mock('@/runtime/files/metadata/runtime-file-metadata-client', () => ({
   statRuntimePath: async (_context: unknown, filePath: string) => ({
     isDirectory: (await stat(filePath)).isDirectory(),
     size: 0,
@@ -42,7 +42,7 @@ vi.mock('@/runtime/runtime-file-metadata-client', () => ({
   isMissingRuntimePathError: (error: unknown) => String(error).includes('ENOENT')
 }))
 // Mirrors the host read: lenient UTF-8 decode, NUL means binary.
-vi.mock('@/runtime/runtime-file-read-client', () => ({
+vi.mock('@/runtime/files/reads/runtime-file-read-client', () => ({
   readRuntimeFileContent: async ({ filePath }: { filePath: string }) => {
     const bytes = await readFile(filePath)
     return { content: bytes.toString('utf8'), isBinary: bytes.includes(0) }
@@ -128,7 +128,11 @@ const REASON_ALIASES: Record<string, string> = {
   PROTECTED_GIT: 'UNRESOLVED_PATH'
 }
 
-const context: RuntimeFileOperationArgs = { target: { kind: 'local' }, worktreeId: null, worktreePath: null }
+const context: RuntimeFileOperationArgs = {
+  target: { kind: 'local' },
+  worktreeId: null,
+  worktreePath: null
+}
 
 async function createLayout(layout: Layout): Promise<string> {
   const parent = await realpath(await mkdtemp(path.join(os.tmpdir(), 'clipcode-contract-')))
