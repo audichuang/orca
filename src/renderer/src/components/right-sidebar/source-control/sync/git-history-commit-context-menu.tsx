@@ -1,6 +1,6 @@
 import { useSourceControlState, useSourceControlScope } from '../panel/worktree-scope'
 import type React from 'react'
-import { ClipboardCopy, Copy, GitGraph, Globe, Hash, Sparkles } from 'lucide-react'
+import { Copy, Globe, Hash, Sparkles } from 'lucide-react'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -10,25 +10,14 @@ import { useTranslate } from '@/i18n/use-translate'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import { getClientCreationActionPolicy } from '@/lib/client-creation-action-policy'
 
-export type GitHistoryCommitAction =
-  | 'open-remote'
-  | 'copy-hash'
-  | 'copy-message'
-  | 'explain'
-  | 'copy-full-source'
+export type GitHistoryCommitAction = 'open-remote' | 'copy-hash' | 'copy-message' | 'explain'
 
 export function GitHistoryCommitContextMenu({
   item,
-  selectedCount = 1,
-  onShowInGraph,
   onAction
 }: {
   item: GitHistoryItem
   onAction: (action: GitHistoryCommitAction, item: GitHistoryItem) => void
-  /** Commits a multi-commit action covers; >1 only when the right-clicked row is in the selection. */
-  selectedCount?: number
-  /** Fork: opens the commit in the Git Graph tab; the entry shows only when set. */
-  onShowInGraph?: (item: GitHistoryItem) => void
 }): React.JSX.Element {
   const t = useTranslate()
   const scope = useSourceControlScope()
@@ -39,7 +28,7 @@ export function GitHistoryCommitContextMenu({
       ].state === 'enabled'
   )
   return (
-    <ContextMenuContent className="w-64">
+    <ContextMenuContent className="w-56">
       {managedBrowserCreationEnabled ? (
         <ContextMenuItem onSelect={() => onAction('open-remote', item)}>
           <Globe className="size-3.5" />
@@ -63,28 +52,6 @@ export function GitHistoryCommitContextMenu({
           'Copy commit message'
         )}
       </ContextMenuItem>
-      <ContextMenuItem onSelect={() => onAction('copy-full-source', item)}>
-        <ClipboardCopy className="size-3.5" />
-        {selectedCount > 1
-          ? translate(
-              'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyFullSourceMany',
-              'Copy Full Source ({{value0}} commits)',
-              { value0: selectedCount }
-            )
-          : translate(
-              'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyFullSource',
-              'Copy Full Source'
-            )}
-      </ContextMenuItem>
-      {onShowInGraph ? (
-        <ContextMenuItem onSelect={() => onShowInGraph(item)}>
-          <GitGraph className="size-3.5" />
-          {translate(
-            'auto.components.right.sidebar.GitHistoryCommitContextMenu.showInGraph',
-            'Show in Git Graph'
-          )}
-        </ContextMenuItem>
-      ) : null}
       <ContextMenuSeparator />
       <ContextMenuItem onSelect={() => onAction('explain', item)}>
         <Sparkles className="size-3.5" />
