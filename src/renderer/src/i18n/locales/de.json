@@ -13562,7 +13562,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "Commit {{value0}} öffnen: {{value1}}",
             "e5e81e59a6": "Größe des Commit-Bereichs ändern",
-            "6d1e0a7c3b": "Commit-Dateien konnten nicht geladen werden"
+            "6d1e0a7c3b": "Commit-Dateien konnten nicht geladen werden",
+            "781a8bcf7b": "Graph wird geladen…"
           },
           "HostedReviewActions": {
             "9845a71e17": "Weitere Aktionen",
@@ -14641,6 +14642,24 @@
                 "uncommitted": {
                   "sections": {
                     "1a59d5a05b": "Vollständigen Quellcode kopieren"
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "add": "Hinzufügen ({{value0}})",
+                        "cancel": "Abbrechen",
+                        "description": "Git-Repositorys unter {{value0}}, einschließlich solcher, die in anderen Repositorys verschachtelt sind.",
+                        "failed": "Dieser Ordner konnte nicht durchsucht werden.",
+                        "none": "Alle Repositorys in diesem Ordner wurden bereits hinzugefügt.",
+                        "scanning": "Repositorys werden gesucht...",
+                        "title": "Repositorys in diesem Ordner hinzufügen",
+                        "truncated": "Der Scan wurde vorzeitig beendet, daher fehlen möglicherweise einige Repositorys."
+                      }
+                    }
                   }
                 }
               }

@@ -13465,7 +13465,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "Ouvrir le commit {{value0}} : {{value1}}",
             "e5e81e59a6": "Redimensionner les commits",
-            "6d1e0a7c3b": "Échec du chargement des fichiers du commit"
+            "6d1e0a7c3b": "Échec du chargement des fichiers du commit",
+            "781a8bcf7b": "Chargement du graphe..."
           },
           "HostedReviewActions": {
             "9845a71e17": "Plus d'actions",
@@ -14574,6 +14575,24 @@
                 "uncommitted": {
                   "sections": {
                     "1a59d5a05b": "Copier la source complète"
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "add": "Ajouter ({{value0}})",
+                        "cancel": "Annuler",
+                        "description": "Dépôts Git sous {{value0}}, y compris ceux imbriqués dans d’autres dépôts.",
+                        "failed": "Impossible d’analyser ce dossier.",
+                        "none": "Tous les dépôts de ce dossier sont déjà ajoutés.",
+                        "scanning": "Recherche des dépôts...",
+                        "title": "Ajouter les dépôts de ce dossier",
+                        "truncated": "L’analyse s’est arrêtée tôt ; certains dépôts peuvent manquer."
+                      }
+                    }
                   }
                 }
               }

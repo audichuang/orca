@@ -12933,7 +12933,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "{{value0}} commit 열기: {{value1}}",
             "e5e81e59a6": "commits 크기 조정",
-            "6d1e0a7c3b": "commit 파일을 로드하지 못했습니다"
+            "6d1e0a7c3b": "commit 파일을 로드하지 못했습니다",
+            "781a8bcf7b": "그래프 로드 중..."
           },
           "HostedReviewActions": {
             "9845a71e17": "추가 작업",
@@ -13997,6 +13998,24 @@
                 "uncommitted": {
                   "sections": {
                     "1a59d5a05b": "전체 소스 복사"
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "add": "추가({{value0}})",
+                        "cancel": "취소",
+                        "description": "{{value0}} 아래의 Git 저장소(다른 저장소 안에 중첩된 저장소 포함).",
+                        "failed": "이 폴더를 검색할 수 없습니다.",
+                        "none": "이 폴더의 모든 저장소가 이미 추가되었습니다.",
+                        "scanning": "저장소를 검색하는 중...",
+                        "title": "이 폴더의 저장소 추가",
+                        "truncated": "검색이 일찍 중단되어 일부 저장소가 누락되었을 수 있습니다."
+                      }
+                    }
                   }
                 }
               }

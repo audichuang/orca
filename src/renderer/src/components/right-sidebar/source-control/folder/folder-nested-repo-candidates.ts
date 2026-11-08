@@ -4,7 +4,10 @@ import { normalizeRuntimePathForComparison } from '../../../../../../shared/cros
 import type { NestedRepoCandidate } from '../../../../../../shared/project-group-types'
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
-import { selectDetectedWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
+import {
+  selectDetectedWorktreesByRepo,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 import {
   getRepoExecutionHostId,
   getRepoSshConnectionId
@@ -62,7 +65,7 @@ export function getNewNestedRepoCandidatesFromState(
     scanned,
     repos: state.repos,
     worktrees: [
-      ...getIndexedAllWorktrees(state.worktreesByRepo),
+      ...getIndexedAllWorktrees(selectWorktreesByRepo(state)),
       ...Object.entries(selectDetectedWorktreesByRepo(state)).flatMap(([repoId, detected]) =>
         (detected?.worktrees ?? []).map((worktree) => ({ repoId, path: worktree.path }))
       )

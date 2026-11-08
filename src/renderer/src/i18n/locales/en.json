@@ -13949,7 +13949,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "Open commit {{value0}}: {{value1}}",
             "e5e81e59a6": "Resize commits",
-            "6d1e0a7c3b": "Failed to load commit files"
+            "6d1e0a7c3b": "Failed to load commit files",
+            "781a8bcf7b": "Loading graph..."
           },
           "HostedReviewActions": {
             "9845a71e17": "More actions",
@@ -15030,6 +15031,24 @@
                 "uncommitted": {
                   "sections": {
                     "1a59d5a05b": "Copy Full Source"
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "add": "Add ({{value0}})",
+                        "cancel": "Cancel",
+                        "description": "Git repositories under {{value0}}, including ones nested inside other repositories.",
+                        "failed": "Could not scan this folder.",
+                        "none": "Every repository in this folder is already added.",
+                        "scanning": "Scanning for repositories...",
+                        "title": "Add repositories in this folder",
+                        "truncated": "The scan stopped early, so some repositories may be missing."
+                      }
+                    }
                   }
                 }
               }

@@ -12,8 +12,10 @@ import {
   getFolderGitWorktrees
 } from '../right-sidebar/source-control/folder/folder-git-worktrees'
 import { getRememberedFolderRepo } from '../right-sidebar/source-control/folder/folder-repo-selection'
-import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
-import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 
 export const GIT_GRAPH_TAB_LABEL = 'Git Graph'
 

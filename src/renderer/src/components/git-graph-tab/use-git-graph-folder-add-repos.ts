@@ -10,9 +10,9 @@ import {
   FOLDER_NESTED_REPO_SCAN_OPTIONS,
   getNewNestedRepoCandidatesFromState
 } from '../right-sidebar/source-control/folder/folder-nested-repo-candidates'
-import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
 import {
   selectDetectedWorktreesByRepo,
+  selectFolderWorkspaces,
   selectWorktreesByRepo
 } from '@/store/workspaces/catalog/workspace-record-fields'
 

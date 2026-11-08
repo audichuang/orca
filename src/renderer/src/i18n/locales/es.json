@@ -13240,7 +13240,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "Abrir commit {{value0}}: {{value1}}",
             "e5e81e59a6": "Cambiar tamaño del panel de commits",
-            "6d1e0a7c3b": "No se pudieron cargar los archivos del commit"
+            "6d1e0a7c3b": "No se pudieron cargar los archivos del commit",
+            "781a8bcf7b": "Cargando gráfico…"
           },
           "HostedReviewActions": {
             "9845a71e17": "Más acciones",
@@ -14349,6 +14350,24 @@
                 "uncommitted": {
                   "sections": {
                     "1a59d5a05b": "Copiar código fuente completo"
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "add": "Añadir ({{value0}})",
+                        "cancel": "Cancelar",
+                        "description": "Repositorios Git dentro de {{value0}}, incluidos los anidados en otros repositorios.",
+                        "failed": "No se pudo analizar esta carpeta.",
+                        "none": "Todos los repositorios de esta carpeta ya están añadidos.",
+                        "scanning": "Buscando repositorios...",
+                        "title": "Añadir repositorios de esta carpeta",
+                        "truncated": "El análisis se detuvo antes de tiempo; pueden faltar repositorios."
+                      }
+                    }
                   }
                 }
               }

@@ -10581,6 +10581,24 @@
                     "1a59d5a05b": "Copiar código-fonte completo"
                   }
                 }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "add": "Adicionar ({{value0}})",
+                        "cancel": "Cancelar",
+                        "description": "Repositórios Git em {{value0}}, incluindo os aninhados dentro de outros repositórios.",
+                        "failed": "Não foi possível examinar esta pasta.",
+                        "none": "Todos os repositórios desta pasta já foram adicionados.",
+                        "scanning": "Procurando repositórios...",
+                        "title": "Adicionar repositórios desta pasta",
+                        "truncated": "A busca parou antes do fim, então alguns repositórios podem estar faltando."
+                      }
+                    }
+                  }
+                }
               }
             }
           },
@@ -11079,7 +11097,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "Abrir commit {{value0}}: {{value1}}",
             "e5e81e59a6": "Redimensionar commits",
-            "6d1e0a7c3b": "Falha ao carregar os arquivos do commit"
+            "6d1e0a7c3b": "Falha ao carregar os arquivos do commit",
+            "781a8bcf7b": "Carregando gráfico..."
           },
           "pull": {
             "policy": {

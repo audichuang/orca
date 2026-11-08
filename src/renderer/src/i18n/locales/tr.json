@@ -13546,7 +13546,8 @@
             "d836037d02": "Commit'ler",
             "8232c8b2f2": "{{value0}} commit'ini aç: {{value1}}",
             "e5e81e59a6": "Commit'leri yeniden boyutlandır",
-            "6d1e0a7c3b": "Commit dosyaları yüklenemedi"
+            "6d1e0a7c3b": "Commit dosyaları yüklenemedi",
+            "781a8bcf7b": "Grafik yükleniyor..."
           },
           "HostedReviewActions": {
             "9845a71e17": "Diğer işlemler",
@@ -14625,6 +14626,24 @@
                 "uncommitted": {
                   "sections": {
                     "1a59d5a05b": "Tam kaynağı kopyala"
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "add": "Ekle ({{value0}})",
+                        "cancel": "İptal",
+                        "description": "{{value0}} altındaki Git repository'leri, diğer repository'lerin içinde yer alanlar dahil.",
+                        "failed": "Bu klasör taranamadı.",
+                        "none": "Bu klasördeki tüm repository'ler zaten eklendi.",
+                        "scanning": "Repository'ler taranıyor...",
+                        "title": "Bu klasördeki repository'leri ekle",
+                        "truncated": "Tarama erken durduğu için bazı repository'ler eksik olabilir."
+                      }
+                    }
                   }
                 }
               }

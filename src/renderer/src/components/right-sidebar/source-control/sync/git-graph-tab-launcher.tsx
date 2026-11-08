@@ -13,8 +13,10 @@ import {
   listGitGraphRepoChoicesFromState,
   resolveGitGraphDefaultRepoWorktreeId
 } from '../../../git-graph-tab/git-graph-tab-model'
-import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
-import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 
 function openGitGraphLabel(): string {
   return translate('auto.components.right.sidebar.GitGraphFullView.open', 'Open Git Graph')

@@ -12933,7 +12933,8 @@
             "d836037d02": "提交",
             "8232c8b2f2": "打开 commit {{value0}}: {{value1}}",
             "e5e81e59a6": "调整提交记录高度",
-            "6d1e0a7c3b": "无法加载提交文件"
+            "6d1e0a7c3b": "无法加载提交文件",
+            "781a8bcf7b": "正在加载图表..."
           },
           "HostedReviewActions": {
             "9845a71e17": "更多操作",
@@ -13997,6 +13998,24 @@
                 "uncommitted": {
                   "sections": {
                     "1a59d5a05b": "复制完整源码"
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "add": "添加（{{value0}}）",
+                        "cancel": "取消",
+                        "description": "{{value0}} 下的 Git 仓库，包括嵌套在其他仓库中的仓库。",
+                        "failed": "无法扫描此文件夹。",
+                        "none": "此文件夹中的所有仓库都已添加。",
+                        "scanning": "正在扫描仓库...",
+                        "title": "添加此文件夹中的仓库",
+                        "truncated": "扫描提前结束，可能遗漏了部分仓库。"
+                      }
+                    }
                   }
                 }
               }
