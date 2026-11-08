@@ -4,10 +4,14 @@ import { FolderPlus, PanelRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
-import { useAllWorktrees, useRepoMap, useWorktreeMap } from '@/store/selectors'
-import type { OpenFile } from '@/store/slices/editor'
+import {
+  useAllWorktrees,
+  useWorktreeMap
+} from '@/store/slices/worktrees/listing/use-worktree-catalog'
+import { useRepoMap } from '@/store/repos/use-repository-catalog'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { getConnectionId, getConnectionIdFromState } from '@/lib/connection-context'
-import { ipcOrRuntimeTargetForHostId } from '@/runtime/runtime-client-target'
+import { ipcOrRuntimeTargetForHostId } from '@/runtime/rpc/targets/runtime-client-target'
 import { translate } from '@/i18n/i18n'
 import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared/execution-host'
 import type { Repo } from '../../../../shared/repo-types'
@@ -29,7 +33,8 @@ import { useRepoDisplayColor } from '@/lib/repo-display-color'
 import { openSourceControlOnRepo } from './git-graph-source-control-link'
 import { useGitGraphTabReveal } from './use-git-graph-tab-reveal'
 import { consumeGitGraphFocusRequest, useGitGraphFocusRequest } from './git-graph-focus-request'
-import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
+import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
+import { SourceControlScopeProvider } from '../right-sidebar/source-control/panel/worktree-scope'
 
 // Upstream keys history reloads on the branch name; a detached tab passes '' like the sidebar.
 function worktreeBranchName(worktree: Worktree): string {
@@ -111,7 +116,6 @@ function GitGraphTabBody({
   const { loadCommitFiles, openHistoryCommitDiff, openCommitFile, handleCommitAction } =
     useGitHistoryCommitActions({
       activeWorktreeId: worktree.id,
-      editorWorktreeId: workspaceId,
       worktreePath: worktree.path,
       activeRepoTarget: target,
       resolveSplitTargetGroupId
@@ -127,7 +131,6 @@ function GitGraphTabBody({
     {
       activeConnectionId: getConnectionId(worktree.id) ?? repo.connectionId ?? null,
       activeRepoTarget: target,
-      editorWorktreeId: workspaceId,
       revealInExplorer
     },
     worktree.id,
@@ -276,19 +279,31 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
   }
   const { worktree, repo } = choice
   const hostId = getRepoExecutionHostId(repo)
+  // Why a scope: commit diffs and file actions open in this tab's workspace (the folder), reading the repo.
+  const owner = {
+    worktreeId: worktree.id,
+    repoId: repo.id,
+    executionHostId: hostId,
+    worktree,
+    attachedAt: 0,
+    repo,
+    placementWorkspaceId: workspaceId
+  }
   return (
-    <GitGraphTabBody
-      // Why remount per repo and host: selection, filters and caches are seeded once per owner.
-      key={bodyKey}
-      fileId={file.id}
-      workspaceId={workspaceId}
-      worktree={worktree}
-      repo={repo}
-      hostId={hostId}
-      switcher={switcher}
-      toolbarTrailing={openInSourceControl}
-      savedFilter={file.gitGraph?.filter}
-      claimFocusOnOpen={!shownBody.switched}
-    />
+    <SourceControlScopeProvider owner={owner}>
+      <GitGraphTabBody
+        // Why remount per repo and host: selection, filters and caches are seeded once per owner.
+        key={bodyKey}
+        fileId={file.id}
+        workspaceId={workspaceId}
+        worktree={worktree}
+        repo={repo}
+        hostId={hostId}
+        switcher={switcher}
+        toolbarTrailing={openInSourceControl}
+        savedFilter={file.gitGraph?.filter}
+        claimFocusOnOpen={!shownBody.switched}
+      />
+    </SourceControlScopeProvider>
   )
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createEditorTabsStore } from './editor-slice-test-harness'
+import { createEditorTabsStore } from './editor/editor-slice-test-harness'
 import { resolveGitGraphSplitTargetGroupId } from '@/components/git-graph-tab/git-graph-split-target'
 import {
   toSourceControlRowOpenEvent,
