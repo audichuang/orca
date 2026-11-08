@@ -4,7 +4,7 @@ import type { OrcadMigrationCatalogPayload } from '../../shared/orcad-migration/
 import {
   rewriteOrcadMigrationPayloadPaths,
   type OrcadMigrationPathRewriter
-} from '../persistence/migrating-orcad-catalog/path-rewrite/orcad-migration-path-rewrite'
+} from './orcad-migration-path-rewrite'
 
 const WSL_PREFIX = '\\\\wsl.localhost\\Ubuntu\\'
 const UNC_REPO = `${WSL_PREFIX}home\\me\\app`
