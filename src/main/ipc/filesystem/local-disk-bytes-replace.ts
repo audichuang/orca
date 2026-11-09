@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { chmod, realpath, rm, stat } from 'node:fs/promises'
+import { chmod, open, realpath, rm, stat, type FileHandle } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import type { FileBytesWritePrecondition } from '../../../shared/file-write/file-bytes-write'
 import {
@@ -28,13 +28,31 @@ async function sha256OfFile(filePath: string): Promise<string | null> {
   return hash.digest('hex')
 }
 
+// Why: Windows refuses a rename over a read-only file, so clear the attribute and restore it on failure.
+async function renameOverTarget(temp: string, target: string, mode: number | null): Promise<void> {
+  const unlock = process.platform === 'win32' && mode !== null && (mode & 0o200) === 0
+  if (unlock) {
+    await chmod(target, mode | 0o200)
+  }
+  try {
+    await renameFileWithWindowsRetryAsync(temp, target)
+  } catch (error) {
+    if (unlock) {
+      await chmod(target, mode).catch(() => undefined)
+    }
+    throw error
+  }
+}
+
 /**
  * Replaces a file's bytes atomically (sibling temp file, then rename) unless it no longer holds
  * the bytes the editor loaded. A symlink is followed, so its target is replaced, not the link.
+ * The temp file is created 0600 and gets the target's mode only before the rename; a read-only
+ * target is replaced like any other.
  */
 export async function replaceLocalFileBytesIfUnchanged(
   requestedPath: string,
-  writeTemp: (tempPath: string) => Promise<void>,
+  writeTemp: (temp: FileHandle) => Promise<void>,
   precondition: FileBytesWritePrecondition
 ): Promise<FileWriteResult> {
   const filePath = windowsFsPath(requestedPath)
@@ -61,11 +79,15 @@ export async function replaceLocalFileBytesIfUnchanged(
     )
     const temp = join(dirname(target), `.${basename(target)}.orca-save-${randomUUID()}`)
     try {
-      await writeTemp(temp)
-      if (mode !== null) {
-        await chmod(temp, mode)
+      const handle = await open(temp, 'wx', 0o600)
+      try {
+        await writeTemp(handle)
+      } finally {
+        await handle.close()
       }
-      await renameFileWithWindowsRetryAsync(temp, target)
+      // Why: a new file gets the mode a plain create would have given it.
+      await chmod(temp, mode ?? 0o666 & ~process.umask())
+      await renameOverTarget(temp, target, mode)
     } finally {
       await rm(temp, { force: true }).catch(() => undefined)
     }
