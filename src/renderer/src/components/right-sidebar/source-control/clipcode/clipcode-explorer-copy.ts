@@ -1,9 +1,8 @@
 // Fork-only: ClipCode "Copy to Clipboard" for file explorer selections (files and whole folders).
-import { basename, getRelativePathInsideRoot, joinPath } from '@/lib/path'
+import { basename, joinPath } from '@/lib/path'
 import type { DirEntry } from '../../../../../../shared/file-listing/directory-entry'
 import { sortDirEntries } from '../../../../../../shared/file-listing/file-name-sort'
 import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
-import { isWindowsAbsolutePathLike } from '../../../../../../shared/cross-platform-path'
 import { isPathOutsideAllowedDirectoriesError } from '../../../../../../shared/file-access/local-file-access'
 import { shouldIncludeFileExplorerEntry } from '../../file-explorer/tree/file-explorer-entries'
 import { buildPayload, CLIPCODE_DEFAULTS, type PayloadFile } from './clipcode-clipboard-format'
@@ -11,6 +10,7 @@ import {
   classifyClipcodeEntryContent,
   clipcodeHeaderRoundTrips,
   clipcodeReadContent,
+  clipcodeRootRelativePath,
   ClipcodeCopyTally,
   type ClipcodeEntryVerdict,
   type ClipcodeFileRead,
@@ -54,18 +54,9 @@ async function readContent(
   }
 }
 
-/** Root-relative with `/`; `\` is a separator only under a Windows root (on POSIX it is part of a name). */
-function rootRelativePath(absolutePath: string, rootPath: string): string | undefined {
-  const relative = getRelativePathInsideRoot(absolutePath, rootPath)
-  if (relative === null) {
-    return undefined
-  }
-  return isWindowsAbsolutePathLike(rootPath) ? relative.replaceAll('\\', '/') : relative
-}
-
 /** Shown path of a skipped item: workspace-relative like the payload, else as given. */
 function displayPath(absolutePath: string, rootPath: string): string {
-  return rootRelativePath(absolutePath, rootPath) || absolutePath
+  return clipcodeRootRelativePath(absolutePath, rootPath) || absolutePath
 }
 
 type CollectedFile = { path: string; isSymlink: boolean }
@@ -157,7 +148,7 @@ export async function buildClipcodeExplorerCopy(args: {
   const maxBytes = CLIPCODE_DEFAULTS.maxFileSizeKB * 1024
   const collected = await collectFilePaths(readers, args.targets)
   const verdicts = await mapWithConcurrency(collected.files, READ_CONCURRENCY, (file) =>
-    readAndClassify(readers, rootRelativePath(file.path, rootPath), file.path, maxBytes)
+    readAndClassify(readers, clipcodeRootRelativePath(file.path, rootPath), file.path, maxBytes)
   )
   const tallies = [new ClipcodeCopyTally(false), new ClipcodeCopyTally(true)] as const
   for (const tally of tallies) {
