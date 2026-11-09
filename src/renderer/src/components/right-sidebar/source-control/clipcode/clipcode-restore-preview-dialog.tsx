@@ -14,7 +14,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { translate } from '@/i18n/i18n'
 import { useTranslate, type Translate } from '@/i18n/use-translate'
-import { formatBytes } from '../../../../../../shared/format-bytes'
+import { formatClipcodeBytes } from './clipcode-byte-size'
 import type { ParsedEntry } from './clipcode-clipboard-format'
 import { ClipcodeMiddleEllipsisPath } from './clipcode-middle-ellipsis-path'
 import { defaultAdjustRestorePaths } from './clipcode-restore-base-default'
@@ -108,7 +108,7 @@ function nonTextNote(size: number, t: Translate): string {
   return t(
     'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.nonTextSize',
     'non-text file · {{value0}}',
-    { value0: formatBytes(size) }
+    { value0: formatClipcodeBytes(size) }
   )
 }
 
