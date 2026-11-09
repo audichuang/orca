@@ -1,5 +1,5 @@
 import { constants, type Stats } from 'node:fs'
-import { open, type FileHandle } from 'node:fs/promises'
+import { open, stat, type FileHandle } from 'node:fs/promises'
 import { isENOENT } from './access/filesystem-path-containment'
 import { windowsFsPath } from '../../wsl/filesystem/wsl-unc-drive-fs-path'
 
@@ -7,7 +7,6 @@ export const NOT_A_REGULAR_FILE_MESSAGE = 'Not a regular file'
 
 // O_NONBLOCK prevents FIFO-open hangs; regular files ignore it and Windows omits it.
 export const LOCAL_READ_OPEN_FLAGS = constants.O_RDONLY | (constants.O_NONBLOCK ?? 0)
-const LOCAL_WRITE_PROBE_FLAGS = constants.O_WRONLY | (constants.O_NONBLOCK ?? 0)
 const READ_CHUNK_BYTES = 1024 * 1024
 
 export class FileTooLargeError extends Error {}
@@ -66,21 +65,18 @@ export async function readLocalFilePrefix(handle: FileHandle, bytes: number): Pr
   return probe.subarray(0, bytesRead)
 }
 
+// Why: stat, not a write-only open, so a read-only file can still be replaced by a rename.
 export async function assertLocalWriteTargetIsRegularFile(filePath: string): Promise<void> {
-  let handle: FileHandle
+  let stats: Stats
   try {
-    handle = await open(windowsFsPath(filePath), LOCAL_WRITE_PROBE_FLAGS)
+    stats = await stat(windowsFsPath(filePath))
   } catch (error) {
     if (isENOENT(error)) {
       return
     }
     throw error
   }
-  try {
-    if (!(await handle.stat()).isFile()) {
-      throw new Error(NOT_A_REGULAR_FILE_MESSAGE)
-    }
-  } finally {
-    await handle.close()
+  if (!stats.isFile()) {
+    throw new Error(NOT_A_REGULAR_FILE_MESSAGE)
   }
 }

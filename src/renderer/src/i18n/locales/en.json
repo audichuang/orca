@@ -15472,14 +15472,14 @@
                         "1f409f3dd6": "path goes through a symlink",
                         "parentIsFile": "a parent folder is a file",
                         "targetUnreadable": "could not check the existing file",
-                        "caseConflict": "same path with different letter case",
                         "nonUtf8Target": "Existing file is not UTF-8; not overwritten",
                         "corruptNonText": "Corrupt non-text file",
                         "nonTextSize": "non-text file · {{value0}}",
                         "corruptBadge": "Corrupt",
                         "unchanged": "Unchanged",
                         "overwriteAll_one": "Overwrite {{count}} existing file",
-                        "overwriteAll_other": "Overwrite all {{count}} existing files"
+                        "overwriteAll_other": "Overwrite all {{count}} existing files",
+                        "targetCollision": "Another entry writes the same file"
                       }
                     }
                   },

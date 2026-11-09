@@ -89,9 +89,56 @@ describe('planClipcodeRestore', () => {
     })
     expect(plan.writes).toEqual([{ relativePath: 'b.txt', content: 'kept' }])
     expect(plan.skipped).toEqual([
-      { rawPath: 'a.txt', reason: 'CASE_CONFLICT' },
-      { rawPath: 'A.txt', reason: 'CASE_CONFLICT' }
+      { rawPath: 'a.txt', reason: 'TARGET_COLLISION' },
+      { rawPath: 'A.txt', reason: 'TARGET_COLLISION' }
     ])
+  })
+
+  describe('collisions follow the target host file system', () => {
+    const nfc = 'café.txt'
+    const nfd = 'café.txt'
+    const paths = (targetPlatform: NodeJS.Platform | null) => {
+      const plan = planClipcodeRestore({
+        rootPath: '/f',
+        targetPlatform,
+        entries: [
+          entry('A.txt', new Set(), 'upper'),
+          entry('a.txt', new Set(), 'lower'),
+          entry(nfc, new Set(), 'composed'),
+          entry(nfd, new Set(), 'decomposed')
+        ]
+      })
+      return {
+        written: plan.writes.map((write) => write.relativePath),
+        skipped: plan.skipped.map((skip) => [skip.rawPath, skip.reason])
+      }
+    }
+
+    it('keeps case and normalization spellings apart on a linux host', () => {
+      expect(paths('linux')).toEqual({ written: ['A.txt', 'a.txt', nfc, nfd], skipped: [] })
+    })
+
+    it('folds letter case but not normalization on a windows host', () => {
+      expect(paths('win32')).toEqual({
+        written: [nfc, nfd],
+        skipped: [
+          ['a.txt', 'TARGET_COLLISION'],
+          ['A.txt', 'TARGET_COLLISION']
+        ]
+      })
+    })
+
+    it.each(['darwin', null] as const)('folds case and NFC/NFD on a %s host', (platform) => {
+      expect(paths(platform)).toEqual({
+        written: [],
+        skipped: [
+          ['a.txt', 'TARGET_COLLISION'],
+          [nfd, 'TARGET_COLLISION'],
+          ['A.txt', 'TARGET_COLLISION'],
+          [nfc, 'TARGET_COLLISION']
+        ]
+      })
+    })
   })
 
   it('never keeps a delete whose case-only replacement was skipped', () => {

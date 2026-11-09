@@ -11,6 +11,8 @@ const statRuntimePath = vi.fn()
 const readRuntimeFileContent = vi.fn()
 const readRuntimeFileBytes = vi.fn()
 const writeRuntimeFile = vi.fn()
+const writeRuntimeFileBytes = vi.fn()
+const writtenBytes = new Map<string, number[]>()
 
 const toast = vi.hoisted(() => ({ warning: vi.fn(), error: vi.fn(), success: vi.fn() }))
 vi.mock('sonner', () => ({ toast }))
@@ -27,8 +29,7 @@ vi.mock('@/runtime/files/metadata/runtime-file-metadata-client', () => ({
   isMissingRuntimePathError: (error: unknown) => String(error).includes('ENOENT')
 }))
 vi.mock('@/runtime/files/mutations/runtime-file-bytes-write', () => ({
-  writeRuntimeFileBytes: async (_c: unknown, path: string, bytes: Uint8Array) =>
-    void calls.push(`write bytes ${path} ${[...bytes].join(',')}`)
+  writeRuntimeFileBytes: (...args: unknown[]) => writeRuntimeFileBytes(...args)
 }))
 vi.mock('@/runtime/files/reads/runtime-paged-file-read', () => ({
   readRuntimeFileBytes: (...args: unknown[]) => readRuntimeFileBytes(...args)
@@ -44,7 +45,7 @@ vi.mock('../../file-explorer/navigation/file-explorer-operation-owner', () => ({
     route: { target: { kind: 'local' } },
     assertCurrent: () => undefined
   }),
-  getFileExplorerOperationOwner: () => undefined
+  getFileExplorerOperationOwner: () => ({ kind: 'local' })
 }))
 vi.mock('@/components/editor/autosave/editor-autosave', () => ({
   requestEditorSaveQuiesce: async (target: { worktreeId: string; relativePath: string }) => {
@@ -56,6 +57,8 @@ vi.mock('@/components/editor/autosave/editor-autosave', () => ({
 }))
 
 const { useClipcodeRestore } = await import('./use-clipcode-restore')
+const { FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE } =
+  await import('../../../../../../shared/file-write/file-bytes-write')
 
 function Harness(): React.JSX.Element {
   const { requestRestore, dialog } = useClipcodeRestore({
@@ -89,10 +92,17 @@ async function runRestore(clipboard: string, { overwrite = false } = {}): Promis
 
 beforeEach(() => {
   calls.length = 0
+  writtenBytes.clear()
+  writeRuntimeFile.mockReset()
+  writeRuntimeFileBytes.mockReset()
   statRuntimePath.mockRejectedValue(new Error('ENOENT'))
   readRuntimeFileContent.mockResolvedValue({ content: 'old', isBinary: false })
   readRuntimeFileBytes.mockResolvedValue({ kind: 'unsupported' })
   writeRuntimeFile.mockImplementation(async (_c: unknown, path: string) => {
+    calls.push(`write text ${path}`)
+  })
+  writeRuntimeFileBytes.mockImplementation(async (_c: unknown, path: string, bytes: Uint8Array) => {
+    writtenBytes.set(path, [...bytes])
     calls.push(`write ${path}`)
   })
   readRuntimeDirectory.mockImplementation(async (_c: unknown, dir: string) =>
@@ -210,16 +220,37 @@ describe('useClipcodeRestore', () => {
     readRuntimeFileContent.mockResolvedValue({ content: '', isBinary: true })
     readRuntimeFileBytes.mockResolvedValue({ kind: 'ok', bytes: new Uint8Array([1, 2, 3]) })
     await runRestore(`// file: same.bin\n${body}// file: new.bin\n${body}`)
-    expect(calls.filter((call) => call.startsWith('write'))).toEqual([
-      'write bytes /f/new.bin 1,2,3'
-    ])
+    expect(calls.filter((call) => call.startsWith('write'))).toEqual(['write /f/new.bin'])
+    expect(writtenBytes.get('/f/new.bin')).toEqual([1, 2, 3])
     expect(toast.success).toHaveBeenLastCalledWith(
       'Created 1, overwritten 0, deleted 0, skipped 0. Unchanged: 1.'
     )
   })
 
+  it('writes a text entry as its UTF-8 bytes through the replace path', async () => {
+    await runRestore('// file: [NEW] ok.ts\ncafé\n')
+    expect(writeRuntimeFile).not.toHaveBeenCalled()
+    expect(writeRuntimeFileBytes).toHaveBeenCalledWith(
+      expect.anything(),
+      '/f/ok.ts',
+      expect.anything(),
+      undefined,
+      { allowMissing: true }
+    )
+    expect(writtenBytes.get('/f/ok.ts')).toEqual([0x63, 0x61, 0x66, 0xc3, 0xa9])
+  })
+
+  it('falls back to the text write when the host cannot replace bytes', async () => {
+    writeRuntimeFileBytes.mockRejectedValue(new Error(FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE))
+    await runRestore('// file: [NEW] ok.ts\nx\n')
+    expect(writeRuntimeFile).toHaveBeenCalledWith(expect.anything(), '/f/ok.ts', 'x')
+    expect(toast.success).toHaveBeenLastCalledWith(
+      'Created 1, overwritten 0, deleted 0, skipped 0.'
+    )
+  })
+
   it('counts a failed write as skipped and names it in user text, not the OS message', async () => {
-    writeRuntimeFile.mockImplementation(async (_c: unknown, path: string) => {
+    writeRuntimeFileBytes.mockImplementation(async (_c: unknown, path: string) => {
       if (path === '/f/locked.ts') {
         throw new Error("EACCES: permission denied, open '/f/locked.ts'")
       }

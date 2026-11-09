@@ -14653,14 +14653,14 @@
                         "1f409f3dd6": "yol bir sembolik bağlantıdan geçiyor",
                         "parentIsFile": "üst klasör bir dosya",
                         "targetUnreadable": "mevcut dosya denetlenemedi",
-                        "caseConflict": "aynı yol, farklı harf büyüklüğüyle",
                         "nonUtf8Target": "Mevcut dosya UTF-8 değil; üzerine yazılmadı",
                         "corruptNonText": "Bozuk metin dışı dosya",
                         "nonTextSize": "metin dışı dosya · {{value0}}",
                         "corruptBadge": "Bozuk",
                         "unchanged": "Değişmedi",
                         "overwriteAll_one": "Mevcut {{count}} dosyanın üzerine yaz",
-                        "overwriteAll_other": "Mevcut {{count}} dosyanın tümünün üzerine yaz"
+                        "overwriteAll_other": "Mevcut {{count}} dosyanın tümünün üzerine yaz",
+                        "targetCollision": "Başka bir girdi aynı dosyaya yazıyor"
                       }
                     }
                   },

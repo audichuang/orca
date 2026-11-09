@@ -14676,14 +14676,14 @@
                         "1f409f3dd6": "Pfad führt über einen symbolischen Link",
                         "parentIsFile": "ein übergeordneter Ordner ist eine Datei",
                         "targetUnreadable": "vorhandene Datei konnte nicht geprüft werden",
-                        "caseConflict": "gleicher Pfad mit abweichender Groß-/Kleinschreibung",
                         "nonUtf8Target": "Vorhandene Datei ist nicht UTF-8; nicht überschrieben",
                         "corruptNonText": "Beschädigte Nicht-Text-Datei",
                         "nonTextSize": "Nicht-Text-Datei · {{value0}}",
                         "corruptBadge": "Beschädigt",
                         "unchanged": "Unverändert",
                         "overwriteAll_one": "{{count}} vorhandene Datei überschreiben",
-                        "overwriteAll_other": "Alle {{count}} vorhandenen Dateien überschreiben"
+                        "overwriteAll_other": "Alle {{count}} vorhandenen Dateien überschreiben",
+                        "targetCollision": "Ein anderer Eintrag schreibt dieselbe Datei"
                       }
                     }
                   },

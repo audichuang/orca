@@ -10889,7 +10889,6 @@
                         "1f409f3dd6": "o caminho passa por um link simbólico",
                         "parentIsFile": "uma pasta pai é um arquivo",
                         "targetUnreadable": "não foi possível verificar o arquivo existente",
-                        "caseConflict": "mesmo caminho com maiúsculas e minúsculas diferentes",
                         "nonUtf8Target": "O arquivo existente não é UTF-8; não foi sobrescrito",
                         "corruptNonText": "Arquivo não textual corrompido",
                         "nonTextSize": "arquivo não textual · {{value0}}",
@@ -10897,7 +10896,8 @@
                         "unchanged": "Inalterado",
                         "overwriteAll_one": "Sobrescrever {{count}} arquivo existente",
                         "overwriteAll_many": "Sobrescrever todos os {{count}} arquivos existentes",
-                        "overwriteAll_other": "Sobrescrever todos os {{count}} arquivos existentes"
+                        "overwriteAll_other": "Sobrescrever todos os {{count}} arquivos existentes",
+                        "targetCollision": "Outra entrada grava o mesmo arquivo"
                       }
                     }
                   },

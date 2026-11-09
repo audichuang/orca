@@ -9,6 +9,7 @@ import {
 } from './file-target'
 import type { RuntimeFileCommandHost } from './file-command-host'
 import { resolveRuntimeAuthorizedPath } from './chat-scratch-file-root'
+import { createReadStream } from 'node:fs'
 import { constants, copyFile, mkdir, rm } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import type { FileBytesWritePrecondition } from '../../../shared/file-write/file-bytes-write'
@@ -224,7 +225,7 @@ export class RuntimeFileMutations {
     try {
       return await replaceLocalFileBytesIfUnchanged(
         finalPath,
-        (replacement) => copyFile(tempPath, replacement),
+        (replacement) => replacement.writeFile(createReadStream(tempPath)),
         precondition
       )
     } finally {
