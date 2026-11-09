@@ -20,6 +20,7 @@ import { PluginInstallTrustDialogHost } from '../components/plugins/dialogs/Plug
 import { TelemetryFirstLaunchSurface } from '../components/onboarding/telemetry/TelemetryFirstLaunchSurface'
 import { ZoomOverlay } from './chrome/ZoomOverlay'
 import { WslMoveDialogHost } from '../components/wsl-move/WslMoveDialog'
+import { ClipcodeNonTextCopyDialogHost } from '../components/right-sidebar/source-control/clipcode/clipcode-non-text-copy-dialog'
 import { MacosUpdateRequirementHost } from '../components/macos-update-requirement/MacosUpdateRequirementHost'
 import { shouldRenderPetOverlay } from '../components/pet/pet-overlay-visibility'
 import { useAppStore } from '../store/index'
@@ -218,6 +219,8 @@ export const AppRootSurfaces = memo(function AppRootSurfaces(props: {
         ) : null}
         {/* Own store, not activeModal: another modal must never evict a running move. */}
         <WslMoveDialogHost />
+        {/* Fork: ClipCode copy question; every copy entry point (source control, explorer) asks through it. */}
+        <ClipcodeNonTextCopyDialogHost />
         {/* Opened by toast, SSH host row and terminal pane. */}
         {activeModal === 'node-dist-mirror' ? (
           <ModalBoundary boundaryId="modal.node-dist-mirror" resetKey>
