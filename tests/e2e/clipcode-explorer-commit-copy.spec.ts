@@ -316,3 +316,71 @@ test('non-text files survive Copy Full Source with Include and Paste & Restore b
   expect(readFileSync(ok, 'utf8')).toBe('ok')
   expect(existsSync(path.join(worktreePath, 'sha.png'))).toBe(false)
 })
+
+// Spec cases 21 and 28: 58–59 character names sharing a prefix, under a 150-character folder.
+const LONG_FOLDER = `nt-long/${'regional-sales-archive-'.repeat(7).slice(0, 150)}`
+const LONG_NAME = (suffix: string): string =>
+  `${LONG_FOLDER}/quarterly-revenue-projection-for-the-north-region-${suffix}.png`
+
+test('long non-text names keep the file name in the copy dialog and restore preview', async ({
+  orcaPage,
+  testRepoPath,
+  registerPostElectronShutdownCleanup
+}) => {
+  const worktreePath = createWorktree(
+    testRepoPath,
+    'nontext-long',
+    registerPostElectronShutdownCleanup
+  )
+  const png = NON_TEXT_FIXTURE['assets/logo.png']
+  writeFiles(worktreePath, {
+    [LONG_NAME('alpha')]: png.bytes,
+    [LONG_NAME('beta')]: png.bytes,
+    [LONG_NAME('gamma')]: png.bytes
+  })
+
+  mkdirSync(SHOTS_DIR, { recursive: true })
+  // Why fixed: reproducible screenshots of the shortened names.
+  await orcaPage.setViewportSize({ width: 1280, height: 800 })
+  await waitForSessionReady(orcaPage)
+  await openSourceControlForWorktree(orcaPage, testRepoPath, worktreePath)
+  await openFileExplorer(orcaPage)
+  const longRow = orcaPage
+    .locator('[data-orca-explorer-shell] [data-file-explorer-row]')
+    .filter({ has: orcaPage.getByText('nt-long', { exact: true }) })
+    .first()
+  await expect(longRow).toBeVisible({ timeout: 20_000 })
+
+  await startCopyFromMenu(orcaPage, longRow)
+  const copyDialog = clipcodeNonTextDialog(orcaPage)
+  await expect(copyDialog).toBeVisible({ timeout: 20_000 })
+  for (const suffix of ['alpha', 'beta', 'gamma']) {
+    await expect(copyDialog).toContainText(
+      `…/quarterly-revenue-projection-for-the-north-region-${suffix}.png`
+    )
+  }
+  const payload = await answerNonTextDialog(orcaPage, 3, 'Include', '08-long-names-copy-dialog.png')
+  const corruptEntry = `\n// file: ${LONG_NAME('delta')}\n// File skipped: non-text file, 83 bytes, sha256 ${'0'.repeat(64)}; base64 follows\n${OPENIDEA_PNG_BASE64_LINES}\n`
+
+  // gamma stays identical so its row is Unchanged; alpha and beta must be written again.
+  rmSync(path.join(worktreePath, LONG_NAME('alpha')))
+  rmSync(path.join(worktreePath, LONG_NAME('beta')))
+  const preview = await pasteAndRestore(
+    orcaPage,
+    payload + corruptEntry,
+    '09-long-names-restore-preview.png'
+  )
+  for (const suffix of ['alpha', 'beta', 'gamma', 'delta']) {
+    await expect(preview).toContainText(
+      `…/quarterly-revenue-projection-for-the-north-region-${suffix}.png`
+    )
+  }
+  await preview.getByRole('button', { name: 'Restore', exact: true }).click()
+  await expect(preview).toHaveCount(0, { timeout: 15_000 })
+  for (const suffix of ['alpha', 'beta', 'gamma']) {
+    const restored = path.join(worktreePath, LONG_NAME(suffix))
+    await expect.poll(() => existsSync(restored), { timeout: 15_000 }).toBe(true)
+    expect(sha256(restored), suffix).toBe(png.sha256)
+  }
+  expect(existsSync(path.join(worktreePath, LONG_NAME('delta')))).toBe(false)
+})
