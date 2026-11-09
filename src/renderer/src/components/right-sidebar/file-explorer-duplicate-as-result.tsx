@@ -7,7 +7,7 @@ import { ContextMenuItem } from '@/components/ui/context-menu'
 import { useAppStore } from '@/store'
 import { detectLanguage } from '@/lib/language-detect'
 import { extractIpcErrorMessage } from '@/lib/ipc-error'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { basename, dirname, joinPath } from '@/lib/path'
 import { copyRuntimePath } from '@/runtime/files/mutations/runtime-file-mutation-client'
 import { runtimePathExists } from '@/runtime/files/metadata/runtime-file-metadata-client'
@@ -123,6 +123,7 @@ export function duplicateFileAsResult(node: TreeNode, refreshDir: RefreshDir | n
 }
 
 export function DuplicateAsResultItem({ node }: { node: TreeNode }): React.JSX.Element | null {
+  const t = useTranslate()
   const refreshDir = useContext(DuplicateAsResultRefreshContext)
   if (node.isDirectory) {
     return null
@@ -134,7 +135,7 @@ export function DuplicateAsResultItem({ node }: { node: TreeNode }): React.JSX.E
       onSelect={() => duplicateFileAsResult(node, refreshDir)}
     >
       <FileOutput />
-      {translate(
+      {t(
         'auto.components.right.sidebar.FileExplorerRow.duplicateAsResult',
         'Duplicate as _result.txt'
       )}

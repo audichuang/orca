@@ -6,7 +6,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator
 } from '@/components/ui/context-menu'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import {
   GitHistoryCommitContextMenu,
@@ -42,16 +42,17 @@ function CopyFullSourceItem({
   onAction,
   selectedCount = 1
 }: Pick<ForkMenuProps, 'item' | 'onAction' | 'selectedCount'>): React.JSX.Element {
+  const t = useTranslate()
   return (
     <ContextMenuItem onSelect={() => onAction('copy-full-source', item)}>
       <ClipboardCopy className="size-3.5" />
       {selectedCount > 1
-        ? translate(
+        ? t(
             'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyFullSourceMany',
             'Copy Full Source ({{value0}} commits)',
             { value0: selectedCount }
           )
-        : translate(
+        : t(
             'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyFullSource',
             'Copy Full Source'
           )}
@@ -63,13 +64,14 @@ function ShowInGraphItem({
   item,
   onShowInGraph
 }: Pick<ForkMenuProps, 'item' | 'onShowInGraph'>): React.JSX.Element | null {
+  const t = useTranslate()
   if (!onShowInGraph) {
     return null
   }
   return (
     <ContextMenuItem onSelect={() => onShowInGraph(item)}>
       <GitGraph className="size-3.5" />
-      {translate(
+      {t(
         'auto.components.right.sidebar.GitHistoryCommitContextMenu.showInGraph',
         'Show in Git Graph'
       )}
@@ -85,13 +87,14 @@ function MultiCommitMenu({
   selectedCount,
   onShowInGraph
 }: ForkMenuProps): React.JSX.Element {
+  const t = useTranslate()
   const count = { value0: selectedCount }
   return (
     // Why wider than upstream's w-56: the counted labels run longer.
     <ContextMenuContent className="w-64">
       <ContextMenuItem onSelect={() => onAction('copy-hash', item)}>
         <Hash className="size-3.5" />
-        {translate(
+        {t(
           'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyHashMany',
           'Copy commit hashes ({{value0}} commits)',
           count
@@ -99,7 +102,7 @@ function MultiCommitMenu({
       </ContextMenuItem>
       <ContextMenuItem onSelect={() => onAction('copy-message', item)}>
         <Copy className="size-3.5" />
-        {translate(
+        {t(
           'auto.components.right.sidebar.GitHistoryCommitContextMenu.copyMessageMany',
           'Copy commit messages ({{value0}} commits)',
           count
@@ -110,7 +113,7 @@ function MultiCommitMenu({
       <ContextMenuSeparator />
       <ContextMenuItem onSelect={() => onAction('explain', item)}>
         <Sparkles className="size-3.5" />
-        {translate(
+        {t(
           'auto.components.right.sidebar.GitHistoryCommitContextMenu.ae4f71cd35',
           'Explain changes'
         )}

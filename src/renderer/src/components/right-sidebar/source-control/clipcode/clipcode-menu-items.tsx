@@ -4,7 +4,7 @@ import { Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ContextMenuItem } from '@/components/ui/context-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { TreeNode } from '../../file-explorer/tree/file-explorer-types'
 import { ActionButton } from '../listing/action-button'
 import type { SourceControlDisplaySection } from '../../../../../../shared/source-control/listing/source-control-section-order'
@@ -20,10 +20,11 @@ export function ClipcodeCopyFullSourceMenuItem({
   onSelect: () => void
   iconClassName?: string
 }): React.JSX.Element {
+  const t = useTranslate()
   return (
     <ContextMenuItem onSelect={onSelect}>
       <Copy className={iconClassName} />
-      {translate(
+      {t(
         'auto.components.right.sidebar.source.control.listing.entry.context.menu.9137d88b9f',
         'Copy Full Source'
       )}
@@ -58,6 +59,7 @@ export function ClipcodeSectionCopyButton({
   section: Pick<SourceControlDisplaySection, 'area' | 'items'>
   filter: string
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const actions = useClipcodeSourceControlActions()
   if (!actions || filter || actions.isStatusTruncated || section.items.length === 0) {
     return null
@@ -65,7 +67,7 @@ export function ClipcodeSectionCopyButton({
   return (
     <ActionButton
       icon={Copy}
-      title={translate(
+      title={t(
         'auto.components.right.sidebar.source.control.listing.uncommitted.sections.1a59d5a05b',
         'Copy Full Source'
       )}
@@ -82,11 +84,12 @@ export function ClipcodeBulkCopyButton({
 }: {
   disabled: boolean
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const actions = useClipcodeSourceControlActions()
   if (!actions) {
     return null
   }
-  const copyLabel = translate(
+  const copyLabel = t(
     'auto.components.right.sidebar.source.control.commit.bulk.action.bar.8a434c829f',
     'Copy Full Source'
   )
