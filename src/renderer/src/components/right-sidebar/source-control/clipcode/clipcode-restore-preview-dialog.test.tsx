@@ -109,28 +109,6 @@ describe('ClipcodeRestorePreviewDialog', () => {
     expect(screen.getByText('outside the folder')).toBeInTheDocument()
   })
 
-  it('counts only targets that will change in the overwrite option', () => {
-    render(
-      <ClipcodeRestorePreviewDialog
-        pending={{
-          rootPath: '/f',
-          entries: [
-            { path: 'a.ts', content: 'a', changeTypes: new Set() },
-            { path: 'b.ts', content: 'b', changeTypes: new Set() }
-          ],
-          suggestion: undefined,
-          states: new Map([
-            ['a.ts', 'file'],
-            ['b.ts', 'file']
-          ])
-        }}
-        onCancel={vi.fn()}
-        onConfirm={vi.fn()}
-      />
-    )
-    expect(screen.getByLabelText('Overwrite all 2 existing files')).toBeInTheDocument()
-  })
-
   it('shows non-text rows by size, identical targets with an Unchanged badge and corrupt ones with a badge', () => {
     const sha = '039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81'
     const body = `// File skipped: non-text file, 3 bytes, sha256 ${sha}; base64 follows\nAQID`
@@ -160,7 +138,12 @@ describe('ClipcodeRestorePreviewDialog', () => {
       />
     )
     expect(screen.getByText('same.bin').closest('li')).toHaveTextContent('Unchanged')
+    expect(screen.getByText('same.bin').closest('li')).toHaveAttribute(
+      'title',
+      'same.bin\nUnchanged · non-text file · 3 B'
+    )
     expect(screen.queryByText('Unchanged (1)')).not.toBeInTheDocument()
+    expect(screen.getByText('Overwrite (1)')).toBeInTheDocument()
     expect(screen.getAllByText('non-text file · 3 B')).toHaveLength(3)
     fireEvent.click(screen.getByLabelText('Overwrite 1 existing file'))
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
