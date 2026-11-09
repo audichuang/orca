@@ -14,6 +14,7 @@ import { useAppStore } from '@/store'
 import { isPathInsideOrEqual } from '../../../../../../shared/cross-platform-path'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
+import type { Repo } from '../../../../../../shared/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { getWorktreeGitOwnerTarget, requireGitOwnerTarget } from '../sync/worktree-git-owner-target'
 import {
@@ -32,6 +33,7 @@ import {
   type ClipcodeCommitCopyCommit,
   type ClipcodeCommitReaders
 } from './clipcode-commit-copy'
+import { getFilesystemOwnerKey } from '../folder/folder-git-worktrees'
 import { notifyClipcodeCopied } from './clipcode-copied-toast'
 import { svgPreviewText } from './clipcode-svg-text'
 import {
@@ -56,8 +58,14 @@ export function getClipcodeRepoContext(worktree: Pick<Worktree, 'id' | 'path'>):
   }
 }
 
-/** Copy root: the folder workspace for a scoped folder panel when the worktree lies inside it or contains it, else the worktree itself. */
-export function getClipcodeRootPath(editorWorktreeId: string | null, worktreePath: string): string {
+export type ClipcodeWorktreeOwner = Pick<Repo, 'connectionId' | 'executionHostId'>
+
+/** Copy root: the folder workspace for a scoped folder panel when the worktree is on the folder's host and lies inside it or contains it, else the worktree itself. */
+export function getClipcodeRootPath(
+  editorWorktreeId: string | null,
+  worktreePath: string,
+  worktreeOwner: ClipcodeWorktreeOwner
+): string {
   const scope = editorWorktreeId ? parseWorkspaceKey(editorWorktreeId) : null
   if (scope?.type !== 'folder') {
     return worktreePath
@@ -65,7 +73,9 @@ export function getClipcodeRootPath(editorWorktreeId: string | null, worktreePat
   const folder = selectFolderWorkspaces(useAppStore.getState()).find(
     (workspace) => workspace.id === scope.folderWorkspaceId
   )
+  // Why: path strings from another host's filesystem say nothing about this folder.
   return folder &&
+    getFilesystemOwnerKey(worktreeOwner) === getFilesystemOwnerKey(folder) &&
     (isPathInsideOrEqual(folder.folderPath, worktreePath) ||
       isPathInsideOrEqual(worktreePath, folder.folderPath))
     ? folder.folderPath
