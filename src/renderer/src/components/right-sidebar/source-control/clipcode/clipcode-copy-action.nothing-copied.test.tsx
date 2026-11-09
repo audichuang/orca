@@ -16,6 +16,7 @@ vi.mock('@/i18n/i18n', () => ({
 
 const fsMocks = vi.hoisted(() => ({
   readDir: vi.fn(),
+  readBytes: vi.fn(),
   denied: async () => {
     throw new Error('EACCES: permission denied')
   }
@@ -32,7 +33,7 @@ vi.mock('@/runtime/files/reads/runtime-directory-read', () => ({
   readRuntimeDirectory: (_context: unknown, path: string) => fsMocks.readDir(path)
 }))
 vi.mock('@/runtime/files/reads/runtime-paged-file-read', () => ({
-  readRuntimeFileBytes: fsMocks.denied
+  readRuntimeFileBytes: fsMocks.readBytes
 }))
 vi.mock('@/runtime/files/reads/runtime-file-read-client', () => ({
   readRuntimeFileContent: fsMocks.denied
@@ -44,6 +45,7 @@ const commitDiff = vi.fn(async () => {
 })
 
 beforeEach(() => {
+  fsMocks.readBytes.mockImplementation(fsMocks.denied)
   Object.assign(window, { api: { ui: { writeClipboardText }, git: { commitDiff } } })
 })
 
@@ -130,5 +132,27 @@ describe('Copy to Clipboard when every selected file is skipped', () => {
       <>{typeof description === 'function' ? description() : description}</>
     )
     expect([...container.querySelectorAll('p')].map((p) => p.textContent)).toEqual([line])
+  })
+})
+
+describe('Copy to Clipboard when only size placeholders would be copied', () => {
+  it('leaves the clipboard alone and says the file was over the size limit', async () => {
+    fsMocks.readBytes.mockResolvedValue({ kind: 'too_large', size: 3145728 })
+
+    await copyClipcodeExplorerTargets({
+      worktreePath: '/ws',
+      targets: [{ path: '/ws/big.txt', isDirectory: false }]
+    })
+
+    expect(writeClipboardText).not.toHaveBeenCalled()
+    const [title, options] = vi.mocked(toast.warning).mock.calls[0]
+    expect(title).toBe('Nothing to copy')
+    const description = options?.description
+    const { container } = render(
+      <>{typeof description === 'function' ? description() : description}</>
+    )
+    expect([...container.querySelectorAll('p')].map((p) => p.textContent)).toEqual([
+      '(1 skipped: size exceeded)'
+    ])
   })
 })
