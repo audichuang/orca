@@ -58,12 +58,7 @@ export function layoutEditorViewOfOpenFile(
       filePath: file.filePath,
       relativePath: file.relativePath,
       language: file.language,
-      ...pickStoredFields(file, [
-        'runtimeEnvironmentId',
-        'externalSshTargetId',
-        'readOnly',
-        'gitWorktreeId'
-      ])
+      ...pickStoredFields(file, ['runtimeEnvironmentId', 'externalSshTargetId', 'readOnly'])
     }
   }
 }
