@@ -14,16 +14,12 @@
 - 驗證（<YYYY-MM-DD>，上游 <sha>）：<跑了什麼、結果>｜未驗證
 ```
 
-## fork 自身問題（待人判斷：v1.4.254 rebase 留給人的三件事）× fork rebase/v1.4.254（PR #148，head 57ac1792c5）— auto-rebase 2026-11-09
-- 類型：待人判斷
-- 事實：v1.4.254 rebase 照「2026-11-09 預演」做完，本機閘門與 CI 除下面兩支 e2e 外全綠，盲審只剩 Codex 的 1 個 BLOCKING。develop 沒動（PR #148 needs-human，`rebase/v1.4.254` 留著）。
-- 待做 1（CI 紅）：`tests/e2e/folder-multi-repo-source-control.spec.ts`（818 行、S0–S11 情境，連同 helpers `folder-multi-repo-layout-scenarios.ts`、`folder-multi-repo-binary-and-keyboard-scenarios.ts`、`folder-repo-row-hover-count-check.ts`）建在已刪的 fork master-detail 面板上：一開頭點 `Refresh all repositories`，用 `[data-repo-row]`、`[data-folder-repo-list]`、`[data-folder-repo-detail]`、`Copy all changes`。要改寫到上游 `FolderWorkspaceSourceControlPanel` 的卡片（每張卡是一份完整 `SourceControlPanel`，ClipCode 接線在 97c5626d87 已接上），拿掉的功能（隱藏 repo S0、repo 清單與記住選取 S1/S2、folder 標題列 Copy all changes S9c）情境刪掉或等功能補回。`config/fork-e2e-timings.json` 一併更新。FORK.md:39、:125 的發版 UI 組描述跟著改。
-- 待做 2（CI 紅）：`tests/e2e/folder-workspace-tab-restart-restore.spec.ts` 驗 folder 編輯分頁重啟後仍以 repo 的 HEAD 做 Changes diff，靠的是已拿掉的 folder 分頁 git owner 路由（`useEditorPanelDiffContentLoader` 改回用 `file.worktreeId`）。決定：補回 git owner 路由（另開 fork PR），或把 spec 改成上游行為。審查者也指出 git-owner 層只拆一半（`folder-file-git-owner.ts` 整檔、`open-file-git-owner.ts` 的 `nextOpenFileGitWorktreeId` 等沒呼叫點，還原的舊 session 分頁仍帶 `gitWorktreeId`），一起決定刪或補。
-- 待做 3（Codex BLOCKING）：上游 folder SC 的 attached worktree（lineage 子 worktree，可在 folder 路徑外）卡片上 Show in Git Graph 會開錯 repo 或不開：`src/renderer/src/components/git-graph-tab/git-graph-tab-model.ts:44` 的 `listGitGraphRepoChoices` 對 folder 只用 `getFolderGitWorktrees`（實體路徑內）。修法方向：把 `getAttachedWorktreesForFolderWorkspace`（`right-sidebar/folder-workspace-attached-worktrees.ts`）的 owners 併進候選清單，GitGraphWorkspaceState 要多帶 lineage 欄位。Codex 的重現探針（vitest 測試，attached 兩例紅）存在本分支 `run453-v1.4.254/attached-folder-review.test.ts.txt`，證據摘要 `run453-v1.4.254/codex-evidence.md`。
-- 做完後：在 `rebase/v1.4.254` 上加 commit、推、等 Fork PR checks 綠，再照 PR 的指令把 develop 推到驗過的 head；下一次排程會發版（第 0 步「develop 已是 vX」那條）。上游先發了 v1.4.255 的話，排程會收鎖（備份 `backup/rebase-v1.4.254-<RUN>`）從新版重來：那時照「2026-11-09 預演」條目加 resolution-history 2026-11-09 那條記的 3 點差異，再把這裡做好的 commit 帶過去。
-- 守它的測試：兩支 spec 本身；待做 3 要新增會紅的 renderer 測試並列進 `config/fork-seam-tests.txt` 的 Git Graph 組。
-- 驗證：未驗證（待人）。
-
+## fork 自身問題（已處理：v1.4.254 rebase 留給人的三件事）× fork rebase/v1.4.254（PR #148，head 3e7fdd5be2）— auto-rebase 2026-11-09，人工接手 2026-11-09
+- 類型：fork 自身問題（已處理；develop 移動後搬進 resolution-history.md）
+- 處理 1（03cf114f1f）：Git Graph 的 repo 候選併入上游 `getAttachedWorktreesForFolderWorkspace` 的 lineage worktree（`getGitGraphFolderAttachedWorktrees`，`listGitGraphRepoChoices` 多一個 `folderAttached` 參數；`git-graph-tab-launcher` 與 `GitGraphTabView` 一起帶 lineage state）。守它：`git-graph-tab-model.folder-attached.fork.test.ts`（seam git-graph tab 組），拿掉修正兩例紅。
+- 處理 2（f2a55e81f6）：`folder-workspace-tab-restart-restore.spec.ts` 改驗上游模型（分頁 `worktreeId`＝repo、開時 `placementWorkspaceId`＝folder）：重啟後擁有者仍是 repo、Changes 對 repo HEAD。**暫時失去**：上游不保存 placement，重啟後分頁回到 repo 自己的 workspace，不留在 folder（fork 舊的 folder 分頁 git owner 路由做得到）；補回時一起決定 git-owner 殘留層（`folder-file-git-owner.ts`、`nextOpenFileGitWorktreeId`、舊 session 的 `gitWorktreeId`）刪或接回。
+- 處理 3（3e7fdd5be2）：`folder-multi-repo-source-control.spec.ts` 改走上游卡片（`section[data-source-control-worktree]`，row 限定在卡片內），保留 S1 S3–S8 S9a S9b S9d S9a-multi S10–S15 S17 S19–S22 S11；刪 S0、S2、S9c、S16、S18 與 `folder-repo-row-hover-count-check.ts`（都屬暫時拿掉的 fork 面板功能）。S22 照上游：卡片的 agent 開在 repo 自己的 workspace，並回答上游新的「Trust <repo> for agents?」對話框。spec 固定 `uiLanguage: 'en'`。FORK.md 發版 UI 組、`fork-e2e-timings.json` 已改。
+- 驗證（2026-11-09，head 3e7fdd5be2）：`pnpm tc` 0 錯、`make -k fork-check-static` 綠、`make fork-check-seams` 98 檔 503 例、兩支 e2e 本機 headless 全過；Fork PR checks 見 PR #148。
 ## c50d4cd3e4d19c7c8dcca2de52966cc22f9548e3（#39996 refactor: organize browser guest lifecycle owners）× fork 4e3e283fe8（test(wire): take upstream main's cross-version fixes for v1.4.254 as the baseline）— auto-rebase 2026-11-09
 - 類型：上游修了同一件事
 - 衝突檔：可能是 tests/e2e/cross-version-wire/{cross-version-pairing-ticket.unit.test.ts,versioned-terminal-wire.ts,release-module-locations.ts}
