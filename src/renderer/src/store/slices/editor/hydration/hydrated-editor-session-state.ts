@@ -101,9 +101,14 @@ export function buildHydratedEditorSessionState(
         id,
         filePath: pf.filePath,
         // Fork: sessions saved by the removed folder git-owner layer can hold a repo-relative folder tab path.
-        relativePath: folderRoots
-          ? restoredFolderTabRelativePath(folderRoots, { ...pf, worktreeId })
-          : pf.relativePath,
+        relativePath: restoredFolderTabRelativePath(folderRoots, {
+          ...pf,
+          worktreeId,
+          gitWorktreeId:
+            'gitWorktreeId' in pf && typeof pf.gitWorktreeId === 'string'
+              ? pf.gitWorktreeId
+              : undefined
+        }),
         worktreeId,
         // Why: re-detect language on hydrate — older sessions stored ids from before extensions like .ipynb were supported.
         language: detectLanguage(pf.relativePath || pf.filePath),
