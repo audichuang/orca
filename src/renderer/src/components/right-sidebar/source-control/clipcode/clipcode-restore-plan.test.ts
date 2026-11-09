@@ -258,6 +258,29 @@ describe('previewClipcodeRestore', () => {
     ])
   })
 
+  it('leaves a non-text target holding the same bytes unchanged and overwrites a non-UTF-8 one', () => {
+    const sha = '039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81'
+    const body = `// File skipped: non-text file, 3 bytes, sha256 ${sha}; base64 follows\nAQID`
+    const plan = planClipcodeRestore({
+      rootPath: '/f',
+      entries: [entry('same.bin', new Set(), body), entry('big5.txt', new Set(), body)]
+    })
+    const states: Record<string, ClipcodeTargetState> = {
+      'same.bin': 'file',
+      'big5.txt': 'nonUtf8File'
+    }
+    const preview = previewClipcodeRestore(
+      plan,
+      (path) => states[path] ?? 'missing',
+      (path) => (path === 'same.bin' ? sha : 'a'.repeat(64))
+    )
+    expect(preview.unchanged).toEqual([{ relativePath: 'same.bin', size: 3 }])
+    expect(preview.overwrite).toEqual([
+      { relativePath: 'big5.txt', bytes: new Uint8Array([1, 2, 3]), sha256: sha }
+    ])
+    expect(preview.skipped).toEqual([])
+  })
+
   it('round-trips a parsed clipboard with the default header', () => {
     const entries = parseClipboard('// file: [NEW] a/x.ts\nhello\n', '// file: $FILE_PATH')
     const plan = planClipcodeRestore({ rootPath: '/f', entries })
