@@ -1,10 +1,16 @@
 /**
- * A folder workspace's edit tab keeps its repo (git owner) across an app restart.
+ * A repo file opened from a folder workspace keeps its repo across an app restart.
  *
- * Why E2E: the git owner rides the saved layout and session, is re-read on the
- * next launch and only then feeds the tab's Changes view. A broken hop leaves
- * the tab open but resolving git against the folder, which is not a repo, so
- * the Changes view shows no diff. Store and unit tests cannot cross the restart.
+ * Upstream #38831 separates where an editor tab sits (`placementWorkspaceId`, the
+ * folder) from what owns its content (`worktreeId`, the repo), replacing the fork's
+ * folder-tab `gitWorktreeId` routing; this spec follows upstream's model. Upstream
+ * does not persist the placement: after a restart the tab reopens under its repo
+ * (fork-canary-notes lists this as a gap until the folder tab routing returns).
+ *
+ * Why E2E: the owner rides the saved session, is re-read on the next launch and
+ * only then feeds the tab's Changes view. A broken hop resolves git against the
+ * folder, which is not a repo, so the Changes view shows no diff. Store and unit
+ * tests cannot cross the restart.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -42,7 +48,7 @@ function apiWorktreeId(page: Page, apiPath: string): Promise<string | null> {
   }, apiPath)
 }
 
-test('a folder edit tab keeps its repo across a restart', async (// oxlint-disable-next-line no-empty-pattern -- Playwright's second fixture arg is testInfo; the first must be an object destructure to opt out of the default fixture set.
+test('a repo file opened from a folder keeps its repo across a restart', async (// oxlint-disable-next-line no-empty-pattern -- Playwright's second fixture arg is testInfo; the first must be an object destructure to opt out of the default fixture set.
 {}, testInfo) => {
   // Why: the test quits and relaunches Electron once.
   test.setTimeout(300_000)
@@ -64,16 +70,19 @@ test('a folder edit tab keeps its repo across a restart', async (// oxlint-disab
     const apiWt = await apiWorktreeId(first.page, api)
     expect(apiWt).toBeTruthy()
     await first.page.evaluate(
-      ({ filePath, worktreeId, gitWorktreeId }) =>
-        window.__store!.getState().openFile({
-          filePath,
-          relativePath: 'server.ts',
-          worktreeId,
-          gitWorktreeId,
-          language: 'typescript',
-          mode: 'edit'
-        }),
-      { filePath, worktreeId: folderKey, gitWorktreeId: apiWt! }
+      ({ filePath, worktreeId, placementWorkspaceId }) => {
+        // Same call upstream's folder Source Control makes for a card's file (use-store-actions).
+        const s = window.__store!.getState()
+        s.openFile(
+          { filePath, relativePath: 'server.ts', worktreeId, language: 'typescript', mode: 'edit' },
+          {
+            placementWorkspaceId,
+            targetGroupId: s.activeGroupIdByWorktree[placementWorkspaceId],
+            preview: false
+          }
+        )
+      },
+      { filePath, worktreeId: apiWt!, placementWorkspaceId: folderKey }
     )
     await expect(first.page.locator('.monaco-editor').first()).toBeVisible({ timeout: 25_000 })
     await session.close(firstApp)
@@ -89,18 +98,20 @@ test('a folder edit tab keeps its repo across a restart', async (// oxlint-disab
         window
           .__store!.getState()
           .openFiles.filter((f) => f.filePath === target && f.mode === 'edit')
-          .map((f) => ({ id: f.id, worktreeId: f.worktreeId, gitWorktreeId: f.gitWorktreeId })),
+          .map((f) => ({ id: f.id, worktreeId: f.worktreeId })),
       filePath
     )
-    expect(restored).toEqual([
-      { id: expect.any(String), worktreeId: folderKey, gitWorktreeId: apiWt }
-    ])
-    await page.evaluate((id) => {
-      const s = window.__store!.getState()
-      s.setActiveFile(id)
-      s.setEditorViewMode(id, 'changes')
-    }, restored[0].id)
-    // User-visible proof: the Changes view diffs against api-server's HEAD, which only the git owner names.
+    expect(restored).toEqual([{ id: expect.any(String), worktreeId: apiWt }])
+    await page.evaluate(
+      ({ id, owner }) => {
+        const s = window.__store!.getState()
+        s.setActiveWorktree(owner)
+        s.setActiveFile(id)
+        s.setEditorViewMode(id, 'changes')
+      },
+      { id: restored[0].id, owner: apiWt! }
+    )
+    // User-visible proof: the Changes view diffs against api-server's HEAD, which only the content owner names.
     const modified = page.locator('.modified-in-monaco-diff-editor .view-lines').first()
     await expect(modified).toContainText('unstaged api', { timeout: 25_000 })
     const original = page.locator('.original-in-monaco-diff-editor .view-lines').first()
