@@ -13954,14 +13954,14 @@
                         "1f409f3dd6": "パスがシンボリックリンクを経由しています",
                         "parentIsFile": "親フォルダーがファイルです",
                         "targetUnreadable": "既存のファイルを確認できませんでした",
-                        "caseConflict": "大文字小文字だけが異なる同じパス",
                         "nonUtf8Target": "既存のファイルが UTF-8 ではないため、上書きしません",
                         "corruptNonText": "破損した非テキストファイル",
                         "nonTextSize": "非テキストファイル · {{value0}}",
                         "corruptBadge": "破損",
                         "unchanged": "変更なし",
                         "overwriteAll_one": "既存の {{count}} 個のファイルを上書き",
-                        "overwriteAll_other": "既存の {{count}} 個のファイルを上書き"
+                        "overwriteAll_other": "既存の {{count}} 個のファイルを上書き",
+                        "targetCollision": "別の項目が同じファイルに書き込みます"
                       }
                     }
                   },

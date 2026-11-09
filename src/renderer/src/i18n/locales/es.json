@@ -14305,7 +14305,6 @@
                         "1f409f3dd6": "la ruta pasa por un enlace simbólico",
                         "parentIsFile": "una carpeta superior es un archivo",
                         "targetUnreadable": "no se pudo comprobar el archivo existente",
-                        "caseConflict": "misma ruta con distinto uso de mayúsculas",
                         "nonUtf8Target": "El archivo existente no es UTF-8; no se sobrescribe",
                         "corruptNonText": "Archivo no de texto dañado",
                         "nonTextSize": "archivo no de texto · {{value0}}",
@@ -14313,7 +14312,8 @@
                         "unchanged": "Sin cambios",
                         "overwriteAll_one": "Sobrescribir {{count}} archivo existente",
                         "overwriteAll_many": "Sobrescribir los {{count}} archivos existentes",
-                        "overwriteAll_other": "Sobrescribir los {{count}} archivos existentes"
+                        "overwriteAll_other": "Sobrescribir los {{count}} archivos existentes",
+                        "targetCollision": "Otra entrada escribe el mismo archivo"
                       }
                     }
                   },

@@ -14548,7 +14548,6 @@
                         "1f409f3dd6": "le chemin passe par un lien symbolique",
                         "parentIsFile": "un dossier parent est un fichier",
                         "targetUnreadable": "impossible de vérifier le fichier existant",
-                        "caseConflict": "même chemin avec une casse différente",
                         "nonUtf8Target": "Le fichier existant n'est pas en UTF-8 ; non écrasé",
                         "corruptNonText": "Fichier non texte corrompu",
                         "nonTextSize": "fichier non texte · {{value0}}",
@@ -14556,7 +14555,8 @@
                         "unchanged": "Inchangé",
                         "overwriteAll_one": "Écraser {{count}} fichier existant",
                         "overwriteAll_many": "Écraser les {{count}} fichiers existants",
-                        "overwriteAll_other": "Écraser les {{count}} fichiers existants"
+                        "overwriteAll_other": "Écraser les {{count}} fichiers existants",
+                        "targetCollision": "Une autre entrée écrit le même fichier"
                       }
                     }
                   },

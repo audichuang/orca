@@ -35,6 +35,8 @@ export type PendingClipcodeRestore = {
   states: ReadonlyMap<string, ClipcodeTargetState>
   /** Hex SHA-256 of existing targets a non-text entry may already match. */
   existingSha256?: ReadonlyMap<string, string>
+  /** OS of the host that owns rootPath; absent or null when it is not known. */
+  targetPlatform?: NodeJS.Platform | null
 }
 
 export type ConfirmedClipcodeRestore = { preview: ClipcodeRestorePreview; overwrite: boolean }
@@ -91,10 +93,10 @@ function skipReasonLabel(reason: ClipcodeRestorePreview['skipped'][number]['reas
         'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.nonUtf8Target',
         'Existing file is not UTF-8; not overwritten'
       )
-    case 'CASE_CONFLICT':
+    case 'TARGET_COLLISION':
       return translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.caseConflict',
-        'same path with different letter case'
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.targetCollision',
+        'Another entry writes the same file'
       )
     case 'CORRUPT_NON_TEXT':
       return translate(
@@ -227,7 +229,12 @@ export function ClipcodeRestorePreviewDialog({
   const [overwrite, setOverwrite] = useState(false)
   const base = adjustPaths ? pending.suggestion?.base : undefined
   const preview = useMemo(() => {
-    const plan = planClipcodeRestore({ rootPath: pending.rootPath, entries: pending.entries, base })
+    const plan = planClipcodeRestore({
+      rootPath: pending.rootPath,
+      entries: pending.entries,
+      base,
+      targetPlatform: pending.targetPlatform
+    })
     return previewClipcodeRestore(
       plan,
       (path) => pending.states.get(path) ?? 'missing',

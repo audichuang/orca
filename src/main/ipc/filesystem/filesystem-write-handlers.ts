@@ -1,5 +1,5 @@
 import { ipcMain, shell } from 'electron'
-import { lstat, rm, writeFile } from 'node:fs/promises'
+import { lstat, rm } from 'node:fs/promises'
 import type { SshMutationExpectation } from '../../../shared/ssh-types'
 import { assertSshMutationExpectation } from '../../ssh/connection/authority/ssh-connection-generation'
 import { SshHostNotServedError } from '../../providers/ssh-host-not-served-error'
@@ -89,7 +89,7 @@ export function registerFilesystemWriteHandlers(context: FilesystemHandlerContex
       const filePath = await resolveLocalWriteRequestPath(args.filePath, args.access, store)
       return replaceLocalFileBytesIfUnchanged(
         filePath,
-        (tempPath) => writeFile(tempPath, args.bytes),
+        (temp) => temp.writeFile(args.bytes),
         args.diskPrecondition ?? {}
       )
     }
