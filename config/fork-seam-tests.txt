@@ -77,6 +77,9 @@ src/renderer/src/components/git-graph-tab/git-graph-tab-model.folder-attached.fo
 src/renderer/src/components/editor/EditorContent.fork.test.tsx
 src/shared/workspace-layout/old-client/old-client-session-tabs-projection.fork.test.ts
 
+# Commit diff change arrows: the fork's file list keys on upstream's commit diff tab id
+src/renderer/src/components/right-sidebar/source-control/sync/commit-file-sequence.store-tab-id.test.ts
+
 # Upstream component slots and folder routing
 src/renderer/src/components/right-sidebar/source-control/folder/folder-path-repo-owners.test.ts
 src/renderer/src/components/right-sidebar/FolderWorkspaceSourceControlPanel.folder-path-repos.fork.test.tsx
