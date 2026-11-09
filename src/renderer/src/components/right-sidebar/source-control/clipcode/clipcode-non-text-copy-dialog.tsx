@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { formatBytes } from '../../../../../../shared/format-bytes'
 import {
   CLIPCODE_PAYLOAD_LIMIT_BYTES,
@@ -87,6 +87,7 @@ function ClipcodeNonTextCopyDialog({
 }: {
   summary: ClipcodeNonTextSummary
 }): React.JSX.Element {
+  const t = useTranslate()
   const includeRef = useRef<HTMLButtonElement>(null)
   const excludeRef = useRef<HTMLButtonElement>(null)
   const overLimit = summary.includePayloadBytes > CLIPCODE_PAYLOAD_LIMIT_BYTES
@@ -103,13 +104,13 @@ function ClipcodeNonTextCopyDialog({
       >
         <DialogHeader>
           <DialogTitle>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.title',
               'Copy non-text files?'
             )}
           </DialogTitle>
           <DialogDescription>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.description',
               'Include copies them as Base64; Exclude leaves them out.'
             )}
@@ -117,7 +118,7 @@ function ClipcodeNonTextCopyDialog({
         </DialogHeader>
         <div className="min-w-0 space-y-1.5 text-xs tabular-nums">
           <div className="font-medium text-foreground">
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.found',
               'Non-text files: {{value0}}, {{value1}} in total',
               { value0: summary.count, value1: formatBytes(summary.totalBytes) }
@@ -125,12 +126,12 @@ function ClipcodeNonTextCopyDialog({
           </div>
           <div className="text-muted-foreground">
             {overLimit
-              ? translate(
+              ? t(
                   'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.overLimit',
                   'Clipboard size with them: more than {{value0}}',
                   { value0: formatBytes(CLIPCODE_PAYLOAD_LIMIT_BYTES) }
                 )
-              : translate(
+              : t(
                   'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.estimate',
                   'Clipboard size with them: about {{value0}}',
                   { value0: formatBytes(summary.includePayloadBytes) }
@@ -138,7 +139,7 @@ function ClipcodeNonTextCopyDialog({
           </div>
           {overLimit && (
             <div className="text-destructive" role="alert">
-              {translate(
+              {t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.overLimitReason',
                 'Too large for the clipboard, so Include is not available.'
               )}
@@ -154,7 +155,7 @@ function ClipcodeNonTextCopyDialog({
           </ul>
           {more > 0 && (
             <div className="text-muted-foreground">
-              {translate(
+              {t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.more',
                 'and {{value0}} more',
                 { value0: more }
@@ -163,7 +164,7 @@ function ClipcodeNonTextCopyDialog({
           )}
           {summary.unreadOverLimitCount > 0 && (
             <div className="text-muted-foreground">
-              {translate(
+              {t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.notRead',
                 'Not read, over {{value0}} (copied as size placeholders): {{value1}}',
                 {
@@ -176,19 +177,19 @@ function ClipcodeNonTextCopyDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => choose('cancel')}>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.cancel',
               'Cancel'
             )}
           </Button>
           <Button ref={excludeRef} variant="outline" onClick={() => choose('exclude')}>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.exclude',
               'Exclude'
             )}
           </Button>
           <Button ref={includeRef} disabled={overLimit} onClick={() => choose('include')}>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.include',
               'Include'
             )}
