@@ -290,6 +290,7 @@ describe('buildClipcodeExplorerCopy', () => {
       "Error invoking remote method 'fs:stat': Error: Access denied: path resolves outside allowed directories. If this blocks a legitimate workflow, please file a GitHub issue."
     )
     const readDir = vi.fn(async () => [
+      { name: 'inside-link.png', isDirectory: false, isSymlink: true },
       { name: 'outside-link', isDirectory: false, isSymlink: true },
       file('denied.txt'),
       file('ok.ts')
@@ -297,6 +298,10 @@ describe('buildClipcodeExplorerCopy', () => {
     const readFile = vi.fn(async (path: string) => {
       if (path === '/ws/src/ok.ts') {
         return { bytes: new TextEncoder().encode('x') }
+      }
+      // The host follows a link whose target is inside the allowed folders.
+      if (path === '/ws/src/inside-link.png') {
+        return { bytes: new Uint8Array([0x89, 0x50, 0x00, 0x01]) }
       }
       throw denied
     })
@@ -310,6 +315,7 @@ describe('buildClipcodeExplorerCopy', () => {
       symlinkedFolderPaths: [],
       unreadablePaths: ['src/denied.txt', 'src/outside-link']
     })
+    expect(result.nonText?.summary.files).toEqual([{ path: 'src/inside-link.png', size: 4 }])
   })
 
   it('names a directly selected symlinked folder instead of following it', async () => {

@@ -2,7 +2,9 @@
 import { cleanup, render } from '@testing-library/react'
 import { toast } from 'sonner'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { copyClipcodeCommitChanges } from './clipcode-copy-action'
+import type { DirEntry } from '../../../../../../shared/file-listing/directory-entry'
+import { copyClipcodeCommitChanges, copyClipcodeExplorerTargets } from './clipcode-copy-action'
+import type { ClipcodeExplorerTarget } from './clipcode-explorer-copy'
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn(), dismiss: vi.fn() }
@@ -10,6 +12,30 @@ vi.mock('sonner', () => ({
 vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string, values?: Record<string, string | number>) =>
     fallback.replace(/\{\{(\w+)\}\}/g, (_match, name: string) => String(values?.[name] ?? ''))
+}))
+
+const fsMocks = vi.hoisted(() => ({
+  readDir: vi.fn(),
+  denied: async () => {
+    throw new Error('EACCES: permission denied')
+  }
+}))
+vi.mock('@/store', () => ({
+  useAppStore: { getState: () => ({ activeWorktreeId: 'wt', settings: {} }) }
+}))
+vi.mock('../../file-explorer/navigation/file-explorer-operation-owner', () => ({
+  getFileExplorerOperationOwner: () => ({ kind: 'local' }),
+  getFileExplorerOperationRoute: () => ({ target: { kind: 'local' } }),
+  getFileExplorerOwnerUnresolvedMessage: () => 'unresolved'
+}))
+vi.mock('@/runtime/files/reads/runtime-directory-read', () => ({
+  readRuntimeDirectory: (_context: unknown, path: string) => fsMocks.readDir(path)
+}))
+vi.mock('@/runtime/files/reads/runtime-paged-file-read', () => ({
+  readRuntimeFileBytes: fsMocks.denied
+}))
+vi.mock('@/runtime/files/reads/runtime-file-read-client', () => ({
+  readRuntimeFileContent: fsMocks.denied
 }))
 
 const writeClipboardText = vi.fn()
@@ -55,5 +81,54 @@ describe('Copy Full Source when everything selected is skipped', () => {
       'Unreadable: 1 · gone.ts',
       'Name not portable: 1 · a:b.png'
     ])
+  })
+})
+
+const file = (name: string): DirEntry => ({ name, isDirectory: false, isSymlink: false })
+
+describe('Copy to Clipboard when every selected file is skipped', () => {
+  it.each<[string, ClipcodeExplorerTarget, string]>([
+    [
+      'a folder holding only a mode-000 file',
+      { path: '/ws/locked', isDirectory: true },
+      'Unreadable: 1 · locked/secret.txt'
+    ],
+    [
+      'a folder holding only q"uote.txt',
+      { path: '/ws/quoted', isDirectory: true },
+      'Name not portable: 1 · quoted/q"uote.txt'
+    ],
+    [
+      'a lone unreadable folder',
+      { path: '/ws/closed', isDirectory: true },
+      'Unreadable: 1 · closed'
+    ],
+    [
+      'a lone symlinked folder',
+      { path: '/ws/linked', isDirectory: true, isSymlink: true },
+      'Symlinked folder: 1 · linked'
+    ]
+  ])('%s: leaves the clipboard alone and names it', async (_name, target, line) => {
+    fsMocks.readDir.mockImplementation(async (path: string) => {
+      const listings: Record<string, DirEntry[]> = {
+        '/ws/locked': [file('secret.txt')],
+        '/ws/quoted': [file('q"uote.txt')]
+      }
+      if (!listings[path]) {
+        throw new Error('EACCES: permission denied')
+      }
+      return listings[path]
+    })
+
+    await copyClipcodeExplorerTargets({ worktreePath: '/ws', targets: [target] })
+
+    expect(writeClipboardText).not.toHaveBeenCalled()
+    const [title, options] = vi.mocked(toast.warning).mock.calls[0]
+    expect(title).toBe('Nothing to copy')
+    const description = options?.description
+    const { container } = render(
+      <>{typeof description === 'function' ? description() : description}</>
+    )
+    expect([...container.querySelectorAll('p')].map((p) => p.textContent)).toEqual([line])
   })
 })
