@@ -1,16 +1,13 @@
 // Fork-only: which repo worktrees a Git Graph editor tab can show, and which one it opens on.
 import type { AppState } from '@/store/types'
-import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
 import type { Repo } from '../../../../shared/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { getIndexedAllWorktrees } from '@/store/slices/worktrees/listing/worktree-catalog-index'
 import { getIndexedRepoMap } from '@/store/repos/repository-catalog-index'
-import {
-  getFilesystemOwnerKey,
-  getFolderGitWorktrees
-} from '../right-sidebar/source-control/folder/folder-git-worktrees'
+import { getFilesystemOwnerKey } from '../right-sidebar/source-control/folder/folder-git-worktrees'
+import { withFolderPathRepoOwners } from '../right-sidebar/source-control/folder/folder-path-repo-owners'
 import { getRememberedFolderRepo } from '../right-sidebar/source-control/folder/folder-repo-selection'
 import { getAttachedWorktreesForFolderWorkspace } from '../right-sidebar/folder-workspace-attached-worktrees'
 import { resolveReviewRepository } from '@/lib/review-owner'
@@ -57,16 +54,12 @@ export function selectGitGraphChoiceInputs(state: GitGraphWorkspaceState): GitGr
   }
 }
 
-/** Upstream's attached worktrees of a folder (lineage children, which may live outside its path or on
- * another host), each with its host-matched repo as Source Control resolves it. */
-function listGitGraphFolderAttachedChoices(
+/** The folder's Source Control owners (attached worktrees, then folder-path repos), each with its host-matched repo as Source Control resolves it. */
+function listGitGraphFolderChoices(
   inputs: GitGraphChoiceInputs,
   workspaceId: string
 ): GitGraphRepoChoice[] {
-  if (parseWorkspaceKey(workspaceId)?.type !== 'folder') {
-    return []
-  }
-  return getAttachedWorktreesForFolderWorkspace({
+  const resolution = getAttachedWorktreesForFolderWorkspace({
     activeWorkspaceKey: workspaceId,
     activeWorktreeId: workspaceId,
     folderWorkspaces: inputs.folders ?? [],
@@ -75,10 +68,13 @@ function listGitGraphFolderAttachedChoices(
     worktreesByRepo: inputs.repoWorktrees,
     lineageParentIdentities: inputs.lineageParentIdentities,
     crossStoreChildrenByFolderId: inputs.crossStoreChildrenByFolderId
-  }).owners.flatMap((owner) => {
-    const repo = resolveReviewRepository(inputs.repos, owner.worktree)
-    return repo && isGitRepoKind(repo) ? [{ repo, worktree: owner.worktree }] : []
   })
+  return withFolderPathRepoOwners(resolution, inputs.repoWorktrees, inputs.repos).flatMap(
+    (owner) => {
+      const repo = resolveReviewRepository(inputs.repos, owner.worktree)
+      return repo && isGitRepoKind(repo) ? [{ repo, worktree: owner.worktree }] : []
+    }
+  )
 }
 
 /** One Git Graph tab per workspace, so reopening focuses it instead of stacking copies. */
@@ -86,34 +82,12 @@ export function buildGitGraphTabId(workspaceId: string): string {
   return `${workspaceId}::git-graph`
 }
 
-/**
- * Repo worktrees the tab may switch to: a folder's member repos plus the worktrees upstream's folder
- * Source Control attaches to it, or every git worktree on the workspace's own filesystem owner (git
- * reads must stay on the host that owns the files).
- */
+/** Every git worktree on the non-folder workspace's own filesystem owner (git reads must stay on the host that owns the files). */
 export function listGitGraphRepoChoices(
   workspaceId: string,
   worktrees: readonly Worktree[],
-  repos: AppState['repos'],
-  folderWorkspaces: readonly FolderWorkspace[],
-  folderAttached: readonly GitGraphRepoChoice[] = []
+  repos: AppState['repos']
 ): GitGraphRepoChoice[] {
-  const scope = parseWorkspaceKey(workspaceId)
-  if (scope?.type === 'folder') {
-    const folder = folderWorkspaces.find((entry) => entry.id === scope.folderWorkspaceId)
-    if (!folder) {
-      return []
-    }
-    const choices = getFolderGitWorktrees(folder, worktrees, repos)
-    const listed = new Set(choices.map((choice) => choice.worktree.id))
-    for (const { repo, worktree } of folderAttached) {
-      if (!listed.has(worktree.id)) {
-        listed.add(worktree.id)
-        choices.push({ repo, worktree, containsFolder: false })
-      }
-    }
-    return choices
-  }
   const repoById = getIndexedRepoMap(repos)
   const own = worktrees.find((worktree) => worktree.id === workspaceId)
   const ownRepo = own ? repoById.get(own.repoId) : undefined
@@ -140,12 +114,13 @@ export function listGitGraphRepoChoicesFromInputs(
   inputs: GitGraphChoiceInputs,
   workspaceId: string
 ): GitGraphRepoChoice[] {
+  if (parseWorkspaceKey(workspaceId)?.type === 'folder') {
+    return listGitGraphFolderChoices(inputs, workspaceId)
+  }
   return listGitGraphRepoChoices(
     workspaceId,
     getIndexedAllWorktrees(inputs.repoWorktrees),
-    inputs.repos,
-    inputs.folders ?? [],
-    listGitGraphFolderAttachedChoices(inputs, workspaceId)
+    inputs.repos
   )
 }
 
