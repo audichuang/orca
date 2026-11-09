@@ -25,14 +25,10 @@ export function createHydrateEditorSession(
       }),
     hydrateEditorSession: (session, options) => {
       set((s) => {
-        // Why: git owners of scoped tabs get the same degraded-repo validity as session keys when their repo is not loaded yet.
-        const gitOwnerIds = Object.values(session.openFilesByWorktree ?? {})
-          .flat()
-          .flatMap((file) => (file.gitWorktreeId ? [file.gitWorktreeId] : []))
-        const validWorktreeIds = buildValidWorktreeIdsForSessionHydration(s, [
-          ...Object.keys(session.openFilesByWorktree ?? {}),
-          ...gitOwnerIds
-        ])
+        const validWorktreeIds = buildValidWorktreeIdsForSessionHydration(
+          s,
+          Object.keys(session.openFilesByWorktree ?? {})
+        )
         validWorktreeIds.add(FLOATING_TERMINAL_WORKTREE_ID)
         for (const workspace of selectFolderWorkspaces(s)) {
           validWorktreeIds.add(folderWorkspaceKey(workspace.id))
@@ -45,7 +41,7 @@ export function createHydrateEditorSession(
           // Why: use the store's activeWorktreeId — hydrateWorkspaceSession may have nulled an invalid ID, and we must respect that.
           s.activeWorktreeId,
           new Set(options?.wslMovedChatWorkspaceKeys),
-          { validGitOwnerIds: validWorktreeIds, ownerRoots: s }
+          s
         )
         return {
           ...state,

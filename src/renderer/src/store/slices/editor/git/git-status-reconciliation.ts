@@ -1,5 +1,4 @@
 import { translate } from '@/i18n/i18n'
-import { getOpenFileGitWorktreeId, type StatusReconcileGitOptions } from './open-file-git-owner'
 import type {
   GitConflictKind,
   GitStatusEntry,
@@ -129,8 +128,7 @@ export function reconcileOpenFilesForStatus(
   openFiles: OpenFile[],
   worktreeId: string,
   nextEntries: GitStatusEntry[],
-  statusIsComplete: boolean,
-  { gitRelativePathOf = (file) => file.relativePath }: StatusReconcileGitOptions = {}
+  statusIsComplete: boolean
 ): OpenFile[] {
   let entriesByPath: Map<string, GitStatusEntry> | undefined
   let stagedEntriesByPath: Map<string, GitStatusEntry> | undefined
@@ -138,7 +136,7 @@ export function reconcileOpenFilesForStatus(
 
   const nextOpenFiles = openFiles.flatMap((originalFile) => {
     let file = originalFile
-    if (getOpenFileGitWorktreeId(file) !== worktreeId) {
+    if (file.worktreeId !== worktreeId) {
       return [file]
     }
 
@@ -159,7 +157,7 @@ export function reconcileOpenFilesForStatus(
           }
         }
       }
-      const entry = stagedEntriesByPath.get(gitRelativePathOf(file))
+      const entry = stagedEntriesByPath.get(file.relativePath)
       if (entry) {
         const oldPath = entry.status === 'renamed' ? entry.oldPath : undefined
         if (file.branchOldPath !== oldPath) {
@@ -175,7 +173,7 @@ export function reconcileOpenFilesForStatus(
 
     // Most refreshes have no open conflicts and need no status-path index.
     entriesByPath ??= new Map(nextEntries.map((entry) => [entry.path, entry]))
-    const entry = entriesByPath.get(gitRelativePathOf(file))
+    const entry = entriesByPath.get(file.relativePath)
 
     // Why: a capped snapshot cannot prove that an omitted conflict was resolved.
     if (!entry && !statusIsComplete) {
