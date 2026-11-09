@@ -15,7 +15,7 @@ const BASE64_VALUES = new Map([...BASE64_ALPHABET].map((char, index) => [char, i
 
 export type NonTextHeader = { size: bigint; sha256: string }
 export type NonTextError = 'base64' | 'size' | 'sha256'
-export type NonTextBody = { ok: true; bytes: Uint8Array } | { ok: false; error: NonTextError }
+export type NonTextBody = { ok: true; bytes: Uint8Array } | { ok: false; reason: NonTextError }
 
 export function sha256Hex(bytes: Uint8Array): string {
   return Array.from(sha256(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('')
@@ -79,13 +79,13 @@ function decodeStrictBase64(text: string): Uint8Array | undefined {
 export function decodeNonTextVerified(base64Text: string, header: NonTextHeader): NonTextBody {
   const bytes = decodeStrictBase64(base64Text.replace(BASE64_WHITESPACE, ''))
   if (!bytes) {
-    return { ok: false, error: 'base64' }
+    return { ok: false, reason: 'base64' }
   }
   if (BigInt(bytes.length) !== header.size) {
-    return { ok: false, error: 'size' }
+    return { ok: false, reason: 'size' }
   }
   if (sha256Hex(bytes) !== header.sha256) {
-    return { ok: false, error: 'sha256' }
+    return { ok: false, reason: 'sha256' }
   }
   return { ok: true, bytes }
 }

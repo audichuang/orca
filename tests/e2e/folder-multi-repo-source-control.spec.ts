@@ -16,7 +16,7 @@ import { waitForSessionReady } from './helpers/store'
 import {
   clearSourceControlSelections,
   clickExplorerPasteRestore,
-  clipboardText,
+  copiedClipboardExcludingNonText,
   setClipboard,
   showSourceControl,
   type RepoKey,
@@ -447,8 +447,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   })
 
   const copiedPayload = async () => {
-    await expect.poll(() => clipboardText(page), { timeout: 20_000 }).not.toBe('sentinel')
-    const actual = await clipboardText(page)
+    const actual = await copiedClipboardExcludingNonText(page)
     const t = page
       .locator('[data-sonner-toast]')
       .filter({ hasText: statsLine(actual) })
