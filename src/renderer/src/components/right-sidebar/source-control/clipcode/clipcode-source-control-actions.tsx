@@ -25,7 +25,10 @@ function useClipcodeFullSourceCopy({
   copySectionFullSource: (entries: readonly GitStatusEntry[], area: GitStatusEntry['area']) => void
 } {
   // Why placement: in a folder card, paths are relative to the folder, like the explorer's copies.
-  const placementWorkspaceId = useSourceControlScope()?.placementWorkspaceId ?? null
+  const scope = useSourceControlScope()
+  const placementWorkspaceId = scope?.placementWorkspaceId ?? null
+  const executionHostId = scope?.executionHostId
+  const connectionId = scope?.connectionId
 
   const copyEntries = useCallback(
     (entries: readonly GitStatusEntry[], forceIndexForStaged: boolean) => {
@@ -33,13 +36,16 @@ function useClipcodeFullSourceCopy({
         return
       }
       void copyClipcodeGitChanges({
-        rootPath: getClipcodeRootPath(placementWorkspaceId, worktreePath),
+        rootPath: getClipcodeRootPath(placementWorkspaceId, worktreePath, {
+          executionHostId,
+          connectionId
+        }),
         requests: [
           { worktree: { id: worktreeId, path: worktreePath }, entries, forceIndexForStaged }
         ]
       })
     },
-    [placementWorkspaceId, worktreeId, worktreePath]
+    [placementWorkspaceId, executionHostId, connectionId, worktreeId, worktreePath]
   )
 
   const copySelectionFullSource = useCallback(() => {
