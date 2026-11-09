@@ -10,13 +10,10 @@ import { useAppStore } from '@/store'
 import { useShortcutKeyDetails } from '@/hooks/useShortcutLabel'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import {
-  listGitGraphRepoChoicesFromState,
-  resolveGitGraphDefaultRepoWorktreeId
+  listGitGraphRepoChoicesFromInputs,
+  resolveGitGraphDefaultRepoWorktreeId,
+  selectGitGraphChoiceInputs
 } from '../../../git-graph-tab/git-graph-tab-model'
-import {
-  selectFolderWorkspaces,
-  selectWorktreesByRepo
-} from '@/store/workspaces/catalog/workspace-record-fields'
 
 function openGitGraphLabel(): string {
   return translate('auto.components.right.sidebar.GitGraphFullView.open', 'Open Git Graph')
@@ -115,38 +112,14 @@ export function GitGraphOpenButton({
 
 /** True when Git Graph can open for the workspace; recomputed only when repos, worktrees or folders change. */
 function useWorkspaceHasGitGraphRepo(workspaceId: string): boolean {
-  const {
-    repos,
-    worktreesByRepo,
-    folderWorkspaces,
-    workspaceLineageByChildKey,
-    worktreeLineageById
-  } = useAppStore(
-    useShallow((s) => ({
-      repos: s.repos,
-      worktreesByRepo: selectWorktreesByRepo(s),
-      folderWorkspaces: selectFolderWorkspaces(s),
-      workspaceLineageByChildKey: s.workspaceLineageByChildKey,
-      worktreeLineageById: s.worktreeLineageById
-    }))
-  )
+  const inputs = useAppStore(useShallow(selectGitGraphChoiceInputs))
   return useMemo(() => {
-    const choices = listGitGraphRepoChoicesFromState(
-      { repos, worktreesByRepo, folderWorkspaces, workspaceLineageByChildKey, worktreeLineageById },
-      workspaceId
-    )
+    const choices = listGitGraphRepoChoicesFromInputs(inputs, workspaceId)
     // Why mirror resolveGitGraphDefaultRepoWorktreeId: a non-git repo workspace still lists same-host siblings.
     return parseWorkspaceKey(workspaceId)?.type === 'folder'
       ? choices.length > 0
       : choices.some((choice) => choice.worktree.id === workspaceId)
-  }, [
-    repos,
-    worktreesByRepo,
-    folderWorkspaces,
-    workspaceLineageByChildKey,
-    worktreeLineageById,
-    workspaceId
-  ])
+  }, [inputs, workspaceId])
 }
 
 /** Tab-strip entry beside the right-sidebar toggle, so the graph opens without the sidebar. */
