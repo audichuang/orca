@@ -2,6 +2,137 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-11-09 auto-rebase v1.4.253 → v1.4.254（PR #148）— 沒移動：兩支 folder e2e 依附已拿掉的 fork folder 功能、Codex 留 1 個 BLOCKING（needs-human）
+
+- RUN=20261108T232658Z（run 453），NEW。OLD_DEVELOP e60ddceb5b，`rebase/v1.4.254` head 57ac1792c5（CI 驗過；只差兩支 folder e2e）。v1.4.254 含 #38831（folder SC）與 #6746（Git Graph），所以照「2026-11-09 預演」條目做。
+- MANUAL：80 個衝突檔（68 個停點，含 rerere 重放）；丟掉 668245b869、90e216fb5f（變空，跟預演一樣）；之後 1 個整檔採上游 commit、6 個預演主題 commit、4 個修正 commit。
+- **做法（可直接複用）**：每個停點用 `rp-resolve.sh`（下附）：檔在 `rp-Sfork.txt` → 取 stage 2（上游）或刪；否則拿預演 replay2 裡同標題 commit（`rp-map.txt`：fork commit → 預演 commit，依標題第 n 次出現對應）的檔，`git merge-file <預演檔> <da8162e3b9 的檔> <v1.4.254 的檔>` 把上游差異平移過來。`rp-loop.sh` 在每個停點都只有這幾種結果時自動 apply + `fork-rebase-continue.sh`，其他停下手解。rebase 完用 `rp-compare.sh <預演 ref>` 逐檔比 HEAD 與「預演平移到 vNEW」：只剩 3 檔差異，都已解釋。cherry-pick 6 個主題 commit 都沒衝突，之後每個 rp-compare 只剩 locale key 順序（JSON driver 與 merge-file 排序不同，key／值相同）與 `git-history-graph-svg.tsx` 一行註解。
+- **v1.4.254 與預演基底 da8162e3b9 的差異（下一次對其他 tag 重做時要先查）**：da8162e3b9 是上游 main，比 v1.4.254 多 96 個 commit（#39937 ssh 搬家、#39846、#39776、#39897、#39874 大搬家、d857e09615 Git Graph commit actions／#39069）。fork 碰過的檔只有 28 個兩邊不同。(1) `src/main/ssh/orcad-migration-path-fields.ts` 在 v1.4.254 是上游檔：`rp-Sfork-deleted.txt` 的那行要改成「保留 + fork 的 gitWorktreeId 5 行」；(2) `git-history-commit-context-menu.tsx` 在 `rp-Sfork-upstream.txt`，但 v1.4.254 的上游版沒有 `children` slot（da81 才有 #39069），要保留 fork 的 slot；(3) 9017e674fb 把 `orcad-migration-path-rewrite.fork.test.ts` 的 import 改成 da81 的新路徑，v1.4.254 要用 `./orcad-migration-path-rewrite`。這 3 點由 919eb16330 修。篩法：`rp-Sfork*.txt` 裡 `git rev-parse da8162e3b9:<檔>` 與 `vNEW:<檔>` 不同的逐一看。
+- **操作上的坑**：(a) 共用 git config 有 `rerere.autoupdate=true`，條目要求關掉；`-c` 只管那一次行程，每次 `--continue`（含 fork-rebase-continue.sh）都要帶 `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=rerere.autoupdate GIT_CONFIG_VALUE_0=false`。有一次忘了帶，`open-history-diff.ts` 被舊解法直接 stage（內容剛好一樣）。(b) 這個 worktree 會被別的 git 行程（多半是 Orca 的 status 輪詢）搶 `index.lock`／`MERGE_RR.lock`：4 個停點的 `git checkout --ours` 失敗、1 個停點（d1bf09924a）沒寫 REBASE_HEAD 與訊息，要手動 `git commit --no-verify -C d1bf09924a` 再 continue；rp-resolve 已加重試，並改從 `rebase-merge/done` 取目前 commit。被搶鎖的停點由 rp-compare 抓回（`git-history-commit-context-menu.tsx` 帶進舊 rerere 內容，之後由整檔採上游 commit 重設）。
+- CI 與上游基準：上游基準只有 `check:path-literal-ratchet` 紅（fork-check-lint 本來就排除）。CI r1（919eb16330，run 42537144043）紅 4 個 job：wire 3 檔（pairing-ticket、terminal-wire 在乾淨 v1.4.254 上同樣紅 → 帶上游 main c50d4cd3e4 的 3 個測試 hunk，4e3e283fe8；tripwire 照檔頭預告轉紅 → 741728f468 改釘 v1.4.254 接受 fork Git Graph open 且保留 repo）、e2e 1/6 是 runner 暫態（`Openbox-Message: Failed to open the display`，下一輪整輪重跑就綠，沒有單獨 rerun）、e2e 3/6 與 6/6 是兩支 folder spec。CI r3（57ac1792c5，run 42541453753）只剩兩支 folder spec 紅。
+- 審查：A NOT ACCEPTABLE（e2e、folder 功能拿掉沒紀錄）、B ACCEPTABLE、C NOT ACCEPTABLE（`ChangesModeView` 丟了 `syncKeptModifiedModelOnMount`）、Codex（thread 01a1bd96-8819-76e3-821c-d0b453a7b417）r1 6 BLOCKING → r2 剩 1；第 2 輪 Claude 修正審查 ACCEPTABLE。確認為真並修：C1 → 57ac1792c5（新 `ChangesModeView.fork.test.tsx`，拿掉 prop → `AssertionError: expected undefined to be true`）；tripwire。用條目反駁、Codex 第 2 輪接受：隱藏 folder repo、Copy all changes／Refresh all、還原的 folder 分頁 git owner。未修留人：兩支 folder e2e、Codex #1（上游 attached worktree 在 folder 路徑外時 Show in Git Graph 開錯 repo，`git-graph-tab-model.ts:44` 的 `listGitGraphRepoChoices` 只看 folder 路徑）。
+- 守它的測試（mutation）：hunk 掃描 97 hunk：guarded 40、crash-only 17（C 逐一對到 guarded 或手動證明）、skipped 27、survived 13（4 個是 C1、4 個屬已拆的 folder git-owner 層、1 個既有缺口、其餘等價或只有 lint／e2e 看得到）。
+- 用到的 `known-resolutions.md` 條目：「2026-11-09 預演」照做（加上面 3 點差異）；「renderer 模組大搬家」「render path 改用 useTranslate」「8f4913fd69 pty-connection-test-environment」由預演的停點解法與 9017e674fb 涵蓋；folder SC（f308486115）與 Git Graph（193dd5726f）條目照預演條目的決定。develop 沒動，條目全留在 known-resolutions。
+- 耗時：rebase 23:26:58 → 開 PR 23:44:52（約 18 分，預演腳本化）；本機閘門 23:44:57 → 推上去 23:51（static、seams 一次綠，但 static 第 0 輪在推之前紅過一次：fields 檔被刪）；CI r1 23:51:07 → 00:20:39（約 30 分，macOS build 最慢）；盲審 23:51 → C 交卷 00:34:51（約 44 分，C 等掃描 28 分才開始）；修正輪 00:20 → 00:40 推（wire 對照、tripwire、C1）；第 2 輪審查 00:37 → 約 00:49；CI r3 00:40:22 → 00:54:51（約 15 分）。比上一條長很多，原因是這版帶進 folder SC 與 Git Graph 兩個大改動，CI 與審查都要走完整一輪以上。
+- canary 效益：預演（canary 延伸出的人工預演）提供了全部 68 個停點的解法與 6 個主題 commit，沒有它這次做不完。沒料到的：預演是對上游 main 做的，v1.4.254 少了 main 的 96 個 commit（3 個檔要改回）；兩支 folder e2e 與 wire 測試預演沒跑（預演只跑了 tc、seams、static、fork 單元測試）；C1 那個跟 folder 無關的 prop 被整檔採上游掃掉。
+- 下一步給人：照 known-resolutions「v1.4.254 rebase 待人」條目。PR #148 與 `rebase/v1.4.254` 留著（needs-human）。
+
+- 腳本（`.rebase-review/` 隨 worktree 刪除，全文附在這裡）：
+
+  `rp-resolve.sh`：
+
+```bash
+#!/usr/bin/env bash
+# Resolve the current rebase stop from the 2026-11-09 rehearsal (replay2 on da8162e3b9), shifted to vNEW.
+#   rp-resolve.sh [--apply]
+# For each unmerged file f at REBASE_HEAD C (rehearsal commit R):
+#   f in rp-Sfork.txt          -> upstream side (stage 2), or git rm when HEAD lacks it
+#   else RV=R:f, merge-file(RV, base=da81:f, other=vNEW:f); clean -> write; conflict -> report
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)"
+RR=.rebase-review
+DA=da8162e3b9
+VN=v1.4.254
+apply=${1:-}
+C=$(awk '$1=="pick"{c=$2} END{print c}' "$(git rev-parse --git-path rebase-merge)/done")
+C=$(git rev-parse "$C")
+R=$(awk -v c="$C" '$1==c{print $2}' "$RR/rp-map.txt")
+echo "stop $(git log -1 --format='%h %s' "$C")  rehearsal=${R:-NONE}"
+tmp=$(mktemp -d)
+rc=0
+git diff --name-only --diff-filter=U | while IFS= read -r f; do
+  if grep -qxF "$f" "$RR/rp/rp-Sfork.txt"; then
+    if git cat-file -e ":2:${f}" 2>/dev/null; then
+      echo "  SFORK-OURS $f"; [ "$apply" = --apply ] && { for i in 1 2 3 4 5; do git checkout --ours -- "$f" && break; sleep 2; done; }
+    else
+      echo "  SFORK-RM   $f"; [ "$apply" = --apply ] && rm -f -- "$f"
+    fi
+    continue
+  fi
+  if [ -z "$R" ]; then echo "  NO-REHEARSAL $f"; continue; fi
+  if ! git cat-file -e "${R}:${f}" 2>/dev/null; then echo "  RV-ABSENT $f"; continue; fi
+  git show "${R}:${f}" > "$tmp/rv"
+  git show "${DA}:${f}" > "$tmp/base" 2>/dev/null || : > "$tmp/base"
+  git show "${VN}:${f}" > "$tmp/other" 2>/dev/null || : > "$tmp/other"
+  da_has=1; git cat-file -e "${DA}:${f}" 2>/dev/null || da_has=0
+  vn_has=1; git cat-file -e "${VN}:${f}" 2>/dev/null || vn_has=0
+  if [ "$da_has" != "$vn_has" ]; then echo "  PATH-DIFF(da=$da_has vn=$vn_has) $f"; continue; fi
+  cp "$tmp/rv" "$tmp/out"
+  if git merge-file -q "$tmp/out" "$tmp/base" "$tmp/other"; then
+    if cmp -s "$tmp/base" "$tmp/other"; then tag=RV-SAME; else tag=RV-SHIFTED; fi
+    echo "  $tag $f"
+    [ "$apply" = --apply ] && cp "$tmp/out" "$f"
+  else
+    echo "  MERGE-CONFLICT $f"
+    [ "$apply" = --apply ] && { mkdir -p "$RR/conflicts"; cp "$tmp/out" "$RR/conflicts/$(echo "$f" | tr / _)"; }
+  fi
+done
+rm -rf "$tmp"
+```
+
+  `rp-loop.sh`：
+
+```bash
+#!/usr/bin/env bash
+# Auto-resolve stops while every unmerged file is SFORK-*/RV-SAME/RV-SHIFTED; stop otherwise.
+cd "$(git rev-parse --show-toplevel)"
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=rerere.autoupdate GIT_CONFIG_VALUE_0=false
+RR=$PWD/.rebase-review
+while :; do
+  out=$(bash "$RR/rp-resolve.sh")
+  echo "$out" >> "$RR/rp-loop.log"
+  if [ -z "$(git diff --name-only --diff-filter=U)" ]; then echo "NO UNMERGED"; echo "$out"; exit 3; fi
+  if echo "$out" | sed 1d | grep -vqE '^  (SFORK-OURS|SFORK-RM|RV-SAME|RV-SHIFTED) '; then echo "MANUAL NEEDED"; echo "$out"; exit 1; fi
+  bash "$RR/rp-resolve.sh" --apply > /dev/null
+  for try in 1 2 3 4; do
+    res=$(bash "$RR/fork-rebase-continue.sh" "$RR" 2>&1); rc=$?
+    if [ $rc -eq 2 ] && echo "$res" | grep -q 'lock'; then echo "lock retry $try"; sleep 3; continue; fi
+    if [ $rc -eq 2 ] && [ -d "$(git rev-parse --git-path rebase-merge)" ] && [ -z "$(git diff --name-only --diff-filter=U)" ]; then echo "retry continue $try: $res" | head -3; sleep 3; continue; fi
+    break
+  done
+  echo "$res" | head -1
+  [ $rc -eq 1 ] && echo "$res" | grep -q '^STOPPED' && continue
+  echo "$res"; exit $rc
+done
+```
+
+  `rp-compare.sh`：
+
+```bash
+#!/usr/bin/env bash
+# rp-compare.sh <rehearsal-ref> : compare HEAD against rehearsal shifted from da8162e3b9 to v1.4.254
+R=$1; DA=da8162e3b9; VN=v1.4.254
+t=$(mktemp -d)
+{ git diff --name-only --no-renames $DA $R; git diff --name-only --no-renames $VN HEAD; } | sort -u | while IFS= read -r f; do
+  h=1; git cat-file -e "HEAD:${f}" 2>/dev/null || h=0
+  r=1; git cat-file -e "${R}:${f}" 2>/dev/null || r=0
+  d=1; git cat-file -e "${DA}:${f}" 2>/dev/null || d=0
+  v=1; git cat-file -e "${VN}:${f}" 2>/dev/null || v=0
+  if [ $r = 0 ]; then
+    # rehearsal lacks it: expected absent unless upstream vNEW has it and da81 lacks it (vNEW-only file)
+    if [ $h = 0 ]; then continue; fi
+    if [ $d = 0 ] && [ $v = 1 ] && git diff --quiet $VN HEAD -- "$f"; then continue; fi
+    echo "EXTRA-IN-HEAD $f"; continue
+  fi
+  git show "${R}:${f}" > $t/rv
+  if [ $d = 1 ]; then git show "${DA}:${f}" > $t/b; else : > $t/b; fi
+  if [ $v = 1 ]; then git show "${VN}:${f}" > $t/o; else : > $t/o; fi
+  if [ $d = 1 ] && [ $v = 0 ]; then
+    # upstream file da81 has but vNEW lacks (moved/added later on main)
+    if [ $h = 0 ]; then continue; fi
+  fi
+  git merge-file -q $t/rv $t/b $t/o; mrc=$?
+  if [ $h = 0 ]; then
+    [ $mrc = 0 ] && [ ! -s $t/rv ] && continue
+    echo "MISSING-IN-HEAD $f (merge rc=$mrc)"; continue
+  fi
+  git show "HEAD:${f}" > $t/h
+  if cmp -s $t/rv $t/h; then continue; fi
+  echo "DIFF(mrc=$mrc) $f"
+done
+rm -rf $t
+```
+
 ## 2026-11-08 人工 PR #146（merge e60ddceb5b）— 決定 folder 外部變更配對
 
 - 使用者選「跟 batch index 路徑一致」：刪掉 `getOpenFilesForExternalFileChange` fallback 路徑的 `getOpenFileGitWorktreeId(file) === target.worktreeId`（現在在 `components/editor/autosave/editor-autosave.ts`），folder 本身回報外部變更時 repo-scoped diff 分頁也會被配對到。

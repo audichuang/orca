@@ -14,6 +14,24 @@
 - 驗證（<YYYY-MM-DD>，上游 <sha>）：<跑了什麼、結果>｜未驗證
 ```
 
+## fork 自身問題（待人判斷：v1.4.254 rebase 留給人的三件事）× fork rebase/v1.4.254（PR #148，head 57ac1792c5）— auto-rebase 2026-11-09
+- 類型：待人判斷
+- 事實：v1.4.254 rebase 照「2026-11-09 預演」做完，本機閘門與 CI 除下面兩支 e2e 外全綠，盲審只剩 Codex 的 1 個 BLOCKING。develop 沒動（PR #148 needs-human，`rebase/v1.4.254` 留著）。
+- 待做 1（CI 紅）：`tests/e2e/folder-multi-repo-source-control.spec.ts`（818 行、S0–S11 情境，連同 helpers `folder-multi-repo-layout-scenarios.ts`、`folder-multi-repo-binary-and-keyboard-scenarios.ts`、`folder-repo-row-hover-count-check.ts`）建在已刪的 fork master-detail 面板上：一開頭點 `Refresh all repositories`，用 `[data-repo-row]`、`[data-folder-repo-list]`、`[data-folder-repo-detail]`、`Copy all changes`。要改寫到上游 `FolderWorkspaceSourceControlPanel` 的卡片（每張卡是一份完整 `SourceControlPanel`，ClipCode 接線在 97c5626d87 已接上），拿掉的功能（隱藏 repo S0、repo 清單與記住選取 S1/S2、folder 標題列 Copy all changes S9c）情境刪掉或等功能補回。`config/fork-e2e-timings.json` 一併更新。FORK.md:39、:125 的發版 UI 組描述跟著改。
+- 待做 2（CI 紅）：`tests/e2e/folder-workspace-tab-restart-restore.spec.ts` 驗 folder 編輯分頁重啟後仍以 repo 的 HEAD 做 Changes diff，靠的是已拿掉的 folder 分頁 git owner 路由（`useEditorPanelDiffContentLoader` 改回用 `file.worktreeId`）。決定：補回 git owner 路由（另開 fork PR），或把 spec 改成上游行為。審查者也指出 git-owner 層只拆一半（`folder-file-git-owner.ts` 整檔、`open-file-git-owner.ts` 的 `nextOpenFileGitWorktreeId` 等沒呼叫點，還原的舊 session 分頁仍帶 `gitWorktreeId`），一起決定刪或補。
+- 待做 3（Codex BLOCKING）：上游 folder SC 的 attached worktree（lineage 子 worktree，可在 folder 路徑外）卡片上 Show in Git Graph 會開錯 repo 或不開：`src/renderer/src/components/git-graph-tab/git-graph-tab-model.ts:44` 的 `listGitGraphRepoChoices` 對 folder 只用 `getFolderGitWorktrees`（實體路徑內）。修法方向：把 `getAttachedWorktreesForFolderWorkspace`（`right-sidebar/folder-workspace-attached-worktrees.ts`）的 owners 併進候選清單，GitGraphWorkspaceState 要多帶 lineage 欄位。Codex 的重現探針（vitest 測試，attached 兩例紅）存在本分支 `run453-v1.4.254/attached-folder-review.test.ts.txt`，證據摘要 `run453-v1.4.254/codex-evidence.md`。
+- 做完後：在 `rebase/v1.4.254` 上加 commit、推、等 Fork PR checks 綠，再照 PR 的指令把 develop 推到驗過的 head；下一次排程會發版（第 0 步「develop 已是 vX」那條）。上游先發了 v1.4.255 的話，排程會收鎖（備份 `backup/rebase-v1.4.254-<RUN>`）從新版重來：那時照「2026-11-09 預演」條目加 resolution-history 2026-11-09 那條記的 3 點差異，再把這裡做好的 commit 帶過去。
+- 守它的測試：兩支 spec 本身；待做 3 要新增會紅的 renderer 測試並列進 `config/fork-seam-tests.txt` 的 Git Graph 組。
+- 驗證：未驗證（待人）。
+
+## c50d4cd3e4d19c7c8dcca2de52966cc22f9548e3（#39996 refactor: organize browser guest lifecycle owners）× fork 4e3e283fe8（test(wire): take upstream main's cross-version fixes for v1.4.254 as the baseline）— auto-rebase 2026-11-09
+- 類型：上游修了同一件事
+- 衝突檔：可能是 tests/e2e/cross-version-wire/{cross-version-pairing-ticket.unit.test.ts,versioned-terminal-wire.ts,release-module-locations.ts}
+- 連帶症狀：無（fork commit 只帶 c50d4cd3e4 在這 3 個檔的 hunk，內容與 main 逐位元組相同）
+- 處理：vNEW 含 c50d4cd3e4 時，丟掉標題為 `test(wire): take upstream main's cross-version fixes for v1.4.254 as the baseline` 的 fork commit（不是完整 cherry-pick，patch-id 不同，git 不會自動略過；套上去多半變空，變空就 `--skip`）。
+- 守它的測試：make fork-check-wire（CI 的 fork cross-version wire compatibility）。
+- 驗證（2026-11-09，上游 v1.4.254）：乾淨 v1.4.254 上 pairing-ticket、terminal-wire 紅（`expected [Function] to throw an error`、`resetRemoteRuntimeTerminalMultiplexersForTests is not a function`）；帶入後本機 3 檔 11 例綠、CI wire job 綠。
+
 ## fork 自身問題（2026-11-09 預演：folder SC 換成上游、fork Git Graph 保留並接管上游的整套做法）× fork 全部（develop v1.4.253 的 502 個 commit）— 預演 2026-11-09，上游 main da8162e3b9
 - 類型：fork 自身問題（實務上 vNEW 含 f308486115（#38831）或 193dd5726f（#6746）才會遇到）。兩條使用者決定（folder SC：以上游為底＋薄接縫；Git Graph：2026-11-09 改成**整個保留 fork 版**）已在預演實作並驗過，auto-rebase 照這條機械地做，**預設「保留 fork 功能」對 folder SC 不適用**。
 - 預演產物（Mac mini 本機分支，跟 run worktree 共用 git dir；本機不在就用 fork 的 backup ref）：replay 版 `rehearsal/replay2-da8162e3b9`（4c2b46c799；backup `backup/rehearsal-replay2-da8162e3b9-20261109`），合併版 `rehearsal/main-da8162e3b9`（27ef3438ee；backup `backup/rehearsal-main-gg-da8162e3b9-20261109`）。清單在筆記分支 `rehearsal2-da8162e3b9/`（`git show <tip>:rehearsal2-da8162e3b9/<檔>`）：`rp-Sfork.txt` 172 個整檔採上游的檔、其中 `rp-Sfork-upstream.txt` 58 個重設成上游、`rp-Sfork-deleted.txt` 114 個 fork 檔要刪；`rp-stops.log` 每個停點怎麼解、`rp-cp.log`。rerere 已錄對 da8162e3b9 的解法。舊的 `rehearsal-da8162e3b9/` 與 `backup/rehearsal-replay-*`、`backup/rehearsal-main-da8162e3b9-*` 是丟掉 Git Graph 的作廢版，不要用。
@@ -24,6 +42,7 @@
   4. 對照：`git diff rehearsal/replay2-da8162e3b9 HEAD --stat` 應該只剩 vNEW 相對 da8162e3b9 的上游差異；fork 檔有差要解釋。
 - Git Graph 並存設計：不改 tab kind，fork 接管上游的 `git-graph`（`<workspace>::git-graph`），EditorContent 先畫 fork 版；上游 `openGitGraph` 開頭一行 seam 改開 fork 的 `openGitGraphTab`；Cmd+J 用 fork 項取代上游同名項；git.history 同時帶 fork `graph` 與上游 `refs`／`historyToken`。
 - 暫時拿掉、之後另開 fork PR 補回（使用者已知、已同意）：fork 的 folder 多 repo 面板（repo 篩選、群組）、隱藏 folder repo、folder repo 的 agent cwd 守門、folder 分頁 git owner 路由（gitWorktreeId 殘留層約 45 個上游檔，沒人設定，待清）、discard autosave hold；Git Graph 跟側欄選中 repo 自動同步、Open in Source Control 捲到卡片、SC 頂端常駐 Git Graph 按鈕（上游換成卡片／header 後無處可接）；依附舊 folder 面板的 lcu 測案。
+- v1.4.254 實跑（2026-11-09，PR #148）：照做可行，68 個停點用 merge-file 把預演解法平移到 vNEW（腳本與 3 點基底差異見 resolution-history 2026-11-09 那條）；預演沒跑的兩支 folder e2e 會紅，見上面「v1.4.254 rebase 留給人的三件事」。整檔採上游時別把跟 folder 無關的 fork hunk 一起掃掉（`ChangesModeView` 的 `syncKeptModifiedModelOnMount` 就是，57ac1792c5 補回）。
 - 審查：盲審拿不到這條與 PR 說明，A 多半會把上一點的 folder 功能移除標 BLOCKING；照第 5 步規則處理，兩輪後仍不過就照常留 verified／needs-human PR 交使用者（使用者已知、會叫人接手發版）。PR 說明第一段寫明兩條使用者決定與這條條目。
 - 守它的測試：`FolderWorkspaceSourceControlPanel.folder-path-repos.fork.test.tsx`（把上游面板換回原版會紅）、seam 組「skipRenderLimit…」與 Git Graph 各組（tabs-hydration-git-graph、open-file-layout-view.fork 等），`make fork-check-seams` 全組；Git Graph e2e 本機沒跑，交 CI。
 - 驗證（2026-11-09，上游 da8162e3b9）：合併版 `pnpm tc` 0 錯、`make fork-check-seams` 96 檔 500 例全過、`make -k fork-check-static FORK_BASE=da8162e3b9` 40 個 lint 步驟全過、fork 單元測試 165 檔 929 例全過；replay2 版樹與合併版只差 package.json version 與 2 個只在 release 分支的上游檔，`pnpm tc` 0 錯、seams 500 例全過。

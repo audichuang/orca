@@ -1,0 +1,23 @@
+import { beforeEach, expect, it } from 'vitest'
+import { useAppStore } from '@/store'
+import { makeFolderWorkspace } from '@/store/folder-workspaces/folder-workspace.test-fixture'
+import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
+import { TEST_REPO } from '@/store/repos/repo.test-fixture'
+import { getAttachedWorktreesForFolderWorkspace } from '../right-sidebar/folder-workspace-attached-worktrees'
+import { withFolderPathRepoOwners } from '../right-sidebar/source-control/folder/folder-path-repo-owners'
+import { worktreeWorkspaceKey } from '../../../../shared/workspace-scope'
+beforeEach(() => useAppStore.setState(useAppStore.getInitialState(), true))
+it.each([false, true])('opens the upstream attached outside repo, with a physical member present: %s', (hasInside) => {
+  const folder = makeFolderWorkspace({id:'attached', folderPath:'/work/folder'})
+  const external = makeWorktree({id:'outside',repoId:'outside',path:'/elsewhere/repo',hostId:'local'})
+  const inside = makeWorktree({id:'inside',repoId:'inside',path:'/work/folder/inside',hostId:'local'})
+  const key = 'folder:attached'
+  const repos = [external, ...(hasInside ? [inside] : [])].map(w => ({...TEST_REPO,id:w.repoId,path:w.path,kind:'git' as const}))
+  const worktreesByRepo = Object.fromEntries([external, ...(hasInside ? [inside] : [])].map(w=>[w.repoId,[w]]))
+  const workspaceLineageByChildKey = {outside:{childWorkspaceKey:worktreeWorkspaceKey(external.id),parentWorkspaceKey:key as 'folder:attached',origin:'cli' as const,capture:{source:'env-workspace' as const, confidence:'inferred' as const},createdAt:1}}
+  const resolution = getAttachedWorktreesForFolderWorkspace({activeWorkspaceKey:key,activeWorktreeId:key,executionHostId:'local',folderWorkspaces:[folder],workspaceLineageByChildKey,worktreeLineageById:{},worktreesByRepo,crossStoreChildrenByFolderId:new Map()})
+  expect(withFolderPathRepoOwners(resolution,worktreesByRepo,repos).map(o=>o.worktreeId)).toContain('outside')
+  useAppStore.setState({repos,worktreesByRepo,folderWorkspaces:[folder],workspaceLineageByChildKey,activeWorktreeId:key,activeWorkspaceKey:key,activeWorkspaceExecutionHostId:'local'})
+  const id = useAppStore.getState().openGitGraphTab(key,{repoWorktreeId:'outside',revealCommit:'a'.repeat(40)})
+  expect(useAppStore.getState().openFiles.find(f=>f.id===id)?.gitGraph?.repoWorktreeId).toBe('outside')
+})
