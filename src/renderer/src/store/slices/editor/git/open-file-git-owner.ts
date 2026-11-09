@@ -1,5 +1,5 @@
 import type { AppState } from '../../../types'
-import type { EditorOpenTargetOptions, OpenFile } from '../types/open-file'
+import type { OpenFile } from '../types/open-file'
 import { getIndexedWorktreesById } from '../../worktrees/listing/worktree-catalog-index'
 import { relativePathInsideRoot } from '../../../../../../shared/cross-platform-path'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
@@ -18,17 +18,6 @@ export function getOpenFileGitWorktreeId(
   file: Pick<OpenFile, 'worktreeId' | 'gitWorktreeId'>
 ): string {
   return file.gitWorktreeId ?? file.worktreeId
-}
-
-/** Git owner a reused tab ends up with: a kept owner is only valid for the repo-relative path it was opened with. */
-export function nextOpenFileGitWorktreeId(
-  existing: Pick<OpenFile, 'relativePath' | 'gitWorktreeId'>,
-  file: Pick<OpenFile, 'relativePath' | 'gitWorktreeId'>
-): string | undefined {
-  return (
-    file.gitWorktreeId ??
-    (file.relativePath === existing.relativePath ? existing.gitWorktreeId : undefined)
-  )
 }
 
 /** Path git and repo-selector reads expect: derived from filePath so it holds whichever root relativePath is relative to. */
@@ -52,22 +41,6 @@ export function getOpenFileGitRelativePath(
   return file.relativePath
 }
 
-/** Root of the git owner worktree holding the file; a folder edit tab's relativePath cannot name it. */
-export function getOpenFileGitRoot(
-  state: Pick<AppState, 'worktreesByRepo'>,
-  file: Pick<OpenFile, 'gitWorktreeId' | 'filePath'>
-): string | null {
-  for (const worktree of getIndexedWorktreesById(
-    selectWorktreesByRepo(state),
-    file.gitWorktreeId ?? ''
-  )) {
-    if (relativePathInsideRoot(worktree.path, file.filePath) !== null) {
-      return worktree.path
-    }
-  }
-  return null
-}
-
 /** Path relative to the tab owner's root; a git-owned tab's relativePath is repo-relative instead. */
 export function resolveTabOwnerRelativePath(
   state: Pick<AppState, 'folderWorkspaces'>,
@@ -85,16 +58,6 @@ export function resolveTabOwnerRelativePath(
       ? getTabOwnerFolderRoot(state, file)
       : worktreePath
   return root ? relativePathInsideRoot(root, file.filePath) : null
-}
-
-/** Root of the workspace owning the tab (its folder, else its worktree), not of its git owner. */
-export function getTabOwnerRoot(
-  state: Pick<AppState, 'folderWorkspaces' | 'worktreesByRepo'>,
-  file: Pick<OpenFile, 'worktreeId' | 'filePath' | 'runtimeEnvironmentId'>
-): string | null {
-  return parseWorkspaceKey(file.worktreeId)?.type === 'folder'
-    ? getTabOwnerFolderRoot(state, file)
-    : getOpenFileGitRoot(state, { gitWorktreeId: file.worktreeId, filePath: file.filePath })
 }
 
 /** filePath relative to the root of its folder tab owner on the tab's host; null when the owner is no folder or the root is ambiguous. */
@@ -134,34 +97,6 @@ function getTabOwnerFolderRoot(
     }
   }
   return candidates.size === 1 ? [...candidates][0] : null
-}
-
-/** Tab-id prefix: repos sharing one folder editor must not collide on identical relative paths. */
-export function getScopedTabIdOwner(worktreeId: string, gitWorktreeId?: string): string {
-  return gitWorktreeId && gitWorktreeId !== worktreeId
-    ? `${worktreeId}@${gitWorktreeId}`
-    : worktreeId
-}
-
-/** Tab id of a commit diff; the cross-file diff navigation looks its file list up by it. */
-export function commitDiffTabId(
-  worktreeId: string,
-  gitWorktreeId: string | undefined,
-  compareVersion: string,
-  relativePath: string
-): string {
-  return `${getScopedTabIdOwner(worktreeId, gitWorktreeId)}::diff::commit::${compareVersion}::${relativePath}`
-}
-
-/** Fork options of an editor open: the repo whose git state backs a folder workspace's tab. */
-export type GitOwnerOpenOptions = Pick<EditorOpenTargetOptions, 'gitWorktreeId'>
-
-/** The tab's git owner, or undefined when it is the tab's own workspace. */
-export function resolveOpenGitWorktreeId(
-  worktreeId: string,
-  options: GitOwnerOpenOptions | undefined
-): string | undefined {
-  return options?.gitWorktreeId !== worktreeId ? options?.gitWorktreeId : undefined
 }
 
 /** How a restored folder tab's git owner is checked. */
