@@ -57,13 +57,21 @@ function ClipcodeCopiedBody({
           )}
         </span>
       </p>
-      {/* Why one line each: categories (non-text, unreadable, symlinked folder, ...) must not run together. */}
+      <ClipcodeNoteLines notes={notes} />
+    </div>
+  )
+}
+
+// Why one line each: categories (non-text, unreadable, symlinked folder, ...) must not run together.
+function ClipcodeNoteLines({ notes }: { notes: readonly string[] }): React.JSX.Element {
+  return (
+    <>
       {notes.map((note) => (
         <p key={note} className="text-xs text-popover-foreground/80">
           {note}
         </p>
       ))}
-    </div>
+    </>
   )
 }
 
@@ -88,6 +96,26 @@ export function notifyClipcodeCopied(
     // Why: an oversized payload stays up until dismissed so the warning cannot be missed.
     duration: limit === null ? 4000 : Infinity
   })
+}
+
+/** Everything selected was skipped: the clipboard is left as it was, and each skip category gets a line. */
+export function notifyClipcodeNothingCopied(notes: readonly string[]): void {
+  if (shownCopiedToastId !== undefined) {
+    toast.dismiss(shownCopiedToastId)
+  }
+  shownCopiedToastId = toast.warning(
+    translate(
+      'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.nothingToCopy',
+      'Nothing to copy'
+    ),
+    {
+      description: (
+        <div className="flex min-w-0 flex-col gap-1">
+          <ClipcodeNoteLines notes={notes} />
+        </div>
+      )
+    }
+  )
 }
 
 const NAMED_PATHS = 3

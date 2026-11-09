@@ -1,5 +1,5 @@
 // Fork-only: content rules every ClipCode copy shares (non-text, size caps).
-import { getRelativePathInsideRoot } from '@/lib/path'
+import { getRelativePathInsideRoot, joinPath } from '@/lib/path'
 import { isWindowsAbsolutePathLike } from '../../../../../../shared/cross-platform-path'
 import { getUtf8ByteLength, measureUtf8ByteLength } from '../../../../../../shared/utf8-byte-limits'
 import type { GitDiffResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
@@ -12,6 +12,7 @@ import {
 } from './clipcode-clipboard-format'
 import type { ClipcodeGitCopyResult } from './clipcode-git-copy'
 import { NON_TEXT_BASE64_LINE_LENGTH } from './clipcode-non-text-body'
+import { isClipcodePortableRelativePath } from './clipcode-portable-path'
 
 /** A working file as read for a copy: raw bytes, its size when over both limits, or an old host's text read. */
 export type ClipcodeFileRead =
@@ -100,6 +101,29 @@ export function clipcodeRootRelativePath(
   return isWindowsAbsolutePathLike(rootPath) ? relative.replaceAll('\\', '/') : relative
 }
 
+/** Payload path of a git path (always `/`-separated, so a `\` in it is a POSIX name character). */
+export function clipcodeGitClipboardPath(
+  worktreePath: string,
+  gitPath: string,
+  rootPath: string
+): string | undefined {
+  const relative = clipcodeRootRelativePath(joinPath(worktreePath, gitPath), rootPath)
+  if (relative === undefined || !gitPath.includes('\\')) {
+    return relative
+  }
+  // Why: under a Windows root the name's own `\` became `/`; put it back so the name is skipped, not moved.
+  const tail = Math.min(relative.length, gitPath.length)
+  return relative.slice(0, relative.length - tail) + gitPath.slice(gitPath.length - tail)
+}
+
+/** True when a payload path restores as itself everywhere (OpenIDEA `is_exportable_relative_path`) and its header parses back. */
+export function isClipcodeCopyablePath(
+  path: string,
+  changeType: ChangeTypeLabel | undefined
+): boolean {
+  return isClipcodePortableRelativePath(path) && clipcodeHeaderRoundTrips(path, changeType)
+}
+
 /** True when this path's header parses back to exactly this path and change label. */
 export function clipcodeHeaderRoundTrips(
   path: string,
@@ -140,7 +164,7 @@ export function classifyClipcodeEntryContent(
   content: ClipcodeFileContent,
   maxBytes: number
 ): ClipcodeEntryVerdict {
-  if (!clipcodeHeaderRoundTrips(path, changeType)) {
+  if (!isClipcodeCopyablePath(path, changeType)) {
     return { kind: 'unsafePath' }
   }
   if ('skippedReason' in content) {

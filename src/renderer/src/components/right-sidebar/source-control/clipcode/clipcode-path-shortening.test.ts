@@ -9,11 +9,11 @@ describe('shortenPathToWidth', () => {
     expect(shortenPathToWidth('img/logo.png', 12, measure)).toBe('img/logo.png')
   })
 
-  it('shrinks a 150-character folder before the file name, then drops its first segment', () => {
+  it('shrinks a 150-character folder to its first segment before any of the file name', () => {
     const path = `d11long/${'abcdefghij'.repeat(14)}/more/name-alpha.png`
     expect(shortenPathToWidth(path, 40, measure)).toBe('d11long/abcdefghijabcdef…/name-alpha.png')
     expect(shortenPathToWidth(path, 24, measure)).toBe('d11long/…/name-alpha.png')
-    expect(shortenPathToWidth(path, 20, measure)).toBe('…/name-alpha.png')
+    expect(shortenPathToWidth(path, 20, measure)).toBe('d11long/…/nam…ha.png')
   })
 
   it('keeps names of 58 to 60 characters that share a prefix apart', () => {
