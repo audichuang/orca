@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { type GitGraphColumns, gitGraphGridTemplate } from './git-graph-full-row'
 import {
   type GitGraphListPrefs,
@@ -44,10 +45,8 @@ function GitGraphListMenu({
   open: boolean
   onOpenChange: (open: boolean) => void
 }): React.JSX.Element {
-  const label = translate(
-    'auto.components.right.sidebar.GitGraphFullView.listOptions',
-    'List options'
-  )
+  const t = useTranslate()
+  const label = t('auto.components.right.sidebar.GitGraphFullView.listOptions', 'List options')
   // Why keep the menu open on a toggle: several columns are usually changed in one go.
   const keepOpen = (event: Event): void => event.preventDefault()
   const columnItem = (key: 'author' | 'date' | 'hash', text: string): React.JSX.Element => (
@@ -59,10 +58,7 @@ function GitGraphListMenu({
       {text}
       {prefs[key] && !prefs.twoLine && !shown[key] && (
         <span className="ml-auto pl-3 text-2xs text-muted-foreground">
-          {translate(
-            'auto.components.right.sidebar.GitGraphFullView.columnTooNarrow',
-            'List too narrow'
-          )}
+          {t('auto.components.right.sidebar.GitGraphFullView.columnTooNarrow', 'List too narrow')}
         </span>
       )}
     </DropdownMenuCheckboxItem>
@@ -83,7 +79,7 @@ function GitGraphListMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>
-          {translate('auto.components.right.sidebar.GitGraphFullView.columns', 'Columns')}
+          {t('auto.components.right.sidebar.GitGraphFullView.columns', 'Columns')}
         </DropdownMenuLabel>
         {columnItem('author', authorLabel())}
         {columnItem('date', dateLabel())}
@@ -94,14 +90,11 @@ function GitGraphListMenu({
           onSelect={keepOpen}
           onCheckedChange={(checked) => setGitGraphListPrefs({ twoLine: checked })}
         >
-          {translate('auto.components.right.sidebar.GitGraphFullView.twoLineRows', 'Two-line rows')}
+          {t('auto.components.right.sidebar.GitGraphFullView.twoLineRows', 'Two-line rows')}
         </DropdownMenuCheckboxItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={resetGitGraphListPrefs}>
-          {translate(
-            'auto.components.right.sidebar.GitGraphFullView.resetList',
-            'Reset to defaults'
-          )}
+          {t('auto.components.right.sidebar.GitGraphFullView.resetList', 'Reset to defaults')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
