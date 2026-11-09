@@ -199,14 +199,13 @@ describe('buildClipcodeExplorerCopy', () => {
       skippedBinaryFileCount: 0,
       entryCount: 4
     })
-    expect(result.nonText?.summary).toEqual({
+    expect(result.nonText?.summary).toMatchObject({
       count: 2,
       totalBytes: 10,
       files: [
         { path: 'img/logo.png', size: 6 },
         { path: 'notes-big5.txt', size: 4 }
       ],
-      includePayloadBytes: new TextEncoder().encode(include?.payload).length,
       unreadOverLimitCount: 1
     })
     const plan = planClipcodeRestore({

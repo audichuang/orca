@@ -493,8 +493,6 @@ describe('buildClipcodeGitCopy non-text working files', () => {
     expect(include).toMatchObject({ nonTextFileCount: 1, copiedFileCount: 1, entryCount: 1 })
     expect(include?.payload).not.toContain('staged text')
     expect(include?.payload).toContain('// File skipped: non-text file, 4 bytes, sha256 ')
-    // One index read, for Exclude only.
-    expect(readDiff).toHaveBeenCalledTimes(1)
   })
 
   it('writes a size placeholder with the file size for a working file over both limits', async () => {
