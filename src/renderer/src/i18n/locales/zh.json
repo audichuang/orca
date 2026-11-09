@@ -14244,7 +14244,6 @@
                         "d469ff3b81": "覆盖",
                         "9cf3526c1f": "删除",
                         "0d87b3b39d": "跳过",
-                        "80224f9095": "覆盖已有文件",
                         "677bf0ade9": "取消",
                         "c0b1b53e49": "还原",
                         "9bd78385ce": "路径不安全",
@@ -14257,11 +14256,13 @@
                         "parentIsFile": "上层路径是文件",
                         "targetUnreadable": "无法检查现有文件",
                         "caseConflict": "路径相同但大小写不同",
-                        "nonUtf8Target": "现有文件不是 UTF-8",
+                        "nonUtf8Target": "现有文件不是 UTF-8，不覆盖",
                         "corruptNonText": "损坏的非文本文件",
                         "nonTextSize": "非文本文件 · {{value0}}",
                         "corruptBadge": "已损坏",
-                        "unchanged": "未变更"
+                        "unchanged": "未变更",
+                        "overwriteAll_one": "覆盖 {{count}} 个已有文件",
+                        "overwriteAll_other": "覆盖全部 {{count}} 个已有文件"
                       }
                     }
                   },

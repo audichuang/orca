@@ -14347,7 +14347,6 @@
                         "d469ff3b81": "Sobrescribir",
                         "9cf3526c1f": "Eliminar",
                         "0d87b3b39d": "Omitir",
-                        "80224f9095": "Sobrescribir archivos existentes",
                         "677bf0ade9": "Cancelar",
                         "c0b1b53e49": "Restaurar",
                         "9bd78385ce": "ruta no segura",
@@ -14360,11 +14359,14 @@
                         "parentIsFile": "una carpeta superior es un archivo",
                         "targetUnreadable": "no se pudo comprobar el archivo existente",
                         "caseConflict": "misma ruta con distinto uso de mayúsculas",
-                        "nonUtf8Target": "el archivo existente no es UTF-8",
+                        "nonUtf8Target": "El archivo existente no es UTF-8; no se sobrescribe",
                         "corruptNonText": "Archivo no de texto dañado",
                         "nonTextSize": "archivo no de texto · {{value0}}",
                         "corruptBadge": "Dañado",
-                        "unchanged": "Sin cambios"
+                        "unchanged": "Sin cambios",
+                        "overwriteAll_one": "Sobrescribir {{count}} archivo existente",
+                        "overwriteAll_many": "Sobrescribir los {{count}} archivos existentes",
+                        "overwriteAll_other": "Sobrescribir los {{count}} archivos existentes"
                       }
                     }
                   },

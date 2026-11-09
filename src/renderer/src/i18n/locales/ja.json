@@ -13999,7 +13999,6 @@
                         "d469ff3b81": "上書き",
                         "9cf3526c1f": "削除",
                         "0d87b3b39d": "スキップ",
-                        "80224f9095": "既存のファイルを上書き",
                         "677bf0ade9": "キャンセル",
                         "c0b1b53e49": "復元",
                         "9bd78385ce": "安全でないパス",
@@ -14012,11 +14011,13 @@
                         "parentIsFile": "親フォルダーがファイルです",
                         "targetUnreadable": "既存のファイルを確認できませんでした",
                         "caseConflict": "大文字小文字だけが異なる同じパス",
-                        "nonUtf8Target": "既存のファイルが UTF-8 ではありません",
+                        "nonUtf8Target": "既存のファイルが UTF-8 ではないため、上書きしません",
                         "corruptNonText": "破損した非テキストファイル",
                         "nonTextSize": "非テキストファイル · {{value0}}",
                         "corruptBadge": "破損",
-                        "unchanged": "変更なし"
+                        "unchanged": "変更なし",
+                        "overwriteAll_one": "既存の {{count}} 個のファイルを上書き",
+                        "overwriteAll_other": "既存の {{count}} 個のファイルをすべて上書き"
                       }
                     }
                   },

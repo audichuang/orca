@@ -14472,7 +14472,6 @@
                         "d469ff3b81": "覆寫",
                         "9cf3526c1f": "刪除",
                         "0d87b3b39d": "略過",
-                        "80224f9095": "覆寫現有檔案",
                         "677bf0ade9": "取消",
                         "c0b1b53e49": "恢復",
                         "9bd78385ce": "路徑不安全",
@@ -14485,11 +14484,13 @@
                         "parentIsFile": "上層資料夾是檔案",
                         "targetUnreadable": "無法檢查現有檔案",
                         "caseConflict": "路徑相同但大小寫不同",
-                        "nonUtf8Target": "現有檔案不是 UTF-8",
+                        "nonUtf8Target": "現有檔案不是 UTF-8，不覆寫",
                         "corruptNonText": "損毀的非文字檔",
                         "nonTextSize": "非文字檔 · {{value0}}",
                         "corruptBadge": "已損毀",
-                        "unchanged": "未變更"
+                        "unchanged": "未變更",
+                        "overwriteAll_one": "覆寫 {{count}} 個現有檔案",
+                        "overwriteAll_other": "覆寫全部 {{count}} 個現有檔案"
                       }
                     }
                   },

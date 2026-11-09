@@ -14644,7 +14644,6 @@
                         "d469ff3b81": "Üzerine yaz",
                         "9cf3526c1f": "Sil",
                         "0d87b3b39d": "Atla",
-                        "80224f9095": "Mevcut dosyaların üzerine yaz",
                         "677bf0ade9": "İptal",
                         "c0b1b53e49": "Geri Yükle",
                         "9bd78385ce": "güvenli olmayan yol",
@@ -14657,11 +14656,13 @@
                         "parentIsFile": "üst klasör bir dosya",
                         "targetUnreadable": "mevcut dosya denetlenemedi",
                         "caseConflict": "aynı yol, farklı harf büyüklüğüyle",
-                        "nonUtf8Target": "mevcut dosya UTF-8 değil",
+                        "nonUtf8Target": "Mevcut dosya UTF-8 değil; üzerine yazılmadı",
                         "corruptNonText": "Bozuk metin dışı dosya",
                         "nonTextSize": "metin dışı dosya · {{value0}}",
                         "corruptBadge": "Bozuk",
-                        "unchanged": "Değişmedi"
+                        "unchanged": "Değişmedi",
+                        "overwriteAll_one": "Mevcut {{count}} dosyanın üzerine yaz",
+                        "overwriteAll_other": "Mevcut {{count}} dosyanın tümünün üzerine yaz"
                       }
                     }
                   },

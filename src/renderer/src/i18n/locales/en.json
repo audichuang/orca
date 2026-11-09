@@ -15463,7 +15463,6 @@
                         "d469ff3b81": "Overwrite",
                         "9cf3526c1f": "Delete",
                         "0d87b3b39d": "Skip",
-                        "80224f9095": "Overwrite existing files",
                         "677bf0ade9": "Cancel",
                         "c0b1b53e49": "Restore",
                         "9bd78385ce": "unsafe path",
@@ -15476,11 +15475,13 @@
                         "parentIsFile": "a parent folder is a file",
                         "targetUnreadable": "could not check the existing file",
                         "caseConflict": "same path with different letter case",
-                        "nonUtf8Target": "existing file is not UTF-8",
+                        "nonUtf8Target": "Existing file is not UTF-8; not overwritten",
                         "corruptNonText": "Corrupt non-text file",
                         "nonTextSize": "non-text file · {{value0}}",
                         "corruptBadge": "Corrupt",
-                        "unchanged": "Unchanged"
+                        "unchanged": "Unchanged",
+                        "overwriteAll_one": "Overwrite {{count}} existing file",
+                        "overwriteAll_other": "Overwrite all {{count}} existing files"
                       }
                     }
                   },
