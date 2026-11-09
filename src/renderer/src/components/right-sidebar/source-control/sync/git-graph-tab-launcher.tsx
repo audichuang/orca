@@ -115,23 +115,38 @@ export function GitGraphOpenButton({
 
 /** True when Git Graph can open for the workspace; recomputed only when repos, worktrees or folders change. */
 function useWorkspaceHasGitGraphRepo(workspaceId: string): boolean {
-  const { repos, worktreesByRepo, folderWorkspaces } = useAppStore(
+  const {
+    repos,
+    worktreesByRepo,
+    folderWorkspaces,
+    workspaceLineageByChildKey,
+    worktreeLineageById
+  } = useAppStore(
     useShallow((s) => ({
       repos: s.repos,
       worktreesByRepo: selectWorktreesByRepo(s),
-      folderWorkspaces: selectFolderWorkspaces(s)
+      folderWorkspaces: selectFolderWorkspaces(s),
+      workspaceLineageByChildKey: s.workspaceLineageByChildKey,
+      worktreeLineageById: s.worktreeLineageById
     }))
   )
   return useMemo(() => {
     const choices = listGitGraphRepoChoicesFromState(
-      { repos, worktreesByRepo, folderWorkspaces },
+      { repos, worktreesByRepo, folderWorkspaces, workspaceLineageByChildKey, worktreeLineageById },
       workspaceId
     )
     // Why mirror resolveGitGraphDefaultRepoWorktreeId: a non-git repo workspace still lists same-host siblings.
     return parseWorkspaceKey(workspaceId)?.type === 'folder'
       ? choices.length > 0
       : choices.some((choice) => choice.worktree.id === workspaceId)
-  }, [repos, worktreesByRepo, folderWorkspaces, workspaceId])
+  }, [
+    repos,
+    worktreesByRepo,
+    folderWorkspaces,
+    workspaceLineageByChildKey,
+    worktreeLineageById,
+    workspaceId
+  ])
 }
 
 /** Tab-strip entry beside the right-sidebar toggle, so the graph opens without the sidebar. */
