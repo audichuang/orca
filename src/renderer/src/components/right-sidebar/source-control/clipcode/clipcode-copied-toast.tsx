@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import {
   CLIPCODE_TOKEN_DANGER_THRESHOLD,
   CLIPCODE_TOKEN_WARN_THRESHOLD,
@@ -21,11 +21,12 @@ function ClipcodeCopiedBody({
   limit: number | null
   notes: readonly string[]
 }): React.JSX.Element {
+  const t = useTranslate()
   return (
     <div className="flex min-w-0 flex-col gap-1 tabular-nums">
       {limit !== null && (
         <p className="font-medium text-popover-foreground">
-          {translate(
+          {t(
             'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.e6cdc3a753',
             'Over {{value0}} tokens.',
             { value0: formatClipcodeCount(limit) }
@@ -35,7 +36,7 @@ function ClipcodeCopiedBody({
       <p className="text-popover-foreground/80">
         {/* Why: tokens decide whether the paste fits a model, so they lead and the rest is detail. */}
         <span className="font-medium text-popover-foreground">
-          {translate(
+          {t(
             'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.tokenCount',
             '~{{value0}} tokens',
             { value0: formatClipcodeCount(stats.tokens) }
@@ -43,7 +44,7 @@ function ClipcodeCopiedBody({
         </span>
         <span className="text-xs">
           {' · '}
-          {translate(
+          {t(
             'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.payloadDetails',
             '{{lines}} lines · {{chars}} chars · {{words}} words',
             {
