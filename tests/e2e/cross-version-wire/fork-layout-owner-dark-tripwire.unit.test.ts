@@ -107,12 +107,13 @@ describe('upstream layout-owner is still dark (R3/R4 unreachable)', () => {
       gitGraph: { repoWorktreeId: 'repo-2::/work/inner' }
     })
     const command = openEditorTab('git-graph', editorTabContent(file))
-    expect(command.command.view.view.gitGraph).toEqual({ repoWorktreeId: 'repo-2::/work/inner' })
+    const expected = {
+      command: { view: { view: { gitGraph: { repoWorktreeId: 'repo-2::/work/inner' } } } }
+    }
+    expect(command).toMatchObject(expected)
     const parsed = layoutApply.safeParse(command)
     expect(parsed.success).toBe(true)
-    expect(parsed.data).toMatchObject({
-      command: { view: { view: { gitGraph: { repoWorktreeId: 'repo-2::/work/inner' } } } }
-    })
+    expect(parsed.data).toMatchObject(expected)
   })
 
   it('the baseline layout.apply drops gitWorktreeId from an editor file record', () => {
