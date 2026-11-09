@@ -14577,22 +14577,24 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}} nicht lesbar)",
                       "e6cdc3a753": "Über {{value0}} Token.",
                       "21758e255e": "Keine Git-Änderungen zum Kopieren gefunden.",
                       "7828c565da": "({{value0}} übersprungen: Größe überschritten)",
                       "65b422bbd1": "{{value0}} Git-Datei(en) kopiert",
                       "7c6daaf4fa": "Vollständigen Quellcode kopieren fehlgeschlagen",
                       "9c3f952874": "{{value0}} Git-Datei(en) konnten nicht gelesen werden.",
-                      "binarySkipped": "({{value0}} übersprungen: binär)",
-                      "onlyBinarySkipped": "Nichts zu kopieren: {{value0}} Binärdatei(en) übersprungen.",
                       "filesCopied": "{{value0}} Datei(en) kopiert",
                       "filesUnreadable": "{{value0}} Datei(en) konnten nicht gelesen werden.",
                       "noFiles": "Keine Dateien zum Kopieren gefunden.",
                       "onlyUnsafeNamesSkipped": "Nichts zu kopieren: {{value0}} Datei(en) übersprungen, da ihre Namen nicht sicher wiederhergestellt werden können.",
-                      "unsafeNamesSkipped": "({{value0}} übersprungen: unsicherer Dateiname)",
                       "tokenCount": "~{{value0}} Token",
-                      "payloadDetails": "{{lines}} Zeilen · {{chars}} Zeichen · {{words}} Wörter"
+                      "payloadDetails": "{{lines}} Zeilen · {{chars}} Zeichen · {{words}} Wörter",
+                      "nonTextCopied": "Als Base64 kopierte Nicht-Text-Dateien: {{value0}}.",
+                      "nonTextSkipped": "({{value0}} übersprungen: Nicht-Text-Datei)",
+                      "onlyNonTextSkipped": "Nichts zu kopieren: {{value0}} Nicht-Text-Datei(en) übersprungen.",
+                      "unreadableLine": "Nicht lesbar: {{value0}}",
+                      "symlinkedFolderLine": "Ordner-Symlink: {{value0}}",
+                      "unsafeNameLine": "Name nicht portierbar: {{value0}}"
                     }
                   },
                   "restore": {
@@ -14623,6 +14625,25 @@
                         "nonTextSize": "Nicht-Text-Datei · {{value0}}",
                         "corruptBadge": "Beschädigt",
                         "unchanged": "Unverändert"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "Nicht-Text-Dateien kopieren?",
+                          "description": "„Einschließen“ kopiert sie als Base64, „Ausschließen“ lässt sie weg.",
+                          "found": "Nicht-Text-Dateien: {{value0}}, insgesamt {{value1}}",
+                          "estimate": "Zwischenablage mit ihnen: etwa {{value0}}",
+                          "overLimit": "Zwischenablage mit ihnen: mehr als {{value0}}",
+                          "overLimitReason": "Zu groß für die Zwischenablage, daher ist „Einschließen“ nicht verfügbar.",
+                          "more": "und {{value0}} weitere",
+                          "notRead": "Nicht gelesen, über {{value0}} (als Größen-Platzhalter kopiert): {{value1}}",
+                          "include": "Einschließen",
+                          "exclude": "Ausschließen",
+                          "cancel": "Abbrechen"
+                        }
                       }
                     }
                   }

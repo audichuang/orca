@@ -14561,22 +14561,24 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}} okunamadı)",
                       "e6cdc3a753": "{{value0}} token'ın üzerinde.",
                       "21758e255e": "Kopyalanacak Git değişikliği bulunamadı.",
                       "7828c565da": "({{value0}} atlandı: boyut aşıldı)",
                       "65b422bbd1": "{{value0}} Git dosyası kopyalandı",
                       "7c6daaf4fa": "Tam kaynak kopyalanamadı",
                       "9c3f952874": "{{value0}} Git dosyası okunamadı.",
-                      "binarySkipped": "({{value0}} atlandı: ikili)",
-                      "onlyBinarySkipped": "Kopyalanacak bir şey yok: {{value0}} ikili dosya atlandı.",
                       "filesCopied": "{{value0}} dosya kopyalandı",
                       "filesUnreadable": "{{value0}} dosya okunamadı.",
                       "noFiles": "Kopyalanacak dosya bulunamadı.",
                       "onlyUnsafeNamesSkipped": "Kopyalanacak bir şey yok: adları güvenli şekilde geri yüklenemediği için {{value0}} dosya atlandı.",
-                      "unsafeNamesSkipped": "({{value0}} atlandı: güvenli olmayan dosya adı)",
                       "tokenCount": "~{{value0}} token",
-                      "payloadDetails": "{{lines}} satır · {{chars}} karakter · {{words}} sözcük"
+                      "payloadDetails": "{{lines}} satır · {{chars}} karakter · {{words}} sözcük",
+                      "nonTextCopied": "Base64 olarak kopyalanan metin dışı dosyalar: {{value0}}.",
+                      "nonTextSkipped": "({{value0}} atlandı: metin dışı dosya)",
+                      "onlyNonTextSkipped": "Kopyalanacak bir şey yok: {{value0}} metin dışı dosya atlandı.",
+                      "unreadableLine": "Okunamayan: {{value0}}",
+                      "symlinkedFolderLine": "Sembolik bağlantılı klasör: {{value0}}",
+                      "unsafeNameLine": "Taşınamayan ad: {{value0}}"
                     }
                   },
                   "restore": {
@@ -14607,6 +14609,25 @@
                         "nonTextSize": "metin dışı dosya · {{value0}}",
                         "corruptBadge": "Bozuk",
                         "unchanged": "Değişmedi"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "Metin dışı dosyalar kopyalansın mı?",
+                          "description": "Dahil et onları Base64 olarak kopyalar; Hariç tut onları dışarıda bırakır.",
+                          "found": "Metin dışı dosyalar: {{value0}}, toplam {{value1}}",
+                          "estimate": "Onlarla pano boyutu: yaklaşık {{value0}}",
+                          "overLimit": "Onlarla pano boyutu: {{value0}} üzeri",
+                          "overLimitReason": "Pano için çok büyük, bu yüzden Dahil et kullanılamıyor.",
+                          "more": "ve {{value0}} tane daha",
+                          "notRead": "Okunmadı, {{value0}} üzeri (boyut yer tutucusu olarak kopyalandı): {{value1}}",
+                          "include": "Dahil et",
+                          "exclude": "Hariç tut",
+                          "cancel": "İptal"
+                        }
                       }
                     }
                   }

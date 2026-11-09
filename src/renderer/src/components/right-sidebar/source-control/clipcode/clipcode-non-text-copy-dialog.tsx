@@ -1,0 +1,198 @@
+// Fork-only: the ClipCode copy question for non-text files (Include / Exclude / Cancel), asked before the clipboard write.
+import { useRef, useSyncExternalStore } from 'react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import { translate } from '@/i18n/i18n'
+import { formatBytes } from '../../../../../../shared/format-bytes'
+import { CLIPCODE_READ_MAX_BYTES, type ClipcodeNonTextSummary } from './clipcode-entry-content'
+
+export type ClipcodeNonTextChoice = 'include' | 'exclude' | 'cancel'
+
+/** Whole-payload ceiling shared with OpenIDEA (`CLIPBOARD_PAYLOAD_MAX`); Include is refused above it. */
+export const CLIPCODE_PAYLOAD_LIMIT_BYTES = 50 * 1024 * 1024
+const MAX_LISTED = 10
+// Why: a few characters of the stem stay beside the extension, so names sharing a long prefix stay apart.
+const NAME_TAIL_CHARS = 8
+
+type Pending = { summary: ClipcodeNonTextSummary; resolve: (choice: ClipcodeNonTextChoice) => void }
+
+let pending: Pending | null = null
+const listeners = new Set<() => void>()
+
+function setPending(next: Pending | null): void {
+  pending = next
+  for (const listener of listeners) {
+    listener()
+  }
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+
+/** Opens the dialog and resolves with the button pressed; closing it (Esc) cancels. Not remembered. */
+export function askClipcodeNonTextChoice(
+  summary: ClipcodeNonTextSummary
+): Promise<ClipcodeNonTextChoice> {
+  // Why: a newer copy replaces an unanswered question; the older copy then writes nothing.
+  pending?.resolve('cancel')
+  return new Promise((resolve) => setPending({ summary, resolve }))
+}
+
+function choose(choice: ClipcodeNonTextChoice): void {
+  const current = pending
+  setPending(null)
+  current?.resolve(choice)
+}
+
+/** Root-hosted so every copy entry point (source control, file explorer) shares one dialog. */
+export function ClipcodeNonTextCopyDialogHost(): React.JSX.Element | null {
+  const current = useSyncExternalStore(subscribe, () => pending)
+  return current ? <ClipcodeNonTextCopyDialog summary={current.summary} /> : null
+}
+
+/** A path whose folder part shrinks first; the file name keeps its end and extension. */
+function MiddleEllipsisPath({ path }: { path: string }): React.JSX.Element {
+  const slash = path.lastIndexOf('/')
+  const folder = slash === -1 ? '' : path.slice(0, slash + 1)
+  const name = path.slice(slash + 1)
+  const dot = name.lastIndexOf('.')
+  const tailStart = Math.max(0, (dot > 0 ? dot : name.length) - NAME_TAIL_CHARS)
+  return (
+    <span className="flex min-w-0 flex-1 font-mono" title={path}>
+      {folder && (
+        // Why the large shrink factor: the folder gives up its width before the name loses any.
+        <span className="min-w-[3ch] truncate" style={{ flexShrink: 10000 }}>
+          {folder}
+        </span>
+      )}
+      <span className="min-w-0 truncate">{name.slice(0, tailStart)}</span>
+      <span className="shrink-0 whitespace-pre">{name.slice(tailStart)}</span>
+    </span>
+  )
+}
+
+function ClipcodeNonTextCopyDialog({
+  summary
+}: {
+  summary: ClipcodeNonTextSummary
+}): React.JSX.Element {
+  const includeRef = useRef<HTMLButtonElement>(null)
+  const excludeRef = useRef<HTMLButtonElement>(null)
+  const overLimit = summary.includePayloadBytes > CLIPCODE_PAYLOAD_LIMIT_BYTES
+  const shown = summary.files.slice(0, MAX_LISTED)
+  const more = summary.count - shown.length
+  return (
+    <Dialog open onOpenChange={(open) => !open && choose('cancel')}>
+      <DialogContent
+        className="max-w-md"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          ;(overLimit ? excludeRef : includeRef).current?.focus()
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>
+            {translate(
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.title',
+              'Copy non-text files?'
+            )}
+          </DialogTitle>
+          <DialogDescription>
+            {translate(
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.description',
+              'Include copies them as Base64; Exclude leaves them out.'
+            )}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="min-w-0 space-y-1.5 text-xs tabular-nums">
+          <div className="font-medium text-foreground">
+            {translate(
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.found',
+              'Non-text files: {{value0}}, {{value1}} in total',
+              { value0: summary.count, value1: formatBytes(summary.totalBytes) }
+            )}
+          </div>
+          <div className="text-muted-foreground">
+            {overLimit
+              ? translate(
+                  'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.overLimit',
+                  'Clipboard size with them: more than {{value0}}',
+                  { value0: formatBytes(CLIPCODE_PAYLOAD_LIMIT_BYTES) }
+                )
+              : translate(
+                  'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.estimate',
+                  'Clipboard size with them: about {{value0}}',
+                  { value0: formatBytes(summary.includePayloadBytes) }
+                )}
+          </div>
+          {overLimit && (
+            <div className="text-destructive" role="alert">
+              {translate(
+                'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.overLimitReason',
+                'Too large for the clipboard, so Include is not available.'
+              )}
+            </div>
+          )}
+          <ul className="space-y-0.5 text-[11px] text-muted-foreground">
+            {shown.map((file) => (
+              <li key={file.path} className="flex min-w-0 items-baseline gap-2">
+                <MiddleEllipsisPath path={file.path} />
+                <span className="shrink-0 whitespace-nowrap">{formatBytes(file.size)}</span>
+              </li>
+            ))}
+          </ul>
+          {more > 0 && (
+            <div className="text-muted-foreground">
+              {translate(
+                'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.more',
+                'and {{value0}} more',
+                { value0: more }
+              )}
+            </div>
+          )}
+          {summary.unreadOverLimitCount > 0 && (
+            <div className="text-muted-foreground">
+              {translate(
+                'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.notRead',
+                'Not read, over {{value0}} (copied as size placeholders): {{value1}}',
+                {
+                  value0: formatBytes(CLIPCODE_READ_MAX_BYTES),
+                  value1: summary.unreadOverLimitCount
+                }
+              )}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => choose('cancel')}>
+            {translate(
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.cancel',
+              'Cancel'
+            )}
+          </Button>
+          <Button ref={excludeRef} variant="outline" onClick={() => choose('exclude')}>
+            {translate(
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.exclude',
+              'Exclude'
+            )}
+          </Button>
+          <Button ref={includeRef} disabled={overLimit} onClick={() => choose('include')}>
+            {translate(
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.include',
+              'Include'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

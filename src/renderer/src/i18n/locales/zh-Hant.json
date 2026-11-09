@@ -14382,22 +14382,24 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "（{{value0}} 個無法讀取）",
                       "e6cdc3a753": "超過 {{value0}} 個 token。",
                       "21758e255e": "找不到可複製的 Git 變更。",
                       "7828c565da": "（{{value0}} 個因超出大小限制而略過）",
                       "65b422bbd1": "已複製 {{value0}} 個 Git 檔案",
                       "7c6daaf4fa": "複製完整原始碼失敗",
                       "9c3f952874": "無法讀取 {{value0}} 個 Git 檔案。",
-                      "binarySkipped": "（{{value0}} 個二進位檔案已略過）",
-                      "onlyBinarySkipped": "沒有可複製的內容：已略過 {{value0}} 個二進位檔案。",
                       "filesCopied": "已複製 {{value0}} 個檔案",
                       "filesUnreadable": "無法讀取 {{value0}} 個檔案。",
                       "noFiles": "找不到可複製的檔案。",
                       "onlyUnsafeNamesSkipped": "沒有可複製的內容：已略過 {{value0}} 個無法安全恢復名稱的檔案。",
-                      "unsafeNamesSkipped": "（{{value0}} 個檔案因名稱不安全而略過）",
                       "tokenCount": "~{{value0}} 個 token",
-                      "payloadDetails": "{{lines}} 行 · {{chars}} 個字元 · {{words}} 個詞"
+                      "payloadDetails": "{{lines}} 行 · {{chars}} 個字元 · {{words}} 個詞",
+                      "nonTextCopied": "以 Base64 複製的非文字檔：{{value0}}。",
+                      "nonTextSkipped": "（{{value0}} 個已略過：非文字檔）",
+                      "onlyNonTextSkipped": "沒有可複製的內容：已略過 {{value0}} 個非文字檔。",
+                      "unreadableLine": "無法讀取：{{value0}}",
+                      "symlinkedFolderLine": "符號連結資料夾：{{value0}}",
+                      "unsafeNameLine": "名稱無法跨平台保留：{{value0}}"
                     }
                   },
                   "restore": {
@@ -14428,6 +14430,25 @@
                         "nonTextSize": "非文字檔 · {{value0}}",
                         "corruptBadge": "已損毀",
                         "unchanged": "未變更"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "複製非文字檔？",
+                          "description": "「包含」會以 Base64 複製它們；「排除」則不複製。",
+                          "found": "非文字檔：{{value0}} 個，共 {{value1}}",
+                          "estimate": "包含它們時的剪貼簿大小：約 {{value0}}",
+                          "overLimit": "包含它們時的剪貼簿大小：超過 {{value0}}",
+                          "overLimitReason": "對剪貼簿來說太大，因此無法使用「包含」。",
+                          "more": "以及另外 {{value0}} 個",
+                          "notRead": "超過 {{value0}} 未讀取（以大小佔位行複製）：{{value1}}",
+                          "include": "包含",
+                          "exclude": "排除",
+                          "cancel": "取消"
+                        }
                       }
                     }
                   }
