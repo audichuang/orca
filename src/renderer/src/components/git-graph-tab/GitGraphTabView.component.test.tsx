@@ -27,6 +27,7 @@ import {
   getRememberedFolderRepo,
   rememberFolderRepo
 } from '../right-sidebar/source-control/folder/folder-repo-selection'
+import { GIT_GRAPH_REFRESH_EVENT } from '@/lib/git-graph-tab'
 import GitGraphTabView from './GitGraphTabView'
 import { showCommitInGitGraphSlot } from './git-graph-source-control-link'
 import { GitHistoryPanel } from '../right-sidebar/source-control/sync/git-history-panel'
@@ -257,6 +258,23 @@ describe('Git Graph tab', () => {
       remoteStatusesByWorktree: { 'wt-api': { hasUpstream: true, ahead: 0, behind: 2 } }
     })
     await waitFor(() => expect(pageReads()).toHaveLength(3))
+  })
+
+  it("refetches on Source Control's Git Graph refresh event for its repo only, like after Fetch", async () => {
+    const id = useAppStore.getState().openGitGraphTab('wt-api')!
+    render(
+      <TooltipProvider>
+        <Host fileId={id} />
+      </TooltipProvider>
+    )
+    await waitFor(() => expect(pageReads()).toHaveLength(1))
+
+    window.dispatchEvent(new CustomEvent(GIT_GRAPH_REFRESH_EVENT, { detail: 'wt-web' }))
+    await nextMacrotask()
+    expect(pageReads()).toHaveLength(1)
+
+    window.dispatchEvent(new CustomEvent(GIT_GRAPH_REFRESH_EVENT, { detail: 'wt-api' }))
+    await waitFor(() => expect(pageReads()).toHaveLength(2))
   })
 
   it('refetches when the repo switches branch without moving HEAD, like git switch -c', async () => {
