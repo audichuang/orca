@@ -16,7 +16,7 @@ export type ClipcodeRestoreSkipReason =
   | 'SYMLINK_IN_PATH'
   | 'OUTSIDE_ROOT'
   | 'CONTENT_SKIPPED'
-  | 'CASE_CONFLICT'
+  | 'TARGET_COLLISION'
   | 'CORRUPT_NON_TEXT'
 
 /** A text write, or a non-text entry's verified bytes (`sha256` is their lowercase hex hash). */
@@ -162,15 +162,32 @@ export function suggestRestoreBase(args: {
   return undefined
 }
 
+/**
+ * The key two spellings share when the target file system stores them as one file: case-insensitive on
+ * darwin and win32, NFC-normalizing on darwin only. An unknown host (null) folds both, so nothing is overwritten silently.
+ */
+function targetFileKey(relativePath: string, targetPlatform: NodeJS.Platform | null): string {
+  if (targetPlatform === 'win32') {
+    return relativePath.toLowerCase()
+  }
+  if (targetPlatform === 'darwin' || targetPlatform === null) {
+    return relativePath.normalize('NFC').toLowerCase()
+  }
+  return relativePath
+}
+
 export function planClipcodeRestore(args: {
   rootPath: string
   entries: readonly ParsedEntry[]
   base?: ClipcodeRestoreBase
+  /** OS of the host that owns rootPath; null when it is not known yet. */
+  targetPlatform?: NodeJS.Platform | null
 }): ClipcodeRestorePlan {
+  const targetPlatform = args.targetPlatform ?? null
   const plan: ClipcodeRestorePlan = { writes: [], deletes: [], skipped: [] }
   // Why: two entries (or a strip-base collision) can resolve to one path; the last one wins so the preview and the write agree.
   const finalPaths = new Map<string, { relativePath: string; entry: ParsedEntry }>()
-  // Why: on case-insensitive disks `A.txt` and `a.txt` are one file, so a second spelling must not silently replace the first.
+  // Why: where `A.txt` and `a.txt` (or NFC/NFD spellings) are one file, a second spelling must not silently replace the first.
   const spellingByFoldedPath = new Map<string, string>()
   const conflictedFoldedPaths = new Set<string>()
   for (const entry of args.entries) {
@@ -197,11 +214,11 @@ export function planClipcodeRestore(args: {
         continue
       }
     }
-    const folded = relativePath.normalize('NFC').toLowerCase()
+    const folded = targetFileKey(relativePath, targetPlatform)
     const spelling = spellingByFoldedPath.get(folded)
     if (spelling !== undefined && spelling !== relativePath) {
       conflictedFoldedPaths.add(folded)
-      plan.skipped.push({ rawPath, reason: 'CASE_CONFLICT' })
+      plan.skipped.push({ rawPath, reason: 'TARGET_COLLISION' })
       continue
     }
     spellingByFoldedPath.set(folded, relativePath)
@@ -209,9 +226,9 @@ export function planClipcodeRestore(args: {
     finalPaths.set(relativePath, { relativePath, entry })
   }
   for (const { relativePath, entry } of finalPaths.values()) {
-    // Why: case-only aliases may be one file or two depending on the host; skip the whole group so a delete never lands without its replacement.
-    if (conflictedFoldedPaths.has(relativePath.normalize('NFC').toLowerCase())) {
-      plan.skipped.push({ rawPath: relativePath, reason: 'CASE_CONFLICT' })
+    // Why: skip the whole group so a delete never lands without its replacement.
+    if (conflictedFoldedPaths.has(targetFileKey(relativePath, targetPlatform))) {
+      plan.skipped.push({ rawPath: relativePath, reason: 'TARGET_COLLISION' })
       continue
     }
     if (entry.changeTypes.has('DELETED')) {
