@@ -66,6 +66,10 @@ export function shortenPathToWidth(
       }
       prefixes[0] = `${firstSegment}${ELLIPSIS}/`
     }
+    // Why: the whole file name outranks the folder's first segment.
+    if (fits(`${ELLIPSIS}/${name}`)) {
+      return `${ELLIPSIS}/${name}`
+    }
     prefixes.push(`${ELLIPSIS}/`)
   }
   const dot = name.lastIndexOf('.')
