@@ -10,9 +10,14 @@ import {
 import os from 'node:os'
 import path from 'node:path'
 import { expect } from './orca-app'
-import type { ExtraScenarioContext } from './folder-multi-repo-scenario-context'
+import {
+  openRepoEditTabInFolder,
+  type ExtraScenarioContext
+} from './folder-multi-repo-scenario-context'
 
 // S21-S22: the external-change banner's Compare / Keep My Edits on a folder tab, and an agent action's cwd.
+// S22 follows upstream: a card's agent action opens in the repo's own workspace (the fork's guard that kept it in
+// the folder went with the fork folder panel).
 export async function runAgentAndBannerScenarios(ctx: ExtraScenarioContext): Promise<void> {
   const { page, R, H, folderKey, scenario, shot, expandOnly, wtIdByPath } = ctx
 
@@ -22,34 +27,14 @@ export async function runAgentAndBannerScenarios(ctx: ExtraScenarioContext): Pro
     const local = 'LOCAL-EDIT-S21'
     const disk = 'DISK-EDIT-S21'
     await page.evaluate(() => window.__store!.getState().updateSettings({ editorAutoSave: false }))
-    const fileId = await page.evaluate(
-      ({ filePath, relativePath, worktreeId, gitWorktreeId }) => {
-        const s = window.__store!.getState()
-        // Why: earlier scenarios leave tabs and a split group; the one editor on screen must be this tab's.
-        s.closeAllFiles()
-        s.openFile({
-          filePath,
-          relativePath,
-          worktreeId,
-          gitWorktreeId: gitWorktreeId ?? undefined,
-          language: 'markdown',
-          mode: 'edit'
-        })
-        const id = window
-          .__store!.getState()
-          .openFiles.find((f) => f.filePath === filePath && f.mode === 'edit')?.id
-        if (!id) {
-          throw new Error('edit tab did not open')
-        }
-        window.__store!.getState().setMarkdownViewMode(id, 'source')
-        return id
-      },
-      {
-        filePath: abs,
-        relativePath: rel,
-        worktreeId: folderKey,
-        gitWorktreeId: await wtIdByPath(R.api)
-      }
+    const fileId = await openRepoEditTabInFolder(
+      page,
+      { filePath: abs, relativePath: rel, ownerWorktreeId: (await wtIdByPath(R.api))!, folderKey },
+      'markdown'
+    )
+    await page.evaluate(
+      (id) => window.__store!.getState().setMarkdownViewMode(id, 'source'),
+      fileId
     )
     const editor = page.locator('.monaco-editor').first()
     await expect(editor).toBeVisible({ timeout: 25_000 })
@@ -92,7 +77,7 @@ export async function runAgentAndBannerScenarios(ctx: ExtraScenarioContext): Pro
     await shot('S21b-kept-and-saved')
   })
 
-  await scenario('S22 Explain changes starts the agent in the repo, not the folder', async (ev) => {
+  await scenario('S22 Explain changes starts the agent in the repo', async (ev) => {
     const stage = mkdtempSync(path.join(os.tmpdir(), 'orca-s22-'))
     const marker = path.join(stage, 'cwd.txt')
     const fakeAgent = path.join(stage, 'fake-agent')
@@ -115,25 +100,58 @@ export async function runAgentAndBannerScenarios(ctx: ExtraScenarioContext): Pro
         }))
       }, fakeAgent)
       await expandOnly(H.api)
-      const commitRow = page.getByTestId('git-history-row').filter({ hasText: 'local-2' })
+      const commitRow = ctx
+        .card(H.api)
+        .getByTestId('git-history-row')
+        .filter({ hasText: 'local-2' })
       if ((await commitRow.count()) === 0) {
-        await page
+        await ctx
+          .card(H.api)
           .getByRole('button', { name: /^Commits/ })
           .first()
           .click()
       }
       await expect(commitRow).toBeVisible({ timeout: 15_000 })
       await commitRow.click({ button: 'right' })
+      const apiWt = (await wtIdByPath(R.api))!
+      const terminalTabs = () =>
+        page.evaluate(
+          (id) =>
+            (window.__store!.getState().unifiedTabsByWorktree[id] ?? []).filter(
+              (t) => t.contentType === 'terminal'
+            ).length,
+          apiWt
+        )
+      const before = await terminalTabs()
       await page.getByRole('menuitem', { name: 'Explain changes' }).click()
+      await expect.poll(terminalTabs, { timeout: 30_000 }).toBe(before + 1)
+      // The agent's terminal starts once its workspace is shown.
+      await page
+        .locator(
+          `[data-worktree-sidebar] [role="option"][data-worktree-id=${JSON.stringify(apiWt)}]`
+        )
+        .click()
+      // Why: the first agent launch in a repo asks once whether Orca should answer agents' folder-trust prompts.
+      const trustDialog = page.getByRole('dialog').filter({ hasText: /^Trust .* for agents\?/ })
+      await expect
+        .poll(async () => existsSync(marker) || (await trustDialog.isVisible()), {
+          timeout: 30_000
+        })
+        .toBe(true)
+      if (!existsSync(marker)) {
+        await trustDialog.getByRole('button', { name: 'Let agents ask' }).click()
+      }
       await expect.poll(() => existsSync(marker), { timeout: 30_000 }).toBe(true)
       const cwd = readFileSync(marker, 'utf8').trim()
       ev.push(`agent cwd: ${cwd}`)
       expect(cwd).toBe(realpathSync(R.api))
-      // The agent tab belongs to the folder workspace the user is in.
-      await expect
-        .poll(() => page.evaluate(() => window.__store!.getState().activeWorktreeId))
-        .toBe(folderKey)
       await shot('S22-agent-tab')
+      // Later scenarios run in the folder workspace.
+      await page
+        .locator(
+          `[data-worktree-sidebar] [role="option"][data-worktree-id=${JSON.stringify(folderKey)}]`
+        )
+        .click()
     } finally {
       await page.evaluate(() =>
         window.__store!.getState().updateSettings({ agentCmdOverrides: {} })
