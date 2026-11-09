@@ -46,14 +46,18 @@ export function folderOwnerRelativePath(state: FolderRootsState, file: FolderTab
   return holding.length === 1 ? relativePathInsideRoot(holding[0], file.filePath) : null
 }
 
-/** A restored folder tab's path in upstream's shape: folder-relative, or absolute outside the folder root. */
+/** A restored folder tab's path in upstream's shape; only tabs saved by the removed git-owner layer (gitWorktreeId marker) hold a repo-relative path to re-anchor. */
 export function restoredFolderTabRelativePath(
-  state: FolderRootsState,
-  file: FolderTab & Pick<OpenFile, 'relativePath'>
+  state: FolderRootsState | undefined,
+  file: FolderTab & Pick<OpenFile, 'relativePath'> & { gitWorktreeId?: string }
 ): string {
-  // Why: an absolute-path tab is upstream's own shape; its placement keys on relativePath === filePath.
-  if (file.relativePath === file.filePath || !folderOwnerRoots(state, file)?.length) {
+  if (
+    !file.gitWorktreeId ||
+    file.gitWorktreeId === file.worktreeId ||
+    parseWorkspaceKey(file.worktreeId)?.type !== 'folder'
+  ) {
     return file.relativePath
   }
-  return folderOwnerRelativePath(state, file) ?? file.filePath
+  // Why: the catalog of a runtime host may not be loaded yet; the absolute path is upstream's shape for a file outside the folder root.
+  return (state && folderOwnerRelativePath(state, file)) ?? file.filePath
 }
