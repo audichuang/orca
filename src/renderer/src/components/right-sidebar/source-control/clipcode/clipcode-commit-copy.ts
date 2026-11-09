@@ -157,8 +157,8 @@ export async function buildClipcodeCommitCopy(args: {
         seen.add(oldPath)
       }
       const changeType = changeTypeFor(entry)
-      // Why before reading: a non-portable name is named, never read or written into a header.
-      if (isClipcodeCopyablePath(clipboardPath, changeType)) {
+      // Why before reading: a non-portable name (a git `\` too) is named, never read or written into a header.
+      if (!entry.path.includes('\\') && isClipcodeCopyablePath(clipboardPath, changeType)) {
         planned.push({ clipboardPath, changeType, commit, entry })
       } else {
         tally.add(clipboardPath, { kind: 'unsafePath' })
