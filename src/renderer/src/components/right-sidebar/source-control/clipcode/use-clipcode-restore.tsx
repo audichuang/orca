@@ -41,9 +41,10 @@ import {
   type ClipcodeTargetState
 } from './clipcode-restore-plan'
 
-// Why: the row shows user text, never a raw OS or IPC message (spec "Pasting").
+// Why: the row shows user text, never a raw OS error (spec "Pasting"); Orca's own messages pass through like other explorer writes.
 function restoreRowErrorText(error: unknown): string {
-  const message = readIpcErrorMessage(error) ?? String(error)
+  const ipcMessage = readIpcErrorMessage(error)
+  const message = ipcMessage ?? String(error)
   // Why: an older remote host cannot take bytes; tell the user what to update.
   if (message.includes(FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE)) {
     return translate(
@@ -68,6 +69,10 @@ function restoreRowErrorText(error: unknown): string {
       'auto.components.right.sidebar.source.control.clipcode.use.clipcode.restore.targetIsFolder',
       'The target is a folder'
     )
+  }
+  // Node errno text (e.g. `ENOSPC: no space left on device, open '…'`) stays hidden.
+  if (ipcMessage && !/\bE[A-Z]{2,}:/.test(ipcMessage)) {
+    return ipcMessage
   }
   return translate(
     'auto.components.right.sidebar.source.control.clipcode.use.clipcode.restore.writeFailed',
