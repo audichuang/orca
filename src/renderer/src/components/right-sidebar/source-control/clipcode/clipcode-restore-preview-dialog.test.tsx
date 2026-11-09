@@ -110,4 +110,38 @@ describe('ClipcodeRestorePreviewDialog', () => {
     expect(screen.getByText('outside the folder')).toBeInTheDocument()
     expect(screen.getByText('/etc/abs.txt')).toHaveClass('break-all')
   })
+
+  it('shows non-text rows by size, identical targets as Unchanged and corrupt ones with a badge', () => {
+    const sha = '039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81'
+    const body = `// File skipped: non-text file, 3 bytes, sha256 ${sha}; base64 follows\nAQID`
+    const onConfirm = vi.fn()
+    render(
+      <ClipcodeRestorePreviewDialog
+        pending={{
+          rootPath: '/f',
+          entries: [
+            { path: 'new.bin', content: body, changeTypes: new Set() },
+            { path: 'same.bin', content: body, changeTypes: new Set() },
+            { path: 'bad.bin', content: `${body.slice(0, -1)}`, changeTypes: new Set() }
+          ],
+          suggestion: undefined,
+          states: new Map([['same.bin', 'nonUtf8File']]),
+          existingSha256: new Map([['same.bin', sha]])
+        }}
+        onCancel={vi.fn()}
+        onConfirm={onConfirm}
+      />
+    )
+    expect(screen.getByText('Unchanged (1)')).toBeInTheDocument()
+    expect(screen.getAllByText('non-text file · 3 B')).toHaveLength(2)
+    expect(screen.getByText('Corrupt').closest('li')).toHaveAttribute(
+      'title',
+      'Corrupt non-text file'
+    )
+    expect(screen.queryByLabelText('Overwrite existing files')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+    expect(
+      onConfirm.mock.calls[0][0].preview.create.map((w: { relativePath: string }) => w.relativePath)
+    ).toEqual(['new.bin'])
+  })
 })

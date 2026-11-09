@@ -14655,7 +14655,11 @@
                         "parentIsFile": "üst klasör bir dosya",
                         "targetUnreadable": "mevcut dosya denetlenemedi",
                         "caseConflict": "aynı yol, farklı harf büyüklüğüyle",
-                        "nonUtf8Target": "mevcut dosya UTF-8 değil"
+                        "nonUtf8Target": "mevcut dosya UTF-8 değil",
+                        "corruptNonText": "Bozuk metin dışı dosya",
+                        "nonTextSize": "metin dışı dosya · {{value0}}",
+                        "corruptBadge": "Bozuk",
+                        "unchanged": "Değişmedi"
                       }
                     }
                   }
@@ -14668,7 +14672,12 @@
                       "af5c90f593": "Yapıştır ve Geri Yükle başarısız oldu",
                       "ae1ec38ef1": "{{value0}} oluşturuldu, {{value1}} üzerine yazıldı, {{value2}} silindi, {{value3}} atlandı.",
                       "19a6f378aa": "...ve {{value0}} tane daha",
-                      "c9af35dc2d": "{{value0}} başarısız oldu."
+                      "c9af35dc2d": "{{value0}} başarısız oldu.",
+                      "folderNotWritable": "Klasöre yazılamıyor",
+                      "parentIsFile": "Üst klasörün yerinde bir dosya var",
+                      "targetIsFolder": "Hedef bir klasör",
+                      "writeFailed": "Dosya yazılamadı",
+                      "unchanged": "Değişmeyen: {{value0}}."
                     }
                   }
                 }

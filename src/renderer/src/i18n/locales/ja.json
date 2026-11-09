@@ -14010,7 +14010,11 @@
                         "parentIsFile": "親フォルダーがファイルです",
                         "targetUnreadable": "既存のファイルを確認できませんでした",
                         "caseConflict": "大文字小文字だけが異なる同じパス",
-                        "nonUtf8Target": "既存のファイルが UTF-8 ではありません"
+                        "nonUtf8Target": "既存のファイルが UTF-8 ではありません",
+                        "corruptNonText": "破損した非テキストファイル",
+                        "nonTextSize": "非テキストファイル · {{value0}}",
+                        "corruptBadge": "破損",
+                        "unchanged": "変更なし"
                       }
                     }
                   }
@@ -14023,7 +14027,12 @@
                       "af5c90f593": "貼り付けと復元に失敗しました",
                       "ae1ec38ef1": "作成 {{value0}}、上書き {{value1}}、削除 {{value2}}、スキップ {{value3}}。",
                       "19a6f378aa": "…ほか {{value0}} 件",
-                      "c9af35dc2d": "失敗 {{value0}} 件。"
+                      "c9af35dc2d": "失敗 {{value0}} 件。",
+                      "folderNotWritable": "フォルダーに書き込めません",
+                      "parentIsFile": "親フォルダーの位置にファイルがあります",
+                      "targetIsFolder": "対象はフォルダーです",
+                      "writeFailed": "ファイルを書き込めませんでした",
+                      "unchanged": "変更なし：{{value0}}。"
                     }
                   }
                 }

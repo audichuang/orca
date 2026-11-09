@@ -14255,7 +14255,11 @@
                         "parentIsFile": "上层路径是文件",
                         "targetUnreadable": "无法检查现有文件",
                         "caseConflict": "路径相同但大小写不同",
-                        "nonUtf8Target": "现有文件不是 UTF-8"
+                        "nonUtf8Target": "现有文件不是 UTF-8",
+                        "corruptNonText": "损坏的非文本文件",
+                        "nonTextSize": "非文本文件 · {{value0}}",
+                        "corruptBadge": "已损坏",
+                        "unchanged": "未变更"
                       }
                     }
                   }
@@ -14268,7 +14272,12 @@
                       "af5c90f593": "粘贴并还原失败",
                       "ae1ec38ef1": "已创建 {{value0}}，已覆盖 {{value1}}，已删除 {{value2}}，已跳过 {{value3}}。",
                       "19a6f378aa": "…另外还有 {{value0}} 项",
-                      "c9af35dc2d": "失败 {{value0}} 项。"
+                      "c9af35dc2d": "失败 {{value0}} 项。",
+                      "folderNotWritable": "文件夹不可写入",
+                      "parentIsFile": "上层文件夹的位置是一个文件",
+                      "targetIsFolder": "目标是文件夹",
+                      "writeFailed": "无法写入文件",
+                      "unchanged": "未变更：{{value0}}。"
                     }
                   }
                 }

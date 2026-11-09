@@ -10891,7 +10891,11 @@
                         "parentIsFile": "uma pasta pai é um arquivo",
                         "targetUnreadable": "não foi possível verificar o arquivo existente",
                         "caseConflict": "mesmo caminho com maiúsculas e minúsculas diferentes",
-                        "nonUtf8Target": "o arquivo existente não é UTF-8"
+                        "nonUtf8Target": "o arquivo existente não é UTF-8",
+                        "corruptNonText": "Arquivo não textual corrompido",
+                        "nonTextSize": "arquivo não textual · {{value0}}",
+                        "corruptBadge": "Corrompido",
+                        "unchanged": "Inalterado"
                       }
                     }
                   }
@@ -10904,7 +10908,12 @@
                       "af5c90f593": "Falha ao colar e restaurar",
                       "ae1ec38ef1": "Criados {{value0}}, sobrescritos {{value1}}, excluídos {{value2}}, ignorados {{value3}}.",
                       "19a6f378aa": "...e mais {{value0}}",
-                      "c9af35dc2d": "Falharam {{value0}}."
+                      "c9af35dc2d": "Falharam {{value0}}.",
+                      "folderNotWritable": "A pasta não permite gravação",
+                      "parentIsFile": "Há um arquivo no lugar da pasta pai",
+                      "targetIsFolder": "O destino é uma pasta",
+                      "writeFailed": "Não foi possível gravar o arquivo",
+                      "unchanged": "Inalterados: {{value0}}."
                     }
                   }
                 }

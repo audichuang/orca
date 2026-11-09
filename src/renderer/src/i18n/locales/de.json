@@ -14678,7 +14678,11 @@
                         "parentIsFile": "ein übergeordneter Ordner ist eine Datei",
                         "targetUnreadable": "vorhandene Datei konnte nicht geprüft werden",
                         "caseConflict": "gleicher Pfad mit abweichender Groß-/Kleinschreibung",
-                        "nonUtf8Target": "vorhandene Datei ist nicht UTF-8"
+                        "nonUtf8Target": "vorhandene Datei ist nicht UTF-8",
+                        "corruptNonText": "Beschädigte Nicht-Text-Datei",
+                        "nonTextSize": "Nicht-Text-Datei · {{value0}}",
+                        "corruptBadge": "Beschädigt",
+                        "unchanged": "Unverändert"
                       }
                     }
                   }
@@ -14691,7 +14695,12 @@
                       "af5c90f593": "Einfügen & Wiederherstellen fehlgeschlagen",
                       "ae1ec38ef1": "{{value0}} erstellt, {{value1}} überschrieben, {{value2}} gelöscht, {{value3}} übersprungen.",
                       "19a6f378aa": "...und {{value0}} weitere",
-                      "c9af35dc2d": "{{value0}} fehlgeschlagen."
+                      "c9af35dc2d": "{{value0}} fehlgeschlagen.",
+                      "folderNotWritable": "Ordner ist nicht beschreibbar",
+                      "parentIsFile": "Eine Datei steht dem übergeordneten Ordner im Weg",
+                      "targetIsFolder": "Das Ziel ist ein Ordner",
+                      "writeFailed": "Die Datei konnte nicht geschrieben werden",
+                      "unchanged": "Unverändert: {{value0}}."
                     }
                   }
                 }

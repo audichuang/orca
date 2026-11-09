@@ -14483,7 +14483,11 @@
                         "parentIsFile": "上層資料夾是檔案",
                         "targetUnreadable": "無法檢查現有檔案",
                         "caseConflict": "路徑相同但大小寫不同",
-                        "nonUtf8Target": "現有檔案不是 UTF-8"
+                        "nonUtf8Target": "現有檔案不是 UTF-8",
+                        "corruptNonText": "損毀的非文字檔",
+                        "nonTextSize": "非文字檔 · {{value0}}",
+                        "corruptBadge": "已損毀",
+                        "unchanged": "未變更"
                       }
                     }
                   }
@@ -14496,7 +14500,12 @@
                       "af5c90f593": "貼上並恢復失敗",
                       "ae1ec38ef1": "已建立 {{value0}}，已覆寫 {{value1}}，已刪除 {{value2}}，已略過 {{value3}}。",
                       "19a6f378aa": "...另外還有 {{value0}} 項",
-                      "c9af35dc2d": "失敗 {{value0}} 項。"
+                      "c9af35dc2d": "失敗 {{value0}} 項。",
+                      "folderNotWritable": "資料夾無法寫入",
+                      "parentIsFile": "上層資料夾的位置是一個檔案",
+                      "targetIsFolder": "目標是資料夾",
+                      "writeFailed": "無法寫入檔案",
+                      "unchanged": "未變更：{{value0}}。"
                     }
                   }
                 }

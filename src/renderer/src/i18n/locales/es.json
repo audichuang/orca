@@ -14358,7 +14358,11 @@
                         "parentIsFile": "una carpeta superior es un archivo",
                         "targetUnreadable": "no se pudo comprobar el archivo existente",
                         "caseConflict": "misma ruta con distinto uso de mayúsculas",
-                        "nonUtf8Target": "el archivo existente no es UTF-8"
+                        "nonUtf8Target": "el archivo existente no es UTF-8",
+                        "corruptNonText": "Archivo no de texto dañado",
+                        "nonTextSize": "archivo no de texto · {{value0}}",
+                        "corruptBadge": "Dañado",
+                        "unchanged": "Sin cambios"
                       }
                     }
                   }
@@ -14371,7 +14375,12 @@
                       "af5c90f593": "No se pudo pegar y restaurar",
                       "ae1ec38ef1": "Creados {{value0}}, sobrescritos {{value1}}, eliminados {{value2}}, omitidos {{value3}}.",
                       "19a6f378aa": "…y {{value0}} más",
-                      "c9af35dc2d": "Fallidos {{value0}}."
+                      "c9af35dc2d": "Fallidos {{value0}}.",
+                      "folderNotWritable": "No se puede escribir en la carpeta",
+                      "parentIsFile": "Hay un archivo en lugar de su carpeta principal",
+                      "targetIsFolder": "El destino es una carpeta",
+                      "writeFailed": "No se pudo escribir el archivo",
+                      "unchanged": "Sin cambios: {{value0}}."
                     }
                   }
                 }
