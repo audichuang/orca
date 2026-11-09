@@ -10,8 +10,12 @@ describe('getClipcodeRootPath in a folder workspace', () => {
     } as never)
   })
 
-  it('roots at the folder when the worktree contains the folder', () => {
-    expect(getClipcodeRootPath('folder:f1', '/work')).toBe('/work/folder')
+  it('roots at the folder for a worktree inside it', () => {
+    expect(getClipcodeRootPath('folder:f1', '/work/folder/repo')).toBe('/work/folder')
+  })
+
+  it('roots at the worktree when it contains the folder so sibling files stay inside the root', () => {
+    expect(getClipcodeRootPath('folder:f1', '/work')).toBe('/work')
   })
 
   it('roots at the worktree when a lineage-attached repo lies outside the folder', () => {
