@@ -1,4 +1,4 @@
-import { basename, getRelativePathInsideRoot, joinPath } from '@/lib/path'
+import { basename, joinPath } from '@/lib/path'
 import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
 import type {
   GitBranchChangeEntry,
@@ -14,6 +14,7 @@ import {
 } from './clipcode-clipboard-format'
 import {
   classifyClipcodeEntryContent,
+  clipcodeRootRelativePath,
   isUnreadableModifiedSide,
   type ClipcodeReadContent
 } from './clipcode-entry-content'
@@ -137,7 +138,7 @@ export async function buildClipcodeCommitCopy(args: {
   const { rootPath, context, readers } = args
   const maxBytes = CLIPCODE_DEFAULTS.maxFileSizeKB * 1024
   const toClipboardPath = (path: string): string | undefined =>
-    getRelativePathInsideRoot(joinPath(context.worktreePath, path), rootPath)?.replaceAll('\\', '/')
+    clipcodeRootRelativePath(joinPath(context.worktreePath, path), rootPath)
   // Why graph order, not author date: rebase and cherry-pick keep old author dates on newer commits.
   const seen = new Set<string>()
   const planned: PlannedEntry[] = []
