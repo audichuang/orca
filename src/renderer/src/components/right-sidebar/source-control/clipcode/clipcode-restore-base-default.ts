@@ -6,7 +6,12 @@ import {
 } from './clipcode-restore-plan'
 
 function existingTargetCount(
-  args: { rootPath: string; entries: readonly ParsedEntry[]; base?: ClipcodeRestoreBase },
+  args: {
+    rootPath: string
+    entries: readonly ParsedEntry[]
+    base?: ClipcodeRestoreBase
+    targetPlatform?: NodeJS.Platform | null
+  },
   states: ReadonlyMap<string, ClipcodeTargetState>
 ): number {
   const plan = planClipcodeRestore(args)
@@ -24,13 +29,16 @@ export function defaultAdjustRestorePaths(pending: {
   entries: readonly ParsedEntry[]
   suggestion: { base: ClipcodeRestoreBase } | undefined
   states: ReadonlyMap<string, ClipcodeTargetState>
+  targetPlatform?: NodeJS.Platform | null
 }): boolean {
   if (!pending.suggestion) {
     return false
   }
-  const { rootPath, entries, states } = pending
+  const { rootPath, entries, states, targetPlatform } = pending
   return (
-    existingTargetCount({ rootPath, entries, base: pending.suggestion.base }, states) >=
-    existingTargetCount({ rootPath, entries }, states)
+    existingTargetCount(
+      { rootPath, entries, base: pending.suggestion.base, targetPlatform },
+      states
+    ) >= existingTargetCount({ rootPath, entries, targetPlatform }, states)
   )
 }

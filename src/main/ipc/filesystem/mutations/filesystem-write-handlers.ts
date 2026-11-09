@@ -1,10 +1,10 @@
 import { ipcMain, shell } from 'electron'
-import { lstat, rm, writeFile } from 'node:fs/promises'
 import type { SshMutationExpectation } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { assertSshMutationExpectation } from '../../../ssh/connection/authority/ssh-connection-generation'
 import { SshHostNotServedError } from '../../../providers/ssh-host-not-served-error'
 import { tryDeleteWslUncPath } from '../../../wsl/filesystem/wsl-unc-delete'
 import type { LocalFileAccess } from '../../../../shared/file-access/local-file-access'
+import { lstat, rm } from 'node:fs/promises'
 import {
   resolveDesktopAuthorizedPath,
   resolveLocalWriteRequestPath
@@ -89,7 +89,7 @@ export function registerFilesystemWriteHandlers(context: FilesystemHandlerContex
       const filePath = await resolveLocalWriteRequestPath(args.filePath, args.access, store)
       return replaceLocalFileBytesIfUnchanged(
         filePath,
-        (tempPath) => writeFile(tempPath, args.bytes),
+        (temp) => temp.writeFile(args.bytes),
         args.diskPrecondition ?? {}
       )
     }
