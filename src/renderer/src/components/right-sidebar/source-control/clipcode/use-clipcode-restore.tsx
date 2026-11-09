@@ -44,9 +44,12 @@ import {
 // Why: the row shows user text, never a raw OS or IPC message (spec "Pasting").
 function restoreRowErrorText(error: unknown): string {
   const message = readIpcErrorMessage(error) ?? String(error)
-  // Why: an older remote host cannot take bytes; that message is already user text and says what to do.
+  // Why: an older remote host cannot take bytes; tell the user what to update.
   if (message.includes(FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE)) {
-    return FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE
+    return translate(
+      'auto.components.right.sidebar.source.control.clipcode.use.clipcode.restore.nonTextUpdateRequired',
+      'Update the Orca server on this host to restore non-text files'
+    )
   }
   if (/\b(EACCES|EPERM)\b|permission denied/i.test(message)) {
     return translate(
