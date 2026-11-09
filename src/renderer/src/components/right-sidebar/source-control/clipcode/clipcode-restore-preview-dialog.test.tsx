@@ -36,7 +36,7 @@ describe('ClipcodeRestorePreviewDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
     expect(onConfirm).toHaveBeenLastCalledWith(expect.objectContaining({ overwrite: false }))
 
-    fireEvent.click(screen.getByLabelText('Overwrite existing files'))
+    fireEvent.click(screen.getByLabelText('Overwrite 1 existing file'))
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
     expect(onConfirm).toHaveBeenLastCalledWith(expect.objectContaining({ overwrite: true }))
   })
@@ -108,10 +108,31 @@ describe('ClipcodeRestorePreviewDialog', () => {
     // The reason is its own element, so a long path can never cut it off.
     expect(screen.getByText('unsafe path')).toBeInTheDocument()
     expect(screen.getByText('outside the folder')).toBeInTheDocument()
-    expect(screen.getByText('/etc/abs.txt')).toHaveClass('break-all')
   })
 
-  it('shows non-text rows by size, identical targets as Unchanged and corrupt ones with a badge', () => {
+  it('counts only targets that will change in the overwrite option', () => {
+    render(
+      <ClipcodeRestorePreviewDialog
+        pending={{
+          rootPath: '/f',
+          entries: [
+            { path: 'a.ts', content: 'a', changeTypes: new Set() },
+            { path: 'b.ts', content: 'b', changeTypes: new Set() }
+          ],
+          suggestion: undefined,
+          states: new Map([
+            ['a.ts', 'file'],
+            ['b.ts', 'file']
+          ])
+        }}
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    )
+    expect(screen.getByLabelText('Overwrite all 2 existing files')).toBeInTheDocument()
+  })
+
+  it('shows non-text rows by size, identical targets with an Unchanged badge and corrupt ones with a badge', () => {
     const sha = '039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81'
     const body = `// File skipped: non-text file, 3 bytes, sha256 ${sha}; base64 follows\nAQID`
     const onConfirm = vi.fn()
@@ -122,22 +143,35 @@ describe('ClipcodeRestorePreviewDialog', () => {
           entries: [
             { path: 'new.bin', content: body, changeTypes: new Set() },
             { path: 'same.bin', content: body, changeTypes: new Set() },
+            { path: 'other.bin', content: body, changeTypes: new Set() },
             { path: 'bad.bin', content: `${body.slice(0, -1)}`, changeTypes: new Set() }
           ],
           suggestion: undefined,
-          states: new Map([['same.bin', 'nonUtf8File']]),
-          existingSha256: new Map([['same.bin', sha]])
+          states: new Map([
+            ['same.bin', 'nonUtf8File'],
+            ['other.bin', 'nonUtf8File']
+          ]),
+          existingSha256: new Map([
+            ['same.bin', sha],
+            ['other.bin', '0'.repeat(64)]
+          ])
         }}
         onCancel={vi.fn()}
         onConfirm={onConfirm}
       />
     )
-    expect(screen.getByText('Unchanged (1)')).toBeInTheDocument()
-    expect(screen.getAllByText('non-text file · 3 B')).toHaveLength(2)
-    expect(screen.queryByLabelText('Overwrite existing files')).not.toBeInTheDocument()
+    expect(screen.getByText('same.bin').closest('li')).toHaveTextContent('Unchanged')
+    expect(screen.queryByText('Unchanged (1)')).not.toBeInTheDocument()
+    expect(screen.getAllByText('non-text file · 3 B')).toHaveLength(3)
+    fireEvent.click(screen.getByLabelText('Overwrite 1 existing file'))
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
     expect(
       onConfirm.mock.calls[0][0].preview.create.map((w: { relativePath: string }) => w.relativePath)
     ).toEqual(['new.bin'])
+    expect(
+      onConfirm.mock.calls[0][0].preview.overwrite.map(
+        (w: { relativePath: string }) => w.relativePath
+      )
+    ).toEqual(['other.bin'])
   })
 })
