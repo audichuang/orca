@@ -4,9 +4,9 @@ import { getClipcodeRootPath } from './clipcode-copy-action'
 
 describe('getClipcodeRootPath in a folder workspace', () => {
   beforeEach(() => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the resolver reads only id and folderPath.
     useAppStore.setState({
       folderWorkspaces: [{ id: 'f1', folderPath: '/work/folder' }]
-      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the resolver reads only id and folderPath.
     } as never)
   })
 
