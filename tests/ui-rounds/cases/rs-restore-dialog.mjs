@@ -69,7 +69,7 @@ globalThis.rsView = async () => {
     return m ? m : null
   }
   const a = box(/^核取方塊 Adjust paths \(([^)]*)\), Value: (\d)/)
-  const o = box(/^核取方塊 Overwrite existing files, Value: (\d)/)
+  const o = box(/^核取方塊 Overwrite (?:all \d+ existing files|\d+ existing file), Value: (\d)/)
   return {
     open: true,
     raw,
@@ -161,7 +161,9 @@ const rsRunInExplorer = async ({ toggleAdjust = false, overwrite = false, restor
     return out
   }
   if (overwrite) {
-    const o = (await lines()).find(([, t]) => t.startsWith('核取方塊 Overwrite existing files'))
+    const o = (await lines()).find(([, t]) =>
+      /^核取方塊 Overwrite (all \d+ existing files|\d+ existing file)\b/.test(t)
+    )
     if (o) {
       await app.click(o[0])
       await sleep(400)
