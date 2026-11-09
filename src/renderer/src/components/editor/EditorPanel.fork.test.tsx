@@ -7,10 +7,10 @@ import EditorPanel from './EditorPanel'
 import { registerDiffFileSequence } from './diff-file-sequence'
 import {
   COMMIT,
-  folderFile,
   installFolderRuntime,
-  seedFolderGitOwner
-} from './folder-git-owner.test-fixture'
+  repoDiffFile,
+  seedFolderWithRepo
+} from './folder-repo-runtime.test-fixture'
 
 vi.mock('@monaco-editor/react', () => ({ DiffEditor: () => null }))
 vi.mock('@/lib/monaco-setup', () => ({
@@ -21,10 +21,8 @@ vi.mock('@/lib/monaco-setup', () => ({
 }))
 let runtime: ReturnType<typeof installFolderRuntime>
 beforeEach(() => {
-  seedFolderGitOwner()
+  seedFolderWithRepo()
   runtime = installFolderRuntime()
-  const file = folderFile({ relativePath: 'src/a.ts' })
-  useAppStore.setState({ openFiles: [file], activeFileId: file.id })
 })
 afterEach(() => {
   cleanup()
@@ -32,7 +30,7 @@ afterEach(() => {
 })
 
 it('shows where the active commit diff sits in the file list it was opened from', () => {
-  const file = folderFile({ id: 'commit-b', diffSource: 'commit', commitCompare: COMMIT })
+  const file = repoDiffFile({ id: 'commit-b', diffSource: 'commit', commitCompare: COMMIT })
   registerDiffFileSequence(
     ['commit-a', 'commit-b', 'commit-c'].map((key) => ({ key, open: vi.fn() })),
     'commit-b'
