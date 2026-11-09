@@ -91,6 +91,7 @@ src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit
 src/renderer/src/components/right-sidebar/source-control-entry-context-menu.fork.test.tsx
 src/renderer/src/components/editor/EditorPanelHeader.fork.test.tsx
 src/renderer/src/components/editor/EditorEditFileSurface.fork.test.tsx
+src/renderer/src/components/editor/ChangesModeView.fork.test.tsx
 
 # Editor save event
 src/renderer/src/components/editor/editor-file-saved-event.contract.test.ts
