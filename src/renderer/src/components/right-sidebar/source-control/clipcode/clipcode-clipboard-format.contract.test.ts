@@ -112,7 +112,7 @@ describe('clipcode clipboard contract', () => {
     const placeholder =
       '// File skipped: non-text file, 2 bytes, sha256 b413f47d13ee2fe6c845b2ee141af81de858df4ec549a58b7970bb96645bc8d2; base64 follows'
     expect(parseNonTextBody(`${placeholder}\n${base64}`)).toEqual(
-      ok ? { ok: true, bytes: new Uint8Array([0, 1]) } : { ok: false, error: 'base64' }
+      ok ? { ok: true, bytes: new Uint8Array([0, 1]) } : { ok: false, reason: 'base64' }
     )
   })
 
