@@ -139,6 +139,23 @@ describe('focusedPanelOwnerKey', () => {
 })
 
 describe('openCheckedRemotePanelSession', () => {
+  it('drops the token when the server updated the plugin while it was opened', async () => {
+    vi.mocked(callRuntimeRpc)
+      .mockResolvedValueOnce([plugin({})])
+      .mockResolvedValueOnce({ html: '', sessionToken: 'new-version-token' })
+      .mockResolvedValueOnce([plugin({ version: '2.0.0' })])
+    expect(
+      await openCheckedRemotePanelSession(
+        'server-a',
+        { pluginKey: 'sample.monitor', id: 'main', tabKey: TAB },
+        '1.0.0'
+      )
+    ).toEqual({
+      availability: { kind: 'version-mismatch', localVersion: '1.0.0', remoteVersion: '2.0.0' },
+      token: null
+    })
+  })
+
   it('opens no session when the server copy changed version', async () => {
     vi.mocked(callRuntimeRpc).mockResolvedValueOnce([plugin({ version: '2.0.0' })])
     const opened = await openCheckedRemotePanelSession(
