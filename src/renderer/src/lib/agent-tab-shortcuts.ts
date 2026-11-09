@@ -55,17 +55,13 @@ export function resolveDefaultAgentForNewTab(args: {
   defaultTuiAgent: TuiAgent | 'blank' | null | undefined
   detectedAgentIds: readonly TuiAgent[] | null | undefined
   disabledTuiAgents: readonly TuiAgent[] | null | undefined
-  chatIn?: { store: AgentLaunchRouteStore; worktreeId: string; cwd?: string | null }
+  chatIn?: { store: AgentLaunchRouteStore; worktreeId: string }
 }): TuiAgent | null {
   const { chatIn } = args
   return resolveDefaultAgentForWorkspace({
     ...args,
     defaultTuiAgent: args.defaultTuiAgent === 'blank' ? null : args.defaultTuiAgent,
-    chatIn: chatIn && {
-      store: chatIn.store,
-      workspace: worktreeLaunchWorkspace(chatIn.worktreeId),
-      cwd: chatIn.cwd
-    }
+    chatIn: chatIn && { store: chatIn.store, workspace: worktreeLaunchWorkspace(chatIn.worktreeId) }
   })
 }
 
@@ -74,21 +70,12 @@ export function resolveDefaultAgentForWorkspace(args: {
   defaultTuiAgent: TuiAgent | 'blank' | null | undefined
   detectedAgentIds: readonly TuiAgent[] | null | undefined
   disabledTuiAgents: readonly TuiAgent[] | null | undefined
-  chatIn?: { store: AgentLaunchRouteStore; workspace: ProspectiveWorkspace; cwd?: string | null }
+  chatIn?: { store: AgentLaunchRouteStore; workspace: ProspectiveWorkspace }
 }): TuiAgent | null {
   const { chatIn } = args
   const chosenUsable = (agent: TuiAgent): boolean =>
     !!chatIn &&
-    agentChoiceMayOpenAsChat(
-      chatIn.store,
-      agent,
-      chatIn.workspace,
-      args.detectedAgentIds ?? null,
-      undefined,
-      {
-        cwd: chatIn.cwd
-      }
-    )
+    agentChoiceMayOpenAsChat(chatIn.store, agent, chatIn.workspace, args.detectedAgentIds ?? null)
   return pickTuiAgent(
     args.defaultTuiAgent,
     args.detectedAgentIds ?? [],
@@ -99,9 +86,7 @@ export function resolveDefaultAgentForWorkspace(args: {
 
 export async function resolveDefaultAgentForWorktreeNewTab(
   getState: () => AppState,
-  worktreeId: string,
-  /** Where the agent launches when not at this workspace's root (a folder workspace's repo). */
-  launchAt?: { worktreeId: string; cwd?: string | null }
+  worktreeId: string
 ): Promise<TuiAgent | null> {
   const { detected: detectedAgentIds } = await acquireAgentLaunchChoices(
     worktreeLaunchWorkspace(worktreeId),
@@ -112,7 +97,7 @@ export async function resolveDefaultAgentForWorktreeNewTab(
   return resolveDefaultAgentForNewTab({
     ...readAgentLaunchPreferencesForWorktree(state, worktreeId),
     detectedAgentIds,
-    chatIn: { store: state, worktreeId: launchAt?.worktreeId ?? worktreeId, cwd: launchAt?.cwd }
+    chatIn: { store: state, worktreeId }
   })
 }
 

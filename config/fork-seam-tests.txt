@@ -49,18 +49,9 @@ src/renderer/src/components/right-sidebar/source-control/listing/section-action-
 # Explorer: Duplicate as _result.txt menu item, naming, exclusive copy, open
 src/renderer/src/components/right-sidebar/file-explorer-duplicate-as-result.fork.test.tsx
 
-# gitWorktreeId persistence: save, reload, restore (layout and session)
-src/renderer/src/lib/workspace/persistence/workspace-session-hydration-keys.fork.test.ts
-src/renderer/src/store/slices/editor-read-only-tabs.fork.test.ts
-src/shared/workspace-layout/workspace-layout-fact-locations.test.ts
-src/shared/workspace-session-schema.git-owner.test.ts
-src/main/ssh/orcad-migration-path-rewrite.fork.test.ts
-
-# gitWorktreeId on editor open actions: panel, combined view, history, status reconcile
+# Commits dock slots and commit file opens from the Commits panel
 src/renderer/src/components/right-sidebar/source-control/panel/panel-content.fork.test.tsx
 src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.fork.test.tsx
-src/renderer/src/store/slices/editor/git/git-status-actions.fork.test.ts
-src/renderer/src/components/editor/ExternalFileChangeBanner.git-owner.test.ts
 
 # Source-control row split-open modifiers and Open to the Side
 src/renderer/src/components/right-sidebar/source-control/listing/split-open.test.ts
@@ -79,17 +70,15 @@ src/shared/workspace-layout/old-client/old-client-session-tabs-projection.fork.t
 
 # Commit diff change arrows: the fork's file list keys on upstream's commit diff tab id
 src/renderer/src/components/right-sidebar/source-control/sync/commit-file-sequence.store-tab-id.test.ts
+src/renderer/src/components/editor/EditorPanel.fork.test.tsx
 
 # Upstream component slots and folder routing
 src/renderer/src/components/right-sidebar/source-control/folder/folder-path-repo-owners.test.ts
 src/renderer/src/components/right-sidebar/FolderWorkspaceSourceControlPanel.folder-path-repos.fork.test.tsx
 src/main/project-groups/nested-repo-discovery.fork.test.ts
-src/renderer/src/components/right-sidebar/right-sidebar-activity-visibility.fork.test.ts
-# (the Commits dock slots and toast clearance: panel-content.fork.test.tsx, listed under gitWorktreeId on editor open actions)
+# (the Commits dock slots and toast clearance: panel-content.fork.test.tsx, listed under Commits dock slots)
 src/renderer/src/components/right-sidebar/source-control/sync/git-graph-full-view.component.test.tsx
 src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph.component.test.tsx
-src/renderer/src/components/editor/editor-autosave.fork.test.ts
-src/renderer/src/components/editor/editor-external-watch-path-index.fork.test.ts
 src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files-menu.test.tsx
 src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.test.tsx
 src/renderer/src/components/right-sidebar/source-control-entry-context-menu.fork.test.tsx
@@ -120,22 +109,16 @@ src/preload/api/app-bridge.fork.test.ts
 src/renderer/src/lib/lazy-chunk-recovery-reload.fork.test.ts
 src/main/asar-transparent-stat.electron.test.ts
 
-# Agent launch cwd in folder repos: route input, offered agents, recovery, AI conflicts, dialog, main pane launch
+# Agent launch cwd in folder repos: CLI args below the folder root, main pane launch
 src/renderer/src/lib/folder-repo-launch-chat-route.test.ts
 src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts
 
-# Editor folder git-owner routing, mounted owner changes, and diff review notes
-src/renderer/src/store/slices/editor/git/git-status-reconciliation.staged-rename.fork.test.ts
-src/renderer/src/components/editor/editor-file-read-git-owner.fork.test.ts
-src/renderer/src/components/editor/combined-diff/load-sections/fetch-combined-diff-section.fork.test.ts
-src/renderer/src/components/editor/combined-diff/load-sections/use-combined-diff-section-revalidation.fork.test.tsx
-src/renderer/src/components/editor/EditorPanel.fork.test.tsx
+# Editor: folder chat quotes, diff review notes, restoring folder tabs saved by the removed git-owner layer
 src/renderer/src/components/editor/useDiffViewerFirstChangeAutoScroll.fork.test.tsx
 src/renderer/src/components/editor/markdown-preview/surface/MarkdownPreview.chat-quote.fork.test.tsx
 src/renderer/src/components/editor/MonacoEditor.chat-quote.fork.test.tsx
 src/renderer/src/components/editor/monaco-editor-input-bindings.add-to-chat.fork.test.ts
 src/renderer/src/components/editor/diff-file-boundary-navigation.test.tsx
-src/renderer/src/components/quick-open-file-history.fork.test.ts
 src/renderer/src/store/slices/store-session-editor-hydration.fork.test.ts
 
 # Source-control entry failure toast: git reasons

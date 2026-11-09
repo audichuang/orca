@@ -6,7 +6,6 @@ import {
   isReloadableSingleFileDiffTab,
   shouldReloadDiffOnGitStatusChange
 } from './editor-panel-diff-reload'
-import { useOpenFileGitRelativePath } from './use-open-file-git-relative-path'
 import type { EditorPanelDiffContentLoader } from './useEditorPanelDiffContentLoader'
 import type { EditorPanelFileContentLoader } from './useEditorPanelFileContentLoader'
 
@@ -38,13 +37,12 @@ export function useEditorPanelContentReloadTriggers({
   loadFileContent
 }: UseEditorPanelContentReloadTriggersParams): void {
   const changesStatusEntries = activeFile?.worktreeId ? gitStatusEntries : undefined
-  const gitRelativePath = useOpenFileGitRelativePath(activeFile)
   const activeFileGitStatusEntries = useMemo(() => {
-    if (!gitRelativePath || !changesStatusEntries) {
+    if (!activeFile?.relativePath || !changesStatusEntries) {
       return undefined
     }
-    return changesStatusEntries.filter((entry) => entry.path === gitRelativePath)
-  }, [gitRelativePath, changesStatusEntries])
+    return changesStatusEntries.filter((entry) => entry.path === activeFile.relativePath)
+  }, [activeFile?.relativePath, changesStatusEntries])
   const activeFileGitStatusSignature = useMemo(() => {
     if (!activeFileGitStatusEntries) {
       return ''
