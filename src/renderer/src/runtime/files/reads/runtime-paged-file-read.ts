@@ -192,7 +192,8 @@ function readFileBytesOnce(
           : window.api.fs.stat({
               filePath: args.filePath,
               connectionId: args.connectionId,
-              access: args.access
+              access: args.access,
+              ...(args.wakeWslDistro && !args.connectionId ? { wakeWslDistro: true } : {})
             }),
       readChunk: (offset, length) => readRuntimeFileChunk(args, remote, offset, length)
     },

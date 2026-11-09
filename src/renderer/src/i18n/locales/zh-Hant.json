@@ -14466,7 +14466,8 @@
                       "parentIsFile": "上層資料夾的位置是一個檔案",
                       "targetIsFolder": "目標是資料夾",
                       "writeFailed": "無法寫入檔案",
-                      "unchanged": "未變更：{{value0}}。"
+                      "unchanged": "未變更：{{value0}}。",
+                      "nonTextUpdateRequired": "需要更新此主機上的 Orca server 才能還原非文字檔"
                     }
                   }
                 }

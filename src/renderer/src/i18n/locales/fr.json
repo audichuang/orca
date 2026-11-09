@@ -14593,7 +14593,8 @@
                       "parentIsFile": "Un fichier occupe la place de son dossier parent",
                       "targetIsFolder": "La cible est un dossier",
                       "writeFailed": "Impossible d'écrire le fichier",
-                      "unchanged": "Inchangés : {{value0}}."
+                      "unchanged": "Inchangés : {{value0}}.",
+                      "nonTextUpdateRequired": "Mettez à jour le serveur Orca sur cet hôte pour restaurer les fichiers non textuels"
                     }
                   }
                 }

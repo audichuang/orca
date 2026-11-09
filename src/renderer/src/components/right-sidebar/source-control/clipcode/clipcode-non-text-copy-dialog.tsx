@@ -142,7 +142,7 @@ function ClipcodeNonTextCopyDialog({
               )}
             </div>
           )}
-          <ul className="space-y-0.5 text-[11px] text-muted-foreground">
+          <ul className="space-y-0.5 text-2xs text-muted-foreground">
             {shown.map((file) => (
               <li key={file.path} className="flex min-w-0 items-baseline gap-2">
                 <MiddleEllipsisPath path={file.path} />

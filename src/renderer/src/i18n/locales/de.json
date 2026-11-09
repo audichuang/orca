@@ -14661,7 +14661,8 @@
                       "parentIsFile": "Eine Datei steht dem übergeordneten Ordner im Weg",
                       "targetIsFolder": "Das Ziel ist ein Ordner",
                       "writeFailed": "Die Datei konnte nicht geschrieben werden",
-                      "unchanged": "Unverändert: {{value0}}."
+                      "unchanged": "Unverändert: {{value0}}.",
+                      "nonTextUpdateRequired": "Aktualisieren Sie den Orca-Server auf diesem Host, um Nicht-Text-Dateien wiederherzustellen"
                     }
                   }
                 }

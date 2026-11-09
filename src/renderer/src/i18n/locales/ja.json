@@ -13999,7 +13999,8 @@
                       "parentIsFile": "親フォルダーの位置にファイルがあります",
                       "targetIsFolder": "対象はフォルダーです",
                       "writeFailed": "ファイルを書き込めませんでした",
-                      "unchanged": "変更なし：{{value0}}。"
+                      "unchanged": "変更なし：{{value0}}。",
+                      "nonTextUpdateRequired": "テキスト以外のファイルを復元するには、このホストの Orca server を更新してください"
                     }
                   }
                 }

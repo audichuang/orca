@@ -148,14 +148,12 @@ function PathList({
       <div className="text-xs font-medium text-foreground">
         {title} ({rows.length})
       </div>
-      <ul className="mt-0.5 space-y-1 text-[11px] text-muted-foreground">
+      <ul className="mt-0.5 space-y-1 text-2xs text-muted-foreground">
         {rows.map((row) => (
           <li key={row.path} title={row.badge ? row.note : row.path}>
             {/* Why: the reason or badge leads on its own line so long paths can wrap without hiding it. */}
             {row.badge ? (
-              <Badge variant="destructive" className="text-[10px]">
-                {row.badge}
-              </Badge>
+              <Badge variant="destructive">{row.badge}</Badge>
             ) : row.note ? (
               <div className="font-medium text-foreground">{row.note}</div>
             ) : null}
