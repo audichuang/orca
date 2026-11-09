@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ImeInput } from '@/lib/ime-text-field'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 import { getConnectionId } from '@/lib/connection-context'
 import { getRuntimeGitHistory } from '@/runtime/source-control/git/runtime-git-status-client'
@@ -107,6 +108,7 @@ export function GitHistoryGraphToolbar({
   /** Whose filter this toolbar edits; the Git Graph tab keeps its own apart from the sidebar's. */
   filterKey?: string
 }): React.JSX.Element {
+  const t = useTranslate()
   const result = state.result
   const filter = useGitHistoryGraphFilter(filterKey)
   const [open, setOpen] = useState(false)
@@ -231,7 +233,7 @@ export function GitHistoryGraphToolbar({
               size="xs"
               role="combobox"
               aria-expanded={open}
-              aria-label={translate(
+              aria-label={t(
                 'auto.components.right.sidebar.GitHistoryGraph.branchFilter',
                 'Branch filter'
               )}
@@ -245,7 +247,7 @@ export function GitHistoryGraphToolbar({
           <PopoverContent align="start" className="w-[min(300px,calc(100vw-1rem))]">
             <Command shouldFilter={false} density="menu">
               <CommandInput
-                placeholder={translate(
+                placeholder={t(
                   'auto.components.right.sidebar.GitHistoryGraph.searchBranches',
                   'Search branches...'
                 )}
@@ -254,7 +256,7 @@ export function GitHistoryGraphToolbar({
               />
               <CommandList>
                 <CommandGroup
-                  heading={translate('auto.components.right.sidebar.GitHistoryGraph.scope', 'Show')}
+                  heading={t('auto.components.right.sidebar.GitHistoryGraph.scope', 'Show')}
                 >
                   <CommandItem
                     value="scope-head"
@@ -263,7 +265,7 @@ export function GitHistoryGraphToolbar({
                     }
                   >
                     {check(filter.scope === 'head')}
-                    {translate(
+                    {t(
                       'auto.components.right.sidebar.GitHistoryGraph.currentBranch',
                       'Current branch'
                     )}
@@ -276,18 +278,12 @@ export function GitHistoryGraphToolbar({
                     }
                   >
                     {check(filter.scope === 'all')}
-                    {translate(
-                      'auto.components.right.sidebar.GitHistoryGraph.allBranches',
-                      'All branches'
-                    )}
+                    {t('auto.components.right.sidebar.GitHistoryGraph.allBranches', 'All branches')}
                   </CommandItem>
                 </CommandGroup>
                 {filter.scope === 'all' && applied && (
                   <CommandGroup
-                    heading={translate(
-                      'auto.components.right.sidebar.GitHistoryGraph.sources',
-                      'Sources'
-                    )}
+                    heading={t('auto.components.right.sidebar.GitHistoryGraph.sources', 'Sources')}
                   >
                     <CommandItem
                       value="source-local"
@@ -296,7 +292,7 @@ export function GitHistoryGraphToolbar({
                       }
                     >
                       {check(filter.local)}
-                      {translate(
+                      {t(
                         'auto.components.right.sidebar.GitHistoryGraph.localBranches',
                         'Local branches'
                       )}
@@ -320,7 +316,7 @@ export function GitHistoryGraphToolbar({
                         }
                       >
                         {check(Boolean(filter.tags))}
-                        {translate('auto.components.right.sidebar.GitHistoryGraph.tags', 'Tags')}
+                        {t('auto.components.right.sidebar.GitHistoryGraph.tags', 'Tags')}
                       </CommandItem>
                     )}
                   </CommandGroup>
@@ -329,7 +325,7 @@ export function GitHistoryGraphToolbar({
                   <CommandGroup>
                     {refOptions.status === 'loading' && (
                       <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                        {translate(
+                        {t(
                           'auto.components.right.sidebar.GitHistoryGraph.loadingBranches',
                           'Loading branches...'
                         )}
@@ -339,7 +335,7 @@ export function GitHistoryGraphToolbar({
                       <div className="px-2 py-1.5 text-xs text-muted-foreground">
                         {refOptions.status === 'unsupported'
                           ? hostTooOldText()
-                          : translate(
+                          : t(
                               'auto.components.right.sidebar.GitHistoryGraph.branchesFailed',
                               'Failed to load branches'
                             )}
@@ -385,16 +381,16 @@ export function GitHistoryGraphToolbar({
             }}
             placeholder={
               fullView
-                ? translate(
+                ? t(
                     'auto.components.right.sidebar.GitHistoryGraph.searchCommitMessages',
                     'Search commit messages'
                   )
-                : translate(
+                : t(
                     'auto.components.right.sidebar.GitHistoryGraph.searchCommits',
                     'Search commits (author: path:)'
                   )
             }
-            aria-label={translate(
+            aria-label={t(
               'auto.components.right.sidebar.GitHistoryGraph.searchCommitsLabel',
               'Search commits'
             )}

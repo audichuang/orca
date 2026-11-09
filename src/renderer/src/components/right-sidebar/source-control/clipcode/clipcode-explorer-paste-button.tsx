@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { ClipboardPaste } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
 import { getFileExplorerOperationOwnerFromState } from '../../file-explorer/navigation/file-explorer-operation-owner'
 import { useFolderGitMembers } from '../folder/use-folder-git-members'
@@ -21,6 +21,7 @@ function ExplorerPasteButton({
   rootPath: string
   onRestored: () => void
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const ownerUnresolved = useAppStore(
     (s) => getFileExplorerOperationOwnerFromState(s, workspaceKey).kind === 'unresolved'
   )
@@ -39,7 +40,7 @@ function ExplorerPasteButton({
   if (ownerUnresolved) {
     return null
   }
-  const label = translate(PASTE_RESTORE_KEY, 'Paste & Restore')
+  const label = t(PASTE_RESTORE_KEY, 'Paste & Restore')
   return (
     <>
       <Tooltip>
