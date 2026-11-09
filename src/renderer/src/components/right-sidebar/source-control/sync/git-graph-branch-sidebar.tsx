@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react'
 import { ChevronDown, ChevronRight, Cloud, GitBranch, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { rovingKeyTarget } from './git-graph-roving-keys'
 import type { GitHistoryResult } from '../../../../../../shared/git/history/git-history-types'
 import type { GitHistoryGraphRefOption } from '../../../../../../shared/git-history-graph-query-types'
@@ -109,6 +110,7 @@ export function GitGraphBranchSidebar({
   /** A branch whose tip is not loaded: narrow the graph to it. */
   onShowRef: (fullName: string) => void
 }): React.JSX.Element {
+  const t = useTranslate()
   const sections = useMemo(() => buildBranchTreeSections(result, refOptions), [result, refOptions])
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
   const toggle = (key: string): void =>
@@ -140,7 +142,7 @@ export function GitGraphBranchSidebar({
   return (
     <nav
       onKeyDown={handleKeyDown}
-      aria-label={translate(
+      aria-label={t(
         'auto.components.right.sidebar.GitGraphBranchSidebar.label',
         'Branches and tags'
       )}
@@ -148,7 +150,7 @@ export function GitGraphBranchSidebar({
     >
       {sections.length === 0 && (
         <p className="px-3 py-2 text-2xs text-muted-foreground">
-          {translate(
+          {t(
             'auto.components.right.sidebar.GitGraphBranchSidebar.empty',
             'No branches loaded yet.'
           )}
@@ -188,7 +190,7 @@ export function GitGraphBranchSidebar({
                     )}
                     title={
                       entry.tipId === undefined
-                        ? translate(
+                        ? t(
                             'auto.components.right.sidebar.GitGraphBranchSidebar.showRef',
                             'Not in the current list — click to show only this branch'
                           )
