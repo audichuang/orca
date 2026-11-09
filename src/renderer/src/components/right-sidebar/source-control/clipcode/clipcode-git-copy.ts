@@ -1,4 +1,4 @@
-import { getRelativePathInsideRoot, basename, joinPath } from '@/lib/path'
+import { basename, joinPath } from '@/lib/path'
 import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
 import type { GitDiffResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
@@ -13,6 +13,7 @@ import {
 import {
   classifyClipcodeEntryContent,
   clipcodeReadContent,
+  clipcodeRootRelativePath,
   ClipcodeCopyTally,
   isUnreadableModifiedSide,
   type ClipcodeEntryVerdict,
@@ -216,11 +217,10 @@ export async function buildClipcodeGitCopy(args: {
       if (entry.conflictStatus === 'unresolved' && entry.conflictKind === 'both_deleted') {
         continue
       }
-      const relativePath = getRelativePathInsideRoot(
+      const clipboardPath = clipcodeRootRelativePath(
         joinPath(repo.context.worktreePath, entry.path),
         rootPath
       )
-      const clipboardPath = relativePath?.replaceAll('\\', '/')
       if (!clipboardPath) {
         continue
       }
