@@ -21,17 +21,23 @@ export const REMOTE_PANEL_LOADING: RemotePanelSessionState = {
 // Why retry: the server may still be connecting at startup, or the plugin installed there later.
 const RETRY_MS = 10_000
 
+/** One start() to its stop(): StrictMode starts the same session twice, and the first run's late
+ *  replies must not count for the second. */
+type SessionRun = {
+  active: boolean
+  token: string | null
+  poller: { refresh: () => void; stop: () => void } | null
+}
+
 /**
  * One server, one panel, one local UI version. Its token, checks and calls belong to it alone,
  * so once the panel moves to another host or version, nothing this one still has in flight can
  * change what the new one shows or which token it uses.
  */
 export class RemotePanelSession {
-  private token: string | null = null
-  private active = false
+  private run: SessionRun | null = null
   private state = REMOTE_PANEL_LOADING
   private readonly listeners = new Set<() => void>()
-  private poller: { refresh: () => void; stop: () => void } | null = null
 
   constructor(
     private readonly environmentId: string,
@@ -40,19 +46,23 @@ export class RemotePanelSession {
   ) {}
 
   start(): void {
-    this.active = true
+    const run: SessionRun = { active: true, token: null, poller: null }
+    this.run = run
     const stop = installWindowVisibilityTimeoutPoller({
-      run: () => this.check(),
+      run: () => this.check(run),
       getDelayMs: () => (this.state.status === 'ready' ? null : RETRY_MS)
     })
-    this.poller = { refresh: stop.refresh, stop }
+    run.poller = { refresh: stop.refresh, stop }
   }
 
   stop(): void {
-    this.active = false
-    this.token = null
-    this.poller?.stop()
-    this.poller = null
+    const run = this.run
+    this.run = null
+    if (run) {
+      run.active = false
+      run.token = null
+      run.poller?.stop()
+    }
   }
 
   readonly subscribe = (listener: () => void): (() => void) => {
@@ -62,17 +72,19 @@ export class RemotePanelSession {
 
   readonly getState = (): RemotePanelSessionState => this.state
 
-  readonly callHostMethod = (call: PanelActionCall): Promise<PluginHostCallOutcome> =>
-    this.active
+  readonly callHostMethod = (call: PanelActionCall): Promise<PluginHostCallOutcome> => {
+    const run = this.run
+    return run
       ? callRemotePanelAction(this.environmentId, call, {
-          current: () => (this.active ? this.token : null),
-          reopen: () => this.open()
+          current: () => (run.active ? run.token : null),
+          reopen: () => this.open(run)
         })
       : Promise.resolve(remotePanelSessionUnavailable())
+  }
 
   /** Checks the server's copy and opens a session; the first open, retries and reopens alike. */
-  private async open(): Promise<string | null> {
-    if (!this.active) {
+  private async open(run: SessionRun): Promise<string | null> {
+    if (!run.active) {
       return null
     }
     const { availability, token } = await openCheckedRemotePanelSession(
@@ -80,22 +92,22 @@ export class RemotePanelSession {
       this.panel,
       this.localVersion
     )
-    if (!this.active) {
+    if (!run.active) {
       return null
     }
-    this.token = token
+    run.token = token
     this.setState({ status: availability.kind, availability })
     if (availability.kind !== 'ready') {
-      this.poller?.refresh()
+      run.poller?.refresh()
     }
     return token
   }
 
-  private async check(): Promise<void> {
+  private async check(run: SessionRun): Promise<void> {
     try {
-      await this.open()
+      await this.open(run)
     } catch {
-      if (this.active) {
+      if (run.active) {
         this.setState({ status: 'unreachable', availability: null })
       }
     }
