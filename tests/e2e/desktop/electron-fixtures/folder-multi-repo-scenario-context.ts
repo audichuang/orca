@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@stablyai/playwright-test'
+import { expect } from './orca-app'
 import { openFileExplorer } from './file-explorer'
 
 export type ScenarioResult = {
@@ -13,6 +14,29 @@ export async function clipboardText(page: Page): Promise<string> {
 }
 export async function setClipboard(page: Page, text: string): Promise<void> {
   await page.evaluate((t) => window.api.ui.writeClipboardText(t), text)
+}
+
+/** The ClipCode question shown before a copy that reached non-text files. */
+export function clipcodeNonTextDialog(page: Page): Locator {
+  return page
+    .getByRole('dialog')
+    .filter({ has: page.getByRole('button', { name: 'Exclude', exact: true }) })
+}
+
+/** Waits for a copy to replace `previous`, answering Exclude (the payload from before non-text support) if asked. */
+export async function copiedClipboardExcludingNonText(
+  page: Page,
+  previous = 'sentinel'
+): Promise<string> {
+  const dialog = clipcodeNonTextDialog(page)
+  const settled = async () => (await clipboardText(page)) !== previous || (await dialog.count()) > 0
+  await expect.poll(settled, { timeout: 20_000 }).toBe(true)
+  if ((await dialog.count()) > 0) {
+    await dialog.getByRole('button', { name: 'Exclude', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect.poll(() => clipboardText(page), { timeout: 20_000 }).not.toBe(previous)
+  }
+  return clipboardText(page)
 }
 
 // Paste & Restore lives in the File Explorer header; the Source Control toolbar no longer has it.
