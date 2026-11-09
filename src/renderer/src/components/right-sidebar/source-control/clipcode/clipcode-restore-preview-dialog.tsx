@@ -1,3 +1,4 @@
+// @protected-copy: Paste & Restore overwrite and delete confirmation.
 import { useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,9 +13,10 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { translate } from '@/i18n/i18n'
-import { useTranslate } from '@/i18n/use-translate'
+import { useTranslate, type Translate } from '@/i18n/use-translate'
 import { formatBytes } from '../../../../../../shared/format-bytes'
 import type { ParsedEntry } from './clipcode-clipboard-format'
+import { ClipcodeMiddleEllipsisPath } from './clipcode-middle-ellipsis-path'
 import { defaultAdjustRestorePaths } from './clipcode-restore-base-default'
 import {
   planClipcodeRestore,
@@ -87,7 +89,7 @@ function skipReasonLabel(reason: ClipcodeRestorePreview['skipped'][number]['reas
     case 'NON_UTF8_TARGET':
       return translate(
         'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.nonUtf8Target',
-        'existing file is not UTF-8'
+        'Existing file is not UTF-8; not overwritten'
       )
     case 'CASE_CONFLICT':
       return translate(
@@ -102,8 +104,8 @@ function skipReasonLabel(reason: ClipcodeRestorePreview['skipped'][number]['reas
   }
 }
 
-function nonTextNote(size: number): string {
-  return translate(
+function nonTextNote(size: number, t: Translate): string {
+  return t(
     'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.nonTextSize',
     'non-text file · {{value0}}',
     { value0: formatBytes(size) }
@@ -111,27 +113,46 @@ function nonTextNote(size: number): string {
 }
 
 // Why: a non-text row shows its size, never the Base64 or a diff.
-function writeRow(write: ClipcodeRestoreWrite): PathRow {
+function writeRow(write: ClipcodeRestoreWrite, t: Translate): PathRow {
   return 'bytes' in write
-    ? { path: write.relativePath, note: nonTextNote(write.bytes.length) }
+    ? { path: write.relativePath, note: nonTextNote(write.bytes.length, t) }
     : { path: write.relativePath }
 }
 
-function skipRow(skipped: ClipcodeRestorePreview['skipped'][number]): PathRow {
+// Why: an identical target sits with the other existing files, marked instead of counted as an overwrite.
+function unchangedRow(item: ClipcodeRestorePreview['unchanged'][number], t: Translate): PathRow {
+  return {
+    path: item.relativePath,
+    badge: t(
+      'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.unchanged',
+      'Unchanged'
+    ),
+    badgeVariant: 'secondary',
+    note: nonTextNote(item.size, t)
+  }
+}
+
+function skipRow(skipped: ClipcodeRestorePreview['skipped'][number], t: Translate): PathRow {
   return skipped.reason === 'CORRUPT_NON_TEXT'
     ? {
         path: skipped.path,
-        badge: translate(
+        badge: t(
           'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.corruptBadge',
           'Corrupt'
         ),
-        note: skipReasonLabel(skipped.reason)
+        detail: skipReasonLabel(skipped.reason)
       }
     : { path: skipped.path, note: skipReasonLabel(skipped.reason) }
 }
 
-/** A badge row keeps its note for the tooltip instead of a line of its own. */
-type PathRow = { path: string; note?: string; badge?: string }
+/** `note` shows in the row; `detail` only in the tooltip. */
+type PathRow = {
+  path: string
+  note?: string
+  detail?: string
+  badge?: string
+  badgeVariant?: 'destructive' | 'secondary'
+}
 
 function PathList({
   title,
@@ -149,17 +170,35 @@ function PathList({
         {title} ({rows.length})
       </div>
       <ul className="mt-0.5 space-y-1 text-2xs text-muted-foreground">
-        {rows.map((row) => (
-          <li key={row.path} title={row.badge ? row.note : row.path}>
-            {/* Why: the reason or badge leads on its own line so long paths can wrap without hiding it. */}
-            {row.badge ? (
-              <Badge variant="destructive">{row.badge}</Badge>
-            ) : row.note ? (
-              <div className="font-medium text-foreground">{row.note}</div>
-            ) : null}
-            <div className="break-all font-mono">{row.path}</div>
-          </li>
-        ))}
+        {rows.map((row) => {
+          const detail = row.detail ?? row.note
+          const title = detail ? `${row.path}\n${detail}` : row.path
+          return (
+            // Why one clipped line with a tall row gap: a badge or note that does not fit whole
+            // wraps out of view instead of squeezing the name, which keeps priority and shortens last.
+            <li
+              key={row.path}
+              title={title}
+              className="flex h-6 min-w-0 flex-wrap content-start items-center gap-x-2 gap-y-10 overflow-hidden"
+            >
+              <ClipcodeMiddleEllipsisPath
+                path={row.path}
+                title={title}
+                className="flex-initial font-mono"
+              />
+              {row.badge && (
+                <Badge variant={row.badgeVariant ?? 'destructive'} className="flex-none">
+                  {row.badge}
+                </Badge>
+              )}
+              {row.note && (
+                <span className="flex-none whitespace-nowrap font-medium text-foreground">
+                  {row.note}
+                </span>
+              )}
+            </li>
+          )
+        })}
       </ul>
     </div>
   )
@@ -238,24 +277,17 @@ export function ClipcodeRestorePreviewDialog({
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.9a421f14d8',
                 'Create'
               )}
-              rows={preview.create.map(writeRow)}
+              rows={preview.create.map((write) => writeRow(write, t))}
             />
             <PathList
               title={t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.d469ff3b81',
                 'Overwrite'
               )}
-              rows={preview.overwrite.map(writeRow)}
-            />
-            <PathList
-              title={t(
-                'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.unchanged',
-                'Unchanged'
-              )}
-              rows={preview.unchanged.map((item) => ({
-                path: item.relativePath,
-                note: nonTextNote(item.size)
-              }))}
+              rows={[
+                ...preview.overwrite.map((write) => writeRow(write, t)),
+                ...preview.unchanged.map((item) => unchangedRow(item, t))
+              ]}
             />
             <PathList
               title={t(
@@ -269,7 +301,7 @@ export function ClipcodeRestorePreviewDialog({
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.0d87b3b39d',
                 'Skip'
               )}
-              rows={preview.skipped.map(skipRow)}
+              rows={preview.skipped.map((skipped) => skipRow(skipped, t))}
             />
           </div>
           {preview.overwrite.length > 0 && (
@@ -281,8 +313,12 @@ export function ClipcodeRestorePreviewDialog({
               />
               <Label htmlFor="clipcode-overwrite-existing">
                 {t(
-                  'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.80224f9095',
-                  'Overwrite existing files'
+                  'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.overwriteAll',
+                  'Overwrite all {{count}} existing files',
+                  {
+                    count: preview.overwrite.length,
+                    defaultValue_one: 'Overwrite {{count}} existing file'
+                  }
                 )}
               </Label>
             </div>

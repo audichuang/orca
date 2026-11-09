@@ -14539,7 +14539,6 @@
                         "d469ff3b81": "Écraser",
                         "9cf3526c1f": "Supprimer",
                         "0d87b3b39d": "Ignorer",
-                        "80224f9095": "Écraser les fichiers existants",
                         "677bf0ade9": "Annuler",
                         "c0b1b53e49": "Restaurer",
                         "9bd78385ce": "chemin non sûr",
@@ -14552,11 +14551,14 @@
                         "parentIsFile": "un dossier parent est un fichier",
                         "targetUnreadable": "impossible de vérifier le fichier existant",
                         "caseConflict": "même chemin avec une casse différente",
-                        "nonUtf8Target": "le fichier existant n'est pas en UTF-8",
+                        "nonUtf8Target": "Le fichier existant n'est pas en UTF-8 ; non écrasé",
                         "corruptNonText": "Fichier non texte corrompu",
                         "nonTextSize": "fichier non texte · {{value0}}",
                         "corruptBadge": "Corrompu",
-                        "unchanged": "Inchangé"
+                        "unchanged": "Inchangé",
+                        "overwriteAll_one": "Écraser {{count}} fichier existant",
+                        "overwriteAll_many": "Écraser les {{count}} fichiers existants",
+                        "overwriteAll_other": "Écraser les {{count}} fichiers existants"
                       }
                     }
                   },

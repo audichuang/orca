@@ -10521,7 +10521,6 @@
                         "d469ff3b81": "Sobrescrever",
                         "9cf3526c1f": "Excluir",
                         "0d87b3b39d": "Ignorar",
-                        "80224f9095": "Sobrescrever arquivos existentes",
                         "677bf0ade9": "Cancelar",
                         "c0b1b53e49": "Restaurar",
                         "9bd78385ce": "caminho inseguro",
@@ -10534,11 +10533,14 @@
                         "parentIsFile": "uma pasta pai é um arquivo",
                         "targetUnreadable": "não foi possível verificar o arquivo existente",
                         "caseConflict": "mesmo caminho com maiúsculas e minúsculas diferentes",
-                        "nonUtf8Target": "o arquivo existente não é UTF-8",
+                        "nonUtf8Target": "O arquivo existente não é UTF-8; não foi sobrescrito",
                         "corruptNonText": "Arquivo não textual corrompido",
                         "nonTextSize": "arquivo não textual · {{value0}}",
                         "corruptBadge": "Corrompido",
-                        "unchanged": "Inalterado"
+                        "unchanged": "Inalterado",
+                        "overwriteAll_one": "Sobrescrever {{count}} arquivo existente",
+                        "overwriteAll_many": "Sobrescrever todos os {{count}} arquivos existentes",
+                        "overwriteAll_other": "Sobrescrever todos os {{count}} arquivos existentes"
                       }
                     }
                   },

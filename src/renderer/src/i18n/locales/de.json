@@ -14607,7 +14607,6 @@
                         "d469ff3b81": "Überschreiben",
                         "9cf3526c1f": "Löschen",
                         "0d87b3b39d": "Überspringen",
-                        "80224f9095": "Vorhandene Dateien überschreiben",
                         "677bf0ade9": "Abbrechen",
                         "c0b1b53e49": "Wiederherstellen",
                         "9bd78385ce": "unsicherer Pfad",
@@ -14620,11 +14619,13 @@
                         "parentIsFile": "ein übergeordneter Ordner ist eine Datei",
                         "targetUnreadable": "vorhandene Datei konnte nicht geprüft werden",
                         "caseConflict": "gleicher Pfad mit abweichender Groß-/Kleinschreibung",
-                        "nonUtf8Target": "vorhandene Datei ist nicht UTF-8",
+                        "nonUtf8Target": "Vorhandene Datei ist nicht UTF-8; nicht überschrieben",
                         "corruptNonText": "Beschädigte Nicht-Text-Datei",
                         "nonTextSize": "Nicht-Text-Datei · {{value0}}",
                         "corruptBadge": "Beschädigt",
-                        "unchanged": "Unverändert"
+                        "unchanged": "Unverändert",
+                        "overwriteAll_one": "{{count}} vorhandene Datei überschreiben",
+                        "overwriteAll_other": "Alle {{count}} vorhandenen Dateien überschreiben"
                       }
                     }
                   },
