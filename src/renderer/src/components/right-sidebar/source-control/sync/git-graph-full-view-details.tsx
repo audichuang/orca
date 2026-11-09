@@ -4,7 +4,7 @@ import { ArrowUpRight, Copy, List, ListTree, PanelRightClose, PanelRightOpen } f
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
 import type { OpenCommitFileHandler } from './commit-file-sequence'
@@ -112,6 +112,7 @@ export function GitGraphDetailsPane({
   /** Width other side panes (the branch tree) take from the view. */
   reservedWidth: number
 }): React.JSX.Element {
+  const t = useTranslate()
   const [width, setWidth] = useState(readDetailsWidth)
   // Rule: with nothing selected the pane is a strip; an explicit expand lasts until the next selection.
   // With a selection it is a strip only after Hide details, until Show details.
@@ -173,31 +174,28 @@ export function GitGraphDetailsPane({
   }
   const layoutLabel =
     filesLayout === 'tree'
-      ? translate('auto.components.right.sidebar.SourceControl.a91f8e2b01', 'View as list')
-      : translate('auto.components.right.sidebar.SourceControl.b82e9f3c12', 'View as tree')
+      ? t('auto.components.right.sidebar.SourceControl.a91f8e2b01', 'View as list')
+      : t('auto.components.right.sidebar.SourceControl.b82e9f3c12', 'View as tree')
 
   const merged = useMemo(() => mergeCommitFiles(items, filesByCommit), [items, filesByCommit])
   const first = items[0]
   const fileCount = merged.state.status === 'ready' ? merged.state.entries.length : null
-  const copyLabel = translate(
+  const copyLabel = t(
     'auto.components.right.sidebar.GitGraphFullView.copyFullSource',
     'Copy Full Source of all changed files'
   )
-  const openAllLabel = translate(
+  const openAllLabel = t(
     'auto.components.right.sidebar.GitGraphFullView.openAllChanges',
     'Open all changes'
   )
-  const hideLabel = translate(
-    'auto.components.right.sidebar.GitGraphFullView.hideDetails',
-    'Hide details'
-  )
+  const hideLabel = t('auto.components.right.sidebar.GitGraphFullView.hideDetails', 'Hide details')
   const enterKey = isMac
     ? '↩'
-    : translate('auto.components.right.sidebar.GitGraphFullView.enterKey', 'Enter')
+    : t('auto.components.right.sidebar.GitGraphFullView.enterKey', 'Enter')
   const openAllHint = `${openAllLabel} (${enterKey})`
 
   if (collapsed) {
-    const showLabel = translate(
+    const showLabel = t(
       'auto.components.right.sidebar.GitGraphFullView.showDetails',
       'Show details'
     )
@@ -215,7 +213,7 @@ export function GitGraphDetailsPane({
           >
             <PanelRightOpen aria-hidden="true" className="size-3.5" />
             <span aria-hidden="true" className="text-2xs [writing-mode:vertical-rl]">
-              {translate('auto.components.right.sidebar.GitGraphFullView.detailsStrip', 'Details')}
+              {t('auto.components.right.sidebar.GitGraphFullView.detailsStrip', 'Details')}
             </span>
           </button>
         </TooltipTrigger>
@@ -234,7 +232,7 @@ export function GitGraphDetailsPane({
     >
       <div
         role="separator"
-        aria-label={translate(
+        aria-label={t(
           'auto.components.right.sidebar.GitGraphFullView.resizeDetails',
           'Resize commit details'
         )}
@@ -251,7 +249,7 @@ export function GitGraphDetailsPane({
       </div>
       {first === undefined ? (
         <p className="px-3 py-3 text-xs text-muted-foreground">
-          {translate(
+          {t(
             'auto.components.right.sidebar.GitGraphFullView.selectCommit',
             'Select a commit to see its details and changed files.'
           )}
@@ -261,12 +259,12 @@ export function GitGraphDetailsPane({
           <div className="flex h-7 shrink-0 items-center gap-2 border-b border-border px-3">
             <span className="min-w-0 flex-1 truncate text-2xs text-muted-foreground">
               {items.length > 1
-                ? translate(
+                ? t(
                     'auto.components.right.sidebar.GitGraphFullView.filesInCommits',
                     'Changed files ({{files}}) · {{commits}} commits',
                     { files: fileCount ?? '…', commits: items.length }
                   )
-                : translate(
+                : t(
                     'auto.components.right.sidebar.GitGraphFullView.filesChanged',
                     'Changed files ({{files}})',
                     { files: fileCount ?? '…' }
