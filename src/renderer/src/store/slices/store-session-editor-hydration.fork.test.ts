@@ -7,17 +7,14 @@ import type { AppState } from '../types'
 const REPO = 'repo-a::/repo-a'
 const FOLDER = 'folder:pkg'
 
+type SavedTab = { filePath: string; relativePath: string; gitWorktreeId?: string }
+
 // Tabs as the removed folder git-owner layer saved them: folder-owned, repo-relative, with gitWorktreeId.
-function hydrateLegacy(files: { filePath: string; relativePath: string }[]) {
+function hydrateLegacy(files: SavedTab[]) {
   const parsed = parseWorkspaceSession({
     ...localDesktopSession(),
     openFilesByWorktree: {
-      [FOLDER]: files.map((file) => ({
-        ...file,
-        worktreeId: FOLDER,
-        language: 'markdown',
-        gitWorktreeId: REPO
-      }))
+      [FOLDER]: files.map((file) => ({ ...file, worktreeId: FOLDER, language: 'markdown' }))
     }
   })
   if (!parsed.ok) {
@@ -44,13 +41,15 @@ describe('hydrating a folder tab saved by the folder git-owner layer', () => {
 
   it('restores upstream folder tabs: folder-relative inside the root, absolute outside it', () => {
     const files = hydrateLegacy([
-      { filePath: '/repo-a/pkg/a.md', relativePath: 'pkg/a.md' },
-      { filePath: '/repo-a/b.md', relativePath: 'b.md' }
+      { filePath: '/repo-a/pkg/a.md', relativePath: 'pkg/a.md', gitWorktreeId: REPO },
+      { filePath: '/repo-a/b.md', relativePath: 'b.md', gitWorktreeId: REPO },
+      // Upstream's own absolute-path tab (a terminal link) keeps its shape.
+      { filePath: '/repo-a/pkg/c.md', relativePath: '/repo-a/pkg/c.md' }
     ])
     expect(files.map(({ worktreeId, relativePath }) => ({ worktreeId, relativePath }))).toEqual([
       { worktreeId: FOLDER, relativePath: 'a.md' },
-      { worktreeId: FOLDER, relativePath: '/repo-a/b.md' }
+      { worktreeId: FOLDER, relativePath: '/repo-a/b.md' },
+      { worktreeId: FOLDER, relativePath: '/repo-a/pkg/c.md' }
     ])
-    expect(files.some((file) => 'gitWorktreeId' in file)).toBe(false)
   })
 })
