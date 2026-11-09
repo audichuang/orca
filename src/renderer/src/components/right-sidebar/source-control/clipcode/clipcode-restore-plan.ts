@@ -2,6 +2,7 @@
 import { asciiTrim, type ParsedEntry } from './clipcode-clipboard-format'
 import { decodeNonTextVerified, parseNonTextPlaceholderLine } from './clipcode-non-text-body'
 import { isClipcodePlaceholderBody } from './clipcode-placeholder-bodies'
+import { isClipcodePortablePathSegment } from './clipcode-portable-path'
 
 export type ClipcodeRestoreBase =
   | { kind: 'strip'; segment: string }
@@ -56,15 +57,6 @@ function isGitSegment(segment: string): boolean {
   return folded.replace(/[. ]+$/, '') === '.git' || /^git~\d+$/.test(folded)
 }
 
-function hasControlCharacter(segment: string): boolean {
-  for (let index = 0; index < segment.length; index++) {
-    if (segment.charCodeAt(index) < 0x20) {
-      return true
-    }
-  }
-  return false
-}
-
 /** Returns a clean '/'-joined relative path, or undefined when it is empty, absolute or can escape the root. */
 export function sanitizeRelativePath(value: string): string | undefined {
   const normalized = asciiTrim(value).replaceAll('\\', '/').replace(/\/+/g, '/').replace(/^\/+/, '')
@@ -77,14 +69,9 @@ export function sanitizeRelativePath(value: string): string | undefined {
   }
   // Why: a restored `.git/...` entry could plant hooks or rewrite repo config, so it is never a valid target.
   // Control characters are refused everywhere (Windows cannot create them), like the plugins.
+  // `\` never reaches a segment here: it was turned into `/` above.
   if (
-    segments.some(
-      (segment) =>
-        segment === '..' ||
-        isGitSegment(segment) ||
-        /[<>:"|?*]/.test(segment) ||
-        hasControlCharacter(segment)
-    )
+    segments.some((segment) => isGitSegment(segment) || !isClipcodePortablePathSegment(segment))
   ) {
     return undefined
   }

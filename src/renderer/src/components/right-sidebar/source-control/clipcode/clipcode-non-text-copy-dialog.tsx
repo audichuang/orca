@@ -16,12 +16,11 @@ import {
   CLIPCODE_READ_MAX_BYTES,
   type ClipcodeNonTextSummary
 } from './clipcode-entry-content'
+import { ClipcodeMiddleEllipsisPath } from './clipcode-middle-ellipsis-path'
 
 export type ClipcodeNonTextChoice = 'include' | 'exclude' | 'cancel'
 
 const MAX_LISTED = 10
-// Why: a few characters of the stem stay beside the extension, so names sharing a long prefix stay apart.
-const NAME_TAIL_CHARS = 8
 
 type Pending = { summary: ClipcodeNonTextSummary; resolve: (choice: ClipcodeNonTextChoice) => void }
 
@@ -59,27 +58,6 @@ function choose(choice: ClipcodeNonTextChoice): void {
 export function ClipcodeNonTextCopyDialogHost(): React.JSX.Element | null {
   const current = useSyncExternalStore(subscribe, () => pending)
   return current ? <ClipcodeNonTextCopyDialog summary={current.summary} /> : null
-}
-
-/** A path whose folder part shrinks first; the file name keeps its end and extension. */
-function MiddleEllipsisPath({ path }: { path: string }): React.JSX.Element {
-  const slash = path.lastIndexOf('/')
-  const folder = slash === -1 ? '' : path.slice(0, slash + 1)
-  const name = path.slice(slash + 1)
-  const dot = name.lastIndexOf('.')
-  const tailStart = Math.max(0, (dot > 0 ? dot : name.length) - NAME_TAIL_CHARS)
-  return (
-    <span className="flex min-w-0 flex-1 font-mono" title={path}>
-      {folder && (
-        // Why the large shrink factor: the folder gives up its width before the name loses any.
-        <span className="min-w-[3ch] truncate" style={{ flexShrink: 10000 }}>
-          {folder}
-        </span>
-      )}
-      <span className="min-w-0 truncate">{name.slice(0, tailStart)}</span>
-      <span className="shrink-0 whitespace-pre">{name.slice(tailStart)}</span>
-    </span>
-  )
 }
 
 function ClipcodeNonTextCopyDialog({
@@ -129,7 +107,7 @@ function ClipcodeNonTextCopyDialog({
               ? t(
                   'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.overLimit',
                   'Clipboard size with them: more than {{value0}}',
-                  { value0: formatBytes(CLIPCODE_PAYLOAD_LIMIT_BYTES) }
+                  { value0: `${CLIPCODE_PAYLOAD_LIMIT_BYTES / 1024 / 1024} MiB` }
                 )
               : t(
                   'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.estimate',
@@ -148,7 +126,7 @@ function ClipcodeNonTextCopyDialog({
           <ul className="space-y-0.5 text-2xs text-muted-foreground">
             {shown.map((file) => (
               <li key={file.path} className="flex min-w-0 items-baseline gap-2">
-                <MiddleEllipsisPath path={file.path} />
+                <ClipcodeMiddleEllipsisPath path={file.path} className="font-mono" />
                 <span className="shrink-0 whitespace-nowrap">{formatBytes(file.size)}</span>
               </li>
             ))}
