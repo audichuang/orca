@@ -14,12 +14,12 @@
 - 驗證（<YYYY-MM-DD>，上游 <sha>）：<跑了什麼、結果>｜未驗證
 ```
 
-## fork 自身問題（已處理：v1.4.254 rebase 留給人的三件事）× fork rebase/v1.4.254（PR #148，head 3e7fdd5be2）— auto-rebase 2026-11-09，人工接手 2026-11-09
+## fork 自身問題（已處理：v1.4.254 rebase 留給人的三件事）× fork rebase/v1.4.254（PR #148，head fa25fba584）— auto-rebase 2026-11-09，人工接手 2026-11-09
 - 類型：fork 自身問題（已處理；develop 移動後搬進 resolution-history.md）
 - 處理 1（03cf114f1f）：Git Graph 的 repo 候選併入上游 `getAttachedWorktreesForFolderWorkspace` 的 lineage worktree（`getGitGraphFolderAttachedWorktrees`，`listGitGraphRepoChoices` 多一個 `folderAttached` 參數；`git-graph-tab-launcher` 與 `GitGraphTabView` 一起帶 lineage state）。守它：`git-graph-tab-model.folder-attached.fork.test.ts`（seam git-graph tab 組），拿掉修正兩例紅。
 - 處理 2（f2a55e81f6）：`folder-workspace-tab-restart-restore.spec.ts` 改驗上游模型（分頁 `worktreeId`＝repo、開時 `placementWorkspaceId`＝folder）：重啟後擁有者仍是 repo、Changes 對 repo HEAD。**暫時失去**：上游不保存 placement，重啟後分頁回到 repo 自己的 workspace，不留在 folder（fork 舊的 folder 分頁 git owner 路由做得到）；補回時一起決定 git-owner 殘留層（`folder-file-git-owner.ts`、`nextOpenFileGitWorktreeId`、舊 session 的 `gitWorktreeId`）刪或接回。
 - 處理 3（3e7fdd5be2）：`folder-multi-repo-source-control.spec.ts` 改走上游卡片（`section[data-source-control-worktree]`，row 限定在卡片內），保留 S1 S3–S8 S9a S9b S9d S9a-multi S10–S15 S17 S19–S22 S11；刪 S0、S2、S9c、S16、S18 與 `folder-repo-row-hover-count-check.ts`（都屬暫時拿掉的 fork 面板功能）。S22 照上游：卡片的 agent 開在 repo 自己的 workspace，並回答上游新的「Trust <repo> for agents?」對話框。spec 固定 `uiLanguage: 'en'`。FORK.md 發版 UI 組、`fork-e2e-timings.json` 已改。
-- 驗證（2026-11-09，head 3e7fdd5be2）：`pnpm tc` 0 錯、`make -k fork-check-static` 綠、`make fork-check-seams` 98 檔 503 例、兩支 e2e 本機 headless 全過；Fork PR checks 見 PR #148。
+- 驗證（2026-11-09，head fa25fba584）：`pnpm tc` 0 錯、`make -k fork-check-static` 綠、`make fork-check-seams` 98 檔 503 例、兩支 e2e 本機 headless 全過；Fork PR checks run 42549261769 30/30 綠。fa25fba584：S5／S6 對 Stage／Unstage 改用 dispatchEvent（CI 上 hover 按鈕被狀態字母擋住）。
 ## c50d4cd3e4d19c7c8dcca2de52966cc22f9548e3（#39996 refactor: organize browser guest lifecycle owners）× fork 4e3e283fe8（test(wire): take upstream main's cross-version fixes for v1.4.254 as the baseline）— auto-rebase 2026-11-09
 - 類型：上游修了同一件事
 - 衝突檔：可能是 tests/e2e/cross-version-wire/{cross-version-pairing-ticket.unit.test.ts,versioned-terminal-wire.ts,release-module-locations.ts}
