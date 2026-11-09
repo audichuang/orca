@@ -26,14 +26,17 @@ import { commitFilesMenuSlot } from '../right-sidebar/source-control/sync/git-hi
 import { FolderAddReposDialog } from '../right-sidebar/source-control/folder/folder-add-repos-dialog'
 import { GitGraphRepoSwitcher } from './git-graph-repo-switcher'
 import { useGitGraphFolderAddRepos } from './use-git-graph-folder-add-repos'
-import { listGitGraphRepoChoices } from './git-graph-tab-model'
+import { getGitGraphFolderAttachedWorktrees, listGitGraphRepoChoices } from './git-graph-tab-model'
 import { resolveGitGraphSplitTargetGroupId } from './git-graph-split-target'
 import type { SourceControlRowOpenEvent } from '../right-sidebar/source-control/listing/split-open'
 import { useRepoDisplayColor } from '@/lib/repo-display-color'
 import { openSourceControlOnRepo } from './git-graph-source-control-link'
 import { useGitGraphTabReveal } from './use-git-graph-tab-reveal'
 import { consumeGitGraphFocusRequest, useGitGraphFocusRequest } from './git-graph-focus-request'
-import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 import { SourceControlScopeProvider } from '../right-sidebar/source-control/panel/worktree-scope'
 
 // Upstream keys history reloads on the branch name; a detached tab passes '' like the sidebar.
@@ -171,11 +174,32 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
   const worktrees = useAllWorktrees()
   const repoById = useRepoMap()
   const folderWorkspaces = useAppStore(selectFolderWorkspaces)
+  const workspaceLineageByChildKey = useAppStore((s) => s.workspaceLineageByChildKey)
+  const worktreeLineageById = useAppStore((s) => s.worktreeLineageById)
+  const worktreesByRepo = useAppStore(selectWorktreesByRepo)
   // Why from the choices: they are filtered to the workspace's host, so a worktree id another host
   // also publishes cannot resolve there, and a removed repo falls out instead of erroring.
   const choices = useMemo(
-    () => listGitGraphRepoChoices(workspaceId, worktrees, repoById, folderWorkspaces ?? []),
-    [folderWorkspaces, repoById, workspaceId, worktrees]
+    () =>
+      listGitGraphRepoChoices(
+        workspaceId,
+        worktrees,
+        repoById,
+        folderWorkspaces ?? [],
+        getGitGraphFolderAttachedWorktrees(
+          { folderWorkspaces, workspaceLineageByChildKey, worktreeLineageById, worktreesByRepo },
+          workspaceId
+        )
+      ),
+    [
+      folderWorkspaces,
+      repoById,
+      workspaceId,
+      worktrees,
+      workspaceLineageByChildKey,
+      worktreeLineageById,
+      worktreesByRepo
+    ]
   )
   const choice = choices.find((entry) => entry.worktree.id === repoWorktreeId) ?? null
   const bodyKey = choice ? `${choice.worktree.id}\0${getRepoExecutionHostId(choice.repo)}` : null
