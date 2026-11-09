@@ -51,7 +51,8 @@ export function restoredFolderTabRelativePath(
   state: FolderRootsState,
   file: FolderTab & Pick<OpenFile, 'relativePath'>
 ): string {
-  if (!folderOwnerRoots(state, file)?.length) {
+  // Why: an absolute-path tab is upstream's own shape; its placement keys on relativePath === filePath.
+  if (file.relativePath === file.filePath || !folderOwnerRoots(state, file)?.length) {
     return file.relativePath
   }
   return folderOwnerRelativePath(state, file) ?? file.filePath
