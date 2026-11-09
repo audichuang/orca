@@ -107,14 +107,15 @@ async function readClipcodeFile(
     bytesFailed = true
   }
   const file = await readRuntimeFileContent(args)
+  const svgText = svgPreviewText(file)
+  if (svgText !== null) {
+    return { content: svgText, isBinary: false }
+  }
   // Why: Include could not carry this non-text file, so it is named as unreadable instead of dropped.
   if (bytesFailed && file.isBinary) {
     throw bytesError
   }
-  const svgText = svgPreviewText(file)
-  return svgText === null
-    ? { content: file.content, isBinary: file.isBinary }
-    : { content: svgText, isBinary: false }
+  return { content: file.content, isBinary: file.isBinary }
 }
 
 export const clipcodeRuntimeReaders: ClipcodeContentReaders = {
