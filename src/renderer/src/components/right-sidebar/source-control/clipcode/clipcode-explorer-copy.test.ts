@@ -247,6 +247,71 @@ describe('buildClipcodeExplorerCopy', () => {
     })
   })
 
+  it('skips names another platform cannot restore and names them as they are, without reading them', async () => {
+    const names = ['a:b.png', 'tab\tname.ts', 'back\\slash.ts', 'what?.ts', 'lone\uD800.ts']
+    const readFile = vi.fn(async (_path: string) => ({ bytes: new TextEncoder().encode('x') }))
+    const readDir = vi.fn(async (path: string) =>
+      path === '/ws/trail ' ? [file('ok.ts')] : [file('in.ts')]
+    )
+    const result = await buildClipcodeExplorerCopy({
+      rootPath: '/ws',
+      targets: [
+        ...names.map((name) => ({ path: `/ws/${name}`, isDirectory: false })),
+        // A trailing space on a folder inside the path is portable; on the file name it is not.
+        { path: '/ws/trail ', isDirectory: true },
+        { path: '/ws/bad|dir', isDirectory: true },
+        { path: '/ws/ok.ts', isDirectory: false }
+      ],
+      readers: { readDir, readFile }
+    })
+
+    expect(result).toMatchObject({
+      unsafePaths: [...names, 'bad|dir/in.ts'],
+      skippedUnsafePathCount: 6,
+      copiedFileCount: 2
+    })
+    expect(readFile.mock.calls.map(([path]) => path)).toEqual(['/ws/trail /ok.ts', '/ws/ok.ts'])
+    expect(result.payload).toBe(
+      '// clipcode-root: ws\n\n// file: trail /ok.ts\nx\n\n// file: ok.ts\nx\n\n'
+    )
+
+    // A Windows root still uses `\` as its separator.
+    const windows = await buildClipcodeExplorerCopy({
+      rootPath: 'C:\\ws',
+      targets: [{ path: 'C:\\ws\\sub\\a.ts', isDirectory: false }],
+      readers: { readDir, readFile }
+    })
+    expect(windows).toMatchObject({ skippedUnsafePathCount: 0, copiedFileCount: 1 })
+    expect(windows.payload).toBe('// clipcode-root: ws\n\n// file: sub/a.ts\nx\n\n')
+  })
+
+  it('names a symlink pointing outside the allowed folders as a symlinked folder', async () => {
+    const denied = new Error(
+      "Error invoking remote method 'fs:stat': Error: Access denied: path resolves outside allowed directories. If this blocks a legitimate workflow, please file a GitHub issue."
+    )
+    const readDir = vi.fn(async () => [
+      { name: 'outside-link', isDirectory: false, isSymlink: true },
+      file('denied.txt'),
+      file('ok.ts')
+    ])
+    const readFile = vi.fn(async (path: string) => {
+      if (path === '/ws/src/ok.ts') {
+        return { bytes: new TextEncoder().encode('x') }
+      }
+      throw denied
+    })
+    const result = await buildClipcodeExplorerCopy({
+      rootPath: '/ws',
+      targets: [{ path: '/ws/src', isDirectory: true }],
+      readers: { readDir, readFile }
+    })
+    expect(result).toMatchObject({
+      copiedFileCount: 1,
+      symlinkedFolderPaths: ['src/outside-link'],
+      unreadablePaths: ['src/denied.txt']
+    })
+  })
+
   it('names a directly selected symlinked folder instead of following it', async () => {
     const readDir = vi.fn(async () => [file('inner.ts')])
     const readFile = vi.fn(async () => ({ bytes: new TextEncoder().encode('x') }))

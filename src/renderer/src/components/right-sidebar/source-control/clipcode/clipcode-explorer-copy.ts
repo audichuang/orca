@@ -3,6 +3,8 @@ import { basename, getRelativePathInsideRoot, joinPath } from '@/lib/path'
 import type { DirEntry } from '../../../../../../shared/file-listing/directory-entry'
 import { sortDirEntries } from '../../../../../../shared/file-listing/file-name-sort'
 import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
+import { isWindowsAbsolutePathLike } from '../../../../../../shared/cross-platform-path'
+import { isPathOutsideAllowedDirectoriesError } from '../../../../../../shared/file-access/local-file-access'
 import { shouldIncludeFileExplorerEntry } from '../../file-explorer/tree/file-explorer-entries'
 import { buildPayload, CLIPCODE_DEFAULTS, type PayloadFile } from './clipcode-clipboard-format'
 import {
@@ -15,6 +17,7 @@ import {
   type ClipcodeFileContent
 } from './clipcode-entry-content'
 import type { ClipcodeGitCopyResult } from './clipcode-git-copy'
+import { isClipcodePortableRelativePath } from './clipcode-portable-path'
 
 /** `isSymlink`: an explorer row of a symlink; a symlinked folder is named, never followed. */
 export type ClipcodeExplorerTarget = { path: string; isDirectory: boolean; isSymlink?: boolean }
@@ -36,7 +39,7 @@ const NOT_A_FILE_ERRORS = ['Not a regular file', 'EISDIR']
 async function readContent(
   readers: ClipcodeExplorerReaders,
   absolutePath: string
-): Promise<ClipcodeFileContent | 'binary' | 'unreadable' | 'notAFile'> {
+): Promise<ClipcodeFileContent | 'binary' | 'unreadable' | 'notAFile' | 'outsideRoots'> {
   try {
     return clipcodeReadContent(await readers.readFile(absolutePath))
   } catch (error) {
@@ -44,13 +47,25 @@ async function readContent(
     if (TOO_LARGE_ERRORS.some((text) => message.includes(text))) {
       return { skippedReason: 'size exceeds limit' }
     }
+    if (isPathOutsideAllowedDirectoriesError(error)) {
+      return 'outsideRoots'
+    }
     return NOT_A_FILE_ERRORS.some((text) => message.includes(text)) ? 'notAFile' : 'unreadable'
   }
 }
 
+/** Root-relative with `/`; `\` is a separator only under a Windows root (on POSIX it is part of a name). */
+function rootRelativePath(absolutePath: string, rootPath: string): string | undefined {
+  const relative = getRelativePathInsideRoot(absolutePath, rootPath)
+  if (relative === null) {
+    return undefined
+  }
+  return isWindowsAbsolutePathLike(rootPath) ? relative.replaceAll('\\', '/') : relative
+}
+
 /** Shown path of a skipped item: workspace-relative like the payload, else as given. */
 function displayPath(absolutePath: string, rootPath: string): string {
-  return getRelativePathInsideRoot(absolutePath, rootPath)?.replaceAll('\\', '/') || absolutePath
+  return rootRelativePath(absolutePath, rootPath) || absolutePath
 }
 
 type CollectedFile = { path: string; isSymlink: boolean }
@@ -101,7 +116,7 @@ async function collectFilePaths(
   return { files, unreadableDirs, symlinkedFolders }
 }
 
-type ExplorerFileVerdict = ClipcodeEntryVerdict | { kind: 'notAFile' }
+type ExplorerFileVerdict = ClipcodeEntryVerdict | { kind: 'notAFile' } | { kind: 'outsideRoots' }
 
 /** Reads and classifies one file; only an accepted file keeps its content, so a big selection never piles up rejected bodies. */
 async function readAndClassify(
@@ -114,11 +129,19 @@ async function readAndClassify(
     return { kind: 'unreadable' }
   }
   // Why first: an unsafe name is skipped without reading its bytes at all.
-  if (!clipcodeHeaderRoundTrips(clipboardPath, undefined)) {
+  if (
+    !isClipcodePortableRelativePath(clipboardPath) ||
+    !clipcodeHeaderRoundTrips(clipboardPath, undefined)
+  ) {
     return { kind: 'unsafePath' }
   }
   const content = await readContent(readers, absolutePath)
-  if (content === 'binary' || content === 'unreadable' || content === 'notAFile') {
+  if (
+    content === 'binary' ||
+    content === 'unreadable' ||
+    content === 'notAFile' ||
+    content === 'outsideRoots'
+  ) {
     return { kind: content }
   }
   return classifyClipcodeEntryContent(clipboardPath, undefined, content, maxBytes)
@@ -134,12 +157,7 @@ export async function buildClipcodeExplorerCopy(args: {
   const maxBytes = CLIPCODE_DEFAULTS.maxFileSizeKB * 1024
   const collected = await collectFilePaths(readers, args.targets)
   const verdicts = await mapWithConcurrency(collected.files, READ_CONCURRENCY, (file) =>
-    readAndClassify(
-      readers,
-      getRelativePathInsideRoot(file.path, rootPath)?.replaceAll('\\', '/'),
-      file.path,
-      maxBytes
-    )
+    readAndClassify(readers, rootRelativePath(file.path, rootPath), file.path, maxBytes)
   )
   const tallies = [new ClipcodeCopyTally(false), new ClipcodeCopyTally(true)] as const
   for (const tally of tallies) {
@@ -151,11 +169,21 @@ export async function buildClipcodeExplorerCopy(args: {
     }
     verdicts.forEach((verdict, index) => {
       const { path, isSymlink } = collected.files[index]
-      if (verdict.kind !== 'notAFile') {
-        tally.add(displayPath(path, rootPath), verdict)
-      } else if (isSymlink) {
+      const shown = displayPath(path, rootPath)
+      if (verdict.kind === 'notAFile') {
         // A symlinked folder listed as a file while folder-following is off; any other non-file stays silent.
-        tally.addSymlinkedFolder(displayPath(path, rootPath))
+        if (isSymlink) {
+          tally.addSymlinkedFolder(shown)
+        }
+      } else if (verdict.kind === 'outsideRoots') {
+        // Why: a symlink leaving the allowed folders lists as a file whatever it points at; it is never followed.
+        if (isSymlink) {
+          tally.addSymlinkedFolder(shown)
+        } else {
+          tally.addUnreadable(shown)
+        }
+      } else {
+        tally.add(shown, verdict)
       }
     })
   }
