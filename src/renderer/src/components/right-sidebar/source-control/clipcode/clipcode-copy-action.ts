@@ -100,8 +100,7 @@ async function readClipcodeFile(
       return { tooLargeSize: read.size }
     }
   } catch {
-    // Why: the text read below keeps today's error wording (unreadable, not a file, too large), and
-    // unlike the byte read's stat it may wake a stopped WSL distro.
+    // Why: the text read below keeps today's error wording (unreadable, not a file, too large).
   }
   const file = await readRuntimeFileContent(args)
   const svgText = svgPreviewText(file)

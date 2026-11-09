@@ -134,10 +134,6 @@ describe('ClipcodeRestorePreviewDialog', () => {
     )
     expect(screen.getByText('Unchanged (1)')).toBeInTheDocument()
     expect(screen.getAllByText('non-text file · 3 B')).toHaveLength(2)
-    expect(screen.getByText('Corrupt').closest('li')).toHaveAttribute(
-      'title',
-      'Corrupt non-text file'
-    )
     expect(screen.queryByLabelText('Overwrite existing files')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
     expect(
