@@ -1,4 +1,5 @@
 // Behavioral port of ClipCodeVSCode src/clipboardFormat.ts; cross-tool wire contract, regenerate fixtures before changing.
+import { nonTextBodyLines, parseNonTextPlaceholderLine } from './clipcode-non-text-body'
 import { CLIPCODE_SKIPPED_BODY_PREFIX } from './clipcode-placeholder-bodies'
 
 export { DELETED_FILE_MARKER } from './clipcode-placeholder-bodies'
@@ -8,6 +9,8 @@ export type ParsedEntry = {
   path: string
   content: string
   changeTypes: Set<ChangeTypeLabel>
+  // A text body whose first line is placeholder-shaped; never decode it as a non-text file.
+  escapedPlaceholder?: boolean
 }
 
 export type PayloadFile = {
@@ -15,6 +18,8 @@ export type PayloadFile = {
   content?: string
   changeType?: ChangeTypeLabel
   skippedReason?: string
+  // Raw bytes of a non-text file, written as the placeholder line plus Base64.
+  bytes?: Uint8Array
 }
 
 export type BuildPayloadOptions = {
@@ -122,10 +127,13 @@ function buildPayloadInternal(options: BuildPayloadOptions, includeEmptyWrappers
 
   for (const file of options.files) {
     lines.push(formatHeader(options.headerFormat, file.path, file.changeType))
-    const body = file.skippedReason
-      ? `${CLIPCODE_SKIPPED_BODY_PREFIX}${file.skippedReason}`
-      : (file.content ?? '')
-    lines.push(escapeContent(body, customRegex))
+    if (file.skippedReason) {
+      lines.push(escapeContent(`${CLIPCODE_SKIPPED_BODY_PREFIX}${file.skippedReason}`, customRegex))
+    } else if (file.bytes) {
+      lines.push(escapeContent(nonTextBodyLines(file.bytes).join('\n'), customRegex))
+    } else {
+      lines.push(escapeTextBody(file.content ?? '', customRegex))
+    }
     if (options.addExtraLineBetweenFiles) {
       lines.push('')
     }
@@ -151,6 +159,34 @@ function escapeContent(text: string, customRegex?: RegExp): string {
     .split('\n')
     .map((line) => (needsEscape(line, customRegex) ? ESCAPE_MARKER + line : line))
     .join('\n')
+}
+
+// A placeholder-shaped first non-blank text line gets the placeholder escape on top of the normal
+// one (two markers), so readers never decode it (OpenIDEA format.rs write_escaped_text).
+function escapeTextBody(text: string, customRegex?: RegExp): string {
+  if (!text) {
+    return text
+  }
+  const lines = text.split('\n')
+  const first = lines.findIndex((line) => asciiTrim(line) !== '')
+  return lines
+    .map((line, index) =>
+      index === first && isPlaceholderShaped(line)
+        ? ESCAPE_MARKER + ESCAPE_MARKER + line
+        : needsEscape(line, customRegex)
+          ? ESCAPE_MARKER + line
+          : line
+    )
+    .join('\n')
+}
+
+// The non-text placeholder line after removing any number of leading escape markers.
+function isPlaceholderShaped(line: string): boolean {
+  let rest = line
+  while (rest.startsWith(ESCAPE_MARKER)) {
+    rest = rest.slice(ESCAPE_MARKER.length)
+  }
+  return parseNonTextPlaceholderLine(rest) !== undefined
 }
 
 // Escape a line if it would parse as a header (must be hidden) or already starts
@@ -199,11 +235,17 @@ export function parseClipboard(content: string, headerFormat: string): ParsedEnt
     if (currentPath === undefined) {
       return
     }
-    entries.push({
-      path: currentPath,
-      content: unescapeContent(joinContent(currentContent)),
-      changeTypes: currentLabels
-    })
+    let content = unescapeContent(joinContent(currentContent))
+    // The first non-blank line as the writer counts it (an escaped whitespace-only line survives joinContent).
+    const lines = content.split('\n')
+    const first = lines.findIndex((line) => asciiTrim(line) !== '')
+    const escapedPlaceholder =
+      first !== -1 && lines[first].startsWith(ESCAPE_MARKER) && isPlaceholderShaped(lines[first])
+    if (escapedPlaceholder) {
+      lines[first] = lines[first].slice(ESCAPE_MARKER.length)
+      content = lines.join('\n')
+    }
+    entries.push({ path: currentPath, content, changeTypes: currentLabels, escapedPlaceholder })
     currentPath = undefined
     currentLabels = new Set()
     currentContent.length = 0
@@ -322,5 +364,6 @@ export const CLIPCODE_DEFAULTS = {
   preText: '',
   postText: '',
   addExtraLineBetweenFiles: true,
-  maxFileSizeKB: 500
+  maxFileSizeKB: 500,
+  maxNonTextFileSizeKB: 2048
 } as const
