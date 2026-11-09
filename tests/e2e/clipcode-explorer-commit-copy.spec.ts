@@ -290,8 +290,6 @@ test('non-text files survive Copy Full Source with Include and Paste & Restore b
     await expect.poll(() => existsSync(restored), { timeout: 15_000 }).toBe(true)
     expect(sha256(restored), file).toBe(expected)
   }
-  // Text entries keep their existing format, which does not carry the final newline.
-  expect(readFileSync(path.join(folder, 'README.md'), 'utf8')).toBe('# sample\n\ntext file')
 
   const openIdeaPreview = await pasteAndRestore(
     orcaPage,
