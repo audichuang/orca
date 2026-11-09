@@ -112,7 +112,8 @@ async function readClipcodeFile(
     return { content: svgText, isBinary: false }
   }
   // Why: Include could not carry this non-text file, so it is named as unreadable instead of dropped.
-  if (bytesFailed && file.isBinary) {
+  // isBinary only probes the head; a later NUL is still non-text to the classifier.
+  if (bytesFailed && (file.isBinary || file.content.includes('\0'))) {
     throw bytesError
   }
   return { content: file.content, isBinary: file.isBinary }

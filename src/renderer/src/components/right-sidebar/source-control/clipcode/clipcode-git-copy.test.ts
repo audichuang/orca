@@ -419,6 +419,18 @@ describe('buildClipcodeGitCopy', () => {
     expect(result.payload).toContain('// file: [MODIFIED] inside.ts')
   })
 
+  it('drops a POSIX name containing a backslash instead of writing it with a slash', async () => {
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f', [modified('img\\logo.png'), modified('img/logo.png')])],
+      readers: makeReaders()
+    })
+    expect(result.copiedFileCount).toBe(1)
+    expect(result.skippedUnsafePathCount).toBe(1)
+    expect(result.payload).toContain('WORK img/logo.png')
+    expect(result.payload).not.toContain('WORK img\\logo.png')
+  })
+
   it('returns an empty payload when nothing is copyable', async () => {
     const result = await buildClipcodeGitCopy({
       rootPath: '/f',
