@@ -1,4 +1,6 @@
 // Fork-only: content rules every ClipCode copy shares (non-text, size caps).
+import { getRelativePathInsideRoot } from '@/lib/path'
+import { isWindowsAbsolutePathLike } from '../../../../../../shared/cross-platform-path'
 import { getUtf8ByteLength, measureUtf8ByteLength } from '../../../../../../shared/utf8-byte-limits'
 import type { GitDiffResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import {
@@ -86,11 +88,27 @@ export function isUnreadableModifiedSide(diff: GitDiffResult): boolean {
   return diff.originalContent === '' && !diff.originalIsBinary
 }
 
+/** Root-relative with `/`; `\` is a separator only under a Windows root (on POSIX it is part of a name). */
+export function clipcodeRootRelativePath(
+  absolutePath: string,
+  rootPath: string
+): string | undefined {
+  const relative = getRelativePathInsideRoot(absolutePath, rootPath)
+  if (relative === null) {
+    return undefined
+  }
+  return isWindowsAbsolutePathLike(rootPath) ? relative.replaceAll('\\', '/') : relative
+}
+
 /** True when this path's header parses back to exactly this path and change label. */
 export function clipcodeHeaderRoundTrips(
   path: string,
   changeType: ChangeTypeLabel | undefined
 ): boolean {
+  // Why: Paste & Restore reads `\` as a separator, so a POSIX name holding one would land at another path.
+  if (path.includes('\\')) {
+    return false
+  }
   const { headerFormat } = CLIPCODE_DEFAULTS
   const parsed = parseClipboard(formatHeader(headerFormat, path, changeType), headerFormat)
   const labels = parsed[0]?.changeTypes
