@@ -121,14 +121,18 @@ function writeRow(write: ClipcodeRestoreWrite, t: Translate): PathRow {
 
 // Why: an identical target sits with the other existing files, marked instead of counted as an overwrite.
 function unchangedRow(item: ClipcodeRestorePreview['unchanged'][number], t: Translate): PathRow {
+  const badge = t(
+    'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.unchanged',
+    'Unchanged'
+  )
+  const note = nonTextNote(item.size, t)
+  // Why detail: a long path pushes the badge out of view, so the tooltip still says Unchanged.
   return {
     path: item.relativePath,
-    badge: t(
-      'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.unchanged',
-      'Unchanged'
-    ),
+    badge,
     badgeVariant: 'secondary',
-    note: nonTextNote(item.size, t)
+    note,
+    detail: `${badge} · ${note}`
   }
 }
 
@@ -142,13 +146,14 @@ function skipRow(skipped: ClipcodeRestorePreview['skipped'][number], t: Translat
         ),
         detail: skipReasonLabel(skipped.reason)
       }
-    : { path: skipped.path, note: skipReasonLabel(skipped.reason) }
+    : { path: skipped.path, reason: skipReasonLabel(skipped.reason) }
 }
 
-/** `note` shows in the row; `detail` only in the tooltip. */
+/** `note` shows in the row while it fits; `reason` always does; `detail` only in the tooltip. */
 type PathRow = {
   path: string
   note?: string
+  reason?: string
   detail?: string
   badge?: string
   badgeVariant?: 'destructive' | 'secondary'
@@ -156,10 +161,13 @@ type PathRow = {
 
 function PathList({
   title,
-  rows
+  rows,
+  count = rows.length
 }: {
   title: string
   rows: readonly PathRow[]
+  /** Rows that act; defaults to all of them. */
+  count?: number
 }): React.JSX.Element | null {
   if (rows.length === 0) {
     return null
@@ -167,11 +175,11 @@ function PathList({
   return (
     <div className="min-w-0">
       <div className="text-xs font-medium text-foreground">
-        {title} ({rows.length})
+        {title} ({count})
       </div>
       <ul className="mt-0.5 space-y-1 text-2xs text-muted-foreground">
         {rows.map((row) => {
-          const detail = row.detail ?? row.note
+          const detail = row.detail ?? row.reason ?? row.note
           const title = detail ? `${row.path}\n${detail}` : row.path
           return (
             // Why one clipped line with a tall row gap: a badge or note that does not fit whole
@@ -184,16 +192,17 @@ function PathList({
               <ClipcodeMiddleEllipsisPath
                 path={row.path}
                 title={title}
-                className="flex-initial font-mono"
+                // Why flex-1 with a reason: a zero basis keeps the reason on the visible line; the path shortens instead.
+                className={row.reason ? 'flex-1 font-mono' : 'flex-initial font-mono'}
               />
               {row.badge && (
                 <Badge variant={row.badgeVariant ?? 'destructive'} className="flex-none">
                   {row.badge}
                 </Badge>
               )}
-              {row.note && (
+              {(row.reason ?? row.note) && (
                 <span className="flex-none whitespace-nowrap font-medium text-foreground">
-                  {row.note}
+                  {row.reason ?? row.note}
                 </span>
               )}
             </li>
@@ -288,6 +297,7 @@ export function ClipcodeRestorePreviewDialog({
                 ...preview.overwrite.map((write) => writeRow(write, t)),
                 ...preview.unchanged.map((item) => unchangedRow(item, t))
               ]}
+              count={preview.overwrite.length}
             />
             <PathList
               title={t(
