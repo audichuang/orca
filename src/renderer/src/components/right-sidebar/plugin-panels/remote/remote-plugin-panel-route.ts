@@ -82,11 +82,20 @@ export async function openCheckedRemotePanelSession(
     panel.tabKey,
     localVersion
   )
-  const token =
-    availability.kind === 'ready'
-      ? await openRemotePanelSession(environmentId, panel.pluginKey, panel.id)
-      : null
-  return { availability, token }
+  if (availability.kind !== 'ready') {
+    return { availability, token: null }
+  }
+  const token = await openRemotePanelSession(environmentId, panel.pluginKey, panel.id)
+  // The server may update the plugin between the check and the open; its token then serves the
+  // new version, so check again and drop a token this UI must not use.
+  const after = remotePanelAvailability(
+    await listRemotePlugins(environmentId),
+    panel.tabKey,
+    localVersion
+  )
+  return after.kind === 'ready'
+    ? { availability: after, token }
+    : { availability: after, token: null }
 }
 
 // The server's answers when the token's connection is gone, or its plugin was updated or re-enabled.
