@@ -482,6 +482,37 @@ describe('buildClipcodeGitCopy unsafe file names', () => {
     expect(result.payload).not.toContain('victim.ts')
     expect(result.payload).toContain('// file: [MODIFIED] ok.ts')
   })
+
+  it('names changed paths another platform cannot restore and copies the rest, without reading them', async () => {
+    const readWorkingFile = vi.fn(async (_c: RuntimeGitContext, path: string) => ({
+      content: `WORK ${path}`,
+      isBinary: false
+    }))
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f', [modified('a:b.png'), modified('tab\there.ts'), modified('ok.ts')])],
+      readers: makeReaders({ readWorkingFile })
+    })
+    expect(result).toMatchObject({
+      unsafePaths: ['a:b.png', 'tab\there.ts'],
+      skippedUnsafePathCount: 2,
+      copiedFileCount: 1
+    })
+    expect(readWorkingFile.mock.calls.map(([, path]) => path)).toEqual(['ok.ts'])
+    expect(result.payload).toBe('// clipcode-root: f\n\n// file: [MODIFIED] ok.ts\nWORK ok.ts\n\n')
+  })
+
+  it('names a git path holding a backslash under a Windows root instead of copying it as a folder', async () => {
+    const result = await buildClipcodeGitCopy({
+      rootPath: 'C:\\f',
+      repos: [repo('C:\\f', [modified('img\\logo.png'), modified('img/logo.png')])],
+      readers: makeReaders()
+    })
+    expect(result).toMatchObject({ unsafePaths: ['img\\logo.png'], copiedFileCount: 1 })
+    expect(result.payload).toBe(
+      '// clipcode-root: f\n\n// file: [MODIFIED] img/logo.png\nWORK img/logo.png\n\n'
+    )
+  })
 })
 
 describe('buildClipcodeGitCopy non-text working files', () => {
