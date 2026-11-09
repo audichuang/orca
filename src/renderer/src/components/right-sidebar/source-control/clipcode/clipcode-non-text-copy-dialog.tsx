@@ -11,12 +11,14 @@ import {
 } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
 import { formatBytes } from '../../../../../../shared/format-bytes'
-import { CLIPCODE_READ_MAX_BYTES, type ClipcodeNonTextSummary } from './clipcode-entry-content'
+import {
+  CLIPCODE_PAYLOAD_LIMIT_BYTES,
+  CLIPCODE_READ_MAX_BYTES,
+  type ClipcodeNonTextSummary
+} from './clipcode-entry-content'
 
 export type ClipcodeNonTextChoice = 'include' | 'exclude' | 'cancel'
 
-/** Whole-payload ceiling shared with OpenIDEA (`CLIPBOARD_PAYLOAD_MAX`); Include is refused above it. */
-export const CLIPCODE_PAYLOAD_LIMIT_BYTES = 50 * 1024 * 1024
 const MAX_LISTED = 10
 // Why: a few characters of the stem stay beside the extension, so names sharing a long prefix stay apart.
 const NAME_TAIL_CHARS = 8
