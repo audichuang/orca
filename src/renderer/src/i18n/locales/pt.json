@@ -11473,7 +11473,6 @@
             "laneComesFromAbove": "Vem de {{sha}} {{subject}}, {{count}} linhas acima. Clique para ir.",
             "laneContinuesPastLoaded": "Continua além dos commits carregados. Carregue mais commits para segui-la.",
             "open": "Abrir Git Graph",
-            "openShort": "Git Graph",
             "description": "Grafo de commits do repositório atual.",
             "message": "Mensagem",
             "author": "Autor",
