@@ -91,6 +91,8 @@ async function readClipcodeFile(
     connectionId: context.connectionId,
     ...USER_ACT
   }
+  let bytesError: unknown
+  let bytesFailed = false
   try {
     const read = await readRuntimeFileBytes(args, CLIPCODE_READ_MAX_BYTES)
     if (read.kind === 'ok') {
@@ -99,10 +101,16 @@ async function readClipcodeFile(
     if (read.kind === 'too_large') {
       return { tooLargeSize: read.size }
     }
-  } catch {
+  } catch (error) {
     // Why: the text read below keeps today's error wording (unreadable, not a file, too large).
+    bytesError = error
+    bytesFailed = true
   }
   const file = await readRuntimeFileContent(args)
+  // Why: Include could not carry this non-text file, so it is named as unreadable instead of dropped.
+  if (bytesFailed && file.isBinary) {
+    throw bytesError
+  }
   const svgText = svgPreviewText(file)
   return svgText === null
     ? { content: file.content, isBinary: file.isBinary }
