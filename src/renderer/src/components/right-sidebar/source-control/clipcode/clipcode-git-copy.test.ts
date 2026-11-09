@@ -425,7 +425,7 @@ describe('buildClipcodeGitCopy', () => {
       repos: [repo('/f/a', [])],
       readers: makeReaders()
     })
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       payload: '',
       copiedFileCount: 0,
       skippedFileSizeCount: 0,
@@ -469,5 +469,42 @@ describe('buildClipcodeGitCopy unsafe file names', () => {
     expect(result).toMatchObject({ skippedUnsafePathCount: 1, copiedFileCount: 1 })
     expect(result.payload).not.toContain('victim.ts')
     expect(result.payload).toContain('// file: [MODIFIED] ok.ts')
+  })
+})
+
+describe('buildClipcodeGitCopy non-text working files', () => {
+  it('keeps Exclude as today (the staged text of the same path) while Include carries the working bytes', async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x00, 0x01])
+    const readDiff = vi.fn(async () => textDiff('', 'staged text'))
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f', [modified('logo.png', 'staged'), modified('logo.png')], true)],
+      readers: makeReaders({ readDiff, readWorkingFile: vi.fn(async () => ({ bytes: png })) })
+    })
+
+    expect(result.payload).toBe('// clipcode-root: f\n// file: [MODIFIED] logo.png\nstaged text\n')
+    expect(result.skippedBinaryFileCount).toBe(0)
+    expect(result.nonText?.summary).toMatchObject({
+      count: 1,
+      totalBytes: 4,
+      files: [{ path: 'logo.png', size: 4 }]
+    })
+    const include = result.nonText?.include
+    expect(include).toMatchObject({ nonTextFileCount: 1, copiedFileCount: 1, entryCount: 1 })
+    expect(include?.payload).not.toContain('staged text')
+    expect(include?.payload).toContain('// File skipped: non-text file, 4 bytes, sha256 ')
+    // One index read, for Exclude only.
+    expect(readDiff).toHaveBeenCalledTimes(1)
+  })
+
+  it('writes a size placeholder with the file size for a working file over both limits', async () => {
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f', [modified('big.bin')])],
+      readers: makeReaders({ readWorkingFile: vi.fn(async () => ({ tooLargeSize: 3_000_000 })) })
+    })
+    expect(result.payload).toContain('// File skipped: size exceeds limit (3000000 bytes)')
+    expect(result.skippedFileSizeCount).toBe(1)
+    expect(result.nonText).toBeUndefined()
   })
 })
