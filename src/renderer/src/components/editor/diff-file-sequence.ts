@@ -4,7 +4,7 @@ import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { setWithLRU } from '@/lib/scroll-cache'
 
 export type DiffFileSequenceStep = {
-  /** Tab id (`commitDiffTabId`) of the diff this step opens. */
+  /** Tab id of the diff this step opens. */
   key: string
   open: (targetGroupId: string | undefined) => void
 }
