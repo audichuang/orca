@@ -1,6 +1,5 @@
 import { getFolderGitWorktrees } from '@/components/right-sidebar/source-control/folder/folder-git-worktrees'
 import { getIndexedAllWorktrees } from '../../worktrees/listing/worktree-catalog-index'
-import { getIndexedRepoMap } from '@/store/repos/repository-catalog-index'
 import type { AppState } from '../../../types'
 import type { OpenFile } from '../types/open-file'
 import {
@@ -37,7 +36,7 @@ export function resolveFolderFileGitOwner(
   const members = getFolderGitWorktrees(
     folderWorkspace,
     getIndexedAllWorktrees(selectWorktreesByRepo(state)),
-    getIndexedRepoMap(state.repos)
+    state.repos
   )
   for (const { worktree } of members) {
     if (!relativePathInsideRoot(worktree.path, filePath)) {
