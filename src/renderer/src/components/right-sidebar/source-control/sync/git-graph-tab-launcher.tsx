@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
 import { useShortcutKeyDetails } from '@/hooks/useShortcutLabel'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
@@ -85,6 +86,7 @@ export function GitGraphOpenButton({
   /** Repo to open on; defaults to the workspace's own or remembered repo. */
   repoWorktreeId?: string
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const openGitGraphTab = useAppStore((s) => s.openGitGraphTab)
   const hasRepo = useAppStore((s) => resolveGitGraphDefaultRepoWorktreeId(s, workspaceId) !== null)
   if (!hasRepo) {
@@ -103,7 +105,7 @@ export function GitGraphOpenButton({
         <GitGraph />
         {/* Why: in a narrow sidebar the label would squeeze out the folder name or Create PR. */}
         <span className="@max-[300px]/sc-toolbar:hidden">
-          {translate('auto.components.right.sidebar.GitGraphFullView.openShort', 'Git Graph')}
+          {t('auto.components.right.sidebar.GitGraphFullView.openShort', 'Git Graph')}
         </span>
       </Button>
     </GitGraphShortcutTooltip>
