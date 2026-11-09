@@ -6,13 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import { translate } from '@/i18n/i18n'
-import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
 import { useShortcutKeyDetails } from '@/hooks/useShortcutLabel'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import {
   listGitGraphRepoChoicesFromInputs,
-  resolveGitGraphDefaultRepoWorktreeId,
   selectGitGraphChoiceInputs
 } from '../../../git-graph-tab/git-graph-tab-model'
 
@@ -69,44 +67,6 @@ export function GitGraphTabLauncher({
         onClick={() => openGitGraphTab(workspaceId, { repoWorktreeId })}
       >
         <GitGraph className="size-3" />
-      </Button>
-    </GitGraphShortcutTooltip>
-  )
-}
-
-/**
- * Always-visible labelled entry at the top of Source Control, so the graph is reachable without
- * opening a repo first. Hidden when the workspace has no git repo to show.
- */
-export function GitGraphOpenButton({
-  workspaceId,
-  repoWorktreeId
-}: {
-  workspaceId: string
-  /** Repo to open on; defaults to the workspace's own or remembered repo. */
-  repoWorktreeId?: string
-}): React.JSX.Element | null {
-  const t = useTranslate()
-  const openGitGraphTab = useAppStore((s) => s.openGitGraphTab)
-  const hasRepo = useAppStore((s) => resolveGitGraphDefaultRepoWorktreeId(s, workspaceId) !== null)
-  if (!hasRepo) {
-    return null
-  }
-  return (
-    <GitGraphShortcutTooltip>
-      <Button
-        type="button"
-        variant="ghost"
-        size="xs"
-        className="shrink-0"
-        aria-label={openGitGraphLabel()}
-        onClick={() => openGitGraphTab(workspaceId, { repoWorktreeId })}
-      >
-        <GitGraph />
-        {/* Why: in a narrow sidebar the label would squeeze out the folder name or Create PR. */}
-        <span className="@max-[300px]/sc-toolbar:hidden">
-          {t('auto.components.right.sidebar.GitGraphFullView.openShort', 'Git Graph')}
-        </span>
       </Button>
     </GitGraphShortcutTooltip>
   )
