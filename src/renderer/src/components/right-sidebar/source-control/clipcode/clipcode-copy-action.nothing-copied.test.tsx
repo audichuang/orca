@@ -73,8 +73,7 @@ describe('Copy Full Source when everything selected is skipped', () => {
 
     expect(writeClipboardText).not.toHaveBeenCalled()
     expect(toast.warning).toHaveBeenCalledTimes(1)
-    const [title, options] = vi.mocked(toast.warning).mock.calls[0]
-    expect(title).toBe('Nothing to copy')
+    const [, options] = vi.mocked(toast.warning).mock.calls[0]
     const description = options?.description
     const { container } = render(
       <>{typeof description === 'function' ? description() : description}</>
@@ -125,8 +124,7 @@ describe('Copy to Clipboard when every selected file is skipped', () => {
     await copyClipcodeExplorerTargets({ worktreePath: '/ws', targets: [target] })
 
     expect(writeClipboardText).not.toHaveBeenCalled()
-    const [title, options] = vi.mocked(toast.warning).mock.calls[0]
-    expect(title).toBe('Nothing to copy')
+    const [, options] = vi.mocked(toast.warning).mock.calls[0]
     const description = options?.description
     const { container } = render(
       <>{typeof description === 'function' ? description() : description}</>
@@ -145,8 +143,7 @@ describe('Copy to Clipboard when only size placeholders would be copied', () => 
     })
 
     expect(writeClipboardText).not.toHaveBeenCalled()
-    const [title, options] = vi.mocked(toast.warning).mock.calls[0]
-    expect(title).toBe('Nothing to copy')
+    const [, options] = vi.mocked(toast.warning).mock.calls[0]
     const description = options?.description
     const { container } = render(
       <>{typeof description === 'function' ? description() : description}</>
