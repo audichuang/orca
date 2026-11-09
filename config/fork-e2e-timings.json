@@ -18,7 +18,7 @@
     "folder-multi-repo-source-control.spec.ts › folder workspace multi-repo source control, copy and restore": 72000,
     "folder-setup.spec.ts › Folder setup › imports a small selection from a large nested folder without modal overflow": 24300,
     "folder-setup.spec.ts › Folder setup › imports nested repositories from the add-project dialog as a project group": 14100,
-    "folder-workspace-tab-restart-restore.spec.ts › a folder edit tab keeps its repo across a restart": 27500,
+    "folder-workspace-tab-restart-restore.spec.ts › a repo file opened from a folder keeps its repo across a restart": 27500,
     "git-graph-auto-load-tags.spec.ts › the Git Graph tab loads pages on scroll, follows an arrow past them, and walks tags on request": 28100,
     "git-graph-full-view.spec.ts › opens the Git Graph tab, switches repo and opens a commit file diff": 114000,
     "git-graph-open-all-changes.spec.ts › graph tab: file diff, back, then Open all changes keeps the workbench alive": 72000,
