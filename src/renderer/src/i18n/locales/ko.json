@@ -14050,7 +14050,8 @@
                       "parentIsFile": "상위 폴더 위치에 파일이 있습니다",
                       "targetIsFolder": "대상이 폴더입니다",
                       "writeFailed": "파일을 쓸 수 없습니다",
-                      "unchanged": "변경 없음: {{value0}}."
+                      "unchanged": "변경 없음: {{value0}}.",
+                      "nonTextUpdateRequired": "텍스트가 아닌 파일을 복원하려면 이 호스트의 Orca server를 업데이트하세요"
                     }
                   }
                 }

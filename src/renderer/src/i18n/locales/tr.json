@@ -14698,7 +14698,8 @@
                       "parentIsFile": "Üst klasörün yerinde bir dosya var",
                       "targetIsFolder": "Hedef bir klasör",
                       "writeFailed": "Dosya yazılamadı",
-                      "unchanged": "Değişmeyen: {{value0}}."
+                      "unchanged": "Değişmeyen: {{value0}}.",
+                      "nonTextUpdateRequired": "Metin olmayan dosyaları geri yüklemek için bu ana bilgisayardaki Orca sunucusunu güncelleyin"
                     }
                   }
                 }

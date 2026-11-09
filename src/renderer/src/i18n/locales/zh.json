@@ -14298,7 +14298,8 @@
                       "parentIsFile": "上层文件夹的位置是一个文件",
                       "targetIsFolder": "目标是文件夹",
                       "writeFailed": "无法写入文件",
-                      "unchanged": "未变更：{{value0}}。"
+                      "unchanged": "未变更：{{value0}}。",
+                      "nonTextUpdateRequired": "需要更新此主机上的 Orca server 才能还原非文本文件"
                     }
                   }
                 }

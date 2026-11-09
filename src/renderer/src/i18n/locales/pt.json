@@ -10934,7 +10934,8 @@
                       "parentIsFile": "Há um arquivo no lugar da pasta pai",
                       "targetIsFolder": "O destino é uma pasta",
                       "writeFailed": "Não foi possível gravar o arquivo",
-                      "unchanged": "Inalterados: {{value0}}."
+                      "unchanged": "Inalterados: {{value0}}.",
+                      "nonTextUpdateRequired": "Atualize o servidor Orca neste host para restaurar arquivos que não são de texto"
                     }
                   }
                 }

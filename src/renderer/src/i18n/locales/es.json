@@ -14401,7 +14401,8 @@
                       "parentIsFile": "Hay un archivo en lugar de su carpeta principal",
                       "targetIsFolder": "El destino es una carpeta",
                       "writeFailed": "No se pudo escribir el archivo",
-                      "unchanged": "Sin cambios: {{value0}}."
+                      "unchanged": "Sin cambios: {{value0}}.",
+                      "nonTextUpdateRequired": "Actualiza el servidor de Orca en este host para restaurar archivos que no son de texto"
                     }
                   }
                 }

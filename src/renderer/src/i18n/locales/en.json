@@ -15517,7 +15517,8 @@
                       "parentIsFile": "A file is in the way of its parent folder",
                       "targetIsFolder": "The target is a folder",
                       "writeFailed": "Could not write the file",
-                      "unchanged": "Unchanged: {{value0}}."
+                      "unchanged": "Unchanged: {{value0}}.",
+                      "nonTextUpdateRequired": "Update the Orca server on this host to restore non-text files"
                     }
                   }
                 }
