@@ -14014,7 +14014,7 @@
                         "corruptBadge": "손상됨",
                         "unchanged": "변경 없음",
                         "overwriteAll_one": "기존 파일 {{count}}개 덮어쓰기",
-                        "overwriteAll_other": "기존 파일 {{count}}개 모두 덮어쓰기"
+                        "overwriteAll_other": "기존 파일 {{count}}개 덮어쓰기"
                       }
                     }
                   },

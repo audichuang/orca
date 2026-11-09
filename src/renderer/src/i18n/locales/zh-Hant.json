@@ -14490,7 +14490,7 @@
                         "corruptBadge": "已損毀",
                         "unchanged": "未變更",
                         "overwriteAll_one": "覆寫 {{count}} 個現有檔案",
-                        "overwriteAll_other": "覆寫全部 {{count}} 個現有檔案"
+                        "overwriteAll_other": "覆寫 {{count}} 個現有檔案"
                       }
                     }
                   },
