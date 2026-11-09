@@ -4,7 +4,11 @@ import type { RuntimeClientTarget } from '../../../../../../shared/runtime-clien
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import { requireGitOwnerTarget } from './worktree-git-owner-target'
-import { copyClipcodeCommitChanges, getClipcodeRootPath } from '../clipcode/clipcode-copy-action'
+import {
+  copyClipcodeCommitChanges,
+  getClipcodeRootPath,
+  type ClipcodeWorktreeOwner
+} from '../clipcode/clipcode-copy-action'
 import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
 
 // Why: a shift-selected range can hold hundreds of commits; the runtime RPC queue rejects past 256.
@@ -17,11 +21,13 @@ export async function copyHistoryCommitsFullSource(args: {
   worktreePath: string
   /** Folder workspace the panel is placed in; paths are then relative to the folder, like Copy Full Source. */
   placementWorkspaceId: string | null
+  /** Filesystem owner of the worktree, so the folder root only applies on the folder's own host. */
+  worktreeOwner: ClipcodeWorktreeOwner
   activeRepoTarget: RuntimeClientTarget | null
   loadCommitFiles: (item: GitHistoryItem) => Promise<GitBranchChangeEntry[]>
 }): Promise<void> {
   await copyClipcodeCommitChanges({
-    rootPath: getClipcodeRootPath(args.placementWorkspaceId, args.worktreePath),
+    rootPath: getClipcodeRootPath(args.placementWorkspaceId, args.worktreePath, args.worktreeOwner),
     context: {
       // Why: route reads by the repo OWNER host, not the focused runtime.
       target: requireGitOwnerTarget(args.activeRepoTarget),
