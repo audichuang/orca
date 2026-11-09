@@ -1,7 +1,7 @@
 // Fork-only: the full Git Graph's list footer, which loads the next page as it scrolls into view.
 import React, { useEffect, useRef } from 'react'
 import { RefreshCw } from 'lucide-react'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { GIT_HISTORY_GRAPH_MAX_LIMIT } from '../../../../../../shared/git-history-graph-query-types'
 import type { GitHistoryPanelState } from './git-history-panel'
 import { useGitHistoryGraphFilter } from './git-history-graph-filter'
@@ -24,6 +24,7 @@ export function GitGraphAutoLoadMore({
   state: GitHistoryPanelState
   scrollRootRef: React.RefObject<HTMLElement | null>
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const filter = useGitHistoryGraphFilter(worktreeId)
   const { hostTooOld } = useGitHistoryGraphHostStatus(worktreeId, state)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -65,10 +66,7 @@ export function GitGraphAutoLoadMore({
         data-git-graph-auto-load="loading"
       >
         <RefreshCw className="size-3 animate-spin" />
-        {translate(
-          'auto.components.right.sidebar.GitGraphFullView.loadingMore',
-          'Loading more commits...'
-        )}
+        {t('auto.components.right.sidebar.GitGraphFullView.loadingMore', 'Loading more commits...')}
       </p>
     )
   }
@@ -78,7 +76,7 @@ export function GitGraphAutoLoadMore({
         className="px-3 py-1.5 text-center text-xs text-muted-foreground"
         data-git-graph-auto-load="cap"
       >
-        {translate(
+        {t(
           'auto.components.right.sidebar.GitGraphFullView.loadCapReached',
           'Showing the first {{count}} commits, the most the graph loads. Narrow it with Branch, User or Paths.',
           { count: GIT_HISTORY_GRAPH_MAX_LIMIT }
