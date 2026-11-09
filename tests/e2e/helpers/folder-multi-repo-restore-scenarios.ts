@@ -3,6 +3,7 @@ import path from 'node:path'
 import { expect } from './orca-app'
 import {
   clickExplorerPasteRestore,
+  openRepoEditTabInFolder,
   showSourceControl,
   type ExtraScenarioContext
 } from './folder-multi-repo-scenario-context'
@@ -133,17 +134,10 @@ export async function runRestoreScenarios(ctx: ExtraScenarioContext): Promise<vo
     )
     const onDisk = () => readFileSync(abs, 'utf8')
     const diskBefore = onDisk()
-    await page.evaluate(
-      ({ filePath, relativePath, worktreeId, gitWorktreeId }) =>
-        window.__store!.getState().openFile({
-          filePath,
-          relativePath,
-          worktreeId,
-          gitWorktreeId: gitWorktreeId ?? undefined,
-          language: 'typescript',
-          mode: 'edit'
-        }),
-      { filePath: abs, relativePath: rel, worktreeId: folderKey, gitWorktreeId: webWt }
+    await openRepoEditTabInFolder(
+      page,
+      { filePath: abs, relativePath: rel, ownerWorktreeId: webWt!, folderKey },
+      'typescript'
     )
     const monaco = page.locator('.monaco-editor').first()
     await expect(monaco).toBeVisible({ timeout: 25_000 })
