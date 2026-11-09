@@ -9,7 +9,7 @@ import { useWorktreeMap } from '@/store/slices/worktrees/listing/use-worktree-ca
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { getConnectionId, getConnectionIdFromState } from '@/lib/connection-context'
 import { ipcOrRuntimeTargetForHostId } from '@/runtime/rpc/targets/runtime-client-target'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared/execution-host'
 import type { Repo } from '../../../../shared/repo-types'
 import type { GitHistoryGraphSavedFilter } from '../../../../shared/git-history-graph-query-types'
@@ -166,6 +166,7 @@ function GitGraphTabBody({
 }
 
 export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX.Element {
+  const t = useTranslate()
   const workspaceId = file.worktreeId
   const repoWorktreeId = file.gitGraph?.repoWorktreeId ?? null
   const choiceInputs = useAppStore(useShallow(selectGitGraphChoiceInputs))
@@ -197,7 +198,7 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
         onClose={() => setAddReposOpen(false)}
       />
     ) : null
-  const openInSourceControlLabel = translate(
+  const openInSourceControlLabel = t(
     'auto.components.gitGraphTab.openInSourceControl',
     'Open in Source Control'
   )
@@ -262,7 +263,7 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
         ) : (
           <>
             <p>
-              {translate(
+              {t(
                 'auto.components.gitGraphTab.noRepo',
                 'No Git repository is available for this workspace.'
               )}
@@ -275,10 +276,7 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
                 onClick={() => setAddReposOpen(true)}
               >
                 <FolderPlus />
-                {translate(
-                  'auto.components.gitGraphTab.addReposButton',
-                  'Add repositories in this folder'
-                )}
+                {t('auto.components.gitGraphTab.addReposButton', 'Add repositories in this folder')}
               </Button>
             )}
             {addReposDialog}

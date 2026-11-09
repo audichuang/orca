@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { ParsedEntry } from './clipcode-clipboard-format'
 import { defaultAdjustRestorePaths } from './clipcode-restore-base-default'
 import {
@@ -132,6 +133,7 @@ export function ClipcodeRestorePreviewDialog({
   onCancel: () => void
   onConfirm: (confirmed: ConfirmedClipcodeRestore) => void
 }): React.JSX.Element {
+  const t = useTranslate()
   const [adjustPaths, setAdjustPaths] = useState(() => defaultAdjustRestorePaths(pending))
   const [overwrite, setOverwrite] = useState(false)
   const base = adjustPaths ? pending.suggestion?.base : undefined
@@ -154,13 +156,13 @@ export function ClipcodeRestorePreviewDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.2c06a4e179',
               'Paste & Restore'
             )}
           </DialogTitle>
           <DialogDescription>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.87832cd30d',
               'Files from the clipboard will be written into this folder.'
             )}
@@ -175,7 +177,7 @@ export function ClipcodeRestorePreviewDialog({
                 onCheckedChange={(checked) => setAdjustPaths(checked === true)}
               />
               <Label htmlFor="clipcode-adjust-paths">
-                {translate(
+                {t(
                   'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.813199296f',
                   'Adjust paths ({{value0}})',
                   {
@@ -187,28 +189,28 @@ export function ClipcodeRestorePreviewDialog({
           )}
           <div className="flex max-h-64 flex-col gap-2 overflow-y-auto scrollbar-sleek">
             <PathList
-              title={translate(
+              title={t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.9a421f14d8',
                 'Create'
               )}
               paths={preview.create.map((item) => item.relativePath)}
             />
             <PathList
-              title={translate(
+              title={t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.d469ff3b81',
                 'Overwrite'
               )}
               paths={preview.overwrite.map((item) => item.relativePath)}
             />
             <PathList
-              title={translate(
+              title={t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.9cf3526c1f',
                 'Delete'
               )}
               paths={preview.delete.map((item) => item.relativePath)}
             />
             <PathList
-              title={translate(
+              title={t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.0d87b3b39d',
                 'Skip'
               )}
@@ -224,7 +226,7 @@ export function ClipcodeRestorePreviewDialog({
                 onCheckedChange={(checked) => setOverwrite(checked === true)}
               />
               <Label htmlFor="clipcode-overwrite-existing">
-                {translate(
+                {t(
                   'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.80224f9095',
                   'Overwrite existing files'
                 )}
@@ -234,7 +236,7 @@ export function ClipcodeRestorePreviewDialog({
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" size="sm" onClick={onCancel}>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.677bf0ade9',
               'Cancel'
             )}
@@ -245,7 +247,7 @@ export function ClipcodeRestorePreviewDialog({
             disabled={actionable === 0}
             onClick={() => onConfirm({ preview, overwrite })}
           >
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.c0b1b53e49',
               'Restore'
             )}

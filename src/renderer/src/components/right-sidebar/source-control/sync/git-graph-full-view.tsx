@@ -4,7 +4,7 @@ import { PanelLeft, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
@@ -107,6 +107,7 @@ export function GitGraphFullView({
   tab,
   reveal
 }: GitGraphFullViewProps): React.JSX.Element {
+  const t = useTranslate()
   const result = state.result
   const viewModels = useMemo(
     () =>
@@ -255,7 +256,7 @@ export function GitGraphFullView({
           className="ml-2"
           aria-pressed={tree.open}
           onClick={tree.toggle}
-          aria-label={translate(
+          aria-label={t(
             'auto.components.right.sidebar.GitGraphFullView.toggleBranches',
             'Toggle branches'
           )}
@@ -278,7 +279,7 @@ export function GitGraphFullView({
           variant="ghost"
           size="icon-xs"
           onClick={onRefresh}
-          aria-label={translate(
+          aria-label={t(
             'auto.components.right.sidebar.GitHistoryPanel.d0fb0f4bf2',
             'Refresh commits'
           )}
@@ -318,10 +319,7 @@ export function GitGraphFullView({
             )}
             {!result && state.status !== 'error' && (
               <p className="px-3 py-2 text-xs text-muted-foreground">
-                {translate(
-                  'auto.components.right.sidebar.GitHistoryPanel.781a8bcf7b',
-                  'Loading graph...'
-                )}
+                {t('auto.components.right.sidebar.GitHistoryPanel.781a8bcf7b', 'Loading graph...')}
               </p>
             )}
             {result && viewModels.length === 0 && (
