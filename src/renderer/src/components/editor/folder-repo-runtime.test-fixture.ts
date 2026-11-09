@@ -10,14 +10,6 @@ import type { OpenFile } from '@/store/slices/editor/types/open-file'
 export const FOLDER = 'folder:folder'
 export const REPO = 'repo-a::/work/folder/repo-a'
 export const ROOT = '/work/folder/repo-a'
-export const BRANCH = {
-  baseRef: 'main',
-  compareRef: 'HEAD',
-  baseOid: 'a'.repeat(40),
-  headOid: 'b'.repeat(40),
-  mergeBase: 'a'.repeat(40),
-  compareVersion: 'branch-version'
-}
 export const COMMIT = {
   baseRef: 'HEAD^',
   compareRef: 'HEAD',
@@ -33,13 +25,13 @@ export const DIFF = {
   modifiedIsBinary: false as const
 }
 
-export function folderFile(overrides: Partial<OpenFile> = {}): OpenFile {
+// A Source Control open from the folder: upstream owns the tab by the repo and places it in the folder.
+export function repoDiffFile(overrides: Partial<OpenFile> = {}): OpenFile {
   return {
-    id: 'folder-file',
+    id: 'repo-diff',
     filePath: `${ROOT}/src/a.ts`,
-    relativePath: 'repo-a/src/a.ts',
-    worktreeId: FOLDER,
-    gitWorktreeId: REPO,
+    relativePath: 'src/a.ts',
+    worktreeId: REPO,
     runtimeEnvironmentId: 'server',
     language: 'typescript',
     mode: 'diff',
@@ -49,7 +41,7 @@ export function folderFile(overrides: Partial<OpenFile> = {}): OpenFile {
   }
 }
 
-export function seedFolderGitOwner(): void {
+export function seedFolderWithRepo(): void {
   useAppStore.setState(useAppStore.getInitialState(), true)
   useAppStore.setState({
     activeWorktreeId: FOLDER,

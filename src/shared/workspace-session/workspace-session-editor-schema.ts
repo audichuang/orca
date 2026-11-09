@@ -9,9 +9,10 @@ export const persistedOpenFileSchema = z.object({
   runtimeEnvironmentId: z.string().nullable().optional(),
   mirroredFromRuntimeSession: z.literal(true).optional(),
   externalSshTargetId: z.string().trim().min(1).optional(),
-  gitWorktreeId: z.string().min(1).optional(),
   dirtyDraftContent: z.string().optional(),
   lastKnownDiskSignature: z.string().optional(),
   readOnly: z.boolean().optional(),
-  liveTail: z.boolean().optional()
+  liveTail: z.boolean().optional(),
+  // Fork: read-only marker of tabs saved by the removed folder git-owner layer; never written back.
+  gitWorktreeId: z.string().optional()
 })
