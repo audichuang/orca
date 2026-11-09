@@ -12,6 +12,7 @@ import {
   getFolderGitWorktrees
 } from '../right-sidebar/source-control/folder/folder-git-worktrees'
 import { getRememberedFolderRepo } from '../right-sidebar/source-control/folder/folder-repo-selection'
+import { getAttachedWorktreesForFolderWorkspace } from '../right-sidebar/folder-workspace-attached-worktrees'
 import {
   selectFolderWorkspaces,
   selectWorktreesByRepo
@@ -21,7 +22,38 @@ export const GIT_GRAPH_TAB_LABEL = 'Git Graph'
 
 export type GitGraphRepoChoice = { repo: Repo; worktree: Worktree }
 
-type GitGraphWorkspaceState = Pick<AppState, 'repos' | 'worktreesByRepo' | 'folderWorkspaces'>
+type GitGraphWorkspaceState = Pick<
+  AppState,
+  | 'repos'
+  | 'worktreesByRepo'
+  | 'folderWorkspaces'
+  | 'workspaceLineageByChildKey'
+  | 'worktreeLineageById'
+>
+
+type FolderLineageState = Pick<
+  AppState,
+  'folderWorkspaces' | 'workspaceLineageByChildKey' | 'worktreeLineageById' | 'worktreesByRepo'
+>
+
+/** Upstream's attached worktrees of a folder (lineage children, which may live outside its path). */
+export function getGitGraphFolderAttachedWorktrees(
+  state: FolderLineageState,
+  workspaceId: string
+): Worktree[] {
+  if (parseWorkspaceKey(workspaceId)?.type !== 'folder') {
+    return []
+  }
+  return getAttachedWorktreesForFolderWorkspace({
+    activeWorkspaceKey: workspaceId,
+    activeWorktreeId: workspaceId,
+    folderWorkspaces: selectFolderWorkspaces(state) ?? [],
+    workspaceLineageByChildKey: state.workspaceLineageByChildKey,
+    worktreeLineageById: state.worktreeLineageById,
+    worktreesByRepo: selectWorktreesByRepo(state),
+    crossStoreChildrenByFolderId: new Map()
+  }).childWorktrees
+}
 
 /** One Git Graph tab per workspace, so reopening focuses it instead of stacking copies. */
 export function buildGitGraphTabId(workspaceId: string): string {
@@ -29,19 +61,33 @@ export function buildGitGraphTabId(workspaceId: string): string {
 }
 
 /**
- * Repo worktrees the tab may switch to: a folder's member repos, or every git worktree on the
- * workspace's own filesystem owner (git reads must stay on the host that owns the files).
+ * Repo worktrees the tab may switch to: a folder's member repos plus the worktrees upstream's folder
+ * Source Control attaches to it, or every git worktree on the workspace's own filesystem owner (git
+ * reads must stay on the host that owns the files).
  */
 export function listGitGraphRepoChoices(
   workspaceId: string,
   worktrees: readonly Worktree[],
   repoById: ReadonlyMap<string, Repo>,
-  folderWorkspaces: readonly FolderWorkspace[]
+  folderWorkspaces: readonly FolderWorkspace[],
+  folderAttached: readonly Worktree[] = []
 ): GitGraphRepoChoice[] {
   const scope = parseWorkspaceKey(workspaceId)
   if (scope?.type === 'folder') {
     const folder = folderWorkspaces.find((entry) => entry.id === scope.folderWorkspaceId)
-    return folder ? getFolderGitWorktrees(folder, worktrees, repoById) : []
+    if (!folder) {
+      return []
+    }
+    const choices = getFolderGitWorktrees(folder, worktrees, repoById)
+    const listed = new Set(choices.map((choice) => choice.worktree.id))
+    for (const worktree of folderAttached) {
+      const repo = repoById.get(worktree.repoId)
+      if (repo && isGitRepoKind(repo) && !listed.has(worktree.id)) {
+        listed.add(worktree.id)
+        choices.push({ repo, worktree, containsFolder: false })
+      }
+    }
+    return choices
   }
   const own = worktrees.find((worktree) => worktree.id === workspaceId)
   const ownRepo = own ? repoById.get(own.repoId) : undefined
@@ -72,7 +118,8 @@ export function listGitGraphRepoChoicesFromState(
     workspaceId,
     getIndexedAllWorktrees(selectWorktreesByRepo(state)),
     getIndexedRepoMap(state.repos),
-    selectFolderWorkspaces(state) ?? []
+    selectFolderWorkspaces(state) ?? [],
+    getGitGraphFolderAttachedWorktrees(state, workspaceId)
   )
 }
 
