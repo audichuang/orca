@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { useAllWorktrees } from '@/store/slices/worktrees/listing/use-worktree-catalog'
-import { useRepoMap } from '@/store/repos/use-repository-catalog'
 import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
@@ -18,10 +17,10 @@ export function useFolderGitMembers(workspaceKey: string): {
     (s) => selectFolderWorkspaces(s).find((workspace) => workspace.id === folderWorkspaceId) ?? null
   )
   const worktrees = useAllWorktrees()
-  const repoById = useRepoMap()
+  const repos = useAppStore((s) => s.repos)
   const members = useMemo(
-    () => (folderWorkspace ? getFolderGitWorktrees(folderWorkspace, worktrees, repoById) : []),
-    [folderWorkspace, repoById, worktrees]
+    () => (folderWorkspace ? getFolderGitWorktrees(folderWorkspace, worktrees, repos) : []),
+    [folderWorkspace, repos, worktrees]
   )
   return { folderWorkspace, members }
 }
