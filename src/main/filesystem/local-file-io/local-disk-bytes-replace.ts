@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { chmod, open, realpath, rm, stat, type FileHandle } from 'node:fs/promises'
-import { basename, dirname, join } from 'node:path'
+import { dirname, join } from 'node:path'
 import type { FileBytesWritePrecondition } from '../../../shared/file-write/file-bytes-write'
 import {
   FILE_WRITE_OK,
@@ -77,7 +77,8 @@ export async function replaceLocalFileBytesIfUnchanged(
       (stats) => stats.mode & 0o7777,
       () => null
     )
-    const temp = join(dirname(target), `.${basename(target)}.orca-save-${randomUUID()}`)
+    // Why: embedding the file name would push a long but legal name past the 255-byte limit.
+    const temp = join(dirname(target), `.orca-save-${randomUUID()}`)
     try {
       const handle = await open(temp, 'wx', 0o600)
       try {
