@@ -20,4 +20,13 @@ describe('formatClipcodeBytes', () => {
       '50 MB'
     ])
   })
+
+  it('re-picks the precision and unit after rounding reaches the next step', () => {
+    expect([10_239, 10_180, 1_048_575, 1_048_063].map(formatClipcodeBytes)).toEqual([
+      '10 KB',
+      '9.9 KB',
+      '1.0 MB',
+      '1023 KB'
+    ])
+  })
 })
