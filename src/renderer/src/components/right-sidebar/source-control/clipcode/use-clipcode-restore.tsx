@@ -1,6 +1,9 @@
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { createParentDirectoriesForNewFile } from './clipcode-restore-parent-directories'
+import { clipcodeRestoreTargetPlatform } from './clipcode-restore-target-platform'
+import { useAppStore } from '@/store'
+import { getShortcutPlatform } from '@/lib/shortcut-platform'
 import { translate } from '@/i18n/i18n'
 import { readIpcErrorMessage } from '@/runtime/errors/ipc-error'
 import { joinPath } from '@/lib/path'
@@ -80,6 +83,29 @@ function restoreRowErrorText(error: unknown): string {
   )
 }
 
+/**
+ * Text goes through the same temp-file + rename replace as bytes, so a read-only target follows the
+ * overwrite option and keeps its mode; a host too old for it gets the in-place text write.
+ */
+async function writeRestoreText(
+  context: RuntimeFileOperationArgs,
+  filePath: string,
+  content: string
+): Promise<void> {
+  try {
+    await writeRuntimeFileBytes(context, filePath, new TextEncoder().encode(content), undefined, {
+      allowMissing: true
+    })
+  } catch (error) {
+    if (
+      !String(readIpcErrorMessage(error) ?? error).includes(FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE)
+    ) {
+      throw error
+    }
+    await writeRuntimeFile(context, filePath, content)
+  }
+}
+
 type RestoreSession = {
   pending: PendingClipcodeRestore
   context: RuntimeFileOperationArgs
@@ -125,9 +151,12 @@ export function useClipcodeRestore({
           )
           return
         }
-        const guard = captureFileExplorerOperationGuard(
-          workspaceKey,
-          getFileExplorerOperationOwner(workspaceKey)
+        const owner = getFileExplorerOperationOwner(workspaceKey)
+        const guard = captureFileExplorerOperationGuard(workspaceKey, owner)
+        const targetPlatform = clipcodeRestoreTargetPlatform(
+          owner,
+          useAppStore.getState(),
+          getShortcutPlatform()
         )
         const context: RuntimeFileOperationArgs = {
           ...guard.route,
@@ -152,7 +181,7 @@ export function useClipcodeRestore({
         const candidatePaths = new Set<string>()
         const nonTextSizes = new Map<string, Set<number>>()
         for (const base of suggestion ? [undefined, suggestion.base] : [undefined]) {
-          const plan = planClipcodeRestore({ rootPath, entries, base })
+          const plan = planClipcodeRestore({ rootPath, entries, base, targetPlatform })
           for (const item of [...plan.writes, ...plan.deletes]) {
             candidatePaths.add(item.relativePath)
           }
@@ -187,7 +216,7 @@ export function useClipcodeRestore({
           }
         }
         setSession({
-          pending: { rootPath, entries, suggestion, states, existingSha256 },
+          pending: { rootPath, entries, suggestion, states, existingSha256, targetPlatform },
           context,
           assertCurrent: guard.assertCurrent,
           rootPath
@@ -281,7 +310,7 @@ export function useClipcodeRestore({
               ? writeRuntimeFileBytes(context, filePath, write.bytes, undefined, {
                   allowMissing: true
                 })
-              : writeRuntimeFile(context, filePath, write.content))
+              : writeRestoreText(context, filePath, write.content))
             notifyEditors(write.relativePath)
             if (write.isNew) {
               created++
