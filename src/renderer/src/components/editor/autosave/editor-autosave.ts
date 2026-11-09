@@ -150,7 +150,7 @@ export function getOpenFilesForExternalFileChange(
   const hasRuntimeOwnerFilter = Object.hasOwn(target, 'runtimeEnvironmentId')
   const targetRuntimeOwner = target.runtimeEnvironmentId?.trim() || null
   return openFiles.filter((file) => {
-    if (file.worktreeId !== target.worktreeId && file.gitWorktreeId !== target.worktreeId) {
+    if (file.worktreeId !== target.worktreeId) {
       return false
     }
     if (
@@ -170,10 +170,7 @@ export function getOpenFilesForExternalFileChange(
     if (file.mode === 'diff') {
       return (
         (file.diffSource === 'unstaged' || file.diffSource === 'staged') &&
-        // Why: a folder-scoped diff's relativePath may not be relative to its repo; its filePath is unambiguous.
-        (file.gitWorktreeId && file.gitWorktreeId !== file.worktreeId
-          ? pathKey(file.filePath) === absolutePathKey
-          : file.relativePath === target.relativePath)
+        file.relativePath === target.relativePath
       )
     }
     return false
