@@ -84,7 +84,7 @@ function restoreRowErrorText(error: unknown): string {
 }
 
 /**
- * Text goes through the same temp-file + rename replace as bytes, so a read-only target follows the
+ * Local text goes through the same temp-file + rename replace as bytes, so a read-only target follows the
  * overwrite option and keeps its mode; a host too old for it gets the in-place text write.
  */
 async function writeRestoreText(
@@ -111,6 +111,8 @@ type RestoreSession = {
   context: RuntimeFileOperationArgs
   assertCurrent: () => unknown
   rootPath: string
+  // Why: a remote upload's temp file is created with the default umask, exposing a 0600 file's text while it uploads.
+  replaceText: boolean
 }
 
 /** Paste & Restore for a repo, worktree or folder workspace: reads the clipboard, previews the plan, then writes under rootPath through the file explorer's owner route. */
@@ -219,7 +221,8 @@ export function useClipcodeRestore({
           pending: { rootPath, entries, suggestion, states, existingSha256, targetPlatform },
           context,
           assertCurrent: guard.assertCurrent,
-          rootPath
+          rootPath,
+          replaceText: owner.kind === 'local'
         })
       } catch (error) {
         toast.error(
@@ -310,7 +313,9 @@ export function useClipcodeRestore({
               ? writeRuntimeFileBytes(context, filePath, write.bytes, undefined, {
                   allowMissing: true
                 })
-              : writeRestoreText(context, filePath, write.content))
+              : current.replaceText
+                ? writeRestoreText(context, filePath, write.content)
+                : writeRuntimeFile(context, filePath, write.content))
             notifyEditors(write.relativePath)
             if (write.isNew) {
               created++
