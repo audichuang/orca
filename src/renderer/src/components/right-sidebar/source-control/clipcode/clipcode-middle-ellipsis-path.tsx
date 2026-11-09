@@ -30,8 +30,9 @@ export function ClipcodeMiddleEllipsisPath({
       setShown(
         shortenPathToWidth(
           path,
+          // Why offsetWidth: the layout width, unscaled by the dialog's zoom-in transform.
           // Why 1px less: canvas and DOM text widths can differ by a fraction, which would clip a letter.
-          Math.max(0, element.getBoundingClientRect().width - 1),
+          Math.max(0, element.offsetWidth - 1),
           (text) => context.measureText(text).width
         )
       )
