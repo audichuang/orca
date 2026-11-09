@@ -193,8 +193,10 @@ async function reportClipcodeCopyResult(
     result.unreadableFileCount +
     (result.symlinkedFolderPaths?.length ?? 0) +
     result.skippedUnsafePathCount
-  // Why: an empty payload would wipe the user's clipboard, so the skipped names are the whole answer.
-  if (result.entryCount === 0 && namedSkipCount > 0) {
+  const onlySizePlaceholders =
+    source === 'files' && result.entryCount > 0 && result.copiedFileCount === 0
+  // Why: an empty or placeholder-only payload would wipe the user's clipboard, so the skip notes are the whole answer.
+  if ((result.entryCount === 0 && namedSkipCount > 0) || onlySizePlaceholders) {
     notifyClipcodeNothingCopied(clipcodeCopyNotes(result))
     return
   }
