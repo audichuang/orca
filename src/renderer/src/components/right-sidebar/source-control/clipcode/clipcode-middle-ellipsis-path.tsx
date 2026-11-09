@@ -3,12 +3,17 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { shortenPathToWidth } from './clipcode-path-shortening'
 
-/** Fills the width its flex row gives it; the full path stays in the tooltip. */
+/**
+ * Fills the width its flex row gives it; the full path stays in the tooltip.
+ * Its content width is always the full path's, so `flex-initial` lets it claim that width before its neighbours.
+ */
 export function ClipcodeMiddleEllipsisPath({
   path,
+  title = path,
   className
 }: {
   path: string
+  title?: string
   className?: string
 }): React.JSX.Element {
   const ref = useRef<HTMLSpanElement>(null)
@@ -25,8 +30,15 @@ export function ClipcodeMiddleEllipsisPath({
       return
     }
     const update = (): void => {
-      // Why the computed font: the text is measured exactly as this element draws it.
-      context.font = getComputedStyle(element).font
+      // Why: the hidden ::after holds the full path, so the DOM itself says whether it fits.
+      if (element.scrollWidth <= element.clientWidth) {
+        setShown(path)
+        return
+      }
+      // Why the computed font and spacing: the text is measured exactly as this element draws it.
+      const style = getComputedStyle(element)
+      context.font = style.font
+      context.letterSpacing = style.letterSpacing
       setShown(
         shortenPathToWidth(
           path,
@@ -45,8 +57,13 @@ export function ClipcodeMiddleEllipsisPath({
   return (
     <span
       ref={ref}
-      title={path}
-      className={cn('block min-w-0 flex-1 overflow-hidden whitespace-pre', className)}
+      title={title}
+      data-full={path}
+      className={cn(
+        // Why the hidden ::after: a shortened text must not shrink the width the row grants it.
+        'block min-w-0 flex-1 overflow-hidden whitespace-pre after:invisible after:block after:h-0 after:w-max after:content-[attr(data-full)]',
+        className
+      )}
     >
       {shown}
     </span>
