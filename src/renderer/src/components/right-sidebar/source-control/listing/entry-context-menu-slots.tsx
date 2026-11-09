@@ -2,7 +2,7 @@
 import type React from 'react'
 import { History, PanelRight } from 'lucide-react'
 import { ContextMenuItem, ContextMenuShortcut } from '@/components/ui/context-menu'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { SourceControlRowOpenEvent } from './split-open'
 import {
   getSourceControlSplitOpenShortcutLabel,
@@ -22,13 +22,14 @@ export function OpenToSideMenuItem({
 }: {
   onOpen?: (event: SourceControlRowOpenEvent) => void
 }): React.JSX.Element {
+  const t = useTranslate()
   return (
     <ContextMenuItem
       onSelect={onOpen ? () => onOpen(SOURCE_CONTROL_OPEN_TO_SIDE_EVENT) : undefined}
       disabled={!onOpen}
     >
       <PanelRight className="size-3.5" />
-      {translate(
+      {t(
         'auto.components.right.sidebar.source.control.listing.entry.context.menu.ce8235a6a4',
         'Open to the Side'
       )}
@@ -39,10 +40,11 @@ export function OpenToSideMenuItem({
 }
 
 export function ShowFileHistoryMenuItem({ onSelect }: { onSelect: () => void }): React.JSX.Element {
+  const t = useTranslate()
   return (
     <ContextMenuItem onSelect={onSelect}>
       <History className="size-3.5" />
-      {translate(
+      {t(
         'auto.components.right.sidebar.source.control.listing.entry.context.menu.showFileHistory',
         'Show File History'
       )}
