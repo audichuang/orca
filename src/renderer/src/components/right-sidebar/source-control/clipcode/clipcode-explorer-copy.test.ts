@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { DirEntry } from '../../../../../../shared/file-listing/directory-entry'
 import { buildPayload, CLIPCODE_DEFAULTS, parseClipboard } from './clipcode-clipboard-format'
+import type { ClipcodeFileRead } from './clipcode-entry-content'
 import { buildClipcodeExplorerCopy, type ClipcodeExplorerReaders } from './clipcode-explorer-copy'
 import { planClipcodeRestore } from './clipcode-restore-plan'
 
@@ -104,8 +105,12 @@ describe('buildClipcodeExplorerCopy', () => {
       skippedFileSizeCount: 2,
       skippedBinaryFileCount: 1,
       unreadableFileCount: 1,
+      unreadablePaths: ['src/locked.txt'],
+      symlinkedFolderPaths: ['src/loop', 'src/linked-dir'],
       entryCount: 7
     })
+    // Only the host's binary flag (an old host): no bytes, so nothing to ask about.
+    expect(result.nonText).toBeUndefined()
     // Hidden folders and symlinked folders are never entered.
     expect(vi.mocked(readers.readDir).mock.calls.map(([path]) => path)).toEqual([
       '/ws/src',
@@ -124,7 +129,12 @@ describe('buildClipcodeExplorerCopy', () => {
       targets: [{ path: '/ws/missing', isDirectory: true }],
       readers: makeReaders()
     })
-    expect(result).toMatchObject({ payload: '', entryCount: 0, unreadableFileCount: 1 })
+    expect(result).toMatchObject({
+      payload: '',
+      entryCount: 0,
+      unreadableFileCount: 1,
+      unreadablePaths: ['missing']
+    })
   })
 
   it('skips names that would restore as a different instruction, without reading them', async () => {
@@ -139,7 +149,11 @@ describe('buildClipcodeExplorerCopy', () => {
       readers: { readDir: vi.fn(async () => []), readFile }
     })
 
-    expect(result).toMatchObject({ skippedUnsafePathCount: 3, copiedFileCount: 1 })
+    expect(result).toMatchObject({
+      skippedUnsafePathCount: 3,
+      unsafePaths: injected,
+      copiedFileCount: 1
+    })
     expect(readFile.mock.calls.map(([path]) => path)).toEqual(['/ws/ok.ts'])
     // The real restore path: nothing but ok.ts would be written, nothing deleted.
     const plan = planClipcodeRestore({
@@ -148,5 +162,80 @@ describe('buildClipcodeExplorerCopy', () => {
     })
     expect(plan.deletes).toEqual([])
     expect(plan.writes.map((write) => write.relativePath)).toEqual(['ok.ts'])
+  })
+
+  it('carries non-text files only under Include; Exclude stays the text-only payload', async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01])
+    const big5 = new Uint8Array([0xa4, 0xa4, 0xa4, 0xe5])
+    const reads: Record<string, ClipcodeFileRead> = {
+      '/ws/a.ts': { bytes: new TextEncoder().encode('export const a = 1') },
+      '/ws/img/logo.png': { bytes: png },
+      '/ws/notes-big5.txt': { bytes: big5 },
+      '/ws/video.bin': { tooLargeSize: 5_000_000 }
+    }
+    const result = await buildClipcodeExplorerCopy({
+      rootPath: '/ws',
+      targets: Object.keys(reads).map((path) => ({ path, isDirectory: false })),
+      readers: { readDir: vi.fn(async () => []), readFile: vi.fn(async (path) => reads[path]) }
+    })
+
+    // Exclude: today's payload, non-text files dropped like binaries.
+    expect(result.payload).toBe(
+      '// clipcode-root: ws\n\n// file: a.ts\nexport const a = 1\n\n' +
+        '// file: video.bin\n// File skipped: size exceeds limit (5000000 bytes)\n\n'
+    )
+    expect(result).toMatchObject({
+      copiedFileCount: 1,
+      skippedFileSizeCount: 1,
+      skippedBinaryFileCount: 2,
+      entryCount: 2
+    })
+
+    const include = result.nonText?.include
+    expect(include).toMatchObject({
+      copiedFileCount: 3,
+      nonTextFileCount: 2,
+      skippedFileSizeCount: 1,
+      skippedBinaryFileCount: 0,
+      entryCount: 4
+    })
+    expect(result.nonText?.summary).toEqual({
+      count: 2,
+      totalBytes: 10,
+      files: [
+        { path: 'img/logo.png', size: 6 },
+        { path: 'notes-big5.txt', size: 4 }
+      ],
+      includePayloadBytes: new TextEncoder().encode(include?.payload).length,
+      unreadOverLimitCount: 1
+    })
+    const plan = planClipcodeRestore({
+      rootPath: '/ws',
+      entries: parseClipboard(include?.payload ?? '', CLIPCODE_DEFAULTS.headerFormat)
+    })
+    const written = new Map(
+      plan.writes.map((write) => [
+        write.relativePath,
+        'bytes' in write ? [...write.bytes] : write.content
+      ])
+    )
+    expect(written.get('img/logo.png')).toEqual([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01])
+    expect(written.get('notes-big5.txt')).toEqual([0xa4, 0xa4, 0xa4, 0xe5])
+    expect(written.get('a.ts')).toBe('export const a = 1')
+  })
+
+  it('names a directly selected symlinked folder instead of following it', async () => {
+    const readDir = vi.fn(async () => [file('inner.ts')])
+    const readFile = vi.fn(async () => ({ bytes: new TextEncoder().encode('x') }))
+    const result = await buildClipcodeExplorerCopy({
+      rootPath: '/ws',
+      targets: [
+        { path: '/ws/linked', isDirectory: true, isSymlink: true },
+        { path: '/ws/ok.ts', isDirectory: false }
+      ],
+      readers: { readDir, readFile }
+    })
+    expect(readDir).not.toHaveBeenCalled()
+    expect(result).toMatchObject({ copiedFileCount: 1, symlinkedFolderPaths: ['linked'] })
   })
 })
