@@ -225,6 +225,40 @@ describe('buildClipcodeCommitCopy', () => {
     ])
   })
 
+  it('names q"uote.txt and a tab name without reading them and copies a.txt', async () => {
+    const r = readers({ [`${OID_A}:${PARENT_1}:a.txt`]: text('', 'a') })
+    const result = await buildClipcodeCommitCopy({
+      rootPath: context.worktreePath,
+      context,
+      commits: [
+        commit(OID_A, [
+          { path: 'q"uote.txt', status: 'modified' },
+          { path: 'tab\tname.txt', status: 'added' },
+          { path: 'a.txt', status: 'modified' }
+        ])
+      ],
+      readers: r
+    })
+    expect(result).toMatchObject({
+      unsafePaths: ['q"uote.txt', 'tab\tname.txt'],
+      copiedFileCount: 1
+    })
+    expect(r.readCommitDiff.mock.calls.map(([, args]) => args.filePath)).toEqual(['a.txt'])
+    expect(result.payload).toBe('// clipcode-root: WebApp\n// file: [MODIFIED] a.txt\na\n')
+  })
+
+  it('names the changes of a repo nested in a folder whose name holds a newline, with no header', async () => {
+    const r = readers({})
+    const result = await buildClipcodeCommitCopy({
+      rootPath: '/work/folder',
+      context: { ...context, worktreePath: '/work/folder/nl\nRepo' },
+      commits: [commit(OID_A, [{ path: 'x.ts', status: 'modified' }])],
+      readers: r
+    })
+    expect(result).toMatchObject({ unsafePaths: ['nl\nRepo/x.ts'], entryCount: 0, payload: '' })
+    expect(r.readCommitDiff).not.toHaveBeenCalled()
+  })
+
   it('copies an emptied file and a new empty file, but not an empty read from a host without missingSides', async () => {
     const r = readers({
       [`${OID_A}:${PARENT_1}:emptied.ts`]: text('was text', ''),
