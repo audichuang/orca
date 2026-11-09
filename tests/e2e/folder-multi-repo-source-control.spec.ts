@@ -331,8 +331,6 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     expect(await activeWt()).toBe(folderKey)
   })
 
-  // Why dispatchEvent: the row's hover-only actions can lose the pointer to the status letter mid-click on CI;
-  // these scenarios check the git action, not the hover reveal.
   await scenario('S5 Stage and unstage', async (ev) => {
     await expandOnly(H.web)
     const rel = 'src/unstaged-mod.ts'
@@ -341,16 +339,18 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     const before = staged()
     expect(before).not.toContain(rel)
     const row = entry('unstaged', rel)
-    await row.hover()
-    await row.getByRole('button', { name: 'Stage', exact: true }).dispatchEvent('click')
+    const stageButton = row.getByRole('button', { name: 'Stage', exact: true })
+    await stageButton.focus()
+    await stageButton.press('Enter')
     await expect.poll(staged, { timeout: 15_000 }).toContain(rel)
     await expect(entry('staged', rel)).toHaveCount(1, { timeout: 15_000 })
     await expect(entry('unstaged', rel)).toHaveCount(0, { timeout: 15_000 })
     ev.push(`staged after Stage: ${JSON.stringify(staged())}`)
     await shot('S5a-staged')
     const srow = entry('staged', rel)
-    await srow.hover()
-    await srow.getByRole('button', { name: 'Unstage', exact: true }).dispatchEvent('click')
+    const unstageButton = srow.getByRole('button', { name: 'Unstage', exact: true })
+    await unstageButton.focus()
+    await unstageButton.press('Enter')
     await expect.poll(staged, { timeout: 15_000 }).not.toContain(rel)
     await expect(entry('unstaged', rel)).toHaveCount(1, { timeout: 15_000 })
     ev.push(`staged after Unstage: ${JSON.stringify(staged())}`)
@@ -373,8 +373,9 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     await expandOnly(H.core)
     const row = entry('unstaged', 'core.ts')
     await expect(row).toHaveCount(1, { timeout: 15_000 })
-    await row.hover()
-    await row.getByRole('button', { name: 'Stage', exact: true }).dispatchEvent('click')
+    const stageButton = row.getByRole('button', { name: 'Stage', exact: true })
+    await stageButton.focus()
+    await stageButton.press('Enter')
     await expect(entry('staged', 'core.ts')).toHaveCount(1, { timeout: 15_000 })
     await shot('S6a-core-staged')
     await card(H.core)
