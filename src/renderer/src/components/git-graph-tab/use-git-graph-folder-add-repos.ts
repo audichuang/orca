@@ -1,7 +1,7 @@
 // Fork-only: lets a folder's Git Graph tab reach the repos under it that Orca has not added yet.
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
 import type { NestedRepoCandidate } from '../../../../shared/project-group-types'
@@ -31,6 +31,7 @@ export type GitGraphFolderAddRepos = {
 
 /** Null unless the workspace is a local folder: the add path is local only, like Source Control's. */
 export function useGitGraphFolderAddRepos(workspaceId: string): GitGraphFolderAddRepos | null {
+  const t = useTranslate()
   const scope = parseWorkspaceKey(workspaceId)
   const folderWorkspaceId = scope?.type === 'folder' ? scope.folderWorkspaceId : null
   const folderWorkspace = useAppStore(
@@ -79,13 +80,13 @@ export function useGitGraphFolderAddRepos(workspaceId: string): GitGraphFolderAd
   }
   const missingLabel =
     missing !== null && missing > 0
-      ? translate('auto.components.gitGraphTab.addReposMissing', '{{value0}} not added', {
+      ? t('auto.components.gitGraphTab.addReposMissing', '{{value0}} not added', {
           value0: scanned?.partial ? `${missing}+` : missing
         })
       : null
   return {
     folderWorkspace,
-    label: translate('auto.components.gitGraphTab.addRepos', 'Add repositories...'),
+    label: t('auto.components.gitGraphTab.addRepos', 'Add repositories...'),
     missingLabel,
     allAdded: missing === 0 && !scanned?.partial,
     scan
