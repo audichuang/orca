@@ -6,10 +6,7 @@ import {
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
 import { isGitRepoKind } from '../../../../../../shared/repo-kind'
 import type { Repo } from '../../../../../../shared/repo-types'
-import { getHiddenExternalWorktrees } from '../../../../../../shared/external-worktree-inbox'
-import type { DetectedWorktreeListResult, Worktree } from '../../../../../../shared/worktree/types'
-import type { AppState } from '@/store/types'
-import { selectDetectedWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
+import type { Worktree } from '../../../../../../shared/worktree/types'
 
 type FilesystemOwnerFields = Pick<Repo, 'connectionId' | 'executionHostId'>
 
@@ -33,13 +30,19 @@ export type FolderGitWorktree = {
 export function getFolderGitWorktrees(
   folderWorkspace: Pick<FolderWorkspace, 'folderPath' | 'connectionId' | 'executionHostId'>,
   worktrees: readonly Worktree[],
-  repoById: ReadonlyMap<string, Repo>
+  repos: readonly Repo[]
 ): FolderGitWorktree[] {
   const ownerKey = getFilesystemOwnerKey(folderWorkspace)
+  // Why filter before keying by id: a local and a remote repo can share one id.
+  const repoById = new Map(
+    repos
+      .filter((repo) => isGitRepoKind(repo) && getFilesystemOwnerKey(repo) === ownerKey)
+      .map((repo) => [repo.id, repo])
+  )
   const result: FolderGitWorktree[] = []
   for (const worktree of worktrees) {
     const repo = repoById.get(worktree.repoId)
-    if (!repo || !isGitRepoKind(repo) || getFilesystemOwnerKey(repo) !== ownerKey) {
+    if (!repo || (worktree.hostId && worktree.hostId !== getRepoExecutionHostId(repo))) {
       continue
     }
     if (isPathInsideOrEqual(folderWorkspace.folderPath, worktree.path)) {
@@ -54,35 +57,4 @@ export function getFolderGitWorktrees(
       Number(b.worktree.isMainWorktree) - Number(a.worktree.isMainWorktree) ||
       a.worktree.path.localeCompare(b.worktree.path)
   )
-}
-
-/** Linked worktrees physically under the folder that sidebar visibility hides, so they are not listed or copied. */
-export function countHiddenFolderWorktrees(
-  folderWorkspace: Pick<FolderWorkspace, 'folderPath' | 'connectionId' | 'executionHostId'>,
-  detectedByRepo: Readonly<Record<string, DetectedWorktreeListResult | undefined>>,
-  repoById: ReadonlyMap<string, Repo>
-): number {
-  const ownerKey = getFilesystemOwnerKey(folderWorkspace)
-  let count = 0
-  for (const [repoId, detected] of Object.entries(detectedByRepo)) {
-    const repo = repoById.get(repoId)
-    if (!repo || !isGitRepoKind(repo) || getFilesystemOwnerKey(repo) !== ownerKey) {
-      continue
-    }
-    count += getHiddenExternalWorktrees(detected).filter((worktree) =>
-      isPathInsideOrEqual(folderWorkspace.folderPath, worktree.path)
-    ).length
-  }
-  return count
-}
-
-/** The store's hidden worktrees under a folder; 0 while the folder record is missing. */
-export function selectFolderHiddenWorktreeCount(
-  state: Pick<AppState, 'detectedWorktreesByRepo'>,
-  folderWorkspace: Parameters<typeof countHiddenFolderWorktrees>[0] | null,
-  repoById: ReadonlyMap<string, Repo>
-): number {
-  return folderWorkspace
-    ? countHiddenFolderWorktrees(folderWorkspace, selectDetectedWorktreesByRepo(state), repoById)
-    : 0
 }
