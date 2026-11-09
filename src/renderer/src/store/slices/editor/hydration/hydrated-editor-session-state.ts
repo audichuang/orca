@@ -6,11 +6,6 @@ import type { OpenFile } from '../types/open-file'
 import { reconcileEditorBufferMembership } from '../buffers/editor-buffer-record'
 import { buildEditorBufferViewIndex } from '../buffers/editor-buffer-views'
 import { buildOwnedEditorFileId } from '../file-ids/editor-file-ids'
-import {
-  resolveTabOwnerRelativePath,
-  type HydratedGitOwnerOptions
-} from '../git/open-file-git-owner'
-import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { resolveHydratedEditorFileSelection } from '../file-ids/hydrated-editor-file-selection'
 import { resolveHydratedEditorFrontmatter } from '../file-ids/hydrated-editor-frontmatter'
 import {
@@ -18,6 +13,8 @@ import {
   LegacyHydratedEditorFileIndex,
   shouldHydrateWithOwnedEditorFileId
 } from '../file-ids/hydrated-editor-file-ids'
+
+import { restoredFolderTabRelativePath } from '../tabs/folder-tab-relative-path'
 
 export type HydratedEditorSessionState = Pick<
   AppState,
@@ -39,7 +36,7 @@ export function buildHydratedEditorSessionState(
   session: WorkspaceSessionState,
   validWorktreeIds: ReadonlySet<string>,
   activeWorktreeId: string | null,
-  { validGitOwnerIds, ownerRoots }: HydratedGitOwnerOptions = {}
+  folderRoots?: Pick<AppState, 'folderWorkspaces'>
 ): {
   state: HydratedEditorSessionState
   editorFileIdMigrationsByWorktree: Record<string, Map<string, string>>
@@ -100,30 +97,13 @@ export function buildHydratedEditorSessionState(
       if (!isReadOnly && pf.dirtyDraftContent !== undefined) {
         editorDrafts[id] = pf.dirtyDraftContent
       }
-      const ownerIsValid =
-        pf.gitWorktreeId &&
-        pf.gitWorktreeId !== worktreeId &&
-        (validGitOwnerIds?.has(pf.gitWorktreeId) ?? true)
-      // Why: sessions saved before edit tabs kept relativePath folder-relative store it repo-relative.
-      const ownerRelative =
-        pf.gitWorktreeId && pf.gitWorktreeId !== worktreeId && ownerRoots
-          ? resolveTabOwnerRelativePath(ownerRoots, { ...pf, worktreeId }, null)
-          : null
-      // Why: a read through the folder selector with a repo-relative path names the wrong file.
-      const reanchoredPath = !ownerIsValid ? ownerRelative : null
-      // Why: with no single owner root, keep the stale owner so reads fail visibly instead of naming another file.
-      const keepsGitOwner =
-        ownerIsValid ||
-        (pf.gitWorktreeId !== undefined &&
-          pf.gitWorktreeId !== worktreeId &&
-          ownerRoots !== undefined &&
-          parseWorkspaceKey(worktreeId)?.type === 'folder' &&
-          !reanchoredPath)
-      const relativePath = ownerRelative || pf.relativePath
       openFiles.push({
         id,
         filePath: pf.filePath,
-        relativePath,
+        // Fork: sessions saved by the removed folder git-owner layer can hold a repo-relative folder tab path.
+        relativePath: folderRoots
+          ? restoredFolderTabRelativePath(folderRoots, { ...pf, worktreeId })
+          : pf.relativePath,
         worktreeId,
         // Why: re-detect language on hydrate — older sessions stored ids from before extensions like .ipynb were supported.
         language: detectLanguage(pf.relativePath || pf.filePath),
@@ -132,7 +112,6 @@ export function buildHydratedEditorSessionState(
         runtimeEnvironmentId: pf.runtimeEnvironmentId,
         mirroredFromRuntimeSession: pf.mirroredFromRuntimeSession,
         externalSshTargetId: pf.externalSshTargetId,
-        ...(keepsGitOwner ? { gitWorktreeId: pf.gitWorktreeId } : {}),
         ...(isReadOnly ? { readOnly: true } : {}),
         ...(isReadOnly && pf.liveTail === true ? { liveTail: true } : {}),
         lastKnownDiskSignature: isReadOnly ? undefined : pf.lastKnownDiskSignature,

@@ -1,25 +1,33 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { localDesktopSession } from '../../../../shared/workspace-layout/workspace-layout-profile.test-fixture'
-import type { WorkspaceSessionState } from '../../../../shared/workspace-session/workspace-session-state-types'
+import { parseWorkspaceSession } from '../../../../shared/workspace-session/workspace-session-schema'
 import { useAppStore } from '..'
 import type { AppState } from '../types'
 
 const REPO = 'repo-a::/repo-a'
 const FOLDER = 'folder:pkg'
 
-type SavedFile = NonNullable<WorkspaceSessionState['openFilesByWorktree']>[string][number]
-
-function hydrate(file: Omit<SavedFile, 'worktreeId' | 'language'>) {
-  const session = localDesktopSession()
-  session.openFilesByWorktree = {
-    [FOLDER]: [{ ...file, worktreeId: FOLDER, language: 'markdown' }]
+// Tabs as the removed folder git-owner layer saved them: folder-owned, repo-relative, with gitWorktreeId.
+function hydrateLegacy(files: { filePath: string; relativePath: string }[]) {
+  const parsed = parseWorkspaceSession({
+    ...localDesktopSession(),
+    openFilesByWorktree: {
+      [FOLDER]: files.map((file) => ({
+        ...file,
+        worktreeId: FOLDER,
+        language: 'markdown',
+        gitWorktreeId: REPO
+      }))
+    }
+  })
+  if (!parsed.ok) {
+    throw new Error('legacy session failed to parse')
   }
-  useAppStore.getState().hydrateEditorSession(session)
-  return useAppStore.getState().openFiles.find((f) => f.filePath === file.filePath)
+  useAppStore.getState().hydrateEditorSession(parsed.value)
+  return useAppStore.getState().openFiles
 }
 
-// Why: sessions saved while folder edit tabs stored repo-relative paths must restore folder-relative ones.
-describe('hydrating a folder edit tab saved with a repo-relative path', () => {
+describe('hydrating a folder tab saved by the folder git-owner layer', () => {
   beforeEach(() => {
     useAppStore.setState(useAppStore.getInitialState(), true)
     useAppStore.setState(
@@ -34,21 +42,15 @@ describe('hydrating a folder edit tab saved with a repo-relative path', () => {
     )
   })
 
-  it('re-anchors the path to the folder and keeps the live owner', () => {
-    const file = hydrate({
-      filePath: '/repo-a/pkg/a.md',
-      relativePath: 'pkg/a.md',
-      gitWorktreeId: REPO
-    })
-    expect(file).toMatchObject({ worktreeId: FOLDER, relativePath: 'a.md', gitWorktreeId: REPO })
-  })
-
-  it('keeps a stale owner and its path when no folder root holds the file', () => {
-    const file = hydrate({
-      filePath: '/elsewhere/x.md',
-      relativePath: 'x.md',
-      gitWorktreeId: 'gone::/elsewhere'
-    })
-    expect(file).toMatchObject({ relativePath: 'x.md', gitWorktreeId: 'gone::/elsewhere' })
+  it('restores upstream folder tabs: folder-relative inside the root, absolute outside it', () => {
+    const files = hydrateLegacy([
+      { filePath: '/repo-a/pkg/a.md', relativePath: 'pkg/a.md' },
+      { filePath: '/repo-a/b.md', relativePath: 'b.md' }
+    ])
+    expect(files.map(({ worktreeId, relativePath }) => ({ worktreeId, relativePath }))).toEqual([
+      { worktreeId: FOLDER, relativePath: 'a.md' },
+      { worktreeId: FOLDER, relativePath: '/repo-a/b.md' }
+    ])
+    expect(files.some((file) => 'gitWorktreeId' in file)).toBe(false)
   })
 })
