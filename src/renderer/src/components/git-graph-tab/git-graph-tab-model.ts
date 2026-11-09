@@ -13,6 +13,12 @@ import {
 } from '../right-sidebar/source-control/folder/folder-git-worktrees'
 import { getRememberedFolderRepo } from '../right-sidebar/source-control/folder/folder-repo-selection'
 import { getAttachedWorktreesForFolderWorkspace } from '../right-sidebar/folder-workspace-attached-worktrees'
+import { resolveReviewRepository } from '@/lib/review-owner'
+import {
+  selectCrossStoreFolderChildrenById,
+  selectSidebarLineageParentIdentities
+} from '@/store/slices/worktrees/metadata/cross-store-lineage-parents'
+import type { SidebarLineageParentIdentities } from '../../../../shared/sidebar-list/worktree-lineage-projection'
 import {
   selectFolderWorkspaces,
   selectWorktreesByRepo
@@ -22,37 +28,57 @@ export const GIT_GRAPH_TAB_LABEL = 'Git Graph'
 
 export type GitGraphRepoChoice = { repo: Repo; worktree: Worktree }
 
-type GitGraphWorkspaceState = Pick<
+/** Store fields the folder lineage selectors read, as upstream's folder Source Control subscribes them. */
+type GitGraphWorkspaceState = Parameters<typeof selectCrossStoreFolderChildrenById>[0] &
+  Pick<AppState, 'repos' | 'workspaceLineageByChildKey'>
+
+/** What the Git Graph repo choices read; the lineage fields are the folder Source Control selectors' results. */
+export type GitGraphChoiceInputs = Pick<
   AppState,
   | 'repos'
   | 'worktreesByRepo'
   | 'folderWorkspaces'
   | 'workspaceLineageByChildKey'
   | 'worktreeLineageById'
->
+> & {
+  lineageParentIdentities: SidebarLineageParentIdentities | undefined
+  crossStoreChildrenByFolderId: ReadonlyMap<string, readonly Worktree[]>
+}
 
-type FolderLineageState = Pick<
-  AppState,
-  'folderWorkspaces' | 'workspaceLineageByChildKey' | 'worktreeLineageById' | 'worktreesByRepo'
->
+export function selectGitGraphChoiceInputs(state: GitGraphWorkspaceState): GitGraphChoiceInputs {
+  return {
+    repos: state.repos,
+    worktreesByRepo: selectWorktreesByRepo(state),
+    folderWorkspaces: selectFolderWorkspaces(state),
+    workspaceLineageByChildKey: state.workspaceLineageByChildKey,
+    worktreeLineageById: state.worktreeLineageById,
+    lineageParentIdentities: selectSidebarLineageParentIdentities(state),
+    crossStoreChildrenByFolderId: selectCrossStoreFolderChildrenById(state)
+  }
+}
 
-/** Upstream's attached worktrees of a folder (lineage children, which may live outside its path). */
-export function getGitGraphFolderAttachedWorktrees(
-  state: FolderLineageState,
+/** Upstream's attached worktrees of a folder (lineage children, which may live outside its path or on
+ * another host), each with its host-matched repo as Source Control resolves it. */
+function listGitGraphFolderAttachedChoices(
+  inputs: GitGraphChoiceInputs,
   workspaceId: string
-): Worktree[] {
+): GitGraphRepoChoice[] {
   if (parseWorkspaceKey(workspaceId)?.type !== 'folder') {
     return []
   }
   return getAttachedWorktreesForFolderWorkspace({
     activeWorkspaceKey: workspaceId,
     activeWorktreeId: workspaceId,
-    folderWorkspaces: selectFolderWorkspaces(state) ?? [],
-    workspaceLineageByChildKey: state.workspaceLineageByChildKey,
-    worktreeLineageById: state.worktreeLineageById,
-    worktreesByRepo: selectWorktreesByRepo(state),
-    crossStoreChildrenByFolderId: new Map()
-  }).childWorktrees
+    folderWorkspaces: inputs.folderWorkspaces ?? [],
+    workspaceLineageByChildKey: inputs.workspaceLineageByChildKey,
+    worktreeLineageById: inputs.worktreeLineageById,
+    worktreesByRepo: inputs.worktreesByRepo,
+    lineageParentIdentities: inputs.lineageParentIdentities,
+    crossStoreChildrenByFolderId: inputs.crossStoreChildrenByFolderId
+  }).owners.flatMap((owner) => {
+    const repo = resolveReviewRepository(inputs.repos, owner.worktree)
+    return repo && isGitRepoKind(repo) ? [{ repo, worktree: owner.worktree }] : []
+  })
 }
 
 /** One Git Graph tab per workspace, so reopening focuses it instead of stacking copies. */
@@ -70,7 +96,7 @@ export function listGitGraphRepoChoices(
   worktrees: readonly Worktree[],
   repoById: ReadonlyMap<string, Repo>,
   folderWorkspaces: readonly FolderWorkspace[],
-  folderAttached: readonly Worktree[] = []
+  folderAttached: readonly GitGraphRepoChoice[] = []
 ): GitGraphRepoChoice[] {
   const scope = parseWorkspaceKey(workspaceId)
   if (scope?.type === 'folder') {
@@ -80,9 +106,8 @@ export function listGitGraphRepoChoices(
     }
     const choices = getFolderGitWorktrees(folder, worktrees, repoById)
     const listed = new Set(choices.map((choice) => choice.worktree.id))
-    for (const worktree of folderAttached) {
-      const repo = repoById.get(worktree.repoId)
-      if (repo && isGitRepoKind(repo) && !listed.has(worktree.id)) {
+    for (const { repo, worktree } of folderAttached) {
+      if (!listed.has(worktree.id)) {
         listed.add(worktree.id)
         choices.push({ repo, worktree, containsFolder: false })
       }
@@ -110,17 +135,24 @@ export function listGitGraphRepoChoices(
   )
 }
 
-export function listGitGraphRepoChoicesFromState(
-  state: GitGraphWorkspaceState,
+export function listGitGraphRepoChoicesFromInputs(
+  inputs: GitGraphChoiceInputs,
   workspaceId: string
 ): GitGraphRepoChoice[] {
   return listGitGraphRepoChoices(
     workspaceId,
-    getIndexedAllWorktrees(selectWorktreesByRepo(state)),
-    getIndexedRepoMap(state.repos),
-    selectFolderWorkspaces(state) ?? [],
-    getGitGraphFolderAttachedWorktrees(state, workspaceId)
+    getIndexedAllWorktrees(inputs.worktreesByRepo),
+    getIndexedRepoMap(inputs.repos),
+    inputs.folderWorkspaces ?? [],
+    listGitGraphFolderAttachedChoices(inputs, workspaceId)
   )
+}
+
+export function listGitGraphRepoChoicesFromState(
+  state: GitGraphWorkspaceState,
+  workspaceId: string
+): GitGraphRepoChoice[] {
+  return listGitGraphRepoChoicesFromInputs(selectGitGraphChoiceInputs(state), workspaceId)
 }
 
 /** The workspace's own repo, or for a folder the member picked last in Source Control, else the first. */
