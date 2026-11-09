@@ -71,7 +71,8 @@ describe('Show in Git Graph', () => {
     useAppStore.setState({ openGitGraphTab })
     renderPanel(showCommitInGitGraphSlot('folder:f1', 'wt-web'))
     fireEvent.contextMenu(screen.getByText('Alpha'))
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Show in Git Graph' }))
+    // Why no await: in happy-dom the menu can close on a later tick, so click in the tick it opened.
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Show in Git Graph' }))
     expect(openGitGraphTab).toHaveBeenCalledWith('folder:f1', {
       repoWorktreeId: 'wt-web',
       revealCommit: COMMIT.id
