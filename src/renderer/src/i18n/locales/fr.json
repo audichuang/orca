@@ -14587,22 +14587,24 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}} illisibles)",
                       "e6cdc3a753": "Plus de {{value0}} tokens.",
                       "21758e255e": "Aucune modification Git à copier.",
                       "7828c565da": "({{value0}} ignorés : taille dépassée)",
                       "65b422bbd1": "{{value0}} fichier(s) Git copié(s)",
                       "7c6daaf4fa": "Échec de la copie de la source complète",
                       "9c3f952874": "{{value0}} fichier(s) Git illisible(s).",
-                      "binarySkipped": "({{value0}} ignorés : binaires)",
-                      "onlyBinarySkipped": "Rien à copier : {{value0}} fichier(s) binaire(s) ignoré(s).",
                       "filesCopied": "{{value0}} fichier(s) copié(s)",
                       "filesUnreadable": "Impossible de lire {{value0}} fichier(s).",
                       "noFiles": "Aucun fichier à copier.",
                       "onlyUnsafeNamesSkipped": "Rien à copier : {{value0}} fichier(s) ignoré(s) car leur nom ne peut pas être restauré en toute sécurité.",
-                      "unsafeNamesSkipped": "({{value0}} ignoré(s) : nom de fichier non sûr)",
                       "tokenCount": "~{{value0}} tokens",
-                      "payloadDetails": "{{lines}} lignes · {{chars}} caractères · {{words}} mots"
+                      "payloadDetails": "{{lines}} lignes · {{chars}} caractères · {{words}} mots",
+                      "nonTextCopied": "Fichiers non texte copiés en Base64 : {{value0}}.",
+                      "nonTextSkipped": "({{value0}} ignorés : fichier non texte)",
+                      "onlyNonTextSkipped": "Rien à copier : {{value0}} fichier(s) non texte ignoré(s).",
+                      "unreadableLine": "Illisibles : {{value0}}",
+                      "symlinkedFolderLine": "Dossier lié symboliquement : {{value0}}",
+                      "unsafeNameLine": "Nom non portable : {{value0}}"
                     }
                   },
                   "restore": {
@@ -14633,6 +14635,25 @@
                         "nonTextSize": "fichier non texte · {{value0}}",
                         "corruptBadge": "Corrompu",
                         "unchanged": "Inchangé"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "Copier les fichiers non texte ?",
+                          "description": "Inclure les copie en Base64 ; Exclure les laisse de côté.",
+                          "found": "Fichiers non texte : {{value0}}, {{value1}} au total",
+                          "estimate": "Taille du presse-papiers avec eux : environ {{value0}}",
+                          "overLimit": "Taille du presse-papiers avec eux : plus de {{value0}}",
+                          "overLimitReason": "Trop volumineux pour le presse-papiers : Inclure est indisponible.",
+                          "more": "et {{value0}} de plus",
+                          "notRead": "Non lus, plus de {{value0}} (copiés comme espaces réservés de taille) : {{value1}}",
+                          "include": "Inclure",
+                          "exclude": "Exclure",
+                          "cancel": "Annuler"
+                        }
                       }
                     }
                   }

@@ -13966,22 +13966,24 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}}개 읽을 수 없음)",
                       "e6cdc3a753": "{{value0}} 토큰을 초과합니다.",
                       "21758e255e": "복사할 Git 변경 사항이 없습니다.",
                       "7828c565da": "({{value0}}개 건너뜀: 크기 초과)",
                       "65b422bbd1": "Git 파일 {{value0}}개를 복사했습니다",
                       "7c6daaf4fa": "전체 소스 복사 실패",
                       "9c3f952874": "Git 파일 {{value0}}개를 읽을 수 없습니다.",
-                      "binarySkipped": "({{value0}}개 건너뜀: 바이너리)",
-                      "onlyBinarySkipped": "복사할 내용이 없습니다: 바이너리 파일 {{value0}}개를 건너뛰었습니다.",
                       "filesCopied": "파일 {{value0}}개 복사됨",
                       "filesUnreadable": "파일 {{value0}}개를 읽을 수 없습니다.",
                       "noFiles": "복사할 파일이 없습니다.",
                       "onlyUnsafeNamesSkipped": "복사할 내용이 없습니다: 이름을 안전하게 복원할 수 없는 파일 {{value0}}개를 건너뛰었습니다.",
-                      "unsafeNamesSkipped": "(안전하지 않은 파일 이름으로 {{value0}}개 건너뜀)",
                       "tokenCount": "~{{value0}} 토큰",
-                      "payloadDetails": "{{lines}}줄 · {{chars}}자 · {{words}}단어"
+                      "payloadDetails": "{{lines}}줄 · {{chars}}자 · {{words}}단어",
+                      "nonTextCopied": "Base64로 복사한 비텍스트 파일: {{value0}}.",
+                      "nonTextSkipped": "({{value0}}개 건너뜀: 비텍스트 파일)",
+                      "onlyNonTextSkipped": "복사할 내용이 없습니다: 비텍스트 파일 {{value0}}개를 건너뛰었습니다.",
+                      "unreadableLine": "읽을 수 없음: {{value0}}",
+                      "symlinkedFolderLine": "심볼릭 링크 폴더: {{value0}}",
+                      "unsafeNameLine": "이식할 수 없는 이름: {{value0}}"
                     }
                   },
                   "restore": {
@@ -14012,6 +14014,25 @@
                         "nonTextSize": "비텍스트 파일 · {{value0}}",
                         "corruptBadge": "손상됨",
                         "unchanged": "변경 없음"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "비텍스트 파일을 복사할까요?",
+                          "description": "포함은 Base64로 복사하고, 제외는 복사하지 않습니다.",
+                          "found": "비텍스트 파일: {{value0}}개, 총 {{value1}}",
+                          "estimate": "포함 시 클립보드 크기: 약 {{value0}}",
+                          "overLimit": "포함 시 클립보드 크기: {{value0}} 초과",
+                          "overLimitReason": "클립보드에 비해 너무 커서 포함을 사용할 수 없습니다.",
+                          "more": "외 {{value0}}개",
+                          "notRead": "{{value0}} 초과로 읽지 않음(크기 자리 표시자로 복사): {{value1}}",
+                          "include": "포함",
+                          "exclude": "제외",
+                          "cancel": "취소"
+                        }
                       }
                     }
                   }
