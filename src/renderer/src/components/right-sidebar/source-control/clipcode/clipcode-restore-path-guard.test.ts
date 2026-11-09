@@ -31,4 +31,11 @@ describe('findRestorePathObstacle', () => {
     )
     expect(await findRestorePathObstacle(context, '/f', 'alias/config')).toBe('symlink')
   })
+
+  it('reports a symlink at the target itself, so a restore never writes through it', async () => {
+    readRuntimeDirectory.mockImplementation(async (_c: unknown, dir: string) =>
+      dir === '/f' ? [{ name: 'link.png', isDirectory: false, isSymlink: true }] : []
+    )
+    expect(await findRestorePathObstacle(context, '/f', 'link.png')).toBe('symlink')
+  })
 })
