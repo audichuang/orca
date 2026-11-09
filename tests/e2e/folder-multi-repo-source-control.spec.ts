@@ -14,10 +14,12 @@ import { expectOneCopyToast } from './helpers/settled-toast-box'
 import { startHiddenRendererFrameCapture } from './helpers/hidden-renderer-frame-capture'
 import { waitForSessionReady } from './helpers/store'
 import {
+  clearSourceControlSelections,
   clickExplorerPasteRestore,
   clipboardText,
   setClipboard,
   showSourceControl,
+  type RepoKey,
   type ScenarioResult as Result
 } from './helpers/folder-multi-repo-scenario-context'
 import { runLayoutScenarios } from './helpers/folder-multi-repo-layout-scenarios'
@@ -31,11 +33,14 @@ import {
   git,
   readStatus,
   splitBlocks,
-  statsLine,
-  type ExpectedFile
+  statsLine
 } from './helpers/folder-multi-repo-expectations'
 
-// Real-app check of the folder-workspace multi-repo Source Control, tab-owner/git-owner split and Snipcode copy/restore.
+// Real-app check of upstream's folder-workspace Source Control (#38831) with the fork's seams:
+// registered repos under the folder appear as cards, and ClipCode copy/restore keeps folder-relative paths.
+// Rewritten for v1.4.254, where upstream's per-repo cards replaced the fork's master-detail folder panel; the
+// fork-only panel features (hidden-worktree hint, repo list and remembered pick, folder-wide Copy all changes,
+// per-repo header copy, list keyboard navigation) were dropped with it and come back in their own fork PRs.
 // ORCA_MR_FIXTURE_ROOT / ORCA_MR_ARTIFACTS override where the fixture and screenshots/payloads go.
 test.use({ seedTestRepo: false })
 
@@ -94,6 +99,8 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   }
 
   await waitForSessionReady(page)
+  // Why: selectors and toasts are matched in English; a non-English machine would localize them.
+  await page.evaluate(() => window.__store!.getState().updateSettings({ uiLanguage: 'en' }))
   // Why: a hidden window stops painting; keep frames flowing so screenshots show the current UI.
   const stopFrameCapture = await startHiddenRendererFrameCapture(page)
 
@@ -116,50 +123,17 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   await page.evaluate(() =>
     window.__store!.getState().updateSettings({ editorPreviewTabsEnabled: false })
   )
-  const refreshBtn = page.getByRole('button', { name: 'Refresh all repositories' })
+  // Why: the linked WebApp-feature worktree is external until shown; the scenarios need its card.
+  await page.evaluate(async () => {
+    const s = window.__store!
+    for (const repo of s.getState().repos) {
+      await s.getState().updateRepo(repo.id, { externalWorktreeVisibility: 'show' })
+      await s.getState().fetchWorktrees(repo.id)
+    }
+  })
+  const refreshBtn = page.getByRole('button', { name: 'Refresh all', exact: true })
   await refreshBtn.click()
 
-  // Master-detail: one selectable row button per repo; the selected repo's panel fills the detail area.
-  const repoHeaders = () => page.locator('[data-repo-row]')
-  const header = (re: RegExp) => page.locator('[data-repo-row]').filter({ hasText: re })
-  const countOf = async (re: RegExp) => {
-    // Hidden at 0; "(?:^|\s)" keeps a sync count such as "↑2" from reading as the change count.
-    const text = (await header(re).first().innerText()).replace(/\s+/g, ' ').trim()
-    const m = text.match(/(?:^|\s)(\d+)$/)
-    return m ? Number(m[1]) : 0
-  }
-  const entry = (area: string, p: string) =>
-    page.locator(
-      `[data-testid="source-control-entry"][data-source-control-area="${area}"][data-source-control-path=${JSON.stringify(p)}]`
-    )
-  const H = {
-    api: /^api-server main\b/,
-    core: /^core main\b/,
-    docs: /^docs-site main\b/,
-    web: /^WebApp main\b/,
-    feature: /^WebApp-feature feature\/x\b/
-  }
-  // Selects the repo row; entry() rows are not repo-scoped, so exactly one repo may be selected.
-  const expandOnly = async (re: RegExp) => {
-    const h = header(re).first()
-    if ((await h.getAttribute('aria-current')) !== 'true') {
-      await h.click()
-    }
-    await expect(h).toHaveAttribute('aria-current', 'true')
-    await expect(page.locator('[data-repo-row][aria-current="true"]')).toHaveCount(1)
-  }
-  const getOpenFiles = () =>
-    page.evaluate(() =>
-      window.__store!.getState().openFiles.map((f) => ({
-        id: f.id,
-        filePath: f.filePath,
-        relativePath: f.relativePath,
-        worktreeId: f.worktreeId,
-        gitWorktreeId: f.gitWorktreeId ?? null,
-        mode: f.mode,
-        diffSource: f.diffSource ?? null
-      }))
-    )
   const wtIdByPath = (p: string) =>
     page.evaluate((target) => {
       const s = window.__store!.getState()
@@ -171,119 +145,98 @@ test('folder workspace multi-repo source control, copy and restore', async ({
       }
       return null
     }, p)
+  const H = { api: 'api', core: 'core', docs: 'docs', web: 'web', feature: 'feature' } as const
+  const repoPath: Record<RepoKey, string> = {
+    api: R.api,
+    core: R.core,
+    docs: R.docs,
+    web: R.webapp,
+    feature: R.feature
+  }
+  const REPO_KEYS: readonly RepoKey[] = ['api', 'core', 'docs', 'web', 'feature']
+  const cardIdEntries: [RepoKey, string][] = []
+  for (const key of REPO_KEYS) {
+    const id = await wtIdByPath(repoPath[key])
+    expect(id, `${key} is registered`).toBeTruthy()
+    cardIdEntries.push([key, id!])
+  }
+  const cardIds = Object.fromEntries(cardIdEntries) satisfies Partial<Record<RepoKey, string>>
+  const cardId = (key: RepoKey): string => cardIds[key] ?? ''
+  // One card per repo worktree; each card is a full Source Control panel scoped to that repo.
+  const card = (key: RepoKey) =>
+    page.locator(`section[data-source-control-worktree=${JSON.stringify(cardId(key))}]`)
+  const cardToggle = (key: RepoKey) => card(key).locator('button[aria-expanded]').first()
+  const countOf = async (key: RepoKey) => {
+    // The header's first line is "<repo> [<worktree>] [<count>]"; the count is hidden at 0.
+    const text = (await cardToggle(key).innerText()).split('\n').slice(0, 3).join(' ')
+    const m = text.match(/(?:^|\s)(\d+)(?=\s|$)/)
+    return m ? Number(m[1]) : 0
+  }
+  let current: RepoKey = 'api'
+  const entry = (area: string, p: string) =>
+    card(current).locator(
+      `[data-testid="source-control-entry"][data-source-control-area="${area}"][data-source-control-path=${JSON.stringify(p)}]`
+    )
+  const expandOnly = async (key: RepoKey) => {
+    current = key
+    const toggle = cardToggle(key)
+    await expect(toggle).toBeVisible({ timeout: 30_000 })
+    if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+      await toggle.click()
+    }
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await card(key).scrollIntoViewIfNeeded()
+  }
+  const getOpenFiles = () =>
+    page.evaluate(() =>
+      window.__store!.getState().openFiles.map((f) => ({
+        id: f.id,
+        filePath: f.filePath,
+        relativePath: f.relativePath,
+        worktreeId: f.worktreeId,
+        mode: f.mode,
+        diffSource: f.diffSource ?? null
+      }))
+    )
+  const inFolder = (fileId: string) =>
+    page.evaluate(
+      ({ id, folder }) =>
+        (window.__store!.getState().unifiedTabsByWorktree[folder] ?? []).some(
+          (t) => t.entityId === id
+        ),
+      { id: fileId, folder: folderKey }
+    )
   const activeWt = () => page.evaluate(() => window.__store!.getState().activeWorktreeId)
   const diffText = async (side: 'original' | 'modified') =>
     (await page.locator(`.${side}-in-monaco-diff-editor .view-lines`).first().innerText()).replace(
-      /\u00a0/g,
+      / /g,
       ' '
     )
-  const waitSettled = async () => {
-    // refresh is async; poll until the header counts stop changing
-    let prev = ''
-    await expect
-      .poll(
-        async () => {
-          const cur = (await repoHeaders().allInnerTexts()).join('|')
-          const same = cur === prev
-          prev = cur
-          return same
-        },
-        { timeout: 15_000, intervals: [400] }
-      )
-      .toBe(true)
-  }
 
-  const hiddenHint = page.getByText(/Hidden worktrees under this folder are not included \(1\)/)
-  await scenario('S0 Hidden linked worktree is flagged, not silently dropped', async (ev) => {
-    await expect(hiddenHint).toBeVisible({ timeout: 30_000 })
-    await expect(header(H.web).first()).toBeVisible({ timeout: 30_000 })
-    await expect(header(H.feature)).toHaveCount(0)
-    await setClipboard(page, 'sentinel')
-    await page.getByRole('button', { name: 'Copy all changes' }).first().click()
-    await expect(
-      page.locator('[data-sonner-toast]').filter({ hasText: /Hidden worktrees .* \(1\)/ })
-    ).toBeVisible({ timeout: 10_000 })
-    await expect.poll(() => clipboardText(page), { timeout: 20_000 }).not.toBe('sentinel')
-    const payload = await clipboardText(page)
-    expect(payload).not.toContain('WebApp-feature/')
-    ev.push(
-      'default hidden: hint + copy toast shown, feature worktree absent from list and payload'
-    )
-    await shot('S0-hidden-worktree-hint')
-  })
-  // Why: the remaining scenarios need the linked worktree listed, so make it visible now.
-  await page.evaluate(async () => {
-    const s = window.__store!
-    for (const repo of s.getState().repos) {
-      await s.getState().updateRepo(repo.id, { externalWorktreeVisibility: 'show' })
-      await s.getState().fetchWorktrees(repo.id)
+  await scenario('S1 Repo cards', async (ev) => {
+    for (const key of REPO_KEYS) {
+      await expect(card(key), `${key} card`).toHaveCount(1, { timeout: 30_000 })
     }
-  })
-  await expect(hiddenHint).toHaveCount(0, { timeout: 30_000 })
-  await refreshBtn.click()
-
-  await scenario('S1 Repo list', async (ev) => {
-    // docs-site is clean, so it sits in the folded "No changes" group; the panel remembers it unfolded.
-    const noChanges = page.getByRole('button', { name: /^No changes/, expanded: false })
-    await noChanges.click({ timeout: 30_000 })
-    await expect
-      .poll(async () => (await repoHeaders().count()) >= 5, { timeout: 30_000 })
-      .toBe(true)
-    const labels = (await repoHeaders().allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim())
-    ev.push(`headers: ${JSON.stringify(labels)}`)
+    await expect(page.locator('section[data-source-control-worktree]')).toHaveCount(5)
+    const labels = await page
+      .locator('section[data-source-control-worktree] button[aria-expanded]')
+      .allInnerTexts()
+    ev.push(`headers: ${JSON.stringify(labels.map((l) => l.replace(/\s+/g, ' ').trim()))}`)
     ev.push(`scanned: ${JSON.stringify(ids.scanned.map((x) => path.relative(P, x)))}`)
-    expect(labels.length).toBe(5)
-    for (const re of [H.web, H.feature, H.api, H.core, H.docs]) {
-      expect(labels.some((l) => re.test(l))).toBe(true)
-    }
     expect(labels.join('|').toLowerCase()).not.toContain('notes')
-    const expectCount = async (re: RegExp, repo: string) =>
-      expect.poll(() => countOf(re), { timeout: 20_000 }).toBe(readStatus(repo).length)
-    await expectCount(H.web, R.webapp)
-    await expectCount(H.feature, R.feature)
-    await expectCount(H.api, R.api)
-    await expectCount(H.core, R.core)
-    await expectCount(H.docs, R.docs)
-    ev.push(
-      `counts web=${readStatus(R.webapp).length} feature=${readStatus(R.feature).length} api=${readStatus(R.api).length} core=${readStatus(R.core).length} docs=${readStatus(R.docs).length}`
-    )
-    const apiHeaderText = (await header(H.api).first().locator('xpath=..').innerText()).replace(
-      /\s+/g,
-      ' '
-    )
-    ev.push(`api header row: ${apiHeaderText}`)
-    expect(apiHeaderText).toContain('↓1')
-    expect(apiHeaderText).toContain('↑2')
-    await shot('S1-repo-list')
-  })
-
-  await scenario('S2 Default selection and remembered pick', async (ev) => {
-    // rows sort by display name: api-server is the first dirty repo
-    await expect(header(H.api).first()).toHaveAttribute('aria-current', 'true')
-    for (const k of ['core', 'docs', 'web', 'feature'] as const) {
-      await expect(header(H[k]).first()).not.toHaveAttribute('aria-current', 'true')
+    for (const key of REPO_KEYS) {
+      await expect
+        .poll(() => countOf(key), { timeout: 20_000 })
+        .toBe(readStatus(repoPath[key]).length)
     }
-    // entry() is not repo-scoped: pick a path only the api repo has.
-    const apiOnly = { area: 'unstaged', path: 'server.ts' }
-    expect(readStatus(R.api)).toContainEqual(expect.objectContaining({ ...apiOnly }))
-    await expect(
-      entry(apiOnly.area, apiOnly.path),
-      'detail panel shows the default repo'
-    ).toHaveCount(1, { timeout: 15_000 })
-    ev.push('default: api-server selected and its panel shown, others unselected')
-    await shot('S2a-default-selected')
-    await header(H.web).first().click()
-    await expect(header(H.web).first()).toHaveAttribute('aria-current', 'true')
-    await expect(header(H.api).first()).not.toHaveAttribute('aria-current', 'true')
-    await expect(entry(apiOnly.area, apiOnly.path)).toHaveCount(0)
-    await refreshBtn.click()
-    await waitSettled()
-    // ast-grep-ignore: test-no-real-time-wait -- asserts the active repo stays put across a refresh that finishes settling
-    await page.waitForTimeout(1500)
-    await expect(header(H.web).first()).toHaveAttribute('aria-current', 'true')
-    await expect(header(H.api).first()).not.toHaveAttribute('aria-current', 'true')
-    ev.push('after clicking WebApp and a refresh: WebApp still selected, api-server not')
-    await shot('S2b-selection-after-refresh')
+    // A clean repo starts collapsed; a dirty one starts open.
+    await expect(cardToggle('docs')).toHaveAttribute('aria-expanded', 'false')
+    await expect(cardToggle('api')).toHaveAttribute('aria-expanded', 'true')
+    const apiHeaderText = (await cardToggle('api').innerText()).replace(/\s+/g, ' ')
+    ev.push(`api header: ${apiHeaderText}`)
+    // api-server is 2 ahead and 1 behind origin.
+    expect(apiHeaderText).toMatch(/main 2 1$/)
+    await shot('S1-repo-cards')
   })
 
   const LETTER: Record<string, string> = { M: 'M', D: 'D', R: 'R', A: 'A', '?': 'U' }
@@ -298,7 +251,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
       ev.push(`${e.area} ${e.path} -> "${text}" (git ${e.code})`)
       expect(text, text).toMatch(new RegExp(`(^|\\s)${LETTER[e.code]}$`))
     }
-    const stagedDom = await page
+    const stagedDom = await card(H.web)
       .locator('[data-testid="source-control-entry"][data-source-control-area="staged"]')
       .count()
     expect(stagedDom).toBe(status.filter((e) => e.area === 'staged').length)
@@ -310,14 +263,14 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     const rel = 'src/unstaged-mod.ts'
     await entry('unstaged', rel).click()
     await expect(page.locator('.monaco-diff-editor').first()).toBeVisible({ timeout: 20_000 })
-    const webWt = await wtIdByPath(R.webapp)
     const files = await getOpenFiles()
     const tab = files.find((f) => f.relativePath === rel && f.diffSource === 'unstaged')
     ev.push(`tab: ${JSON.stringify(tab)}`)
     expect(tab).toBeTruthy()
-    expect(tab!.worktreeId).toBe(folderKey)
+    // Upstream #38831: the repo owns the tab's content, the folder holds the tab.
+    expect(tab!.worktreeId).toBe(cardId('web'))
+    expect(await inFolder(tab!.id)).toBe(true)
     expect(tab!.filePath).toBe(path.join(R.webapp, rel))
-    expect(tab!.gitWorktreeId).toBe(webWt)
     expect(await activeWt()).toBe(folderKey)
     const cl = changedLines(R.webapp, false, rel)
     await expect.poll(() => diffText('modified'), { timeout: 15_000 }).toContain(cl.added[0])
@@ -369,7 +322,12 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     expect(readmes.length).toBe(2)
     expect(new Set(readmes.map((f) => f.id)).size).toBe(2)
     expect(new Set(readmes.map((f) => f.filePath)).size).toBe(2)
-    expect(readmes.every((f) => f.worktreeId === folderKey)).toBe(true)
+    expect(new Set(readmes.map((f) => f.worktreeId))).toEqual(
+      new Set([cardId('web'), cardId('api')])
+    )
+    for (const f of readmes) {
+      expect(await inFolder(f.id)).toBe(true)
+    }
     expect(await activeWt()).toBe(folderKey)
   })
 
@@ -417,8 +375,10 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     await row.getByRole('button', { name: 'Stage', exact: true }).click()
     await expect(entry('staged', 'core.ts')).toHaveCount(1, { timeout: 15_000 })
     await shot('S6a-core-staged')
-    await page.getByRole('textbox', { name: 'Commit message' }).fill('test: commit core only')
-    await page.getByRole('button', { name: 'Commit', exact: true }).click()
+    await card(H.core)
+      .getByRole('textbox', { name: 'Commit message' })
+      .fill('test: commit core only')
+    await card(H.core).getByRole('button', { name: 'Commit', exact: true }).click()
     await expect
       .poll(() => git(R.core, 'log', '-1', '--format=%s'), { timeout: 20_000 })
       .toBe('test: commit core only\n')
@@ -441,14 +401,13 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     await row.click()
     await expect(page.locator('.monaco-diff-editor').first()).toBeVisible({ timeout: 20_000 })
     await expect.poll(() => diffText('modified'), { timeout: 15_000 }).toContain('feature change')
-    const featWt = await wtIdByPath(R.feature)
     const tab = (await getOpenFiles()).find(
       (f) => f.relativePath === rel && f.filePath === path.join(R.feature, rel)
     )
-    ev.push(`tab: ${JSON.stringify(tab)} featWt=${featWt}`)
+    ev.push(`tab: ${JSON.stringify(tab)}`)
     expect(tab).toBeTruthy()
-    expect(tab!.gitWorktreeId).toBe(featWt)
-    expect(tab!.worktreeId).toBe(folderKey)
+    expect(tab!.worktreeId).toBe(cardId('feature'))
+    expect(await inFolder(tab!.id)).toBe(true)
     await shot('S7-feature-diff')
   })
 
@@ -467,7 +426,6 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     await expect.poll(() => countOf(H.api), { timeout: 15_000 }).toBe(base + 2)
     ev.push(`manual refresh picked up second file in ${Date.now() - t1}ms`)
     await shot('S8-external-refresh')
-    ev.push('app-editor save path not automated (see notes)')
   })
 
   const copiedPayload = async () => {
@@ -526,18 +484,22 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     }
   })
 
+  // A section header inside the repo's card: its Copy Full Source copies only that section.
+  const sectionCopy = async (key: RepoKey, title: RegExp) => {
+    await setClipboard(page, 'sentinel')
+    await card(key)
+      .locator('button[aria-expanded]')
+      .filter({ hasText: title })
+      .first()
+      .locator('xpath=ancestor::div[contains(@class,"group/section")][1]')
+      .getByRole('button', { name: 'Copy Full Source' })
+      .click()
+    return copiedPayload()
+  }
+
   await scenario('S9b Copy Full Source: Staged section header', async (ev) => {
     await expandOnly(H.web)
-    await setClipboard(page, 'sentinel')
-    const stagedHeader = page
-      .locator('button[aria-expanded]')
-      .filter({ hasText: /^Staged/i })
-      .first()
-    const container = stagedHeader.locator(
-      'xpath=ancestor::div[contains(@class,"group/section")][1]'
-    )
-    await container.getByRole('button', { name: 'Copy Full Source' }).click()
-    const { actual, toast } = await copiedPayload()
+    const { actual, toast } = await sectionCopy(H.web, /^Staged/i)
     const files = readStatus(R.webapp)
       .filter((e) => e.area === 'staged')
       .map((e) => ({ repoDir: 'WebApp', repoAbs: R.webapp, entry: e }))
@@ -549,71 +511,10 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     expect(toast).toContain(statsLine(actual))
   })
 
-  await scenario('S9c Copy all changes (folder header)', async (ev) => {
-    await setClipboard(page, 'sentinel')
-    await page.getByRole('button', { name: 'Copy all changes' }).first().click()
-    const { actual, toast } = await copiedPayload()
-    const order: [string, string, string][] = [
-      ['api-server', R.api, 'api'],
-      ['libs/shared/core', R.core, 'core'],
-      ['docs-site', R.docs, 'docs'],
-      ['WebApp', R.webapp, 'web'],
-      ['WebApp-feature', R.feature, 'feature']
-    ]
-    const files: ExpectedFile[] = []
-    for (const [dir, abs] of order) {
-      const st = readStatus(abs)
-      for (const area of ['unstaged', 'untracked', 'staged'] as const) {
-        for (const e of st.filter((x) => x.area === area)) {
-          files.push({ repoDir: dir, repoAbs: abs, entry: e })
-        }
-      }
-    }
-    const expected = expectedPayload({
-      rootName: 'MultiProduct',
-      files,
-      forceIndexForStaged: false
-    })
-    compare(ev, 'S9c-all-changes', actual, expected)
-    expect(actual).not.toContain('logo.png')
-    ev.push(`toast: ${toast}`)
-    expect(toast).toContain(statsLine(actual))
-  })
-
-  await scenario('S9d Copy: per-repo header and the Changes section', async (ev) => {
-    const copyFrom = async (re: RegExp, repoRow = false) => {
-      await setClipboard(page, 'sentinel')
-      const container = repoRow
-        ? header(re).first().locator('xpath=..')
-        : // Why the detail scope: the repo list's own "Changes" group header also matches.
-          page
-            .locator('[data-folder-repo-detail] button[aria-expanded]')
-            .filter({ hasText: re })
-            .first()
-            .locator('xpath=ancestor::div[contains(@class,"group/section")][1]')
-      await container
-        .getByRole('button', { name: /Copy (Full Source|all changes)/ })
-        .first()
-        .click()
-      return copiedPayload()
-    }
-    // per-repo header: one member, worktree content (forceIndexForStaged=false)
-    await expandOnly(H.api)
-    const apiFiles = readStatus(R.api).map((e) => ({
-      repoDir: 'api-server',
-      repoAbs: R.api,
-      entry: e
-    }))
-    const repoCopy = await copyFrom(H.api, true)
-    compare(
-      ev,
-      'S9d-repo-header-api',
-      repoCopy.actual,
-      expectedPayload({ rootName: 'MultiProduct', files: apiFiles, forceIndexForStaged: false })
-    )
+  await scenario('S9d Copy: the Changes section', async (ev) => {
     await expandOnly(H.web)
     // Why one section: upstream lists untracked files inside Changes, so its copy takes both areas.
-    const { actual } = await copyFrom(/^Changes/i)
+    const { actual } = await sectionCopy(H.web, /^Changes/i)
     const webStatus = readStatus(R.webapp)
     const files = (['unstaged', 'untracked'] as const).flatMap((area) =>
       webStatus
@@ -630,6 +531,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
 
   await scenario('S9a-multi Copy Full Source on a multi-selection', async (ev) => {
     await expandOnly(H.web)
+    await clearSourceControlSelections(page)
     const rows = [
       { area: 'unstaged', p: 'src/partial.ts' },
       { area: 'unstaged', p: 'src/deleted-unstaged.ts' }
@@ -638,9 +540,10 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     await entry(rows[0]!.area, rows[0]!.p).click({ modifiers: ['ControlOrMeta'] })
     await entry(rows[1]!.area, rows[1]!.p).click({ modifiers: ['ControlOrMeta'] })
     // A modifier click must select, not open a split.
-    await expect(page.getByRole('button', { name: 'Copy Full Source' }).last()).toBeVisible()
+    const barCopy = card(H.web).getByRole('button', { name: 'Copy Full Source' }).last()
+    await expect(barCopy).toBeVisible()
     await shot('S9a-multi-selection')
-    await page.getByRole('button', { name: 'Copy Full Source' }).last().click()
+    await barCopy.click()
     const { actual, toast } = await copiedPayload()
     const st = readStatus(R.webapp)
     const files = rows.map((r) => ({
@@ -657,7 +560,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     // Why: selection order is a product detail; accept either deterministic order.
     compare(ev, 'S9a-multi', actual, actual === rev ? rev : fwd)
     expect(toast).toContain(statsLine(actual))
-    await page.keyboard.press('Escape')
+    await clearSourceControlSelections(page)
   })
 
   await scenario('S10 Paste and Restore', async (ev) => {
@@ -764,7 +667,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     H,
     scenario,
     shot,
-    header,
+    card,
     entry,
     expandOnly,
     setClipboard,
@@ -780,20 +683,23 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   await runAgentAndBannerScenarios(extra)
 
   await scenario('S11 Normal repo workspace regression', async (ev) => {
-    const webWt = await wtIdByPath(R.webapp)
-    expect(webWt).toBeTruthy()
+    const webWt = cardId('web')
     await page
       .locator(`[data-worktree-sidebar] [role="option"][data-worktree-id=${JSON.stringify(webWt)}]`)
       .click()
     await expect.poll(activeWt).toBe(webWt)
-    await expect(page.getByRole('button', { name: 'Refresh all repositories' })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Copy all changes' })).toHaveCount(0)
+    // The folder's card list is gone; the repo's own panel is not wrapped in a card.
+    await expect(page.locator('section[data-source-control-worktree]')).toHaveCount(0)
+    await expect(refreshBtn).toHaveCount(0)
     // ast-grep-ignore: test-no-real-time-wait -- asserts the panel stays absent for a stretch after the workspace switch
     await page.waitForTimeout(1000)
-    await expect(page.getByRole('button', { name: 'Refresh all repositories' })).toHaveCount(0)
+    await expect(page.locator('section[data-source-control-worktree]')).toHaveCount(0)
     const rel = 'src/unstaged-mod.ts'
-    await expect(entry('unstaged', rel)).toHaveCount(1, { timeout: 20_000 })
-    await entry('unstaged', rel).click()
+    const row = page.locator(
+      `[data-testid="source-control-entry"][data-source-control-area="unstaged"][data-source-control-path=${JSON.stringify(rel)}]`
+    )
+    await expect(row).toHaveCount(1, { timeout: 20_000 })
+    await row.click()
     await expect(page.locator('.monaco-diff-editor').first()).toBeVisible({ timeout: 20_000 })
     await expect.poll(() => diffText('modified'), { timeout: 15_000 }).toContain('unstaged-edit')
     const tab = (await getOpenFiles()).find(
