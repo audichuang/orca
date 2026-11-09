@@ -40,12 +40,13 @@ vi.mock('@/runtime/files/reads/runtime-file-read-client', () => ({
 vi.mock('./clipcode-restore-parent-directories', () => ({
   createParentDirectoriesForNewFile: async () => undefined
 }))
+let owner: { kind: string; connectionId?: string } = { kind: 'local' }
 vi.mock('../../file-explorer/navigation/file-explorer-operation-owner', () => ({
   captureFileExplorerOperationGuard: () => ({
     route: { target: { kind: 'local' } },
     assertCurrent: () => undefined
   }),
-  getFileExplorerOperationOwner: () => ({ kind: 'local' })
+  getFileExplorerOperationOwner: () => owner
 }))
 vi.mock('@/components/editor/autosave/editor-autosave', () => ({
   requestEditorSaveQuiesce: async (target: { worktreeId: string; relativePath: string }) => {
@@ -91,6 +92,7 @@ async function runRestore(clipboard: string, { overwrite = false } = {}): Promis
 }
 
 beforeEach(() => {
+  owner = { kind: 'local' }
   calls.length = 0
   writtenBytes.clear()
   writeRuntimeFile.mockReset()
@@ -238,6 +240,13 @@ describe('useClipcodeRestore', () => {
       { allowMissing: true }
     )
     expect(writtenBytes.get('/f/ok.ts')).toEqual([0x63, 0x61, 0x66, 0xc3, 0xa9])
+  })
+
+  it('writes a text entry on an SSH host in place instead of uploading a temp file', async () => {
+    owner = { kind: 'ssh', connectionId: 'conn-1' }
+    await runRestore('// file: [NEW] ok.ts\ncafé\n')
+    expect(writeRuntimeFileBytes).not.toHaveBeenCalled()
+    expect(writeRuntimeFile).toHaveBeenCalledWith(expect.anything(), '/f/ok.ts', 'café')
   })
 
   it('falls back to the text write when the host cannot replace bytes', async () => {
