@@ -58,7 +58,7 @@ describe('Git Graph on a folder with an upstream attached worktree outside its p
       const ids = listGitGraphRepoChoicesFromState(useAppStore.getState(), FOLDER_KEY).map(
         (choice) => choice.worktree.id
       )
-      expect(ids).toEqual(withInside ? ['inside', 'outside'] : ['outside'])
+      expect(ids).toEqual(withInside ? ['outside', 'inside'] : ['outside'])
       const tabId = useAppStore
         .getState()
         .openGitGraphTab(FOLDER_KEY, { repoWorktreeId: 'outside', revealCommit: 'a'.repeat(40) })
