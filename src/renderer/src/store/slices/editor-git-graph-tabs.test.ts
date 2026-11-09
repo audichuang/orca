@@ -66,6 +66,9 @@ function seededStore(): ReturnType<typeof createEditorTabsStore> {
   const store = createEditorTabsStore()
   store.setState({
     activeWorktreeId: 'wt-api',
+    // The editor harness has no worktree slice; Git Graph reads folder lineage from it.
+    worktreeLineageById: {},
+    workspaceLineageByChildKey: {},
     repos: [repo('api'), repo('web'), repo('notes', { kind: 'folder' })],
     worktreesByRepo: {
       'repo-api': [worktree('api'), worktree('api-feature', 'api')],
