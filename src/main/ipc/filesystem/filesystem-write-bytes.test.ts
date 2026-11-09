@@ -54,6 +54,16 @@ it('replaces the bytes atomically when the file still holds what the editor load
   expect(await readdir(root)).toEqual(['book.xlsx'])
 })
 
+it.skipIf(process.platform === 'win32')(
+  'replaces a file whose name is near the 255-byte name limit',
+  async () => {
+    const filePath = join(root, `${'n'.repeat(216)}.txt`)
+    await writeFile(filePath, loaded)
+    await expect(writeBytes(filePath, edited, sha256(loaded))).resolves.toEqual({ ok: true })
+    expect(new Uint8Array(await readFile(filePath))).toEqual(edited)
+  }
+)
+
 it('refuses a stale baseline and leaves the newer disk bytes alone', async () => {
   const filePath = join(root, 'book.xlsx')
   await writeFile(filePath, new Uint8Array([1, 2, 3]))
