@@ -9,19 +9,29 @@ const calls: string[] = []
 const readRuntimeDirectory = vi.fn()
 const statRuntimePath = vi.fn()
 const readRuntimeFileContent = vi.fn()
+const readRuntimeFileBytes = vi.fn()
+const writeRuntimeFile = vi.fn()
 
-vi.mock('sonner', () => ({ toast: { warning: vi.fn(), error: vi.fn(), success: vi.fn() } }))
+const toast = vi.hoisted(() => ({ warning: vi.fn(), error: vi.fn(), success: vi.fn() }))
+vi.mock('sonner', () => ({ toast }))
 vi.mock('@/runtime/files/reads/runtime-directory-read', () => ({
   readRuntimeDirectory: (...args: unknown[]) => readRuntimeDirectory(...args)
 }))
 vi.mock('@/runtime/files/mutations/runtime-file-mutation-client', () => ({
-  writeRuntimeFile: async (_c: unknown, path: string) => void calls.push(`write ${path}`),
+  writeRuntimeFile: (...args: unknown[]) => writeRuntimeFile(...args),
   deleteRuntimePath: async (_c: unknown, path: string) => void calls.push(`delete ${path}`),
   createRuntimePath: async () => undefined
 }))
 vi.mock('@/runtime/files/metadata/runtime-file-metadata-client', () => ({
   statRuntimePath: (...args: unknown[]) => statRuntimePath(...args),
   isMissingRuntimePathError: (error: unknown) => String(error).includes('ENOENT')
+}))
+vi.mock('@/runtime/files/mutations/runtime-file-bytes-write', () => ({
+  writeRuntimeFileBytes: async (_c: unknown, path: string, bytes: Uint8Array) =>
+    void calls.push(`write bytes ${path} ${[...bytes].join(',')}`)
+}))
+vi.mock('@/runtime/files/reads/runtime-paged-file-read', () => ({
+  readRuntimeFileBytes: (...args: unknown[]) => readRuntimeFileBytes(...args)
 }))
 vi.mock('@/runtime/files/reads/runtime-file-read-client', () => ({
   readRuntimeFileContent: (...args: unknown[]) => readRuntimeFileContent(...args)
@@ -81,6 +91,10 @@ beforeEach(() => {
   calls.length = 0
   statRuntimePath.mockRejectedValue(new Error('ENOENT'))
   readRuntimeFileContent.mockResolvedValue({ content: 'old', isBinary: false })
+  readRuntimeFileBytes.mockResolvedValue({ kind: 'unsupported' })
+  writeRuntimeFile.mockImplementation(async (_c: unknown, path: string) => {
+    calls.push(`write ${path}`)
+  })
   readRuntimeDirectory.mockImplementation(async (_c: unknown, dir: string) =>
     dir === '/f' ? [{ name: 'git-alias', isDirectory: true, isSymlink: true }] : []
   )
@@ -182,5 +196,40 @@ describe('useClipcodeRestore', () => {
     )
     await runRestore('// file: [NEW] caf\u00e9/config\nx\n')
     expect(calls).toEqual([])
+  })
+
+  it('writes a non-text entry as bytes and leaves a target that already holds them unchanged', async () => {
+    const sha = '039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81'
+    const body = `// File skipped: non-text file, 3 bytes, sha256 ${sha}; base64 follows\nAQID\n`
+    statRuntimePath.mockImplementation(async (_c: unknown, path: string) => {
+      if (path === '/f/same.bin') {
+        return { isDirectory: false, size: 3, mtime: 0 }
+      }
+      throw new Error('ENOENT')
+    })
+    readRuntimeFileContent.mockResolvedValue({ content: '', isBinary: true })
+    readRuntimeFileBytes.mockResolvedValue({ kind: 'ok', bytes: new Uint8Array([1, 2, 3]) })
+    await runRestore(`// file: same.bin\n${body}// file: new.bin\n${body}`)
+    expect(calls.filter((call) => call.startsWith('write'))).toEqual([
+      'write bytes /f/new.bin 1,2,3'
+    ])
+    expect(toast.success).toHaveBeenLastCalledWith(
+      'Created 1, overwritten 0, deleted 0, skipped 0. Unchanged: 1.'
+    )
+  })
+
+  it('counts a failed write as skipped and names it in user text, not the OS message', async () => {
+    writeRuntimeFile.mockImplementation(async (_c: unknown, path: string) => {
+      if (path === '/f/locked.ts') {
+        throw new Error("EACCES: permission denied, open '/f/locked.ts'")
+      }
+      calls.push(`write ${path}`)
+    })
+    await runRestore('// file: [NEW] locked.ts\nx\n// file: [NEW] ok.txt\nok\n')
+    expect(calls).toContain('write /f/ok.txt')
+    expect(toast.error).toHaveBeenLastCalledWith(
+      'Created 1, overwritten 0, deleted 0, skipped 1. Failed 1.',
+      { description: 'locked.ts: Folder is not writable' }
+    )
   })
 })
