@@ -9,6 +9,7 @@ import {
   writeRuntimeFile
 } from '@/runtime/files/mutations/runtime-file-mutation-client'
 import { writeRuntimeFileBytes } from '@/runtime/files/mutations/runtime-file-bytes-write'
+import { FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE } from '../../../../../../shared/file-write/file-bytes-write'
 import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 import { notifyEditorExternalFileChange } from '@/components/editor/autosave/editor-autosave'
 import {
@@ -43,6 +44,10 @@ import {
 // Why: the row shows user text, never a raw OS or IPC message (spec "Pasting").
 function restoreRowErrorText(error: unknown): string {
   const message = readIpcErrorMessage(error) ?? String(error)
+  // Why: an older remote host cannot take bytes; that message is already user text and says what to do.
+  if (message.includes(FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE)) {
+    return FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE
+  }
   if (/\b(EACCES|EPERM)\b|permission denied/i.test(message)) {
     return translate(
       'auto.components.right.sidebar.source.control.clipcode.use.clipcode.restore.folderNotWritable',
