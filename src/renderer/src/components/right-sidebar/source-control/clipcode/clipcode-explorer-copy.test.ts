@@ -285,7 +285,7 @@ describe('buildClipcodeExplorerCopy', () => {
     expect(windows.payload).toBe('// clipcode-root: ws\n\n// file: sub/a.ts\nx\n\n')
   })
 
-  it('names a symlink pointing outside the allowed folders as a symlinked folder', async () => {
+  it('names a symlink pointing outside the allowed folders as unreadable, without following it', async () => {
     const denied = new Error(
       "Error invoking remote method 'fs:stat': Error: Access denied: path resolves outside allowed directories. If this blocks a legitimate workflow, please file a GitHub issue."
     )
@@ -307,8 +307,8 @@ describe('buildClipcodeExplorerCopy', () => {
     })
     expect(result).toMatchObject({
       copiedFileCount: 1,
-      symlinkedFolderPaths: ['src/outside-link'],
-      unreadablePaths: ['src/denied.txt']
+      symlinkedFolderPaths: [],
+      unreadablePaths: ['src/denied.txt', 'src/outside-link']
     })
   })
 
