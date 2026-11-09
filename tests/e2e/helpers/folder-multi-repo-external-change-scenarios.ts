@@ -1,7 +1,10 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { expect } from './orca-app'
-import type { ExtraScenarioContext } from './folder-multi-repo-scenario-context'
+import {
+  openRepoEditTabInFolder,
+  type ExtraScenarioContext
+} from './folder-multi-repo-scenario-context'
 
 // S20: the external-change banner over an edit tab in Changes mode.
 export async function runExternalChangeScenarios(ctx: ExtraScenarioContext): Promise<void> {
@@ -11,35 +14,12 @@ export async function runExternalChangeScenarios(ctx: ExtraScenarioContext): Pro
     const abs = path.join(R.api, rel)
     const marker = 'UNSAVED-EDIT-S20'
     await page.evaluate(() => window.__store!.getState().updateSettings({ editorAutoSave: false }))
-    const fileId = await page.evaluate(
-      ({ filePath, relativePath, worktreeId, gitWorktreeId }) => {
-        const s = window.__store!.getState()
-        // Why: earlier scenarios leave diff tabs and a split group; the one diff editor on screen must be this tab's.
-        s.closeAllFiles()
-        s.openFile({
-          filePath,
-          relativePath,
-          worktreeId,
-          gitWorktreeId: gitWorktreeId ?? undefined,
-          language: 'typescript',
-          mode: 'edit'
-        })
-        const id = window
-          .__store!.getState()
-          .openFiles.find((f) => f.filePath === filePath && f.mode === 'edit')?.id
-        if (!id) {
-          throw new Error('edit tab did not open')
-        }
-        window.__store!.getState().setEditorViewMode(id, 'changes')
-        return id
-      },
-      {
-        filePath: abs,
-        relativePath: rel,
-        worktreeId: folderKey,
-        gitWorktreeId: await wtIdByPath(R.api)
-      }
+    const fileId = await openRepoEditTabInFolder(
+      page,
+      { filePath: abs, relativePath: rel, ownerWorktreeId: (await wtIdByPath(R.api))!, folderKey },
+      'typescript'
     )
+    await page.evaluate((id) => window.__store!.getState().setEditorViewMode(id, 'changes'), fileId)
     const diffEditor = page.locator('.monaco-diff-editor').first()
     await expect(diffEditor).toBeVisible({ timeout: 25_000 })
     await page.locator('.modified-in-monaco-diff-editor .view-lines').first().click()
