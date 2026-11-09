@@ -193,10 +193,6 @@ export function useGitHistoryCommitActions({
             worktreeId: activeWorktreeId,
             worktreePath,
             placementWorkspaceId: placementWorkspaceId ?? null,
-            worktreeOwner: {
-              executionHostId,
-              connectionId: sourceControlConnectionId(scope, activeWorktreeId, ownerConnectionId)
-            },
             activeRepoTarget,
             loadCommitFiles
           })
@@ -279,7 +275,6 @@ export function useGitHistoryCommitActions({
       activeRepoTarget,
       activeWorktreeId,
       copyCommitText,
-      executionHostId,
       loadCommitFiles,
       placementWorkspaceId,
       scope,
