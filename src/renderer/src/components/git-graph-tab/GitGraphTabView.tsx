@@ -34,6 +34,7 @@ import { openSourceControlOnRepo } from './git-graph-source-control-link'
 import { useGitGraphTabReveal } from './use-git-graph-tab-reveal'
 import { consumeGitGraphFocusRequest, useGitGraphFocusRequest } from './git-graph-focus-request'
 import { SourceControlScopeProvider } from '../right-sidebar/source-control/panel/worktree-scope'
+import { folderRepoOwner } from '../right-sidebar/source-control/folder/folder-path-repo-owners'
 
 // Upstream keys history reloads on the branch name; a detached tab passes '' like the sidebar.
 function worktreeBranchName(worktree: Worktree): string {
@@ -240,7 +241,19 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
       {addReposDialog}
     </>
   )
-  if (!choice) {
+  // Why a scope: commit diffs and file actions open in this tab's workspace (the folder), reading the repo.
+  const owner = useMemo(
+    () =>
+      choice
+        ? {
+            ...folderRepoOwner(choice.repo, choice.worktree),
+            repo: choice.repo,
+            placementWorkspaceId: workspaceId
+          }
+        : null,
+    [choice, workspaceId]
+  )
+  if (!choice || !owner) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
         {/* With choices left, the switcher's own "Select repository" prompt is the message. */}
@@ -275,17 +288,7 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
     )
   }
   const { worktree, repo } = choice
-  const hostId = getRepoExecutionHostId(repo)
-  // Why a scope: commit diffs and file actions open in this tab's workspace (the folder), reading the repo.
-  const owner = {
-    worktreeId: worktree.id,
-    repoId: repo.id,
-    executionHostId: hostId,
-    worktree,
-    attachedAt: 0,
-    repo,
-    placementWorkspaceId: workspaceId
-  }
+  const hostId = owner.executionHostId
   return (
     <SourceControlScopeProvider owner={owner}>
       <GitGraphTabBody
