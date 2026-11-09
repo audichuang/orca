@@ -112,7 +112,7 @@ function GitGraphTabBody({
   // Why: Fetch moves other refs without touching head or ahead/behind; Source Control announces it here.
   useEffect(() => {
     const onRefresh = (event: Event): void => {
-      if ((event as CustomEvent<string>).detail === worktree.id) {
+      if (event instanceof CustomEvent && event.detail === worktree.id) {
         void refreshGitHistoryRef.current()
       }
     }
