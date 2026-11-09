@@ -4,6 +4,7 @@ import {
   getRepoSshConnectionId
 } from '../../../../../../shared/execution-host'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
+import { reviewRepositoryMatchesWorkspace } from '@/lib/review-owner'
 import { isGitRepoKind } from '../../../../../../shared/repo-kind'
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
@@ -42,7 +43,7 @@ export function getFolderGitWorktrees(
   const result: FolderGitWorktree[] = []
   for (const worktree of worktrees) {
     const repo = repoById.get(worktree.repoId)
-    if (!repo || (worktree.hostId && worktree.hostId !== getRepoExecutionHostId(repo))) {
+    if (!repo || !reviewRepositoryMatchesWorkspace(repo, worktree)) {
       continue
     }
     if (isPathInsideOrEqual(folderWorkspace.folderPath, worktree.path)) {
