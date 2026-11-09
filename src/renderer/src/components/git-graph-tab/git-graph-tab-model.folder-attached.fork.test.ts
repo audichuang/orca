@@ -72,8 +72,8 @@ describe('Git Graph folder choices follow upstream folder Source Control owners'
   const folder = makeFolderWorkspace({ id: 'attached', folderPath: '/work/folder' })
   const inputs = (overrides: Partial<GitGraphChoiceInputs>): GitGraphChoiceInputs => ({
     repos: [],
-    worktreesByRepo: {},
-    folderWorkspaces: [folder],
+    repoWorktrees: {},
+    folders: [folder],
     workspaceLineageByChildKey: {},
     worktreeLineageById: {},
     lineageParentIdentities: undefined,
@@ -106,7 +106,7 @@ describe('Git Graph folder choices follow upstream folder Source Control owners'
     const ids = listGitGraphRepoChoicesFromInputs(
       inputs({
         repos: [remoteRepo],
-        worktreesByRepo: { remote: [root, child] },
+        repoWorktrees: { remote: [root, child] },
         lineageParentIdentities: new Map([
           ['ssh:box|remote-root', 'local|folder:attached'],
           ['ssh:box|remote-child', 'ssh:box|remote-root']
@@ -141,7 +141,7 @@ describe('Git Graph folder choices follow upstream folder Source Control owners'
       const choices = listGitGraphRepoChoicesFromInputs(
         inputs({
           repos,
-          worktreesByRepo: { shared: [local] },
+          repoWorktrees: { shared: [local] },
           workspaceLineageByChildKey: { [lineage.childWorkspaceKey]: lineage }
         }),
         FOLDER_KEY
