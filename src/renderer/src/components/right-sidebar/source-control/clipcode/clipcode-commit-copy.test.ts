@@ -197,6 +197,34 @@ describe('buildClipcodeCommitCopy', () => {
     expect(result.skippedUnsafePathCount).toBe(1)
   })
 
+  it('names non-portable and unreadable paths for the notice and copies the rest', async () => {
+    const r = readers({
+      [`${OID_A}:${PARENT_1}:ok.ts`]: text('', 'ok'),
+      [`${OID_A}:${PARENT_1}:a:b.png`]: text('', 'colon'),
+      [`${OID_A}:${PARENT_1}:missing.ts`]: text('x', '', { missingSides: ['modified'] })
+    })
+    const result = await buildClipcodeCommitCopy({
+      rootPath: context.worktreePath,
+      context,
+      commits: [
+        commit(OID_A, [
+          { path: 'a:b.png', status: 'added' },
+          { path: 'missing.ts', status: 'modified' },
+          { path: 'ok.ts', status: 'added' }
+        ])
+      ],
+      readers: r
+    })
+    expect(result).toMatchObject({
+      unsafePaths: ['a:b.png'],
+      unreadablePaths: ['missing.ts'],
+      copiedFileCount: 1
+    })
+    expect(parsePayload(result.payload)).toEqual([
+      { path: 'ok.ts', changeType: 'NEW', content: 'ok' }
+    ])
+  })
+
   it('copies an emptied file and a new empty file, but not an empty read from a host without missingSides', async () => {
     const r = readers({
       [`${OID_A}:${PARENT_1}:emptied.ts`]: text('was text', ''),
