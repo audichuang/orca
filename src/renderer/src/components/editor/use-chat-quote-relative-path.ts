@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { folderOwnerRelativePath } from '@/store/slices/editor/git/open-file-git-owner'
+import { folderOwnerRelativePath } from '@/store/slices/editor/tabs/folder-tab-relative-path'
 import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 
