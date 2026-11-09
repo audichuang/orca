@@ -15608,7 +15608,6 @@
             "filesInCommits": "Изменённые файлы ({{files}}) · коммитов: {{commits}}",
             "filesChanged": "Изменённые файлы ({{files}})",
             "toggleBranches": "Показать или скрыть ветки",
-            "openShort": "Git Graph",
             "laneContinuesBelow": "Продолжается на {{count}} строк ниже в {{sha}} {{subject}}. Нажмите, чтобы перейти.",
             "laneComesFromAbove": "Идёт от {{sha}} {{subject}}, {{count}} строк выше. Нажмите, чтобы перейти.",
             "laneContinuesPastLoaded": "Продолжается за пределами загруженных коммитов. Загрузите ещё коммиты, чтобы проследить его.",

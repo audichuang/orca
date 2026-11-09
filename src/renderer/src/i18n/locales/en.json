@@ -15545,7 +15545,6 @@
             "filesInCommits": "Changed files ({{files}}) · {{commits}} commits",
             "filesChanged": "Changed files ({{files}})",
             "toggleBranches": "Toggle branches",
-            "openShort": "Git Graph",
             "laneContinuesBelow": "Continues {{count}} rows below at {{sha}} {{subject}}. Click to jump.",
             "laneComesFromAbove": "Comes from {{sha}} {{subject}}, {{count}} rows above. Click to jump.",
             "laneContinuesPastLoaded": "Continues past the loaded commits. Load more commits to follow it.",

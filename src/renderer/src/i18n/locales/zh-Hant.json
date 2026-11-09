@@ -14938,7 +14938,6 @@
             "filesInCommits": "變更檔案 ({{files}}) · {{commits}} 個提交",
             "filesChanged": "變更檔案 ({{files}})",
             "toggleBranches": "切換分支面板",
-            "openShort": "Git Graph",
             "laneContinuesBelow": "往下 {{count}} 列接到 {{sha}} {{subject}}。點一下跳過去。",
             "laneComesFromAbove": "從上方 {{count}} 列的 {{sha}} {{subject}} 接過來。點一下跳過去。",
             "laneContinuesPastLoaded": "接到尚未載入的更早提交。載入更多提交後即可跳過去。",
