@@ -23,7 +23,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { getWorktreeGitIdentityDisplay } from '../../../../../shared/worktree/row-display/git-identity-display'
 import { isFolderRepo } from '../../../../../shared/repository/repo-kind'
 import { SourceControlPanel } from '../source-control/panel/panel'
-import { withFolderPathRepoOwners } from './source-control/folder/folder-path-repo-owners'
 import {
   SourceControlScopeProvider,
   type SourceControlScope
@@ -39,6 +38,7 @@ import {
   FOLDER_WORKTREE_CARD_CLASS,
   FolderWorktreeSectionHeader
 } from './folder-worktree-section-header'
+import { withFolderPathRepoOwners } from './source-control/folder/folder-path-repo-owners'
 const EMPTY_ENTRIES: readonly unknown[] = []
 
 type SectionProps = {
