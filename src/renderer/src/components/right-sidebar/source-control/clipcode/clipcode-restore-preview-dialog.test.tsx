@@ -105,7 +105,6 @@ describe('ClipcodeRestorePreviewDialog', () => {
       />
     )
     expect(screen.getByText('Skip (2)')).toBeInTheDocument()
-    // The reason is its own element, so a long path can never cut it off.
     expect(screen.getByText('unsafe path')).toBeInTheDocument()
     expect(screen.getByText('outside the folder')).toBeInTheDocument()
   })
