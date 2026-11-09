@@ -42,11 +42,12 @@ describe('getFolderGitWorktrees on a paired hub with a nested SSH repo', () => {
     expect(result.map((entry) => entry.worktree.id)).toEqual(['nested-main'])
   })
 
-  it('drops a worktree owned by a different SSH target', () => {
+  it('does not pull a direct-SSH worktree into the hub folder when both repos share one id', () => {
+    const direct: Repo = { ...nestedSshRepo(), executionHostId: undefined }
     const result = getFolderGitWorktrees(
       folder,
-      [worktree({ hostId: 'ssh:other', runtimeOwnerEnvironmentId: 'hub' })],
-      [nestedSshRepo()]
+      [worktree({ id: 'direct-wt', hostId: 'ssh:box' })],
+      [direct, nestedSshRepo()]
     )
     expect(result).toEqual([])
   })
