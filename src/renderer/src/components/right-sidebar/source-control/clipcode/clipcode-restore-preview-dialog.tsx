@@ -248,7 +248,7 @@ export function ClipcodeRestorePreviewDialog({
               rows={preview.overwrite.map(writeRow)}
             />
             <PathList
-              title={translate(
+              title={t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.unchanged',
                 'Unchanged'
               )}
