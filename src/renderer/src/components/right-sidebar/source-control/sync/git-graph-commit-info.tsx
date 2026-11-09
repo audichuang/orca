@@ -2,7 +2,7 @@
 import React from 'react'
 import { Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type {
   GitHistoryGraphColorId,
   GitHistoryItem,
@@ -81,6 +81,7 @@ export function GitGraphCommitInfo({
   item: GitHistoryItem
   context: GitGraphCommitContext
 }): React.JSX.Element {
+  const t = useTranslate()
   const refs = dedupeRemoteTrackingRefs(item.references ?? []).map((ref) => ({
     ...ref,
     color: ref.color ?? context.refColors.get(ref.id)
@@ -114,9 +115,7 @@ export function GitGraphCommitInfo({
       </div>
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1">
         {item.author && (
-          <InfoRow
-            label={translate('auto.components.right.sidebar.GitGraphCommitInfo.author', 'Author')}
-          >
+          <InfoRow label={t('auto.components.right.sidebar.GitGraphCommitInfo.author', 'Author')}>
             <span className="flex min-w-0 items-center gap-1.5 select-text">
               <GitGraphAuthorAvatar name={item.author} email={item.authorEmail} />
               <span className="truncate">
@@ -129,9 +128,7 @@ export function GitGraphCommitInfo({
           </InfoRow>
         )}
         {item.timestamp != null && (
-          <InfoRow
-            label={translate('auto.components.right.sidebar.GitGraphCommitInfo.date', 'Date')}
-          >
+          <InfoRow label={t('auto.components.right.sidebar.GitGraphCommitInfo.date', 'Date')}>
             <span className="select-text">{formatGitHistoryTimestamp(item.timestamp)}</span>
             <span className="text-muted-foreground">
               {' '}
@@ -146,7 +143,7 @@ export function GitGraphCommitInfo({
               type="button"
               variant="ghost"
               size="icon-xs"
-              aria-label={translate(
+              aria-label={t(
                 'auto.components.right.sidebar.GitGraphCommitInfo.copySha',
                 'Copy commit SHA'
               )}
@@ -157,9 +154,7 @@ export function GitGraphCommitInfo({
           </span>
         </InfoRow>
         {item.parentIds.length > 0 && (
-          <InfoRow
-            label={translate('auto.components.right.sidebar.GitGraphCommitInfo.parents', 'Parents')}
-          >
+          <InfoRow label={t('auto.components.right.sidebar.GitGraphCommitInfo.parents', 'Parents')}>
             <span className="flex flex-wrap gap-2">
               {item.parentIds.map((id) => (
                 <CommitLink key={id} id={id} context={context} />
@@ -169,11 +164,8 @@ export function GitGraphCommitInfo({
         )}
         {childIds.length > 0 && (
           <InfoRow
-            label={translate(
-              'auto.components.right.sidebar.GitGraphCommitInfo.children',
-              'Children'
-            )}
-            hint={translate(
+            label={t('auto.components.right.sidebar.GitGraphCommitInfo.children', 'Children')}
+            hint={t(
               'auto.components.right.sidebar.GitGraphCommitInfo.childrenHint',
               'Commits in the loaded list whose parent is this commit.'
             )}
@@ -186,9 +178,7 @@ export function GitGraphCommitInfo({
           </InfoRow>
         )}
         {refs.length > 0 && (
-          <InfoRow
-            label={translate('auto.components.right.sidebar.GitGraphCommitInfo.refs', 'Refs')}
-          >
+          <InfoRow label={t('auto.components.right.sidebar.GitGraphCommitInfo.refs', 'Refs')}>
             <span className="flex flex-wrap gap-1">
               {refs.map((ref) => (
                 <GitGraphRefBadge
@@ -202,11 +192,8 @@ export function GitGraphCommitInfo({
         )}
         {containing.length > 0 && (
           <InfoRow
-            label={translate(
-              'auto.components.right.sidebar.GitGraphCommitInfo.containedIn',
-              'In branches'
-            )}
-            hint={translate(
+            label={t('auto.components.right.sidebar.GitGraphCommitInfo.containedIn', 'In branches')}
+            hint={t(
               'auto.components.right.sidebar.GitGraphCommitInfo.containedInHint',
               'Branches whose tips are in the loaded list; branches outside it are not counted.'
             )}
@@ -221,7 +208,7 @@ export function GitGraphCommitInfo({
               ))}
               {containing.length > CONTAINING_BRANCH_LIMIT && (
                 <span className="text-2xs text-muted-foreground">
-                  {translate(
+                  {t(
                     'auto.components.right.sidebar.GitGraphCommitInfo.moreBranches',
                     '+{{count}} more',
                     { count: containing.length - CONTAINING_BRANCH_LIMIT }
