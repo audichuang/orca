@@ -13963,7 +13963,7 @@
                         "corruptBadge": "已损坏",
                         "unchanged": "未变更",
                         "overwriteAll_one": "覆盖 {{count}} 个已有文件",
-                        "overwriteAll_other": "覆盖全部 {{count}} 个已有文件"
+                        "overwriteAll_other": "覆盖 {{count}} 个已有文件"
                       }
                     }
                   },

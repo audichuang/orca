@@ -13963,7 +13963,7 @@
                         "corruptBadge": "破損",
                         "unchanged": "変更なし",
                         "overwriteAll_one": "既存の {{count}} 個のファイルを上書き",
-                        "overwriteAll_other": "既存の {{count}} 個のファイルをすべて上書き"
+                        "overwriteAll_other": "既存の {{count}} 個のファイルを上書き"
                       }
                     }
                   },
