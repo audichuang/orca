@@ -1,16 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
-import { installWindowVisibilityTimeoutPoller } from '@/lib/window-visibility-timeout-poller'
 import { usePluginPanelsStore } from '@/store/plugin-panels'
 import { getRuntimeEnvironmentDisplayName } from '@/store/repos/owner-routing'
 import type { PluginHostCallOutcome } from '../../../../../../shared/plugins/frames/plugin-protocol'
 import type { PanelActionCall } from '../../../plugins/frames/plugin-frame-host'
 import {
-  callRemotePanelAction,
   focusedPanelOwnerKey,
-  openCheckedRemotePanelSession,
+  remotePanelSessionUnavailable,
   type RemotePanelAvailability
 } from './remote-plugin-panel-route'
+import { REMOTE_PANEL_LOADING, RemotePanelSession } from './remote-plugin-panel-session'
 
 export type RemotePluginPanelRoute =
   | { kind: 'local' }
@@ -23,8 +22,10 @@ export type RemotePluginPanelRoute =
       callHostMethod: (call: PanelActionCall) => Promise<PluginHostCallOutcome>
     }
 
-// Why retry: the server may still be connecting at startup, or the plugin installed there later.
-const RETRY_MS = 10_000
+const noSubscription = (): (() => void) => () => {}
+const loadingState = () => REMOTE_PANEL_LOADING
+const refuseHostCall = (): Promise<PluginHostCallOutcome> =>
+  Promise.resolve(remotePanelSessionUnavailable())
 
 /** Where this panel's host calls go: the paired server owning the focused workspace, else here. */
 export function useRemotePluginPanelRoute(
@@ -46,101 +47,36 @@ export function useRemotePluginPanelRoute(
       ? (state.plugins.find((each) => each.pluginKey === pluginKey)?.version ?? null)
       : null
   )
-  const [availability, setAvailability] = useState<{
-    key: string
-    value: RemotePanelAvailability | 'unreachable'
-  } | null>(null)
-  // Tagged with its server so a late reply for the previous host never becomes this host's token.
-  const sessionRef = useRef<{ environmentId: string; token: string | null } | null>(null)
-  const pollerRef = useRef<{ refresh: () => void } | null>(null)
-  const readyRef = useRef(false)
-  // The local version is part of it: a check made for another local UI version is not this one's.
-  const routeKey =
-    environmentId && tabKey && !ownerPending
-      ? `${environmentId}\0${tabKey}\0${localVersion ?? ''}`
-      : null
-  // Bumped whenever the route or the local version changes; older checks then change nothing.
-  const generationRef = useRef(0)
 
-  // One path for the first open, the retries and a reopen after the server dropped the session.
-  const openChecked = useCallback(async (): Promise<string | null> => {
-    if (!environmentId || !pluginKey || !panelId || !tabKey || !routeKey) {
-      return null
-    }
-    const generation = generationRef.current
-    const { availability: value, token } = await openCheckedRemotePanelSession(
-      environmentId,
-      { pluginKey, id: panelId, tabKey },
-      localVersion
-    )
-    if (generationRef.current !== generation) {
-      return null
-    }
-    sessionRef.current = { environmentId, token }
-    readyRef.current = value.kind === 'ready'
-    setAvailability({ key: routeKey, value })
-    if (!readyRef.current) {
-      pollerRef.current?.refresh()
-    }
-    return token
-  }, [environmentId, pluginKey, panelId, tabKey, routeKey, localVersion])
-
+  // A new host, panel or local version gets a new session; the old one is stopped, not reused.
+  const session = useMemo(
+    () =>
+      environmentId && !ownerPending && pluginKey && panelId && tabKey
+        ? new RemotePanelSession(environmentId, { pluginKey, id: panelId, tabKey }, localVersion)
+        : null,
+    [environmentId, ownerPending, pluginKey, panelId, tabKey, localVersion]
+  )
   useEffect(() => {
-    if (!routeKey) {
+    if (!session) {
       return
     }
-    generationRef.current += 1
-    const generation = generationRef.current
-    // The previous route's or version's token must not serve a single call of this one.
-    sessionRef.current = null
-    readyRef.current = false
-    let cancelled = false
-    const check = async (): Promise<void> => {
-      try {
-        await openChecked()
-      } catch {
-        if (!cancelled && generationRef.current === generation) {
-          readyRef.current = false
-          setAvailability({ key: routeKey, value: 'unreachable' })
-        }
-      }
-    }
-    const poller = installWindowVisibilityTimeoutPoller({
-      run: () => (cancelled ? undefined : check()),
-      getDelayMs: () => (readyRef.current ? null : RETRY_MS)
-    })
-    pollerRef.current = poller
-    return () => {
-      cancelled = true
-      generationRef.current += 1
-      pollerRef.current = null
-      poller()
-    }
-  }, [routeKey, openChecked])
-
-  const callHostMethod = useCallback(
-    (call: PanelActionCall): Promise<PluginHostCallOutcome> => {
-      // Only handed to the frame once the route is ready, so the server is known.
-      const env = environmentId ?? ''
-      return callRemotePanelAction(env, call, {
-        current: () =>
-          sessionRef.current?.environmentId === env ? sessionRef.current.token : null,
-        reopen: openChecked
-      })
-    },
-    [environmentId, openChecked]
+    session.start()
+    return () => session.stop()
+  }, [session])
+  const state = useSyncExternalStore(
+    session?.subscribe ?? noSubscription,
+    session?.getState ?? loadingState
   )
 
   if (!environmentId) {
     return { kind: 'local' }
   }
-  const current = availability?.key === routeKey ? availability.value : null
   return {
     kind: 'remote',
     environmentId,
     hostName,
-    status: current === null ? 'loading' : current === 'unreachable' ? current : current.kind,
-    availability: current === null || current === 'unreachable' ? null : current,
-    callHostMethod
+    status: state.status,
+    availability: state.availability,
+    callHostMethod: session?.callHostMethod ?? refuseHostCall
   }
 }
