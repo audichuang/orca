@@ -14642,11 +14642,8 @@
                       "7828c565da": "({{value0}} übersprungen: Größe überschritten)",
                       "65b422bbd1": "{{value0}} Git-Datei(en) kopiert",
                       "7c6daaf4fa": "Vollständigen Quellcode kopieren fehlgeschlagen",
-                      "9c3f952874": "{{value0}} Git-Datei(en) konnten nicht gelesen werden.",
                       "filesCopied": "{{value0}} Datei(en) kopiert",
-                      "filesUnreadable": "{{value0}} Datei(en) konnten nicht gelesen werden.",
                       "noFiles": "Keine Dateien zum Kopieren gefunden.",
-                      "onlyUnsafeNamesSkipped": "Nichts zu kopieren: {{value0}} Datei(en) übersprungen, da ihre Namen nicht sicher wiederhergestellt werden können.",
                       "tokenCount": "~{{value0}} Token",
                       "payloadDetails": "{{lines}} Zeilen · {{chars}} Zeichen · {{words}} Wörter",
                       "nonTextCopied": "Als Base64 kopierte Nicht-Text-Dateien: {{value0}}.",
@@ -14654,7 +14651,8 @@
                       "onlyNonTextSkipped": "Nichts zu kopieren: {{value0}} Nicht-Text-Datei(en) übersprungen.",
                       "unreadableLine": "Nicht lesbar: {{value0}}",
                       "symlinkedFolderLine": "Ordner-Symlink: {{value0}}",
-                      "unsafeNameLine": "Name nicht portierbar: {{value0}}"
+                      "unsafeNameLine": "Name nicht portierbar: {{value0}}",
+                      "nothingToCopy": "Nichts zu kopieren"
                     }
                   },
                   "restore": {

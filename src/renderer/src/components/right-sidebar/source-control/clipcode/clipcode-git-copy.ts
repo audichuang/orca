@@ -1,4 +1,4 @@
-import { basename, joinPath } from '@/lib/path'
+import { basename } from '@/lib/path'
 import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
 import type { GitDiffResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
@@ -13,8 +13,9 @@ import {
 import {
   classifyClipcodeEntryContent,
   clipcodeReadContent,
-  clipcodeRootRelativePath,
+  clipcodeGitClipboardPath,
   ClipcodeCopyTally,
+  isClipcodeCopyablePath,
   isUnreadableModifiedSide,
   type ClipcodeEntryVerdict,
   type ClipcodeFileRead,
@@ -52,7 +53,7 @@ export type ClipcodeGitCopyResult = {
   unreadableFileCount: number
   /** Non-text files left out of the payload (Exclude, or a side with no raw bytes to carry). */
   skippedBinaryFileCount: number
-  /** Files whose name would not restore as itself (see clipcodeHeaderRoundTrips). */
+  /** Files whose name would not restore as itself (see isClipcodeCopyablePath). */
   skippedUnsafePathCount: number
   /** Number of payload entries, skip lines included. */
   entryCount: number
@@ -217,8 +218,9 @@ export async function buildClipcodeGitCopy(args: {
       if (entry.conflictStatus === 'unresolved' && entry.conflictKind === 'both_deleted') {
         continue
       }
-      const clipboardPath = clipcodeRootRelativePath(
-        joinPath(repo.context.worktreePath, entry.path),
+      const clipboardPath = clipcodeGitClipboardPath(
+        repo.context.worktreePath,
+        entry.path,
         rootPath
       )
       if (!clipboardPath) {
@@ -230,6 +232,13 @@ export async function buildClipcodeGitCopy(args: {
         continue
       }
       const changeType = changeTypeFor(entry)
+      // Why before reading: a non-portable name is named, never read or written into a header.
+      if (!isClipcodeCopyablePath(clipboardPath, changeType)) {
+        for (const mode of modes) {
+          mode.tally.add(clipboardPath, { kind: 'unsafePath' })
+        }
+        continue
+      }
       let content: WorkingContent
       let fromIndex = false
       if (changeType === 'DELETED') {

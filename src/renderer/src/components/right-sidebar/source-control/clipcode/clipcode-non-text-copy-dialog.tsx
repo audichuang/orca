@@ -10,7 +10,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { useTranslate } from '@/i18n/use-translate'
-import { formatBytes } from '../../../../../../shared/format-bytes'
+import { formatClipcodeBytes } from './clipcode-byte-size'
 import {
   CLIPCODE_PAYLOAD_LIMIT_BYTES,
   CLIPCODE_READ_MAX_BYTES,
@@ -99,7 +99,7 @@ function ClipcodeNonTextCopyDialog({
             {t(
               'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.found',
               'Non-text files: {{value0}}, {{value1}} in total',
-              { value0: summary.count, value1: formatBytes(summary.totalBytes) }
+              { value0: summary.count, value1: formatClipcodeBytes(summary.totalBytes) }
             )}
           </div>
           <div className="text-muted-foreground">
@@ -112,7 +112,7 @@ function ClipcodeNonTextCopyDialog({
               : t(
                   'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.estimate',
                   'Clipboard size with them: about {{value0}}',
-                  { value0: formatBytes(summary.includePayloadBytes) }
+                  { value0: formatClipcodeBytes(summary.includePayloadBytes) }
                 )}
           </div>
           {overLimit && (
@@ -127,7 +127,7 @@ function ClipcodeNonTextCopyDialog({
             {shown.map((file) => (
               <li key={file.path} className="flex min-w-0 items-baseline gap-2">
                 <ClipcodeMiddleEllipsisPath path={file.path} className="font-mono" />
-                <span className="shrink-0 whitespace-nowrap">{formatBytes(file.size)}</span>
+                <span className="shrink-0 whitespace-nowrap">{formatClipcodeBytes(file.size)}</span>
               </li>
             ))}
           </ul>
@@ -146,7 +146,7 @@ function ClipcodeNonTextCopyDialog({
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.non.text.copy.dialog.notRead',
                 'Not read, over {{value0}} (copied as size placeholders): {{value1}}',
                 {
-                  value0: formatBytes(CLIPCODE_READ_MAX_BYTES),
+                  value0: formatClipcodeBytes(CLIPCODE_READ_MAX_BYTES),
                   value1: summary.unreadOverLimitCount
                 }
               )}

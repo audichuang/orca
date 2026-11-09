@@ -33,7 +33,11 @@ import {
   type ClipcodeCommitCopyCommit,
   type ClipcodeCommitReaders
 } from './clipcode-commit-copy'
-import { clipcodeCopyNotes, notifyClipcodeCopied } from './clipcode-copied-toast'
+import {
+  clipcodeCopyNotes,
+  notifyClipcodeCopied,
+  notifyClipcodeNothingCopied
+} from './clipcode-copied-toast'
 import { CLIPCODE_READ_MAX_BYTES, type ClipcodeFileRead } from './clipcode-entry-content'
 import { askClipcodeNonTextChoice } from './clipcode-non-text-copy-dialog'
 import { svgPreviewText } from './clipcode-svg-text'
@@ -185,47 +189,32 @@ async function reportClipcodeCopyResult(
       result = excludeResult.nonText.include
     }
   }
-  if (result.entryCount === 0 && result.unreadableFileCount > 0) {
-    toast.error(
-      source === 'git'
-        ? translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.9c3f952874',
-            '{{value0}} Git file(s) could not be read.',
-            {
-              value0: result.unreadableFileCount
-            }
-          )
-        : translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.filesUnreadable',
-            '{{value0}} file(s) could not be read.',
-            { value0: result.unreadableFileCount }
-          )
-    )
+  const namedSkipCount =
+    result.unreadableFileCount +
+    (result.symlinkedFolderPaths?.length ?? 0) +
+    result.skippedUnsafePathCount
+  // Why: an empty payload would wipe the user's clipboard, so the skipped names are the whole answer.
+  if (result.entryCount === 0 && namedSkipCount > 0) {
+    notifyClipcodeNothingCopied(clipcodeCopyNotes(result))
     return
   }
   if (result.entryCount === 0) {
     toast.warning(
-      result.skippedUnsafePathCount > 0
+      result.skippedBinaryFileCount > 0
         ? translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyUnsafeNamesSkipped',
-            'Nothing to copy: {{value0}} file(s) skipped because their names cannot be restored safely.',
-            { value0: result.skippedUnsafePathCount }
+            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyNonTextSkipped',
+            'Nothing to copy: {{value0}} non-text file(s) skipped.',
+            { value0: result.skippedBinaryFileCount }
           )
-        : result.skippedBinaryFileCount > 0
+        : source === 'git'
           ? translate(
-              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyNonTextSkipped',
-              'Nothing to copy: {{value0}} non-text file(s) skipped.',
-              { value0: result.skippedBinaryFileCount }
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
+              'No Git changes found to copy.'
             )
-          : source === 'git'
-            ? translate(
-                'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
-                'No Git changes found to copy.'
-              )
-            : translate(
-                'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.noFiles',
-                'No files found to copy.'
-              )
+          : translate(
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.noFiles',
+              'No files found to copy.'
+            )
     )
     return
   }

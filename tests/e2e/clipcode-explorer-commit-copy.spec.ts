@@ -321,8 +321,11 @@ test('non-text files survive Copy Full Source with Include and Paste & Restore b
 const LONG_FOLDER = `nt-long/${'regional-sales-archive-'.repeat(7).slice(0, 150)}`
 const LONG_NAME = (suffix: string): string =>
   `${LONG_FOLDER}/quarterly-revenue-projection-for-the-north-region-${suffix}.png`
+// Folder first (spec line 112): the folder shrinks to its first segment, then the name keeps the suffix that tells rows apart.
+const shortenedLongName = (suffix: string): RegExp =>
+  new RegExp(`nt-long/…/quarterly-[^/]*${suffix}\\.png`)
 
-test('long non-text names keep the file name in the copy dialog and restore preview', async ({
+test('long non-text names stay distinguishable in the copy dialog and restore preview', async ({
   orcaPage,
   testRepoPath,
   registerPostElectronShutdownCleanup
@@ -355,9 +358,7 @@ test('long non-text names keep the file name in the copy dialog and restore prev
   const copyDialog = clipcodeNonTextDialog(orcaPage)
   await expect(copyDialog).toBeVisible({ timeout: 20_000 })
   for (const suffix of ['alpha', 'beta', 'gamma']) {
-    await expect(copyDialog).toContainText(
-      `…/quarterly-revenue-projection-for-the-north-region-${suffix}.png`
-    )
+    await expect(copyDialog).toContainText(shortenedLongName(suffix))
   }
   const payload = await answerNonTextDialog(orcaPage, 3, 'Include', '08-long-names-copy-dialog.png')
   const corruptEntry = `\n// file: ${LONG_NAME('delta')}\n// File skipped: non-text file, 83 bytes, sha256 ${'0'.repeat(64)}; base64 follows\n${OPENIDEA_PNG_BASE64_LINES}\n`
@@ -371,9 +372,7 @@ test('long non-text names keep the file name in the copy dialog and restore prev
     '09-long-names-restore-preview.png'
   )
   for (const suffix of ['alpha', 'beta', 'gamma', 'delta']) {
-    await expect(preview).toContainText(
-      `…/quarterly-revenue-projection-for-the-north-region-${suffix}.png`
-    )
+    await expect(preview).toContainText(shortenedLongName(suffix))
   }
   await preview.getByRole('button', { name: 'Restore', exact: true }).click()
   await expect(preview).toHaveCount(0, { timeout: 15_000 })

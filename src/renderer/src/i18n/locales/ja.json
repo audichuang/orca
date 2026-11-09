@@ -13974,11 +13974,8 @@
                       "7828c565da": "（{{value0}} 件をスキップ: サイズ超過）",
                       "65b422bbd1": "{{value0}} 件の Git ファイルをコピーしました",
                       "7c6daaf4fa": "ソース全体のコピーに失敗しました",
-                      "9c3f952874": "{{value0}} 件の Git ファイルを読み取れませんでした。",
                       "filesCopied": "{{value0}} 個のファイルをコピーしました",
-                      "filesUnreadable": "{{value0}} 個のファイルを読み取れませんでした。",
                       "noFiles": "コピーするファイルがありません。",
-                      "onlyUnsafeNamesSkipped": "コピーする内容がありません：安全に復元できない名前のファイル {{value0}} 個をスキップしました。",
                       "tokenCount": "~{{value0}} トークン",
                       "payloadDetails": "{{lines}} 行 · {{chars}} 文字 · {{words}} 語",
                       "nonTextCopied": "Base64 でコピーした非テキストファイル：{{value0}}。",
@@ -13986,7 +13983,8 @@
                       "onlyNonTextSkipped": "コピーする内容がありません：非テキストファイル {{value0}} 件をスキップしました。",
                       "unreadableLine": "読み取れません：{{value0}}",
                       "symlinkedFolderLine": "シンボリックリンクのフォルダー：{{value0}}",
-                      "unsafeNameLine": "移植できない名前：{{value0}}"
+                      "unsafeNameLine": "移植できない名前：{{value0}}",
+                      "nothingToCopy": "コピーする内容がありません"
                     }
                   },
                   "restore": {

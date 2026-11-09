@@ -13971,11 +13971,8 @@
                       "7828c565da": "({{value0}}개 건너뜀: 크기 초과)",
                       "65b422bbd1": "Git 파일 {{value0}}개를 복사했습니다",
                       "7c6daaf4fa": "전체 소스 복사 실패",
-                      "9c3f952874": "Git 파일 {{value0}}개를 읽을 수 없습니다.",
                       "filesCopied": "파일 {{value0}}개 복사됨",
-                      "filesUnreadable": "파일 {{value0}}개를 읽을 수 없습니다.",
                       "noFiles": "복사할 파일이 없습니다.",
-                      "onlyUnsafeNamesSkipped": "복사할 내용이 없습니다: 이름을 안전하게 복원할 수 없는 파일 {{value0}}개를 건너뛰었습니다.",
                       "tokenCount": "~{{value0}} 토큰",
                       "payloadDetails": "{{lines}}줄 · {{chars}}자 · {{words}}단어",
                       "nonTextCopied": "Base64로 복사한 비텍스트 파일: {{value0}}.",
@@ -13983,7 +13980,8 @@
                       "onlyNonTextSkipped": "복사할 내용이 없습니다: 비텍스트 파일 {{value0}}개를 건너뛰었습니다.",
                       "unreadableLine": "읽을 수 없음: {{value0}}",
                       "symlinkedFolderLine": "심볼릭 링크 폴더: {{value0}}",
-                      "unsafeNameLine": "이식할 수 없는 이름: {{value0}}"
+                      "unsafeNameLine": "이식할 수 없는 이름: {{value0}}",
+                      "nothingToCopy": "복사할 내용이 없습니다"
                     }
                   },
                   "restore": {
