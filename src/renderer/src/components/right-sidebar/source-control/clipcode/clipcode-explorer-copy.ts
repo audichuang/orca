@@ -8,16 +8,15 @@ import { shouldIncludeFileExplorerEntry } from '../../file-explorer/tree/file-ex
 import { buildPayload, CLIPCODE_DEFAULTS, type PayloadFile } from './clipcode-clipboard-format'
 import {
   classifyClipcodeEntryContent,
-  clipcodeHeaderRoundTrips,
   clipcodeReadContent,
   clipcodeRootRelativePath,
   ClipcodeCopyTally,
+  isClipcodeCopyablePath,
   type ClipcodeEntryVerdict,
   type ClipcodeFileRead,
   type ClipcodeFileContent
 } from './clipcode-entry-content'
 import type { ClipcodeGitCopyResult } from './clipcode-git-copy'
-import { isClipcodePortableRelativePath } from './clipcode-portable-path'
 
 /** `isSymlink`: an explorer row of a symlink; a symlinked folder is named, never followed. */
 export type ClipcodeExplorerTarget = { path: string; isDirectory: boolean; isSymlink?: boolean }
@@ -120,10 +119,7 @@ async function readAndClassify(
     return { kind: 'unreadable' }
   }
   // Why first: an unsafe name is skipped without reading its bytes at all.
-  if (
-    !isClipcodePortableRelativePath(clipboardPath) ||
-    !clipcodeHeaderRoundTrips(clipboardPath, undefined)
-  ) {
+  if (!isClipcodeCopyablePath(clipboardPath, undefined)) {
     return { kind: 'unsafePath' }
   }
   const content = await readContent(readers, absolutePath)
@@ -167,12 +163,8 @@ export async function buildClipcodeExplorerCopy(args: {
           tally.addSymlinkedFolder(shown)
         }
       } else if (verdict.kind === 'outsideRoots') {
-        // Why: a symlink leaving the allowed folders lists as a file whatever it points at; it is never followed.
-        if (isSymlink) {
-          tally.addSymlinkedFolder(shown)
-        } else {
-          tally.addUnreadable(shown)
-        }
+        // Why: a link out of every copy root is never followed, so a credential file cannot reach the clipboard.
+        tally.addUnreadable(shown)
       } else {
         tally.add(shown, verdict)
       }
