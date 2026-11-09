@@ -36,8 +36,9 @@ export function ClipcodeMiddleEllipsisPath({
         return
       }
       // Why the computed font and spacing: the text is measured exactly as this element draws it.
+      // Why longhands: the `font` shorthand is '' under tabular-nums, which leaves the canvas at 10px sans-serif.
       const style = getComputedStyle(element)
-      context.font = style.font
+      context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
       context.letterSpacing = style.letterSpacing
       setShown(
         shortenPathToWidth(

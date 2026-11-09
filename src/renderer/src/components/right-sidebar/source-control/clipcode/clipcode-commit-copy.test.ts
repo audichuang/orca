@@ -186,6 +186,17 @@ describe('buildClipcodeCommitCopy', () => {
     ])
   })
 
+  it('drops a POSIX name containing a backslash instead of writing it with a slash', async () => {
+    const result = await buildClipcodeCommitCopy({
+      rootPath: context.worktreePath,
+      context,
+      commits: [commit(OID_A, [{ path: 'img\\logo.png', status: 'added' }])],
+      readers: readers({ [`${OID_A}:${PARENT_1}:img\\logo.png`]: text('', 'logo') })
+    })
+    expect(result.payload).toBe('')
+    expect(result.skippedUnsafePathCount).toBe(1)
+  })
+
   it('copies an emptied file and a new empty file, but not an empty read from a host without missingSides', async () => {
     const r = readers({
       [`${OID_A}:${PARENT_1}:emptied.ts`]: text('was text', ''),

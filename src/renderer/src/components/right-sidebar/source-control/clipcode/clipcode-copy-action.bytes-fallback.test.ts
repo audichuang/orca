@@ -41,4 +41,11 @@ describe('ClipCode working-file read when the raw-bytes read fails', () => {
       isBinary: false
     })
   })
+
+  it('reports a file whose first NUL is past the text read binary probe as unreadable', async () => {
+    api.fs.readFile.mockResolvedValueOnce({ content: `${'a'.repeat(9000)}\0`, isBinary: false })
+    await expect(clipcodeRuntimeReaders.readWorkingFile(context, 'late-nul.dat')).rejects.toThrow(
+      'EIO: i/o error'
+    )
+  })
 })
