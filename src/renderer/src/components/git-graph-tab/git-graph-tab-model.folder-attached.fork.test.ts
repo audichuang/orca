@@ -5,7 +5,13 @@ import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
 import { TEST_REPO } from '@/store/repos/repo.test-fixture'
 import type { WorkspaceLineage } from '../../../../shared/worktree/lineage-types'
 import { worktreeWorkspaceKey } from '../../../../shared/workspace-scope'
-import { listGitGraphRepoChoicesFromState } from './git-graph-tab-model'
+import type { Repo } from '../../../../shared/repo-types'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host'
+import {
+  listGitGraphRepoChoicesFromInputs,
+  listGitGraphRepoChoicesFromState,
+  type GitGraphChoiceInputs
+} from './git-graph-tab-model'
 
 const FOLDER_KEY = 'folder:attached' as const
 
@@ -60,4 +66,89 @@ describe('Git Graph on a folder with an upstream attached worktree outside its p
       expect(tab?.gitGraph?.repoWorktreeId).toBe('outside')
     }
   )
+})
+
+describe('Git Graph folder choices follow upstream folder Source Control owners', () => {
+  const folder = makeFolderWorkspace({ id: 'attached', folderPath: '/work/folder' })
+  const inputs = (overrides: Partial<GitGraphChoiceInputs>): GitGraphChoiceInputs => ({
+    repos: [],
+    worktreesByRepo: {},
+    folderWorkspaces: [folder],
+    workspaceLineageByChildKey: {},
+    worktreeLineageById: {},
+    lineageParentIdentities: undefined,
+    crossStoreChildrenByFolderId: new Map(),
+    ...overrides
+  })
+
+  it('lists remote lineage children the folder Source Control resolves from other stores', () => {
+    const root = makeWorktree({
+      id: 'remote-root',
+      repoId: 'remote',
+      path: '/srv/remote-root',
+      hostId: 'ssh:box',
+      instanceId: 'root'
+    })
+    const child = makeWorktree({
+      id: 'remote-child',
+      repoId: 'remote',
+      path: '/srv/remote-child',
+      hostId: 'ssh:box',
+      instanceId: 'child'
+    })
+    const remoteRepo: Repo = {
+      ...TEST_REPO,
+      id: 'remote',
+      path: '/srv/remote-root',
+      kind: 'git',
+      connectionId: 'box'
+    }
+    const ids = listGitGraphRepoChoicesFromInputs(
+      inputs({
+        repos: [remoteRepo],
+        worktreesByRepo: { remote: [root, child] },
+        lineageParentIdentities: new Map([
+          ['ssh:box|remote-root', 'local|folder:attached'],
+          ['ssh:box|remote-child', 'ssh:box|remote-root']
+        ]),
+        crossStoreChildrenByFolderId: new Map([['attached', [root]]])
+      }),
+      FOLDER_KEY
+    ).map((choice) => choice.worktree.id)
+    expect(ids.toSorted()).toEqual(['remote-child', 'remote-root'])
+  })
+
+  it('pairs an attached local worktree with the local repo when a remote repo shares its id', () => {
+    const local = makeWorktree({
+      id: 'shared-wt',
+      repoId: 'shared',
+      path: '/elsewhere/shared',
+      hostId: 'local'
+    })
+    const localRepo: Repo = { ...TEST_REPO, id: 'shared', path: '/elsewhere/shared', kind: 'git' }
+    const remoteRepo: Repo = { ...localRepo, executionHostId: 'runtime:remote' }
+    const lineage: WorkspaceLineage = {
+      childWorkspaceKey: worktreeWorkspaceKey(local.id),
+      parentWorkspaceKey: FOLDER_KEY,
+      origin: 'cli',
+      capture: { source: 'env-workspace', confidence: 'inferred' },
+      createdAt: 1
+    }
+    for (const repos of [
+      [localRepo, remoteRepo],
+      [remoteRepo, localRepo]
+    ]) {
+      const choices = listGitGraphRepoChoicesFromInputs(
+        inputs({
+          repos,
+          worktreesByRepo: { shared: [local] },
+          workspaceLineageByChildKey: { [lineage.childWorkspaceKey]: lineage }
+        }),
+        FOLDER_KEY
+      )
+      expect(
+        choices.map((choice) => [choice.worktree.id, getRepoExecutionHostId(choice.repo)])
+      ).toEqual([['shared-wt', 'local']])
+    }
+  })
 })
