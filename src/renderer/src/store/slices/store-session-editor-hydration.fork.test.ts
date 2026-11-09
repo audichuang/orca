@@ -65,7 +65,7 @@ describe('hydrating a folder tab saved by the folder git-owner layer', () => {
 
   describe('a runtime-host folder tab while the folder catalog is not loaded yet', () => {
     beforeEach(() => {
-      useAppStore.setState({ folderWorkspaces: [] } as unknown as Partial<AppState>)
+      useAppStore.setState({ folderWorkspaces: [] })
     })
 
     it('restores a legacy tab as an absolute path', () => {
