@@ -223,6 +223,30 @@ describe('buildClipcodeExplorerCopy', () => {
     expect(written.get('a.ts')).toBe('export const a = 1')
   })
 
+  it('does not build the Include payload when its Base64 alone is over 50 MiB', async () => {
+    // One 2 MiB buffer shared by 19 files: Base64 plus line breaks is 2,832,997 bytes each.
+    const image = new Uint8Array(2 * 1024 * 1024)
+    const reads: Record<string, ClipcodeFileRead> = {
+      '/ws/a.ts': { bytes: new TextEncoder().encode('export const a = 1') }
+    }
+    for (let index = 0; index < 19; index++) {
+      reads[`/ws/img/${index}.png`] = { bytes: image }
+    }
+    const result = await buildClipcodeExplorerCopy({
+      rootPath: '/ws',
+      targets: Object.keys(reads).map((path) => ({ path, isDirectory: false })),
+      readers: { readDir: vi.fn(async () => []), readFile: vi.fn(async (path) => reads[path]) }
+    })
+
+    expect(result.payload).toBe('// clipcode-root: ws\n\n// file: a.ts\nexport const a = 1\n\n')
+    expect(result.nonText?.include.payload).toBe('')
+    expect(result.nonText?.summary).toMatchObject({
+      count: 19,
+      totalBytes: 39_845_888,
+      includePayloadBytes: 53_826_943
+    })
+  })
+
   it('names a directly selected symlinked folder instead of following it', async () => {
     const readDir = vi.fn(async () => [file('inner.ts')])
     const readFile = vi.fn(async () => ({ bytes: new TextEncoder().encode('x') }))
