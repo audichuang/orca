@@ -15145,7 +15145,6 @@
             "filesInCommits": "Geänderte Dateien ({{files}}) · {{commits}} Commits",
             "filesChanged": "Geänderte Dateien ({{files}})",
             "toggleBranches": "Branches ein-/ausblenden",
-            "openShort": "Git Graph",
             "laneContinuesBelow": "Setzt sich {{count}} Zeilen weiter unten bei {{sha}} {{subject}} fort. Zum Springen klicken.",
             "laneComesFromAbove": "Kommt von {{sha}} {{subject}}, {{count}} Zeilen weiter oben. Zum Springen klicken.",
             "laneContinuesPastLoaded": "Setzt sich über die geladenen Commits hinaus fort. Weitere Commits laden, um ihm zu folgen.",
