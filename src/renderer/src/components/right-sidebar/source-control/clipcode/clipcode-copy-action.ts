@@ -56,7 +56,7 @@ export function getClipcodeRepoContext(worktree: Pick<Worktree, 'id' | 'path'>):
   }
 }
 
-/** Copy root: the folder workspace for a scoped folder panel when the worktree lies inside it or contains it, else the worktree itself. */
+/** Copy root: the folder workspace for a scoped folder panel when the worktree lies inside it, else the worktree itself. */
 export function getClipcodeRootPath(editorWorktreeId: string | null, worktreePath: string): string {
   const scope = editorWorktreeId ? parseWorkspaceKey(editorWorktreeId) : null
   if (scope?.type !== 'folder') {
@@ -65,9 +65,7 @@ export function getClipcodeRootPath(editorWorktreeId: string | null, worktreePat
   const folder = selectFolderWorkspaces(useAppStore.getState()).find(
     (workspace) => workspace.id === scope.folderWorkspaceId
   )
-  return folder &&
-    (isPathInsideOrEqual(folder.folderPath, worktreePath) ||
-      isPathInsideOrEqual(worktreePath, folder.folderPath))
+  return folder && isPathInsideOrEqual(folder.folderPath, worktreePath)
     ? folder.folderPath
     : worktreePath
 }
