@@ -65,11 +65,19 @@ type RestoreCase = {
   deletes: { root: string; path: string }[]
   skips: { rawPath: string; reason: string }[]
 }
+type NonTextRestoreCase = {
+  name: string
+  headerFormat: string
+  payload: string
+  creates: { path: string; base64?: string; content?: string }[]
+  skips: { rawPath: string; reason: string }[]
+}
 type Fixtures = {
   pathLayout: Layout
   pathCases: PathCase[]
   restoreLayout: Layout
   restoreCases: RestoreCase[]
+  nonTextRestoreCases: NonTextRestoreCase[]
 }
 
 const fixtures: Fixtures = JSON.parse(
@@ -226,12 +234,12 @@ describe('clipcode cross-tool restore contract', () => {
           creates: [
             ...result.create.map((op) => ({
               path: op.relativePath,
-              content: op.content,
+              content: 'content' in op ? op.content : undefined,
               existed: false
             })),
             ...result.overwrite.map((op) => ({
               path: op.relativePath,
-              content: op.content,
+              content: 'content' in op ? op.content : undefined,
               existed: true
             }))
           ].sort(byPath),
@@ -256,5 +264,33 @@ describe('clipcode cross-tool restore contract', () => {
   it('keeps every listed divergence in the fixture', () => {
     const names = new Set(fixtures.restoreCases.map((c) => c.name))
     expect(Object.keys(RESTORE_DIVERGENCES).filter((name) => !names.has(name))).toEqual([])
+  })
+})
+
+describe('clipcode cross-tool non-text restore contract', () => {
+  it.each(fixtures.nonTextRestoreCases)('non-text restore: $name', async (c) => {
+    const parent = await createLayout(fixtures.restoreLayout)
+    try {
+      const result = await preview(
+        path.join(parent, 'project'),
+        parseClipboard(c.payload, c.headerFormat)
+      )
+      const byPath = (a: { path: string }, b: { path: string }) => a.path.localeCompare(b.path)
+      expect({
+        creates: [...result.create, ...result.overwrite]
+          .map((op) =>
+            'bytes' in op
+              ? { path: op.relativePath, base64: Buffer.from(op.bytes).toString('base64') }
+              : { path: op.relativePath, content: op.content }
+          )
+          .sort(byPath),
+        skips: result.skipped.map((op) => ({
+          rawPath: op.path,
+          reason: REASON_ALIASES[op.reason] ?? op.reason
+        }))
+      }).toEqual({ creates: [...c.creates].sort(byPath), skips: c.skips })
+    } finally {
+      await rm(parent, { recursive: true, force: true })
+    }
   })
 })
