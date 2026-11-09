@@ -9,6 +9,7 @@ import {
 } from '@/runtime/source-control/git/runtime-git-diff-client'
 import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
 import { readRuntimeFileContent } from '@/runtime/files/reads/runtime-file-read-client'
+import { readRuntimeFileBytes } from '@/runtime/files/reads/runtime-paged-file-read'
 import { readRuntimeDirectory } from '@/runtime/files/reads/runtime-directory-read'
 import { useAppStore } from '@/store'
 import { isPathInsideOrEqual } from '../../../../../../shared/cross-platform-path'
@@ -32,7 +33,9 @@ import {
   type ClipcodeCommitCopyCommit,
   type ClipcodeCommitReaders
 } from './clipcode-commit-copy'
-import { notifyClipcodeCopied } from './clipcode-copied-toast'
+import { clipcodeCopyNotes, notifyClipcodeCopied } from './clipcode-copied-toast'
+import { CLIPCODE_READ_MAX_BYTES, type ClipcodeFileRead } from './clipcode-entry-content'
+import { askClipcodeNonTextChoice } from './clipcode-non-text-copy-dialog'
 import { svgPreviewText } from './clipcode-svg-text'
 import {
   buildClipcodeExplorerCopy,
@@ -75,18 +78,32 @@ export function getClipcodeRootPath(editorWorktreeId: string | null, worktreePat
 // Copy Full Source is the user's own act, so its reads may start a stopped WSL distro (E9).
 const USER_ACT = { wakeWslDistro: true } as const
 
+/** Raw bytes, so non-text files can be carried; an old host without paged reads gets today's text read. */
 async function readClipcodeFile(
   context: RuntimeGitContext,
   relativePath: string
-): Promise<{ content: string; isBinary: boolean }> {
-  const file = await readRuntimeFileContent({
+): Promise<ClipcodeFileRead> {
+  const args = {
     target: context.target,
     filePath: joinPath(context.worktreePath, relativePath),
     relativePath,
     worktreeId: context.worktreeId ?? undefined,
     connectionId: context.connectionId,
     ...USER_ACT
-  })
+  }
+  try {
+    const read = await readRuntimeFileBytes(args, CLIPCODE_READ_MAX_BYTES)
+    if (read.kind === 'ok') {
+      return { bytes: read.bytes }
+    }
+    if (read.kind === 'too_large') {
+      return { tooLargeSize: read.size }
+    }
+  } catch {
+    // Why: the text read below keeps today's error wording (unreadable, not a file, too large), and
+    // unlike the byte read's stat it may wake a stopped WSL distro.
+  }
+  const file = await readRuntimeFileContent(args)
   const svgText = svgPreviewText(file)
   return svgText === null
     ? { content: file.content, isBinary: file.isBinary }
@@ -144,11 +161,21 @@ export async function copyClipcodeGitChanges(args: {
   }
 }
 
-/** Clipboard write plus the shared toast wording, so every Copy Full Source source reports alike. */
+/** Asks about non-text files first, then writes the clipboard and reports, so every Copy Full Source source reports alike. */
 async function reportClipcodeCopyResult(
-  result: ClipcodeGitCopyResult,
+  excludeResult: ClipcodeGitCopyResult,
   source: 'git' | 'files' = 'git'
 ): Promise<void> {
+  let result = excludeResult
+  if (excludeResult.nonText) {
+    const choice = await askClipcodeNonTextChoice(excludeResult.nonText.summary)
+    if (choice === 'cancel') {
+      return
+    }
+    if (choice === 'include') {
+      result = excludeResult.nonText.include
+    }
+  }
   if (result.entryCount === 0 && result.unreadableFileCount > 0) {
     toast.error(
       source === 'git'
@@ -177,8 +204,8 @@ async function reportClipcodeCopyResult(
           )
         : result.skippedBinaryFileCount > 0
           ? translate(
-              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyBinarySkipped',
-              'Nothing to copy: {{value0}} binary file(s) skipped.',
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyNonTextSkipped',
+              'Nothing to copy: {{value0}} non-text file(s) skipped.',
               { value0: result.skippedBinaryFileCount }
             )
           : source === 'git'
@@ -194,43 +221,7 @@ async function reportClipcodeCopyResult(
     return
   }
   await window.api.ui.writeClipboardText(result.payload)
-  const notes: string[] = []
-  if (result.skippedFileSizeCount > 0) {
-    notes.push(
-      translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.7828c565da',
-        '({{value0}} skipped: size exceeded)',
-        { value0: result.skippedFileSizeCount }
-      )
-    )
-  }
-  if (result.skippedBinaryFileCount > 0) {
-    notes.push(
-      translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.binarySkipped',
-        '({{value0}} skipped: binary)',
-        { value0: result.skippedBinaryFileCount }
-      )
-    )
-  }
-  if (result.skippedUnsafePathCount > 0) {
-    notes.push(
-      translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.unsafeNamesSkipped',
-        '({{value0}} skipped: unsafe file name)',
-        { value0: result.skippedUnsafePathCount }
-      )
-    )
-  }
-  if (result.unreadableFileCount > 0) {
-    notes.push(
-      translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.2749202819',
-        '({{value0}} unreadable)',
-        { value0: result.unreadableFileCount }
-      )
-    )
-  }
+  const notes = clipcodeCopyNotes(result)
   const copied =
     source === 'git'
       ? translate(
