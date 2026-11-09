@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils'
 import { branchName } from '@/lib/git-utils'
 import { RepoBadgeMark } from '@/components/repo/RepoBadgeLabel'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { GitGraphRepoChoice } from './git-graph-tab-model'
 import { useRepoDisplayColor } from '@/lib/repo-display-color'
 
@@ -80,6 +80,7 @@ export function GitGraphRepoSwitcher({
     onSelect: () => void
   }
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const [open, setOpen] = useState(false)
   const repoColor = useRepoDisplayColor()
   const groups = useMemo(() => groupByRepo(choices, value), [choices, value])
@@ -87,7 +88,7 @@ export function GitGraphRepoSwitcher({
   if (choices.length === 0) {
     return null
   }
-  const label = translate('auto.components.gitGraphTab.repoSwitcher', 'Repository')
+  const label = t('auto.components.gitGraphTab.repoSwitcher', 'Repository')
   return (
     <Popover
       open={open}
@@ -121,7 +122,7 @@ export function GitGraphRepoSwitcher({
             <>
               <FolderGit2 className="size-3 shrink-0" />
               <span className="truncate">
-                {translate('auto.components.gitGraphTab.selectRepo', 'Select repository')}
+                {t('auto.components.gitGraphTab.selectRepo', 'Select repository')}
               </span>
             </>
           )}
@@ -131,14 +132,11 @@ export function GitGraphRepoSwitcher({
       <PopoverContent align="start" className="w-[min(320px,calc(100vw-1rem))]">
         <Command density="menu" filter={repoSwitcherFilter}>
           <CommandInput
-            placeholder={translate(
-              'auto.components.gitGraphTab.searchRepos',
-              'Search repositories...'
-            )}
+            placeholder={t('auto.components.gitGraphTab.searchRepos', 'Search repositories...')}
           />
           <CommandList className="max-h-72">
             <CommandEmpty>
-              {translate('auto.components.gitGraphTab.noRepos', 'No repositories found.')}
+              {t('auto.components.gitGraphTab.noRepos', 'No repositories found.')}
             </CommandEmpty>
             {/* Why flat rows: most repos have one worktree, so a heading per repo doubled the list. */}
             <CommandGroup>

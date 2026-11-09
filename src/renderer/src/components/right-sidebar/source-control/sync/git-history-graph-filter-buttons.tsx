@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import {
   isGitHistoryGraphFiltered,
@@ -110,6 +110,7 @@ export function GitHistoryGraphFilterButtons({
   /** Loaded commits; the User picker lists their authors. */
   items: readonly GitHistoryItem[]
 }): React.JSX.Element {
+  const t = useTranslate()
   const filter = useGitHistoryGraphFilter(filterKey)
   // Why the draft: it is what the search box shows, including text the debounce has not sent yet.
   const draftQuery = useGitHistoryGraphDraftQuery(filterKey)
@@ -146,8 +147,8 @@ export function GitHistoryGraphFilterButtons({
     <Check className={cn('size-3 text-muted-foreground', on ? 'opacity-70' : 'opacity-0')} />
   )
 
-  const userLabel = translate('auto.components.right.sidebar.GitHistoryGraph.userFilter', 'User')
-  const pathsLabel = translate('auto.components.right.sidebar.GitHistoryGraph.pathsFilter', 'Paths')
+  const userLabel = t('auto.components.right.sidebar.GitHistoryGraph.userFilter', 'User')
+  const pathsLabel = t('auto.components.right.sidebar.GitHistoryGraph.pathsFilter', 'Paths')
 
   return (
     <>
@@ -156,7 +157,7 @@ export function GitHistoryGraphFilterButtons({
         label={userLabel}
         value={author}
         shownValue={author}
-        clearLabel={translate(
+        clearLabel={t(
           'auto.components.right.sidebar.GitHistoryGraph.clearUserFilter',
           'Clear user filter'
         )}
@@ -166,14 +167,14 @@ export function GitHistoryGraphFilterButtons({
       >
         <Command density="menu">
           <CommandInput
-            placeholder={translate(
+            placeholder={t(
               'auto.components.right.sidebar.GitHistoryGraph.searchUsers',
               'Search users...'
             )}
           />
           <CommandList>
             <CommandEmpty>
-              {translate(
+              {t(
                 'auto.components.right.sidebar.GitHistoryGraph.noUsers',
                 'No users in the loaded commits.'
               )}
@@ -201,7 +202,7 @@ export function GitHistoryGraphFilterButtons({
         label={pathsLabel}
         value={path}
         shownValue={path && shortPath(path)}
-        clearLabel={translate(
+        clearLabel={t(
           'auto.components.right.sidebar.GitHistoryGraph.clearPathFilter',
           'Clear path filter'
         )}
@@ -217,7 +218,7 @@ export function GitHistoryGraphFilterButtons({
         {/* Why a Command: Enter applies the highlighted row, which is the typed path when there is one. */}
         <Command shouldFilter={false} density="menu">
           <CommandInput
-            placeholder={translate(
+            placeholder={t(
               'auto.components.right.sidebar.GitHistoryGraph.typePath',
               'Repo-relative file or folder path'
             )}
@@ -226,7 +227,7 @@ export function GitHistoryGraphFilterButtons({
           />
           <CommandList>
             <CommandEmpty>
-              {translate(
+              {t(
                 'auto.components.right.sidebar.GitHistoryGraph.typePathHint',
                 'Type a path, then press Enter.'
               )}
@@ -236,7 +237,7 @@ export function GitHistoryGraphFilterButtons({
                 <CommandItem value="__apply-path__" onSelect={() => applyPath(pathDraft)}>
                   <FileSearch className="size-3 text-muted-foreground" />
                   <span className="truncate">
-                    {translate(
+                    {t(
                       'auto.components.right.sidebar.GitHistoryGraph.filterByPath',
                       'Filter by {{value0}}',
                       { value0: pathDraft.trim() }
@@ -247,10 +248,7 @@ export function GitHistoryGraphFilterButtons({
             )}
             {recentPaths.length > 0 && (
               <CommandGroup
-                heading={translate(
-                  'auto.components.right.sidebar.GitHistoryGraph.recentPaths',
-                  'Recent'
-                )}
+                heading={t('auto.components.right.sidebar.GitHistoryGraph.recentPaths', 'Recent')}
               >
                 {recentPaths.map((entry) => (
                   <CommandItem
@@ -276,7 +274,7 @@ export function GitHistoryGraphFilterButtons({
           className="shrink-0"
           onClick={() => resetGitHistoryGraphFilterToDefault(filterKey)}
         >
-          {translate('auto.components.right.sidebar.GitHistoryGraph.clearFilters', 'Clear')}
+          {t('auto.components.right.sidebar.GitHistoryGraph.clearFilters', 'Clear')}
         </Button>
       )}
     </>
