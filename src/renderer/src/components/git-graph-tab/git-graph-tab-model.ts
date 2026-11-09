@@ -35,12 +35,12 @@ type GitGraphWorkspaceState = Parameters<typeof selectCrossStoreFolderChildrenBy
 /** What the Git Graph repo choices read; the lineage fields are the folder Source Control selectors' results. */
 export type GitGraphChoiceInputs = Pick<
   AppState,
-  | 'repos'
-  | 'worktreesByRepo'
-  | 'folderWorkspaces'
-  | 'workspaceLineageByChildKey'
-  | 'worktreeLineageById'
+  'repos' | 'workspaceLineageByChildKey' | 'worktreeLineageById'
 > & {
+  /** selectWorktreesByRepo's view. */
+  repoWorktrees: AppState['worktreesByRepo']
+  /** selectFolderWorkspaces's view. */
+  folders: AppState['folderWorkspaces']
   lineageParentIdentities: SidebarLineageParentIdentities | undefined
   crossStoreChildrenByFolderId: ReadonlyMap<string, readonly Worktree[]>
 }
@@ -48,8 +48,8 @@ export type GitGraphChoiceInputs = Pick<
 export function selectGitGraphChoiceInputs(state: GitGraphWorkspaceState): GitGraphChoiceInputs {
   return {
     repos: state.repos,
-    worktreesByRepo: selectWorktreesByRepo(state),
-    folderWorkspaces: selectFolderWorkspaces(state),
+    repoWorktrees: selectWorktreesByRepo(state),
+    folders: selectFolderWorkspaces(state),
     workspaceLineageByChildKey: state.workspaceLineageByChildKey,
     worktreeLineageById: state.worktreeLineageById,
     lineageParentIdentities: selectSidebarLineageParentIdentities(state),
@@ -69,10 +69,10 @@ function listGitGraphFolderAttachedChoices(
   return getAttachedWorktreesForFolderWorkspace({
     activeWorkspaceKey: workspaceId,
     activeWorktreeId: workspaceId,
-    folderWorkspaces: inputs.folderWorkspaces ?? [],
+    folderWorkspaces: inputs.folders ?? [],
     workspaceLineageByChildKey: inputs.workspaceLineageByChildKey,
     worktreeLineageById: inputs.worktreeLineageById,
-    worktreesByRepo: inputs.worktreesByRepo,
+    worktreesByRepo: inputs.repoWorktrees,
     lineageParentIdentities: inputs.lineageParentIdentities,
     crossStoreChildrenByFolderId: inputs.crossStoreChildrenByFolderId
   }).owners.flatMap((owner) => {
@@ -141,9 +141,9 @@ export function listGitGraphRepoChoicesFromInputs(
 ): GitGraphRepoChoice[] {
   return listGitGraphRepoChoices(
     workspaceId,
-    getIndexedAllWorktrees(inputs.worktreesByRepo),
+    getIndexedAllWorktrees(inputs.repoWorktrees),
     getIndexedRepoMap(inputs.repos),
-    inputs.folderWorkspaces ?? [],
+    inputs.folders ?? [],
     listGitGraphFolderAttachedChoices(inputs, workspaceId)
   )
 }
