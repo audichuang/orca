@@ -8,17 +8,13 @@ import {
   selectDetectedWorktreesByRepo,
   selectWorktreesByRepo
 } from '@/store/workspaces/catalog/workspace-record-fields'
-import {
-  getRepoExecutionHostId,
-  getRepoSshConnectionId
-} from '../../../../../../shared/execution-host'
+import { getFilesystemOwnerKey } from './folder-git-worktrees'
 
 type FolderOwner = Pick<Repo, 'connectionId' | 'executionHostId'>
 
 // Why path, not repo id: a removed and re-added repo mints a new id but is the same checkout.
 function repoPathKey(repo: Pick<Repo, 'path' | 'connectionId' | 'executionHostId'>): string {
-  const owner = `${getRepoExecutionHostId(repo)}|${getRepoSshConnectionId(repo) ?? ''}`
-  return `${owner}\n${normalizeRuntimePathForComparison(repo.path)}`
+  return `${getFilesystemOwnerKey(repo)}\n${normalizeRuntimePathForComparison(repo.path)}`
 }
 
 // Why deeper than Add Project's default 3: monorepo folders nest repos inside repos (folder/docs/guide).
