@@ -52,8 +52,7 @@ export function GitHistoryCommitFilesMenu({
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   renderList: (selectedPaths: ReadonlySet<string>) => React.JSX.Element
 }): React.JSX.Element {
-  const scope = useSourceControlScope()
-  const placementWorkspaceId = scope?.placementWorkspaceId ?? null
+  const placementWorkspaceId = useSourceControlScope()?.placementWorkspaceId ?? null
   const [entry, setEntry] = useState<GitBranchChangeEntry | null>(null)
   const [dirPath, setDirPath] = useState<string | null>(null)
   const [selection, setSelection] = useState(EMPTY_COMMIT_FILE_SELECTION)
@@ -112,7 +111,6 @@ export function GitHistoryCommitFilesMenu({
       worktreeId,
       worktreePath,
       placementWorkspaceId,
-      worktreeOwner: { executionHostId: scope?.executionHostId, connectionId: scope?.connectionId },
       activeRepoTarget: model.activeRepoTarget,
       // Why a narrowed loader: the commits' Copy Full Source, limited to the selected files.
       loadCommitFiles: async (item) =>
