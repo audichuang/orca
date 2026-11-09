@@ -62,8 +62,8 @@ export async function runRestoreScenarios(ctx: ExtraScenarioContext): Promise<vo
     const skip = await skipSection(dialog)
     ev.push(`skip block: ${JSON.stringify(skip)}`)
     expect(skip).toMatch(/^2\)/)
-    expect(skip).toMatch(/path goes through a symlink\s+WebApp\/git-alias\/config/)
-    expect(skip).toMatch(/path goes through a symlink\s+WebApp\/outside-link\/pwned\.txt/)
+    expect(skip).toMatch(/WebApp\/git-alias\/config\s+path goes through a symlink/)
+    expect(skip).toMatch(/WebApp\/outside-link\/pwned\.txt\s+path goes through a symlink/)
     await shot('S12-symlink-escape-dialog')
     await dialog.getByRole('button', { name: 'Restore' }).click()
     await expect(dialog).toHaveCount(0, { timeout: 15_000 })
@@ -101,8 +101,8 @@ export async function runRestoreScenarios(ctx: ExtraScenarioContext): Promise<vo
     const text = (await dialog.innerText()).replace(/\n+/g, '\n')
     ev.push(`dialog: ${JSON.stringify(text)}`)
     expect(text).toMatch(/Skip \(2\)/)
-    expect(text).toMatch(/content was skipped when copied\s+WebApp\/README\.md/)
-    expect(text).toMatch(/content was skipped when copied\s+WebApp\/src\/restored\/s13-skipped\.ts/)
+    expect(text).toMatch(/WebApp\/README\.md\s+content was skipped when copied/)
+    expect(text).toMatch(/WebApp\/src\/restored\/s13-skipped\.ts\s+content was skipped when copied/)
     // README must not be offered as an overwrite either.
     expect(text).not.toMatch(/Overwrite \(/)
     await shot('S13-size-skip-dialog')
@@ -155,7 +155,7 @@ export async function runRestoreScenarios(ctx: ExtraScenarioContext): Promise<vo
     const dialog = await openRestoreDialog(
       `// clipcode-root: MultiProduct\n// file: [MODIFIED] WebApp/${rel}\n${restored}\n`
     )
-    await dialog.getByLabel('Overwrite existing files').click()
+    await dialog.getByLabel(/^Overwrite .*existing files?$/).click()
     // Setup guard: the edit must still be unsaved when Restore is clicked, or the test proves nothing.
     expect(onDisk()).not.toContain(marker)
     await dialog.getByRole('button', { name: 'Restore' }).click()
