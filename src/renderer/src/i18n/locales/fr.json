@@ -14514,11 +14514,8 @@
                       "7828c565da": "({{value0}} ignorés : taille dépassée)",
                       "65b422bbd1": "{{value0}} fichier(s) Git copié(s)",
                       "7c6daaf4fa": "Échec de la copie de la source complète",
-                      "9c3f952874": "{{value0}} fichier(s) Git illisible(s).",
                       "filesCopied": "{{value0}} fichier(s) copié(s)",
-                      "filesUnreadable": "Impossible de lire {{value0}} fichier(s).",
                       "noFiles": "Aucun fichier à copier.",
-                      "onlyUnsafeNamesSkipped": "Rien à copier : {{value0}} fichier(s) ignoré(s) car leur nom ne peut pas être restauré en toute sécurité.",
                       "tokenCount": "~{{value0}} tokens",
                       "payloadDetails": "{{lines}} lignes · {{chars}} caractères · {{words}} mots",
                       "nonTextCopied": "Fichiers non texte copiés en Base64 : {{value0}}.",
@@ -14526,7 +14523,8 @@
                       "onlyNonTextSkipped": "Rien à copier : {{value0}} fichier(s) non texte ignoré(s).",
                       "unreadableLine": "Illisibles : {{value0}}",
                       "symlinkedFolderLine": "Dossier lié symboliquement : {{value0}}",
-                      "unsafeNameLine": "Nom non portable : {{value0}}"
+                      "unsafeNameLine": "Nom non portable : {{value0}}",
+                      "nothingToCopy": "Rien à copier"
                     }
                   },
                   "restore": {

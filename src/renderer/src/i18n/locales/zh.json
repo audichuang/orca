@@ -13920,11 +13920,8 @@
                       "7828c565da": "（{{value0}} 个因超出大小限制被跳过）",
                       "65b422bbd1": "已复制 {{value0}} 个 Git 文件",
                       "7c6daaf4fa": "复制完整源码失败",
-                      "9c3f952874": "{{value0}} 个 Git 文件无法读取。",
                       "filesCopied": "已复制 {{value0}} 个文件",
-                      "filesUnreadable": "{{value0}} 个文件无法读取。",
                       "noFiles": "没有可复制的文件。",
-                      "onlyUnsafeNamesSkipped": "没有可复制的内容：已跳过 {{value0}} 个无法安全还原名称的文件。",
                       "tokenCount": "~{{value0}} 个 token",
                       "payloadDetails": "{{lines}} 行 · {{chars}} 个字符 · {{words}} 个词",
                       "nonTextCopied": "以 Base64 复制的非文本文件：{{value0}}。",
@@ -13932,7 +13929,8 @@
                       "onlyNonTextSkipped": "没有可复制的内容：已跳过 {{value0}} 个非文本文件。",
                       "unreadableLine": "无法读取：{{value0}}",
                       "symlinkedFolderLine": "符号链接文件夹：{{value0}}",
-                      "unsafeNameLine": "名称无法跨平台保留：{{value0}}"
+                      "unsafeNameLine": "名称无法跨平台保留：{{value0}}",
+                      "nothingToCopy": "没有可复制的内容"
                     }
                   },
                   "restore": {

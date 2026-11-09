@@ -15145,11 +15145,8 @@
                       "7828c565da": "({{value0}} skipped: size exceeded)",
                       "65b422bbd1": "{{value0}} Git file(s) copied",
                       "7c6daaf4fa": "Copy Full Source failed",
-                      "9c3f952874": "{{value0}} Git file(s) could not be read.",
                       "filesCopied": "{{value0}} file(s) copied",
-                      "filesUnreadable": "{{value0}} file(s) could not be read.",
                       "noFiles": "No files found to copy.",
-                      "onlyUnsafeNamesSkipped": "Nothing to copy: {{value0}} file(s) skipped because their names cannot be restored safely.",
                       "tokenCount": "~{{value0}} tokens",
                       "payloadDetails": "{{lines}} lines · {{chars}} chars · {{words}} words",
                       "nonTextCopied": "Non-text files copied as Base64: {{value0}}.",
@@ -15157,7 +15154,8 @@
                       "onlyNonTextSkipped": "Nothing to copy: {{value0}} non-text file(s) skipped.",
                       "unreadableLine": "Unreadable: {{value0}}",
                       "symlinkedFolderLine": "Symlinked folder: {{value0}}",
-                      "unsafeNameLine": "Name not portable: {{value0}}"
+                      "unsafeNameLine": "Name not portable: {{value0}}",
+                      "nothingToCopy": "Nothing to copy"
                     }
                   },
                   "restore": {

@@ -14566,11 +14566,8 @@
                       "7828c565da": "({{value0}} atlandı: boyut aşıldı)",
                       "65b422bbd1": "{{value0}} Git dosyası kopyalandı",
                       "7c6daaf4fa": "Tam kaynak kopyalanamadı",
-                      "9c3f952874": "{{value0}} Git dosyası okunamadı.",
                       "filesCopied": "{{value0}} dosya kopyalandı",
-                      "filesUnreadable": "{{value0}} dosya okunamadı.",
                       "noFiles": "Kopyalanacak dosya bulunamadı.",
-                      "onlyUnsafeNamesSkipped": "Kopyalanacak bir şey yok: adları güvenli şekilde geri yüklenemediği için {{value0}} dosya atlandı.",
                       "tokenCount": "~{{value0}} token",
                       "payloadDetails": "{{lines}} satır · {{chars}} karakter · {{words}} sözcük",
                       "nonTextCopied": "Base64 olarak kopyalanan metin dışı dosyalar: {{value0}}.",
@@ -14578,7 +14575,8 @@
                       "onlyNonTextSkipped": "Kopyalanacak bir şey yok: {{value0}} metin dışı dosya atlandı.",
                       "unreadableLine": "Okunamayan: {{value0}}",
                       "symlinkedFolderLine": "Sembolik bağlantılı klasör: {{value0}}",
-                      "unsafeNameLine": "Taşınamayan ad: {{value0}}"
+                      "unsafeNameLine": "Taşınamayan ad: {{value0}}",
+                      "nothingToCopy": "Kopyalanacak bir şey yok"
                     }
                   },
                   "restore": {
