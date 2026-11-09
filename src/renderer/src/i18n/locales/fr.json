@@ -14550,7 +14550,11 @@
                         "parentIsFile": "un dossier parent est un fichier",
                         "targetUnreadable": "impossible de vérifier le fichier existant",
                         "caseConflict": "même chemin avec une casse différente",
-                        "nonUtf8Target": "le fichier existant n'est pas en UTF-8"
+                        "nonUtf8Target": "le fichier existant n'est pas en UTF-8",
+                        "corruptNonText": "Fichier non texte corrompu",
+                        "nonTextSize": "fichier non texte · {{value0}}",
+                        "corruptBadge": "Corrompu",
+                        "unchanged": "Inchangé"
                       }
                     }
                   }
@@ -14563,7 +14567,12 @@
                       "af5c90f593": "Échec du collage et de la restauration",
                       "ae1ec38ef1": "Créés : {{value0}}, écrasés : {{value1}}, supprimés : {{value2}}, ignorés : {{value3}}.",
                       "19a6f378aa": "…et {{value0}} de plus",
-                      "c9af35dc2d": "Échecs : {{value0}}."
+                      "c9af35dc2d": "Échecs : {{value0}}.",
+                      "folderNotWritable": "Le dossier n'est pas accessible en écriture",
+                      "parentIsFile": "Un fichier occupe la place de son dossier parent",
+                      "targetIsFolder": "La cible est un dossier",
+                      "writeFailed": "Impossible d'écrire le fichier",
+                      "unchanged": "Inchangés : {{value0}}."
                     }
                   }
                 }

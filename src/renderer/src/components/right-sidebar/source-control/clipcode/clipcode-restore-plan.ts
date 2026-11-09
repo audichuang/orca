@@ -1,5 +1,6 @@
 // Behavioral port of ClipCodeVSCode pathResolver/restoreBase, reduced to the single-root case.
 import { asciiTrim, type ParsedEntry } from './clipcode-clipboard-format'
+import { decodeNonTextVerified, parseNonTextPlaceholderLine } from './clipcode-non-text-body'
 import { isClipcodePlaceholderBody } from './clipcode-placeholder-bodies'
 
 export type ClipcodeRestoreBase =
@@ -15,9 +16,15 @@ export type ClipcodeRestoreSkipReason =
   | 'OUTSIDE_ROOT'
   | 'CONTENT_SKIPPED'
   | 'CASE_CONFLICT'
+  | 'CORRUPT_NON_TEXT'
+
+/** A text write, or a non-text entry's verified bytes (`sha256` is their lowercase hex hash). */
+export type ClipcodeRestoreWrite =
+  | { relativePath: string; content: string }
+  | { relativePath: string; bytes: Uint8Array; sha256: string }
 
 export type ClipcodeRestorePlan = {
-  writes: { relativePath: string; content: string }[]
+  writes: ClipcodeRestoreWrite[]
   deletes: { relativePath: string }[]
   skipped: { rawPath: string; reason: ClipcodeRestoreSkipReason }[]
 }
@@ -222,7 +229,26 @@ export function planClipcodeRestore(args: {
     }
     if (entry.changeTypes.has('DELETED')) {
       plan.deletes.push({ relativePath })
-    } else if (isClipcodePlaceholderBody(entry.content)) {
+      continue
+    }
+    // Why: an escaped placeholder is text that only looks like one, so it is never decoded nor skipped.
+    const lineBreak = entry.content.indexOf('\n')
+    const nonText = entry.escapedPlaceholder
+      ? undefined
+      : parseNonTextPlaceholderLine(
+          lineBreak === -1 ? entry.content : entry.content.slice(0, lineBreak)
+        )
+    if (nonText) {
+      const body = decodeNonTextVerified(
+        lineBreak === -1 ? '' : entry.content.slice(lineBreak + 1),
+        nonText
+      )
+      if (body.ok) {
+        plan.writes.push({ relativePath, bytes: body.bytes, sha256: nonText.sha256 })
+      } else {
+        plan.skipped.push({ rawPath: relativePath, reason: 'CORRUPT_NON_TEXT' })
+      }
+    } else if (!entry.escapedPlaceholder && isClipcodePlaceholderBody(entry.content)) {
       plan.skipped.push({ rawPath: relativePath, reason: 'CONTENT_SKIPPED' })
     } else {
       // MOVED only carries the new path; the old location is never touched.
@@ -266,25 +292,43 @@ const UNTOUCHABLE_STATE_REASON = {
 } as const satisfies Partial<Record<ClipcodeTargetState, ClipcodePreviewSkipReason>>
 
 export type ClipcodeRestorePreview = {
-  create: { relativePath: string; content: string }[]
-  overwrite: { relativePath: string; content: string }[]
+  create: ClipcodeRestoreWrite[]
+  overwrite: ClipcodeRestoreWrite[]
+  /** Non-text targets that already hold the pasted bytes: never written, no overwrite needed. */
+  unchanged: { relativePath: string; size: number }[]
   delete: { relativePath: string }[]
   skipped: { path: string; reason: ClipcodePreviewSkipReason }[]
 }
 
-/** Classifies a plan against what already exists; a delete only runs when the target is a file. */
+/**
+ * Classifies a plan against what already exists; a delete only runs when the target is a file.
+ * `existingSha256Of` is the hex SHA-256 of an existing target's bytes, when they were read.
+ */
 export function previewClipcodeRestore(
   plan: ClipcodeRestorePlan,
-  stateOf: (relativePath: string) => ClipcodeTargetState
+  stateOf: (relativePath: string) => ClipcodeTargetState,
+  existingSha256Of: (relativePath: string) => string | undefined = () => undefined
 ): ClipcodeRestorePreview {
-  const preview: ClipcodeRestorePreview = { create: [], overwrite: [], delete: [], skipped: [] }
+  const preview: ClipcodeRestorePreview = {
+    create: [],
+    overwrite: [],
+    unchanged: [],
+    delete: [],
+    skipped: []
+  }
   for (const skipped of plan.skipped) {
     preview.skipped.push({ path: skipped.rawPath, reason: skipped.reason })
   }
   for (const write of plan.writes) {
     const state = stateOf(write.relativePath)
-    if (state === 'file' || state === 'missing') {
-      const bucket = state === 'file' ? preview.overwrite : preview.create
+    // Why: raw bytes carry no encoding to lose, so the non-UTF-8 overwrite guard is text only.
+    const existing =
+      state === 'file' ||
+      ('bytes' in write && (state === 'nonUtf8File' || state === 'unverifiedFile'))
+    if ('bytes' in write && existing && existingSha256Of(write.relativePath) === write.sha256) {
+      preview.unchanged.push({ relativePath: write.relativePath, size: write.bytes.length })
+    } else if (existing || state === 'missing') {
+      const bucket = existing ? preview.overwrite : preview.create
       bucket.push(write)
     } else {
       preview.skipped.push({ path: write.relativePath, reason: UNTOUCHABLE_STATE_REASON[state] })

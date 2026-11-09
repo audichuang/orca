@@ -15181,7 +15181,11 @@
                         "parentIsFile": "a parent folder is a file",
                         "targetUnreadable": "could not check the existing file",
                         "caseConflict": "same path with different letter case",
-                        "nonUtf8Target": "existing file is not UTF-8"
+                        "nonUtf8Target": "existing file is not UTF-8",
+                        "corruptNonText": "Corrupt non-text file",
+                        "nonTextSize": "non-text file · {{value0}}",
+                        "corruptBadge": "Corrupt",
+                        "unchanged": "Unchanged"
                       }
                     }
                   }
@@ -15194,7 +15198,12 @@
                       "af5c90f593": "Paste & Restore failed",
                       "ae1ec38ef1": "Created {{value0}}, overwritten {{value1}}, deleted {{value2}}, skipped {{value3}}.",
                       "19a6f378aa": "...and {{value0}} more",
-                      "c9af35dc2d": "Failed {{value0}}."
+                      "c9af35dc2d": "Failed {{value0}}.",
+                      "folderNotWritable": "Folder is not writable",
+                      "parentIsFile": "A file is in the way of its parent folder",
+                      "targetIsFolder": "The target is a folder",
+                      "writeFailed": "Could not write the file",
+                      "unchanged": "Unchanged: {{value0}}."
                     }
                   }
                 }

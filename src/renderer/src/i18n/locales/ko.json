@@ -13956,7 +13956,11 @@
                         "parentIsFile": "상위 폴더가 파일임",
                         "targetUnreadable": "기존 파일을 확인할 수 없음",
                         "caseConflict": "대소문자만 다른 같은 경로",
-                        "nonUtf8Target": "기존 파일이 UTF-8이 아닙니다"
+                        "nonUtf8Target": "기존 파일이 UTF-8이 아닙니다",
+                        "corruptNonText": "손상된 비텍스트 파일",
+                        "nonTextSize": "비텍스트 파일 · {{value0}}",
+                        "corruptBadge": "손상됨",
+                        "unchanged": "변경 없음"
                       }
                     }
                   }
@@ -13969,7 +13973,12 @@
                       "af5c90f593": "붙여넣기 및 복원 실패",
                       "ae1ec38ef1": "생성 {{value0}}, 덮어쓰기 {{value1}}, 삭제 {{value2}}, 건너뜀 {{value3}}.",
                       "19a6f378aa": "…외 {{value0}}개",
-                      "c9af35dc2d": "실패 {{value0}}개."
+                      "c9af35dc2d": "실패 {{value0}}개.",
+                      "folderNotWritable": "폴더에 쓸 수 없습니다",
+                      "parentIsFile": "상위 폴더 위치에 파일이 있습니다",
+                      "targetIsFolder": "대상이 폴더입니다",
+                      "writeFailed": "파일을 쓸 수 없습니다",
+                      "unchanged": "변경 없음: {{value0}}."
                     }
                   }
                 }

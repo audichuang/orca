@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -12,6 +13,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
+import { formatBytes } from '../../../../../../shared/format-bytes'
 import type { ParsedEntry } from './clipcode-clipboard-format'
 import { defaultAdjustRestorePaths } from './clipcode-restore-base-default'
 import {
@@ -19,6 +21,7 @@ import {
   previewClipcodeRestore,
   type ClipcodeRestoreBaseSuggestion,
   type ClipcodeRestorePreview,
+  type ClipcodeRestoreWrite,
   type ClipcodeTargetState
 } from './clipcode-restore-plan'
 
@@ -28,6 +31,8 @@ export type PendingClipcodeRestore = {
   suggestion: ClipcodeRestoreBaseSuggestion | undefined
   /** Existing state of every path either base choice can target. */
   states: ReadonlyMap<string, ClipcodeTargetState>
+  /** Hex SHA-256 of existing targets a non-text entry may already match. */
+  existingSha256?: ReadonlyMap<string, string>
 }
 
 export type ConfirmedClipcodeRestore = { preview: ClipcodeRestorePreview; overwrite: boolean }
@@ -89,34 +94,72 @@ function skipReasonLabel(reason: ClipcodeRestorePreview['skipped'][number]['reas
         'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.caseConflict',
         'same path with different letter case'
       )
+    case 'CORRUPT_NON_TEXT':
+      return translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.corruptNonText',
+        'Corrupt non-text file'
+      )
   }
 }
 
+function nonTextNote(size: number): string {
+  return translate(
+    'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.nonTextSize',
+    'non-text file · {{value0}}',
+    { value0: formatBytes(size) }
+  )
+}
+
+// Why: a non-text row shows its size, never the Base64 or a diff.
+function writeRow(write: ClipcodeRestoreWrite): PathRow {
+  return 'bytes' in write
+    ? { path: write.relativePath, note: nonTextNote(write.bytes.length) }
+    : { path: write.relativePath }
+}
+
+function skipRow(skipped: ClipcodeRestorePreview['skipped'][number]): PathRow {
+  return skipped.reason === 'CORRUPT_NON_TEXT'
+    ? {
+        path: skipped.path,
+        badge: translate(
+          'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.corruptBadge',
+          'Corrupt'
+        ),
+        note: skipReasonLabel(skipped.reason)
+      }
+    : { path: skipped.path, note: skipReasonLabel(skipped.reason) }
+}
+
+/** A badge row keeps its note for the tooltip instead of a line of its own. */
+type PathRow = { path: string; note?: string; badge?: string }
+
 function PathList({
   title,
-  paths,
-  notes
+  rows
 }: {
   title: string
-  paths: readonly string[]
-  notes?: readonly string[]
+  rows: readonly PathRow[]
 }): React.JSX.Element | null {
-  if (paths.length === 0) {
+  if (rows.length === 0) {
     return null
   }
   return (
     <div className="min-w-0">
       <div className="text-xs font-medium text-foreground">
-        {title} ({paths.length})
+        {title} ({rows.length})
       </div>
       <ul className="mt-0.5 space-y-1 text-[11px] text-muted-foreground">
-        {paths.map((path, index) => (
-          <li key={path} title={path}>
-            {/* Why: the reason leads on its own line so long absolute paths can wrap without hiding it. */}
-            {notes?.[index] ? (
-              <div className="font-medium text-foreground">{notes[index]}</div>
+        {rows.map((row) => (
+          <li key={row.path} title={row.badge ? row.note : row.path}>
+            {/* Why: the reason or badge leads on its own line so long paths can wrap without hiding it. */}
+            {row.badge ? (
+              <Badge variant="destructive" className="text-[10px]">
+                {row.badge}
+              </Badge>
+            ) : row.note ? (
+              <div className="font-medium text-foreground">{row.note}</div>
             ) : null}
-            <div className="break-all font-mono">{path}</div>
+            <div className="break-all font-mono">{row.path}</div>
           </li>
         ))}
       </ul>
@@ -139,7 +182,11 @@ export function ClipcodeRestorePreviewDialog({
   const base = adjustPaths ? pending.suggestion?.base : undefined
   const preview = useMemo(() => {
     const plan = planClipcodeRestore({ rootPath: pending.rootPath, entries: pending.entries, base })
-    return previewClipcodeRestore(plan, (path) => pending.states.get(path) ?? 'missing')
+    return previewClipcodeRestore(
+      plan,
+      (path) => pending.states.get(path) ?? 'missing',
+      (path) => pending.existingSha256?.get(path)
+    )
   }, [base, pending])
   const actionable =
     preview.create.length + (overwrite ? preview.overwrite.length : 0) + preview.delete.length
@@ -193,29 +240,38 @@ export function ClipcodeRestorePreviewDialog({
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.9a421f14d8',
                 'Create'
               )}
-              paths={preview.create.map((item) => item.relativePath)}
+              rows={preview.create.map(writeRow)}
             />
             <PathList
               title={t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.d469ff3b81',
                 'Overwrite'
               )}
-              paths={preview.overwrite.map((item) => item.relativePath)}
+              rows={preview.overwrite.map(writeRow)}
+            />
+            <PathList
+              title={translate(
+                'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.unchanged',
+                'Unchanged'
+              )}
+              rows={preview.unchanged.map((item) => ({
+                path: item.relativePath,
+                note: nonTextNote(item.size)
+              }))}
             />
             <PathList
               title={t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.9cf3526c1f',
                 'Delete'
               )}
-              paths={preview.delete.map((item) => item.relativePath)}
+              rows={preview.delete.map((item) => ({ path: item.relativePath }))}
             />
             <PathList
               title={t(
                 'auto.components.right.sidebar.source.control.clipcode.clipcode.restore.preview.dialog.0d87b3b39d',
                 'Skip'
               )}
-              paths={preview.skipped.map((item) => item.path)}
-              notes={preview.skipped.map((item) => skipReasonLabel(item.reason))}
+              rows={preview.skipped.map(skipRow)}
             />
           </div>
           {preview.overwrite.length > 0 && (
