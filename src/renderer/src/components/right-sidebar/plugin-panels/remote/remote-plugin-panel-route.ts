@@ -98,7 +98,7 @@ function isDeadSession(outcome: PluginHostCallOutcome): boolean {
   return !outcome.ok && DEAD_SESSION_ERRORS.has(`${outcome.code}\0${outcome.error}`)
 }
 
-function sessionUnavailable(): PluginHostCallOutcome {
+export function remotePanelSessionUnavailable(): PluginHostCallOutcome {
   return {
     ok: false,
     code: 'unavailable',
@@ -129,7 +129,7 @@ export async function callRemotePanelAction(
   try {
     const token = session.current() ?? (await session.reopen())
     if (!token) {
-      return sessionUnavailable()
+      return remotePanelSessionUnavailable()
     }
     const outcome = await send(token)
     if (!isDeadSession(outcome)) {
@@ -137,7 +137,7 @@ export async function callRemotePanelAction(
     }
     // Reopening rechecks the server's copy; a changed version must not get this UI's call.
     const fresh = await session.reopen()
-    return fresh ? await send(fresh) : sessionUnavailable()
+    return fresh ? await send(fresh) : remotePanelSessionUnavailable()
   } catch (error) {
     return {
       ok: false,
