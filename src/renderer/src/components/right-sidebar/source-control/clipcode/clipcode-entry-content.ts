@@ -9,6 +9,7 @@ import {
   type PayloadFile
 } from './clipcode-clipboard-format'
 import type { ClipcodeGitCopyResult } from './clipcode-git-copy'
+import { NON_TEXT_BASE64_LINE_LENGTH } from './clipcode-non-text-body'
 
 /** A working file as read for a copy: raw bytes, its size when over both limits, or an old host's text read. */
 export type ClipcodeFileRead =
@@ -28,6 +29,9 @@ export type ClipcodeFileContent = ClipcodeReadContent | { bytes: Uint8Array }
 /** Read cap of a working file: past both limits it is not read at all. */
 export const CLIPCODE_READ_MAX_BYTES =
   Math.max(CLIPCODE_DEFAULTS.maxFileSizeKB, CLIPCODE_DEFAULTS.maxNonTextFileSizeKB) * 1024
+
+/** Whole-payload ceiling shared with OpenIDEA (`CLIPBOARD_PAYLOAD_MAX`); Include is refused above it. */
+export const CLIPCODE_PAYLOAD_LIMIT_BYTES = 50 * 1024 * 1024
 
 export function clipcodeReadContent(read: ClipcodeFileRead): ClipcodeFileContent | 'binary' {
   if ('bytes' in read) {
@@ -172,7 +176,7 @@ export type ClipcodeNonTextSummary = {
   totalBytes: number
   /** Payload order. */
   files: { path: string; size: number }[]
-  /** UTF-8 bytes of the Include payload. */
+  /** UTF-8 bytes of the Include payload, or its lower bound when that is already over the limit (payload not built). */
   includePayloadBytes: number
   /** Over both per-file limits, so not read (kind unknown); copied as size placeholders. */
   unreadOverLimitCount: number
@@ -258,8 +262,14 @@ export class ClipcodeCopyTally {
     if (carried.length === 0) {
       return exclude
     }
-    const includeResult = include.result(build)
     const sizes = carried.map((file) => ({ path: file.path, size: file.bytes?.length ?? 0 }))
+    // Why: the Base64 lines alone can already pass the limit; building that string can exceed V8's max length.
+    const base64LowerBound = sizes.reduce((total, file) => {
+      const encoded = Math.ceil(file.size / 3) * 4
+      return total + encoded + Math.ceil(encoded / NON_TEXT_BASE64_LINE_LENGTH)
+    }, 0)
+    const overLimit = base64LowerBound > CLIPCODE_PAYLOAD_LIMIT_BYTES
+    const includeResult = include.result(overLimit ? () => '' : build)
     return {
       ...exclude,
       nonText: {
@@ -268,7 +278,9 @@ export class ClipcodeCopyTally {
           count: carried.length,
           totalBytes: sizes.reduce((total, file) => total + file.size, 0),
           files: sizes,
-          includePayloadBytes: getUtf8ByteLength(includeResult.payload),
+          includePayloadBytes: overLimit
+            ? base64LowerBound
+            : getUtf8ByteLength(includeResult.payload),
           unreadOverLimitCount: include.notReadCount
         }
       }
