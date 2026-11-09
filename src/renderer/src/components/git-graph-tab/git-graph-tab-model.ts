@@ -94,7 +94,7 @@ export function buildGitGraphTabId(workspaceId: string): string {
 export function listGitGraphRepoChoices(
   workspaceId: string,
   worktrees: readonly Worktree[],
-  repoById: ReadonlyMap<string, Repo>,
+  repos: AppState['repos'],
   folderWorkspaces: readonly FolderWorkspace[],
   folderAttached: readonly GitGraphRepoChoice[] = []
 ): GitGraphRepoChoice[] {
@@ -104,7 +104,7 @@ export function listGitGraphRepoChoices(
     if (!folder) {
       return []
     }
-    const choices = getFolderGitWorktrees(folder, worktrees, repoById)
+    const choices = getFolderGitWorktrees(folder, worktrees, repos)
     const listed = new Set(choices.map((choice) => choice.worktree.id))
     for (const { repo, worktree } of folderAttached) {
       if (!listed.has(worktree.id)) {
@@ -114,6 +114,7 @@ export function listGitGraphRepoChoices(
     }
     return choices
   }
+  const repoById = getIndexedRepoMap(repos)
   const own = worktrees.find((worktree) => worktree.id === workspaceId)
   const ownRepo = own ? repoById.get(own.repoId) : undefined
   if (!ownRepo) {
@@ -142,7 +143,7 @@ export function listGitGraphRepoChoicesFromInputs(
   return listGitGraphRepoChoices(
     workspaceId,
     getIndexedAllWorktrees(inputs.repoWorktrees),
-    getIndexedRepoMap(inputs.repos),
+    inputs.repos,
     inputs.folders ?? [],
     listGitGraphFolderAttachedChoices(inputs, workspaceId)
   )
