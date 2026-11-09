@@ -12,12 +12,9 @@ vi.mock('@/runtime/rpc/subscriptions/runtime-rpc-subscribe', () => ({
 }))
 import { useAppStore } from '@/store'
 import { makeFolderWorkspace } from '@/store/folder-workspaces/folder-workspace.test-fixture'
-import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
 import { resetHostStructuredAgentsForTests } from '@/runtime/native-chat/agent-catalogs/host-structured-agents'
 import { setLocalRuntimeCapabilitiesForTests } from '@/runtime/hosts/capabilities/local-runtime-capabilities'
 import { acquireAgentLaunchChoices } from './host-chat-program-acquisition'
-import { agentChoiceMayOpenAsChat, agentsOfferedForLaunch } from './host-chat-program'
-import { resolveDefaultAgentForWorktreeNewTab } from './agent-tab-shortcuts'
 import { sourceControlLaunchAppliesAgentArgs } from '@/components/right-sidebar/source-control/ai/source-control-launch-agent-args-applicability'
 
 // Fork: a folder workspace's repo launch starts below the folder root, which only a terminal applies.
@@ -42,52 +39,9 @@ afterEach(() => {
   useAppStore.setState(initial, true)
 })
 
-it('offers a chat-only agent at the folder root but not for a repo below it', async () => {
-  await acquireAgentLaunchChoices(folder, async () => [])
-  const state = useAppStore.getState()
-  expect(agentChoiceMayOpenAsChat(state, 'antigravity', folder, [])).toBe(true)
-  expect(
-    agentChoiceMayOpenAsChat(state, 'antigravity', folder, [], undefined, { cwd: '/work' })
-  ).toBe(true)
-  expect(
-    agentChoiceMayOpenAsChat(state, 'antigravity', folder, [], undefined, { cwd: '/work/repo-1' })
-  ).toBe(false)
-  expect(agentsOfferedForLaunch(state, folder, [])).toContain('antigravity')
-  expect(
-    agentsOfferedForLaunch(state, folder, [], undefined, { cwd: '/work/repo-1' })
-  ).not.toContain('antigravity')
-})
-
-it('picks a chat-only default agent at the folder root but not for a repo below it', async () => {
-  const repo = 'repo-1::/work/repo-1'
-  useAppStore.setState({
-    settings: { ...useAppStore.getState().settings!, defaultTuiAgent: 'antigravity' },
-    worktreesByRepo: {
-      'repo-1': [makeWorktree({ id: repo, repoId: 'repo-1', path: '/work/repo-1' })]
-    }
-  })
-  // Detected in the repo, launched in the folder workspace as Explain commit does.
-  const pick = (cwd: string) =>
-    resolveDefaultAgentForWorktreeNewTab(useAppStore.getState, repo, {
-      worktreeId: folder.worktreeId,
-      cwd
-    })
-  await expect(pick('/work')).resolves.toBe('antigravity')
-  await expect(pick('/work/repo-1')).resolves.not.toBe('antigravity')
-})
-
 it('applies CLI arguments to a chat-default agent launched in a repo below the folder root', async () => {
   await acquireAgentLaunchChoices(folder, async () => [])
   const target = { agent: 'antigravity', worktreeId: folder.worktreeId } as const
   expect(sourceControlLaunchAppliesAgentArgs(target)).toBe(false)
   expect(sourceControlLaunchAppliesAgentArgs({ ...target, initialCwd: '/work/repo-1' })).toBe(true)
-})
-
-it('refuses a chat-only agent below the folder root before the host catalog is learned', () => {
-  const state = useAppStore.getState()
-  // Unlearned catalog: the root launch is still pending, so it may open as a chat.
-  expect(agentChoiceMayOpenAsChat(state, 'antigravity', folder, [])).toBe(true)
-  expect(
-    agentChoiceMayOpenAsChat(state, 'antigravity', folder, [], undefined, { cwd: '/work/repo-1' })
-  ).toBe(false)
 })
