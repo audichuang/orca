@@ -1,4 +1,5 @@
 import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { cn } from '@/lib/utils'
 import type { DiffDirection } from './diff-change-boundary'
 import type { DiffFilePosition } from './diff-file-sequence'
@@ -24,16 +25,13 @@ export function DiffFileSequenceStatus({
   position: Pick<DiffFilePosition, 'index' | 'total'>
   hint: DiffDirection | null
 }): React.JSX.Element {
+  const t = useTranslate()
   const text = hint
     ? HINT_TEXT[hint]()
-    : translate(
-        'auto.components.editor.DiffFileSequenceStatus.position',
-        '{{index}}/{{total}} files',
-        {
-          index: position.index + 1,
-          total: position.total
-        }
-      )
+    : t('auto.components.editor.DiffFileSequenceStatus.position', '{{index}}/{{total}} files', {
+        index: position.index + 1,
+        total: position.total
+      })
   return (
     <span
       role="status"

@@ -10,7 +10,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
 import type { NestedRepoCandidate } from '../../../../../../shared/project-group-types'
@@ -33,6 +33,7 @@ export function FolderAddReposDialog({
   folderWorkspace: FolderWorkspace
   onClose: () => void
 }): React.JSX.Element {
+  const t = useTranslate()
   const [scan, setScan] = useState<ScanState>({ phase: 'scanning' })
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const [adding, setAdding] = useState(false)
@@ -102,13 +103,13 @@ export function FolderAddReposDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.folder.folder.add.repos.dialog.title',
               'Add repositories in this folder'
             )}
           </DialogTitle>
           <DialogDescription>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.folder.folder.add.repos.dialog.description',
               'Git repositories under {{value0}}, including ones nested inside other repositories.',
               { value0: folderWorkspace.name }
@@ -118,7 +119,7 @@ export function FolderAddReposDialog({
         <div className="flex min-w-0 flex-col gap-3">
           {scan.phase === 'scanning' && (
             <div className="text-xs text-muted-foreground">
-              {translate(
+              {t(
                 'auto.components.right.sidebar.source.control.folder.folder.add.repos.dialog.scanning',
                 'Scanning for repositories...'
               )}
@@ -126,7 +127,7 @@ export function FolderAddReposDialog({
           )}
           {scan.phase === 'failed' && (
             <div className="text-xs text-destructive">
-              {translate(
+              {t(
                 'auto.components.right.sidebar.source.control.folder.folder.add.repos.dialog.failed',
                 'Could not scan this folder.'
               )}
@@ -134,7 +135,7 @@ export function FolderAddReposDialog({
           )}
           {scan.phase === 'ready' && candidates.length === 0 && (
             <div className="text-xs text-muted-foreground">
-              {translate(
+              {t(
                 'auto.components.right.sidebar.source.control.folder.folder.add.repos.dialog.none',
                 'Every repository in this folder is already added.'
               )}
@@ -164,7 +165,7 @@ export function FolderAddReposDialog({
           )}
           {scan.phase === 'ready' && scan.truncated && (
             <div className="text-[11px] text-muted-foreground">
-              {translate(
+              {t(
                 'auto.components.right.sidebar.source.control.folder.folder.add.repos.dialog.truncated',
                 'The scan stopped early, so some repositories may be missing.'
               )}
@@ -173,13 +174,13 @@ export function FolderAddReposDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" disabled={adding} onClick={onClose}>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.folder.folder.add.repos.dialog.cancel',
               'Cancel'
             )}
           </Button>
           <Button disabled={adding || selected.size === 0} onClick={() => void addSelected()}>
-            {translate(
+            {t(
               'auto.components.right.sidebar.source.control.folder.folder.add.repos.dialog.add',
               'Add ({{value0}})',
               { value0: selected.size }

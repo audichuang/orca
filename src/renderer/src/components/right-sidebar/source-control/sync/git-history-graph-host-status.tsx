@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { GIT_HISTORY_GRAPH_MAX_LIMIT } from '../../../../../../shared/git-history-graph-query-types'
 import type { GitHistoryPanelState } from './git-history-panel'
 import {
@@ -79,6 +80,7 @@ export function GitHistoryGraphLoadMore({
   worktreeId: string
   state: GitHistoryPanelState
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const filter = useGitHistoryGraphFilter(worktreeId)
   const { hostTooOld } = useGitHistoryGraphHostStatus(worktreeId, state)
   const result = state.result
@@ -95,7 +97,7 @@ export function GitHistoryGraphLoadMore({
         className="w-full"
         onClick={() => loadMoreGitHistoryGraph(worktreeId, result.items.length)}
       >
-        {translate('auto.components.right.sidebar.GitHistoryGraph.loadMore', 'Load more commits')}
+        {t('auto.components.right.sidebar.GitHistoryGraph.loadMore', 'Load more commits')}
       </Button>
     </div>
   )
