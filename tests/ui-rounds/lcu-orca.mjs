@@ -348,7 +348,9 @@ const rsInExplorer = async ({ toggleAdjust, overwrite, restore }) => {
     return r
   }
   if (overwrite) {
-    const o = (await lines()).find(([, t]) => t.startsWith('核取方塊 Overwrite existing files'))
+    const o = (await lines()).find(([, t]) =>
+      /^核取方塊 Overwrite (all \d+ existing files|\d+ existing file)\b/.test(t)
+    )
     if (o) {
       await app.click(o[0])
       await sleep(300)
