@@ -34,7 +34,7 @@ export const UI_TEXT = {
   openFile: 'Open file',
   settings: 'Settings',
   backToApp: 'Back to app',
-  autoSaveFiles: 'Auto Save Files',
+  autoSaveFiles: 'Auto save',
   // Panel and sidebar landmarks the finders read; section titles render upper-case
   notificationsRegion: 'Notifications',
   worktreeList: 'Worktrees',
