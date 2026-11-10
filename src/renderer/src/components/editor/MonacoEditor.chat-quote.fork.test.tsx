@@ -10,7 +10,7 @@ const mounted = vi.hoisted(() => {
 })
 
 vi.mock('@monaco-editor/react', () => ({ default: () => null, loader: { config: vi.fn() } }))
-vi.mock('@/lib/monaco-setup', () => ({}))
+vi.mock('@/lib/editor/monaco/monaco-setup', () => ({}))
 vi.mock('@/store', () => ({
   useAppStore: (selector: (state: Record<string, unknown>) => unknown) =>
     selector({
