@@ -22,6 +22,7 @@ import { GitHistoryCommitForkMenu } from './git-history-commit-fork-menu'
 import { translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
 import type { GitHistoryPanelSlots } from './git-history-panel-slots'
+import type { SourceControlRowOpenEvent } from '../listing/split-open'
 import {
   useGitHistoryCommitSelection,
   type GitHistoryCommitActionHandler
