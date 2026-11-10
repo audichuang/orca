@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/userData' } }))
 
 import { getManagedScript as getClaudeManagedScript } from '../../src/main/claude/hook-service'
-import { runVendorHook } from '../../src/main/agent-hooks/vendor-hook-delivery.test-fixture'
+import { runVendorHook } from '../../src/main/agent-hooks/installation/scripts/testing/vendor-hook-delivery.test-fixture'
 
 const wrapper = join(import.meta.dirname, 'fork-detached-agent.sh')
 const paneIdentity = {
