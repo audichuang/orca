@@ -13,7 +13,7 @@ import {
 } from './folder-repo-runtime.test-fixture'
 
 vi.mock('@monaco-editor/react', () => ({ DiffEditor: () => null }))
-vi.mock('@/lib/monaco-setup', () => ({
+vi.mock('@/lib/editor/monaco/monaco-setup', () => ({
   monaco: {
     Uri: { parse: (path: string) => path },
     editor: { getModel: () => null, getModels: () => [], getEditors: () => [] }
