@@ -19,7 +19,9 @@ const mocks = vi.hoisted(() => ({ getRuntimeGitHistory: vi.fn() }))
 vi.mock('@/runtime/source-control/git/runtime-git-status-client', () => ({
   getRuntimeGitHistory: mocks.getRuntimeGitHistory
 }))
-vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => undefined }))
+vi.mock('@/lib/workspace/ownership/connection-context', () => ({
+  getConnectionId: () => undefined
+}))
 
 const { GitGraphFullView } = await import('./git-graph-full-view')
 const { GitHistoryGraphToolbar } = await import('./git-history-graph-toolbar')
