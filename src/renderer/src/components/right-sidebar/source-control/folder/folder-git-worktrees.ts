@@ -4,6 +4,7 @@ import {
   getRepoSshConnectionId
 } from '../../../../../../shared/execution-host'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
+import { resolveReviewRepository } from '@/lib/review-owner'
 import { isGitRepoKind } from '../../../../../../shared/repo-kind'
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
@@ -13,6 +14,14 @@ type FilesystemOwnerFields = Pick<Repo, 'connectionId' | 'executionHostId'>
 // Why: a paired server's native repos and its nested SSH repos share one runtime host id; only the SSH target tells their filesystems apart.
 export function getFilesystemOwnerKey(owner: FilesystemOwnerFields): string {
   return `${getRepoExecutionHostId(owner)}|${getRepoSshConnectionId(owner) ?? ''}`
+}
+
+// Why: hostless legacy worktrees can't disambiguate a shared repo id, so the folder's owner-filtered pick stands; otherwise the worktree must resolve to that exact repo row.
+function worktreeBelongsToRepo(repos: readonly Repo[], repo: Repo, worktree: Worktree): boolean {
+  if (!worktree.hostId && !worktree.runtimeOwnerEnvironmentId) {
+    return true
+  }
+  return resolveReviewRepository(repos, worktree) === repo
 }
 
 export type FolderGitWorktree = {
@@ -42,7 +51,7 @@ export function getFolderGitWorktrees(
   const result: FolderGitWorktree[] = []
   for (const worktree of worktrees) {
     const repo = repoById.get(worktree.repoId)
-    if (!repo || (worktree.hostId && worktree.hostId !== getRepoExecutionHostId(repo))) {
+    if (!repo || !worktreeBelongsToRepo(repos, repo, worktree)) {
       continue
     }
     if (isPathInsideOrEqual(folderWorkspace.folderPath, worktree.path)) {

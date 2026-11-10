@@ -11,6 +11,7 @@ import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git
 import { readRuntimeFileContent } from '@/runtime/files/reads/runtime-file-read-client'
 import { readRuntimeDirectory } from '@/runtime/files/reads/runtime-directory-read'
 import { useAppStore } from '@/store'
+import { isPathInsideOrEqual } from '../../../../../../shared/cross-platform-path'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
@@ -55,7 +56,7 @@ export function getClipcodeRepoContext(worktree: Pick<Worktree, 'id' | 'path'>):
   }
 }
 
-/** Copy root: the folder workspace for a scoped folder panel, else the worktree itself. */
+/** Copy root: the folder workspace for a scoped folder panel when the worktree lies inside it or contains it, else the worktree itself. */
 export function getClipcodeRootPath(editorWorktreeId: string | null, worktreePath: string): string {
   const scope = editorWorktreeId ? parseWorkspaceKey(editorWorktreeId) : null
   if (scope?.type !== 'folder') {
@@ -64,7 +65,11 @@ export function getClipcodeRootPath(editorWorktreeId: string | null, worktreePat
   const folder = selectFolderWorkspaces(useAppStore.getState()).find(
     (workspace) => workspace.id === scope.folderWorkspaceId
   )
-  return folder?.folderPath ?? worktreePath
+  return folder &&
+    (isPathInsideOrEqual(folder.folderPath, worktreePath) ||
+      isPathInsideOrEqual(worktreePath, folder.folderPath))
+    ? folder.folderPath
+    : worktreePath
 }
 
 // Copy Full Source is the user's own act, so its reads may start a stopped WSL distro (E9).
