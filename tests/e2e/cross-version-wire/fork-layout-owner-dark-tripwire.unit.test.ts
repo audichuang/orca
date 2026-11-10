@@ -1,4 +1,4 @@
-// Red here means upstream shipped layout-owner or stopped carrying fork Git Graph tabs: R3/R4 can now trigger, see FORK.md "Deferred to upstream phase F".
+// Red here means upstream shipped layout-owner or stopped carrying fork Git Graph tabs: R3 can now trigger, see FORK.md "Deferred to upstream phase F".
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -87,7 +87,7 @@ function openEditorTab(contentType: string, content: ReturnType<typeof editorTab
   }
 }
 
-describe('upstream layout-owner is still dark (R3/R4 unreachable)', () => {
+describe('upstream layout-owner is still dark (R3 unreachable)', () => {
   it('the baseline release compiles ORCA_LAYOUT_OWNER as window', () => {
     expect(darkSwitches.darkBuildDefines({}).ORCA_LAYOUT_OWNER).toBe(JSON.stringify('window'))
     // Control: the check can tell a main build apart.
@@ -107,18 +107,12 @@ describe('upstream layout-owner is still dark (R3/R4 unreachable)', () => {
       gitGraph: { repoWorktreeId: 'repo-2::/work/inner' }
     })
     const command = openEditorTab('git-graph', editorTabContent(file))
-    expect(JSON.stringify(command)).toContain('repoWorktreeId')
+    const expected = {
+      command: { view: { view: { gitGraph: { repoWorktreeId: 'repo-2::/work/inner' } } } }
+    }
+    expect(command).toMatchObject(expected)
     const parsed = layoutApply.safeParse(command)
     expect(parsed.success).toBe(true)
-    expect(JSON.stringify(parsed.data)).toContain('repoWorktreeId')
-  })
-
-  it('the baseline layout.apply drops gitWorktreeId from an editor file record', () => {
-    const file = openFile({ gitWorktreeId: 'repo-2::/work/inner' })
-    const content = editorTabContent(file)
-    expect(content.file?.gitWorktreeId).toBe('repo-2::/work/inner')
-    const parsed = layoutApply.safeParse(openEditorTab('editor', content))
-    expect(parsed.success).toBe(true)
-    expect(JSON.stringify(parsed.data)).not.toContain('gitWorktreeId')
+    expect(parsed.data).toMatchObject(expected)
   })
 })

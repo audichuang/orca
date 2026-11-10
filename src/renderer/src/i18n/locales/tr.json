@@ -15129,7 +15129,6 @@
             "filesInCommits": "Değişen dosyalar ({{files}}) · {{commits}} commit",
             "filesChanged": "Değişen dosyalar ({{files}})",
             "toggleBranches": "Branch'leri göster/gizle",
-            "openShort": "Git Graph",
             "laneContinuesBelow": "{{count}} satır aşağıda {{sha}} {{subject}} ile devam ediyor. Atlamak için tıklayın.",
             "laneComesFromAbove": "{{count}} satır yukarıdaki {{sha}} {{subject}} öğesinden geliyor. Atlamak için tıklayın.",
             "laneContinuesPastLoaded": "Yüklenen commit'lerin ötesinde devam ediyor. Takip etmek için daha fazla commit yükleyin.",

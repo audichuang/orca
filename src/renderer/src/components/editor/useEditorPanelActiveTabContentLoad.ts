@@ -131,12 +131,7 @@ export function useEditorPanelActiveTabContentLoad({
         if (view ? needsFileRead(view.id) : needsFileRead(absolutePath)) {
           void (view
             ? loadFileContent(view.filePath, view.id, view.worktreeId, view.relativePath, load)
-            : activeFile.gitWorktreeId
-              ? loadFileContent(absolutePath, absolutePath, activeFile.worktreeId, entry.path, {
-                  ...load,
-                  gitWorktreeId: activeFile.gitWorktreeId
-                })
-              : loadFileContent(absolutePath, absolutePath, activeFile.worktreeId, entry.path, load))
+            : loadFileContent(absolutePath, absolutePath, activeFile.worktreeId, entry.path, load))
         }
       }
       return
