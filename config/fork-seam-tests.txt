@@ -66,6 +66,7 @@ src/renderer/src/store/slices/tabs-hydration-git-graph.test.ts
 src/renderer/src/components/tab-group/TabGroupPanel.git-graph-button.test.tsx
 src/renderer/src/components/cmd-j/git-graph-quick-action.test.ts
 src/renderer/src/components/git-graph-tab/git-graph-tab-model.folder-attached.fork.test.ts
+src/renderer/src/lib/git-graph-tab.fork.test.ts
 src/renderer/src/components/editor/EditorContent.fork.test.tsx
 src/shared/workspace-layout/old-client/old-client-session-tabs-projection.fork.test.ts
 
