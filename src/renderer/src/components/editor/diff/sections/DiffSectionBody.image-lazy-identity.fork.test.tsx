@@ -1,16 +1,12 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen } from '@testing-library/react'
-import type { ComponentProps } from 'react'
+import { Suspense, type ComponentProps } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { ImageDiffViewer } from '../../editor-lazy-views'
 import { DiffSectionBody } from './DiffSectionBody'
 
-// Fork: the image diff uses the editor's shared lazy identity, not a second local lazy wrapper.
-vi.mock('../../editor-lazy-views', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  ImageDiffViewer: () => <div data-testid="shared-image-diff" />
-}))
 vi.mock('../large-files/ImageDiffViewer', () => ({
-  default: () => <div data-testid="local-image-diff" />
+  default: () => <div data-testid="image-diff" />
 }))
 vi.mock('@monaco-editor/react', () => ({ DiffEditor: () => <div data-testid="monaco-diff" /> }))
 vi.mock('@/i18n/i18n', () => ({ translate: (_key: string, fallback: string) => fallback }))
@@ -64,10 +60,24 @@ afterEach(() => {
 })
 
 describe('DiffSectionBody image diff (fork)', () => {
-  it('renders the shared ImageDiffViewer from editor-lazy-views', async () => {
-    render(<DiffSectionBody {...props} />)
+  it('reuses the editor-wide ImageDiffViewer lazy identity, so a loaded chunk renders without suspending', async () => {
+    // Load the chunk through the shared lazy export the editor's other surfaces use.
+    render(
+      <Suspense fallback={null}>
+        <ImageDiffViewer
+          originalContent=""
+          modifiedContent=""
+          filePath="warm.png"
+          mimeType="image/png"
+          sideBySide
+        />
+      </Suspense>
+    )
+    await screen.findByTestId('image-diff')
+    cleanup()
 
-    expect(await screen.findByTestId('shared-image-diff')).toBeTruthy()
-    expect(screen.queryByTestId('local-image-diff')).toBeNull()
+    // Why: a second lazy wrapper over the same module suspends again, a separate boundary that remounts the row.
+    render(<DiffSectionBody {...props} />)
+    expect(screen.queryByTestId('image-diff')).not.toBeNull()
   })
 })
