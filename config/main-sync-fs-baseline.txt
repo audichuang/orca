@@ -29,6 +29,7 @@
 7 src/main/antigravity/native-file-credentials.ts
 3 src/main/artifacts/artifact-create-intent-store.ts
 2 src/main/artifacts/artifact-share-record-store.ts
+2 src/main/asar-transparent-stat.ts
 1 src/main/automations/external-managers/external-manager-discovery.ts
 7 src/main/bitbucket/credential-store.ts
 2 src/main/bots/bot-access-request-watch.ts
@@ -532,6 +533,7 @@
 3 src/main/startup/windows-startup/windows-user-data-acl.ts
 2 src/main/stats/stats-file-loader.ts
 2 src/main/text-generation/prompts/source-control-prompt-files.ts
+1 src/main/updater/fork-distribution.ts
 1 src/main/updater/lifecycle/windows-update-install-directory.ts
 9 src/main/updater/linux-package/appimage-runtime-identity.ts
 1 src/main/updater/linux-package/linux-package-install-command.ts
