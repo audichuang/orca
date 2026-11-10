@@ -30,6 +30,7 @@ import {
 import { resolveGitGraphSplitTargetGroupId } from './git-graph-split-target'
 import type { SourceControlRowOpenEvent } from '../right-sidebar/source-control/listing/split-open'
 import { useRepoDisplayColor } from '@/lib/repo-display-color'
+import { GIT_GRAPH_REFRESH_EVENT } from '@/lib/git-graph-tab'
 import { openSourceControlOnRepo } from './git-graph-source-control-link'
 import { useGitGraphTabReveal } from './use-git-graph-tab-reveal'
 import { consumeGitGraphFocusRequest, useGitGraphFocusRequest } from './git-graph-focus-request'
@@ -108,6 +109,16 @@ function GitGraphTabBody({
       void refreshGitHistoryRef.current()
     }
   }, [refreshGitHistoryRef, refreshKey, sshStatus])
+  // Why: Fetch moves other refs without touching head or ahead/behind; Source Control announces it here.
+  useEffect(() => {
+    const onRefresh = (event: Event): void => {
+      if (event instanceof CustomEvent && event.detail === worktree.id) {
+        void refreshGitHistoryRef.current()
+      }
+    }
+    window.addEventListener(GIT_GRAPH_REFRESH_EVENT, onRefresh)
+    return () => window.removeEventListener(GIT_GRAPH_REFRESH_EVENT, onRefresh)
+  }, [refreshGitHistoryRef, worktree.id])
   const resolveSplitTargetGroupId = useCallback(
     (event?: SourceControlRowOpenEvent) =>
       resolveGitGraphSplitTargetGroupId(useAppStore.getState(), workspaceId, fileId, event),
