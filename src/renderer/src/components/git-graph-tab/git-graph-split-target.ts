@@ -1,6 +1,6 @@
 // Fork-only: where an Alt-click / "Open to the Side" from the Git Graph tab opens its diff.
 import type { AppState } from '@/store/types'
-import { findReusableRightSplitGroupId } from '@/lib/emulator-right-split-target'
+import { findReusableRightSplitGroupId } from '@/lib/simulator/tabs/emulator-right-split-target'
 import {
   isSourceControlSplitOpenModifier,
   type SourceControlRowOpenEvent
