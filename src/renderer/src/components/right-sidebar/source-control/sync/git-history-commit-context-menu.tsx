@@ -31,7 +31,7 @@ export function GitHistoryCommitContextMenu({
       ].state === 'enabled'
   )
   return (
-    <ContextMenuContent className="w-64">
+    <ContextMenuContent className="w-56">
       {children}
       {managedBrowserCreationEnabled ? (
         <ContextMenuItem onSelect={() => onAction('open-remote', item)}>
