@@ -57,7 +57,7 @@ vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback
 }))
 
-vi.mock('@/lib/file-preview', () => ({ openFileInBrowserTab: vi.fn() }))
+vi.mock('@/lib/browser/documents/file-preview', () => ({ openFileInBrowserTab: vi.fn() }))
 
 vi.mock(import('@/lib/reveal-in-file-manager'), async (importOriginal) => ({
   ...(await importOriginal()),

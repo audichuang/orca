@@ -20,7 +20,9 @@ vi.mock('@/store', () => {
   useAppStore.getState = () => state
   return { useAppStore }
 })
-vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => undefined }))
+vi.mock('@/lib/workspace/ownership/connection-context', () => ({
+  getConnectionId: () => undefined
+}))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }))
 
 const { useGitHistoryCommitActions } = await import('./use-git-history-commit-actions')
