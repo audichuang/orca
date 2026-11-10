@@ -14,22 +14,6 @@
 - 驗證（<YYYY-MM-DD>，上游 <sha>）：<跑了什麼、結果>｜未驗證
 ```
 
-## c50d4cd3e4d19c7c8dcca2de52966cc22f9548e3（#39996 refactor: organize browser guest lifecycle owners）× fork 4e3e283fe8（test(wire): take upstream main's cross-version fixes for v1.4.254 as the baseline）— auto-rebase 2026-11-09
-- 類型：上游修了同一件事
-- 衝突檔：可能是 tests/e2e/cross-version-wire/{cross-version-pairing-ticket.unit.test.ts,versioned-terminal-wire.ts,release-module-locations.ts}
-- 連帶症狀：無（fork commit 只帶 c50d4cd3e4 在這 3 個檔的 hunk，內容與 main 逐位元組相同）
-- 處理：vNEW 含 c50d4cd3e4 時，丟掉標題為 `test(wire): take upstream main's cross-version fixes for v1.4.254 as the baseline` 的 fork commit（不是完整 cherry-pick，patch-id 不同，git 不會自動略過；套上去多半變空，變空就 `--skip`）。
-- 守它的測試：make fork-check-wire（CI 的 fork cross-version wire compatibility）。
-- 驗證（2026-11-09，上游 v1.4.254）：乾淨 v1.4.254 上 pairing-ticket、terminal-wire 紅（`expected [Function] to throw an error`、`resetRemoteRuntimeTerminalMultiplexersForTests is not a function`）；帶入後本機 3 檔 11 例綠、CI wire job 綠。
-
-## d857e09615e56ce17128662a814b71030f9151ed（#39069 Git Graph: commit actions）、0d1220c31f4718bdaf93842ba593369e6faa78bf（#39937 Organize SSH and managed-server modules by concrete owner）× fork 919eb16330（fix(rebase): keep v1.4.254's layout where the rehearsal followed upstream main）— auto-rebase 2026-11-09
-- 類型：上游改了 fork 依賴的 API
-- 事實：2026-11-09 預演是對上游 main da8162e3b9 做的，含 #39069 與 #39937；v1.4.254 兩個都沒有，所以 919eb16330 把預演跟著 main 的兩處改回 v1.4.254 的樣子：`src/main/ssh/orcad-migration-path-fields.ts` 保留（帶 fork 的 `gitWorktreeId` 欄位，#39937 把它搬到 `src/main/persistence` 底下）、`orcad-migration-path-rewrite.fork.test.ts` 從 v1.4.254 路徑 import；`sync/git-history-commit-context-menu.tsx` 保留 fork 的 `children` slot（`git-history-commit-fork-menu.tsx` 填它；#39069 上游自己加了 children slot）。
-- 衝突檔：可能是 src/main/ssh/orcad-migration-path-fields.ts（上游搬走／刪除）、src/main/ssh/orcad-migration-path-rewrite.fork.test.ts、src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-context-menu.tsx。
-- 處理：vNEW 含 #39937 時，fork 的 `gitWorktreeId` 欄位搬到上游新位置的同名模組、刪掉舊路徑的 fork 版，測試 import 改新路徑；vNEW 含 #39069 時，context menu 採上游（上游已有 children slot），確認 `git-history-commit-fork-menu.tsx` 仍經它渲染。做法可對照預演 replay2（`backup/rehearsal-replay2-da8162e3b9-20261109`）同檔的內容。
-- 守它的測試：src/main/ssh/orcad-migration-path-rewrite.fork.test.ts（或搬家後的路徑）、seam 組 Git Graph 各組、`pnpm tc`。
-- 驗證：未驗證（預演在 da8162e3b9 上 `pnpm tc` 0 錯、seams 全過，可視為參考）。
-
 ## 4cee4b1ba63033d4a76c8c8c8091319ed579a20e（#35809）、a50a44bb8df9a193b91afb8c54d11a4ad99f1c14（#35597）、3ce252c79a26889ff10dd303796adda3c3e1e959（#35652）、006bbb28e79172116053b2b6f64fcfcdc1044ed4（#34906）、5616230ecdad2a80cc00412867c531a56d9d150c（#35517）、12a7d4c13a60c81e5e12c9f76e101357b3ee7a51（#35399）、79ba74dc3866218f30211bfd9bb032bb1ea4c870（#35619）、7980f2c23f1b5304890793ab133bd5c1d721bc42（Fix mobile download button destination）、ec58374a4c9a0ada905c4bd625067646c0971593（#35992）；71bcf131a45de04fb27be17f7d906d8c407d55e4（#36382）、1cefa152c979d7d2c0f7049a09bb4892acc01935（#36383）、24cebf03b501b3b7d80290bf8542d31e3f8924ed（#36234）、596e5f52d6353341b671965ac211def7cb21913a（#36216）× 無 fork commit — canary 2026-10-30、2026-10-31
 - 類型：上游自己（release 分支與 main 各改一次）；auto-rebase 不用處理
 - 衝突檔：2026-10-30 .github/workflows/pr.yml、src/renderer/src/components/mobile/use-mobile-install-actions.ts；2026-10-31 .github/workflows/computer-task-benchmark.yml（報告的 fork 欄都空白）

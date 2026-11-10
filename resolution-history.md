@@ -2,6 +2,44 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-11-10 auto-rebase v1.4.254 → v1.4.255（PR #157）— develop 已移動並發 v1.4.255-fork.1
+- 使用者手動要求接手：前一次 run-476（2026-11-10 05:19 本地）停在 2/520 後死掉，鎖 `rebase/v1.4.255` 沒有 PR；這期間 develop 已因 #153–#156 前進到 bf3ec59725 並發了 v1.4.254-fork.3。刪掉舊鎖（tip 只是 lock commit），從 bf3ec59725 重做（RUN=20261110T002931Z，Mac mini 上的 `ar-20261110T002931Z-main`，不是 Orca worktree）。
+- MANUAL：540 個 fork commit 重放，drop 4e3e283fe8（筆記條目）。做法：每個停點以舊 develop 上同一個 commit（REBASE_HEAD）的檔案為準，用 `git merge-file --diff3` 套上 v1.4.254→v1.4.255 的上游差異，再用小腳本自動解「一邊刪除、另一邊只追加」「兩邊都只追加」的 diff3 型態，剩下的手解並把解法存成規則重用（`.rebase-review/stop-merge.sh`、`diff3-resolve.py`、`rules.json`、`drive.sh`，只在這次的 run 目錄）。手解只有 7 個停點。先用 `git merge-tree --write-tree --merge-base=vOLD OLD_DEVELOP vNEW` 估真衝突：只有 5 個 Git Graph 檔，rebase 完非衝突檔與它逐一相同、locale 只差 key 順序（JSON 相等）。
+- 衝突檔與解法：
+  - `panel/panel-content.tsx`：fork `sourceControlHistorySlots` 與上游 #39069 新的 `onOpenGitGraph` 都保留。
+  - `sync/git-history-panel.tsx`：同時收 `onOpenGitGraph` 與 fork slots，header 仍是 `slots.headerActions ?? <GitGraphOpenButton onOpen>`；補 `SourceControlRowOpenEvent` import（a9a5ed51c5）。守它：hunk 掃描 guarded（git-history-panel 274/322/339/355/393）。
+  - `sync/git-history-graph-svg.tsx`：上游改成 path 物件陣列 + `paths.map(GraphPath)`，fork 的 `GitHistoryGraphNodeMarker` 保留。圓點只在實機看得到（上游也無測試）。
+  - `lib/git-graph-tab.ts`：上游新簽章 `openGitGraph(worktreeId, resolveTargetGroupId?)`，開頭仍是 fork 接管 seam。這個 seam 原本沒有測試會紅（Codex BLOCKING）→ d961e47ad8 新增 `src/renderer/src/lib/git-graph-tab.fork.test.ts` 進 Git Graph seam 組；拿掉 seam：`expected "vi.fn()" to be called with arguments: [ 'repo-1::/work/app' ]`。
+  - `sync/git-history-commit-context-menu.tsx`：上游 #39069 已有 `children` slot（放在選單最上方），採上游、檔案與 v1.4.255 相同（41c5ced9ac 把誤改的 w-64 改回）。fork 選單項目因此移到最上方。
+  - `remap-open-editor-tabs-for-path-change.test.ts`：上游 #39859 刪掉低價值測試，採上游刪除、保留 fork 新增的測試。
+  - orcad migration path：上游 #39937 搬到 `src/main/persistence/migrating-orcad-catalog/path-rewrite/`；最終 develop 在這裡已無 fork 改動（gitWorktreeId 由 #153 拿掉），29bdd8a52b 的刪除不能套到上游新位置、919eb16330 重建舊路徑的部分整段不要。
+- 額外 commit：a9a5ed51c5（menu slot、import）、e2c28d2639（v1.4.255 新 ratchet `check:main-sync-fs-ratchet` 抓到 `asar-transparent-stat.ts` 與 `fork-distribution.ts`，一次性／快取的讀取，加進 `config/main-sync-fs-baseline.txt`；改回會紅）、ad407ffa3c（CI fork-check tests (7/18)：`fork-detached-agent.test.ts` 的 fixture 被 #39969 搬到 `installation/scripts/testing/`；改回 Cannot find module）、d961e47ad8、41c5ced9ac。
+- 上游基準：v1.4.255 tc、lint、daemon-protocol 全綠。本機 static 42 步綠、seams 87 檔 486 例綠。CI run 42733764303（head 41c5ced9ac）30/30 綠。
+- 審查：A、B、C 第 1 輪 ACCEPTABLE（NON-BLOCKING 共 17 條）；Codex 第 1 輪 NOT ACCEPTABLE（git-graph-tab seam 無測試）→ 第 2 輪 ACCEPTABLE，41c5ced9ac 同 thread 再看 ACCEPTABLE。NON-BLOCKING 留待：上游 v1.4.255 的 Git Graph checkout／cherry-pick／revert 與 Cmd/Ctrl-click 開分割在 fork 版到不了（`openGitGraphTab` 已收 `targetGroupId`，要接只差 launcher 讀修飾鍵與 seam 轉傳）；既有缺口 `use-saved-source-control-action-start.ts` 的 `initialCwd`、單一 commit 選單 Copy Full Source 無單元測試；中間 32 個 commit 單獨不過 tc。
+- 發版：tag v1.4.255-fork.1 指 41c5ced9ac，main 從 bf3ec59725 lease 推；release run 42734843385 01:18:27Z → 01:29:57Z 綠，tap 1.4.255-fork.1。MacBook 上 Orca 開著，沒升級。
+- 耗時：rebase 00:29Z → 開 PR 00:38Z（約 9 分；merge-file 腳本讓 540 個 commit 只停 7 次手解）；本機閘門 00:38Z → 推上 00:43Z；盲審 00:43Z → 01:10Z（含 Codex 第 2 輪）；CI 最後一輪 01:09Z → 01:17Z；發版 01:18Z → 01:30Z。比上一條（預演 + 68 個停點 + 人工接手數小時）快很多。
+- canary 效益：沒用到（最近的 canary 快取是 2026-11-08，對的是 v1.4.253 的 develop）；這次的衝突全來自 v1.4.255 的 #39069、#39859、#39937、#39969，筆記條目（canary 以外的 auto-rebase 條目）預告了其中兩項。
+- 用掉的 known-resolutions 條目（整段搬到下面）：c50d4cd3e4 × 4e3e283fe8（照做：drop）；#39069／#39937 × 919eb16330（照做；跟眼前不同處：gitWorktreeId 欄位已不存在，不用搬，orcad 檔一律採上游新位置）。
+- 沒刪的舊 worktree：`auto-orca-fork-rebase-run-476-20261109T2117`（停在 rebase 中）、`ar-20261109T211801Z-base`，留給使用者或下一次 run。
+
+### 搬過來的條目
+### c50d4cd3e4d19c7c8dcca2de52966cc22f9548e3（#39996 refactor: organize browser guest lifecycle owners）× fork 4e3e283fe8（test(wire): take upstream main's cross-version fixes for v1.4.254 as the baseline）— auto-rebase 2026-11-09
+- 類型：上游修了同一件事
+- 衝突檔：可能是 tests/e2e/cross-version-wire/{cross-version-pairing-ticket.unit.test.ts,versioned-terminal-wire.ts,release-module-locations.ts}
+- 連帶症狀：無（fork commit 只帶 c50d4cd3e4 在這 3 個檔的 hunk，內容與 main 逐位元組相同）
+- 處理：vNEW 含 c50d4cd3e4 時，丟掉標題為 `test(wire): take upstream main's cross-version fixes for v1.4.254 as the baseline` 的 fork commit（不是完整 cherry-pick，patch-id 不同，git 不會自動略過；套上去多半變空，變空就 `--skip`）。
+- 守它的測試：make fork-check-wire（CI 的 fork cross-version wire compatibility）。
+- 驗證（2026-11-09，上游 v1.4.254）：乾淨 v1.4.254 上 pairing-ticket、terminal-wire 紅（`expected [Function] to throw an error`、`resetRemoteRuntimeTerminalMultiplexersForTests is not a function`）；帶入後本機 3 檔 11 例綠、CI wire job 綠。
+
+### d857e09615e56ce17128662a814b71030f9151ed（#39069 Git Graph: commit actions）、0d1220c31f4718bdaf93842ba593369e6faa78bf（#39937 Organize SSH and managed-server modules by concrete owner）× fork 919eb16330（fix(rebase): keep v1.4.254's layout where the rehearsal followed upstream main）— auto-rebase 2026-11-09
+- 類型：上游改了 fork 依賴的 API
+- 事實：2026-11-09 預演是對上游 main da8162e3b9 做的，含 #39069 與 #39937；v1.4.254 兩個都沒有，所以 919eb16330 把預演跟著 main 的兩處改回 v1.4.254 的樣子：`src/main/ssh/orcad-migration-path-fields.ts` 保留（帶 fork 的 `gitWorktreeId` 欄位，#39937 把它搬到 `src/main/persistence` 底下）、`orcad-migration-path-rewrite.fork.test.ts` 從 v1.4.254 路徑 import；`sync/git-history-commit-context-menu.tsx` 保留 fork 的 `children` slot（`git-history-commit-fork-menu.tsx` 填它；#39069 上游自己加了 children slot）。
+- 衝突檔：可能是 src/main/ssh/orcad-migration-path-fields.ts（上游搬走／刪除）、src/main/ssh/orcad-migration-path-rewrite.fork.test.ts、src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-context-menu.tsx。
+- 處理：vNEW 含 #39937 時，fork 的 `gitWorktreeId` 欄位搬到上游新位置的同名模組、刪掉舊路徑的 fork 版，測試 import 改新路徑；vNEW 含 #39069 時，context menu 採上游（上游已有 children slot），確認 `git-history-commit-fork-menu.tsx` 仍經它渲染。做法可對照預演 replay2（`backup/rehearsal-replay2-da8162e3b9-20261109`）同檔的內容。
+- 守它的測試：src/main/ssh/orcad-migration-path-rewrite.fork.test.ts（或搬家後的路徑）、seam 組 Git Graph 各組、`pnpm tc`。
+- 驗證：未驗證（預演在 da8162e3b9 上 `pnpm tc` 0 錯、seams 全過，可視為參考）。
+
+
 ## 2026-11-09 auto-rebase v1.4.253 → v1.4.254（PR #148，續）— develop 已由使用者推到 658050fd29；打了 v1.4.254-fork.1，但 release 紅兩次（GitHub 504），沒發佈
 - 接手（run 460，RUN=20261109T054012Z）：PR #148 留了 needs-human；人工接手做完三件事後（3e7fdd5be2、f2a55e81f6、03cf114f1f、fa25fba584，Codex 複審後 87aec4d1db、658050fd29），使用者把 develop 推到 `rebase/v1.4.254` 的 tip 658050fd29（Fork PR checks passed：run 42552396521，fork-pr.yml，30/30 綠）。第 0 步判定「develop 已在 vX、等於鎖的 tip、沒有 fork tag」→ 留 `develop-moved`、做第 7 步。
 - 人工接手的三件事（細節見下面搬過來的條目）：folder multi-repo e2e 改走上游卡片、restart spec 改驗上游 placement 模型（重啟後分頁不留在 folder，列為暫時拿掉的功能）、Git Graph 的 folder 候選併入上游 lineage worktree 並依 host 解析 repo；守它的測試 `git-graph-tab-model.folder-attached.fork.test.ts`（拿掉修正會紅：`expected [] to deeply equal [ 'remote-child', 'remote-root' ]`、`expected [ [ 'shared-wt', 'runtime:remote' ] ] to deeply equal [ [ 'shared-wt', 'local' ] ]`）。
