@@ -40,13 +40,12 @@ vi.mock('@/runtime/files/reads/runtime-file-read-client', () => ({
 vi.mock('./clipcode-restore-parent-directories', () => ({
   createParentDirectoriesForNewFile: async () => undefined
 }))
-let owner: { kind: string; connectionId?: string } = { kind: 'local' }
 vi.mock('../../file-explorer/navigation/file-explorer-operation-owner', () => ({
   captureFileExplorerOperationGuard: () => ({
     route: { target: { kind: 'local' } },
     assertCurrent: () => undefined
   }),
-  getFileExplorerOperationOwner: () => owner
+  getFileExplorerOperationOwner: () => ({ kind: 'local' })
 }))
 vi.mock('@/components/editor/autosave/editor-autosave', () => ({
   requestEditorSaveQuiesce: async (target: { worktreeId: string; relativePath: string }) => {
@@ -58,8 +57,6 @@ vi.mock('@/components/editor/autosave/editor-autosave', () => ({
 }))
 
 const { useClipcodeRestore } = await import('./use-clipcode-restore')
-const { FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE } =
-  await import('../../../../../../shared/file-write/file-bytes-write')
 
 function Harness(): React.JSX.Element {
   const { requestRestore, dialog } = useClipcodeRestore({
@@ -92,7 +89,6 @@ async function runRestore(clipboard: string, { overwrite = false } = {}): Promis
 }
 
 beforeEach(() => {
-  owner = { kind: 'local' }
   calls.length = 0
   writtenBytes.clear()
   writeRuntimeFile.mockReset()
@@ -101,7 +97,7 @@ beforeEach(() => {
   readRuntimeFileContent.mockResolvedValue({ content: 'old', isBinary: false })
   readRuntimeFileBytes.mockResolvedValue({ kind: 'unsupported' })
   writeRuntimeFile.mockImplementation(async (_c: unknown, path: string) => {
-    calls.push(`write text ${path}`)
+    calls.push(`write ${path}`)
   })
   writeRuntimeFileBytes.mockImplementation(async (_c: unknown, path: string, bytes: Uint8Array) => {
     writtenBytes.set(path, [...bytes])
@@ -229,37 +225,8 @@ describe('useClipcodeRestore', () => {
     )
   })
 
-  it('writes a text entry as its UTF-8 bytes through the replace path', async () => {
-    await runRestore('// file: [NEW] ok.ts\ncafé\n')
-    expect(writeRuntimeFile).not.toHaveBeenCalled()
-    expect(writeRuntimeFileBytes).toHaveBeenCalledWith(
-      expect.anything(),
-      '/f/ok.ts',
-      expect.anything(),
-      undefined,
-      { allowMissing: true }
-    )
-    expect(writtenBytes.get('/f/ok.ts')).toEqual([0x63, 0x61, 0x66, 0xc3, 0xa9])
-  })
-
-  it('writes a text entry on an SSH host in place instead of uploading a temp file', async () => {
-    owner = { kind: 'ssh', connectionId: 'conn-1' }
-    await runRestore('// file: [NEW] ok.ts\ncafé\n')
-    expect(writeRuntimeFileBytes).not.toHaveBeenCalled()
-    expect(writeRuntimeFile).toHaveBeenCalledWith(expect.anything(), '/f/ok.ts', 'café')
-  })
-
-  it('falls back to the text write when the host cannot replace bytes', async () => {
-    writeRuntimeFileBytes.mockRejectedValue(new Error(FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE))
-    await runRestore('// file: [NEW] ok.ts\nx\n')
-    expect(writeRuntimeFile).toHaveBeenCalledWith(expect.anything(), '/f/ok.ts', 'x')
-    expect(toast.success).toHaveBeenLastCalledWith(
-      'Created 1, overwritten 0, deleted 0, skipped 0.'
-    )
-  })
-
   it('counts a failed write as skipped and names it in user text, not the OS message', async () => {
-    writeRuntimeFileBytes.mockImplementation(async (_c: unknown, path: string) => {
+    writeRuntimeFile.mockImplementation(async (_c: unknown, path: string) => {
       if (path === '/f/locked.ts') {
         throw new Error("EACCES: permission denied, open '/f/locked.ts'")
       }

@@ -21,7 +21,6 @@ import { TelemetryFirstLaunchSurface } from '../components/onboarding/telemetry/
 import { ZoomOverlay } from './chrome/ZoomOverlay'
 import { WslMoveDialogHost } from '../components/wsl-move/WslMoveDialog'
 import { AgentCliUpdateFailedDialogHost } from '../components/agent-cli-update/AgentCliUpdateFailedDialogHost'
-import { ClipcodeNonTextCopyDialogHost } from '../components/right-sidebar/source-control/clipcode/clipcode-non-text-copy-dialog'
 import { MacosUpdateRequirementHost } from '../components/macos-update-requirement/MacosUpdateRequirementHost'
 import { shouldRenderPetOverlay } from '../components/pet/pet-overlay-visibility'
 import { useAppStore } from '../store/index'
@@ -39,6 +38,8 @@ import {
 } from './root-surfaces/app-root-surface-settings'
 import type { FloatingWorkspacePanelState } from '../components/floating-terminal/workspace/use-floating-workspace-panel'
 import type { OnboardingGate } from './startup/use-onboarding-and-feature-tips'
+
+import { ClipcodeNonTextCopyDialogHost } from '@/components/right-sidebar/source-control/clipcode/clipcode-non-text-copy-dialog'
 
 const QuickOpen = lazy(() => import('../components/file-actions/quick-open/QuickOpen'))
 const WorkspaceCleanupDialog = lazy(
