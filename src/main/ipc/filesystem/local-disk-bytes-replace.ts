@@ -28,27 +28,10 @@ async function sha256OfFile(filePath: string): Promise<string | null> {
   return hash.digest('hex')
 }
 
-// Why: Windows refuses a rename over a read-only file, so clear the attribute and restore it on failure.
-async function renameOverTarget(temp: string, target: string, mode: number | null): Promise<void> {
-  const unlock = process.platform === 'win32' && mode !== null && (mode & 0o200) === 0
-  if (unlock) {
-    await chmod(target, mode | 0o200)
-  }
-  try {
-    await renameFileWithWindowsRetryAsync(temp, target)
-  } catch (error) {
-    if (unlock) {
-      await chmod(target, mode).catch(() => undefined)
-    }
-    throw error
-  }
-}
-
 /**
  * Replaces a file's bytes atomically (sibling temp file, then rename) unless it no longer holds
  * the bytes the editor loaded. A symlink is followed, so its target is replaced, not the link.
- * The temp file is created 0600 and gets the target's mode only before the rename; a read-only
- * target is replaced like any other.
+ * The temp file is created 0600 and gets the target's mode only before the rename.
  */
 export async function replaceLocalFileBytesIfUnchanged(
   requestedPath: string,
@@ -88,7 +71,7 @@ export async function replaceLocalFileBytesIfUnchanged(
       }
       // Why: a new file gets the mode a plain create would have given it.
       await chmod(temp, mode ?? 0o666 & ~process.umask())
-      await renameOverTarget(temp, target, mode)
+      await renameFileWithWindowsRetryAsync(temp, target)
     } finally {
       await rm(temp, { force: true }).catch(() => undefined)
     }

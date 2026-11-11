@@ -9,7 +9,6 @@ import {
 } from './file-target'
 import type { RuntimeFileCommandHost } from './file-command-host'
 import { resolveRuntimeAuthorizedPath } from './chat-scratch-file-root'
-import { createReadStream } from 'node:fs'
 import { constants, copyFile, mkdir, rm } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import type { FileBytesWritePrecondition } from '../../../shared/file-write/file-bytes-write'
@@ -18,6 +17,8 @@ import type {
   FileWriteDiskPrecondition,
   FileWriteResult
 } from '../../../shared/file-write/file-write-disk-precondition'
+
+import { createReadStream } from 'node:fs'
 
 type RuntimeFileMutationHost = Pick<
   RuntimeFileCommandHost,
