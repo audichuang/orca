@@ -6,10 +6,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PluginHostCallOutcome } from '../../../../../shared/plugins/frames/plugin-protocol'
 import type { PanelActionCall } from './plugin-frame-host'
 import { usePluginFrameHost } from './use-plugin-frame-host'
+type HappyDomWindow = { happyDOM: { waitUntilComplete: () => Promise<void> } }
 
-;(
-  globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
-).IS_REACT_ACT_ENVIRONMENT = true
+function happyDomWindow(): HappyDomWindow {
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: happy-dom installs window.happyDOM; the DOM lib does not declare it.
+  return window as unknown as HappyDomWindow
+}
+
+function partialApi(api: object): Window['api'] {
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: a partial preload stub; the code under test calls only these members.
+  return api as Window['api']
+}
+
+beforeEach(() => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+})
 
 type RemoteHostCall = (call: PanelActionCall) => Promise<PluginHostCallOutcome>
 
@@ -56,9 +67,7 @@ async function sendHostCall(id: number): Promise<void> {
   Object.defineProperty(event, 'source', { value: frameWindow() })
   await act(async () => {
     window.dispatchEvent(event)
-    await (
-      window as unknown as { happyDOM: { waitUntilComplete: () => Promise<void> } }
-    ).happyDOM.waitUntilComplete()
+    await happyDomWindow().happyDOM.waitUntilComplete()
   })
 }
 
@@ -70,9 +79,9 @@ beforeEach(() => {
   panelActionMock.mockResolvedValue({ ok: true, value: 'local' })
   unsubscribeMock.mockReset()
   subscribePanelPushMock.mockClear()
-  globalThis.window.api = {
+  globalThis.window.api = partialApi({
     plugins: { panelAction: panelActionMock, subscribePanelPush: subscribePanelPushMock }
-  } as unknown as Window['api']
+  })
 })
 
 afterEach(async () => {
@@ -81,6 +90,7 @@ afterEach(async () => {
   })
   container.remove()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 describe('usePluginFrameHost remote host calls (fork)', () => {
