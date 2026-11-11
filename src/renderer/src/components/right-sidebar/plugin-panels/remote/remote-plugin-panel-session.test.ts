@@ -32,7 +32,7 @@ const listed: PluginHostListEntry = {
 }
 
 async function settle(): Promise<void> {
-  for (let i = 0; i < 5; i += 1) {
+  for (let i = 0; i < 20; i += 1) {
     await Promise.resolve()
   }
 }
@@ -56,14 +56,14 @@ it("a left host's late dead session opens nothing and leaves the new host ready"
     }
     return { outcome: { ok: true, value: 'b data' } }
   })
-  const a = new RemotePanelSession('server-a', PANEL, '1.0.0')
+  const a = new RemotePanelSession('server-a', PANEL, () => Promise.resolve('1.0.0'))
   a.start()
   await settle()
   const oldCall = a.callHostMethod({ sessionToken: 'local', action: 'plugin.request' })
   await settle()
 
   a.stop()
-  const b = new RemotePanelSession('server-b', PANEL, '1.0.0')
+  const b = new RemotePanelSession('server-b', PANEL, () => Promise.resolve('1.0.0'))
   b.start()
   await settle()
   expect(b.getState().status).toBe('ready')
@@ -99,7 +99,7 @@ it("a restarted session ignores its first run's late failure", async () => {
     return { html: '', sessionToken: 'second-run-token' }
   })
   // StrictMode replays the effect: start, stop, start on the same session.
-  const session = new RemotePanelSession('server-a', PANEL, '1.0.0')
+  const session = new RemotePanelSession('server-a', PANEL, () => Promise.resolve('1.0.0'))
   session.start()
   session.stop()
   session.start()
@@ -109,5 +109,32 @@ it("a restarted session ignores its first run's late failure", async () => {
   failFirstList(new Error('socket closed'))
   await settle()
   expect(session.getState().status).toBe('ready')
+  session.stop()
+})
+
+it('checks the version installed now, so a document reloaded for an update meets the old server copy', async () => {
+  vi.mocked(callRuntimeRpc).mockResolvedValue([listed])
+  const session = new RemotePanelSession('server-a', PANEL, () => Promise.resolve('2.0.0'))
+  session.start()
+  await settle()
+
+  expect(session.getState()).toEqual({
+    status: 'version-mismatch',
+    availability: { kind: 'version-mismatch', localVersion: '2.0.0', remoteVersion: '1.0.0' }
+  })
+  expect(vi.mocked(callRuntimeRpc).mock.calls.map((call) => call[1])).toEqual(['plugins.list'])
+  session.stop()
+})
+
+it("reads the installed version from main's plugin list by default", async () => {
+  vi.mocked(callRuntimeRpc).mockResolvedValue([listed])
+  const list = vi.fn().mockResolvedValue([{ ...listed, version: '2.0.0' }])
+  window.api = { plugins: { list } } as unknown as Window['api']
+  const session = new RemotePanelSession('server-a', PANEL)
+  session.start()
+  await settle()
+
+  expect(list).toHaveBeenCalled()
+  expect(session.getState().status).toBe('version-mismatch')
   session.stop()
 })

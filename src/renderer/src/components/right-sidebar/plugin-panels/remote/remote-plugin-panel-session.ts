@@ -4,6 +4,7 @@ import type { PanelActionCall } from '../../../plugins/frames/plugin-frame-host'
 import {
   callRemotePanelAction,
   openCheckedRemotePanelSession,
+  readLocalPluginVersion,
   remotePanelSessionUnavailable,
   type RemotePanelAvailability
 } from './remote-plugin-panel-route'
@@ -30,9 +31,10 @@ type SessionRun = {
 }
 
 /**
- * One server, one panel, one local UI version. Its token, checks and calls belong to it alone,
- * so once the panel moves to another host or version, nothing this one still has in flight can
- * change what the new one shows or which token it uses.
+ * One server, one panel, one loaded panel document. Its token, checks and calls belong to it alone,
+ * so once the panel moves to another host or document, nothing this one still has in flight can
+ * change what the new one shows or which token it uses. Every check reads the installed version
+ * afresh: the document reloads on a plugin update before the catalog store learns the version.
  */
 export class RemotePanelSession {
   private run: SessionRun | null = null
@@ -42,7 +44,8 @@ export class RemotePanelSession {
   constructor(
     private readonly environmentId: string,
     private readonly panel: { pluginKey: string; id: string; tabKey: string },
-    private readonly localVersion: string | null
+    private readonly readLocalVersion: () => Promise<string | null> = () =>
+      readLocalPluginVersion(panel.pluginKey)
   ) {}
 
   start(): void {
@@ -90,7 +93,7 @@ export class RemotePanelSession {
     const { availability, token } = await openCheckedRemotePanelSession(
       this.environmentId,
       this.panel,
-      this.localVersion
+      this.readLocalVersion
     )
     if (!run.active) {
       return null
