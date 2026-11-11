@@ -56,7 +56,7 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
     () => (panelShell ? fillPluginPanelShell(panelShell) : null),
     [panelShell]
   )
-  const route = useRemotePluginPanelRoute(panel)
+  const route = useRemotePluginPanelRoute(panel, entry.status === 'ready' ? entry.revision : null)
   const remoteNotice = panel ? remotePluginPanelNotice(route, panel.pluginName, declarative) : null
   // Fork: a host switch remounts the frame so no state from the previous host's data lingers.
   const panelFrameKey =
@@ -85,7 +85,12 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
       )
     }
   }, [entry.status, setPanelHealth, tabKey])
-  useReportFramePanelDraw(tabKey, frameRef, guest && !declarative ? guest.url : null)
+  // Fork: a remote notice keeps the guest unmounted, so register once the frame exists.
+  useReportFramePanelDraw(
+    tabKey,
+    frameRef,
+    guest && !declarative && !remoteNotice ? guest.url : null
+  )
 
   // Persisted tabs can outlive an uninstalled or disabled plugin.
   if (!panel) {
