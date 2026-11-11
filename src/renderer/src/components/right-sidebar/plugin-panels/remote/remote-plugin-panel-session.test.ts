@@ -2,10 +2,10 @@
 
 import { afterEach, expect, it, vi } from 'vitest'
 import type { PluginHostListEntry } from '../../../../../../shared/plugins/plugin-list-entry'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import { RemotePanelSession } from './remote-plugin-panel-session'
 
-vi.mock('@/runtime/runtime-rpc-client', () => ({ callRuntimeRpc: vi.fn() }))
+vi.mock('@/runtime/rpc/calls/runtime-rpc-call', () => ({ callRuntimeRpc: vi.fn() }))
 
 afterEach(() => {
   vi.resetAllMocks()
