@@ -170,6 +170,42 @@ describe('PluginPanel remote route (fork)', () => {
     expect(routeMock).toHaveBeenLastCalledWith(dashboardPanel, 1)
   })
 
+  it.each([
+    ['a paired server to this computer', remoteRoute('env-1', 'ready'), { kind: 'local' } as const],
+    ['this computer to a paired server', { kind: 'local' } as const, remoteRoute('env-1', 'ready')],
+    ['one paired server to another', remoteRoute('env-1', 'ready'), remoteRoute('env-2', 'ready')]
+  ])(
+    'rebinds the draw report to the new guest when the panel moves from %s',
+    async (_name, from, to) => {
+      readPanelEntryMock.mockResolvedValue({
+        html: '',
+        sessionToken: SESSION_TOKEN,
+        guest: {
+          partition: 'persist:orca-plugin-0123456789abcdef',
+          url: 'orca-plugin-frame://0123456789abcdef/panel.html'
+        }
+      })
+      routeMock.mockReturnValue(from)
+      await renderPanel()
+      const first = container.querySelector('webview')
+      await act(async () => {
+        first?.dispatchEvent(new Event('did-finish-load'))
+      })
+      expect(pluginPanelDrawStatus(TAB_KEY)?.drawn).toBe(true)
+
+      routeMock.mockReturnValue(to)
+      await renderPanel()
+      const second = container.querySelector('webview')
+      expect(second).not.toBe(first)
+      expect(pluginPanelDrawStatus(TAB_KEY)?.drawn).toBe(false)
+      await act(async () => {
+        second?.dispatchEvent(new Event('did-finish-load'))
+      })
+
+      expect(pluginPanelDrawStatus(TAB_KEY)?.drawn).toBe(true)
+    }
+  )
+
   it('reports a guest drawn when it mounts only after the server copy turned ready', async () => {
     readPanelEntryMock.mockResolvedValue({
       html: '',
