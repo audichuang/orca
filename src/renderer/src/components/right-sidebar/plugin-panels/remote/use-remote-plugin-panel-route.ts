@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
-import { usePluginPanelsStore } from '@/store/plugins/catalog/plugin-contribution-catalog'
 import { getRuntimeEnvironmentDisplayName } from '@/store/repos/owner-routing'
 import type { PluginHostCallOutcome } from '../../../../../../shared/plugins/frames/plugin-protocol'
 import type { PanelActionCall } from '../../../plugins/frames/plugin-frame-host'
@@ -29,7 +28,9 @@ const refuseHostCall = (): Promise<PluginHostCallOutcome> =>
 
 /** Where this panel's host calls go: the paired server owning the focused workspace, else here. */
 export function useRemotePluginPanelRoute(
-  panel: { pluginKey: string; id: string; tabKey: string } | null
+  panel: { pluginKey: string; id: string; tabKey: string } | null,
+  /** The loaded panel document's revision; null until one is ready. */
+  documentRevision: number | null
 ): RemotePluginPanelRoute {
   const ownerKey = useAppStore(focusedPanelOwnerKey)
   const separator = ownerKey.indexOf(':')
@@ -42,19 +43,15 @@ export function useRemotePluginPanelRoute(
   const pluginKey = panel?.pluginKey ?? null
   const panelId = panel?.id ?? null
   const tabKey = panel?.tabKey ?? null
-  const localVersion = usePluginPanelsStore((state) =>
-    environmentId
-      ? (state.plugins.find((each) => each.pluginKey === pluginKey)?.version ?? null)
-      : null
-  )
 
-  // A new host, panel or local version gets a new session; the old one is stopped, not reused.
+  // A new host, panel or document gets a new session; the old one is stopped, not reused, so a
+  // reloaded document never inherits a token checked against the previous version.
   const session = useMemo(
     () =>
-      environmentId && !ownerPending && pluginKey && panelId && tabKey
-        ? new RemotePanelSession(environmentId, { pluginKey, id: panelId, tabKey }, localVersion)
+      environmentId && !ownerPending && pluginKey && panelId && tabKey && documentRevision !== null
+        ? new RemotePanelSession(environmentId, { pluginKey, id: panelId, tabKey })
         : null,
-    [environmentId, ownerPending, pluginKey, panelId, tabKey, localVersion]
+    [environmentId, ownerPending, pluginKey, panelId, tabKey, documentRevision]
   )
   useEffect(() => {
     if (!session) {
