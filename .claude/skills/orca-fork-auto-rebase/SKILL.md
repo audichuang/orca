@@ -212,7 +212,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
    推完再跑一次 `make fork-ci-disable-upstream`：上游新加的 workflow 要等它進到預設分支 `main` 才會在 GitHub 註冊，第 6 步那次停用不到（v1.4.241 的 `wsl-orcad-e2e-frozen-runner-retry.yml`）。剛推完可能還沒註冊，第 6 點收尾前再跑一次；失敗（例如 API 配額）不擋發版，在通知裡寫出還沒停用的 workflow。
 4. 在 PR 留言「發版開始 vNEW-fork.N」（心跳）。找這個 tag 的 release run：`gh run list -R audichuang/orca --workflow fork-release.yml --event push --limit 5 --json databaseId,headBranch --jq '.[] | select(.headBranch=="vNEW-fork.N") | .databaseId'`。剛推完可能還沒出現，查不到就先寫第 8 步的通知草稿再查，查三次都沒有就當 release 沒觸發，第 8 步回報。找到後 `gh-wait run <id> -R audichuang/orca -t 9`（照「等待」的方式）。「Bump the Homebrew cask」紅多半是 API 配額，`gh run rerun <id> --failed -R audichuang/orca` 一次。確認 `gh api repos/audichuang/homebrew-tap/contents/Casks/orca-fork.rb --jq .content | base64 -d` 的 version 是新版。release 紅兩次 → 不升級，第 8 步回報（tag 已推不刪）。重跑 workflow 只救偶發失敗，它建的還是 tag 指的同一個 commit；要改 code 才修得好的（v1.4.243-fork.1 缺 helper），修正走 PR 合進 develop、從它的 merge commit 發 `vNEW-fork.(N+1)`，不要只寫進 `known-resolutions.md` 等下一個上游版本：筆記與 PR 留言寫明「修好後立刻發 N+1」。
 5. MacBook：`ssh macbookpro "bash -lc 'export PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH; pgrep -f \"Orca Fork.app\" >/dev/null && echo RUNNING || { brew update >/dev/null; brew upgrade --cask orca-fork; }'"`。印 RUNNING 就不升級（不幫使用者關 app），通知裡請使用者自己升級。
-6. 收鎖與收尾：`gh pr close PR -R audichuang/orca -c "<發版結果：vNEW-fork.N 已發佈，或失敗在哪>"`，刪 fork 的 `rebase/vNEW` 與 `ci-base/vNEW`；`make fork-wrapup` 核對 tag、tap 與 MacBook 安裝版本，輸出貼進通知；`git worktree remove --force` 這次的 `../ar-$RUN-*`（先確認沒有你要留給使用者看的東西）；`MAIN` 由 Orca 管理，留給下一次 run 清。回滾不由這個技能做（develop 這時還指著壞的 commit，第 3 點的檢查會擋下）：在通知裡寫出上一個好的 commit，讓使用者照 FORK.md「Release」把它打成 `vNEW-fork.(N+1)` 推上去。
+6. 收鎖與收尾：`gh pr close PR -R audichuang/orca -c "<第 8 步的完整報告>"`（`make fork-wrapup` 先跑），刪 fork 的 `rebase/vNEW` 與 `ci-base/vNEW`；`make fork-wrapup` 核對 tag、tap 與 MacBook 安裝版本，輸出放進第 8 步的完整報告；`git worktree remove --force` 這次的 `../ar-$RUN-*`（先確認沒有你要留給使用者看的東西）；`MAIN` 由 Orca 管理，留給下一次 run 清。回滾不由這個技能做（develop 這時還指著壞的 commit，第 3 點的檢查會擋下）：在通知裡寫出上一個好的 commit，讓使用者照 FORK.md「Release」把它打成 `vNEW-fork.(N+1)` 推上去。
 
 ## 8. Bark 通知（不論結果都推）
 
@@ -230,7 +230,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
 ```
 doppler run -p shioaji -c dev -- uv run --no-project python - <<'PY'
 import json, os, sys, urllib.request
-title = "Orca fork rebase vNEW：<已移動 develop｜等你審 PR #N｜失敗：哪一步>"
+title = "Orca fork vNEW：<✅ 已發 vNEW-fork.N｜⏸ 等你審 PR #N｜❌ 卡在第 X 步>"
 body = """（多行內容）"""
 payload = json.dumps({"title": title, "body": body, "group": "orca"}, ensure_ascii=False).encode("utf-8")
 if not title.strip() or not body.strip():
@@ -242,13 +242,17 @@ sys.exit(0 if resp.get("code") == 200 else 1)
 PY
 ```
 
-body 控制在約 1,200 字內：vOLD → vNEW、CLEAN/MANUAL、衝突與修正各一句、本機 static／seams 與 CI 結果、每個審查者的 VERDICT 與確認為真的發現數、PR 連結、develop 有沒有移動（沒移動就寫原因，例如 lease 失敗）。再加：
+使用者只想從推播知道「發了沒、卡在哪、要不要我動手」，所以 Bark 只放這些，細節放 PR 與對話：
 
-- 發版結果：tag、release 連結、MacBook 有沒有升級（Orca 開著就寫「請自己 `brew upgrade --cask orca-fork` 後重開」）；沒發版就寫原因。
-- CI 有自動重跑的 job 寫出名稱；審查者 C 列出、但不擋這次的既有測試缺口列出來；第 0 步沒刪的 worktree；筆記沒寫成的話寫原因。
-- develop 有移動時列出對 develop 開著的 PR（`gh pr list -R audichuang/orca --base develop`），它們要重跑 CI 才能合。
+- title 就是結論（上面三選一）；卡住的在 `>` 後補一句原因，例如「❌ 卡在第 7 步：release 紅兩次」。
+- body 最多三行、約 150 字，不放 sha、備份分支、run id、CLEAN/MANUAL、VERDICT、tap 版本：
+  1. 一句話結果：發了就寫 tag；沒發就寫卡在哪、為什麼。
+  2. `要你做：` 只列必須由使用者親手做的事，每項一句，用「；」隔開：MacBook 沒升級（Orca 開著 → 請自己 `brew upgrade --cask orca-fork` 後重開；SSH 連不上 → 請自己升級）、要審的 PR、要自己回滾、對 develop 開著的 PR 要重跑 CI（develop 有移動時 `gh pr list -R audichuang/orca --base develop` 查）。沒有就整行省略。
+  3. 一個連結：沒發版放 PR，發了放 release。
 
-最後在對話裡印出和 Bark 一樣的內容。
+完整報告在送 Bark 前留言到 PR（第 7 步第 6 點的 close 留言就用它）：vOLD → vNEW、CLEAN/MANUAL、衝突與修正各一句、本機 static／seams 與 CI 結果、每個審查者的 VERDICT 與確認為真的發現數、develop 有沒有移動（沒移動就寫原因，例如 lease 失敗）、發版結果與 `make fork-wrapup` 輸出、CI 自動重跑的 job、審查者 C 列出但不擋這次的既有測試缺口、第 0 步沒刪的 worktree、筆記沒寫成的原因。
+
+最後在對話裡印出 Bark 內容，接著是完整報告。
 
 ## 限制
 
