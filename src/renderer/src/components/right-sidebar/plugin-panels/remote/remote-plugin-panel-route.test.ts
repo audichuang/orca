@@ -148,7 +148,7 @@ describe('openCheckedRemotePanelSession', () => {
       await openCheckedRemotePanelSession(
         'server-a',
         { pluginKey: 'sample.monitor', id: 'main', tabKey: TAB },
-        '1.0.0'
+        () => Promise.resolve('1.0.0')
       )
     ).toEqual({
       availability: { kind: 'version-mismatch', localVersion: '1.0.0', remoteVersion: '2.0.0' },
@@ -161,7 +161,7 @@ describe('openCheckedRemotePanelSession', () => {
     const opened = await openCheckedRemotePanelSession(
       'server-a',
       { pluginKey: 'sample.monitor', id: 'main', tabKey: TAB },
-      '1.0.0'
+      () => Promise.resolve('1.0.0')
     )
     expect(opened).toEqual({
       availability: { kind: 'version-mismatch', localVersion: '1.0.0', remoteVersion: '2.0.0' },

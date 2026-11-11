@@ -71,27 +71,36 @@ export async function openRemotePanelSession(
   return entry?.sessionToken ?? null
 }
 
+/** The version installed here now; the catalog store can lag behind a frame that already reloaded. */
+export async function readLocalPluginVersion(pluginKey: string): Promise<string | null> {
+  const list = window.api?.plugins?.list
+  if (!list) {
+    throw new Error('plugins.list is unavailable')
+  }
+  return (await list()).find((each) => each.pluginKey === pluginKey)?.version ?? null
+}
+
 /** Checks the server's copy, then opens a session only when it can serve this panel's UI. */
 export async function openCheckedRemotePanelSession(
   environmentId: string,
   panel: { pluginKey: string; id: string; tabKey: string },
-  localVersion: string | null
+  readLocalVersion: () => Promise<string | null>
 ): Promise<{ availability: RemotePanelAvailability; token: string | null }> {
   const availability = remotePanelAvailability(
     await listRemotePlugins(environmentId),
     panel.tabKey,
-    localVersion
+    await readLocalVersion()
   )
   if (availability.kind !== 'ready') {
     return { availability, token: null }
   }
   const token = await openRemotePanelSession(environmentId, panel.pluginKey, panel.id)
-  // The server may update the plugin between the check and the open; its token then serves the
-  // new version, so check again and drop a token this UI must not use.
+  // Either side may update the plugin between the check and the open, so check again and drop a
+  // token this UI must not use.
   const after = remotePanelAvailability(
     await listRemotePlugins(environmentId),
     panel.tabKey,
-    localVersion
+    await readLocalVersion()
   )
   return after.kind === 'ready'
     ? { availability: after, token }
