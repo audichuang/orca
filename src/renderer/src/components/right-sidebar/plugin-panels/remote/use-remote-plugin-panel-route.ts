@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
-import { usePluginPanelsStore } from '@/store/plugin-panels'
+import { usePluginPanelsStore } from '@/store/plugins/catalog/plugin-contribution-catalog'
 import { getRuntimeEnvironmentDisplayName } from '@/store/repos/owner-routing'
 import type { PluginHostCallOutcome } from '../../../../../../shared/plugins/frames/plugin-protocol'
 import type { PanelActionCall } from '../../../plugins/frames/plugin-frame-host'
