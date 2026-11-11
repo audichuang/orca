@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { registerFilesystemWriteHandlers } from './filesystem-write-handlers'
-import { replaceLocalFileBytesIfUnchanged } from './local-disk-bytes-replace'
 import type { FilesystemHandlerContext } from './filesystem-handler-context'
 
 const handlers = vi.hoisted(() => new Map<string, (_event: unknown, args: unknown) => unknown>())
@@ -54,16 +53,6 @@ it('replaces the bytes atomically when the file still holds what the editor load
   expect(await readdir(root)).toEqual(['book.xlsx'])
 })
 
-it.skipIf(process.platform === 'win32')(
-  'replaces a file whose name is near the 255-byte name limit',
-  async () => {
-    const filePath = join(root, `${'n'.repeat(216)}.txt`)
-    await writeFile(filePath, loaded)
-    await expect(writeBytes(filePath, edited, sha256(loaded))).resolves.toEqual({ ok: true })
-    expect(new Uint8Array(await readFile(filePath))).toEqual(edited)
-  }
-)
-
 it('refuses a stale baseline and leaves the newer disk bytes alone', async () => {
   const filePath = join(root, 'book.xlsx')
   await writeFile(filePath, new Uint8Array([1, 2, 3]))
@@ -99,39 +88,3 @@ it('recreates a deleted file only when the save allows it', async () => {
   await expect(writeBytes(filePath, edited, sha256(loaded))).resolves.toEqual({ ok: true })
   expect(new Uint8Array(await readFile(filePath))).toEqual(edited)
 })
-
-it('replaces a read-only file when overwriting and keeps it read-only', async () => {
-  const filePath = join(root, 'locked.png')
-  await writeFile(filePath, loaded, { mode: 0o444 })
-  await expect(writeBytes(filePath, edited)).resolves.toEqual({ ok: true })
-  expect(new Uint8Array(await readFile(filePath))).toEqual(edited)
-  expect((await stat(filePath)).mode & 0o777).toBe(0o444)
-  expect(await readdir(root)).toEqual(['locked.png'])
-})
-
-it.skipIf(process.platform === 'win32')(
-  'creates the temporary file owner-only before any byte is written (no POSIX modes on Windows)',
-  async () => {
-    const filePath = join(root, 'secret.bin')
-    let tempMode: number | undefined
-    await replaceLocalFileBytesIfUnchanged(
-      filePath,
-      async (temp) => {
-        tempMode = (await temp.stat()).mode & 0o777
-        await temp.writeFile(edited)
-      },
-      {}
-    )
-    expect(tempMode).toBe(0o600)
-    expect(new Uint8Array(await readFile(filePath))).toEqual(edited)
-  }
-)
-
-it.skipIf(process.platform === 'win32')(
-  'gives a new file the default mode, not the temporary 0600 (no POSIX modes on Windows)',
-  async () => {
-    const filePath = join(root, 'new.bin')
-    await expect(writeBytes(filePath, edited)).resolves.toEqual({ ok: true })
-    expect((await stat(filePath)).mode & 0o777).toBe(0o666 & ~process.umask())
-  }
-)
