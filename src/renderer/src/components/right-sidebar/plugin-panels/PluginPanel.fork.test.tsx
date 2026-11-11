@@ -29,10 +29,21 @@ vi.mock('./remote/use-remote-plugin-panel-route', () => ({
 }))
 
 import PluginPanel from './PluginPanel'
+type HappyDomWindow = { happyDOM: { waitUntilComplete: () => Promise<void> } }
 
-;(
-  globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
-).IS_REACT_ACT_ENVIRONMENT = true
+function happyDomWindow(): HappyDomWindow {
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: happy-dom installs window.happyDOM; the DOM lib does not declare it.
+  return window as unknown as HappyDomWindow
+}
+
+function partialApi(api: object): Window['api'] {
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: a partial preload stub; the code under test calls only these members.
+  return api as Window['api']
+}
+
+beforeEach(() => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+})
 
 const TAB_KEY = 'plugin:samples.my-plugin/dashboard'
 const SESSION_TOKEN = 's'.repeat(43)
@@ -48,6 +59,7 @@ const dashboardPanel: ActivePluginPanel = {
 let container: HTMLDivElement
 let root: Root
 const panelActionMock = vi.fn()
+const readPanelEntryMock = vi.fn()
 
 function remoteRoute(
   environmentId: string,
@@ -65,9 +77,7 @@ function remoteRoute(
 }
 
 function waitForHappyDomTasks(): Promise<void> {
-  return (
-    window as unknown as { happyDOM: { waitUntilComplete: () => Promise<void> } }
-  ).happyDOM.waitUntilComplete()
+  return happyDomWindow().happyDOM.waitUntilComplete()
 }
 
 async function renderPanel(): Promise<void> {
@@ -85,16 +95,16 @@ beforeEach(() => {
   panelActionMock.mockResolvedValue({ ok: true, value: { delivered: true } })
   routeMock.mockReset()
   usePluginPanelsMock.mockReturnValue([dashboardPanel])
-  globalThis.window.api = {
+  globalThis.window.api = partialApi({
     plugins: {
-      readPanelEntry: vi.fn().mockResolvedValue({
+      readPanelEntry: readPanelEntryMock.mockResolvedValue({
         html: '<h1>Hello plugin</h1>',
         sessionToken: SESSION_TOKEN
       }),
       panelAction: panelActionMock,
       onChanged: () => vi.fn()
     }
-  } as unknown as Window['api']
+  })
 })
 
 afterEach(async () => {
@@ -103,6 +113,7 @@ afterEach(async () => {
   })
   container.remove()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 describe('PluginPanel remote route (fork)', () => {
@@ -160,8 +171,7 @@ describe('PluginPanel remote route (fork)', () => {
   })
 
   it('reports a guest drawn when it mounts only after the server copy turned ready', async () => {
-    const plugins = window.api.plugins as unknown as { readPanelEntry: ReturnType<typeof vi.fn> }
-    plugins.readPanelEntry.mockResolvedValue({
+    readPanelEntryMock.mockResolvedValue({
       html: '',
       sessionToken: SESSION_TOKEN,
       guest: {
