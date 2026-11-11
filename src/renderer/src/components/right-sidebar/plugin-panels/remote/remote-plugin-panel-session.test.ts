@@ -9,6 +9,7 @@ vi.mock('@/runtime/rpc/calls/runtime-rpc-call', () => ({ callRuntimeRpc: vi.fn()
 
 afterEach(() => {
   vi.resetAllMocks()
+  vi.unstubAllGlobals()
 })
 
 const TAB = 'plugin:sample.monitor/main'
@@ -129,7 +130,7 @@ it('checks the version installed now, so a document reloaded for an update meets
 it("reads the installed version from main's plugin list by default", async () => {
   vi.mocked(callRuntimeRpc).mockResolvedValue([listed])
   const list = vi.fn().mockResolvedValue([{ ...listed, version: '2.0.0' }])
-  window.api = { plugins: { list } } as unknown as Window['api']
+  vi.stubGlobal('window', { api: { plugins: { list } } })
   const session = new RemotePanelSession('server-a', PANEL)
   session.start()
   await settle()
