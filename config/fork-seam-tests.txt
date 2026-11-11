@@ -137,3 +137,8 @@ src/renderer/src/components/editor/diff/sections/DiffSectionBody.image-lazy-iden
 
 # ClipCode restore: temp-file replace through upstream's bytes write (0600 temp, short temp name, kept modes)
 src/main/ipc/filesystem/filesystem-write-bytes.fork.test.ts
+src/main/runtime/files/file-mutations.fork.test.ts
+src/renderer/src/runtime/files/mutations/runtime-file-bytes-write.fork.test.ts
+
+# ClipCode copy: non-text question dialog host mounted at the app root
+src/renderer/src/app-shell/AppRootSurfaces.fork.test.tsx
