@@ -22,6 +22,7 @@ import { useTranslate } from '@/i18n/use-translate'
 import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
 import { useRemotePluginPanelRoute } from './remote/use-remote-plugin-panel-route'
 import { remotePluginPanelNotice } from './remote/remote-plugin-panel-notice'
+import { usePluginFrameMountRef } from './remote/plugin-frame-mount-ref'
 
 type PluginPanelProps = {
   tabKey: string
@@ -85,10 +86,11 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
       )
     }
   }, [entry.status, setPanelHealth, tabKey])
-  // Fork: a remote notice keeps the guest unmounted, so register once the frame exists.
+  // Fork: rebind the draw report to each mounted frame; a remote notice keeps it unmounted.
+  const drawFrameRef = usePluginFrameMountRef(frameRef, remoteNotice ? null : panelFrameKey)
   useReportFramePanelDraw(
     tabKey,
-    frameRef,
+    drawFrameRef,
     guest && !declarative && !remoteNotice ? guest.url : null
   )
 
