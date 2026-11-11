@@ -2,6 +2,55 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-11-11 auto-rebase v1.4.255 → v1.4.256（PR #158）— develop 已移動並發 v1.4.256-fork.1
+- RUN=20261110T221803Z（Orca worktree `auto-orca-fork-rebase-run-501-20261110T2217`）。OLD_DEVELOP 41c5ced9ac → develop c78d434dc8（舊 develop 備份 `backup/develop-v1.4.255-20261110T221803Z`）。
+- MANUAL：`git rebase --onto v1.4.256 v1.4.255`，544 個 fork commit、10 個停點，全部來自上游 renderer owner 分組搬家（#40230、#40273、#40313）與刪低價值測試（#40188、#40363）。c9edd1e48b 變成空 commit 被略過（它只改上游刪掉的 `open-uncommitted-entry.test.ts`；387eef4cf0 已把案例搬到 `.fork.test`，之後又被刪，舊 tip 這檔與 v1.4.255 相同）。用了小腳本按衝突區塊選 ours／theirs／自訂（只在 run 目錄）。
+- 衝突檔與解法（停點的 commit）：
+  - `editor/external-changes/editor-restored-tab-conflict-scan.ts`（b88d04277b、c646d2afa6、0f2c75f8e0）：採上游 `@/lib/workspace/ownership/connection-context`，保留 fork 的 open-file-git-owner import；0f2c75f8e0（拆 gitWorktreeId 層）那一站整檔採 v1.4.256（`git diff --quiet v1.4.255 0f2c75f8e0 -- <檔>` 成立）。最終與 v1.4.256 相同。
+  - `editor/useEditorPanelActiveTabContentLoad.ts`（b88d04277b、b68f6bbaf1）：保留上游的 `EditorPanelFileContentLoader` 型別 import，fork 的 git owner import 照各 commit 加／刪。最終與 v1.4.256 相同。
+  - `sync/use-git-history-commit-actions.ts`（b88d04277b）：fork 刪掉的 5 個 import 照刪（搬到 git-history-commit-explain.ts）。守它：hunk 掃描 :188/:246 guarded；:139 手動 → `use-git-history-commit-actions.fork.test.tsx` `expected null to match object { index: +0, total: 2 }`。
+  - `sync/use-git-history.ts`（a24261401a）：上游 `@/lib/workspace/activation/workspace-switch-user-act` + fork `git-history-graph-filter`。守它：:121/:153/:191 guarded；:27 → `GitGraphTabView.component.test.tsx` `expected undefined to match object { mode: 'all', … }`。
+  - `editor/diff/sections/DiffSectionBody.tsx`（d22f5616d9）：上游 `@/lib/editor/appearance/editor-typography`，不取上游 local `lazyWithRetry(ImageDiffViewer)`，用 fork 的 `../../editor-lazy-views` 與 `deferDiffEditorDispose`。:34 原本沒有測試會紅 → 補 c78d434dc8（見審查）。
+  - `lib/editor/file-operations/remap-open-editor-tabs-for-path-change{,.test}.ts`（b88d04277b、ca74004bdb、387eef4cf0、9d96db8bef）：import 採上游新路徑；上游 #40363 刪掉的 "carries the disk baseline" 測試不加回；387eef4cf0／9d96db8bef 還原成上游的那一站採 v1.4.256。最終與 v1.4.256 相同。
+  - `listing/open-uncommitted-entry.test.ts`（c9edd1e48b、387eef4cf0）：上游 #40188 刪檔，採刪除（modify/delete 的 DU）。
+  - `settings/shortcuts/keybinding-title-copy.ts`（bbb80859d9 → 7008e559e3）：照 #40249 條目。守它：刪掉 fork 兩行 → tc `TS2741 … 'sourceControl.openGitGraph' is missing`。
+- 額外 commit：4dc8f333f0（rename 表換 specifier：8 個產品檔 import → tc TS2307；9 個測試的 vi.mock，file-explorer 那支改回會 suite crash，其餘 8 支改回仍綠，C 用 `__boom()` 證明新路徑 mock 有綁上、真模組回傳一樣 → 等價）、de2c136847（ui-map 'Auto save'：改回 → `ui-rounds-map.test.mjs` `expected [ [ 'autoSaveFiles', …(1) ] ] to deeply equal []`）、5243b8d4cd（wsl-move dispositions：加回 → oxlint `max-lines … (302)`）、7e408c6383 → c78d434dc8（`DiffSectionBody.image-lazy-identity.fork.test.tsx`，seam 清單新組「Diff section image: shared lazy identity」）。
+- 上游基準：v1.4.256 tc、lint、daemon-protocol-crossing 全綠，沒有 cherry-pick。本機 static r1 只紅 oxlint（wsl-move max-lines，被條目預告），r2 起全綠；seams 87→88 檔全綠。footprint：production 101 檔 +767/−271。
+- CI（fork-pr.yml，全部一次綠、沒有重跑）：42915711216（5243b8d4cd，22:33:50Z→22:41:29Z）、42923430570（7e408c6383，23:26:50Z→23:33:43Z）、42925888763（c78d434dc8，23:44:56Z→23:51:49Z）。
+- 審查：A、B、C、Codex 第 1 輪全 ACCEPTABLE、0 BLOCKING。C 指出 DiffSectionBody.tsx:34 在衝突區塊內、改回上游全綠 → 7e408c6383 補測試；第 2 輪新 Claude ACCEPTABLE、Codex（同 thread）BLOCKING：測試 mock 掉 `editor-lazy-views`、只斷言 mock 給的標記，包一層新 lazy 仍綠（確認為真）。advisor 核准加開第 3 輪（只限這支測試）：c78d434dc8 只 mock 葉節點 chunk，先經共用 lazy 載入，再要求 DiffSectionBody 同步渲染；改回上游、包一層 lazy 都紅 `expected null not to be null`。第 3 輪 Codex、新 Claude 都 ACCEPTABLE。
+  - seam-upstream 上 C 的 mutation 不紅的三項，都不擋：`commit-area.tsx:247` `initialCwd` 是死 prop（commit-surface 的 `<CommitArea>` 沒傳）；`use-saved-source-control-action-start.ts:97` `initialCwd` 與 `DiffViewer.tsx:276` `syncKeptModelValue` 是活的 seam、沒有測試，但上游這版對兩檔都只改 import（v1.4.250 前例）→ 記成 known-resolutions 的 fork 自身問題。
+  - NON-BLOCKING：`use-git-history-commit-actions.ts:274` deps 陣列（既有）；`lcu-orca.mjs:414` `setAutoSave` 在 #40249 的新設定頁要實機確認；`EditorPanel.fork.test.tsx:16` 多餘的 monaco-setup mock；舊有的 vi.mock 不存在路徑（pty-agent-pane-launch、repos-nested-scan-options，待人判斷條目）；三支 fork 測試 mock 多帶 `runtimeEnvironmentSupportsCapability`；`projectGroup.scanNested` RPC 不轉發 options；上游 Tooltip 延遲 600ms 與 `menu-segment` 樣式跟上游。
+- 發版：tag v1.4.256-fork.1 指 c78d434dc8，main 從 41c5ced9ac lease 推；release run 42926968911 23:53:09Z → 00:07:36Z 綠，tap 1.4.256-fork.1。MacBook SSH 連不上（`connect to host … port 22: Operation timed out`），沒升級。
+- 耗時：rebase 22:18Z → 開 PR 22:24Z（6 分，10 個停點全手解）；本機閘門 22:24Z → 推上 22:33Z（9 分，static 紅一輪）；CI 每輪約 7 分；盲審 22:33Z → 23:20Z（47 分，超過上一條 27 分的 1.5 倍：hunk 掃描 13 分才能啟動 C，C 對 18 組 seam 各跑一次全 seam 清單、約 34 分；Codex 20 分）；修正第 2 輪 23:24Z → 23:43Z、第 3 輪 23:44Z → 23:52Z（多一輪是因為第一版測試 mock 掉了要驗的模組）；發版 23:53Z → 00:07Z。
+- canary 效益：canary 2026-11-11（上游 main abff3a41f5）事先寫好的條目用到 4 條：renderer 搬家的 rename 對照與「vi.mock 也要掃」（省掉找 9 個 tc 不報的 mock）、keybinding-title-copy 的解法、ui-map 'Auto save'、wsl-move max-lines 的處理（本機 static 唯一的紅）。它沒料到的：中間 commit 對上游刪掉的測試檔（open-uncommitted-entry、remap test）的 modify/delete，以及 DiffSectionBody 的衝突落在無測 hunk（條目只寫最終樹）。canary 快取的解法檔是對 main 的最終樹，這次的停點都在中間 commit，沒直接用。沒有它大概要多 20–30 分追 TS2307 與 lint。
+- 用掉的 known-resolutions 條目（整段搬到下面）：#40249 × bbb80859d9（照做）、#40249 × bc74f798bf（照做）、#40745 等 × 7ed606c7d1／e99c8d3ac8 wsl-move（照做）。renderer 搬家條目只用掉 v1.4.256 含的部分，留在 known-resolutions 並註記。新增 known-resolutions：上游只改 import 的檔上兩個無測 fork seam（fork 自身問題）。
+- 沒刪的舊 worktree：無。
+
+### 搬過來的條目
+### 55db56d989ff5e057f864ab74d7fca77a0831e83（#40249 Make Settings easier to scan and organize General）× fork bbb80859d9（fix(keybindings): give the fork's Open Git Graph shortcut a localized title）— canary 2026-11-11
+- 類型：兩邊各改各的
+- 衝突檔：src/renderer/src/components/settings/shortcuts/keybinding-title-copy.ts
+- 連帶症狀：typecheck keybinding-title-copy.ts TS2741（缺 `sourceControl.openGitGraph`）；上游 lint verify:localization-extraction／catalogs 的 `keybindings.title.sourceControlOpenGitGraph` 沒人引用。
+- 處理：上游把相鄰兩條改成雜湊 key 與句首大寫（`keybindings.title.8788e3be3a` 'Toggle child workspaces'、`keybindings.title.d286d1ab85` 'Clear pane title'）。採上游的兩行，中間加回 fork 的 `'sourceControl.openGitGraph': () => translate('keybindings.title.sourceControlOpenGitGraph', 'Open Git Graph'),`（key 不改，各 locale 已有翻譯）。解法存在報告 resolution/files。
+- 守它的測試：`pnpm tc`（Record<StaticKeybindingActionId> 會抓缺項）、verify:localization-extraction、`node config/scripts/fork-locale-parity.mjs HEAD`。
+- 驗證（2026-11-11，上游 abff3a41f52dbd024f7fa15b1ad3b55319b5c343）：tc 0 錯誤；兩個 localization 步驟通過；parity 158 個 fork key 各 locale 都有。
+
+### 55db56d989ff5e057f864ab74d7fca77a0831e83（#40249 Make Settings easier to scan and organize General）× fork bc74f798bf（test(ui-rounds): keep the hands-on UI round scripts in the repo）— canary 2026-11-11
+- 類型：上游改了 fork 依賴的 API（設定頁文字）
+- 衝突檔：無
+- 連帶症狀：失敗測試 config/scripts/ui-rounds-map.test.mjs（「keep every ui-map label in the renderer」：`autoSaveFiles`）
+- 處理：上游把 Auto Save 設定搬進 src/renderer/src/components/settings/editor/GeneralAutoSaveSetting.tsx，開關的 label 從 'Auto Save Files' 改成 'Auto save'（描述 'Save edits after a short pause.'）。tests/ui-rounds/ui-map.mjs 第 37 行 `autoSaveFiles: 'Auto Save Files'` 改成 `'Auto save'`。tests/ui-rounds/lcu-orca.mjs 的 `setAutoSave` 用 `^切換 Description: <label>` 與 `<label>, Value` 找開關，AX 名稱實際長怎樣要在下一輪實機 UI 測試確認。
+- 守它的測試：config/scripts/ui-rounds-map.test.mjs
+- 驗證（2026-11-11，上游 abff3a41f52dbd024f7fa15b1ad3b55319b5c343）：改完 ui-rounds-map.test.mjs 2 passed；lcu 實機未驗證。
+
+### 811973ea8ac77e46af8f556f63de7e93b313d2aa（#40745）、b07b3d318a4e1d8bc6ac9268f8a3abc2ae509e3e（#40777）、ccd4592634f5aeca03c58b80a36c619432211fa7（#40230）把 wsl-move-storage-dispositions.ts 推到 300 行 × fork 7ed606c7d1（fix(git-graph): parse stored list prefs with zod and register their storage）、e99c8d3ac8（fix(fork): move fork wsl-move dispositions to a fork file to keep the upstream file within max-lines (upstream 1c950baf33)）— canary 2026-11-11
+- 類型：上游修了同一件事（這份清單已經沒有讀者）
+- 衝突檔：無
+- 連帶症狀：上游 lint oxlint：src/shared/wsl-move/wsl-move-storage-dispositions.ts `eslint(max-lines)` 302 > 300（fork 的 import 與 `...FORK_LOCAL_STORAGE_MODULE_DISPOSITIONS` 兩行）。
+- 處理：`LOCAL_STORAGE_MODULE_DISPOSITIONS` 的讀者（census 測試）在上游 72104bfc64de3a2dc0454dc1dc2fc6661b338bdf（#36600 test: remove low-value fixture and forwarding suites）就刪了，merge-base 與上游 main 都沒有任何檔 import 它（`git grep LOCAL_STORAGE_MODULE_DISPOSITIONS`、`git grep storage-dispositions` 只剩檔案本身與 fork-footprint.test.mjs 的分類表）。丟掉 fork 的兩行（`git checkout <vNEW> -- src/shared/wsl-move/wsl-move-storage-dispositions.ts`），並 `git rm src/shared/wsl-move/fork-local-storage-dispositions.ts`。config/scripts/fork-footprint.test.mjs 裡那行只是路徑分類，不用改。auto-rebase 重放 7ed606c7d1、e99c8d3ac8 時，wsl-move 的部分整個丟掉（7ed606c7d1 的 git-graph-list-prefs.ts 照留）。**和前兩次做法不同**：2026-11-04（f758771364 條目）與 2026-11-07（1c950baf33 條目）都保留登記、只縮行數或搬到 fork 檔，依據是 FORK.md 第 55 行「upstream census 要列的 fork 檔要登記」；1c950baf33 條目當時就記下「上游目前沒有測試直接讀 LOCAL_STORAGE_MODULE_DISPOSITIONS」。這次上游檔剛好 300 行、fork 至少要 import 加 spread 兩行，又不能加 config/max-lines-baseline.txt（只能縮），已經沒有不動上游行的寫法；census 不在了，照「衝突時優先跟上游」丟掉。若使用者要保留登記，替代做法是改上游那兩行附近的寫法騰出空間（會多一個衝突點），待人決定。
+- 守它的測試：上游 lint oxlint；config/scripts/fork-footprint.test.mjs
+- 驗證（2026-11-11，上游 abff3a41f52dbd024f7fa15b1ad3b55319b5c343）：拿掉後 oxlint 乾淨、fork-footprint.test.mjs 15 passed、tc 0 錯誤、完整 lint 45 步全過。
+
 ## 2026-11-10 auto-rebase v1.4.254 → v1.4.255（PR #157）— develop 已移動並發 v1.4.255-fork.1
 - 使用者手動要求接手：前一次 run-476（2026-11-10 05:19 本地）停在 2/520 後死掉，鎖 `rebase/v1.4.255` 沒有 PR；這期間 develop 已因 #153–#156 前進到 bf3ec59725 並發了 v1.4.254-fork.3。刪掉舊鎖（tip 只是 lock commit），從 bf3ec59725 重做（RUN=20261110T002931Z，Mac mini 上的 `ar-20261110T002931Z-main`，不是 Orca worktree）。
 - MANUAL：540 個 fork commit 重放，drop 4e3e283fe8（筆記條目）。做法：每個停點以舊 develop 上同一個 commit（REBASE_HEAD）的檔案為準，用 `git merge-file --diff3` 套上 v1.4.254→v1.4.255 的上游差異，再用小腳本自動解「一邊刪除、另一邊只追加」「兩邊都只追加」的 diff3 型態，剩下的手解並把解法存成規則重用（`.rebase-review/stop-merge.sh`、`diff3-resolve.py`、`rules.json`、`drive.sh`，只在這次的 run 目錄）。手解只有 7 個停點。先用 `git merge-tree --write-tree --merge-base=vOLD OLD_DEVELOP vNEW` 估真衝突：只有 5 個 Git Graph 檔，rebase 完非衝突檔與它逐一相同、locale 只差 key 順序（JSON 相等）。

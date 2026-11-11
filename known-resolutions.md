@@ -50,7 +50,6 @@
 - 驗證：未驗證（只有讀碼與三位審查者的路徑比對）
 - 2026-11-07（v1.4.252 rebase 審查者 C）：同類還有 `src/renderer/src/components/right-sidebar/source-control-entry-context-menu.fork.test.tsx`、`src/renderer/src/components/right-sidebar/source-control/listing/entry-context-menu.show-file-history.test.tsx` 的 `vi.mock('@/lib/workspace/ownership/worktree-runtime-owner')`：路徑存在但 mock 沒作用（改回舊路徑或拿掉都 2 passed），一樣待人判斷要不要刪。
 
-
 ## ccd4592634f5aeca03c58b80a36c619432211fa7（#40230）、715020e8714874f2dc0d222c597e9549280ea92c（#40273）、ef27841e290e4a6706f194abc78abebeec1018a5（#40313）、b39a64d3473b75051fcd3aef932a3ca6790d630e（#40337）、31eff247fa0717f8f86cafa87a225897c509b366（#40562）、2ceaff486997722403067a3b4b365ef07c3e7c95（#40688）、811973ea8ac77e46af8f556f63de7e93b313d2aa（#40745）、d1466f6017c4bb6006b77eb46f2fc0f461ef021e（#40761）、b07b3d318a4e1d8bc6ac9268f8a3abc2ae509e3e（#40777）renderer owner 分組搬家（`@/lib/*` 拆進子目錄）× fork 全部（import 被搬模組的 fork 檔、跟著被搬模組的 fork 測試）— canary 2026-11-11
 - 類型：上游改了 fork 依賴的 API
 - 事實：merge-base 04e866e12c 到上游 main 有 1120 個 rename（`git diff --name-status -M50% <merge-base> <vNEW>`，存在報告的 resolution/renames-mb-to-upstream.txt）。跟 11-08「renderer 模組大搬家」同型（見 resolution-history），這次是 `src/renderer/src/lib/` 平放的檔拆進子目錄。
@@ -63,6 +62,7 @@
   4. fork 測試跟著主體搬（`git mv`，相對 import 重算）：src/renderer/src/lib/git-graph-tab.fork.test.ts → lib/source-control/graph/；lib/lazy-chunk-recovery-reload.fork.test.ts → app-shell/startup/（`./updater-beforeunload` 改 `../updates/updater-beforeunload`）；lib/folder-repo-launch-chat-route.test.ts → lib/agent-session/launch/inventory/。config/fork-seam-tests.txt 第 69、112、116 行跟著改成新路徑。
 - 守它的測試：`pnpm tc`、make fork-check-lint（fork-test-inventory 抓 seam 清單失效路徑）、上面 3 個搬家的測試。
 - 驗證（2026-11-11，上游 abff3a41f52dbd024f7fa15b1ad3b55319b5c343）：上面 11 個只改 mock 路徑的測試檔 76 例全過；K 做完 1～4（連同本次其他條目）後 `pnpm tc` 0 錯誤、`node config/scripts/fork-lint-run.mjs` 45 步全過、fork-test-inventory 選的檔加上搬家的 3 檔，共 146 個測試檔、881 個測試全過。
+- 2026-11-11 auto-rebase v1.4.256（PR #158）用掉一部分：v1.4.256 只含 #40230、#40273、#40313（`git merge-base --is-ancestor`；#40337、#40562、#40688、#40745、#40761、#40777 不在）。第 2 點已對 v1.4.256 的 rename 表做完（4dc8f333f0：connection-context ×8（含 6 個 vi.mock）、emulator-right-split-target、language-detect ×2（改相對路徑 `shared/editor-language/editor-language-detect`）、agent-tab-shortcuts、agent-detection-target-inventory、monaco-setup ×2、file-preview）；第 3 點只有 `getConnectionIdFromState` 適用（`GIT_GRAPH_REFRESH_EVENT` 的 `@/lib/git-graph-tab` 在 v1.4.256 還在）；第 4 點的測試搬家（git-graph-tab、lazy-chunk-recovery-reload、folder-repo-launch-chat-route）在 v1.4.256 不用做。衝突檔第 1 點中 v1.4.256 真的衝到的只有 DiffSectionBody.tsx、use-git-history-commit-actions.ts、use-git-history.ts（其餘列的檔沒衝突）。下一個含其餘 commit 的 release：用 `git diff -M50% --name-status --diff-filter=R v1.4.256 vNEW` 重算 rename 表，對 fork 檔掃解析不到的 specifier（含 vi.mock）。
 
 ## 6d3d8245b2f84d49decc482fea9eabced4fdabcf（#40850 Clean up folder Source Control cards and add Remove from Parent）× fork b88d04277b（feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229）— canary 2026-11-11
 - 類型：上游修了同一件事（fork 那段已經沒有呼叫端）
@@ -72,22 +72,6 @@
 - 守它的測試：`pnpm tc`（有人再傳 `preserveCase` 會報錯）
 - 驗證（2026-11-11，上游 abff3a41f52dbd024f7fa15b1ad3b55319b5c343）：整檔採上游後 tc 0 錯誤、fork 測試全過。
 
-## 55db56d989ff5e057f864ab74d7fca77a0831e83（#40249 Make Settings easier to scan and organize General）× fork bbb80859d9（fix(keybindings): give the fork's Open Git Graph shortcut a localized title）— canary 2026-11-11
-- 類型：兩邊各改各的
-- 衝突檔：src/renderer/src/components/settings/shortcuts/keybinding-title-copy.ts
-- 連帶症狀：typecheck keybinding-title-copy.ts TS2741（缺 `sourceControl.openGitGraph`）；上游 lint verify:localization-extraction／catalogs 的 `keybindings.title.sourceControlOpenGitGraph` 沒人引用。
-- 處理：上游把相鄰兩條改成雜湊 key 與句首大寫（`keybindings.title.8788e3be3a` 'Toggle child workspaces'、`keybindings.title.d286d1ab85` 'Clear pane title'）。採上游的兩行，中間加回 fork 的 `'sourceControl.openGitGraph': () => translate('keybindings.title.sourceControlOpenGitGraph', 'Open Git Graph'),`（key 不改，各 locale 已有翻譯）。解法存在報告 resolution/files。
-- 守它的測試：`pnpm tc`（Record<StaticKeybindingActionId> 會抓缺項）、verify:localization-extraction、`node config/scripts/fork-locale-parity.mjs HEAD`。
-- 驗證（2026-11-11，上游 abff3a41f52dbd024f7fa15b1ad3b55319b5c343）：tc 0 錯誤；兩個 localization 步驟通過；parity 158 個 fork key 各 locale 都有。
-
-## 55db56d989ff5e057f864ab74d7fca77a0831e83（#40249 Make Settings easier to scan and organize General）× fork bc74f798bf（test(ui-rounds): keep the hands-on UI round scripts in the repo）— canary 2026-11-11
-- 類型：上游改了 fork 依賴的 API（設定頁文字）
-- 衝突檔：無
-- 連帶症狀：失敗測試 config/scripts/ui-rounds-map.test.mjs（「keep every ui-map label in the renderer」：`autoSaveFiles`）
-- 處理：上游把 Auto Save 設定搬進 src/renderer/src/components/settings/editor/GeneralAutoSaveSetting.tsx，開關的 label 從 'Auto Save Files' 改成 'Auto save'（描述 'Save edits after a short pause.'）。tests/ui-rounds/ui-map.mjs 第 37 行 `autoSaveFiles: 'Auto Save Files'` 改成 `'Auto save'`。tests/ui-rounds/lcu-orca.mjs 的 `setAutoSave` 用 `^切換 Description: <label>` 與 `<label>, Value` 找開關，AX 名稱實際長怎樣要在下一輪實機 UI 測試確認。
-- 守它的測試：config/scripts/ui-rounds-map.test.mjs
-- 驗證（2026-11-11，上游 abff3a41f52dbd024f7fa15b1ad3b55319b5c343）：改完 ui-rounds-map.test.mjs 2 passed；lcu 實機未驗證。
-
 ## b07b3d318a4e1d8bc6ac9268f8a3abc2ae509e3e（#40777）、31eff247fa0717f8f86cafa87a225897c509b366（#40562）、715020e8714874f2dc0d222c597e9549280ea92c（#40273）、ccd4592634f5aeca03c58b80a36c619432211fa7（#40230）把 DiffViewer.tsx 推到上限 × fork d123a06c7d（fix(source-control): 修正 folder workspace 多 repo 與 ClipCode 交叉測試找到的問題）— canary 2026-11-11
 - 類型：上游改了 fork 依賴的 API（上游檔變長，fork 的行讓 max-lines 超標）
 - 衝突檔：無
@@ -96,14 +80,6 @@
 - 守它的測試：src/renderer/src/components/editor/ChangesModeView.fork.test.tsx、src/renderer/src/components/editor/diff-kept-model-sync.test.ts
 - 驗證（2026-11-11，上游 abff3a41f52dbd024f7fa15b1ad3b55319b5c343）：oxfmt、oxlint 乾淨；上面兩支測試 3 passed；完整 lint 45 步全過。
 
-## 811973ea8ac77e46af8f556f63de7e93b313d2aa（#40745）、b07b3d318a4e1d8bc6ac9268f8a3abc2ae509e3e（#40777）、ccd4592634f5aeca03c58b80a36c619432211fa7（#40230）把 wsl-move-storage-dispositions.ts 推到 300 行 × fork 7ed606c7d1（fix(git-graph): parse stored list prefs with zod and register their storage）、e99c8d3ac8（fix(fork): move fork wsl-move dispositions to a fork file to keep the upstream file within max-lines (upstream 1c950baf33)）— canary 2026-11-11
-- 類型：上游修了同一件事（這份清單已經沒有讀者）
-- 衝突檔：無
-- 連帶症狀：上游 lint oxlint：src/shared/wsl-move/wsl-move-storage-dispositions.ts `eslint(max-lines)` 302 > 300（fork 的 import 與 `...FORK_LOCAL_STORAGE_MODULE_DISPOSITIONS` 兩行）。
-- 處理：`LOCAL_STORAGE_MODULE_DISPOSITIONS` 的讀者（census 測試）在上游 72104bfc64de3a2dc0454dc1dc2fc6661b338bdf（#36600 test: remove low-value fixture and forwarding suites）就刪了，merge-base 與上游 main 都沒有任何檔 import 它（`git grep LOCAL_STORAGE_MODULE_DISPOSITIONS`、`git grep storage-dispositions` 只剩檔案本身與 fork-footprint.test.mjs 的分類表）。丟掉 fork 的兩行（`git checkout <vNEW> -- src/shared/wsl-move/wsl-move-storage-dispositions.ts`），並 `git rm src/shared/wsl-move/fork-local-storage-dispositions.ts`。config/scripts/fork-footprint.test.mjs 裡那行只是路徑分類，不用改。auto-rebase 重放 7ed606c7d1、e99c8d3ac8 時，wsl-move 的部分整個丟掉（7ed606c7d1 的 git-graph-list-prefs.ts 照留）。**和前兩次做法不同**：2026-11-04（f758771364 條目）與 2026-11-07（1c950baf33 條目）都保留登記、只縮行數或搬到 fork 檔，依據是 FORK.md 第 55 行「upstream census 要列的 fork 檔要登記」；1c950baf33 條目當時就記下「上游目前沒有測試直接讀 LOCAL_STORAGE_MODULE_DISPOSITIONS」。這次上游檔剛好 300 行、fork 至少要 import 加 spread 兩行，又不能加 config/max-lines-baseline.txt（只能縮），已經沒有不動上游行的寫法；census 不在了，照「衝突時優先跟上游」丟掉。若使用者要保留登記，替代做法是改上游那兩行附近的寫法騰出空間（會多一個衝突點），待人決定。
-- 守它的測試：上游 lint oxlint；config/scripts/fork-footprint.test.mjs
-- 驗證（2026-11-11，上游 abff3a41f52dbd024f7fa15b1ad3b55319b5c343）：拿掉後 oxlint 乾淨、fork-footprint.test.mjs 15 passed、tc 0 錯誤、完整 lint 45 步全過。
-
 ## 54090f93e51897473bb3b449c60d63b9c31d1264（#40633 chore: ignore Claude Code local settings）× fork 5db1ba4936（chore(fork): 對話紀錄收割的修正：zsh 冒號 hook、排程 skill 的 zsh 與 as 規則、auto-merge 說明）— canary 2026-11-11
 - 類型：兩邊各改各的
 - 衝突檔：.gitignore
@@ -111,3 +87,11 @@
 - 處理：保留上游新加的 `# Claude Code settings are machine-local.` 與 `**/.claude/settings.local.json`，下面的 skills 段用 fork 版（`/.claude/skills/*` 加 `!/.claude/skills/orca-fork-*/`，fork 的 pipeline skill 要進版控）。解法存在報告 resolution/files。
 - 守它的測試：無（`git check-ignore .claude/skills/orca-fork-canary/SKILL.md` 應該沒有輸出）
 - 驗證（2026-11-11，上游 abff3a41f52dbd024f7fa15b1ad3b55319b5c343）：合好的檔與 HEAD 的差異只有 skills 那三行。
+
+## fork 自身問題（上游只改 import 的檔上，兩個活的 fork seam 沒有測試會紅）× fork 6a01784884／634145afad（folder repo 啟動目錄 `initialCwd`）、d123a06c7d（DiffViewer kept-model sync）— auto-rebase 2026-11-11
+- 類型：fork 自身問題
+- 衝突檔：無
+- 連帶症狀：無（v1.4.256 rebase 審查者 C 的 seam mutation：拿掉後 seam 86 支與 right-sidebar／editor 相關測試全綠）
+- 處理：補兩支 `.fork.test`，各自拿掉接線會紅，加進 config/fork-seam-tests.txt：(1) `src/renderer/src/components/right-sidebar/source-control/ai/use-saved-source-control-action-start.ts:97` 的 `initialCwd: args.initialCwd`（`use-ai.ts:150` 傳 folder repo 的 `worktreePath`；它決定 `sourceControlLaunchAppliesAgentArgs` 走 terminal 還是 native chat）；(2) `src/renderer/src/components/editor/diff/monaco-view/DiffViewer.tsx:276` mount 時的 `syncKeptModelValue(...)`（`ChangesModeView.fork.test.tsx` 只驗 prop 有傳到 DiffViewer）。另外 `commit-area.tsx` 的 `initialCwd` prop 沒有任何呼叫端傳（`panel/commit-surface.tsx` 的 `<CommitArea>` 沒傳），可考慮刪掉這條死接線。這次不擋：上游 v1.4.255→v1.4.256 對兩檔都只改 import（v1.4.250 前例）；上游真的改到這兩檔時沒有測試就會擋自動移動。
+- 守它的測試：待補
+- 驗證：未驗證（只有審查者 C 的 mutation：拿掉後全綠）
