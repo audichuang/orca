@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActivePluginPanel } from '@/store/plugins/catalog/plugin-contribution-catalog'
 import type { RemotePluginPanelRoute } from './remote/use-remote-plugin-panel-route'
+import { pluginPanelDrawStatus } from './health/plugin-panel-draw-status'
 
 vi.mock('@/i18n/i18n', () => ({
   getIntlLocale: () => 'en-US',
@@ -149,5 +150,37 @@ describe('PluginPanel remote route (fork)', () => {
 
     expect(container.querySelector('iframe')).toBeNull()
     expect(container.textContent).toBe('auto.components.right.sidebar.RemotePluginPanel.missing')
+  })
+
+  it('opens the route for the loaded panel document, keyed by its revision', async () => {
+    routeMock.mockReturnValue(remoteRoute('env-1', 'ready'))
+    await renderPanel()
+
+    expect(routeMock).toHaveBeenLastCalledWith(dashboardPanel, 1)
+  })
+
+  it('reports a guest drawn when it mounts only after the server copy turned ready', async () => {
+    const plugins = window.api.plugins as unknown as { readPanelEntry: ReturnType<typeof vi.fn> }
+    plugins.readPanelEntry.mockResolvedValue({
+      html: '',
+      sessionToken: SESSION_TOKEN,
+      guest: {
+        partition: 'persist:orca-plugin-0123456789abcdef',
+        url: 'orca-plugin-frame://0123456789abcdef/panel.html'
+      }
+    })
+    routeMock.mockReturnValue(remoteRoute('env-1', 'loading'))
+    await renderPanel()
+    expect(container.querySelector('webview')).toBeNull()
+
+    routeMock.mockReturnValue(remoteRoute('env-1', 'ready'))
+    await renderPanel()
+    const webview = container.querySelector('webview')
+    expect(webview).not.toBeNull()
+    await act(async () => {
+      webview?.dispatchEvent(new Event('did-finish-load'))
+    })
+
+    expect(pluginPanelDrawStatus(TAB_KEY)?.drawn).toBe(true)
   })
 })
