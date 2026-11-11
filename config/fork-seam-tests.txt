@@ -142,3 +142,7 @@ src/renderer/src/runtime/files/mutations/runtime-file-bytes-write.fork.test.ts
 
 # ClipCode copy: non-text question dialog host mounted at the app root
 src/renderer/src/app-shell/AppRootSurfaces.fork.test.tsx
+
+# Remote plugin panels: host-call routing through upstream's frame host and PluginPanel
+src/renderer/src/components/plugins/frames/use-plugin-frame-host.fork.test.tsx
+src/renderer/src/components/right-sidebar/plugin-panels/PluginPanel.fork.test.tsx
