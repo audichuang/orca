@@ -167,10 +167,21 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     page.locator(`section[data-source-control-worktree=${JSON.stringify(cardId(key))}]`)
   const cardToggle = (key: RepoKey) => card(key).locator('button[aria-expanded]').first()
   const countOf = async (key: RepoKey) => {
-    // The header's first line is "<repo> [<worktree>] [<count>]"; the count is hidden at 0.
-    const text = (await cardToggle(key).innerText()).split('\n').slice(0, 3).join(' ')
-    const m = text.match(/(?:^|\s)(\d+)(?=\s|$)/)
-    return m ? Number(m[1]) : 0
+    if ((await cardToggle(key).getAttribute('aria-expanded')) !== 'true') {
+      // A collapsed card summarises "<n> changes" under its name; the count is hidden at 0.
+      const m = (await card(key).innerText()).match(/(\d+) changes?\b/)
+      return m ? Number(m[1]) : 0
+    }
+    // An expanded card drops the summary; its Staged Changes and Changes headers carry the counts.
+    const headers = await card(key).locator('button[aria-expanded]').allInnerTexts()
+    return headers
+      .map((h) =>
+        h
+          .replace(/\s+/g, ' ')
+          .trim()
+          .match(/^(?:STAGED CHANGES|CHANGES) (\d+)$/i)
+      )
+      .reduce((sum, m) => sum + (m ? Number(m[1]) : 0), 0)
   }
   let current: RepoKey = 'api'
   const entry = (area: string, p: string) =>
@@ -232,10 +243,12 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     // A clean repo starts collapsed; a dirty one starts open.
     await expect(cardToggle('docs')).toHaveAttribute('aria-expanded', 'false')
     await expect(cardToggle('api')).toHaveAttribute('aria-expanded', 'true')
-    const apiHeaderText = (await cardToggle('api').innerText()).replace(/\s+/g, ' ')
+    // An expanded card names its branch in the toggle's label and shows ahead/behind beside it.
+    await expect(cardToggle('api')).toHaveAttribute('aria-label', 'api-server, main')
+    const apiHeaderText = (await cardToggle('api').locator('..').innerText()).replace(/\s+/g, ' ')
     ev.push(`api header: ${apiHeaderText}`)
     // api-server is 2 ahead and 1 behind origin.
-    expect(apiHeaderText).toMatch(/main 2 1$/)
+    expect(apiHeaderText).toMatch(/^api-server 2 1\b/)
     await shot('S1-repo-cards')
   })
 
