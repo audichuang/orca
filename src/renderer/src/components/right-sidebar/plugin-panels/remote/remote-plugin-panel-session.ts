@@ -1,4 +1,4 @@
-import { installWindowVisibilityTimeoutPoller } from '@/lib/window-visibility-timeout-poller'
+import { installWindowVisibilityTimeoutPoller } from '@/lib/window-activity/window-visibility-timeout-poller'
 import type { PluginHostCallOutcome } from '../../../../../../shared/plugins/frames/plugin-protocol'
 import type { PanelActionCall } from '../../../plugins/frames/plugin-frame-host'
 import {
