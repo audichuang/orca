@@ -27,7 +27,7 @@ vi.mock('../right-sidebar/source-control/sync/git-graph-tab-launcher', () => ({
     </button>
   )
 }))
-vi.mock('@/lib/pane-manager/client-hosted-browser-row-state', () => ({
+vi.mock('@/runtime/browser/client-hosting/client-hosted-browser-row-state', () => ({
   useClientHostedBrowserRows: () => []
 }))
 vi.mock('./useTabGroupWorkspaceModel', () => ({
