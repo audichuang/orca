@@ -1,4 +1,4 @@
-import { readIpcErrorMessage } from '@/lib/ipc-error'
+import { readIpcErrorMessage } from '@/runtime/errors/ipc-error'
 import { joinPath } from '@/lib/path'
 import {
   isMissingRuntimePathError,

@@ -15,7 +15,7 @@ vi.mock('@/store/plugins/catalog/plugin-contribution-catalog', () => ({
   collectActivePluginCommands: () => []
 }))
 const platform = vi.hoisted((): { current: NodeJS.Platform } => ({ current: 'win32' }))
-vi.mock('@/lib/shortcut-platform', () => ({ getShortcutPlatform: () => platform.current }))
+vi.mock('@/lib/keyboard/shortcut-platform', () => ({ getShortcutPlatform: () => platform.current }))
 vi.mock('@/app-shell/app-window-chrome', () => ({
   get shortcutPlatform() {
     return platform.current
