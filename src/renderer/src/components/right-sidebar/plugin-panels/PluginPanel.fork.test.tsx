@@ -6,6 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActivePluginPanel } from '@/store/plugins/catalog/plugin-contribution-catalog'
 import type { RemotePluginPanelRoute } from './remote/use-remote-plugin-panel-route'
 import { pluginPanelDrawStatus } from './health/plugin-panel-draw-status'
+import {
+  PANEL_WATCHDOG_PING_INTERVAL_MS,
+  PANEL_WATCHDOG_PONG_TIMEOUT_MS
+} from '../../../../../shared/plugins/frames/plugin-frame-bridge'
 
 vi.mock('@/i18n/i18n', () => ({
   getIntlLocale: () => 'en-US',
@@ -205,6 +209,74 @@ describe('PluginPanel remote route (fork)', () => {
       })
 
       expect(pluginPanelDrawStatus(TAB_KEY)?.drawn).toBe(true)
+    }
+  )
+
+  it.each([
+    [
+      'this computer, a missing server copy, then this computer',
+      { kind: 'local' } as const,
+      remoteRoute('env-1', 'missing'),
+      { kind: 'local' } as const
+    ],
+    [
+      'a ready server, a disabled server copy, then ready again',
+      remoteRoute('env-1', 'ready'),
+      remoteRoute('env-1', 'missing'),
+      remoteRoute('env-1', 'ready')
+    ],
+    [
+      'this computer, a server, then back before that frame loaded',
+      { kind: 'local' } as const,
+      remoteRoute('env-1', 'ready'),
+      { kind: 'local' } as const
+    ]
+  ])(
+    'keeps a frame remounted after %s healthy until it loads',
+    async (_name, first, middle, last) => {
+      readPanelEntryMock.mockResolvedValue({
+        html: '',
+        sessionToken: SESSION_TOKEN,
+        guest: {
+          partition: 'persist:orca-plugin-0123456789abcdef',
+          url: 'orca-plugin-frame://0123456789abcdef/panel.html'
+        }
+      })
+      routeMock.mockReturnValue(first)
+      await renderPanel()
+      await act(async () => {
+        container.querySelector('webview')?.dispatchEvent(new Event('dom-ready'))
+      })
+      routeMock.mockReturnValue(middle)
+      await renderPanel()
+
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+      const send = vi.fn()
+      try {
+        routeMock.mockReturnValue(last)
+        await act(async () => {
+          root.render(<PluginPanel tabKey={TAB_KEY} />)
+        })
+        await act(async () => {
+          vi.advanceTimersByTime(
+            PANEL_WATCHDOG_PING_INTERVAL_MS + PANEL_WATCHDOG_PONG_TIMEOUT_MS + 1_000
+          )
+        })
+        expect(container.textContent).not.toContain(
+          'auto.components.right.sidebar.PluginPanel.unresponsive'
+        )
+        const webview = container.querySelector('webview')
+        expect(webview).not.toBeNull()
+
+        // The watchdog still guards the new guest once it is ready.
+        Object.assign(webview!, { send })
+        await act(async () => {
+          webview?.dispatchEvent(new Event('dom-ready'))
+        })
+      } finally {
+        vi.useRealTimers()
+      }
+      expect(send).toHaveBeenCalled()
     }
   )
 
