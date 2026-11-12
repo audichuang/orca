@@ -89,9 +89,56 @@ describe('planClipcodeRestore', () => {
     })
     expect(plan.writes).toEqual([{ relativePath: 'b.txt', content: 'kept' }])
     expect(plan.skipped).toEqual([
-      { rawPath: 'a.txt', reason: 'CASE_CONFLICT' },
-      { rawPath: 'A.txt', reason: 'CASE_CONFLICT' }
+      { rawPath: 'a.txt', reason: 'TARGET_COLLISION' },
+      { rawPath: 'A.txt', reason: 'TARGET_COLLISION' }
     ])
+  })
+
+  describe('collisions follow the target host file system', () => {
+    const nfc = 'café.txt'
+    const nfd = 'café.txt'
+    const paths = (targetPlatform: NodeJS.Platform | null) => {
+      const plan = planClipcodeRestore({
+        rootPath: '/f',
+        targetPlatform,
+        entries: [
+          entry('A.txt', new Set(), 'upper'),
+          entry('a.txt', new Set(), 'lower'),
+          entry(nfc, new Set(), 'composed'),
+          entry(nfd, new Set(), 'decomposed')
+        ]
+      })
+      return {
+        written: plan.writes.map((write) => write.relativePath),
+        skipped: plan.skipped.map((skip) => [skip.rawPath, skip.reason])
+      }
+    }
+
+    it('keeps case and normalization spellings apart on a linux host', () => {
+      expect(paths('linux')).toEqual({ written: ['A.txt', 'a.txt', nfc, nfd], skipped: [] })
+    })
+
+    it('folds letter case but not normalization on a windows host', () => {
+      expect(paths('win32')).toEqual({
+        written: [nfc, nfd],
+        skipped: [
+          ['a.txt', 'TARGET_COLLISION'],
+          ['A.txt', 'TARGET_COLLISION']
+        ]
+      })
+    })
+
+    it.each(['darwin', null] as const)('folds case and NFC/NFD on a %s host', (platform) => {
+      expect(paths(platform)).toEqual({
+        written: [],
+        skipped: [
+          ['a.txt', 'TARGET_COLLISION'],
+          [nfd, 'TARGET_COLLISION'],
+          ['A.txt', 'TARGET_COLLISION'],
+          [nfc, 'TARGET_COLLISION']
+        ]
+      })
+    })
   })
 
   it('never keeps a delete whose case-only replacement was skipped', () => {
@@ -256,6 +303,29 @@ describe('previewClipcodeRestore', () => {
       { path: 'locked.ts', reason: 'TARGET_UNREADABLE' },
       { path: 'x.ts', reason: 'PARENT_IS_FILE' }
     ])
+  })
+
+  it('leaves a non-text target holding the same bytes unchanged and overwrites a non-UTF-8 one', () => {
+    const sha = '039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81'
+    const body = `// File skipped: non-text file, 3 bytes, sha256 ${sha}; base64 follows\nAQID`
+    const plan = planClipcodeRestore({
+      rootPath: '/f',
+      entries: [entry('same.bin', new Set(), body), entry('big5.txt', new Set(), body)]
+    })
+    const states: Record<string, ClipcodeTargetState> = {
+      'same.bin': 'file',
+      'big5.txt': 'nonUtf8File'
+    }
+    const preview = previewClipcodeRestore(
+      plan,
+      (path) => states[path] ?? 'missing',
+      (path) => (path === 'same.bin' ? sha : 'a'.repeat(64))
+    )
+    expect(preview.unchanged).toEqual([{ relativePath: 'same.bin', size: 3 }])
+    expect(preview.overwrite).toEqual([
+      { relativePath: 'big5.txt', bytes: new Uint8Array([1, 2, 3]), sha256: sha }
+    ])
+    expect(preview.skipped).toEqual([])
   })
 
   it('round-trips a parsed clipboard with the default header', () => {

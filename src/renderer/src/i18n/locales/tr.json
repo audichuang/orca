@@ -14561,22 +14561,22 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}} okunamadı)",
                       "e6cdc3a753": "{{value0}} token'ın üzerinde.",
                       "21758e255e": "Kopyalanacak Git değişikliği bulunamadı.",
                       "7828c565da": "({{value0}} atlandı: boyut aşıldı)",
                       "65b422bbd1": "{{value0}} Git dosyası kopyalandı",
                       "7c6daaf4fa": "Tam kaynak kopyalanamadı",
-                      "9c3f952874": "{{value0}} Git dosyası okunamadı.",
-                      "binarySkipped": "({{value0}} atlandı: ikili)",
-                      "onlyBinarySkipped": "Kopyalanacak bir şey yok: {{value0}} ikili dosya atlandı.",
                       "filesCopied": "{{value0}} dosya kopyalandı",
-                      "filesUnreadable": "{{value0}} dosya okunamadı.",
                       "noFiles": "Kopyalanacak dosya bulunamadı.",
-                      "onlyUnsafeNamesSkipped": "Kopyalanacak bir şey yok: adları güvenli şekilde geri yüklenemediği için {{value0}} dosya atlandı.",
-                      "unsafeNamesSkipped": "({{value0}} atlandı: güvenli olmayan dosya adı)",
                       "tokenCount": "~{{value0}} token",
-                      "payloadDetails": "{{lines}} satır · {{chars}} karakter · {{words}} sözcük"
+                      "payloadDetails": "{{lines}} satır · {{chars}} karakter · {{words}} sözcük",
+                      "nonTextCopied": "Base64 olarak kopyalanan metin dışı dosyalar: {{value0}}.",
+                      "nonTextSkipped": "({{value0}} atlandı: metin dışı dosya)",
+                      "onlyNonTextSkipped": "Kopyalanacak bir şey yok: {{value0}} metin dışı dosya atlandı.",
+                      "unreadableLine": "Okunamayan: {{value0}}",
+                      "symlinkedFolderLine": "Sembolik bağlantılı klasör: {{value0}}",
+                      "unsafeNameLine": "Taşınamayan ad: {{value0}}",
+                      "nothingToCopy": "Kopyalanacak bir şey yok"
                     }
                   },
                   "restore": {
@@ -14589,7 +14589,6 @@
                         "d469ff3b81": "Üzerine yaz",
                         "9cf3526c1f": "Sil",
                         "0d87b3b39d": "Atla",
-                        "80224f9095": "Mevcut dosyaların üzerine yaz",
                         "677bf0ade9": "İptal",
                         "c0b1b53e49": "Geri Yükle",
                         "9bd78385ce": "güvenli olmayan yol",
@@ -14601,8 +14600,33 @@
                         "1f409f3dd6": "yol bir sembolik bağlantıdan geçiyor",
                         "parentIsFile": "üst klasör bir dosya",
                         "targetUnreadable": "mevcut dosya denetlenemedi",
-                        "caseConflict": "aynı yol, farklı harf büyüklüğüyle",
-                        "nonUtf8Target": "mevcut dosya UTF-8 değil"
+                        "nonUtf8Target": "Mevcut dosya UTF-8 değil; üzerine yazılmadı",
+                        "corruptNonText": "Bozuk metin dışı dosya",
+                        "nonTextSize": "metin dışı dosya · {{value0}}",
+                        "corruptBadge": "Bozuk",
+                        "unchanged": "Değişmedi",
+                        "overwriteAll_one": "Mevcut {{count}} dosyanın üzerine yaz",
+                        "overwriteAll_other": "Mevcut {{count}} dosyanın tümünün üzerine yaz",
+                        "targetCollision": "Başka bir girdi aynı dosyaya yazıyor"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "Metin dışı dosyalar kopyalansın mı?",
+                          "description": "Dahil et onları Base64 olarak kopyalar; Hariç tut onları dışarıda bırakır.",
+                          "found": "Metin dışı dosyalar: {{value0}}, toplam {{value1}}",
+                          "estimate": "Onlarla pano boyutu: yaklaşık {{value0}}",
+                          "overLimit": "Onlarla pano boyutu: {{value0}} üzeri",
+                          "overLimitReason": "Pano için çok büyük, bu yüzden Dahil et kullanılamıyor.",
+                          "more": "ve {{value0}} tane daha",
+                          "notRead": "Okunmadı, {{value0}} üzeri (boyut yer tutucusu olarak kopyalandı): {{value1}}",
+                          "include": "Dahil et",
+                          "exclude": "Hariç tut",
+                          "cancel": "İptal"
+                        }
                       }
                     }
                   }
@@ -14615,7 +14639,13 @@
                       "af5c90f593": "Yapıştır ve Geri Yükle başarısız oldu",
                       "ae1ec38ef1": "{{value0}} oluşturuldu, {{value1}} üzerine yazıldı, {{value2}} silindi, {{value3}} atlandı.",
                       "19a6f378aa": "...ve {{value0}} tane daha",
-                      "c9af35dc2d": "{{value0}} başarısız oldu."
+                      "c9af35dc2d": "{{value0}} başarısız oldu.",
+                      "folderNotWritable": "Klasöre yazılamıyor",
+                      "parentIsFile": "Üst klasörün yerinde bir dosya var",
+                      "targetIsFolder": "Hedef bir klasör",
+                      "writeFailed": "Dosya yazılamadı",
+                      "unchanged": "Değişmeyen: {{value0}}.",
+                      "nonTextUpdateRequired": "Metin olmayan dosyaları geri yüklemek için bu ana bilgisayardaki Orca sunucusunu güncelleyin"
                     }
                   }
                 }

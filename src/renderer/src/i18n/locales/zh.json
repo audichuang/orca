@@ -13915,22 +13915,22 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "（{{value0}} 个无法读取）",
                       "e6cdc3a753": "超过 {{value0}} 个 token。",
                       "21758e255e": "没有可复制的 Git 变更。",
                       "7828c565da": "（{{value0}} 个因超出大小限制被跳过）",
                       "65b422bbd1": "已复制 {{value0}} 个 Git 文件",
                       "7c6daaf4fa": "复制完整源码失败",
-                      "9c3f952874": "{{value0}} 个 Git 文件无法读取。",
-                      "binarySkipped": "（{{value0}} 个二进制文件已跳过）",
-                      "onlyBinarySkipped": "没有可复制的内容：已跳过 {{value0}} 个二进制文件。",
                       "filesCopied": "已复制 {{value0}} 个文件",
-                      "filesUnreadable": "{{value0}} 个文件无法读取。",
                       "noFiles": "没有可复制的文件。",
-                      "onlyUnsafeNamesSkipped": "没有可复制的内容：已跳过 {{value0}} 个无法安全还原名称的文件。",
-                      "unsafeNamesSkipped": "（{{value0}} 个文件因名称不安全已跳过）",
                       "tokenCount": "~{{value0}} 个 token",
-                      "payloadDetails": "{{lines}} 行 · {{chars}} 个字符 · {{words}} 个词"
+                      "payloadDetails": "{{lines}} 行 · {{chars}} 个字符 · {{words}} 个词",
+                      "nonTextCopied": "以 Base64 复制的非文本文件：{{value0}}。",
+                      "nonTextSkipped": "（{{value0}} 个已跳过：非文本文件）",
+                      "onlyNonTextSkipped": "没有可复制的内容：已跳过 {{value0}} 个非文本文件。",
+                      "unreadableLine": "无法读取：{{value0}}",
+                      "symlinkedFolderLine": "符号链接文件夹：{{value0}}",
+                      "unsafeNameLine": "名称无法跨平台保留：{{value0}}",
+                      "nothingToCopy": "没有可复制的内容"
                     }
                   },
                   "restore": {
@@ -13943,7 +13943,6 @@
                         "d469ff3b81": "覆盖",
                         "9cf3526c1f": "删除",
                         "0d87b3b39d": "跳过",
-                        "80224f9095": "覆盖已有文件",
                         "677bf0ade9": "取消",
                         "c0b1b53e49": "还原",
                         "9bd78385ce": "路径不安全",
@@ -13955,8 +13954,33 @@
                         "1f409f3dd6": "路径经过符号链接",
                         "parentIsFile": "上层路径是文件",
                         "targetUnreadable": "无法检查现有文件",
-                        "caseConflict": "路径相同但大小写不同",
-                        "nonUtf8Target": "现有文件不是 UTF-8"
+                        "nonUtf8Target": "现有文件不是 UTF-8，不覆盖",
+                        "corruptNonText": "损坏的非文本文件",
+                        "nonTextSize": "非文本文件 · {{value0}}",
+                        "corruptBadge": "已损坏",
+                        "unchanged": "未变更",
+                        "overwriteAll_one": "覆盖 {{count}} 个已有文件",
+                        "overwriteAll_other": "覆盖 {{count}} 个已有文件",
+                        "targetCollision": "另一个条目写入同一个文件"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "复制非文本文件？",
+                          "description": "“包含”会以 Base64 复制它们；“排除”则不复制。",
+                          "found": "非文本文件：{{value0}} 个，共 {{value1}}",
+                          "estimate": "包含它们时的剪贴板大小：约 {{value0}}",
+                          "overLimit": "包含它们时的剪贴板大小：超过 {{value0}}",
+                          "overLimitReason": "对剪贴板来说太大，因此无法使用“包含”。",
+                          "more": "以及另外 {{value0}} 个",
+                          "notRead": "超过 {{value0}} 未读取（以大小占位行复制）：{{value1}}",
+                          "include": "包含",
+                          "exclude": "排除",
+                          "cancel": "取消"
+                        }
                       }
                     }
                   }
@@ -13969,7 +13993,13 @@
                       "af5c90f593": "粘贴并还原失败",
                       "ae1ec38ef1": "已创建 {{value0}}，已覆盖 {{value1}}，已删除 {{value2}}，已跳过 {{value3}}。",
                       "19a6f378aa": "…另外还有 {{value0}} 项",
-                      "c9af35dc2d": "失败 {{value0}} 项。"
+                      "c9af35dc2d": "失败 {{value0}} 项。",
+                      "folderNotWritable": "文件夹不可写入",
+                      "parentIsFile": "上层文件夹的位置是一个文件",
+                      "targetIsFolder": "目标是文件夹",
+                      "writeFailed": "无法写入文件",
+                      "unchanged": "未变更：{{value0}}。",
+                      "nonTextUpdateRequired": "需要更新此主机上的 Orca server 才能还原非文本文件"
                     }
                   }
                 }

@@ -13915,22 +13915,22 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "（{{value0}} 件読み取り不可）",
                       "e6cdc3a753": "{{value0}} トークンを超えています。",
                       "21758e255e": "コピーする Git の変更がありません。",
                       "7828c565da": "（{{value0}} 件をスキップ: サイズ超過）",
                       "65b422bbd1": "{{value0}} 件の Git ファイルをコピーしました",
                       "7c6daaf4fa": "ソース全体のコピーに失敗しました",
-                      "9c3f952874": "{{value0}} 件の Git ファイルを読み取れませんでした。",
-                      "binarySkipped": "（{{value0}} 件をスキップ: バイナリ）",
-                      "onlyBinarySkipped": "コピーするものがありません: バイナリファイル {{value0}} 件をスキップしました。",
                       "filesCopied": "{{value0}} 個のファイルをコピーしました",
-                      "filesUnreadable": "{{value0}} 個のファイルを読み取れませんでした。",
                       "noFiles": "コピーするファイルがありません。",
-                      "onlyUnsafeNamesSkipped": "コピーする内容がありません：安全に復元できない名前のファイル {{value0}} 個をスキップしました。",
-                      "unsafeNamesSkipped": "（安全でないファイル名のため {{value0}} 個をスキップ）",
                       "tokenCount": "~{{value0}} トークン",
-                      "payloadDetails": "{{lines}} 行 · {{chars}} 文字 · {{words}} 語"
+                      "payloadDetails": "{{lines}} 行 · {{chars}} 文字 · {{words}} 語",
+                      "nonTextCopied": "Base64 でコピーした非テキストファイル：{{value0}}。",
+                      "nonTextSkipped": "（{{value0}} 件をスキップ：非テキストファイル）",
+                      "onlyNonTextSkipped": "コピーする内容がありません：非テキストファイル {{value0}} 件をスキップしました。",
+                      "unreadableLine": "読み取れません：{{value0}}",
+                      "symlinkedFolderLine": "シンボリックリンクのフォルダー：{{value0}}",
+                      "unsafeNameLine": "移植できない名前：{{value0}}",
+                      "nothingToCopy": "コピーする内容がありません"
                     }
                   },
                   "restore": {
@@ -13943,7 +13943,6 @@
                         "d469ff3b81": "上書き",
                         "9cf3526c1f": "削除",
                         "0d87b3b39d": "スキップ",
-                        "80224f9095": "既存のファイルを上書き",
                         "677bf0ade9": "キャンセル",
                         "c0b1b53e49": "復元",
                         "9bd78385ce": "安全でないパス",
@@ -13955,8 +13954,33 @@
                         "1f409f3dd6": "パスがシンボリックリンクを経由しています",
                         "parentIsFile": "親フォルダーがファイルです",
                         "targetUnreadable": "既存のファイルを確認できませんでした",
-                        "caseConflict": "大文字小文字だけが異なる同じパス",
-                        "nonUtf8Target": "既存のファイルが UTF-8 ではありません"
+                        "nonUtf8Target": "既存のファイルが UTF-8 ではないため、上書きしません",
+                        "corruptNonText": "破損した非テキストファイル",
+                        "nonTextSize": "非テキストファイル · {{value0}}",
+                        "corruptBadge": "破損",
+                        "unchanged": "変更なし",
+                        "overwriteAll_one": "既存の {{count}} 個のファイルを上書き",
+                        "overwriteAll_other": "既存の {{count}} 個のファイルを上書き",
+                        "targetCollision": "別の項目が同じファイルに書き込みます"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "非テキストファイルをコピーしますか？",
+                          "description": "「含める」は Base64 でコピーし、「除外」はコピーしません。",
+                          "found": "非テキストファイル：{{value0}} 件、合計 {{value1}}",
+                          "estimate": "含めた場合のクリップボードのサイズ：約 {{value0}}",
+                          "overLimit": "含めた場合のクリップボードのサイズ：{{value0}} 超",
+                          "overLimitReason": "クリップボードには大きすぎるため、「含める」は使用できません。",
+                          "more": "ほか {{value0}} 件",
+                          "notRead": "{{value0}} 超のため未読込（サイズのプレースホルダーとしてコピー）：{{value1}}",
+                          "include": "含める",
+                          "exclude": "除外",
+                          "cancel": "キャンセル"
+                        }
                       }
                     }
                   }
@@ -13969,7 +13993,13 @@
                       "af5c90f593": "貼り付けと復元に失敗しました",
                       "ae1ec38ef1": "作成 {{value0}}、上書き {{value1}}、削除 {{value2}}、スキップ {{value3}}。",
                       "19a6f378aa": "…ほか {{value0}} 件",
-                      "c9af35dc2d": "失敗 {{value0}} 件。"
+                      "c9af35dc2d": "失敗 {{value0}} 件。",
+                      "folderNotWritable": "フォルダーに書き込めません",
+                      "parentIsFile": "親フォルダーの位置にファイルがあります",
+                      "targetIsFolder": "対象はフォルダーです",
+                      "writeFailed": "ファイルを書き込めませんでした",
+                      "unchanged": "変更なし：{{value0}}。",
+                      "nonTextUpdateRequired": "テキスト以外のファイルを復元するには、このホストの Orca server を更新してください"
                     }
                   }
                 }

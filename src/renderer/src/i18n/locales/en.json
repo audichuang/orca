@@ -15140,22 +15140,22 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}} unreadable)",
                       "e6cdc3a753": "Over {{value0}} tokens.",
                       "21758e255e": "No Git changes found to copy.",
                       "7828c565da": "({{value0}} skipped: size exceeded)",
                       "65b422bbd1": "{{value0}} Git file(s) copied",
                       "7c6daaf4fa": "Copy Full Source failed",
-                      "9c3f952874": "{{value0}} Git file(s) could not be read.",
-                      "binarySkipped": "({{value0}} skipped: binary)",
-                      "onlyBinarySkipped": "Nothing to copy: {{value0}} binary file(s) skipped.",
                       "filesCopied": "{{value0}} file(s) copied",
-                      "filesUnreadable": "{{value0}} file(s) could not be read.",
                       "noFiles": "No files found to copy.",
-                      "onlyUnsafeNamesSkipped": "Nothing to copy: {{value0}} file(s) skipped because their names cannot be restored safely.",
-                      "unsafeNamesSkipped": "({{value0}} skipped: unsafe file name)",
                       "tokenCount": "~{{value0}} tokens",
-                      "payloadDetails": "{{lines}} lines · {{chars}} chars · {{words}} words"
+                      "payloadDetails": "{{lines}} lines · {{chars}} chars · {{words}} words",
+                      "nonTextCopied": "Non-text files copied as Base64: {{value0}}.",
+                      "nonTextSkipped": "({{value0}} skipped: non-text file)",
+                      "onlyNonTextSkipped": "Nothing to copy: {{value0}} non-text file(s) skipped.",
+                      "unreadableLine": "Unreadable: {{value0}}",
+                      "symlinkedFolderLine": "Symlinked folder: {{value0}}",
+                      "unsafeNameLine": "Name not portable: {{value0}}",
+                      "nothingToCopy": "Nothing to copy"
                     }
                   },
                   "restore": {
@@ -15168,7 +15168,6 @@
                         "d469ff3b81": "Overwrite",
                         "9cf3526c1f": "Delete",
                         "0d87b3b39d": "Skip",
-                        "80224f9095": "Overwrite existing files",
                         "677bf0ade9": "Cancel",
                         "c0b1b53e49": "Restore",
                         "9bd78385ce": "unsafe path",
@@ -15180,8 +15179,33 @@
                         "1f409f3dd6": "path goes through a symlink",
                         "parentIsFile": "a parent folder is a file",
                         "targetUnreadable": "could not check the existing file",
-                        "caseConflict": "same path with different letter case",
-                        "nonUtf8Target": "existing file is not UTF-8"
+                        "nonUtf8Target": "Existing file is not UTF-8; not overwritten",
+                        "corruptNonText": "Corrupt non-text file",
+                        "nonTextSize": "non-text file · {{value0}}",
+                        "corruptBadge": "Corrupt",
+                        "unchanged": "Unchanged",
+                        "overwriteAll_one": "Overwrite {{count}} existing file",
+                        "overwriteAll_other": "Overwrite all {{count}} existing files",
+                        "targetCollision": "Another entry writes the same file"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "Copy non-text files?",
+                          "description": "Include copies them as Base64; Exclude leaves them out.",
+                          "found": "Non-text files: {{value0}}, {{value1}} in total",
+                          "estimate": "Clipboard size with them: about {{value0}}",
+                          "overLimit": "Clipboard size with them: more than {{value0}}",
+                          "overLimitReason": "Too large for the clipboard, so Include is not available.",
+                          "more": "and {{value0}} more",
+                          "notRead": "Not read, over {{value0}} (copied as size placeholders): {{value1}}",
+                          "include": "Include",
+                          "exclude": "Exclude",
+                          "cancel": "Cancel"
+                        }
                       }
                     }
                   }
@@ -15194,7 +15218,13 @@
                       "af5c90f593": "Paste & Restore failed",
                       "ae1ec38ef1": "Created {{value0}}, overwritten {{value1}}, deleted {{value2}}, skipped {{value3}}.",
                       "19a6f378aa": "...and {{value0}} more",
-                      "c9af35dc2d": "Failed {{value0}}."
+                      "c9af35dc2d": "Failed {{value0}}.",
+                      "folderNotWritable": "Folder is not writable",
+                      "parentIsFile": "A file is in the way of its parent folder",
+                      "targetIsFolder": "The target is a folder",
+                      "writeFailed": "Could not write the file",
+                      "unchanged": "Unchanged: {{value0}}.",
+                      "nonTextUpdateRequired": "Update the Orca server on this host to restore non-text files"
                     }
                   }
                 }

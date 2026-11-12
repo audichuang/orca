@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import { translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
 import {
   CLIPCODE_TOKEN_DANGER_THRESHOLD,
@@ -7,6 +8,7 @@ import {
   payloadStats,
   type ClipcodePayloadStats
 } from './clipcode-payload-stats'
+import type { ClipcodeGitCopyResult } from './clipcode-git-copy'
 
 // Why: the clipboard holds only the latest copy, and stacked copy toasts cover the rows copied next.
 // A fresh id (not an update in place) so the new toast still shows if the old one is mid-exit.
@@ -55,8 +57,21 @@ function ClipcodeCopiedBody({
           )}
         </span>
       </p>
-      {notes.length > 0 && <p className="text-xs text-popover-foreground/80">{notes.join(' ')}</p>}
+      <ClipcodeNoteLines notes={notes} />
     </div>
+  )
+}
+
+// Why one line each: categories (non-text, unreadable, symlinked folder, ...) must not run together.
+function ClipcodeNoteLines({ notes }: { notes: readonly string[] }): React.JSX.Element {
+  return (
+    <>
+      {notes.map((note) => (
+        <p key={note} className="text-xs text-popover-foreground/80">
+          {note}
+        </p>
+      ))}
+    </>
   )
 }
 
@@ -81,4 +96,114 @@ export function notifyClipcodeCopied(
     // Why: an oversized payload stays up until dismissed so the warning cannot be missed.
     duration: limit === null ? 4000 : Infinity
   })
+}
+
+/** Everything selected was skipped: the clipboard is left as it was, and each skip category gets a line. */
+export function notifyClipcodeNothingCopied(notes: readonly string[]): void {
+  if (shownCopiedToastId !== undefined) {
+    toast.dismiss(shownCopiedToastId)
+  }
+  shownCopiedToastId = toast.warning(
+    translate(
+      'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.nothingToCopy',
+      'Nothing to copy'
+    ),
+    {
+      description: (
+        <div className="flex min-w-0 flex-col gap-1">
+          <ClipcodeNoteLines notes={notes} />
+        </div>
+      )
+    }
+  )
+}
+
+const NAMED_PATHS = 3
+
+// Why: a skipped name may hold a tab or newline; show it rather than break the notice line.
+function visiblePath(path: string): string {
+  // oxlint-disable-next-line no-control-regex -- control characters are exactly what is made visible.
+  return path.replace(/[\u0000-\u001f]/g, (char) =>
+    char === '\t' ? '\\t' : `\\x${char.charCodeAt(0).toString(16).padStart(2, '0')}`
+  )
+}
+
+/** "Unreadable: 2 · a.txt, b/c.txt": one notice line per category, naming the first few paths. */
+function categoryLine(label: string, paths: readonly string[] | undefined): string {
+  const named = paths?.slice(0, NAMED_PATHS) ?? []
+  if (named.length === 0) {
+    return label
+  }
+  const more = (paths?.length ?? 0) > named.length ? ', …' : ''
+  return `${label} · ${named.map(visiblePath).join(', ')}${more}`
+}
+
+/** The notice lines under a copy's title: what Include carried, then each skip category on its own line. */
+export function clipcodeCopyNotes(result: ClipcodeGitCopyResult): string[] {
+  const notes: string[] = []
+  if (result.nonTextFileCount) {
+    notes.push(
+      translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.nonTextCopied',
+        'Non-text files copied as Base64: {{value0}}.',
+        { value0: result.nonTextFileCount }
+      )
+    )
+  }
+  if (result.skippedFileSizeCount > 0) {
+    notes.push(
+      translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.7828c565da',
+        '({{value0}} skipped: size exceeded)',
+        { value0: result.skippedFileSizeCount }
+      )
+    )
+  }
+  if (result.skippedBinaryFileCount > 0) {
+    notes.push(
+      translate(
+        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.nonTextSkipped',
+        '({{value0}} skipped: non-text file)',
+        { value0: result.skippedBinaryFileCount }
+      )
+    )
+  }
+  if (result.unreadableFileCount > 0) {
+    notes.push(
+      categoryLine(
+        translate(
+          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.unreadableLine',
+          'Unreadable: {{value0}}',
+          { value0: result.unreadableFileCount }
+        ),
+        result.unreadablePaths
+      )
+    )
+  }
+  const symlinkedFolders = result.symlinkedFolderPaths ?? []
+  if (symlinkedFolders.length > 0) {
+    notes.push(
+      categoryLine(
+        translate(
+          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.symlinkedFolderLine',
+          'Symlinked folder: {{value0}}',
+          { value0: symlinkedFolders.length }
+        ),
+        symlinkedFolders
+      )
+    )
+  }
+  if (result.skippedUnsafePathCount > 0) {
+    notes.push(
+      categoryLine(
+        translate(
+          'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.unsafeNameLine',
+          'Name not portable: {{value0}}',
+          { value0: result.skippedUnsafePathCount }
+        ),
+        result.unsafePaths
+      )
+    )
+  }
+  return notes
 }

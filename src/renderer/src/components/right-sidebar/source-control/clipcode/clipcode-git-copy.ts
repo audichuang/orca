@@ -1,4 +1,4 @@
-import { getRelativePathInsideRoot, basename, joinPath } from '@/lib/path'
+import { basename } from '@/lib/path'
 import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
 import type { GitDiffResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
@@ -10,7 +10,18 @@ import {
   type ChangeTypeLabel,
   type PayloadFile
 } from './clipcode-clipboard-format'
-import { classifyClipcodeEntryContent, isUnreadableModifiedSide } from './clipcode-entry-content'
+import {
+  classifyClipcodeEntryContent,
+  clipcodeReadContent,
+  clipcodeGitClipboardPath,
+  ClipcodeCopyTally,
+  isClipcodeCopyablePath,
+  isUnreadableModifiedSide,
+  type ClipcodeEntryVerdict,
+  type ClipcodeFileRead,
+  type ClipcodeNonTextSummary,
+  type ClipcodeFileContent
+} from './clipcode-entry-content'
 
 export type ClipcodeCopyRepo = {
   /** Git owner transport of this repo; reads never touch the local fs directly. */
@@ -30,10 +41,7 @@ export type ClipcodeContentReaders = {
       skipRenderLimit?: boolean
     }
   ) => Promise<GitDiffResult>
-  readWorkingFile: (
-    context: RuntimeGitContext,
-    relativePath: string
-  ) => Promise<{ content: string; isBinary: boolean }>
+  readWorkingFile: (context: RuntimeGitContext, relativePath: string) => Promise<ClipcodeFileRead>
 }
 
 export type ClipcodeGitCopyResult = {
@@ -43,12 +51,20 @@ export type ClipcodeGitCopyResult = {
   skippedFileSizeCount: number
   /** Files dropped because a read failed (not binary, not too large). */
   unreadableFileCount: number
-  /** Binary files left out of the payload (Snipcode never copies their bytes). */
+  /** Non-text files left out of the payload (Exclude, or a side with no raw bytes to carry). */
   skippedBinaryFileCount: number
-  /** Files whose name would not restore as itself (see clipcodeHeaderRoundTrips). */
+  /** Files whose name would not restore as itself (see isClipcodeCopyablePath). */
   skippedUnsafePathCount: number
   /** Number of payload entries, skip lines included. */
   entryCount: number
+  /** Payload paths the completion notice names; absent where a copy does not track them. */
+  unreadablePaths?: readonly string[]
+  unsafePaths?: readonly string[]
+  symlinkedFolderPaths?: readonly string[]
+  /** Non-text files carried as Base64 (Include). */
+  nonTextFileCount?: number
+  /** On an Exclude result whose Include would carry non-text files: the copy dialog's choice. */
+  nonText?: { include: ClipcodeGitCopyResult; summary: ClipcodeNonTextSummary }
 }
 
 // Working tree wins over index when one path appears in several areas (Snipcode dedupe order).
@@ -69,7 +85,7 @@ function changeTypeFor(entry: GitStatusEntry): ChangeTypeLabel {
   }
 }
 
-type Content = { text: string } | { skippedReason: string } | null
+type Content = ClipcodeFileContent | null
 type WorkingContent = Content | 'unreadable'
 
 const STAGED_TOO_LARGE_REASON = 'size exceeds limit (staged version too large to read)'
@@ -148,8 +164,8 @@ async function readWorkingContent(
   entry: GitStatusEntry
 ): Promise<WorkingContent> {
   try {
-    const file = await readers.readWorkingFile(context, entry.path)
-    return file.isBinary ? null : { text: file.content }
+    const content = clipcodeReadContent(await readers.readWorkingFile(context, entry.path))
+    return content === 'binary' ? null : content
   } catch (error) {
     // Why: a remote preview-sized read throws for big files; Snipcode would write a size skip line for them.
     if (error instanceof Error && error.message.startsWith('Remote file is too large')) {
@@ -157,6 +173,23 @@ async function readWorkingContent(
     }
     return 'unreadable'
   }
+}
+
+/** One copy mode: Exclude keeps today's payload, Include also carries non-text working files. */
+type GitCopyMode = { tally: ClipcodeCopyTally; hasDeleted: boolean; usedIndexContent: boolean }
+
+function gitCopyMode(includeNonText: boolean): GitCopyMode {
+  return {
+    tally: new ClipcodeCopyTally(includeNonText),
+    hasDeleted: false,
+    usedIndexContent: false
+  }
+}
+
+// Why: Snipcode picks the git spacing (no empty wrappers) only for deleted or index copies; byte parity needs the same quirk.
+function payloadBuilder(mode: GitCopyMode, rootPath: string): (files: PayloadFile[]) => string {
+  const build = mode.hasDeleted || mode.usedIndexContent ? buildGitPayload : buildPayload
+  return (files) => build({ ...CLIPCODE_DEFAULTS, files, sourceRoot: basename(rootPath) })
 }
 
 /**
@@ -170,14 +203,8 @@ export async function buildClipcodeGitCopy(args: {
 }): Promise<ClipcodeGitCopyResult> {
   const { rootPath, repos, readers } = args
   const maxBytes = CLIPCODE_DEFAULTS.maxFileSizeKB * 1024
-  const seen = new Set<string>()
-  const files: PayloadFile[] = []
-  let usedIndexContent = false
-  let hasDeleted = false
-  let skippedFileSizeCount = 0
-  let unreadableFileCount = 0
-  const binaryPaths = new Set<string>()
-  const unsafePaths = new Set<string>()
+  const exclude = gitCopyMode(false)
+  const include = gitCopyMode(true)
 
   for (const repo of repos) {
     const ordered = repo.entries
@@ -191,15 +218,27 @@ export async function buildClipcodeGitCopy(args: {
       if (entry.conflictStatus === 'unresolved' && entry.conflictKind === 'both_deleted') {
         continue
       }
-      const relativePath = getRelativePathInsideRoot(
-        joinPath(repo.context.worktreePath, entry.path),
+      const clipboardPath = clipcodeGitClipboardPath(
+        repo.context.worktreePath,
+        entry.path,
         rootPath
       )
-      const clipboardPath = relativePath?.replaceAll('\\', '/')
-      if (!clipboardPath || seen.has(clipboardPath)) {
+      if (!clipboardPath) {
+        continue
+      }
+      // Why per mode: a non-text working file Exclude drops leaves the path open for its staged row, as today.
+      const modes = [exclude, include].filter((mode) => !mode.tally.seen.has(clipboardPath))
+      if (modes.length === 0) {
         continue
       }
       const changeType = changeTypeFor(entry)
+      // Why before reading: a non-portable name (a git `\` too) is named, never read or written into a header.
+      if (entry.path.includes('\\') || !isClipcodeCopyablePath(clipboardPath, changeType)) {
+        for (const mode of modes) {
+          mode.tally.add(clipboardPath, { kind: 'unsafePath' })
+        }
+        continue
+      }
       let content: WorkingContent
       let fromIndex = false
       if (changeType === 'DELETED') {
@@ -212,49 +251,25 @@ export async function buildClipcodeGitCopy(args: {
       } else {
         content = await readWorkingContent(readers, repo.context, entry)
       }
-      if (content === 'unreadable') {
-        unreadableFileCount++
-        continue
+      const verdict: ClipcodeEntryVerdict =
+        content === 'unreadable'
+          ? { kind: 'unreadable' }
+          : content === null
+            ? { kind: 'binary' }
+            : classifyClipcodeEntryContent(clipboardPath, changeType, content, maxBytes)
+      for (const mode of modes) {
+        mode.tally.add(clipboardPath, verdict)
+        if (mode.tally.seen.has(clipboardPath)) {
+          mode.hasDeleted ||= changeType === 'DELETED'
+          mode.usedIndexContent ||= fromIndex
+        }
       }
-      const verdict =
-        content === null
-          ? ({ kind: 'binary' } as const)
-          : classifyClipcodeEntryContent(clipboardPath, changeType, content, maxBytes)
-      if (verdict.kind === 'binary') {
-        binaryPaths.add(clipboardPath)
-        continue
-      }
-      if (verdict.kind === 'unsafePath') {
-        unsafePaths.add(clipboardPath)
-        continue
-      }
-      if (verdict.kind === 'unreadable') {
-        unreadableFileCount++
-        continue
-      }
-      seen.add(clipboardPath)
-      hasDeleted ||= changeType === 'DELETED'
-      usedIndexContent ||= fromIndex
-      if (verdict.sizeSkipped) {
-        skippedFileSizeCount++
-      }
-      files.push(verdict.file)
     }
   }
 
-  // Why: Snipcode picks the git spacing (no empty wrappers) only for deleted or index copies; byte parity needs the same quirk.
-  const build = hasDeleted || usedIndexContent ? buildGitPayload : buildPayload
-  const payload = files.length
-    ? build({ ...CLIPCODE_DEFAULTS, files, sourceRoot: basename(rootPath) })
-    : ''
-  return {
-    payload,
-    copiedFileCount: files.length - skippedFileSizeCount,
-    skippedFileSizeCount,
-    unreadableFileCount,
-    // A path skipped as binary in one area can still be copied from another.
-    skippedBinaryFileCount: [...binaryPaths].filter((path) => !seen.has(path)).length,
-    skippedUnsafePathCount: unsafePaths.size,
-    entryCount: files.length
-  }
+  return ClipcodeCopyTally.withNonTextChoice(
+    exclude.tally.result(payloadBuilder(exclude, rootPath)),
+    include.tally,
+    payloadBuilder(include, rootPath)
+  )
 }

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { chmod, realpath, rm, stat } from 'node:fs/promises'
-import { basename, dirname, join } from 'node:path'
+import { chmod, open, realpath, rm, stat, type FileHandle } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import type { FileBytesWritePrecondition } from '../../../shared/file-write/file-bytes-write'
 import {
   FILE_WRITE_OK,
@@ -31,10 +31,11 @@ async function sha256OfFile(filePath: string): Promise<string | null> {
 /**
  * Replaces a file's bytes atomically (sibling temp file, then rename) unless it no longer holds
  * the bytes the editor loaded. A symlink is followed, so its target is replaced, not the link.
+ * The temp file is created 0600 and gets the target's mode only before the rename.
  */
 export async function replaceLocalFileBytesIfUnchanged(
   requestedPath: string,
-  writeTemp: (tempPath: string) => Promise<void>,
+  writeTemp: (temp: FileHandle) => Promise<void>,
   precondition: FileBytesWritePrecondition
 ): Promise<FileWriteResult> {
   const filePath = windowsFsPath(requestedPath)
@@ -59,12 +60,17 @@ export async function replaceLocalFileBytesIfUnchanged(
       (stats) => stats.mode & 0o7777,
       () => null
     )
-    const temp = join(dirname(target), `.${basename(target)}.orca-save-${randomUUID()}`)
+    // Why: embedding the file name would push a long but legal name past the 255-byte limit.
+    const temp = join(dirname(target), `.orca-save-${randomUUID()}`)
     try {
-      await writeTemp(temp)
-      if (mode !== null) {
-        await chmod(temp, mode)
+      const handle = await open(temp, 'wx', 0o600)
+      try {
+        await writeTemp(handle)
+      } finally {
+        await handle.close()
       }
+      // Why: a new file gets the mode a plain create would have given it.
+      await chmod(temp, mode ?? 0o666 & ~process.umask())
       await renameFileWithWindowsRetryAsync(temp, target)
     } finally {
       await rm(temp, { force: true }).catch(() => undefined)

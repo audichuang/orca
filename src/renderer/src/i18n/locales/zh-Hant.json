@@ -14382,22 +14382,22 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "（{{value0}} 個無法讀取）",
                       "e6cdc3a753": "超過 {{value0}} 個 token。",
                       "21758e255e": "找不到可複製的 Git 變更。",
                       "7828c565da": "（{{value0}} 個因超出大小限制而略過）",
                       "65b422bbd1": "已複製 {{value0}} 個 Git 檔案",
                       "7c6daaf4fa": "複製完整原始碼失敗",
-                      "9c3f952874": "無法讀取 {{value0}} 個 Git 檔案。",
-                      "binarySkipped": "（{{value0}} 個二進位檔案已略過）",
-                      "onlyBinarySkipped": "沒有可複製的內容：已略過 {{value0}} 個二進位檔案。",
                       "filesCopied": "已複製 {{value0}} 個檔案",
-                      "filesUnreadable": "無法讀取 {{value0}} 個檔案。",
                       "noFiles": "找不到可複製的檔案。",
-                      "onlyUnsafeNamesSkipped": "沒有可複製的內容：已略過 {{value0}} 個無法安全恢復名稱的檔案。",
-                      "unsafeNamesSkipped": "（{{value0}} 個檔案因名稱不安全而略過）",
                       "tokenCount": "~{{value0}} 個 token",
-                      "payloadDetails": "{{lines}} 行 · {{chars}} 個字元 · {{words}} 個詞"
+                      "payloadDetails": "{{lines}} 行 · {{chars}} 個字元 · {{words}} 個詞",
+                      "nonTextCopied": "以 Base64 複製的非文字檔：{{value0}}。",
+                      "nonTextSkipped": "（{{value0}} 個已略過：非文字檔）",
+                      "onlyNonTextSkipped": "沒有可複製的內容：已略過 {{value0}} 個非文字檔。",
+                      "unreadableLine": "無法讀取：{{value0}}",
+                      "symlinkedFolderLine": "符號連結資料夾：{{value0}}",
+                      "unsafeNameLine": "名稱無法跨平台保留：{{value0}}",
+                      "nothingToCopy": "沒有可複製的內容"
                     }
                   },
                   "restore": {
@@ -14410,7 +14410,6 @@
                         "d469ff3b81": "覆寫",
                         "9cf3526c1f": "刪除",
                         "0d87b3b39d": "略過",
-                        "80224f9095": "覆寫現有檔案",
                         "677bf0ade9": "取消",
                         "c0b1b53e49": "恢復",
                         "9bd78385ce": "路徑不安全",
@@ -14422,8 +14421,33 @@
                         "1f409f3dd6": "路徑經過符號連結",
                         "parentIsFile": "上層資料夾是檔案",
                         "targetUnreadable": "無法檢查現有檔案",
-                        "caseConflict": "路徑相同但大小寫不同",
-                        "nonUtf8Target": "現有檔案不是 UTF-8"
+                        "nonUtf8Target": "現有檔案不是 UTF-8，不覆寫",
+                        "corruptNonText": "損毀的非文字檔",
+                        "nonTextSize": "非文字檔 · {{value0}}",
+                        "corruptBadge": "已損毀",
+                        "unchanged": "未變更",
+                        "overwriteAll_one": "覆寫 {{count}} 個現有檔案",
+                        "overwriteAll_other": "覆寫 {{count}} 個現有檔案",
+                        "targetCollision": "另一個項目寫入同一個檔案"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "複製非文字檔？",
+                          "description": "「包含」會以 Base64 複製它們；「排除」則不複製。",
+                          "found": "非文字檔：{{value0}} 個，共 {{value1}}",
+                          "estimate": "包含它們時的剪貼簿大小：約 {{value0}}",
+                          "overLimit": "包含它們時的剪貼簿大小：超過 {{value0}}",
+                          "overLimitReason": "對剪貼簿來說太大，因此無法使用「包含」。",
+                          "more": "以及另外 {{value0}} 個",
+                          "notRead": "超過 {{value0}} 未讀取（以大小佔位行複製）：{{value1}}",
+                          "include": "包含",
+                          "exclude": "排除",
+                          "cancel": "取消"
+                        }
                       }
                     }
                   }
@@ -14436,7 +14460,13 @@
                       "af5c90f593": "貼上並恢復失敗",
                       "ae1ec38ef1": "已建立 {{value0}}，已覆寫 {{value1}}，已刪除 {{value2}}，已略過 {{value3}}。",
                       "19a6f378aa": "...另外還有 {{value0}} 項",
-                      "c9af35dc2d": "失敗 {{value0}} 項。"
+                      "c9af35dc2d": "失敗 {{value0}} 項。",
+                      "folderNotWritable": "資料夾無法寫入",
+                      "parentIsFile": "上層資料夾的位置是一個檔案",
+                      "targetIsFolder": "目標是資料夾",
+                      "writeFailed": "無法寫入檔案",
+                      "unchanged": "未變更：{{value0}}。",
+                      "nonTextUpdateRequired": "需要更新此主機上的 Orca server 才能還原非文字檔"
                     }
                   }
                 }

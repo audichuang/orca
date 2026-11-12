@@ -569,6 +569,18 @@
           },
           "source": {
             "control": {
+              "clipcode": {
+                "clipcode": {
+                  "restore": {
+                    "preview": {
+                      "dialog": {
+                        "overwriteAll_one": "Overwrite {{count}} existing file",
+                        "overwriteAll_other": "Overwrite all {{count}} existing files"
+                      }
+                    }
+                  }
+                }
+              },
               "compare": {
                 "summary": {
                   "commitsAhead_one": "{{count}} commit ahead of {{ref}}",

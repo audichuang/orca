@@ -1,6 +1,9 @@
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { createParentDirectoriesForNewFile } from './clipcode-restore-parent-directories'
+import { clipcodeRestoreTargetPlatform } from './clipcode-restore-target-platform'
+import { useAppStore } from '@/store'
+import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import { translate } from '@/i18n/i18n'
 import { readIpcErrorMessage } from '@/runtime/errors/ipc-error'
 import { joinPath } from '@/lib/path'
@@ -8,6 +11,8 @@ import {
   deleteRuntimePath,
   writeRuntimeFile
 } from '@/runtime/files/mutations/runtime-file-mutation-client'
+import { writeRuntimeFileBytes } from '@/runtime/files/mutations/runtime-file-bytes-write'
+import { FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE } from '../../../../../../shared/file-write/file-bytes-write'
 import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 import { notifyEditorExternalFileChange } from '@/components/editor/autosave/editor-autosave'
 import {
@@ -23,6 +28,7 @@ import type { RestoreDirectoryCache } from './clipcode-restore-path-guard'
 import {
   isRestorePathBlocked,
   readCandidateState,
+  readExistingSha256,
   readTargetState
 } from './clipcode-restore-target-state'
 import { CLIPCODE_DEFAULTS, extractSourceRoot, parseClipboard } from './clipcode-clipboard-format'
@@ -37,6 +43,45 @@ import {
   suggestRestoreBase,
   type ClipcodeTargetState
 } from './clipcode-restore-plan'
+
+// Why: the row shows user text, never a raw OS error (spec "Pasting"); Orca's own messages pass through like other explorer writes.
+function restoreRowErrorText(error: unknown): string {
+  const ipcMessage = readIpcErrorMessage(error)
+  const message = ipcMessage ?? String(error)
+  // Why: an older remote host cannot take bytes; tell the user what to update.
+  if (message.includes(FILE_BYTES_SAVE_UPDATE_REQUIRED_MESSAGE)) {
+    return translate(
+      'auto.components.right.sidebar.source.control.clipcode.use.clipcode.restore.nonTextUpdateRequired',
+      'Update the Orca server on this host to restore non-text files'
+    )
+  }
+  if (/\b(EACCES|EPERM)\b|permission denied/i.test(message)) {
+    return translate(
+      'auto.components.right.sidebar.source.control.clipcode.use.clipcode.restore.folderNotWritable',
+      'Folder is not writable'
+    )
+  }
+  if (/\bENOTDIR\b|not a directory/i.test(message)) {
+    return translate(
+      'auto.components.right.sidebar.source.control.clipcode.use.clipcode.restore.parentIsFile',
+      'A file is in the way of its parent folder'
+    )
+  }
+  if (/\bEISDIR\b|is a directory/i.test(message)) {
+    return translate(
+      'auto.components.right.sidebar.source.control.clipcode.use.clipcode.restore.targetIsFolder',
+      'The target is a folder'
+    )
+  }
+  // Node errno text (e.g. `ENOSPC: no space left on device, open '…'`) stays hidden.
+  if (ipcMessage && !/\bE[A-Z]{2,}:/.test(ipcMessage)) {
+    return ipcMessage
+  }
+  return translate(
+    'auto.components.right.sidebar.source.control.clipcode.use.clipcode.restore.writeFailed',
+    'Could not write the file'
+  )
+}
 
 type RestoreSession = {
   pending: PendingClipcodeRestore
@@ -83,9 +128,12 @@ export function useClipcodeRestore({
           )
           return
         }
-        const guard = captureFileExplorerOperationGuard(
-          workspaceKey,
-          getFileExplorerOperationOwner(workspaceKey)
+        const owner = getFileExplorerOperationOwner(workspaceKey)
+        const guard = captureFileExplorerOperationGuard(workspaceKey, owner)
+        const targetPlatform = clipcodeRestoreTargetPlatform(
+          owner,
+          useAppStore.getState(),
+          getShortcutPlatform()
         )
         const context: RuntimeFileOperationArgs = {
           ...guard.route,
@@ -108,10 +156,17 @@ export function useClipcodeRestore({
         })
         // Both base choices stay selectable in the dialog, so stat every path either one can target.
         const candidatePaths = new Set<string>()
+        const nonTextSizes = new Map<string, Set<number>>()
         for (const base of suggestion ? [undefined, suggestion.base] : [undefined]) {
-          const plan = planClipcodeRestore({ rootPath, entries, base })
+          const plan = planClipcodeRestore({ rootPath, entries, base, targetPlatform })
           for (const item of [...plan.writes, ...plan.deletes]) {
             candidatePaths.add(item.relativePath)
+          }
+          for (const write of plan.writes) {
+            if ('bytes' in write) {
+              const sizes = nonTextSizes.get(write.relativePath) ?? new Set<number>()
+              nonTextSizes.set(write.relativePath, sizes.add(write.bytes.length))
+            }
           }
         }
         const states = new Map<string, ClipcodeTargetState>()
@@ -122,8 +177,23 @@ export function useClipcodeRestore({
             await readCandidateState(context, rootPath, relativePath, directoryCache)
           )
         }
+        // Why: a non-text target already holding the pasted bytes is shown Unchanged and never written.
+        const existingSha256 = new Map<string, string>()
+        for (const [relativePath, sizes] of nonTextSizes) {
+          const state = states.get(relativePath)
+          if (state !== 'file' && state !== 'nonUtf8File' && state !== 'unverifiedFile') {
+            continue
+          }
+          for (const size of sizes) {
+            const sha = await readExistingSha256(context, rootPath, relativePath, size)
+            if (sha) {
+              existingSha256.set(relativePath, sha)
+              break
+            }
+          }
+        }
         setSession({
-          pending: { rootPath, entries, suggestion, states },
+          pending: { rootPath, entries, suggestion, states, existingSha256, targetPlatform },
           context,
           assertCurrent: guard.assertCurrent,
           rootPath
@@ -151,6 +221,7 @@ export function useClipcodeRestore({
       }
       const { context, rootPath: root } = current
       const errors: string[] = []
+      let failedRows = 0
       let created = 0
       let overwritten = 0
       let deleted = 0
@@ -210,7 +281,13 @@ export function useClipcodeRestore({
                 worktreePath: root
               })
             }
-            await writeRuntimeFile(context, joinPath(root, write.relativePath), write.content)
+            const filePath = joinPath(root, write.relativePath)
+            // Why: no expected hash means an explicit overwrite, already gated by the overwrite option.
+            await ('bytes' in write
+              ? writeRuntimeFileBytes(context, filePath, write.bytes, undefined, {
+                  allowMissing: true
+                })
+              : writeRuntimeFile(context, filePath, write.content))
             notifyEditors(write.relativePath)
             if (write.isNew) {
               created++
@@ -218,7 +295,8 @@ export function useClipcodeRestore({
               overwritten++
             }
           } catch (error) {
-            errors.push(`${write.relativePath}: ${readIpcErrorMessage(error) ?? String(error)}`)
+            failedRows++
+            errors.push(`${write.relativePath}: ${restoreRowErrorText(error)}`)
           } finally {
             releaseEditorSaveHolds(holds)
           }
@@ -236,7 +314,8 @@ export function useClipcodeRestore({
             notifyEditors(item.relativePath)
             deleted++
           } catch (error) {
-            errors.push(`${item.relativePath}: ${readIpcErrorMessage(error) ?? String(error)}`)
+            failedRows++
+            errors.push(`${item.relativePath}: ${restoreRowErrorText(error)}`)
           } finally {
             releaseEditorSaveHolds(holds)
           }
@@ -244,13 +323,25 @@ export function useClipcodeRestore({
       } catch (error) {
         errors.push(readIpcErrorMessage(error) ?? String(error))
       }
+      // Why: a row that failed while writing was skipped too, so the title must count it.
       const skipped =
-        preview.skipped.length + (overwrite ? 0 : preview.overwrite.length) + staleSkipped
-      const summary = translate(
+        preview.skipped.length +
+        (overwrite ? 0 : preview.overwrite.length) +
+        staleSkipped +
+        failedRows
+      const counts = translate(
         'auto.components.right.sidebar.source.control.clipcode.use.clipcode.restore.ae1ec38ef1',
         'Created {{value0}}, overwritten {{value1}}, deleted {{value2}}, skipped {{value3}}.',
         { value0: created, value1: overwritten, value2: deleted, value3: skipped }
       )
+      const summary =
+        preview.unchanged.length > 0
+          ? `${counts} ${translate(
+              'auto.components.right.sidebar.source.control.clipcode.use.clipcode.restore.unchanged',
+              'Unchanged: {{value0}}.',
+              { value0: preview.unchanged.length }
+            )}`
+          : counts
       if (errors.length > 0) {
         const shown = errors.slice(0, 3)
         if (errors.length > shown.length) {

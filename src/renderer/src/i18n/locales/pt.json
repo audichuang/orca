@@ -10491,22 +10491,22 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}} ilegíveis)",
                       "e6cdc3a753": "Mais de {{value0}} tokens.",
                       "21758e255e": "Nenhuma alteração Git encontrada para copiar.",
                       "7828c565da": "({{value0}} ignorados: tamanho excedido)",
                       "65b422bbd1": "{{value0}} arquivo(s) Git copiado(s)",
                       "7c6daaf4fa": "Falha ao copiar o código-fonte completo",
-                      "9c3f952874": "Não foi possível ler {{value0}} arquivo(s) Git.",
-                      "binarySkipped": "({{value0}} ignorados: binário)",
-                      "onlyBinarySkipped": "Nada para copiar: {{value0}} arquivo(s) binário(s) ignorado(s).",
                       "filesCopied": "{{value0}} arquivo(s) copiado(s)",
-                      "filesUnreadable": "Não foi possível ler {{value0}} arquivo(s).",
                       "noFiles": "Nenhum arquivo encontrado para copiar.",
-                      "onlyUnsafeNamesSkipped": "Nada para copiar: {{value0}} arquivo(s) ignorado(s) porque os nomes não podem ser restaurados com segurança.",
-                      "unsafeNamesSkipped": "({{value0}} ignorados: nome de arquivo inseguro)",
                       "tokenCount": "~{{value0}} tokens",
-                      "payloadDetails": "{{lines}} linhas · {{chars}} caracteres · {{words}} palavras"
+                      "payloadDetails": "{{lines}} linhas · {{chars}} caracteres · {{words}} palavras",
+                      "nonTextCopied": "Arquivos não textuais copiados como Base64: {{value0}}.",
+                      "nonTextSkipped": "({{value0}} ignorados: arquivo não textual)",
+                      "onlyNonTextSkipped": "Nada para copiar: {{value0}} arquivo(s) não textual(is) ignorado(s).",
+                      "unreadableLine": "Ilegíveis: {{value0}}",
+                      "symlinkedFolderLine": "Pasta com link simbólico: {{value0}}",
+                      "unsafeNameLine": "Nome não portável: {{value0}}",
+                      "nothingToCopy": "Nada para copiar"
                     }
                   },
                   "restore": {
@@ -10519,7 +10519,6 @@
                         "d469ff3b81": "Sobrescrever",
                         "9cf3526c1f": "Excluir",
                         "0d87b3b39d": "Ignorar",
-                        "80224f9095": "Sobrescrever arquivos existentes",
                         "677bf0ade9": "Cancelar",
                         "c0b1b53e49": "Restaurar",
                         "9bd78385ce": "caminho inseguro",
@@ -10531,8 +10530,34 @@
                         "1f409f3dd6": "o caminho passa por um link simbólico",
                         "parentIsFile": "uma pasta pai é um arquivo",
                         "targetUnreadable": "não foi possível verificar o arquivo existente",
-                        "caseConflict": "mesmo caminho com maiúsculas e minúsculas diferentes",
-                        "nonUtf8Target": "o arquivo existente não é UTF-8"
+                        "nonUtf8Target": "O arquivo existente não é UTF-8; não foi sobrescrito",
+                        "corruptNonText": "Arquivo não textual corrompido",
+                        "nonTextSize": "arquivo não textual · {{value0}}",
+                        "corruptBadge": "Corrompido",
+                        "unchanged": "Inalterado",
+                        "overwriteAll_one": "Sobrescrever {{count}} arquivo existente",
+                        "overwriteAll_many": "Sobrescrever todos os {{count}} arquivos existentes",
+                        "overwriteAll_other": "Sobrescrever todos os {{count}} arquivos existentes",
+                        "targetCollision": "Outra entrada grava o mesmo arquivo"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "Copiar arquivos não textuais?",
+                          "description": "Incluir os copia como Base64; Excluir os deixa de fora.",
+                          "found": "Arquivos não textuais: {{value0}}, {{value1}} no total",
+                          "estimate": "Tamanho da área de transferência com eles: cerca de {{value0}}",
+                          "overLimit": "Tamanho da área de transferência com eles: mais de {{value0}}",
+                          "overLimitReason": "Grande demais para a área de transferência, então Incluir não está disponível.",
+                          "more": "e mais {{value0}}",
+                          "notRead": "Não lidos, acima de {{value0}} (copiados como marcadores de tamanho): {{value1}}",
+                          "include": "Incluir",
+                          "exclude": "Excluir",
+                          "cancel": "Cancelar"
+                        }
                       }
                     }
                   }
@@ -10545,7 +10570,13 @@
                       "af5c90f593": "Falha ao colar e restaurar",
                       "ae1ec38ef1": "Criados {{value0}}, sobrescritos {{value1}}, excluídos {{value2}}, ignorados {{value3}}.",
                       "19a6f378aa": "...e mais {{value0}}",
-                      "c9af35dc2d": "Falharam {{value0}}."
+                      "c9af35dc2d": "Falharam {{value0}}.",
+                      "folderNotWritable": "A pasta não permite gravação",
+                      "parentIsFile": "Há um arquivo no lugar da pasta pai",
+                      "targetIsFolder": "O destino é uma pasta",
+                      "writeFailed": "Não foi possível gravar o arquivo",
+                      "unchanged": "Inalterados: {{value0}}.",
+                      "nonTextUpdateRequired": "Atualize o servidor Orca neste host para restaurar arquivos que não são de texto"
                     }
                   }
                 }

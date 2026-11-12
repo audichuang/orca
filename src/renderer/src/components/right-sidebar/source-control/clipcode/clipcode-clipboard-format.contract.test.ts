@@ -8,11 +8,12 @@ import {
   parseClipboard,
   type BuildPayloadOptions
 } from './clipcode-clipboard-format'
+import { parseNonTextBody } from './clipcode-non-text-body'
 import { payloadStats } from './clipcode-payload-stats'
 
 // Frozen cross-tool contract shared byte-identically with ClipCodeVSCode and the IntelliJ plugin.
 // Regenerate with ClipCodeVSCode scripts/gen-contract-fixtures.cjs, then update every copy and SHA together.
-const EXPECTED_FIXTURES_SHA = 'df317eb7b412d4bd71222d71d4cd64a1652fbcac2d82468ec417e4ce95ec2468'
+const EXPECTED_FIXTURES_SHA = 'ca6da6eb43d66a7cf2932d9246d09540e0541abdbc4dfd6f155f3fbb25ce3d5f'
 const FIXTURES_PATH = path.join(__dirname, '__fixtures__', 'clipcode-clipboard-contract.json')
 
 type Fixtures = {
@@ -36,6 +37,12 @@ type Fixtures = {
     words: number
     tokens: number
   }[]
+  nonTextBuildCases: {
+    name: string
+    headerFormat: string
+    files: { path: string; base64?: string; content?: string }[]
+    wire: string
+  }[]
 }
 
 const rawFixtures = readFileSync(FIXTURES_PATH)
@@ -58,6 +65,55 @@ describe('clipcode clipboard contract', () => {
       changeTypes: [...e.changeTypes].sort()
     }))
     expect(parsed).toEqual(c.expected)
+  })
+
+  it.each(fixtures.nonTextBuildCases)('build non-text: $name', (c) => {
+    const built = buildPayload({
+      headerFormat: c.headerFormat,
+      preText: '',
+      postText: '',
+      addExtraLineBetweenFiles: true,
+      files: c.files.map((f) =>
+        f.base64 === undefined
+          ? { path: f.path, content: f.content }
+          : { path: f.path, bytes: new Uint8Array(Buffer.from(f.base64, 'base64')) }
+      )
+    })
+    expect(built).toBe(c.wire)
+  })
+
+  it.each(fixtures.nonTextBuildCases)('parse non-text: $name', (c) => {
+    const entries = parseClipboard(c.wire, c.headerFormat)
+    expect(entries.map((e) => e.path)).toEqual(c.files.map((f) => f.path))
+    c.files.forEach((f, i) => {
+      const entry = entries[i]
+      if (f.base64 === undefined) {
+        expect(entry.content).toBe(f.content)
+        // T2's planner decodes an entry only when it is not an escaped placeholder.
+        expect(entry.escapedPlaceholder || parseNonTextBody(entry.content) === undefined).toBe(true)
+        return
+      }
+      expect(entry.escapedPlaceholder).toBe(false)
+      const body = parseNonTextBody(entry.content)
+      expect(body?.ok && Buffer.from(body.bytes).toString('base64')).toBe(f.base64)
+    })
+  })
+
+  // Spec case 18: same strictness as OpenIDEA's Rust base64 STANDARD.
+  it.each([
+    ['AAE=', true],
+    [' AA\r\nE=\t', true],
+    ['AAE', false],
+    ['AAF=', false],
+    ['AA=E', false],
+    ['AA-E', false],
+    ['AA\vE=', false]
+  ])('non-text Base64 %j decodes: %s', (base64, ok) => {
+    const placeholder =
+      '// File skipped: non-text file, 2 bytes, sha256 b413f47d13ee2fe6c845b2ee141af81de858df4ec549a58b7970bb96645bc8d2; base64 follows'
+    expect(parseNonTextBody(`${placeholder}\n${base64}`)).toEqual(
+      ok ? { ok: true, bytes: new Uint8Array([0, 1]) } : { ok: false, reason: 'base64' }
+    )
   })
 
   it.each(fixtures.tokenCases)('stats: $name', (c) => {

@@ -22,6 +22,13 @@ const api = {
   git: { diff: vi.fn(async () => DIFF), commitDiff: vi.fn(async () => DIFF) },
   fs: {
     readFile: vi.fn(async () => ({ content: 'x', isBinary: false })),
+    stat: vi.fn(async (args: { wakeWslDistro?: boolean }) => {
+      if (!args.wakeWslDistro) {
+        throw new Error('WSL distro is stopped')
+      }
+      return { size: 1, isDirectory: false, mtime: 1 }
+    }),
+    readFileChunk: vi.fn(async () => ({ contentBase64: 'eA==', bytesRead: 1, eof: true })),
     readDir: vi.fn(async () => [])
   }
 }
@@ -49,15 +56,14 @@ describe('ClipCode Copy Full Source on a stopped WSL distro', () => {
     await explorer.readDir('/repo/src')
     await explorer.readFile('/repo/src/a.ts')
 
-    for (const read of [api.git.diff, api.git.commitDiff, api.fs.readDir]) {
+    for (const read of [api.git.diff, api.git.commitDiff, api.fs.readDir, api.fs.stat]) {
       expect(read).toHaveBeenCalledWith(expect.objectContaining({ wakeWslDistro: true }))
     }
-    expect(api.fs.readFile).toHaveBeenCalledTimes(2)
-    for (const call of [1, 2]) {
-      expect(api.fs.readFile).toHaveBeenNthCalledWith(
-        call,
-        expect.objectContaining({ wakeWslDistro: true })
-      )
-    }
+    expect(api.fs.stat).not.toHaveBeenCalledWith(
+      expect.not.objectContaining({ wakeWslDistro: true })
+    )
+    expect(api.fs.readFileChunk).toHaveBeenCalledWith(
+      expect.objectContaining({ wakeWslDistro: true })
+    )
   })
 })

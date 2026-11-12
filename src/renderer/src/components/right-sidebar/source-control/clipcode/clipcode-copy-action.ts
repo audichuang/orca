@@ -9,6 +9,7 @@ import {
 } from '@/runtime/source-control/git/runtime-git-diff-client'
 import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
 import { readRuntimeFileContent } from '@/runtime/files/reads/runtime-file-read-client'
+import { readRuntimeFileBytes } from '@/runtime/files/reads/runtime-paged-file-read'
 import { readRuntimeDirectory } from '@/runtime/files/reads/runtime-directory-read'
 import { useAppStore } from '@/store'
 import { isPathInsideOrEqual } from '../../../../../../shared/cross-platform-path'
@@ -32,7 +33,13 @@ import {
   type ClipcodeCommitCopyCommit,
   type ClipcodeCommitReaders
 } from './clipcode-commit-copy'
-import { notifyClipcodeCopied } from './clipcode-copied-toast'
+import {
+  clipcodeCopyNotes,
+  notifyClipcodeCopied,
+  notifyClipcodeNothingCopied
+} from './clipcode-copied-toast'
+import { CLIPCODE_READ_MAX_BYTES, type ClipcodeFileRead } from './clipcode-entry-content'
+import { askClipcodeNonTextChoice } from './clipcode-non-text-copy-dialog'
 import { svgPreviewText } from './clipcode-svg-text'
 import {
   buildClipcodeExplorerCopy,
@@ -75,22 +82,45 @@ export function getClipcodeRootPath(editorWorktreeId: string | null, worktreePat
 // Copy Full Source is the user's own act, so its reads may start a stopped WSL distro (E9).
 const USER_ACT = { wakeWslDistro: true } as const
 
+/** Raw bytes, so non-text files can be carried; an old host without paged reads gets today's text read. */
 async function readClipcodeFile(
   context: RuntimeGitContext,
   relativePath: string
-): Promise<{ content: string; isBinary: boolean }> {
-  const file = await readRuntimeFileContent({
+): Promise<ClipcodeFileRead> {
+  const args = {
     target: context.target,
     filePath: joinPath(context.worktreePath, relativePath),
     relativePath,
     worktreeId: context.worktreeId ?? undefined,
     connectionId: context.connectionId,
     ...USER_ACT
-  })
+  }
+  let bytesError: unknown
+  let bytesFailed = false
+  try {
+    const read = await readRuntimeFileBytes(args, CLIPCODE_READ_MAX_BYTES)
+    if (read.kind === 'ok') {
+      return { bytes: read.bytes }
+    }
+    if (read.kind === 'too_large') {
+      return { tooLargeSize: read.size }
+    }
+  } catch (error) {
+    // Why: the text read below keeps today's error wording (unreadable, not a file, too large).
+    bytesError = error
+    bytesFailed = true
+  }
+  const file = await readRuntimeFileContent(args)
   const svgText = svgPreviewText(file)
-  return svgText === null
-    ? { content: file.content, isBinary: file.isBinary }
-    : { content: svgText, isBinary: false }
+  if (svgText !== null) {
+    return { content: svgText, isBinary: false }
+  }
+  // Why: Include could not carry this non-text file, so it is named as unreadable instead of dropped.
+  // isBinary only probes the head; a later NUL is still non-text to the classifier.
+  if (bytesFailed && (file.isBinary || file.content.includes('\0'))) {
+    throw bytesError
+  }
+  return { content: file.content, isBinary: file.isBinary }
 }
 
 export const clipcodeRuntimeReaders: ClipcodeContentReaders = {
@@ -144,93 +174,54 @@ export async function copyClipcodeGitChanges(args: {
   }
 }
 
-/** Clipboard write plus the shared toast wording, so every Copy Full Source source reports alike. */
+/** Asks about non-text files first, then writes the clipboard and reports, so every Copy Full Source source reports alike. */
 async function reportClipcodeCopyResult(
-  result: ClipcodeGitCopyResult,
+  excludeResult: ClipcodeGitCopyResult,
   source: 'git' | 'files' = 'git'
 ): Promise<void> {
-  if (result.entryCount === 0 && result.unreadableFileCount > 0) {
-    toast.error(
-      source === 'git'
-        ? translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.9c3f952874',
-            '{{value0}} Git file(s) could not be read.',
-            {
-              value0: result.unreadableFileCount
-            }
-          )
-        : translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.filesUnreadable',
-            '{{value0}} file(s) could not be read.',
-            { value0: result.unreadableFileCount }
-          )
-    )
+  let result = excludeResult
+  if (excludeResult.nonText) {
+    const choice = await askClipcodeNonTextChoice(excludeResult.nonText.summary)
+    if (choice === 'cancel') {
+      return
+    }
+    if (choice === 'include') {
+      result = excludeResult.nonText.include
+    }
+  }
+  const namedSkipCount =
+    result.unreadableFileCount +
+    (result.symlinkedFolderPaths?.length ?? 0) +
+    result.skippedUnsafePathCount
+  const onlySizePlaceholders =
+    source === 'files' && result.entryCount > 0 && result.copiedFileCount === 0
+  // Why: an empty or placeholder-only payload would wipe the user's clipboard, so the skip notes are the whole answer.
+  if ((result.entryCount === 0 && namedSkipCount > 0) || onlySizePlaceholders) {
+    notifyClipcodeNothingCopied(clipcodeCopyNotes(result))
     return
   }
   if (result.entryCount === 0) {
     toast.warning(
-      result.skippedUnsafePathCount > 0
+      result.skippedBinaryFileCount > 0
         ? translate(
-            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyUnsafeNamesSkipped',
-            'Nothing to copy: {{value0}} file(s) skipped because their names cannot be restored safely.',
-            { value0: result.skippedUnsafePathCount }
+            'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyNonTextSkipped',
+            'Nothing to copy: {{value0}} non-text file(s) skipped.',
+            { value0: result.skippedBinaryFileCount }
           )
-        : result.skippedBinaryFileCount > 0
+        : source === 'git'
           ? translate(
-              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.onlyBinarySkipped',
-              'Nothing to copy: {{value0}} binary file(s) skipped.',
-              { value0: result.skippedBinaryFileCount }
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
+              'No Git changes found to copy.'
             )
-          : source === 'git'
-            ? translate(
-                'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.21758e255e',
-                'No Git changes found to copy.'
-              )
-            : translate(
-                'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.noFiles',
-                'No files found to copy.'
-              )
+          : translate(
+              'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.noFiles',
+              'No files found to copy.'
+            )
     )
     return
   }
   await window.api.ui.writeClipboardText(result.payload)
-  const notes: string[] = []
-  if (result.skippedFileSizeCount > 0) {
-    notes.push(
-      translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.7828c565da',
-        '({{value0}} skipped: size exceeded)',
-        { value0: result.skippedFileSizeCount }
-      )
-    )
-  }
-  if (result.skippedBinaryFileCount > 0) {
-    notes.push(
-      translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.binarySkipped',
-        '({{value0}} skipped: binary)',
-        { value0: result.skippedBinaryFileCount }
-      )
-    )
-  }
-  if (result.skippedUnsafePathCount > 0) {
-    notes.push(
-      translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.unsafeNamesSkipped',
-        '({{value0}} skipped: unsafe file name)',
-        { value0: result.skippedUnsafePathCount }
-      )
-    )
-  }
-  if (result.unreadableFileCount > 0) {
-    notes.push(
-      translate(
-        'auto.components.right.sidebar.source.control.clipcode.clipcode.copy.action.2749202819',
-        '({{value0}} unreadable)',
-        { value0: result.unreadableFileCount }
-      )
-    )
-  }
+  const notes = clipcodeCopyNotes(result)
   const copied =
     source === 'git'
       ? translate(

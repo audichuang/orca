@@ -419,13 +419,25 @@ describe('buildClipcodeGitCopy', () => {
     expect(result.payload).toContain('// file: [MODIFIED] inside.ts')
   })
 
+  it('drops a POSIX name containing a backslash instead of writing it with a slash', async () => {
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f', [modified('img\\logo.png'), modified('img/logo.png')])],
+      readers: makeReaders()
+    })
+    expect(result.copiedFileCount).toBe(1)
+    expect(result.skippedUnsafePathCount).toBe(1)
+    expect(result.payload).toContain('WORK img/logo.png')
+    expect(result.payload).not.toContain('WORK img\\logo.png')
+  })
+
   it('returns an empty payload when nothing is copyable', async () => {
     const result = await buildClipcodeGitCopy({
       rootPath: '/f',
       repos: [repo('/f/a', [])],
       readers: makeReaders()
     })
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       payload: '',
       copiedFileCount: 0,
       skippedFileSizeCount: 0,
@@ -469,5 +481,122 @@ describe('buildClipcodeGitCopy unsafe file names', () => {
     expect(result).toMatchObject({ skippedUnsafePathCount: 1, copiedFileCount: 1 })
     expect(result.payload).not.toContain('victim.ts')
     expect(result.payload).toContain('// file: [MODIFIED] ok.ts')
+  })
+
+  it('names changed paths another platform cannot restore and copies the rest, without reading them', async () => {
+    const readWorkingFile = vi.fn(async (_c: RuntimeGitContext, path: string) => ({
+      content: `WORK ${path}`,
+      isBinary: false
+    }))
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f', [modified('a:b.png'), modified('tab\there.ts'), modified('ok.ts')])],
+      readers: makeReaders({ readWorkingFile })
+    })
+    expect(result).toMatchObject({
+      unsafePaths: ['a:b.png', 'tab\there.ts'],
+      skippedUnsafePathCount: 2,
+      copiedFileCount: 1
+    })
+    expect(readWorkingFile.mock.calls.map(([, path]) => path)).toEqual(['ok.ts'])
+    expect(result.payload).toBe('// clipcode-root: f\n\n// file: [MODIFIED] ok.ts\nWORK ok.ts\n\n')
+  })
+
+  it.each<[string, GitStatusEntry, boolean]>([
+    ['working', modified('q"uote.txt'), false],
+    ['staged', modified('q"uote.txt', 'staged'), true],
+    ['deleted', { path: 'q"uote.txt', status: 'deleted', area: 'unstaged' }, false]
+  ])('names a %s q"uote.txt without reading it and copies a.txt', async (_area, bad, force) => {
+    const readDiff = vi.fn(async () => textDiff('HEAD', 'INDEX'))
+    const readWorkingFile = vi.fn(async (_c: RuntimeGitContext, path: string) => ({
+      content: `WORK ${path}`,
+      isBinary: false
+    }))
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f', [bad, modified('a.txt')], force)],
+      readers: makeReaders({ readDiff, readWorkingFile })
+    })
+    expect(result).toMatchObject({ unsafePaths: ['q"uote.txt'], copiedFileCount: 1 })
+    expect(readDiff).not.toHaveBeenCalled()
+    expect(readWorkingFile.mock.calls.map(([, path]) => path)).toEqual(['a.txt'])
+    expect(result.payload).toBe('// clipcode-root: f\n\n// file: [MODIFIED] a.txt\nWORK a.txt\n\n')
+  })
+
+  it('names the changes of a nested repo whose folder name holds a newline, with no header', async () => {
+    const readWorkingFile = vi.fn(async (_c: RuntimeGitContext, path: string) => ({
+      content: `WORK ${path}`,
+      isBinary: false
+    }))
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f/nl\nrepo', [modified('x.ts')]), repo('/f/ok', [modified('y.ts')])],
+      readers: makeReaders({ readWorkingFile })
+    })
+    expect(result).toMatchObject({ unsafePaths: ['nl\nrepo/x.ts'], copiedFileCount: 1 })
+    expect(readWorkingFile.mock.calls.map(([, path]) => path)).toEqual(['y.ts'])
+    expect(result.payload).toBe('// clipcode-root: f\n\n// file: [MODIFIED] ok/y.ts\nWORK y.ts\n\n')
+  })
+
+  it('names a git path holding a backslash under a Windows root instead of copying it as a folder', async () => {
+    const result = await buildClipcodeGitCopy({
+      rootPath: 'C:\\f',
+      repos: [repo('C:\\f', [modified('img\\logo.png'), modified('img/logo.png')])],
+      readers: makeReaders()
+    })
+    expect(result).toMatchObject({ unsafePaths: ['img\\logo.png'], copiedFileCount: 1 })
+    expect(result.payload).toBe(
+      '// clipcode-root: f\n\n// file: [MODIFIED] img/logo.png\nWORK img/logo.png\n\n'
+    )
+  })
+})
+
+describe('buildClipcodeGitCopy non-text working files', () => {
+  it('keeps Exclude as today (the staged text of the same path) while Include carries the working bytes', async () => {
+    const png = new Uint8Array([0x89, 0x50, 0x00, 0x01])
+    const readDiff = vi.fn(async () => textDiff('', 'staged text'))
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f', [modified('logo.png', 'staged'), modified('logo.png')], true)],
+      readers: makeReaders({ readDiff, readWorkingFile: vi.fn(async () => ({ bytes: png })) })
+    })
+
+    expect(result.payload).toBe('// clipcode-root: f\n// file: [MODIFIED] logo.png\nstaged text\n')
+    expect(result.skippedBinaryFileCount).toBe(0)
+    expect(result.nonText?.summary).toMatchObject({
+      count: 1,
+      totalBytes: 4,
+      files: [{ path: 'logo.png', size: 4 }]
+    })
+    const include = result.nonText?.include
+    expect(include).toMatchObject({ nonTextFileCount: 1, copiedFileCount: 1, entryCount: 1 })
+    expect(include?.payload).not.toContain('staged text')
+    expect(include?.payload).toContain('// File skipped: non-text file, 4 bytes, sha256 ')
+  })
+
+  it('carries a non-text file of exactly 2048 KiB and writes a size placeholder one byte over', async () => {
+    const sizes: Record<string, number> = { 'at.bin': 2_097_152, 'over.bin': 2_097_153 }
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f', [modified('at.bin'), modified('over.bin')])],
+      readers: makeReaders({
+        readWorkingFile: vi.fn(async (_c, path) => ({ bytes: new Uint8Array(sizes[path]) }))
+      })
+    })
+    expect(result.nonText?.summary.files).toEqual([{ path: 'at.bin', size: 2_097_152 }])
+    expect(result.payload).toBe(
+      '// clipcode-root: f\n\n// file: [MODIFIED] over.bin\n// File skipped: size exceeds limit (2097153 bytes)\n\n'
+    )
+  })
+
+  it('writes a size placeholder with the file size for a working file over both limits', async () => {
+    const result = await buildClipcodeGitCopy({
+      rootPath: '/f',
+      repos: [repo('/f', [modified('big.bin')])],
+      readers: makeReaders({ readWorkingFile: vi.fn(async () => ({ tooLargeSize: 3_000_000 })) })
+    })
+    expect(result.payload).toContain('// File skipped: size exceeds limit (3000000 bytes)')
+    expect(result.skippedFileSizeCount).toBe(1)
+    expect(result.nonText).toBeUndefined()
   })
 })

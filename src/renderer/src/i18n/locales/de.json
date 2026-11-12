@@ -14577,22 +14577,22 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}} nicht lesbar)",
                       "e6cdc3a753": "Über {{value0}} Token.",
                       "21758e255e": "Keine Git-Änderungen zum Kopieren gefunden.",
                       "7828c565da": "({{value0}} übersprungen: Größe überschritten)",
                       "65b422bbd1": "{{value0}} Git-Datei(en) kopiert",
                       "7c6daaf4fa": "Vollständigen Quellcode kopieren fehlgeschlagen",
-                      "9c3f952874": "{{value0}} Git-Datei(en) konnten nicht gelesen werden.",
-                      "binarySkipped": "({{value0}} übersprungen: binär)",
-                      "onlyBinarySkipped": "Nichts zu kopieren: {{value0}} Binärdatei(en) übersprungen.",
                       "filesCopied": "{{value0}} Datei(en) kopiert",
-                      "filesUnreadable": "{{value0}} Datei(en) konnten nicht gelesen werden.",
                       "noFiles": "Keine Dateien zum Kopieren gefunden.",
-                      "onlyUnsafeNamesSkipped": "Nichts zu kopieren: {{value0}} Datei(en) übersprungen, da ihre Namen nicht sicher wiederhergestellt werden können.",
-                      "unsafeNamesSkipped": "({{value0}} übersprungen: unsicherer Dateiname)",
                       "tokenCount": "~{{value0}} Token",
-                      "payloadDetails": "{{lines}} Zeilen · {{chars}} Zeichen · {{words}} Wörter"
+                      "payloadDetails": "{{lines}} Zeilen · {{chars}} Zeichen · {{words}} Wörter",
+                      "nonTextCopied": "Als Base64 kopierte Nicht-Text-Dateien: {{value0}}.",
+                      "nonTextSkipped": "({{value0}} übersprungen: Nicht-Text-Datei)",
+                      "onlyNonTextSkipped": "Nichts zu kopieren: {{value0}} Nicht-Text-Datei(en) übersprungen.",
+                      "unreadableLine": "Nicht lesbar: {{value0}}",
+                      "symlinkedFolderLine": "Ordner-Symlink: {{value0}}",
+                      "unsafeNameLine": "Name nicht portierbar: {{value0}}",
+                      "nothingToCopy": "Nichts zu kopieren"
                     }
                   },
                   "restore": {
@@ -14605,7 +14605,6 @@
                         "d469ff3b81": "Überschreiben",
                         "9cf3526c1f": "Löschen",
                         "0d87b3b39d": "Überspringen",
-                        "80224f9095": "Vorhandene Dateien überschreiben",
                         "677bf0ade9": "Abbrechen",
                         "c0b1b53e49": "Wiederherstellen",
                         "9bd78385ce": "unsicherer Pfad",
@@ -14617,8 +14616,33 @@
                         "1f409f3dd6": "Pfad führt über einen symbolischen Link",
                         "parentIsFile": "ein übergeordneter Ordner ist eine Datei",
                         "targetUnreadable": "vorhandene Datei konnte nicht geprüft werden",
-                        "caseConflict": "gleicher Pfad mit abweichender Groß-/Kleinschreibung",
-                        "nonUtf8Target": "vorhandene Datei ist nicht UTF-8"
+                        "nonUtf8Target": "Vorhandene Datei ist nicht UTF-8; nicht überschrieben",
+                        "corruptNonText": "Beschädigte Nicht-Text-Datei",
+                        "nonTextSize": "Nicht-Text-Datei · {{value0}}",
+                        "corruptBadge": "Beschädigt",
+                        "unchanged": "Unverändert",
+                        "overwriteAll_one": "{{count}} vorhandene Datei überschreiben",
+                        "overwriteAll_other": "Alle {{count}} vorhandenen Dateien überschreiben",
+                        "targetCollision": "Ein anderer Eintrag schreibt dieselbe Datei"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "Nicht-Text-Dateien kopieren?",
+                          "description": "„Einschließen“ kopiert sie als Base64, „Ausschließen“ lässt sie weg.",
+                          "found": "Nicht-Text-Dateien: {{value0}}, insgesamt {{value1}}",
+                          "estimate": "Zwischenablage mit ihnen: etwa {{value0}}",
+                          "overLimit": "Zwischenablage mit ihnen: mehr als {{value0}}",
+                          "overLimitReason": "Zu groß für die Zwischenablage, daher ist „Einschließen“ nicht verfügbar.",
+                          "more": "und {{value0}} weitere",
+                          "notRead": "Nicht gelesen, über {{value0}} (als Größen-Platzhalter kopiert): {{value1}}",
+                          "include": "Einschließen",
+                          "exclude": "Ausschließen",
+                          "cancel": "Abbrechen"
+                        }
                       }
                     }
                   }
@@ -14631,7 +14655,13 @@
                       "af5c90f593": "Einfügen & Wiederherstellen fehlgeschlagen",
                       "ae1ec38ef1": "{{value0}} erstellt, {{value1}} überschrieben, {{value2}} gelöscht, {{value3}} übersprungen.",
                       "19a6f378aa": "...und {{value0}} weitere",
-                      "c9af35dc2d": "{{value0}} fehlgeschlagen."
+                      "c9af35dc2d": "{{value0}} fehlgeschlagen.",
+                      "folderNotWritable": "Ordner ist nicht beschreibbar",
+                      "parentIsFile": "Eine Datei steht dem übergeordneten Ordner im Weg",
+                      "targetIsFolder": "Das Ziel ist ein Ordner",
+                      "writeFailed": "Die Datei konnte nicht geschrieben werden",
+                      "unchanged": "Unverändert: {{value0}}.",
+                      "nonTextUpdateRequired": "Aktualisieren Sie den Orca-Server auf diesem Host, um Nicht-Text-Dateien wiederherzustellen"
                     }
                   }
                 }

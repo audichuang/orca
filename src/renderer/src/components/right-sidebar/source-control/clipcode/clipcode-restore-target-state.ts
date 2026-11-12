@@ -5,6 +5,7 @@ import {
   statRuntimePath
 } from '@/runtime/files/metadata/runtime-file-metadata-client'
 import { readRuntimeFileContent } from '@/runtime/files/reads/runtime-file-read-client'
+import { readRuntimeFileBytes } from '@/runtime/files/reads/runtime-paged-file-read'
 import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 import {
   findRestorePathObstacle,
@@ -12,6 +13,7 @@ import {
   type RestoreDirectoryCache,
   type RestorePathObstacle
 } from './clipcode-restore-path-guard'
+import { sha256Hex } from './clipcode-non-text-body'
 import type { ClipcodeTargetState } from './clipcode-restore-plan'
 
 export async function readTargetState(
@@ -90,5 +92,30 @@ async function readExistingFileEncoding(
     return file.isBinary || file.content.includes('\uFFFD') ? 'nonUtf8File' : 'file'
   } catch {
     return 'unverifiedFile'
+  }
+}
+
+/** Hex SHA-256 of an existing target of exactly `size` bytes; undefined when it differs in size or cannot be read. */
+export async function readExistingSha256(
+  context: RuntimeFileOperationArgs,
+  root: string,
+  relativePath: string,
+  size: number
+): Promise<string | undefined> {
+  try {
+    const read = await readRuntimeFileBytes(
+      {
+        target: context.target,
+        filePath: joinPath(root, relativePath),
+        relativePath,
+        worktreeId: context.worktreeId ?? undefined,
+        connectionId: context.connectionId
+      },
+      size
+    )
+    return read.kind === 'ok' && read.bytes.length === size ? sha256Hex(read.bytes) : undefined
+  } catch {
+    // Why: an unreadable target is only "not known identical"; the overwrite option still decides.
+    return undefined
   }
 }

@@ -16,7 +16,7 @@ import { waitForSessionReady } from './helpers/store'
 import {
   clearSourceControlSelections,
   clickExplorerPasteRestore,
-  clipboardText,
+  copiedClipboardExcludingNonText,
   setClipboard,
   showSourceControl,
   type RepoKey,
@@ -447,8 +447,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
   })
 
   const copiedPayload = async () => {
-    await expect.poll(() => clipboardText(page), { timeout: 20_000 }).not.toBe('sentinel')
-    const actual = await clipboardText(page)
+    const actual = await copiedClipboardExcludingNonText(page)
     const t = page
       .locator('[data-sonner-toast]')
       .filter({ hasText: statsLine(actual) })
@@ -625,12 +624,12 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     expect(groupLines('Delete')).toEqual(['libs/shared/core/extra.ts'])
     const skipBlock = dialogText.slice(dialogText.indexOf('Skip ('))
     expect(skipBlock).toMatch(/^Skip \(2\)/)
-    // The reason leads on its own line above the (wrappable) path.
-    expect(skipBlock).toMatch(/(unsafe path|outside the folder)\s+\.\.\/escape\.txt/)
-    expect(skipBlock).toMatch(/(unsafe path|outside the folder)\s+\S*abs-escape\.txt/)
+    // The name leads the row; the reason follows it.
+    expect(skipBlock).toMatch(/\.\.\/escape\.txt\s+(unsafe path|outside the folder)/)
+    expect(skipBlock).toMatch(/\S*abs-escape\.txt\s+(unsafe path|outside the folder)/)
     expect(skipBlock).not.toMatch(/restored\/a\.ts|README\.md|extra\.ts/)
     await expect(dialog.getByRole('button', { name: 'Restore' })).toBeEnabled()
-    await dialog.getByLabel('Overwrite existing files').click()
+    await dialog.getByLabel(/^Overwrite .*existing files?$/).click()
     await dialog.getByRole('button', { name: 'Restore' }).click()
     await expect(dialog).toHaveCount(0, { timeout: 15_000 })
     await expect
@@ -663,7 +662,7 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     const dialog2 = page.getByRole('dialog')
     await expect(dialog2).toBeVisible({ timeout: 15_000 })
     await expect(dialog2).toContainText('Overwrite (1)')
-    await expect(dialog2.getByLabel('Overwrite existing files')).not.toBeChecked()
+    await expect(dialog2.getByLabel(/^Overwrite .*existing files?$/)).not.toBeChecked()
     // Why: with overwrite off the only entry is skipped, so there is nothing to restore.
     await expect(dialog2.getByRole('button', { name: 'Restore' })).toBeDisabled()
     await dialog2.getByRole('button', { name: 'Cancel' }).click()

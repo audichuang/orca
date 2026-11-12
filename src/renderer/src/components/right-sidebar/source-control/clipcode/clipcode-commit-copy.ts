@@ -1,4 +1,4 @@
-import { basename, getRelativePathInsideRoot, joinPath } from '@/lib/path'
+import { basename } from '@/lib/path'
 import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
 import type {
   GitBranchChangeEntry,
@@ -9,11 +9,13 @@ import {
   buildGitPayload,
   CLIPCODE_DEFAULTS,
   DELETED_FILE_MARKER,
-  type ChangeTypeLabel,
-  type PayloadFile
+  type ChangeTypeLabel
 } from './clipcode-clipboard-format'
 import {
   classifyClipcodeEntryContent,
+  clipcodeGitClipboardPath,
+  ClipcodeCopyTally,
+  isClipcodeCopyablePath,
   isUnreadableModifiedSide,
   type ClipcodeReadContent
 } from './clipcode-entry-content'
@@ -137,10 +139,11 @@ export async function buildClipcodeCommitCopy(args: {
   const { rootPath, context, readers } = args
   const maxBytes = CLIPCODE_DEFAULTS.maxFileSizeKB * 1024
   const toClipboardPath = (path: string): string | undefined =>
-    getRelativePathInsideRoot(joinPath(context.worktreePath, path), rootPath)?.replaceAll('\\', '/')
+    clipcodeGitClipboardPath(context.worktreePath, path, rootPath)
   // Why graph order, not author date: rebase and cherry-pick keep old author dates on newer commits.
   const seen = new Set<string>()
   const planned: PlannedEntry[] = []
+  const tally = new ClipcodeCopyTally(false)
   for (const commit of args.commits) {
     for (const entry of commit.entries) {
       const clipboardPath = toClipboardPath(entry.path)
@@ -153,7 +156,13 @@ export async function buildClipcodeCommitCopy(args: {
       if (oldPath) {
         seen.add(oldPath)
       }
-      planned.push({ clipboardPath, changeType: changeTypeFor(entry), commit, entry })
+      const changeType = changeTypeFor(entry)
+      // Why before reading: a non-portable name (a git `\` too) is named, never read or written into a header.
+      if (!entry.path.includes('\\') && isClipcodeCopyablePath(clipboardPath, changeType)) {
+        planned.push({ clipboardPath, changeType, commit, entry })
+      } else {
+        tally.add(clipboardPath, { kind: 'unsafePath' })
+      }
     }
   }
   const contents = await mapWithConcurrency(planned, READ_CONCURRENCY, (item) =>
@@ -162,42 +171,19 @@ export async function buildClipcodeCommitCopy(args: {
       : readCommittedContent(readers, context, item.commit, item.entry)
   )
 
-  const files: PayloadFile[] = []
-  let skippedFileSizeCount = 0
-  let unreadableFileCount = 0
-  let skippedBinaryFileCount = 0
-  let skippedUnsafePathCount = 0
   planned.forEach((item, index) => {
     const content = contents[index]
-    const verdict =
+    tally.add(
+      item.clipboardPath,
       content === 'binary'
-        ? ({ kind: 'binary' } as const)
+        ? { kind: 'binary' }
         : content === 'unreadable'
-          ? ({ kind: 'unreadable' } as const)
+          ? { kind: 'unreadable' }
           : classifyClipcodeEntryContent(item.clipboardPath, item.changeType, content, maxBytes)
-    if (verdict.kind === 'binary') {
-      skippedBinaryFileCount++
-    } else if (verdict.kind === 'unreadable') {
-      unreadableFileCount++
-    } else if (verdict.kind === 'unsafePath') {
-      skippedUnsafePathCount++
-    } else {
-      skippedFileSizeCount += verdict.sizeSkipped ? 1 : 0
-      files.push(verdict.file)
-    }
+    )
   })
-
   // Why buildGitPayload: ClipCodeVSCode's commit copy always uses the git spacing.
-  const payload = files.length
-    ? buildGitPayload({ ...CLIPCODE_DEFAULTS, files, sourceRoot: basename(rootPath) })
-    : ''
-  return {
-    payload,
-    copiedFileCount: files.length - skippedFileSizeCount,
-    skippedFileSizeCount,
-    unreadableFileCount,
-    skippedBinaryFileCount,
-    skippedUnsafePathCount,
-    entryCount: files.length
-  }
+  return tally.result((files) =>
+    buildGitPayload({ ...CLIPCODE_DEFAULTS, files, sourceRoot: basename(rootPath) })
+  )
 }

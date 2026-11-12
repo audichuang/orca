@@ -14266,22 +14266,22 @@
                 "clipcode": {
                   "copy": {
                     "action": {
-                      "2749202819": "({{value0}} ilegibles)",
                       "e6cdc3a753": "Más de {{value0}} tokens.",
                       "21758e255e": "No hay cambios de Git para copiar.",
                       "7828c565da": "({{value0}} omitidos: tamaño excedido)",
                       "65b422bbd1": "{{value0}} archivo(s) de Git copiado(s)",
                       "7c6daaf4fa": "No se pudo copiar el código fuente completo",
-                      "9c3f952874": "No se pudieron leer {{value0}} archivo(s) de Git.",
-                      "binarySkipped": "({{value0}} omitidos: binarios)",
-                      "onlyBinarySkipped": "Nada que copiar: se omitieron {{value0}} archivo(s) binario(s).",
                       "filesCopied": "{{value0}} archivo(s) copiado(s)",
-                      "filesUnreadable": "No se pudieron leer {{value0}} archivo(s).",
                       "noFiles": "No hay archivos para copiar.",
-                      "onlyUnsafeNamesSkipped": "Nada que copiar: se omitieron {{value0}} archivo(s) cuyo nombre no se puede restaurar de forma segura.",
-                      "unsafeNamesSkipped": "({{value0}} omitido(s): nombre de archivo no seguro)",
                       "tokenCount": "~{{value0}} tokens",
-                      "payloadDetails": "{{lines}} líneas · {{chars}} caracteres · {{words}} palabras"
+                      "payloadDetails": "{{lines}} líneas · {{chars}} caracteres · {{words}} palabras",
+                      "nonTextCopied": "Archivos no de texto copiados como Base64: {{value0}}.",
+                      "nonTextSkipped": "({{value0}} omitidos: archivo no de texto)",
+                      "onlyNonTextSkipped": "Nada que copiar: se omitieron {{value0}} archivo(s) no de texto.",
+                      "unreadableLine": "Ilegibles: {{value0}}",
+                      "symlinkedFolderLine": "Carpeta enlazada simbólicamente: {{value0}}",
+                      "unsafeNameLine": "Nombre no portable: {{value0}}",
+                      "nothingToCopy": "Nada que copiar"
                     }
                   },
                   "restore": {
@@ -14294,7 +14294,6 @@
                         "d469ff3b81": "Sobrescribir",
                         "9cf3526c1f": "Eliminar",
                         "0d87b3b39d": "Omitir",
-                        "80224f9095": "Sobrescribir archivos existentes",
                         "677bf0ade9": "Cancelar",
                         "c0b1b53e49": "Restaurar",
                         "9bd78385ce": "ruta no segura",
@@ -14306,8 +14305,34 @@
                         "1f409f3dd6": "la ruta pasa por un enlace simbólico",
                         "parentIsFile": "una carpeta superior es un archivo",
                         "targetUnreadable": "no se pudo comprobar el archivo existente",
-                        "caseConflict": "misma ruta con distinto uso de mayúsculas",
-                        "nonUtf8Target": "el archivo existente no es UTF-8"
+                        "nonUtf8Target": "El archivo existente no es UTF-8; no se sobrescribe",
+                        "corruptNonText": "Archivo no de texto dañado",
+                        "nonTextSize": "archivo no de texto · {{value0}}",
+                        "corruptBadge": "Dañado",
+                        "unchanged": "Sin cambios",
+                        "overwriteAll_one": "Sobrescribir {{count}} archivo existente",
+                        "overwriteAll_many": "Sobrescribir los {{count}} archivos existentes",
+                        "overwriteAll_other": "Sobrescribir los {{count}} archivos existentes",
+                        "targetCollision": "Otra entrada escribe el mismo archivo"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "¿Copiar archivos no de texto?",
+                          "description": "Incluir los copia como Base64; Excluir los deja fuera.",
+                          "found": "Archivos no de texto: {{value0}}, {{value1}} en total",
+                          "estimate": "Tamaño del portapapeles con ellos: unos {{value0}}",
+                          "overLimit": "Tamaño del portapapeles con ellos: más de {{value0}}",
+                          "overLimitReason": "Demasiado grande para el portapapeles, así que Incluir no está disponible.",
+                          "more": "y {{value0}} más",
+                          "notRead": "Sin leer, más de {{value0}} (copiados como marcadores de tamaño): {{value1}}",
+                          "include": "Incluir",
+                          "exclude": "Excluir",
+                          "cancel": "Cancelar"
+                        }
                       }
                     }
                   }
@@ -14320,7 +14345,13 @@
                       "af5c90f593": "No se pudo pegar y restaurar",
                       "ae1ec38ef1": "Creados {{value0}}, sobrescritos {{value1}}, eliminados {{value2}}, omitidos {{value3}}.",
                       "19a6f378aa": "…y {{value0}} más",
-                      "c9af35dc2d": "Fallidos {{value0}}."
+                      "c9af35dc2d": "Fallidos {{value0}}.",
+                      "folderNotWritable": "No se puede escribir en la carpeta",
+                      "parentIsFile": "Hay un archivo en lugar de su carpeta principal",
+                      "targetIsFolder": "El destino es una carpeta",
+                      "writeFailed": "No se pudo escribir el archivo",
+                      "unchanged": "Sin cambios: {{value0}}.",
+                      "nonTextUpdateRequired": "Actualiza el servidor de Orca en este host para restaurar archivos que no son de texto"
                     }
                   }
                 }

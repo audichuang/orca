@@ -33,6 +33,8 @@ import {
 import type { FloatingWorkspacePanelState } from './use-floating-workspace-panel'
 import type { OnboardingGate } from './use-onboarding-and-feature-tips'
 
+import { ClipcodeNonTextCopyDialogHost } from '@/components/right-sidebar/source-control/clipcode/clipcode-non-text-copy-dialog'
+
 const QuickOpen = lazy(() => import('../components/QuickOpen'))
 const WorkspaceCleanupDialog = lazy(
   () => import('../components/workspace-cleanup/WorkspaceCleanupDialog')
@@ -223,6 +225,8 @@ export const AppRootSurfaces = memo(function AppRootSurfaces(props: {
         ) : null}
         {/* Own store, not activeModal: another modal must never evict a running move. */}
         <WslMoveDialogHost />
+        {/* Fork: ClipCode copy question; every copy entry point (source control, explorer) asks through it. */}
+        <ClipcodeNonTextCopyDialogHost />
         {/* Opened by toast, SSH host row and terminal pane. */}
         {activeModal === 'node-dist-mirror' ? (
           <ModalBoundary boundaryId="modal.node-dist-mirror" resetKey>
