@@ -216,7 +216,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
 6. 收鎖與收尾：`gh pr close PR -R audichuang/orca -c "<第 8 步的完整報告>"`（`make fork-wrapup` 先跑），刪 fork 的 `rebase/vNEW` 與 `ci-base/vNEW`；`make fork-wrapup` 核對 tag、tap 與 MacBook 安裝版本，輸出放進第 8 步的完整報告；`git worktree remove --force` 這次的 `../ar-$RUN-*`（先確認沒有你要留給使用者看的東西）；`MAIN` 由 Orca 管理，留給下一次 run 清。發版成功時，把 GitHub 收件匣裡 stablyai/orca 已跟上的 release 通知標成 Done（使用者靠它知道不用再 rebase；失敗不擋收尾，寫進完整報告）：
 
    ```sh
-   gh api 'notifications?all=true&per_page=50' --jq '.[] | select(.repository.full_name=="stablyai/orca" and .subject.type=="Release") | "\(.id) \(.subject.url)"' | while read id url; do
+   gh api --paginate 'notifications?all=true&per_page=50' --jq '.[] | select(.repository.full_name=="stablyai/orca" and .subject.type=="Release") | "\(.id) \(.subject.url)"' | while read id url; do
      tag=$(gh api "$url" --jq .tag_name); case "$tag" in v[0-9]*.[0-9]*.[0-9]*) ;; *) continue ;; esac
      [ "$(printf '%s\n%s\n' "$tag" vNEW | sort -V | tail -1)" = vNEW ] && gh api -X DELETE "notifications/threads/$id"
    done
