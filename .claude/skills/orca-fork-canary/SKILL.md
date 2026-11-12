@@ -5,7 +5,7 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
 
 # Orca fork canary
 
-無人值守：沒有人會回答問題，不要停下來問。repo 是 audichuang/orca（remote `fork`），上游 stablyai/orca（remote `origin`）。這個技能只產出報告與筆記，**不推 Bark、不發任何通知**（使用者要 canary 完全安靜；要使用者知道的事寫進筆記，由下一次 auto-rebase 的通知帶出），能動什麼見文末「限制」。判斷怎麼解、要不要丟 fork commit，照 run worktree 裡 FORK.md 的「Platform scope」「Accepted risks」「Who decides」三節（開始前先讀）。
+無人值守：沒有人會回答問題，不要停下來問。repo 是 audichuang/orca（remote `fork`），上游 stablyai/orca（remote `origin`）。這個技能只產出報告與筆記，**不推 Bark、不發任何通知**（使用者要 canary 完全安靜；要使用者知道的事寫進筆記，由下一次 auto-rebase 照筆記處理、寫進它的報告），能動什麼見文末「限制」。判斷怎麼解、要不要丟 fork commit，照 run worktree 裡 FORK.md 的「Platform scope」「Accepted risks」「Who decides」三節（開始前先讀）。
 
 目的：上游幾乎每天發一版。canary 先對上游 `main` 試合，讓下一次 `orca-fork-auto-rebase` 開跑時，衝突與該丟的 fork commit 已經查清楚、寫在筆記分支 `fork-canary-notes` 的 `known-resolutions.md`（跟 develop 沒有共同歷史，不跑 CI、不會被 rebase 改寫）。
 
@@ -77,15 +77,15 @@ Shell 是 zsh（macOS）：變數後接 `:` 一律寫 `${v}:`（`$b:config/…` 
   - **上游改了 fork 依賴的 API**（改名、刪 export、改簽章）→ 寫 fork 這邊要怎麼跟上。
   - **fork 自身問題**（跟上游哪一版無關，develop 現在就壞或不穩，例如 fork 測試的時序）→ 寫清楚怎麼改、哪個測試守它。標題的上游 commit 位置寫「fork 自身問題」：沒有上游 sha，下一次 auto-rebase 不論 vNEW 是哪一版都會在 rebase 後照它改，不必等人處理。條目列的修正已經在 develop 上（有人先改了）就刪掉條目，在 `resolution-history.md` 不用另記。
   - **跟 fork 核心功能有關** → 照 FORK.md「Who decides」：ClipCode 一律寫出保住整個功能的解法；Git Graph 寫怎麼把上游的修正與新動作併進 fork 的 IntelliJ 式 Git Graph、保住那節列的能力，只有做不到時才寫「待人判斷」，問題寫成「採上游會失去 X，預設保留 fork 版」。
-  - **只在 Windows／WSL、屬於 Accepted risks 的類別、或使用者沒有的環境** → 直接寫照上游或丟掉 fork 那幾行，不要寫成問題（不要寫「要保留請說」）。
+  - **fork 那幾行只為 Windows／WSL 或使用者沒有的環境存在**（FORK.md「Platform scope」）→ 直接寫照上游或丟掉那幾行，不要寫成問題（不要寫「要保留請說」）。ClipCode 與 Git Graph 的行不適用這條，照上一項。問題落在「Accepted risks」的類別時，條目寫「屬於 Accepted risks，不修」，fork 的行照常保留。
   - **看不出來** → 先照「Who decides」與 advisor 判斷；還是判斷不了才寫「待人判斷」，附已知的事實、一個問題與你會選的預設，不要猜。既有的「待人判斷」條目每次也照這樣重新判斷，能決定就改寫成可照做的條目。
 - 驗證就是第 2 步那次 `pnpm tc` 和重跑測試。寫下跑了什麼、結果如何、在哪個上游 sha 上跑的；沒驗證的標「未驗證」。
 - 寫進 `$S/known-resolutions.md`，**一個根因一條**，格式照檔案開頭的範本：標題寫上游 commit、fork commit、canary 日期；內容列出衝突檔，以及連帶出現的 typecheck 錯誤檔和失敗測試，這樣 auto-rebase 看到同樣的症狀，就知道是同一件事。上游 commit 一定要寫完整的 sha（fork 自身問題除外）：auto-rebase 用 `git merge-base --is-ancestor <它> vNEW` 判斷條目適不適用。fork commit 寫 sha 也寫標題：develop 每次 rebase 都會改寫 sha，靠標題才找得回來。
-- 已經有條目的根因：這次也驗證過的話，在條目上更新「驗證（日期，上游 sha）」那行，不要另開一條。條目的 fork sha 不在目前的 develop 上（`git merge-base --is-ancestor <sha> fork/develop` 失敗，代表 develop 已被 rebase 改寫過），就用 commit 標題在 `git log --format='%h %s' "$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' fork/develop)"..fork/develop` 找標題完全相同的那一個，把新的 sha 換上；找不到或不只一個，就在條目上註明「fork sha 待人判斷」。條目留著；auto-rebase 移動 develop 後會把它搬進 `resolution-history.md`。
+- 已經有條目的根因：這次也驗證過的話，在條目上更新「驗證（日期，上游 sha）」那行，不要另開一條。條目的 fork sha 不在目前的 develop 上（`git merge-base --is-ancestor <sha> fork/develop` 失敗，代表 develop 已被 rebase 改寫過），就用 commit 標題在 `git log --format='%h %s' "$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' fork/develop)"..fork/develop` 找標題完全相同的那一個，把新的 sha 換上；找不到或不只一個，就在條目上註明「fork sha 對不上，auto-rebase 依標題找」（這不是要問使用者的題目）。條目留著；auto-rebase 移動 develop 後會把它搬進 `resolution-history.md`。
 
 ## 4. 存摘要、收尾
 
-- **不推 Bark**，不論結果。setup error、筆記沒寫成、殘留的 worktree 都只寫進最後的摘要；canary 沒幫上的版本，auto-rebase 的「canary 效益」那行會記下。
+- **不推 Bark**，不論結果。setup error 寫進 `canary-last.json` 的 `result`（見下），筆記沒寫成、殘留的 worktree 只寫進最後的摘要；canary 沒幫上的版本，auto-rebase 的「canary 效益」那行會記下。
 - 寫回筆記（第 1 步取筆記失敗就跳過，摘要裡寫原因）：
   - green 或 not green：把這次的摘要寫進 `$S/canary-last.json`，五個清單照報告原樣列還沒歸因的檔案路徑（`lintFailures` 列報告「Lint failures」的步驟；上一次的摘要沒有這個欄位就當空清單）；`result` 記下 install 或 test listing 失敗這類清單表達不出來的狀態。下一次就拿它來比對：
 
@@ -96,7 +96,7 @@ Shell 是 zsh（macOS）：變數後接 `:` 一律寫 `${v}:`（`$b:config/…` 
 
     `config/scripts/fork-notes.sh write "$tip" "canary <日期> <上游 sha>" known-resolutions.md="$S/known-resolutions.md" canary-last.json="$S/canary-last.json"`。
 
-  - setup error：這次沒有結果可比，**不寫** `canary-last.json`（寫空清單會讓下一次把所有項目都當成新的）；`known-resolutions.md` 沒改就不寫。
+  - setup error：`canary-last.json` 保留上一次的五個清單，只把 `date` 換成今天、`result` 寫成 `setup error: <一句原因>`，讓人與 auto-rebase 從筆記看得到 canary 壞了幾天；`known-resolutions.md` 沒改就不寫。
   - exit 2 表示這段時間 auto-rebase 改過筆記：重新 `tip`、`git show` 出新版，把這次的改動重新套上（不要蓋掉對方刪掉或新增的條目），再寫一次。第二次還是 2，或任何其他非 0 → 不再試，在摘要寫「筆記沒寫成」與原因。
 - 清 `$OUT` 裡超過 14 天的舊報告：`find "$OUT" -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +`。
 - 只刪 `K`：`git worktree remove --force "$K"`。其他 `orca-fork-canary.` 開頭的不刪：可能是另一個 canary 正在跑，或使用者用 `CANARY_KEEP=1` 留著手動解衝突（腳本與 FORK.md 都規定只列不刪）。
