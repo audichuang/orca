@@ -51,17 +51,27 @@ it('uploads beside the file under a temp name that leaves out the file name', as
     )
   ).resolves.toEqual({ ok: true })
 
-  const params = (method: string) =>
+  const params = (method: string): unknown[] =>
     runtimeEnvironmentTransportCall.mock.calls
       .map(([args]) => args)
       .filter((args) => args.method === method)
-      .map((args) => args.params as Record<string, unknown>)
+      .map((args) => args.params)
   const [chunk] = params('files.writeBase64Chunk')
-  expect(chunk.relativePath).toMatch(/^assets\/\.orca-save-[0-9a-z]+-[0-9a-z]+$/)
+  const tempRelativePath = relativePathOf(chunk)
+  expect(tempRelativePath).toMatch(/^assets\/\.orca-save-[0-9a-z]+-[0-9a-z]+$/)
   expect(params('files.replaceWithUpload')).toEqual([
     expect.objectContaining({
-      tempRelativePath: chunk.relativePath,
+      tempRelativePath,
       finalRelativePath: `assets/${name}`
     })
   ])
 })
+
+function relativePathOf(params: unknown): string | undefined {
+  return typeof params === 'object' &&
+    params !== null &&
+    'relativePath' in params &&
+    typeof params.relativePath === 'string'
+    ? params.relativePath
+    : undefined
+}
