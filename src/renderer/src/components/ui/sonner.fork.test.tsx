@@ -5,7 +5,7 @@ import { act } from 'react'
 import { cleanup, render } from '@testing-library/react'
 import { toast } from 'sonner'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { NOTIFICATION_CARD_STACK_HEIGHT_VAR } from '@/lib/notification-card-stack-height'
+import { NOTIFICATION_CARD_STACK_HEIGHT_VAR } from '@/lib/notifications/notification-card-stack-height'
 import { TOAST_BOTTOM_CLEARANCE_VAR } from '@/lib/toast-bottom-clearance'
 import { Toaster } from './sonner'
 

@@ -1,4 +1,4 @@
-import { readIpcErrorDetail, readIpcErrorMessage } from '@/lib/ipc-error'
+import { readIpcErrorDetail, readIpcErrorMessage } from '@/runtime/errors/ipc-error'
 
 const COMMAND_FAILED_PREFIX = /^Command failed:/
 const GIT_REASON_LINE = /^(?:fatal|error):\s*/i
