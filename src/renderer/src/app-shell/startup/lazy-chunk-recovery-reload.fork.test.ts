@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ORCA_RENDERER_UNLOAD_PREVENTED_EVENT } from '../../../shared/renderer-shutdown-events'
-import { ORCA_APP_RESTART_STARTED_EVENT } from '../../../shared/updater-renderer-events'
+import { ORCA_RENDERER_UNLOAD_PREVENTED_EVENT } from '../../../../shared/renderer-shutdown-events'
+import { ORCA_APP_RESTART_STARTED_EVENT } from '../../../../shared/updater-renderer-events'
 import { requestLazyChunkRecoveryReload } from './lazy-chunk-recovery-reload'
 import {
   isIntentionalAppRestartInProgress,
   registerUpdaterBeforeUnloadBypass
-} from './updater-beforeunload'
+} from '../updates/updater-beforeunload'
 
 describe('requestLazyChunkRecoveryReload after the installed bundle was replaced', () => {
   afterEach(() => {

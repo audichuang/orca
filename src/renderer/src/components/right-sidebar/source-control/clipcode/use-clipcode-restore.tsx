@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { createParentDirectoriesForNewFile } from './clipcode-restore-parent-directories'
 import { translate } from '@/i18n/i18n'
-import { readIpcErrorMessage } from '@/lib/ipc-error'
+import { readIpcErrorMessage } from '@/runtime/errors/ipc-error'
 import { joinPath } from '@/lib/path'
 import {
   deleteRuntimePath,

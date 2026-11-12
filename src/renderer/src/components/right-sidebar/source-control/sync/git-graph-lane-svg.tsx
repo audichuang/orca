@@ -1,6 +1,6 @@
 // Fork-only: draws one full Git Graph row from the re-laid lanes (git-graph-lane-layout.ts).
 import React from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import type { GitHistoryGraphColorId } from '../../../../../../shared/git/history/git-history-types'
 import type { GitHistoryItemViewModel } from '../../../../../../shared/git/history/git-history-graph'

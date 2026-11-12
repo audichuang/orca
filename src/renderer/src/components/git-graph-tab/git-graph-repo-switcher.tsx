@@ -12,8 +12,8 @@ import {
   CommandSeparator
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
-import { branchName } from '@/lib/git-utils'
+import { cn } from '@/lib/class-names'
+import { branchName } from '@/lib/source-control/branches/branch-name'
 import { RepoBadgeMark } from '@/components/repo/RepoBadgeLabel'
 import { useTranslate } from '@/i18n/use-translate'
 import type { GitGraphRepoChoice } from './git-graph-tab-model'

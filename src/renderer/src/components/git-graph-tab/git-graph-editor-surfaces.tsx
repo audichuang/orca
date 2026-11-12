@@ -1,7 +1,7 @@
 // Fork-only: the fork's Git Graph view draws upstream's `git-graph` editor tabs.
 
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
-import { lazyWithRetry } from '@/lib/lazy-with-retry'
+import { lazyWithRetry } from '@/app-shell/startup/lazy-with-retry'
 
 const GitGraphTabView = lazyWithRetry(() => import('./GitGraphTabView'))
 

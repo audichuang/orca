@@ -67,7 +67,7 @@ vi.mock('@/store/index', () => {
   )
   return { useAppStore }
 })
-vi.mock('@/lib/file-owner-runtime-target', () => {
+vi.mock('@/lib/files/access/file-owner-runtime-target', () => {
   const getRuntimeTargetForFileOwner = (
     _state: unknown,
     _worktreeId: string | null | undefined,

@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { getConnectionId } from '@/lib/workspace/ownership/connection-context'
-import { readIpcErrorMessage } from '@/lib/ipc-error'
+import { readIpcErrorMessage } from '@/runtime/errors/ipc-error'
 import { getRelativePathInsideRoot, joinPath } from '@/lib/path'
 import {
   getRuntimeGitCommitDiff,
