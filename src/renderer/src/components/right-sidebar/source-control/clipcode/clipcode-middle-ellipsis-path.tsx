@@ -1,6 +1,6 @@
 // Fork-only: one-line path that shortens in the middle to its measured width (copy dialog, restore preview).
 import { useLayoutEffect, useRef, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { shortenPathToWidth } from './clipcode-path-shortening'
 
 /**
