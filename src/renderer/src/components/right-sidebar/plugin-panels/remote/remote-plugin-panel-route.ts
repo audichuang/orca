@@ -9,7 +9,7 @@ import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import { translate } from '@/i18n/i18n'
 import type { PanelActionCall } from '../../../plugins/frames/plugin-frame-host'
 import { parseExecutionHostId } from '../../../../../../shared/execution-host'
-import { getActiveWorkspaceOwnerTarget } from '@/lib/resolved-worktree-execution-host'
+import { getActiveWorkspaceOwnerTarget } from '@/lib/workspace/ownership/resolved-worktree-execution-host'
 import type { WorktreeRuntimeOwnerState } from '@/lib/workspace/ownership/worktree-runtime-owner-state'
 
 /**
