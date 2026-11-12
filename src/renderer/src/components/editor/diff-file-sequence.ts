@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
-import { setWithLRU } from '@/lib/scroll-cache'
+import { setWithLRU } from '@/components/editor/model-lifetime/retention/editor-view-state-cache'
 
 export type DiffFileSequenceStep = {
   /** Tab id of the diff this step opens. */

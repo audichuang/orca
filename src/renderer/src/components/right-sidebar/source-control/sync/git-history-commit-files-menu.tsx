@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import type React from 'react'
 import { joinPath } from '@/lib/path'
-import { getShortcutPlatform } from '@/lib/shortcut-platform'
+import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import { useAppStore } from '@/store'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'

@@ -1,6 +1,6 @@
 // Fork-only: a full Git Graph row's subject; the cursor row floats its whole text over nearby rows.
 import React, { useLayoutEffect, useRef, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 
 type OverlayLayout = { clipped: boolean; upward: boolean }
 
