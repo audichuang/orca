@@ -59,7 +59,7 @@ vi.mock('@/i18n/i18n', () => ({
 
 vi.mock('@/lib/browser/documents/file-preview', () => ({ openFileInBrowserTab: vi.fn() }))
 
-vi.mock(import('@/lib/reveal-in-file-manager'), async (importOriginal) => ({
+vi.mock(import('@/lib/files/os-open/reveal-in-file-manager'), async (importOriginal) => ({
   ...(await importOriginal()),
   getRevealInFileManagerLabel: () => 'Reveal in Finder',
   revealInFileManager

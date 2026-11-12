@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { getDefaultSettings } from '../../../shared/constants'
-import { MANAGED_RUNTIME_INSTALL_RUNTIME_CAPABILITY as INSTALL } from '../../../shared/managed-runtime-install'
-import { STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY as CHAT } from '../../../shared/agent-session/agent-session-runtime-capabilities'
-import { STRUCTURED_AGENT_SESSION_REGISTERED_AGENTS_RUNTIME_CAPABILITY as CATALOG } from '../../../shared/agent-session/structured-agent-session-surface-capabilities'
-import { folderWorkspaceKey } from '../../../shared/workspace-scope'
+import { getDefaultSettings } from '../../../../../../shared/constants'
+import { MANAGED_RUNTIME_INSTALL_RUNTIME_CAPABILITY as INSTALL } from '../../../../../../shared/managed-runtime-install'
+import { STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY as CHAT } from '../../../../../../shared/agent-session/agent-session-runtime-capabilities'
+import { STRUCTURED_AGENT_SESSION_REGISTERED_AGENTS_RUNTIME_CAPABILITY as CATALOG } from '../../../../../../shared/agent-session/structured-agent-session-surface-capabilities'
+import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
 
 const rpc = vi.hoisted(() => ({ call: vi.fn(), subscribe: vi.fn() }))
 vi.mock('@/runtime/rpc/calls/runtime-rpc-call', () => ({ callRuntimeRpc: rpc.call }))
