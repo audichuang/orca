@@ -167,6 +167,8 @@ test('folder workspace multi-repo source control, copy and restore', async ({
     page.locator(`section[data-source-control-worktree=${JSON.stringify(cardId(key))}]`)
   const cardToggle = (key: RepoKey) => card(key).locator('button[aria-expanded]').first()
   const countOf = async (key: RepoKey) => {
+    // An off-screen card mounts its body only once scrolled into view (upstream #40850).
+    await card(key).scrollIntoViewIfNeeded()
     if ((await cardToggle(key).getAttribute('aria-expanded')) !== 'true') {
       // A collapsed card summarises "<n> changes" under its name; the count is hidden at 0.
       const m = (await card(key).innerText()).match(/(\d+) changes?\b/)
