@@ -164,7 +164,7 @@ type PathRow = {
 function PathList({
   title,
   rows,
-  count = rows.length
+  count
 }: {
   title: string
   rows: readonly PathRow[]
@@ -177,7 +177,7 @@ function PathList({
   return (
     <div className="min-w-0">
       <div className="text-xs font-medium text-foreground">
-        {title} ({count})
+        {title} ({count ?? rows.length})
       </div>
       <ul className="mt-0.5 space-y-1 text-2xs text-muted-foreground">
         {rows.map((row) => {
