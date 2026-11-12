@@ -1,6 +1,5 @@
 import { joinPath } from '@/lib/path'
 import { areLocalWindowsWslPathAliases } from '../../../../../shared/file-access/cross-platform-path'
-import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { externalChangePathKeyFor } from '@/store/slices/editor/buffers/editor-buffer-identity'
 import { isLocalWindowsDesktopClient } from '@/app-shell/chrome/desktop-window-chrome'
 import {
