@@ -88,6 +88,7 @@ src/renderer/src/components/right-sidebar/source-control-entry-context-menu.fork
 src/renderer/src/components/editor/EditorPanelHeader.fork.test.tsx
 src/renderer/src/components/editor/EditorEditFileSurface.fork.test.tsx
 src/renderer/src/components/editor/ChangesModeView.fork.test.tsx
+src/renderer/src/components/editor/diff/monaco-view/DiffViewer.kept-model-sync.fork.test.tsx
 
 # Editor save event
 src/renderer/src/components/editor/editor-file-saved-event.contract.test.ts
