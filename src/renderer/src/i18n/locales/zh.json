@@ -14518,6 +14518,14 @@
             "containedInHint": "只计算末端提交在已加载列表中的分支;列表外的分支不计入。",
             "children": "子提交",
             "childrenHint": "已載入的清單中,以這個 commit 為父提交的 commit。"
+          },
+          "RemotePluginPanel": {
+            "declarative": "此面板只能显示这台电脑，无法显示 {{host}} 的数据。",
+            "loading": "正在连接到 {{host}} 上的 {{plugin}}...",
+            "unreachable": "无法连接到 {{host}}。",
+            "missing": "{{host}} 上没有安装或没有启用 {{plugin}}。请在那台安装并启用，才能在这里看到它的数据。",
+            "versionMismatch": "{{plugin}} 在 {{host}} 上是 {{remote}}，这台是 {{local}}。请在两台安装相同版本。",
+            "sessionUnavailable": "那台主机上没有可用的这个插件。"
           }
         }
       },

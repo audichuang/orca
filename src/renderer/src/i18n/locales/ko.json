@@ -14518,6 +14518,14 @@
             "containedInHint": "불러온 목록에 끝 커밋이 있는 브랜치만 표시하며, 목록 밖의 브랜치는 포함되지 않습니다.",
             "children": "자식 커밋",
             "childrenHint": "불러온 목록에서 이 커밋을 부모로 둔 커밋입니다."
+          },
+          "RemotePluginPanel": {
+            "declarative": "This panel shows only this computer. It cannot show data from {{host}}.",
+            "loading": "Connecting to {{plugin}} on {{host}}...",
+            "unreachable": "Could not reach {{host}}.",
+            "missing": "{{plugin}} is not installed or not enabled on {{host}}. Install and enable it there to see that host here.",
+            "versionMismatch": "{{plugin}} is {{remote}} on {{host}} and {{local}} here. Install the same version on both.",
+            "sessionUnavailable": "The plugin is not available on that host."
           }
         }
       },

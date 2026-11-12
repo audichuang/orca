@@ -20,6 +20,9 @@ import {
 } from '@/store/plugins/catalog/plugin-contribution-catalog'
 import { useTranslate } from '@/i18n/use-translate'
 import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
+import { useRemotePluginPanelRoute } from './remote/use-remote-plugin-panel-route'
+import { remotePluginPanelNotice } from './remote/remote-plugin-panel-notice'
+import { usePluginFrameMount } from './remote/plugin-frame-mount'
 
 type PluginPanelProps = {
   tabKey: string
@@ -54,15 +57,23 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
     () => (panelShell ? fillPluginPanelShell(panelShell) : null),
     [panelShell]
   )
+  const route = useRemotePluginPanelRoute(panel, entry.status === 'ready' ? entry.revision : null)
+  const remoteNotice = panel ? remotePluginPanelNotice(route, panel.pluginName, declarative) : null
   const panelFrameKey = entry.status === 'ready' ? `${tabKey}:${entry.revision}` : null
+  const frameMount = usePluginFrameMount(
+    frameRef,
+    declarative || remoteNotice ? null : panelFrameKey,
+    route
+  )
   const { onFrameLoad } = usePluginFrameHost({
     surface: 'panel',
     frameRef,
     // Why null: a declarative panel's own host wires its hidden guest instead.
-    frameKey: declarative ? null : panelFrameKey,
+    frameKey: frameMount.key,
     sessionToken: entry.status === 'ready' ? entry.sessionToken : null,
     onUnresponsive: markUnresponsive,
-    onGuestGone: remountGone
+    onGuestGone: remountGone,
+    remoteHostCall: route.kind === 'remote' ? route.callHostMethod : undefined
   })
 
   useEffect(() => {
@@ -76,7 +87,11 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
       )
     }
   }, [entry.status, setPanelHealth, tabKey])
-  useReportFramePanelDraw(tabKey, frameRef, guest && !declarative ? guest.url : null)
+  useReportFramePanelDraw(
+    tabKey,
+    frameMount.ref,
+    guest && !declarative && !remoteNotice ? guest.url : null
+  )
 
   // Persisted tabs can outlive an uninstalled or disabled plugin.
   if (!panel) {
@@ -120,6 +135,10 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
     )
   }
 
+  if (remoteNotice) {
+    return <PluginPanelMessage>{remoteNotice}</PluginPanelMessage>
+  }
+
   if (declarative) {
     return guest && panelFrameKey ? (
       <PluginDeclarativePanel
@@ -151,7 +170,7 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
 
   return (
     <PluginFrameView
-      key={panelFrameKey}
+      key={frameMount.key}
       frameRef={frameRef}
       guest={guest}
       name={`${PLUGIN_PANEL_FRAME_NAME_PREFIX}${tabKey}`}

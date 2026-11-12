@@ -14518,6 +14518,14 @@
             "containedInHint": "読み込み済みの一覧に先端コミットがあるブランチのみ。一覧外のブランチは含まれません。",
             "children": "子コミット",
             "childrenHint": "読み込まれた一覧のうち、このコミットを親に持つコミット。"
+          },
+          "RemotePluginPanel": {
+            "declarative": "このパネルはこのコンピューターのみを表示します。{{host}} のデータは表示できません。",
+            "loading": "{{host}} の {{plugin}} に接続しています...",
+            "unreachable": "{{host}} に接続できませんでした。",
+            "missing": "{{host}} に {{plugin}} がインストールされていないか、有効になっていません。そのホストでインストールして有効にしてください。",
+            "versionMismatch": "{{plugin}} は {{host}} では {{remote}}、ここでは {{local}} です。両方に同じバージョンをインストールしてください。",
+            "sessionUnavailable": "そのホストではこのプラグインを利用できません。"
           }
         }
       },
