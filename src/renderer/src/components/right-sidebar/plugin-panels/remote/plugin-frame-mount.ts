@@ -23,17 +23,21 @@ export function usePluginFrameMount(
     setMount(current)
   }
   const key = current.frameKey === null ? null : `${current.frameKey}#${current.generation}`
-  const ref = useMemo(
-    () => ({
-      get current() {
-        return frameRef.current
-      },
-      set current(value) {
-        frameRef.current = value
-      }
-    }),
-    // oxlint-disable-next-line react-hooks/exhaustive-deps -- key only renews the identity
-    [frameRef, key]
-  )
+  const ref = useMemo(() => createFrameMountRef(frameRef, key), [frameRef, key])
   return { key, ref }
+}
+
+// The key is unused: each call returns a new identity over the same element.
+function createFrameMountRef(
+  frameRef: RefObject<PluginFrameElement | null>,
+  _key: string | null
+): RefObject<PluginFrameElement | null> {
+  return {
+    get current() {
+      return frameRef.current
+    },
+    set current(value) {
+      frameRef.current = value
+    }
+  }
 }
