@@ -10,7 +10,7 @@ import { getFilesystemOwnerKey } from '../right-sidebar/source-control/folder/fo
 import { withFolderPathRepoOwners } from '../right-sidebar/source-control/folder/folder-path-repo-owners'
 import { getRememberedFolderRepo } from '../right-sidebar/source-control/folder/folder-repo-selection'
 import { getAttachedWorktreesForFolderWorkspace } from '../right-sidebar/folder-workspace-attached-worktrees'
-import { resolveReviewRepository } from '@/lib/review-owner'
+import { resolveReviewRepository } from '@/lib/source-control/review/review-owner'
 import {
   selectCrossStoreFolderChildrenById,
   selectSidebarLineageParentIdentities

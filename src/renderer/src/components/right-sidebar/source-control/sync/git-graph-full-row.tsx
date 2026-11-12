@@ -1,7 +1,7 @@
 // Fork-only: one row of the full-width Git Graph (graph | refs + subject | author | date | hash).
 import React from 'react'
 import { Cloud, GitBranch, Tag } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { initialsFor } from './git-graph-author-initials'
 import {
