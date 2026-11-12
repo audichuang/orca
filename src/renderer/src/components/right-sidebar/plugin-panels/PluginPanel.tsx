@@ -22,7 +22,7 @@ import { useTranslate } from '@/i18n/use-translate'
 import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
 import { useRemotePluginPanelRoute } from './remote/use-remote-plugin-panel-route'
 import { remotePluginPanelNotice } from './remote/remote-plugin-panel-notice'
-import { usePluginFrameMountRef } from './remote/plugin-frame-mount-ref'
+import { usePluginFrameMount } from './remote/plugin-frame-mount'
 
 type PluginPanelProps = {
   tabKey: string
@@ -59,16 +59,17 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
   )
   const route = useRemotePluginPanelRoute(panel, entry.status === 'ready' ? entry.revision : null)
   const remoteNotice = panel ? remotePluginPanelNotice(route, panel.pluginName, declarative) : null
-  // Fork: a host switch remounts the frame so no state from the previous host's data lingers.
-  const panelFrameKey =
-    entry.status === 'ready'
-      ? `${route.kind === 'remote' ? `${route.environmentId}:` : ''}${tabKey}:${entry.revision}`
-      : null
+  const panelFrameKey = entry.status === 'ready' ? `${tabKey}:${entry.revision}` : null
+  const frameMount = usePluginFrameMount(
+    frameRef,
+    declarative || remoteNotice ? null : panelFrameKey,
+    route
+  )
   const { onFrameLoad } = usePluginFrameHost({
     surface: 'panel',
     frameRef,
     // Why null: a declarative panel's own host wires its hidden guest instead.
-    frameKey: declarative || remoteNotice ? null : panelFrameKey,
+    frameKey: frameMount.key,
     sessionToken: entry.status === 'ready' ? entry.sessionToken : null,
     onUnresponsive: markUnresponsive,
     onGuestGone: remountGone,
@@ -86,11 +87,9 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
       )
     }
   }, [entry.status, setPanelHealth, tabKey])
-  // Fork: rebind the draw report to each mounted frame; a remote notice keeps it unmounted.
-  const drawFrameRef = usePluginFrameMountRef(frameRef, remoteNotice ? null : panelFrameKey)
   useReportFramePanelDraw(
     tabKey,
-    drawFrameRef,
+    frameMount.ref,
     guest && !declarative && !remoteNotice ? guest.url : null
   )
 
@@ -171,7 +170,7 @@ function PluginPanel({ tabKey }: PluginPanelProps): React.JSX.Element {
 
   return (
     <PluginFrameView
-      key={panelFrameKey}
+      key={frameMount.key}
       frameRef={frameRef}
       guest={guest}
       name={`${PLUGIN_PANEL_FRAME_NAME_PREFIX}${tabKey}`}
