@@ -12,8 +12,9 @@ description: Unattended pipeline that rebases the Orca fork's develop onto the n
 只做一件事：把 develop 搬到上游最新 release，確認 fork 功能在新基底上照常運作（macOS，連 remote Linux），閘門全過就移動 develop 並發版。慢沒關係，重點是做得完；做不下去就停下來交人，不要為了發版硬修。
 
 - 要處理：衝突；上游改動讓 fork 功能壞掉的地方（typecheck、測試、lint、審查找到的 API 漂移）；這次解過衝突、rerere 重放或修正過的 hunk 都要有證明（改回上游會讓測試變紅，或只改 import／型別而由 `pnpm tc` 守；細節見第 6 步「合格的 MANUAL」）。
-- 不處理，只列進第 8 步通知：這次沒碰到的既有測試缺口；只在 Windows 或 WSL 發生的問題（FORK.md「Platform scope」）；屬於 FORK.md「Accepted risks」那幾類的問題；功能改進與重構；實機 UI 測試。
-- 停下來交人（第 8 步，PR 與鎖留著），主要是：沒把握解的衝突、筆記要丟的 commit 找不到（第 1 步）；同一個問題修兩輪還不過、上游自己紅而上游 `main` 也沒修（第 2 步）；審查素材產生失敗或 Codex 沒跑完（第 4 步）；第 5 步兩輪後仍有確認為真的 BLOCKING。各步寫的其他結局照該步。
+- 不處理，只列進第 8 步的 PR 完整報告（不進 Bark）：這次沒碰到的既有測試缺口；只在 Windows 或 WSL 發生的問題（FORK.md「Platform scope」）；屬於 FORK.md「Accepted risks」那幾類的問題；功能改進與重構；實機 UI 測試。
+- 停下來交人（第 8 步，PR 與鎖留著），主要是：沒把握解的衝突、筆記要丟的 commit 找不到（第 1 步）；同一個問題修兩輪還不過、上游自己紅而上游 `main` 也沒修（第 2 步）；審查素材產生失敗或 Codex 沒跑完（第 4 步）；第 5 步兩輪後仍有確認為真的 BLOCKING（先照 FORK.md「Who decides」問 advisor 加開一輪）。各步寫的其他結局照該步。
+- 交人之前一律先對照 FORK.md「Who decides」，再問 advisor；兩者都判斷不了才交人，PR 與 Bark 只寫一個問題和你會選的預設。ClipCode 衝突一律自己解到功能完整、不問；Git Graph 照那節保留 IntelliJ 式的能力，自己判斷上游改動怎麼併。
 
 本技能覆寫兩個預設：codex 技能的「找到問題不自動修、停下來問」在這裡不適用（第 5 步規定怎麼修）；`orca-lcu-ui-test` 與 Codex desktop 的真實 UI 測試輪**不在這裡跑**——它們會占用螢幕鍵盤剪貼簿，排程隨時會觸發。發版前要驗的 UI 情境（ClipCode 複製、Paste & Restore、資料夾 repo 清單、session restore、external-change banner、agent launch cwd）由 fork e2e 在隱藏視窗驗（`folder-multi-repo-source-control.spec.ts`、`folder-workspace-tab-restart-restore.spec.ts`），CI 的 fork e2e job 會跑；lcu 實機輪只留給新增或改了 UI 的功能 PR。
 
@@ -147,7 +148,7 @@ cd ../ar-$RUN-review-c && { node config/scripts/native-build/node-addons/ensure-
 - Claude 審查者：每個是一個全新的 `claude -p`（沒有你的脈絡，所以是盲審），提示寫進 `$MAIN/.rebase-review/claude-<角度>-prompt.md`，在它的 worktree（A、B 用 `MAIN`）以 run_in_background 跑 `sh "$MAIN/config/scripts/fork-detached-agent.sh" claude -p --model opus --dangerously-skip-permissions < <提示檔> > $MAIN/.rebase-review/claude-<角度>-r<輪>-result.md 2>&1; echo $? > $MAIN/.rebase-review/claude-<角度>-r<輪>-result.exit`（它不會問權限，所以 A、B 的提示要寫明 `MAIN` 唯讀、不准改檔；每個提示都要寫「不要開背景工作或 subagent，所有指令在前景跑完再回答」，不然它可能先結束、留下不完整的結果），各一個角度：
   - **A 衝突忠實度**：`range-diff.txt` 每個 `!` 項目，新版是否保留 fork 原本的行為、同時採用上游的新結構？有沒有 fork 的欄位、分支、呼叫被默默丟掉？每個 `<` 項目（rebase 後消失的 fork commit）是不是刻意丟的、理由是否成立？
   - **B 上游 API 漂移**：讀 `upstream-touching.diff`、`importer-sweep.txt` 與 `seam-upstream.diff`，上游改了簽章、回傳值、語意（例如回傳一個要呼叫的 release、改成會 reject）的模組，fork 的呼叫點有沒有跟上？上游新增的平行路徑（新的 switch、新的入口、重建的 options 物件）有沒有繞過 fork 的 seam？逐一打開呼叫點看，不要只看 diff。
-  - **C 測試與 seam**：讀 hunk 掃描的結果判斷，只看**這次解過或修過**的 hunk（`resolved-files.txt` 列的檔）。證明表從 `scan/hunks-all.jsonl` 取：`guarded` 的 `redBy` 就是 mutation 證明；`skipped`（import、註解、只改型別）由 `pnpm tc` 守；`crash-only` 確認用到它的 hunk 是 `guarded`，錯誤是名稱不見（`X is not defined`，對應的 import 在另一個 hunk）時，手動把這個 hunk 和那個 import 一起改回、跑 `redBy` 那支測試，紅在斷言上才算證明；`survived`、`no-fork-test` 先判斷是不是等價或只有 e2e 看得到，都不是就是發現；`flaky`、`error` 不算證明，手動補。掃描不涵蓋的照手動做：`report.md` 列的 unmatched 檔（fork 新增檔、測試檔、locale）、lint 修正（改回後跑那一步 lint）、補翻譯（`fork-locale-parity.mjs vNEW`），每個都把那個 hunk 改回上游或拿掉修正、跑指定的測試確認會紅，看完 `git checkout -- .` 還原。逐項列出 hunk 與證明（第 6 步「合格的 MANUAL」靠這張表）；其他 hunk 的缺口只列為既有缺口。**CLEAN 時也要做**：對 `seam-upstream.diff` 碰到的每個 seam（對照 `config/fork-seam-tests.txt` 的分組），把 fork 在那個 seam 的接線拿掉一處（刪欄位轉傳、刪 `'git-graph'` case、刪 slot prop），跑那組 seam 測試確認會紅；沒有會紅的就是發現。
+  - **C 測試與 seam**：讀 hunk 掃描的結果判斷，只看**這次解過或修過**的 hunk（`resolved-files.txt` 列的檔）。證明表從 `scan/hunks-all.jsonl` 取：`guarded` 的 `redBy` 就是 mutation 證明；`skipped`（import、註解、只改型別）由 `pnpm tc` 守；`crash-only` 確認用到它的 hunk 是 `guarded`，錯誤是名稱不見（`X is not defined`，對應的 import 在另一個 hunk）時，手動把這個 hunk 和那個 import 一起改回、跑 `redBy` 那支測試，紅在斷言上才算證明；`survived`、`no-fork-test` 先判斷是不是等價或只有 e2e 看得到，都不是就是發現；`flaky`、`error` 不算證明，手動補。掃描不涵蓋的照手動做：`report.md` 列的 unmatched 檔（fork 新增檔、測試檔、locale）、lint 修正（改回後跑那一步 lint）、補翻譯（`fork-locale-parity.mjs vNEW`），每個都把那個 hunk 改回上游或拿掉修正、跑指定的測試確認會紅，看完 `git checkout -- .` 還原。逐項列出 hunk 與證明（第 6 步「合格的 MANUAL」靠這張表）；其他 hunk 的缺口只列為既有缺口。「上游碰到」一律用 hunk 層級判斷（FORK.md「Unattended merges」同一句）：`git diff -U0 vOLD vNEW -- <檔>` 的 `+` 側行號與 `git diff -U0 vNEW HEAD -- <檔>` 的 `-` 側行號（都是 vNEW 行號）重疊或相距 3 行以內才算；同一個檔的其他區段算既有缺口。**CLEAN 時也要做**：對 `seam-upstream.diff` 裡上游碰到的每個 seam（對照 `config/fork-seam-tests.txt` 的分組），把 fork 在那個 seam 的接線拿掉一處（刪欄位轉傳、刪 `'git-graph'` case、刪 slot prop），跑那組 seam 測試確認會紅；沒有會紅的就是發現。
   - 每個都要求輸出：發現清單（BLOCKING / NON-BLOCKING、`file:line`、為什麼、怎麼證實的），最後一行 `VERDICT: ACCEPTABLE` 或 `VERDICT: NOT ACCEPTABLE`。提示要寫明：只在 Windows 或 WSL 上才會發生的問題一律標 NON-BLOCKING、不影響 VERDICT（FORK.md「Platform scope」：fork 不在 Windows 上用）；屬於 FORK.md「Accepted risks」所列類別的問題也一律標 NON-BLOCKING，提示裡把那一節原文貼給審查者。
 - Codex 兜底（獨立全面審）：照 codex 技能用 companion 的 `task`（**不要用 `review`/`adversarial-review`**：它們拿分支比預設分支，在這裡會是整串 fork 或兩條分岔歷史）。提示寫進 `$MAIN/.rebase-review/codex-prompt.md`：說明這是 fork rebase 的審查、素材在哪、四個問題（A/B/C 的問題加上「還有什麼會讓 fork 功能在 vNEW 上壞掉」）、同樣的輸出格式與 VERDICT 行（含 Windows／WSL 與 Accepted risks 只列 NON-BLOCKING 那兩句）。
   ```sh
@@ -155,14 +156,14 @@ cd ../ar-$RUN-review-c && { node config/scripts/native-build/node-addons/ensure-
   ```
   `--write` 讓它能在自己的 worktree 做改回上游的實驗；提示檔用絕對路徑，因為指令在另一個目錄跑。照上面「等待」的方式 `wait`；完成後 `result <jobId>` 存成 `.rebase-review/codex-result.md`，並記下它的 thread id（`status <jobId> --json`）。Codex 跑失敗或沒啟動成功：**不要自己代寫結果**，記為「Codex 未完成」，這次就不能自動移動 develop。
 
-## 5. 分流與修正（最多兩輪）
+## 5. 分流與修正（兩輪，必要時加開一輪）
 
 - 彙整所有結果。每個 BLOCKING 自己去程式碼裡確認：
   - 確認是真的 → 修、補會變紅的測試、commit（算 MANUAL）、重跑受影響的本機測試與 `make -k fork-check-static`（綠了才推：v1.4.243 有一輪 CI 只因修正 commit 沒先跑 static、被 `audit:anti-slop` 擋下）、`git push --force fork HEAD:refs/heads/rebase/vNEW`，CI 照第 3 步等綠。
   - 不同意 → 寫下理由（引用程式碼證據），原文與理由一起進 PR。
 - 有修正就再審一輪：先在 `../ar-$RUN-review-codex` `git checkout --detach <新 head>`，Codex 在那裡用 `task --thread <第一輪的 thread id>`（一樣經 `fork-detached-agent.sh` 啟動；thread 每跑完一次會被自動封存，先 `codex unarchive <thread id>`，否則 job 立刻 failed）看修正後的 diff（**不要用 `--resume-last`**：機器上別的 session 也在跑 Codex，會接錯 thread）；Claude 只開一個新的 `claude -p` 審查者看修正的部分（同第 4 步的跑法）。
 - 有修正時，C 的 worktree 也切到新 head（`git -C ../ar-$RUN-review-c checkout --detach <新 head>`），對修正碰到的檔照第 4 步的方式重跑掃描（`--out` 用新目錄，例如 `scan-r2`），新的審查者用它的結果。
-- 兩輪後仍有確認為真、沒修好的 BLOCKING → 不移動 develop，第 8 步回報。
+- 兩輪後仍有確認為真、沒修好的 BLOCKING → 把剩下的 BLOCKING、已試過的修法與證據交給 advisor，問再一輪能不能收斂。能 → 照上面的方式再修、再審一輪（只加這一輪）；不能，或第 3 輪後仍有 → 不移動 develop，第 8 步回報。
 - 審查結果貼成一則 PR 留言：每個審查者的 VERDICT、每個發現與處理（已修 commit / 不同意理由 / NON-BLOCKING 留待），附上 importer-sweep 裡人工確認過的「上游改了 X，fork 呼叫點 Y 已看過」。
 
 **審查通過**的定義（第 6 步用）：每個 Claude 審查者的每個 BLOCKING 都已修好或有程式碼證據反駁，而且 Codex 最後一輪是 `VERDICT: ACCEPTABLE`。Codex 的 BLOCKING 不能只靠反駁放行：反駁後要它在同一個 thread 再看一次（不另算一輪），它改判 ACCEPTABLE 才算。例外：審查者仍把屬於 FORK.md「Accepted risks」類別的問題標成 BLOCKING，就改記為 NON-BLOCKING，不需修、不需它改判；這樣的發現是它 NOT ACCEPTABLE 的唯一理由時，那個 VERDICT 視同 ACCEPTABLE，PR 留言寫明套用哪一條。
@@ -177,7 +178,7 @@ cd ../ar-$RUN-review-c && { node config/scripts/native-build/node-addons/ensure-
 - 第 5 步的審查通過；
 - RESUME 時 PR 說明裡有 old-develop 那行。
 
-**合格的 MANUAL**：每個解過衝突、rerere 重放的 hunk 與每個修正 commit（`resolved-files.txt` 列的檔；`range-diff.txt` 的 `!` 項目由審查者 A 看忠實度）都有審查者 C（或你自己）做過的 mutation 證明——把那個 hunk 改回上游那一側或拿掉修正，指定的測試會變紅（cherry-pick 的上游 lint 修正用那一步 lint；補翻譯的 commit 用 `fork-locale-parity.mjs vNEW`），證據（指令與紅的那一行）寫進審查留言。審查者 C 的 hunk 掃描結果直接算數：`guarded` 的 `redBy` 就是證明；`skipped`（import、註解、只改型別）由本機 `pnpm tc` 綠守住；`crash-only` 以用到它的 hunk 是 `guarded` 為證；`flaky`、`error` 不算；審查者 C 列出的「沒有測試會紅的 seam」裡，沒有一個落在這次解過衝突、rerere 重放或修正的 hunk 上，也沒有一個落在 `seam-upstream.diff` 碰到的 seam 上（不相關的既有缺口不擋，但要列進通知）。任何一項做不到就不移動。例外：「fork 自身問題」條目的修正 commit 只改 fork 自己的測試檔（`git cat-file -e vNEW:<檔>` 失敗，上游沒有這個檔）時，不需要 mutation 證明（時序類的修正改回去也不一定會紅），條目「守它的測試」在本機與 CI 都通過即可；改到產品程式碼或上游檔的照一般規則。
+**合格的 MANUAL**：每個解過衝突、rerere 重放的 hunk 與每個修正 commit（`resolved-files.txt` 列的檔；`range-diff.txt` 的 `!` 項目由審查者 A 看忠實度）都有審查者 C（或你自己）做過的 mutation 證明——把那個 hunk 改回上游那一側或拿掉修正，指定的測試會變紅（cherry-pick 的上游 lint 修正用那一步 lint；補翻譯的 commit 用 `fork-locale-parity.mjs vNEW`），證據（指令與紅的那一行）寫進審查留言。審查者 C 的 hunk 掃描結果直接算數：`guarded` 的 `redBy` 就是證明；`skipped`（import、註解、只改型別）由本機 `pnpm tc` 綠守住；`crash-only` 以用到它的 hunk 是 `guarded` 為證；`flaky`、`error` 不算；審查者 C 列出的「沒有測試會紅的 seam」裡，沒有一個落在這次解過衝突、rerere 重放或修正的 hunk 上，也沒有一個落在上游碰到的 seam 上（照第 4 步審查者 C 那段的 hunk 層級判斷：只是同一個檔被上游改了別處，不算）。不相關的既有缺口不擋，只列進 PR 完整報告。任何一項做不到就不移動。例外：「fork 自身問題」條目的修正 commit 只改 fork 自己的測試檔（`git cat-file -e vNEW:<檔>` 失敗，上游沒有這個檔）時，不需要 mutation 證明（時序類的修正改回去也不一定會紅），條目「守它的測試」在本機與 CI 都通過即可；改到產品程式碼或上游檔的照一般規則。
 
 推的是 CI 驗過的那個 sha，不是分支名：
 
@@ -210,7 +211,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
    git tag -a "vNEW-fork.N" "${sha}" -F <notes 檔> && git push --atomic --force-with-lease="main:${old}" fork "${sha}:main" "vNEW-fork.N"
    ```
    推完再跑一次 `make fork-ci-disable-upstream`：上游新加的 workflow 要等它進到預設分支 `main` 才會在 GitHub 註冊，第 6 步那次停用不到（v1.4.241 的 `wsl-orcad-e2e-frozen-runner-retry.yml`）。剛推完可能還沒註冊，第 6 點收尾前再跑一次；失敗（例如 API 配額）不擋發版，在通知裡寫出還沒停用的 workflow。
-4. 在 PR 留言「發版開始 vNEW-fork.N」（心跳）。找這個 tag 的 release run：`gh run list -R audichuang/orca --workflow fork-release.yml --event push --limit 5 --json databaseId,headBranch --jq '.[] | select(.headBranch=="vNEW-fork.N") | .databaseId'`。剛推完可能還沒出現，查不到就先寫第 8 步的通知草稿再查，查三次都沒有就當 release 沒觸發，第 8 步回報。找到後 `gh-wait run <id> -R audichuang/orca -t 9`（照「等待」的方式）。「Bump the Homebrew cask」紅多半是 API 配額，`gh run rerun <id> --failed -R audichuang/orca` 一次。確認 `gh api repos/audichuang/homebrew-tap/contents/Casks/orca-fork.rb --jq .content | base64 -d` 的 version 是新版。release 紅兩次 → 不升級，第 8 步回報（tag 已推不刪）。重跑 workflow 只救偶發失敗，它建的還是 tag 指的同一個 commit；要改 code 才修得好的（v1.4.243-fork.1 缺 helper），修正走 PR 合進 develop、從它的 merge commit 發 `vNEW-fork.(N+1)`，不要只寫進 `known-resolutions.md` 等下一個上游版本：筆記與 PR 留言寫明「修好後立刻發 N+1」。
+4. 在 PR 留言「發版開始 vNEW-fork.N」（心跳）。找這個 tag 的 release run：`gh run list -R audichuang/orca --workflow fork-release.yml --event push --limit 5 --json databaseId,headBranch --jq '.[] | select(.headBranch=="vNEW-fork.N") | .databaseId'`。剛推完可能還沒出現，查不到就先寫第 8 步的通知草稿再查，查三次都沒有就當 release 沒觸發，第 8 步回報。找到後 `gh-wait run <id> -R audichuang/orca -t 9`（照「等待」的方式）。「Bump the Homebrew cask」紅多半是 API 配額，`gh run rerun <id> --failed -R audichuang/orca` 一次。確認 `gh api repos/audichuang/homebrew-tap/contents/Casks/orca-fork.rb --jq .content | base64 -d` 的 version 是新版。release 紅兩次 → 先看失敗原因：GitHub 5xx、runner 取不到、下載逾時這類已確認的基礎設施暫態（log 或 annotation 寫明），等 10 分鐘再 `rerun --failed`，最多再兩次；其他原因或仍紅 → 不升級，第 8 步回報（tag 已推不刪）。重跑 workflow 只救偶發失敗，它建的還是 tag 指的同一個 commit；要改 code 才修得好的（v1.4.243-fork.1 缺 helper），修正走 PR 合進 develop、從它的 merge commit 發 `vNEW-fork.(N+1)`，不要只寫進 `known-resolutions.md` 等下一個上游版本：筆記與 PR 留言寫明「修好後立刻發 N+1」。
 5. MacBook：`ssh macbookpro "bash -lc 'export PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH; pgrep -f \"Orca Fork.app\" >/dev/null && echo RUNNING || { brew update >/dev/null; brew upgrade --cask orca-fork; }'"`。印 RUNNING 就不升級（不幫使用者關 app），通知裡請使用者自己升級。
 6. 收鎖與收尾：`gh pr close PR -R audichuang/orca -c "<第 8 步的完整報告>"`（`make fork-wrapup` 先跑），刪 fork 的 `rebase/vNEW` 與 `ci-base/vNEW`；`make fork-wrapup` 核對 tag、tap 與 MacBook 安裝版本，輸出放進第 8 步的完整報告；`git worktree remove --force` 這次的 `../ar-$RUN-*`（先確認沒有你要留給使用者看的東西）；`MAIN` 由 Orca 管理，留給下一次 run 清。回滾不由這個技能做（develop 這時還指著壞的 commit，第 3 點的檢查會擋下）：在通知裡寫出上一個好的 commit，讓使用者照 FORK.md「Release」把它打成 `vNEW-fork.(N+1)` 推上去。
 
@@ -221,7 +222,7 @@ git push fork "${OLD_DEVELOP}:refs/heads/backup/develop-vOLD-$RUN" && \
 **寫筆記（不論結果都寫，Bark 之前做）**：使用者不會照通知去處理，下一次 run 只能靠筆記知道之前怎麼做的。重新 `tip=$(config/scripts/fork-notes.sh tip)`，`git show` 出兩份副本：
 
 - `resolution-history.md`（處理紀錄，只增不刪）：最上面加一條 `## <YYYY-MM-DD> auto-rebase vOLD → vNEW（PR #N）— <develop 已移動並發 vNEW-fork.N｜沒移動：原因>`，列出：每個衝突檔怎麼解、守它的測試（mutation 證據的那一行）；用掉的 `known-resolutions.md` 條目整段搬過來並註明「照做／跟眼前不符改怎麼做」；確認為真的審查發現與修法；各階段耗時（rebase 從 `$RUN` 到開 PR、本機閘門從「本機閘門開始」留言到推上去、CI 用 run 的起訖、盲審從「盲審開始」留言到最後一個審查者完成、第 2 步與第 5 步的修正輪各記一筆、發版用 release run 的起訖；沒跑到的階段省略，不要估；任何一段超過上一條有耗時紀錄的 1.5 倍，就寫出原因）；沒移動或發版失敗時卡在哪、下一次要怎麼做；**canary 效益**一行：這次的衝突、修正 commit 與閘門紅，哪些 canary 事先寫好了（用到的 `— canary` 條目、從 canary 快取直接複製的解法檔），哪些它沒料到、為什麼（例如只出現在 release tag、不在上游 main），以及沒有它大概要多花哪些工夫。連續三次 rebase 都是「canary 沒提供任何用到的東西」，就在這行寫「建議停用 canary」與理由。
-- `known-resolutions.md`：develop 移動了才刪掉用掉的條目（已搬進紀錄）。沒移動、而且這次有自己解出來的衝突或修正，就照檔頭範本補條目（上游 commit 填 `git log -1 --format=%H vOLD..vNEW -- <衝突檔>`），讓下一次 rebase 或 canary 直接用；卡住的寫「待人判斷」與已知事實。
+- `known-resolutions.md`：develop 移動了才刪掉用掉的條目（已搬進紀錄）。沒移動、而且這次有自己解出來的衝突或修正，就照檔頭範本補條目（上游 commit 填 `git log -1 --format=%H vOLD..vNEW -- <衝突檔>`），讓下一次 rebase 或 canary 直接用；卡住的先照 FORK.md「Who decides」決定怎麼做，寫成可照做的條目；只有落在 **ask** 那幾類才寫「待人判斷」，附一個問題與預設。讀到既有的「待人判斷」條目時也照這樣重新判斷。
 
 `config/scripts/fork-notes.sh write "$tip" "auto-rebase vNEW: <結果>" known-resolutions.md=<副本> resolution-history.md=<副本>`。exit 2 表示 canary 剛寫過：重新 `tip`、在新版上套同樣的改動再寫一次；還是 exit 2 或其他非 0 就不再試，在通知裡註明筆記沒寫成、該怎麼改。
 
@@ -247,10 +248,10 @@ PY
 - title 就是結論（上面三選一）；卡住的在 `>` 後補一句原因，例如「❌ 卡在第 7 步：release 紅兩次」。
 - body 最多三行、約 150 字，不放 sha、備份分支、run id、CLEAN/MANUAL、VERDICT、tap 版本：
   1. 一句話結果：發了就寫 tag；沒發就寫卡在哪、為什麼。
-  2. `要你做：` 只列必須由使用者親手做的事，每項一句，用「；」隔開：MacBook 沒升級（Orca 開著 → 請自己 `brew upgrade --cask orca-fork` 後重開；SSH 連不上 → 請自己升級）、要審的 PR、要自己回滾、對 develop 開著的 PR 要重跑 CI（develop 有移動時 `gh pr list -R audichuang/orca --base develop` 查）。沒有就整行省略。
+  2. `要你做：` 只列必須由使用者親手做的事，每項一句，用「；」隔開：MacBook 沒升級（Orca 開著 → 請自己 `brew upgrade --cask orca-fork` 後重開；SSH 連不上 → 請自己升級）、要審的 PR、要自己回滾、真的要使用者決定的一個問題（照 FORK.md「Who decides」只剩 **ask** 那幾類，附你會選的預設）。沒有就整行省略。不寫：審查細節、既有測試缺口、Windows／WSL、Accepted risks、對 develop 開著的 PR（它們要重跑 CI 這件事寫進 PR 完整報告）。
   3. 一個連結：沒發版放 PR，發了放 release。
 
-完整報告在送 Bark 前留言到 PR（第 7 步第 6 點的 close 留言就用它）：vOLD → vNEW、CLEAN/MANUAL、衝突與修正各一句、本機 static／seams 與 CI 結果、每個審查者的 VERDICT 與確認為真的發現數、develop 有沒有移動（沒移動就寫原因，例如 lease 失敗）、發版結果與 `make fork-wrapup` 輸出、CI 自動重跑的 job、審查者 C 列出但不擋這次的既有測試缺口、第 0 步沒刪的 worktree、筆記沒寫成的原因。
+完整報告在送 Bark 前留言到 PR（第 7 步第 6 點的 close 留言就用它）：vOLD → vNEW、CLEAN/MANUAL、衝突與修正各一句、本機 static／seams 與 CI 結果、每個審查者的 VERDICT 與確認為真的發現數、develop 有沒有移動（沒移動就寫原因，例如 lease 失敗）、發版結果與 `make fork-wrapup` 輸出、CI 自動重跑的 job、審查者 C 列出但不擋這次的既有測試缺口、第 0 步沒刪的 worktree、筆記沒寫成的原因；develop 有移動時列出對 develop 開著的 PR（`gh pr list -R audichuang/orca --base develop`），它們要重跑 CI 才能合。
 
 最後在對話裡印出 Bark 內容，接著是完整報告。
 
