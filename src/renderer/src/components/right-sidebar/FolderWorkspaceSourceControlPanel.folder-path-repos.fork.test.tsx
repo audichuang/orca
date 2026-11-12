@@ -19,7 +19,7 @@ vi.mock('./source-control/sync/use-git-status-upstream-ref-watch', () => ({
 vi.mock('./source-control/sync/use-refresh-on-host-contact', () => ({
   useRefreshOnHostContact: () => {}
 }))
-vi.mock('@/lib/worktree-git-copy', () => ({
+vi.mock('@/lib/workspace/ownership/worktree-git-copy', () => ({
   resolveWorktreeGitCopyNow: (id: string, hostId: string) => ({
     worktreeId: id,
     hostId,

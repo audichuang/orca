@@ -54,7 +54,7 @@ vi.mock('@/lib/workspace/ownership/worktree-runtime-owner', () => ({
   runtimeEnvironmentIdOrLocalUnlessTwin: () => ownerRuntime.environmentId
 }))
 
-vi.mock(import('@/lib/reveal-in-file-manager'), async (importOriginal) => ({
+vi.mock(import('@/lib/files/os-open/reveal-in-file-manager'), async (importOriginal) => ({
   ...(await importOriginal()),
   getRevealInFileManagerLabel: () => 'Reveal in Finder',
   revealInFileManager
@@ -64,12 +64,13 @@ vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback
 }))
 
-vi.mock('@/lib/open-in-app-catalog', () => ({
+vi.mock('@/lib/files/os-open/open-in-app-catalog', () => ({
   OpenInApplicationIcon: () => null
 }))
 
 vi.mock('@/components/sidebar/workspace-actions/open/WorktreeOpenInMenu', async () => {
-  const { getExternalEditorOpenCapability } = await import('@/lib/external-editor-open-capability')
+  const { getExternalEditorOpenCapability } =
+    await import('@/lib/files/os-open/external-editor-open-capability')
   return {
     getOpenInEntryAvailability: (
       entry: { command?: string },
