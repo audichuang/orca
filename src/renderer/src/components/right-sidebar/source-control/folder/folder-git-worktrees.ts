@@ -4,7 +4,7 @@ import {
   getRepoSshConnectionId
 } from '../../../../../../shared/execution-host'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
-import { resolveReviewRepository } from '@/lib/review-owner'
+import { resolveReviewRepository } from '@/lib/source-control/review/review-owner'
 import { isGitRepoKind } from '../../../../../../shared/repo-kind'
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'

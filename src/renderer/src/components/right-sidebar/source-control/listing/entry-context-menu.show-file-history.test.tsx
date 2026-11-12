@@ -44,7 +44,7 @@ vi.mock('@/lib/workspace/ownership/worktree-runtime-owner', () => ({
 vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback
 }))
-vi.mock('@/lib/open-in-app-catalog', () => ({ OpenInApplicationIcon: () => null }))
+vi.mock('@/lib/files/os-open/open-in-app-catalog', () => ({ OpenInApplicationIcon: () => null }))
 vi.mock('@/components/sidebar/workspace-actions/open/WorktreeOpenInMenu', () => ({
   getOpenInEntryAvailability: () => ({ disabled: false }),
   openOpenInAppsSettings: vi.fn(),
