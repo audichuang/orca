@@ -13,7 +13,9 @@ function happyDomWindow(): HappyDomWindow {
   return window as unknown as HappyDomWindow
 }
 
-function partialApi(api: object): Window['api'] {
+type PluginsApiStub = { plugins: Partial<Window['api']['plugins']> }
+
+function partialApi(api: PluginsApiStub): Window['api'] {
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: a partial preload stub; the code under test calls only these members.
   return api as Window['api']
 }
