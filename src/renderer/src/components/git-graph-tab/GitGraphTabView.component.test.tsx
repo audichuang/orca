@@ -27,7 +27,7 @@ import {
   getRememberedFolderRepo,
   rememberFolderRepo
 } from '../right-sidebar/source-control/folder/folder-repo-selection'
-import { GIT_GRAPH_REFRESH_EVENT } from '@/lib/git-graph-tab'
+import { GIT_GRAPH_REFRESH_EVENT } from '@/lib/source-control/graph/git-graph-refresh-event'
 import GitGraphTabView from './GitGraphTabView'
 import { showCommitInGitGraphSlot } from './git-graph-source-control-link'
 import { GitHistoryPanel } from '../right-sidebar/source-control/sync/git-history-panel'

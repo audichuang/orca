@@ -1,7 +1,7 @@
 // Fork-only: the full Git Graph's branch tree (Fork's sidebar, IntelliJ's Branches pane).
 import React, { useMemo, useState } from 'react'
 import { ChevronDown, ChevronRight, Cloud, GitBranch, Tag } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
 import { rovingKeyTarget } from './git-graph-roving-keys'
