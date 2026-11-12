@@ -239,8 +239,8 @@ export default function DiffViewer({
 
   const { setupCopy, toastNode } = useContextualCopySetup()
 
-  const modifiedContentRef = useRef(modifiedContent)
-  modifiedContentRef.current = modifiedContent
+  const keptModelSyncRef = useRef({ modifiedContent, syncKeptModifiedModelOnMount })
+  keptModelSyncRef.current = { modifiedContent, syncKeptModifiedModelOnMount }
 
   const propsRef = useRef({ relativePath, language, onSave })
   propsRef.current = { relativePath, language, onSave }
@@ -290,8 +290,8 @@ export default function DiffViewer({
       })
       diffEditor.onDidDispose(preserveDiffViewStateAcrossModelSwaps(diffEditor).dispose)
 
-      if (syncKeptModifiedModelOnMount) {
-        syncKeptModelValue(modifiedEditor.getModel(), modifiedContentRef.current)
+      if (keptModelSyncRef.current.syncKeptModifiedModelOnMount) {
+        syncKeptModelValue(modifiedEditor.getModel(), keptModelSyncRef.current.modifiedContent)
       }
 
       setupCopy(originalEditor, monaco, filePath, propsRef)
@@ -331,16 +331,7 @@ export default function DiffViewer({
         diffEditor.focus()
       }
     },
-    [
-      editable,
-      setupCopy,
-      modelKey,
-      filePath,
-      sideBySide,
-      registerDiffEditor,
-      unregisterDiffEditor,
-      syncKeptModifiedModelOnMount
-    ]
+    [editable, setupCopy, modelKey, filePath, sideBySide, registerDiffEditor, unregisterDiffEditor]
   )
 
   // Snapshot on layout cleanup before unmount, avoiding scroll-time writes.
