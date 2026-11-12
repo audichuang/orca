@@ -1,4 +1,4 @@
-import { getShortcutPlatform } from '@/lib/shortcut-platform'
+import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import type { SourceControlRowOpenEvent } from './split-open'
 
 /** The Alt-click event, for menu items that open the row in a split to the right. */

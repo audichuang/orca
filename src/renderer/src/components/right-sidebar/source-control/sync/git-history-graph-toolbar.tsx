@@ -10,8 +10,8 @@ import {
   CommandList
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ImeInput } from '@/lib/ime-text-field'
-import { cn } from '@/lib/utils'
+import { ImeInput } from '@/lib/text-input/ime/ime-text-field'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
