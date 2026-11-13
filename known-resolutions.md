@@ -33,6 +33,7 @@
 - 驗證（2026-11-11，上游 abff3a41f52dbd024f7fa15b1ad3b55319b5c343）：develop 已在 v1.4.255（merge-base 04e866e12c），同型 10 個衝突檔（報告 fork 欄空白，`git diff --quiet v1.4.255 MERGE_HEAD -- <檔>` 都成立，`v1.4.255..MERGE_HEAD` 都沒 fork commit）：.github/CONTRIBUTING.md、config/scripts/test-runtime/environment/vitest-shared-worker-file-reset.mjs（modify/delete）、config/vitest.config.ts（v1.4.255 的 ffddfcbe12 revert #40067）、src/main/ai-vault-search/session-search-tool-purge.test.ts（4c37eb7f89）、src/renderer/src/components/agent/AgentLaunchPickerMenu{,.search.test}.tsx（d40925eb08）、src/renderer/src/components/native-chat/session/options/controls/NativeChatSession{OptionRows,SpeedButton}.tsx（2e6c9e70db、73831a5697）、src/renderer/src/components/tab-group/SplitPaneLanding.tsx、src/renderer/src/components/terminal-agent-tab-shortcut.ts（2a06f6abf9）。**新變形**：release 的 revert ffddfcbe12 刪了 `config/scripts/test-runtime/execution-policy/vitest-shared-worker-files.mjs`，上游 main 還在用，合併取了刪除 → vitest config 載不起來，canary 報告的「Failing tests」只有 `UNRESOLVED_IMPORT`、沒有 vitest.json（測試根本沒跑），tc 也報 `config/vitest.config.ts` TS2307。canary 要自己清的殘留：(1) `git checkout HEAD -- config/scripts/test-runtime/execution-policy/vitest-shared-worker-files.mjs package.json`（package.json 是 release bump 的 version）；(2) `git rm` release 新增、上游 main 沒有的 4 檔：config/scripts/orcad-distribution/server-bundle/orcad-child-artifacts.test.mjs、src/renderer/src/components/native-chat/session/options/controls/NativeChatSessionSpeedButton.test.tsx、src/renderer/src/components/tab-group/{SplitPaneLandingAgentRow,split-pane-landing-row}.tsx（SplitPaneLandingAgentRow 的 TS2307 是它帶出來的，不要修 import）；(3) en.json 刪掉 release 留下的 `components.tabGroup.splitPaneLanding.{goToFile,heading,reopenClosedTab}`（上游 lint verify:localization-extraction／catalogs 紅的一半原因，另一半屬「renderer owner 分組搬家」條目）。挑法：`git diff --name-only <merge-base> v1.4.255` 裡 `v1.4.255..MERGE_HEAD` 沒 fork commit、K 與 HEAD 不同的檔一律採 HEAD（HEAD 沒有就 `git rm`）。另一個陷阱：tc 走 tsrs，有 `.cache/typecheck/tsrs` 快取，檔案補回後仍報同一個 TS2307；`rm -rf .cache/typecheck` 再跑才正確（原生 `tsc -p config/tsconfig.node.json` 是 0 錯誤）。都不在 `v1.4.255..develop`，auto-rebase 不用處理。
 - 驗證（2026-11-12，上游 ed31974c2d03c72fd12bf00014919bcf450447b9）：develop 已在 v1.4.256（merge-base f8ffde3837），同型 14 個衝突檔（報告 fork 欄空白，`git diff --quiet v1.4.256 MERGE_HEAD -- <檔>` 都成立，`v1.4.256..MERGE_HEAD` 都沒 fork commit）：config/ast-grep/rule-tests/claude-chat-entrypoint-callers-test.yml、config/ast-grep/rules/claude-chat-entrypoint.yml、src/main/claude/structured/launch/claude-structured-child-env.ts（v1.4.256 的 cfcaf07f7f #40548；main 的 cec9a6627d、2a3bfb9f01 又改）、src/renderer/src/components/dictation/{DictationController,DictationIndicator,DictationPillShell,DictationSetupPill}.tsx、dictation/{speech-model-update-check,use-dictation-speech-model-setup}.ts（v1.4.256 的 b93b59f996、6023ca6a16、7c5d780560，main 是 115976acca #40686）、src/renderer/src/components/native-chat/conversation/slots/native-chat-transcript-slots.ts、native-chat/messages/rows/NativeChat{Assistant,}MessageRow.tsx 與 NativeChatTranscriptRow.tsx（v1.4.256 的 9bd6baa512 #40668）、src/shared/agent-launch/startup/parent-agent-session-env.ts（main 的 2a3bfb9f01 #41220 把 claude-parent-session-env.ts 改名成它，release 在舊路徑改過 cfcaf07f7f；v1.4.256 與 MERGE_HEAD 都沒有新路徑）。canary 要自己清的殘留：(1) `git checkout HEAD -- .github/workflows/release-cut.yml package.json`（release 的 3ad9722af6 與 version bump）；(2) `git rm -f` release 新增、上游 main 已在低價值測試清理中刪掉的 4 檔：config/scripts/static-analysis/ratchets/react-compiler/check-react-compiler-compat-ratchet.test.mjs（3d28b6fbf8 #40588）、src/renderer/src/components/dictation/dictation-setup-pill.test.tsx（05cea5e99d #41012）、dictation/dictation-speech-model-setup.test.tsx（5401c07619 #41026）、src/shared/agent-launch/startup/claude-chat-entrypoint.test.ts（59fd2dac7c #41007）。挑法同上一行。這次 locale 沒有 release 殘留。都不在 `v1.4.256..develop`，auto-rebase 不用處理。採上游並清掉殘留後，連同其他條目一起：tc 0 錯誤、150 個測試檔 888 例全過、上游 lint 45 步全過。
 - 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：develop 已在 v1.4.257（merge-base ed08b72c9b），同型 4 個衝突檔（報告 fork 欄空白，`git diff --quiet v1.4.257 MERGE_HEAD -- <檔>` 都成立，`v1.4.257..MERGE_HEAD` 都沒 fork commit）：src/cli/handlers/chat{,.test}.ts（v1.4.257 的 b8422387ed、44b4112040 revert #40836／#41129；main 是 3f84308ec1 #41241，再由 3b5a433247 #41534 搬到 src/cli/agents/）、src/cli/dispatch/handler-group-manifest.ts（舊路徑 src/cli/handler-group-manifest.ts，560a22e00f #41562 搬家）、src/main/orca-profiles/profile-project-domain-transfer.test.ts（v1.4.257 的 5aa17f0fe4 #40982；main 的 2195eae589 #41082 刪掉）。canary 要自己清的殘留：(1) `git checkout HEAD -- package.json`；(2) `git rm -f src/main/persistence/profile-state/profile-state-offline-settings.test.ts`（v1.4.257 的 5aa17f0fe4 新增，main 在 386afed0ca #41106 搬到 profile-state/offline-access/；tc 的 `./profile-state-database` TS2307 是它帶出來的，不要修 import）。挑法同上。另：這次 src/main/git/source-control/history.ts 報告 fork 欄也空白，但舊路徑 src/main/git/history.ts 在 `v1.4.257..MERGE_HEAD` 有 fork 99277d0027，是真衝突，屬「git 模組搬家」條目。都不在 `v1.4.257..develop`，auto-rebase 不用處理。採上游並清掉殘留後，連同其他條目一起：tc 0 錯誤、161 個測試檔 1006 例全過、上游 lint 45 步全過。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：本次 22 個 release/main 分歧。比對 v1.4.258 與 MERGE_HEAD 在新舊路徑均無 fork 差異，採上游。CLI/chat 4 個；worker approvals／turn stops 與 Native Chat 11 個（release 433d33ddfb04c7a0df549f129a367c67ba12856c 與 main b8950a4f6631864679e86b6b46fd8babbfaa32a3）；Add Project／New Workspace 6 個（release 3527a9d69168e8c26c5dfb4aba15560b6688256f、main 99c84bff03f3755346d9afbd3ef65582305d1266，main 隨 e7288d7ea5387b279ddf5663d1004f04a1bd793f 再分域）；產生的 RPC catalog 1 個，採上游後驗證通過。另有兩個 release 測試自動回灌，從 K 的工作樹及 index 一起移除：`src/renderer/src/components/native-chat/conversation/slots/NativeChatMessageList.timed-rows.test.tsx`（main 50e702d51f91478c99a52450cc72279fe5bc817a 已刪，造成缺 harness 的 TS2307）與 `src/renderer/src/components/native-chat/worker-approvals/NativeChatWorkerApprovals.test.tsx`（main 9f32c6d06dd692824b888a1eb6b089cee4fb00b7 已刪）。這些無 fork commit，rebase 不重放；上游保留的 timed-rows 與 approval-feed 測試另跑通過。
 
 ## fork 自身問題（folder repo diff 的筆記 owner 在 remote 情境沒有真 store 斷言）× fork 既有 folder 多 repo 筆記接線（CombinedDiffViewer、EditorPanelHeader 的 `useVisibleWorktreeDiffComments(getOpenFileGitWorktreeId(file), file)`）— auto-rebase 2026-11-04
 - 類型：fork 自身問題
@@ -68,7 +69,7 @@
 - 守它的測試：待補
 - 驗證：未驗證（審查者 C 的 mutation：拿掉後全綠）
 
-## a0f1cb0ee2e68a6978df505c074623334e42662a（#41322 refactor(git): group root modules by concrete domain owners）、04158606b5deb127b0dd5fdd2735f146f171cd19（#41316 refactor(git): group command execution by concrete owners）× fork 99277d0027（feat(source-control): git 歷史支援多分支、分支篩選與 git 端搜尋(後端)）、a1b46d2592（refactor: carry fork values in options objects instead of trailing positional params）、2b8b4a6bdd（test(fork): 補上游接縫的非 UI 契約測試,修正 commit 複製把缺檔當空內容）、651d848c59（test(project-groups): 補 descendIntoRepos 經 scanNested IPC 傳到 scanNestedRepos 的測試）— canary 2026-11-13
+## a0f1cb0ee2e68a6978df505c074623334e42662a（#41322 refactor(git): group root modules by concrete domain owners）、04158606b5deb127b0dd5fdd2735f146f171cd19（#41316 refactor(git): group command execution by concrete owners）× fork 376d7ae578（feat(source-control): git 歷史支援多分支、分支篩選與 git 端搜尋(後端)）、de6316aa19（refactor: carry fork values in options objects instead of trailing positional params）、a802816911（test(fork): 補上游接縫的非 UI 契約測試,修正 commit 複製把缺檔當空內容）、44ee6b3ad5（test(project-groups): 補 descendIntoRepos 經 scanNested IPC 傳到 scanNestedRepos 的測試）— canary 2026-11-13
 - 類型：上游改了 fork 依賴的 API（上游把 src/main/git 根目錄的模組搬進子目錄；衝突都只在 import 區）
 - 衝突檔：src/main/git/source-control/history.ts（a0f1cb0ee2 從 src/main/git/history.ts 搬來；報告 fork 欄空白，舊路徑才看得到 99277d0027）、src/main/git/source-control/file-diff.ts（a0f1cb0ee2 改 `../git-runtime-options` → `../command-runner/git-runtime-options`）、src/main/providers/git-provider-contract.ts（04158606b5 把 GitAdmissionTier 的 import 改成 `../../shared/rpc-contract/git-admission-tier-params`）
 - 連帶症狀：typecheck file-diff.skip-render-limit-real-git.test.ts、filesystem-git-status-handlers.ts 的 TS2353 `skipRenderLimit`、local-git-provider.ts 的 TS2322、runtime-git-diff-commands.ts 的 TS2554（衝突檔被重設成上游版）；history-graph-dispatch.real-git.test.ts 的 TS2307 `./history`；repos-nested-scan-options.test.ts 的 TS2307 `../git/runner`／`../git/repo` 與 TS2339 `gitRepoModuleMock`／`gitRunnerModuleMock`。失敗測試 blob-absence-real-git.fork.test.ts、file-diff.read-failure.test.ts、file-diff.skip-render-limit-real-git.test.ts、filesystem-git-history-graph-ipc.test.ts、runtime-git-history-graph-chain.test.ts、history-graph-dispatch.real-git.test.ts、repos-nested-scan-options.test.ts。
@@ -81,44 +82,121 @@
 - 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：連同其他條目一起套用後 tc 0 錯誤、canary 的 161 個測試檔 1006 例全過、上游 lint 45 步全過。
 - 2026-11-13 auto-rebase v1.4.258（PR #161）照做，develop 沒移動（上游 folder-setup e2e 紅），條目留著：v1.4.258 只含 04158606b5（a0f1cb0ee2 不在）：git-provider-contract.ts 在 a1b46d2592（fork import 是 `diff-render-limit-options`）、2c31042595（改名 `git-diff-read-options`）兩站衝突；repos-nested-scan-options.test.ts 只改 runner 兩處（修正 commit 112480d477），`../git/repo` 與 `gitRepoModuleMock` 在 v1.4.258 還在。history.ts／file-diff.ts／history graph 測試路徑留給含 a0f1cb0ee2 的 release。
 - 2026-11-13 develop 已推到 rebase/v1.4.258 並發 v1.4.258-fork.1：04158606b5 那部分（git-provider-contract.ts、repos-nested-scan-options 的 runner 兩處）已在 develop 上，不用再做；條目留給含 a0f1cb0ee2 的 release（history.ts／file-diff.ts／history graph 測試路徑、repos-nested-scan-options 的 `../git/repo`→repo-detection）。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：history.ts 採上游 Git runner 位置並加回 fork history graph dispatch，更新 real-Git／IPC／runtime chain 的舊 history 路徑。`repos-nested-scan-options.test.ts` 已有 v1.4.258 的 git-spawn，這次只改 repo-detection 路徑與 mock 名稱。#41812、#41772、#42063 若已在 tag，依各條的較新 Git 路徑。合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過。
 
-## d3b6609ac90538cb5c9745291480e97da3a96bcd（#41475 refactor(rpc): group root modules by defining owner）× fork 2b8b4a6bdd（test(fork): 補上游接縫的非 UI 契約測試,修正 commit 複製把缺檔當空內容）、c38931b8b7（test(git-diff): 補齊 skipRenderLimit 與 history graph 遠端路徑的傳遞鏈測試）、6239823655（fix(fork): follow upstream's renderer lib and RPC module moves in fork files (upstream 3228095e97, 0314da7ed8)）— canary 2026-11-13
+## d3b6609ac90538cb5c9745291480e97da3a96bcd（#41475 refactor(rpc): group root modules by defining owner）× fork a802816911（test(fork): 補上游接縫的非 UI 契約測試,修正 commit 複製把缺檔當空內容）、173589d58e（test(git-diff): 補齊 skipRenderLimit 與 history graph 遠端路徑的傳遞鏈測試）、195eebce11（fix(fork): follow upstream's renderer lib and RPC module moves in fork files (upstream 3228095e97, 0314da7ed8)）— canary 2026-11-13
 - 類型：上游改了 fork 依賴的 API（`src/main/runtime/rpc/unused-default-rpc-methods.test-fixture.ts` 搬到 `rpc/dispatch/testing/`）
 - 衝突檔：無
 - 連帶症狀：typecheck 與失敗測試 TS2882／Cannot find module：src/main/runtime/rpc/methods/source-control/git/{git-diff-skip-render-limit,git-history-graph-rpc}.test.ts、src/main/runtime/runtime-git-{diff-skip-render-limit,history-graph}-chain.test.ts
 - 處理：前兩支的 `import '../../../unused-default-rpc-methods.test-fixture'` → `'../../../dispatch/testing/unused-default-rpc-methods.test-fixture'`（同目錄上游 git-conflict-projection.test.ts 的寫法）；後兩支的 `import './rpc/unused-default-rpc-methods.test-fixture'` → `'./rpc/dispatch/testing/unused-default-rpc-methods.test-fixture'`。
 - 守它的測試：上面 4 支本身（都在 config/fork-seam-tests.txt）
 - 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：改完 tc 0 錯誤、4 支在 161 檔重跑裡通過。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過，四支 RPC／runtime 測試通過。
 
-## e902c9a65b691fdffcc5b4200bbf4fda2a12dc73（#41350 refactor(workspace-layout): organize concrete domain owners）× fork 82fc6df202（test(git-graph-tab): pin lazy retry and old-client exclusion; rename editor-kind modules）、3465cfccb0（fix(fork): folder 編輯分頁的 relativePath 恢復為相對 folder）— canary 2026-11-13
+## e902c9a65b691fdffcc5b4200bbf4fda2a12dc73（#41350 refactor(workspace-layout): organize concrete domain owners）× fork 54ba7c76a2（test(git-graph-tab): pin lazy retry and old-client exclusion; rename editor-kind modules）、b3b51f2796（fix(fork): folder 編輯分頁的 relativePath 恢復為相對 folder）— canary 2026-11-13
 - 類型：上游改了 fork 依賴的 API（workspace-layout 的 test-fixture 搬進 commands/、persistence/）
 - 衝突檔：無
 - 連帶症狀：typecheck 與失敗測試 TS2307：src/shared/workspace-layout/old-client/old-client-session-tabs-projection.fork.test.ts（`../workspace-layout-command.test-fixture`）、src/renderer/src/store/slices/store-session-editor-hydration.fork.test.ts（`…/shared/workspace-layout/workspace-layout-profile.test-fixture`）
 - 處理：前者改 `'../commands/workspace-layout-command.test-fixture'`，後者改 `'../../../../shared/workspace-layout/persistence/workspace-layout-profile.test-fixture'`；用到的 `build`、`testContext`、`WS`、`localDesktopSession` 在新檔都還在。
 - 守它的測試：上面兩支本身（都在 config/fork-seam-tests.txt）
 - 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：改完 tc 0 錯誤、兩支在 161 檔重跑裡通過。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過，兩支 workspace layout fixture 測試通過。
 
-## fb58871bdb0c6414b4cf88aa9d7814b0dd43cca0（#41437 refactor(claude): group root modules by defining owners）× fork 2a9ba1528e（fix(fork): auto-rebase 的子 agent 不帶 pane 身分啟動）、fc65cfa947（test(fork): fork-detached-agent 測試在 Windows 跳過並用 POSIX hook）— canary 2026-11-13
+## fb58871bdb0c6414b4cf88aa9d7814b0dd43cca0（#41437 refactor(claude): group root modules by defining owners）× fork e857a8b1b2（fix(fork): auto-rebase 的子 agent 不帶 pane 身分啟動）、c348a94e5c（test(fork): fork-detached-agent 測試在 Windows 跳過並用 POSIX hook）— canary 2026-11-13
 - 類型：上游改了 fork 依賴的 API（hook-service.ts 不再 re-export `getManagedScript`，本體搬到 src/main/claude/hooks/hook-script.ts）
 - 衝突檔：無
 - 連帶症狀：失敗測試 config/scripts/fork-detached-agent.test.ts（`TypeError: getManagedScript is not a function`）。config/scripts 的 .ts 不在 `pnpm tc` 範圍，typecheck 抓不到，只有這支測試會紅。
 - 處理：`import { getManagedScript as getClaudeManagedScript } from '../../src/main/claude/hook-service'` → `'../../src/main/claude/hooks/hook-script'`（簽章 `getManagedScript(target: 'local' | 'posix' = 'local', options?)` 沒變）。
 - 守它的測試：config/scripts/fork-detached-agent.test.ts
 - 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：改完在 161 檔重跑裡通過。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過，detached-agent 測試通過。
 
-## fb8d6f950bc9ec2c64fa99ef50d7ff27a866eef2（#41601 refactor(github): organize concrete feature owners）× fork 9ebaed30ea（feat(source-control): Git Graph 版面讓出訊息空間、分頁篩選獨立並預設全部分支）— canary 2026-11-13
+## fb8d6f950bc9ec2c64fa99ef50d7ff27a866eef2（#41601 refactor(github): organize concrete feature owners）× fork 384d3c4a69（feat(source-control): Git Graph 版面讓出訊息空間、分頁篩選獨立並預設全部分支）— canary 2026-11-13
 - 類型：兩邊各改各的（只在 import 區）
 - 衝突檔：src/shared/editor-tab-view-types.ts
 - 連帶症狀：typecheck git-graph-tab-actions.ts、editor/types/open-file.ts 的 TS2305 `OpenGitGraphState`；上游 lint audit:code-quality:type-aware 與 check:code-quality:changed 的 `no-redundant-type-constituents`（git-graph-tab-actions.ts:138，同一個 error type）；Git Graph 分頁那批失敗測試（GitGraphTabView、git-graph-full-*、git-graph-open-commit 等 component 測試）與 dc13df6962 條目一起消失。
 - 處理：import 區採上游的 `'./github/checks/check-types'`、`'./github/repositories/repository-identity'` 兩行，前面加回 fork 的 `import type { GitHistoryGraphSavedFilter } from './git-history-graph-query-types'`；檔案其他 fork 段落（`OpenGitGraphState` 等）merge-file 自動合入。
 - 守它的測試：`pnpm tc`、config/fork-seam-tests.txt 的 GitGraphTabView.component.test.tsx、git-graph-full-view.component.test.tsx
 - 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：tc 0 錯誤、type-aware 與 changed 兩步通過、161 檔全過。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過；補回 `OpenGitGraphState` 後，type-aware 與 changed-code lint 通過。
 
-## aaf5295a7f45f7507428fcafe1ae89e94df7629e（#41441 feat(tab-group): split pane landing as a command card）× fork 06c5e92ef8（feat(source-control): Git Graph 全螢幕改成 IntelliJ 式佈局,可多選 commit 合併檢視與複製變更檔案）、9435369a99（fix(clipcode): 擋下會被還原成其他指令的檔名、讀檔後立即丟棄超量內容、切換 commit 時清掉多選;commit 檔案選取改用檔案總管的高亮樣式並補 e2e）— canary 2026-11-13
+## aaf5295a7f45f7507428fcafe1ae89e94df7629e（#41441 feat(tab-group): split pane landing as a command card）× fork 6706c8c6e8（feat(source-control): Git Graph 全螢幕改成 IntelliJ 式佈局,可多選 commit 合併檢視與複製變更檔案）、2989df4b95（fix(clipcode): 擋下會被還原成其他指令的檔名、讀檔後立即丟棄超量內容、切換 commit 時清掉多選;commit 檔案選取改用檔案總管的高亮樣式並補 e2e）— canary 2026-11-13
 - 類型：兩邊各改各的
 - 衝突檔：src/renderer/src/assets/main.css（一個 hunk：上游在 `[data-file-explorer-row][data-selected='true'] {` 前面插入 `.split-pane-landing … jump-palette-item[data-selected='true']` 兩條規則，fork 把那個 selector 擴成三個）
 - 連帶症狀：無獨立症狀（Git Graph／commit 檔案選取的樣式；測試不驗 CSS）
 - 處理：保留上游新增的兩條 `.split-pane-landing` 規則，後面的 selector 用 fork 版 `[data-file-explorer-row][data-selected='true'],\n[data-commit-file-path][data-selected='true'],\n[data-git-graph-row][data-selected='true'] {`。ff01a87397（#41602）也改了這個檔，但在沒衝突的區域，自動合入。
 - 守它的測試：上游 lint check:dead-classes 與 e2e 的 ClipCode commit 檔案選取（9435369a99 補的那支）
 - 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：上游 lint 45 步全過（含 check:dead-classes）；e2e 未跑。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：保留上游 palette 和 sidebar 規則，補回兩個 fork selector。`check:dead-classes` 通過；ClipCode E2E 未驗證。
 
+## 2050d9fbc6e5d92c5992cb5eef5aee0c6b6f9fd9（#41812 refactor: group source-control modules by operation ownership）× fork 416e34ed5b（refactor: finish moving fork params into options objects and pin the remaining hops）、a802816911（test(fork): 補上游接縫的非 UI 契約測試,修正 commit 複製把缺檔當空內容）、99f258ed7d（test: move fork cases out of upstream test files into .fork.test siblings）— canary 2026-11-14
+- 類型：上游改了 fork 依賴的 API
+- 衝突檔：`src/main/git/source-control/diffs/{diff-result,file-diff}.ts`、`src/main/git/source-control/submodules/submodule-diff.ts`、`src/main/runtime/integrations/git/runtime-git-diff-commands.ts`（該檔的 RPC import 另見 #42063）。
+- 連帶症狀：`filesystem-git-status-handlers.ts` 的 `FileDiffOptions` 缺 `skipRenderLimit`；`blob-absence-real-git.fork.test.ts`、`commit-diff-missing-sides.real-git.test.ts`、`file-diff.read-failure.test.ts`、`file-diff.skip-render-limit-real-git.test.ts`、`filesystem-git-diff-skip-render-limit-ipc.test.ts` 失敗。seam 清單列出的 `src/main/git/source-control/blob-absence-real-git.test.ts` 隨上游搬進 `diffs/`。
+- 處理：三個 Git 檔保留上游的新路徑，加入 `../git-diff-read-options` 的 `GitDiffReadOptions`，保留 fork 的內容大小選項（含快取 key 與 submodule 轉發）及缺檔語意；runtime 的 `getBranchDiff` 改從 `comparisons/branch-diff` 載入，保留 `GitDiffReadOptions` 及 options 轉發。`commit-diff.ts` 搬到 `comparisons/`，保留 fork 的 `missingSides` hunk（本次自動合入）。fork 測試的 import 與 vi.mock 一起換：`file-diff`、`git-blob-read` → `diffs/`，`commit-diff` → `comparisons/`，`worktree-diff-stamp` → `input-stamps/`，`submodule-paths` → `submodules/`。更新 `config/fork-seam-tests.txt` 的上游 blob-absence 測試路徑，fork sibling 留原處。
+- 守它的測試：seam 清單的 skip-render-limit 組（含 runtime chain、IPC、真 Git）、blob-absence、commit-diff-missing-sides 和 file-diff.read-failure。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過；搬移的上游 blob-absence 測試另跑通過，seam 清單檢查通過。
+
+## cc29ae4820878be9bba0bad2bd3783231841ba94（#41772 refactor: organize provider modules by defining owner）× fork 416e34ed5b（refactor: finish moving fork params into options objects and pin the remaining hops）— canary 2026-11-14
+- 類型：上游改了 fork 依賴的 API
+- 衝突檔：`src/main/providers/git/provider-contract.ts`（原 `src/main/providers/git-provider-contract.ts`）。
+- 連帶症狀：`src/main/providers/git/local-provider.ts` 的 `getDiff` 簽章不合，`file-diff.skip-render-limit-real-git.test.ts` 找不到舊的 local-git-provider。
+- 處理：保留上游分域結構與 import。契約加回 `../../git/source-control/git-diff-read-options` 的 `GitDiffReadOptions`，保留 `getDiff` 最後的 optional options。local provider 搬至 `git/local-provider.ts`，保留 options 轉發（本次自動合入），真 Git 測試改 import `../../providers/git/local-provider`。若 release 同時含 #42063，`GitAdmissionTier` 採新契約路徑。
+- 守它的測試：`file-diff.skip-render-limit-real-git.test.ts` 的 provider 實際讀取與快取隔離。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過。
+
+## 075d6b3b507b8b6ce0c3202e72a5bb00c4045500（#42063 refactor(rpc): group request contracts by feature owner）× fork 416e34ed5b（refactor: finish moving fork params into options objects and pin the remaining hops）、376d7ae578（feat(source-control): git 歷史支援多分支、分支篩選與 git 端搜尋(後端)）、173589d58e（test(git-diff): 補齊 skipRenderLimit 與 history graph 遠端路徑的傳遞鏈測試）— canary 2026-11-14
+- 類型：上游改了 fork 依賴的 API
+- 衝突檔：`src/shared/rpc-contract/source-control/git-params.ts`、`src/main/runtime/rpc/methods/source-control/git/git-diff-methods.ts`、`src/main/runtime/integrations/git/runtime-git-diff-commands.ts`（與 #41812 共用後者）。
+- 連帶症狀：`src/main/runtime/rpc/methods/source-control/git/git.ts` 的 `args.graph` 型別消失，`git-diff-skip-render-limit.test.ts` 指向舊 `git-params`。
+- 處理：保留上游的 `rpc-contract/source-control/` import，`git-params.ts` 從 `../git-history-graph-params` 加回 `GitHistoryGraphParams`，並保留 fork schema 的 `graph`、`skipRenderLimit`。RPC diff methods 保留 `gitDiffReadArgs`，runtime 保留 `GitDiffReadOptions`；RPC 測試改用新 `git-params` 路徑。產生的 `rpc-params-catalog.generated.ts` 是本次 release/main 分歧，採 main，跑 `pnpm run verify:rpc-params-catalog` 驗證。若包含 #41950 且仍見 observability 的舊 import，見 #41950 條。
+- 守它的測試：`git-diff-skip-render-limit.test.ts`、`git-history-graph-rpc.test.ts` 及兩條 runtime chain。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過；RPC catalog 驗證通過。
+
+## 17a1dc373b0ac7c5b1710490815d478f2ae76f56（#42093 refactor: group shared worktree modules by feature）× fork 9c425c7788（fix(fork): follow upstream v1.4.257's renderer owner moves (#40337, #40562, #40688, #40745, #40761, #40777, #40895, #40911, #40936)）— canary 2026-11-14
+- 類型：上游改了 fork 依賴的 API
+- 衝突檔：無
+- 連帶症狀：`GitGraphTabView.tsx` TS2307，`GitGraphTabView.component.test.tsx` import 失敗。
+- 處理：在 `src/renderer/src/components/git-graph-tab/GitGraphTabView.tsx` 將 `shared/worktree/git-identity-display` 改成 `shared/worktree/row-display/git-identity-display`。
+- 守它的測試：`GitGraphTabView.component.test.tsx`。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過。
+
+## 587562e862c564a49eb3e35217fbb1595d04bbc5（#42107 refactor: organize shared sidebar list modules by domain）× fork 76cbc192ba（fix(git-graph): resolve folder choices with Source Control's lineage selectors and host-aware repos）— canary 2026-11-14
+- 類型：上游改了 fork 依賴的 API
+- 衝突檔：無
+- 連帶症狀：`git-graph-tab-model.ts` TS2307，`audit:code-quality:type-aware` 和 `check:code-quality:changed` 都把 `SidebarLineageParentIdentities` 報為 error type。
+- 處理：在 `src/renderer/src/components/git-graph-tab/git-graph-tab-model.ts` 將 `shared/sidebar-list/worktree-lineage-projection` 改成 `shared/sidebar-list/lineage/worktree-lineage-projection`。
+- 守它的測試：`GitGraphTabView.component.test.tsx`、`pnpm tc` 和上述兩個 lint 步驟。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過；兩個 lint 步驟通過。
+
+## 7922a4a0e4b7c139bf27db9888b85e8ff34d44c1（#21108 Scroll combined diff panes with sideways wheel input）× fork 21f353884d（fix(source-control): 依第二輪 QA 修正:combined diff 在 dev StrictMode 不再 crash、多選複製 hash/訊息涵蓋全部選取、Git Graph 可在旁邊開 diff）— canary 2026-11-14
+- 類型：兩邊各改各的
+- 衝突檔：`src/renderer/src/components/editor/diff/sections/DiffSectionBody.tsx`。
+- 連帶症狀：`DiffSectionBody.monaco-strict-reveal.test.tsx`、`DiffSectionBody.real-monaco-strict-reveal.test.tsx`、`DiffSectionBody.image-lazy-identity.fork.test.tsx` 失敗。只合 production 檔後，第一個測試的舊 mock 會漏進真 wheel handler，報 `editor.getContainerDomNode is not a function`。
+- 處理：沿用上游 `installDiffEditorHorizontalWheelScroll(diffEditor)` 和 dispose cleanup；在它前面保留 fork `cancelPendingDisposeRef.current = deferDiffEditorDispose(diffEditor)`，保留重連 guard 和共用的 `editor-lazy-views` 入口。fake Monaco 測試只把 `vi.mock` 改指向 `diff-editor-horizontal-wheel-scroll` 與新 export `installDiffEditorHorizontalWheelScroll`。測試仍驗證生命週期和 image chunk，wheel 行為由上游測試驗證。
+- 守它的測試：上述三個 fork 測試，以及上游 `diff-editor-horizontal-wheel-scroll.test.ts`。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過；上游水平滑輪測試另跑通過。
+
+## 2434a63be94d8f7fe09a9e35e17f8c4b412faca1（#41249 fix(tab-group): keep a grabbable tab in narrow tab-group strips）× fork 831438e7a1（feat(source-control): Git 介面順手度優化第一批）— canary 2026-11-14
+- 類型：兩邊各改各的
+- 衝突檔：`src/renderer/src/components/tab-group/TabGroupPanel.tsx`。
+- 連帶症狀：`TabGroupPanel.git-graph-button.test.tsx` 的頂右角定位和 active 斷言都紅。
+- 處理：採上游的內層 `@container/tab-strip`、40px tab 下限、窄幅 action 規則及 quick commands fallback。把 `reserveClosedExplorerToggleSpace` 控制的 `TabStripGitGraphButton` 放回同一容器的 action chrome，位於 quick-command wrapper 與 pane actions 之間，保留 `activeTab?.contentType === 'git-graph'`。launcher 現有 260px query 在上游 203px／163px／114px 階段前已隱藏按鈕。`oxlint` 會報直接加回的版本有 404 個有效行、上限 400；將上游 action chrome（quick commands、pane actions、原 ref 與寬度規則）與 fork 按鈕抽到 `TabGroupStripActions.tsx`，由原容器傳入原 props。兩個解法檔要一起套，窄條 e2e 可驗證 drag 與鍵盤焦點。
+- 守它的測試：`TabGroupPanel.git-graph-button.test.tsx`；上游 `tests/e2e/narrow-tab-group-drag-handle.spec.ts`。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：合併樹 `pnpm tc` 通過，原批 160 檔 1,003 例全過；分拆後全套 lint 45 步通過，另跑 Git Graph 按鈕與 launcher 7 例通過；窄條 e2e 未驗證。
+
+## 98bcd7943a02a32e263393130890939f3c427711（#41838 refactor: organize text generation around concrete owners）× fork 275f5d9d5c（chore(rebase): grandfather the fork's startup-only sync fs reads in v1.4.255's main-sync-fs ratchet）— canary 2026-11-14
+- 類型：兩邊各改各的
+- 衝突檔：`config/main-sync-fs-baseline.txt`。
+- 連帶症狀：`check:main-sync-fs-ratchet` 指出 `src/main/asar-transparent-stat.ts` 有 2 次與 `src/main/updater/fork-distribution.ts` 有 1 次同步呼叫，baseline 都容許 0。
+- 處理：沿用上游 baseline 的既有行序與新路徑，包含 `src/main/automations/external-managers/external-manager-discovery.ts` 及 `src/main/text-generation/prompts/source-control-prompt-files.ts`；插回 `2 src/main/asar-transparent-stat.ts`、`1 src/main/updater/fork-distribution.ts` 兩行。
+- 守它的測試：`pnpm run check:main-sync-fs-ratchet`。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：ratchet 通過，總額 2171。
+
+## 3fe2827bc9a88e507b38fe33eca60c533c15c10e（#41950 Label Git execution callers, command shapes and priority in traces）× 無 fork commit — canary 2026-11-14
+- 類型：上游自己就紅（#41950 在 #42063 搬動 RPC 契約後帶回舊 import）。
+- 衝突檔：無。
+- 連帶症狀：`src/main/observability/git-execution-spans.ts` TS2307，原樣存在於上游 `fe7241058b`。fork 自 v1.4.258 沒碰這個檔。
+- 處理：若新 tag 已含兩個上游 commit，而且檔案仍引用 `../../shared/rpc-contract/git-admission-tier-params`，改為 `../../shared/rpc-contract/source-control/git-admission-tier-params`。先找上游是否已修；有修復 commit 就用它。此輪觀測到的 main 還有舊路徑。
+- 守它的測試：`pnpm tc`。
+- 驗證（2026-11-14，上游 fe7241058b1af9ecf783326e1799e59fde84b927）：上游原檔與合併檔一致；修正 import 後型別檢查通過。
