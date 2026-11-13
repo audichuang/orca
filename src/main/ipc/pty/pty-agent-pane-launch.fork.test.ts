@@ -15,7 +15,7 @@ vi.mock('node-pty', () => import('./pty-ipc-mock-registry').then((m) => m.nodePt
 vi.mock('node:child_process', async (importOriginal) =>
   (await import('./pty-ipc-mock-registry')).childProcessModuleMock(await importOriginal())
 )
-vi.mock('../../opencode/hook-service', () =>
+vi.mock('../../opencode/status-hooks/hook-service', () =>
   import('./pty-ipc-mock-registry').then((m) => m.openCodeHookServiceModuleMock())
 )
 vi.mock('../../mimo/hook-service', () =>
@@ -24,7 +24,7 @@ vi.mock('../../mimo/hook-service', () =>
 vi.mock('../../agent-hooks/server', () =>
   import('./pty-ipc-mock-registry').then((m) => m.agentHookServerModuleMock())
 )
-vi.mock('../../pi/titlebar-extension-service', () =>
+vi.mock('../../pi/managed-extensions/titlebar-extension-service', () =>
   import('./pty-ipc-mock-registry').then((m) => m.piTitlebarExtensionModuleMock())
 )
 vi.mock('../../pwsh', () => import('./pty-ipc-mock-registry').then((m) => m.pwshModuleMock()))
@@ -37,7 +37,7 @@ vi.mock('../../telemetry/client', () =>
 vi.mock('../../telemetry/classify-error', () =>
   import('./pty-ipc-mock-registry').then((m) => m.classifyErrorModuleMock())
 )
-vi.mock('../../cli/linux-terminal-orca-cli-shim', () =>
+vi.mock('../../cli/launchers/linux-terminal-orca-cli-shim', () =>
   import('./pty-ipc-mock-registry').then((m) => m.linuxCliShimModuleMock())
 )
 vi.mock('../../memory/pty-registry', () =>
