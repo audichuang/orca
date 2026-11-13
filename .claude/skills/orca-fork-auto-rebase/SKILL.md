@@ -119,6 +119,7 @@ pnpm run ensure:electron-runtime && LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 npx playwr
   - 先讀 `gh run view <id> --log-failed -R audichuang/orca` 與 `gh api repos/audichuang/orca/check-runs/<job_id>/annotations`。判斷有沒有取得 runner 要合看 job 的 `runner_id`、`steps` 與 annotations；API `started_at` 不代表已取得 runner，`runner_id=0`、`steps=[]` 加上取得失敗的 annotation 才能判為未開始執行。
   - 型別錯誤、缺檔、mock／API 漂移、同錯重複出現等確定性錯誤直接修，照第 2 步做基準對照。原因未知就繼續查，保留紅燈。
   - 只有已確認的基礎設施暫態（runner 未取得、網路下載失敗；下載要先確認恢復），或已列出測試名稱並附同 SHA fail→pass 證據的不穩定測試，才記錄 job、測試／證據與理由，用 `gh run rerun <id> --failed -R audichuang/orca` 重跑一次，再 `gh-wait run <id> -R audichuang/orca -t 9`。再次失敗就修；fork-check 目標裡不加豁免，required jobs 仍須全部成功。重跑過的 job 在第 8 步完整報告註明。
+- `config/fork-upstream-e2e.txt` 列的上游 spec 紅，而且在乾淨的 vNEW 以同一個斷言紅、上游 `main` 也沒有修正可 cherry-pick：照 FORK.md「Merge gate」把那一行改成註解，另一個 commit（算 MANUAL，證明是兩份失敗輸出），不交人、不問；PR 完整報告寫一行，Bark 不提。
 - fork e2e 失敗另外照 FORK.md「When a fork e2e goes red」下載 artifact 看 `shots/`。spec 在 vNEW 存在就在 vNEW 跑；是 fork 自己的 spec（上游沒有）就在 OLD_DEVELOP 跑（`git worktree add --detach ../ar-$RUN-olddev OLD_DEVELOP && (cd ../ar-$RUN-olddev && pnpm install --frozen-lockfile)`，只重現那一個 spec，用第 2 步的 playwright 指令）。舊 develop 上也失敗就記為「develop 既有紅測試」，照第 2 步處理，仍須讓 required gate 全綠。修正 commit 換了 head，審查者照第 5 步看修正的部分。
 - CI 結果（綠，或每個紅 job 與對照）貼成 PR 留言。留言也是心跳：precheck 看 PR 的更新時間判斷這個 run 還活著，所以第 4、5 步每個階段開始時也各留一則短留言（「盲審開始」「第 2 輪審查開始」）。
 
