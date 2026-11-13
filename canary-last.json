@@ -1,7 +1,7 @@
 {
-  "upstream": "fe7241058b",
+  "upstream": "dd9f8e3994",
   "date": "2026-11-14",
-  "report": "~/.cache/orca-fork-canary/20261113T211436Z-64144/report.md",
+  "report": "~/.cache/orca-fork-canary/20261113T213040Z-86910/report.md",
   "result": "not green (exit 1): 35 merge conflicts, typecheck errors, failing tests, lint failures, fork tests the merged tree no longer runs",
   "conflicts": [
     "config/main-sync-fs-baseline.txt",
