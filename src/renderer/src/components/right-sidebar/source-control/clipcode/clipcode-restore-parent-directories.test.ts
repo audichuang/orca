@@ -68,7 +68,7 @@ describe('createParentDirectoriesForNewFile', () => {
     createRuntimePath.mockRejectedValueOnce(new Error('EEXIST'))
     statRuntimePath.mockResolvedValue({ size: 3, isDirectory: false, mtime: 0 })
 
-    await expect(create('a/new.ts')).rejects.toThrow('无法创建文件，因为 /srv/repo/a 不是目录。')
+    await expect(create('a/new.ts')).rejects.toThrow('无法创建文件，因为 /srv/repo/a 不是目录')
   })
 
   it('rethrows any other failure without probing', async () => {
