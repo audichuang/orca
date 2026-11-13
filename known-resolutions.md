@@ -60,46 +60,6 @@
 - 守它的測試：(2) `src/renderer/src/components/editor/diff/monaco-view/DiffViewer.kept-model-sync.fork.test.tsx`（v1.4.257 rebase 的 ab01f13588，已進 seam 清單）；(1) 待補
 - 驗證：(1) 未驗證；v1.4.257 rebase 的審查者 C 再次確認拿掉 `initialCwd` 後 source-control/ai 與 agent-session/launch 共 29 支測試全綠（S15）；`commit-area.tsx:250` 的 `initialCwd` 仍是死接線（8dc69cf2d2 拿掉了 commit-surface 的傳入，S32）
 
-## dc13df6962693a325ecd880a2712dc66ca3a1ecc（#40944 Keep Git Graph work bounded during scrolling and paging）× fork 024bca1a88（原 82d7f007d8；feat(source-control): Git Graph 摺疊很長的分支連線,目前分支固定在最左）、d447f6d699（原 c317f0499d；refactor(fork): stop exporting upstream internals the fork reads）— canary 2026-11-12
-- 類型：兩邊各改各的
-- 衝突檔：src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph-svg.tsx
-- 連帶症狀：typecheck git-graph-full-view.tsx、git-graph-lane-svg.tsx 的 TS2459 `SWIMLANE_WIDTH`／`SWIMLANE_HEIGHT` 沒 export、TS2305 `GitHistoryGraphNodeMarker`（衝突檔被重設成上游版的連帶症狀）；失敗測試 git-graph-lane-layout.test.tsx、git-graph-full-*.component.test.tsx 另有搬家條目的 `@/lib/utils`。
-- 處理：上游在 `GitHistoryGraphSvg` 加了 `visibleWidth` 與 `intersects()` 裁切、把節點畫成 `showCircle && …`；fork 把節點圓點抽成 export 的 `GitHistoryGraphNodeMarker`（full Git Graph 的 git-graph-lane-svg.tsx 共用，那邊沒有 visibleWidth）。合法：採上游的 paths／`cx`／`intersects` 段；`width` 下面保留上游的 `isBoundaryNode`、`isMergeNode`、`circleExtent`、`showCircle`，不要 `cy`（只有 marker 用）；`<svg>` 裡改成 `{showCircle && (<GitHistoryGraphNodeMarker viewModel={viewModel} cx={cx} color={circleColor} />)}`；`GitHistoryGraphNodeMarker` 本體用 fork 版，merge-file 自動併進去的三個 `showCircle && ` 要拿掉（marker 裡沒有這個變數）。`export const SWIMLANE_HEIGHT`／`SWIMLANE_WIDTH` 照 fork。解法存在報告 resolution/files。
-- 守它的測試：src/renderer/src/components/right-sidebar/source-control/sync/git-graph-lane-layout.test.tsx（marker 共用）、上游的 sync/git-history-graph-svg.test.tsx（visibleWidth 裁切）、config/fork-seam-tests.txt 的 git-graph-full-view.component.test.tsx
-- 驗證（2026-11-12，上游 ed31974c2d03c72fd12bf00014919bcf450447b9）：tc 0 錯誤；canary 的 146 檔加上 dc13df6962 動到的 4 個上游測試（editor/git-graph/git-graph-{model,rendering,viewport}、sync/git-history-graph-svg.test.tsx）全過。
-- 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：兩側這個檔都和 11-12 相同（`git diff --quiet 902ccb91f0 fork/develop`、`ed31974c2d 3bec2aa636` 都沒差），直接沿用 11-12 的解法檔；tc 0 錯誤、161 檔重跑全過、上游 lint 45 步全過。
-- 2026-11-13 auto-rebase v1.4.258（PR #161）照做，develop 沒移動（上游 folder-setup e2e 紅），條目留著：停在 fork 024bca1a88；中間站保留 024bca1a88 自己的 `export const SWIMLANE_CURVE_RADIUS`／`export function GraphPath`，讓 d447f6d699 乾淨套上，最終與 canary 解法檔相同。
-
-## 3217e60e840d363caf2a9cb94d1e0aab40718fd0（#41038 refactor: give pane conversations a concrete owner and remove redundant wrappers）× fork f7ccd3a268（原 c3201fd573；feat(source-control): Commits 區的分支篩選、git 端搜尋、載入更多與複製 commit 異動；新增 git-history-commit-explain.ts）— canary 2026-11-12
-- 類型：上游改了 fork 依賴的 API（3217e60e84 不在上次 canary 的上游 abff3a41f5 裡；這兩個檔上次歸搬家條目）
-- 衝突檔：src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.ts（報告 fork 欄：43d19cf1f9、c902bd6062、c1c06fe938、ae7eb14314、6a01784884）
-- 連帶症狀：typecheck git-history-commit-explain.ts 的 TS2305 `launchAgentInNewTab`、TS2307 `agent-launch-request-id`；panel-content.tsx、GitGraphTabView.tsx 的 TS2322 `GitHistoryCommitActionHandler`，git-history-commit-copy-wiring.test.tsx／use-git-history-commit-actions.fork.test.tsx 的 TS2554；失敗測試 git-history-commit-copy-wiring.test.tsx；上游 lint verify:localization-extraction／catalogs 的 `auto.components.right.sidebar.SourceControl.{commitHashes,commitMessages}`（後三項是衝突檔被重設成上游版的症狀）。
-- 處理：衝突檔的兩個 hunk 都採 fork 側（空）：fork 把 `explainCommitWithDefaultAgent` 與它的 5 個 import 搬到 git-history-commit-explain.ts。把 #41038 對這段的改動移植到 git-history-commit-explain.ts：`launchAgentInNewTab` → `launchAgentInNewTabWithOutcome`（同一個模組 `@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab`），`newAgentLaunchRequestId()`（`@/lib/agent-session/launch/routing/agent-launch-request-id`，上游已刪）→ `createNonSecureContextUuid()`（`'../../../../../../shared/non-secure-context-uuid'`）。fork 其他檔（含 vi.mock）沒有用到這兩個舊名。
-- 守它的測試：`pnpm tc`、src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.fork.test.tsx、git-history-commit-copy-wiring.test.tsx
-- 驗證（2026-11-12，上游 ed31974c2d03c72fd12bf00014919bcf450447b9）：tc 0 錯誤、兩支測試在 150 檔的重跑裡通過、localization 兩步通過。
-- 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：衝突檔兩側與 11-12 相同，沿用解法檔；git-history-commit-explain.ts 照上面改兩處；tc 0 錯誤、兩支測試通過、verify:localization-extraction／catalogs 通過。
-- 2026-11-13 auto-rebase v1.4.258（PR #161）照做，develop 沒移動（上游 folder-setup e2e 紅），條目留著：停在 d8e94f091a，兩個 hunk 採 fork 側；explain 的移植是修正 commit cc1f601304。
-
-## ee6b0858cf77e68c407121c53787fa4df9e87ebe（#41238 test: remove automatic reply matrices and weak suites）× fork 26ccf9de60（原 6ea672f41a；fix(fork): follow upstream's module moves (#37990, #38033, #38037, #38101, #38023, #37915, …)）、8f7154d62c（原 754637c745；test(fork): follow upstream v1.4.246 API changes in fork tests）— canary 2026-11-12
-- 類型：上游修了同一件事（上游刪掉整支測試；fork 的 hunk 只是讓這支上游測試在 fork 的 deferred dispose 下能跑）
-- 衝突檔：src/renderer/src/components/editor/combined-diff/scroll-viewport/combined-diff-cursor-reveal.test.tsx（modify/delete；報告「Fork tests the merged tree no longer runs」也列它）
-- 連帶症狀：無
-- 處理：接受上游刪除，不要把檔加回來；auto-rebase 重放 26ccf9de60、8f7154d62c 時這個檔的 hunk 丟掉（fork 的改動只有一段 `vi.mock('../../monaco-diff-editor-deferred-dispose', …)` 與一行註解）。config/fork-seam-tests.txt 沒列它。
-- 守它的測試：無
-- 驗證（2026-11-12，上游 ed31974c2d03c72fd12bf00014919bcf450447b9）：`git diff <merge-base> MERGE_HEAD -- <檔>` 只有那段 mock；刪除後 tc 與其他測試全過。
-- 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：同樣是 modify/delete，canary 已採刪除；tc 與 161 檔全過。
-- 2026-11-13 auto-rebase v1.4.258（PR #161）照做，develop 沒移動（上游 folder-setup e2e 紅），條目留著：8f7154d62c、26ccf9de60 兩站都是 DU，`git rm` 後交給 continue 腳本（檔名補在參數裡）。
-
-## 108226bfe3e292337dda5f2e9999406d98968c73（#40456 feat: combine localization and status-bar formatting）× fork 0bc81e31f3（原 c73573b8b5；fix(fork): ClipCode 還原的父層非目錄錯誤改用上游的翻譯字串）— canary 2026-11-12
-- 類型：上游改了 fork 依賴的 API（上游翻譯字串改了，fork 測試寫死舊譯文）
-- 衝突檔：無
-- 連帶症狀：失敗測試 src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-parent-directories.test.ts 的「words the not-a-directory refusal in the UI language」：expected '无法创建文件，因为 /srv/repo/a 不是目录。' but got '…不是目录'。
-- 處理：#40456 把 zh.json 的 `auto.components.tab.bar.tabCreateEntry.parentNotDirectory` 從「无法创建文件，因为 {{path}} 不是目录。」改成句尾沒有「。」。測試的期望值改成 `'无法创建文件，因为 /srv/repo/a 不是目录'`（只刪句尾「。」）。fork 沿用上游這個 key，不要改 locale 檔。
-- 守它的測試：上面那支測試本身
-- 驗證（2026-11-12，上游 ed31974c2d03c72fd12bf00014919bcf450447b9）：改完單跑 5 passed，150 檔重跑全過。
-- 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：develop 的測試仍寫「不是目录。」；改完 161 檔重跑全過。
-- 2026-11-13 auto-rebase v1.4.258（PR #161）照做，develop 沒移動（上游 folder-setup e2e 紅），條目留著：修正 commit e316e3b8dd。
-
 ## fork 自身問題（v1.4.257 rebase 審查者 C 找到、舊 develop 就有的測試缺口）× fork 6a01784884（folder workspace 多 repo、`readGitCommandFailureMessage`）、Cmd+J Git Graph 接線、fork 測試的字串 vi.mock — auto-rebase 2026-11-12
 - 類型：fork 自身問題
 - 衝突檔：無（v1.4.257 對這些檔只搬 import）
@@ -120,6 +80,7 @@
 - 守它的測試：config/fork-seam-tests.txt 的 skip-render-limit 組（file-diff.skip-render-limit-real-git、filesystem-git-diff-skip-render-limit-ipc …）、history graph 組（history-graph-dispatch.real-git、filesystem-git-history-graph-ipc、git-history-graph-rpc、runtime-git-history-graph-chain）、blob-absence-real-git.fork、file-diff.read-failure；repos-nested-scan-options.test.ts
 - 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：連同其他條目一起套用後 tc 0 錯誤、canary 的 161 個測試檔 1006 例全過、上游 lint 45 步全過。
 - 2026-11-13 auto-rebase v1.4.258（PR #161）照做，develop 沒移動（上游 folder-setup e2e 紅），條目留著：v1.4.258 只含 04158606b5（a0f1cb0ee2 不在）：git-provider-contract.ts 在 a1b46d2592（fork import 是 `diff-render-limit-options`）、2c31042595（改名 `git-diff-read-options`）兩站衝突；repos-nested-scan-options.test.ts 只改 runner 兩處（修正 commit 112480d477），`../git/repo` 與 `gitRepoModuleMock` 在 v1.4.258 還在。history.ts／file-diff.ts／history graph 測試路徑留給含 a0f1cb0ee2 的 release。
+- 2026-11-13 develop 已推到 rebase/v1.4.258 並發 v1.4.258-fork.1：04158606b5 那部分（git-provider-contract.ts、repos-nested-scan-options 的 runner 兩處）已在 develop 上，不用再做；條目留給含 a0f1cb0ee2 的 release（history.ts／file-diff.ts／history graph 測試路徑、repos-nested-scan-options 的 `../git/repo`→repo-detection）。
 
 ## d3b6609ac90538cb5c9745291480e97da3a96bcd（#41475 refactor(rpc): group root modules by defining owner）× fork 2b8b4a6bdd（test(fork): 補上游接縫的非 UI 契約測試,修正 commit 複製把缺檔當空內容）、c38931b8b7（test(git-diff): 補齊 skipRenderLimit 與 history graph 遠端路徑的傳遞鏈測試）、6239823655（fix(fork): follow upstream's renderer lib and RPC module moves in fork files (upstream 3228095e97, 0314da7ed8)）— canary 2026-11-13
 - 類型：上游改了 fork 依賴的 API（`src/main/runtime/rpc/unused-default-rpc-methods.test-fixture.ts` 搬到 `rpc/dispatch/testing/`）
@@ -161,26 +122,3 @@
 - 守它的測試：上游 lint check:dead-classes 與 e2e 的 ClipCode commit 檔案選取（9435369a99 補的那支）
 - 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：上游 lint 45 步全過（含 check:dead-classes）；e2e 未跑。
 
-## 3527a9d69168e8c26c5dfb4aba15560b6688256f（#41303 feat(project-admission): open menu-first Add project flow with synced host header）× 無 fork commit（fork 的上游 e2e 清單 config/fork-upstream-e2e.txt 列了 tests/e2e/folder-setup.spec.ts）— auto-rebase 2026-11-13
-- 類型：待人判斷
-- 衝突檔：無
-- 連帶症狀：fork CI `fork e2e specs` 紅：`tests/e2e/folder-setup.spec.ts:112`、`:177` 兩個測試卡在 `tests/e2e/helpers/sidebar-project-dialog.ts:10` 的 `expect(page.getByRole('dialog', { name: /Add a project/i })).toBeVisible()`（側欄「Add project」現在先開選單：Browse folder… / Clone from URL… / Create new project…）。
-- 處理：上游自己紅（乾淨 v1.4.258 同樣 2 failed、同一行），上游 main 7b73a633cf 也沒改 spec／helper。清單規則只准「上游刪 spec」或「fork 刻意改行為」時移出，所以 auto-rebase 不自己移出；PR #161 needs-human 留言請使用者二選一：(1) 同意移出清單（照 tabs.spec 前例 7d2019b68e 記進 FORK.md Accepted risks，清單留一行註解「upstream #41303 … re-add once upstream updates it」），(2) 等上游修。下一次 run 先 `git fetch origin main && git log v1.4.258..origin/main -- tests/e2e/helpers/sidebar-project-dialog.ts tests/e2e/folder-setup.spec.ts`，有修正就 `git cherry-pick -x`；使用者已在 FORK.md 或清單做了決定就照做。
-- 守它的測試：tests/e2e/folder-setup.spec.ts 本身
-- 驗證（2026-11-13，上游 v1.4.258 c91a7a6ee3／main 7b73a633cf）：fork CI run 43348474063 與本機乾淨 v1.4.258 都 2 failed。
-
-## 108226bfe3e292337dda5f2e9999406d98968c73（#40456 feat: combine localization and status-bar formatting，抽出 `refreshExistingOpenFile`）× fork d8e94f091a、3780b30b00、069555470a、5d15b024ce（open-file-apply.ts 的 folder git owner 接線與 split-group 搬家，後來都拆掉）— auto-rebase 2026-11-13
-- 類型：上游改了 fork 依賴的 API（fork 在這檔的淨改動是 0，只有中間 commit 衝突）
-- 衝突檔：src/renderer/src/store/slices/editor/opening/open-file-apply.ts（四站）
-- 連帶症狀：無
-- 處理：每站採上游（HEAD）那側；069555470a 那站整檔 `git checkout HEAD -- <檔>`（它把上游的 split-group 段搬到 open-file-link-split.ts，那個檔之後也被 fork 刪了）；最後一站 5d15b024ce `git show vNEW:<檔> > <檔>`。完成後確認 `git diff --quiet vNEW HEAD -- <檔>`。rerere 已錄下這四站的解法，同一個 vOLD 重跑時會自動重放，仍要照這條核對。
-- 守它的測試：`git diff --quiet vNEW HEAD -- src/renderer/src/store/slices/editor/opening/open-file-apply.ts`（沒有 fork hunk 要守）
-- 驗證（2026-11-13，上游 v1.4.258）：rebase 後與 v1.4.258 相同；審查者 A、B、Codex 確認 fork 淨差異舊新都是 0。
-
-## 791aa668dc38a06a22ac44119640146bf2c47126（#41192 opencode）、4b241c1d035a032f2bd7120b6297532dc979cf41（#41162 Pi）、bfd2bd7486e5d2032e0306eb37414554a6863fba（#41142 CLI）模組搬家 × fork 測試 src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts 的 vi.mock — auto-rebase 2026-11-13
-- 類型：上游改了 fork 依賴的 API（字串型 vi.mock，tc 與 seams 都不紅）
-- 衝突檔：無
-- 連帶症狀：無（mock 靜默失效，測試照樣綠；真模組 titlebar-extension-service 會在模組層建 service、可能往 HOME 寫檔）
-- 處理：已在 PR #161 的 7abf80def9 改成 `../../opencode/status-hooks/hook-service`、`../../pi/managed-extensions/titlebar-extension-service`、`../../cli/launchers/linux-terminal-orca-cli-shim`（同目錄上游 pty-*.test.ts 的寫法）。develop 若從 rebase/v1.4.258 推上去就已修好、刪掉這條；從 old develop 重新 rebase 時照做。**通用做法**：rebase 完、本機閘門前，對 `git diff --name-only --diff-filter=AM vNEW HEAD -- '*.ts' '*.tsx' '*.mjs' '*.mts'` 的每個檔掃 `from`／`import(`／`vi.mock(`／`importActual` 的相對與 `@/` specifier，找解析不到的；同樣掃 old develop 對 vOLD，只有新出現的才是這次要修（v1.4.258 run 的腳本：用 `git ls-tree -r --name-only <rev>` 當檔案集合、`git show <rev>:<檔>` 讀內容，副檔名試 .ts/.tsx/.mjs/.js/.mts/.cjs//index.ts//index.tsx/.json）。改完用暫時讓新路徑 mock factory 丟 `__boom` 證明綁上。
-- 守它的測試：pty-agent-pane-launch.fork.test.ts（在 seam 清單）＋上面的 specifier 掃描
-- 驗證（2026-11-13，上游 v1.4.258）：改完 1 passed；三條新路徑各丟 `__boom` 都 `Caused by: Error: __boom`。
