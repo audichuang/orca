@@ -1,6 +1,6 @@
 // Fork seam guard: descendIntoRepos must cross the projectGroups:scanNested IPC (options is z.unknown()) into scanNestedRepos.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as GitRunner from '../git/runner'
+import type * as GitSpawnModule from '../git/command-runner/git-spawn'
 import type * as RepoModule from '../git/repo'
 
 const { reposMocks, moduleMocks, scanNestedRepos } = await vi.hoisted(async () => {
@@ -12,8 +12,8 @@ vi.mock('electron', () => moduleMocks.electronModuleMock(reposMocks))
 vi.mock('../git/repo', async (importOriginal) =>
   moduleMocks.gitRepoModuleMock(await importOriginal<typeof RepoModule>())
 )
-vi.mock('../git/runner', async (importOriginal) =>
-  moduleMocks.gitRunnerModuleMock(reposMocks, await importOriginal<typeof GitRunner>())
+vi.mock('../git/command-runner/git-spawn', async (importOriginal) =>
+  moduleMocks.gitSpawnModuleMock(reposMocks, await importOriginal<typeof GitSpawnModule>())
 )
 vi.mock('../git/worktree', () => moduleMocks.gitWorktreeModuleMock(reposMocks))
 vi.mock('./registered-worktree-roots-cache', () =>
