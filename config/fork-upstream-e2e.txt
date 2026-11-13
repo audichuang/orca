@@ -40,5 +40,5 @@ tests/e2e/golden-file-open-edit-save.spec.ts
 tests/e2e/file-explorer-watch-refresh.spec.ts
 
 # folder workspaces
-tests/e2e/folder-setup.spec.ts
+# folder-setup.spec.ts: upstream v1.4.258 #41303 made "Add project" menu-first; its own spec still waits for the dialog and fails on clean v1.4.258. Re-add once upstream updates it.
 tests/e2e/sidebar-folder-keyboard-navigation.spec.ts
