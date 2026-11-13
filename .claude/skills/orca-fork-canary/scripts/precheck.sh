@@ -3,7 +3,8 @@
 # in flight (it needs the machine more). A rebase/* lock whose PR is verified and waiting for the user does not skip:
 # that wait can last days, which is exactly when the canary's warnings matter.
 set -euo pipefail
-trap 'rc=$?; m="precheck failed (exit $rc) at line $LINENO: $BASH_COMMAND"; echo "$m" >&2; "$HOME/.config/fork-automation/precheck-alert.sh" "Orca fork canary" "$m" || true' ERR
+# No Bark alert: the user wants the canary silent; a missed run shows up in the notes' canary-last.json date.
+trap 'rc=$?; echo "precheck failed (exit $rc) at line $LINENO: $BASH_COMMAND" >&2' ERR
 cd "$HOME/Project/orca"
 locks=$(git ls-remote fork 'refs/heads/rebase/*')
 [ -n "$locks" ] || exit 0
