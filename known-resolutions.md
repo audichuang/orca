@@ -44,7 +44,7 @@
 - 驗證：未驗證（只有審查者 B 讀碼）
 - 2026-11-05 auto-rebase v1.4.250（run 371）評估後未做：要用真 store 重建上游 host-authority／ownership catalog（`workspace-copy-owner.ts` 的 `resolveSourceCopy`、indexed owners）的 remote fixture，超出無人值守 rebase 的範圍。適合人工或功能 PR 補。
 
-## fork 自身問題（上游只改 import 的檔上，活的 fork seam 沒有測試會紅；(2) 已在 v1.4.257 補上）× fork 6a01784884／634145afad（folder repo 啟動目錄 `initialCwd`）、e089260726（原 d123a06c7d，DiffViewer kept-model sync）— auto-rebase 2026-11-11
+## fork 自身問題（上游只改 import 的檔上，活的 fork seam 沒有測試會紅；(2) 已在 v1.4.257 補上）× fork 1dd73170a0／9959f56191（folder repo 啟動目錄 `initialCwd`）、09dc8d42ed（原 e089260726、d123a06c7d，DiffViewer kept-model sync）— auto-rebase 2026-11-11
 - 類型：fork 自身問題
 - 衝突檔：無
 - 連帶症狀：無（v1.4.256 rebase 審查者 C 的 seam mutation：拿掉後 seam 86 支與 right-sidebar／editor 相關測試全綠）
@@ -52,14 +52,14 @@
 - 守它的測試：(2) `src/renderer/src/components/editor/diff/monaco-view/DiffViewer.kept-model-sync.fork.test.tsx`（v1.4.257 rebase 的 ab01f13588，已進 seam 清單）；(1) 待補
 - 驗證：(1) 未驗證；v1.4.257 rebase 的審查者 C 再次確認拿掉 `initialCwd` 後 source-control/ai 與 agent-session/launch 共 29 支測試全綠（S15）；`commit-area.tsx:250` 的 `initialCwd` 仍是死接線（8dc69cf2d2 拿掉了 commit-surface 的傳入，S32）
 
-## fork 自身問題（v1.4.257 rebase 審查者 C 找到、舊 develop 就有的測試缺口）× fork 6a01784884（folder workspace 多 repo、`readGitCommandFailureMessage`）、Cmd+J Git Graph 接線、fork 測試的字串 vi.mock — auto-rebase 2026-11-12
+## fork 自身問題（v1.4.257 rebase 審查者 C 找到、舊 develop 就有的測試缺口）× fork 1dd73170a0（folder workspace 多 repo、`readGitCommandFailureMessage`）、Cmd+J Git Graph 接線、fork 測試的字串 vi.mock — auto-rebase 2026-11-12
 - 類型：fork 自身問題
 - 衝突檔：無（v1.4.257 對這些檔只搬 import）
 - 連帶症狀：無；這次 rebase 因此不符「合格的 MANUAL」，由使用者授權移動 develop
 - 處理：補 `.fork.test`、各自拿掉接線會紅、加進 config/fork-seam-tests.txt：(a) `source-control/commit/use-bulk-actions.ts:33`、`use-discard-confirmation.ts:120,124` 的 `readGitCommandFailureMessage`：讓 bulk stage 與 discard-all 丟出 `"…Command failed: git add …\nfatal: Unable to create …index.lock…"`，斷言 `toast.error` 的 description 是那行 `fatal:`（比照 `source-control-entry-failure-toast.fork.test.ts`）；(b) `cmd-j/quick-action-context.ts:212` 的 `...buildGitGraphQuickActionContext(...)`：拿掉後 Cmd+J 的 Open Git Graph 一直顯示 `no-git-repo`，現有測試自己組 context、沒經過 `buildCmdJQuickActionContext`；(c) `use-selection.test.ts` 是 fork 新增檔卻不在 seam 清單（S21、S22 只有它會紅）；(d) 6 個字串型 `vi.mock('…')` 路徑改寫改回舊路徑仍綠（keybindings、MarkdownPreview.chat-quote、folder-path-repos、source-control-entry-context-menu、show-file-history、TabGroupPanel.git-graph-button），比照 v1.4.256 用 `__boom()` 證明 mock 有綁上。(e) 指向不存在模組的 `vi.mock` 刪掉、不改指向（原「vi.mock 指向不存在的模組」待人判斷條，2026-11-14 canary 依 FORK.md Who decides 重判併入，不是 ask 列）：`src/main/ipc/repos-nested-scan-options.test.ts` 的 `vi.mock('../git/worktree', …)`、`vi.mock('./registered-worktree-roots-cache', …)`、`vi.mock('../worktree-root-preparation', …)` 三段（`src/main/git/worktree`、`src/main/ipc/registered-worktree-roots-cache`、`src/main/worktree-root-preparation` 都不存在）；`moduleMocks` 的對應 helper 其他上游測試還在用，不用刪。`src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts` 的 `vi.mock('../../pwsh')`、`vi.mock('../../wsl')` 只關 Windows／WSL，屬 Platform scope：不修、不問（要順手刪也可以，刪掉同樣綠）。right-sidebar 兩支 `worktree-runtime-owner` 的 mock 已在 (d)。
 - 守它的測試：待補
 - 驗證：未驗證（審查者 C 的 mutation：拿掉後全綠）
-- 驗證 (e)（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：在合併樹刪掉上面 5 段 `vi.mock` 後，兩支仍 2 檔 2 例通過（刪前也是 2 例），oxlint 無新警告；沒有會因刪除而紅的測試，所以是清死碼，不是補守門。
+- 驗證 (e)（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：在合併樹刪掉上面 5 段 `vi.mock` 後，兩支仍 2 檔 2 例通過（刪前也是 2 例）；刪掉的段落只用到 `moduleMocks`、`reposMocks` 與動態 import，不會留下未用的靜態 import；沒有會因刪除而紅的測試，所以是清死碼，不是補守門。
 
 ## a0f1cb0ee2e68a6978df505c074623334e42662a（#41322 refactor(git): group root modules by concrete domain owners）、04158606b5deb127b0dd5fdd2735f146f171cd19（#41316 refactor(git): group command execution by concrete owners）× fork 376d7ae578（feat(source-control): git 歷史支援多分支、分支篩選與 git 端搜尋(後端)）、de6316aa19（refactor: carry fork values in options objects instead of trailing positional params）、a802816911（test(fork): 補上游接縫的非 UI 契約測試,修正 commit 複製把缺檔當空內容）、44ee6b3ad5（test(project-groups): 補 descendIntoRepos 經 scanNested IPC 傳到 scanNestedRepos 的測試）— canary 2026-11-13
 - 類型：上游改了 fork 依賴的 API（上游把 src/main/git 根目錄的模組搬進子目錄；衝突都只在 import 區）
