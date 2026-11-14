@@ -2,6 +2,7 @@
 import type { AppState } from '@/store/types'
 import type { Repo } from '../../../../shared/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
+import { isWorktreeRetiredByRemoval } from '../../../../shared/worktree/removal/removal-visibility'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { getIndexedAllWorktrees } from '@/store/slices/worktrees/listing/worktree-catalog-index'
@@ -98,7 +99,12 @@ export function listGitGraphRepoChoices(
   const choices: GitGraphRepoChoice[] = []
   for (const worktree of worktrees) {
     const repo = repoById.get(worktree.repoId)
-    if (repo && isGitRepoKind(repo) && getFilesystemOwnerKey(repo) === ownerKey) {
+    if (
+      repo &&
+      isGitRepoKind(repo) &&
+      getFilesystemOwnerKey(repo) === ownerKey &&
+      !isWorktreeRetiredByRemoval(worktree)
+    ) {
       choices.push({ repo, worktree })
     }
   }
