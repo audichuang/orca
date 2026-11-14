@@ -11,7 +11,7 @@ vi.mock('electron', () => ({
       mocks.handlers.set(channel, handler)
   }
 }))
-vi.mock('../../git/history', () => ({ getHistory: mocks.getHistory }))
+vi.mock('../../git/source-control/history', () => ({ getHistory: mocks.getHistory }))
 vi.mock('../worktrees/removal/registered-worktree-roots-cache', () => ({
   resolveRegisteredWorktreePath: async (path: string) => path
 }))

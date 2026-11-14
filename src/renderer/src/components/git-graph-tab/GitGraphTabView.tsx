@@ -15,7 +15,7 @@ import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared
 import type { Repo } from '../../../../shared/repo-types'
 import type { GitHistoryGraphSavedFilter } from '../../../../shared/git-history-graph-query-types'
 import type { Worktree } from '../../../../shared/worktree/types'
-import { getWorktreeGitIdentityDisplay } from '../../../../shared/worktree/git-identity-display'
+import { getWorktreeGitIdentityDisplay } from '../../../../shared/worktree/row-display/git-identity-display'
 import { GitGraphFullView } from '../right-sidebar/source-control/sync/git-graph-full-view'
 import { useSourceControlGitHistory } from '../right-sidebar/source-control/sync/use-git-history'
 import { useGitGraphTabFilter } from './use-git-graph-tab-filter'

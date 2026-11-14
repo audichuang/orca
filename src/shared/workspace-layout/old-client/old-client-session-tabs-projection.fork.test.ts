@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { projectSessionTabs } from './old-client-session-tabs-projection'
-import { build, testContext, WS } from '../workspace-layout-command.test-fixture'
+import { build, testContext, WS } from '../commands/workspace-layout-command.test-fixture'
 
 const GRAPH_FILE = { filePath: 'git-graph:wt-1', relativePath: 'Git Graph', language: 'plaintext' }
 
