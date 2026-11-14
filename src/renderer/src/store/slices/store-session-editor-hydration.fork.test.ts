@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { localDesktopSession } from '../../../../shared/workspace-layout/workspace-layout-profile.test-fixture'
+import { localDesktopSession } from '../../../../shared/workspace-layout/persistence/workspace-layout-profile.test-fixture'
 import { parseWorkspaceSession } from '../../../../shared/workspace-session/workspace-session-schema'
 import { useAppStore } from '..'
 import type { AppState } from '../types'
