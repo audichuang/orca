@@ -11,7 +11,7 @@ vi.mock('electron', () => ({
       mocks.handlers.set(channel, handler)
   }
 }))
-vi.mock('../../git/source-control/file-diff', async (importOriginal) => ({
+vi.mock('../../git/source-control/diffs/file-diff', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   getDiff: mocks.getDiff
 }))

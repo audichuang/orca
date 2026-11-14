@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runProcess } from '@orca/process-host'
 import { resolveExecutableCommand } from '../../shared/node-cli-command-resolution'
-import { getHistory } from './history'
+import { getHistory } from './source-control/history'
 
 const repos: string[] = []
 const gitBinary = resolveExecutableCommand(process.env.ORCA_TEST_GIT_BINARY ?? 'git')

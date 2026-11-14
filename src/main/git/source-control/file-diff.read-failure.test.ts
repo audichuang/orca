@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('./git-blob-read', () => ({
+vi.mock('./diffs/git-blob-read', () => ({
   blobConversion: vi.fn(
     (_worktree: string, _file: string, _options: unknown, mode = 'textconv') => ({
       mode,
@@ -12,14 +12,14 @@ vi.mock('./git-blob-read', () => ({
   readUnstagedLeftBlob: vi.fn(() => Promise.reject(new Error('spawn failed'))),
   readWorkingTreeFile: vi.fn(() => Promise.reject(new Error('spawn failed')))
 }))
-vi.mock('./worktree-diff-stamp', () => ({ readWorktreeDiffStamp: vi.fn(async () => null) }))
-vi.mock(import('./submodule-paths'), async (importOriginal) => ({
+vi.mock('./input-stamps/worktree-diff-stamp', () => ({ readWorktreeDiffStamp: vi.fn(async () => null) }))
+vi.mock(import('./submodules/submodule-paths'), async (importOriginal) => ({
   ...(await importOriginal()),
   findContainingSubmodule: vi.fn(() => null),
   listSubmodulePaths: vi.fn(async () => [])
 }))
 
-import { getDiff } from './file-diff'
+import { getDiff } from './diffs/file-diff'
 import { invalidateGitReadCaches } from './git-read-cache-invalidation'
 
 describe('getDiff when a blob read throws', () => {
