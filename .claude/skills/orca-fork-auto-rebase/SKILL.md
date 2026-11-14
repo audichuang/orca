@@ -39,6 +39,8 @@ Shell 是 zsh（macOS），審查者提示也要轉述這段：變數後接 `:` 
 - Claude 審查者：**不用 Agent 工具**（它一律在背景跑、完成才通知，等它就是閒置），改用 `claude -p` 子行程，跟 make 一樣寫 exit 檔、用 `fork-wait-for-job.sh` 等（第 4 步）。
 - 子 agent（`claude -p`、`codex-companion.mjs task`）一律經 `sh "$MAIN/config/scripts/fork-detached-agent.sh"` 啟動：直接啟動的子 agent 會繼承這個 terminal 的 pane 身分，它的 hook 會被 Orca 當成你回報，它一結束 Orca 就把 run 判成完成、關掉 terminal（run 219 死在審查者 A 交卷那一刻）。
 
+**重的指令送 ubuntu**：`MAIN` 與 `../ar-$RUN-base`、`../ar-$RUN-olddev` 裡的 install、`make fork-check-*`、`pnpm tc`、`check:code-quality:changed`、vitest、playwright、`fork-upstream-red`、hunk 掃描一律經 `fork-remote.sh`（第 1 步第 2 點複製進 `$MAIN/.rebase-review/`，在沒有 fork 腳本的上游 worktree 也叫得到）：`cd <那個 worktree> && bash "$MAIN/.rebase-review/fork-remote.sh" [--pull <相對路徑>] '<指令>'`。它把當下工作樹（含未提交的修改）送到 ubuntu：那邊的 HEAD 跟本機同一個 commit、修改 staged 在上面，在那邊 install、跑完、印出輸出，以指令的 exit code 結束；`--pull` 把產出拉回同一個相對路徑；`$FORK_REMOTE_SCRATCH` 是那邊跑完就刪的暫存目錄（指令要用單引號，讓它在那邊展開）。所以這些 worktree，連審查者 C 與 Codex 的，都不在本機 `pnpm install`；審查者的提示要寫明「測試一律在自己的 worktree 跑 `bash <MAIN 的絕對路徑>/.rebase-review/fork-remote.sh '<指令>'`，改回 hunk 的實驗也會跟著送過去」。`MAIN` 沒有 `node_modules`：會用到依賴的 `pnpm`／`node` 指令一律經 `R`，只用 Node 內建模組的 fork 腳本（`fork-notes.sh`、`fork-merge-driver-install.mjs`、`review-bundle.sh`、`fork-canary-apply.sh`）才在本機跑。下文寫 `R '<指令>'` 就是指這種呼叫，**一律照上面「等待」的方式跑**（背景、新 LOG 名、`.exit`、`fork-wait-for-job.sh`）。結束碼：90 = 什麼都沒跑（ubuntu 連不上）→ 那一步改在本機跑，先 `pnpm install --frozen-lockfile`，重型指令前面加 `FORK_LOCAL_HEAVY=1`（否則專案 hook 會擋），完整報告註明「ubuntu 不可用，改本機跑」；91 = 跑了但結果不明（遠端行程死掉、主機十分鐘連不上）→ 經 `fork-remote.sh` 重跑一次，再 91 才照 90 處理；其他是指令本身的結果。
+
 ## 0. 決定模式
 
 ```sh
@@ -75,8 +77,8 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
    git push fork "${lock}:refs/heads/rebase/vNEW"
    ```
    這個 commit 的時間是現在，precheck 拿它判斷鎖是否過期。之後每次推 `rebase/vNEW` 都是 `--force`。
-2. `git checkout --detach OLD_DEVELOP`，讀筆記：`tip=$(config/scripts/fork-notes.sh tip) && mkdir -p "$MAIN/.rebase-review" && cp config/scripts/fork-rebase-continue.sh config/scripts/fork-canary-apply.sh config/scripts/zsh-colon-modifier-guard.mjs "$MAIN/.rebase-review/" && for f in known-resolutions.md resolution-history.md; do git show "${tip}:$f" > "$MAIN/.rebase-review/$f" || : > "$MAIN/.rebase-review/$f"; done`（`fork-notes.sh` 是 fork 自己的檔案，rebase 中途可能不在工作樹，所以先讀）。`known-resolutions.md` 是待處理的建議：canary 對上游 main 試合時看過的衝突、「該丟掉的 fork commit」，以及 fork 自身問題；`resolution-history.md` 是之前怎麼處理過的紀錄，遇到筆記沒寫到的衝突，先在裡面找同一個檔或同一個 fork commit 的前例照做。條目適用於這次的條件：一般條目是 `git merge-base --is-ancestor <條目的上游 commit> vNEW`；類型是「fork 自身問題」的條目沒有上游 commit，條目列的檔案在 OLD_DEVELOP 上還在、修正還沒做就適用。`fork-notes.sh` 回非 0 → 沒有筆記也能做，照常 rebase，在完整報告裡註明。
-   讀完筆記，rebase 之前先量上游基準（約 1 分鐘，跟 rebase 同時跑；第 2 步要用）：前景先 `pnpm install --frozen-lockfile && git fetch origin main`（剛建的 worktree 還沒有 node_modules，腳本要用；MAIN 還在 OLD_DEVELOP，腳本是 fork 的檔，rebase 開始後就不在工作樹），再在背景跑 `node config/scripts/fork-upstream-red.mjs vNEW ../ar-$RUN-base "$MAIN/.rebase-review/upstream-red" > "$MAIN/.rebase-review/upstream-red.log" 2>&1; echo $? > "$MAIN/.rebase-review/upstream-red.log.exit"`，它一啟動就可以開始 rebase。它在乾淨的 vNEW worktree 跑 `pnpm tc`、上游 `pnpm lint` 的每一步與 `check:daemon-protocol-crossing`，寫出 `upstream-red.md`／`.json`：哪些上游自己就紅、各自的輸出，以及 `vNEW..origin/main` 裡碰過那些檔的 commit（cherry-pick 候選）。只是報告，不豁免任何東西。
+2. `git checkout --detach OLD_DEVELOP`，讀筆記：`tip=$(config/scripts/fork-notes.sh tip) && mkdir -p "$MAIN/.rebase-review" && cp config/scripts/fork-rebase-continue.sh config/scripts/fork-canary-apply.sh config/scripts/zsh-colon-modifier-guard.mjs config/scripts/fork-heavy-command-guard.mjs config/scripts/fork-remote.sh "$MAIN/.rebase-review/" && for f in known-resolutions.md resolution-history.md; do git show "${tip}:$f" > "$MAIN/.rebase-review/$f" || : > "$MAIN/.rebase-review/$f"; done`（`fork-notes.sh` 是 fork 自己的檔案，rebase 中途可能不在工作樹，所以先讀）。`known-resolutions.md` 是待處理的建議：canary 對上游 main 試合時看過的衝突、「該丟掉的 fork commit」，以及 fork 自身問題；`resolution-history.md` 是之前怎麼處理過的紀錄，遇到筆記沒寫到的衝突，先在裡面找同一個檔或同一個 fork commit 的前例照做。條目適用於這次的條件：一般條目是 `git merge-base --is-ancestor <條目的上游 commit> vNEW`；類型是「fork 自身問題」的條目沒有上游 commit，條目列的檔案在 OLD_DEVELOP 上還在、修正還沒做就適用。`fork-notes.sh` 回非 0 → 沒有筆記也能做，照常 rebase，在完整報告裡註明。
+   讀完筆記，rebase 之前先量上游基準（跟 rebase 同時跑；第 2 步要用）：前景先 `git fetch origin main`（報告列的 cherry-pick 候選在上游 `main` 上，本機要有），再背景啟動 `bash "$MAIN/.rebase-review/fork-remote.sh" --pull out/upstream-red 'mkdir -p out/upstream-red && node config/scripts/fork-upstream-red.mjs vNEW "$FORK_REMOTE_SCRATCH/ar-base" out/upstream-red/upstream-red' > "$MAIN/.rebase-review/upstream-red.log" 2>&1; echo $? > "$MAIN/.rebase-review/upstream-red.log.exit"`，在 ubuntu 跑（MAIN 還在 OLD_DEVELOP，腳本是 fork 的檔，rebase 開始後就不在工作樹）。回 90（或 91 兩次）時本機版是 `pnpm install --frozen-lockfile && FORK_LOCAL_HEAVY=1 node config/scripts/fork-upstream-red.mjs vNEW ../ar-$RUN-base "$MAIN/.rebase-review/upstream-red"`（`$FORK_REMOTE_SCRATCH` 只在 ubuntu 有），結果直接寫在 `.rebase-review/`。等 log 出現 `>> fork-remote:` 那行（快照已送出）才開始 rebase，否則快照會拍到 rebase 到一半的樹。跑完把 `$MAIN/out/upstream-red/` 裡的 `upstream-red.*` 移到 `$MAIN/.rebase-review/`。它在乾淨的 vNEW worktree 跑 `pnpm tc`、上游 `pnpm lint` 的每一步與 `check:daemon-protocol-crossing`，寫出 `upstream-red.md`／`.json`：哪些上游自己就紅、各自的輸出，以及 `vNEW..origin/main` 裡碰過那些檔的 commit（cherry-pick 候選）。只是報告，不豁免任何東西。
 3. Rebase：先 `node config/scripts/fork-merge-driver-install.mjs`（讓 locale JSON 由 driver 合併；driver 複製進 git 目錄，rebase 中途工作樹沒有它也能用），再 `git rebase --onto vNEW vOLD`（FORK.md 說明為何要 --onto）。條目要丟掉某個 fork commit 時，改用：
    ```sh
    d=$(git rev-parse --short <要丟的 fork commit>)
@@ -85,7 +87,7 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
    要丟的 commit 必須在這次的 develop 上：`git merge-base --is-ancestor <條目的 sha> OLD_DEVELOP`。不在（條目是在上一次 rebase 前寫的，sha 已被改寫）就用條目寫的 commit 標題在 `git log --format='%h %s' vOLD..OLD_DEVELOP` 找，標題完全相同的剛好一個才用它；找不到或不只一個 → 不 rebase，鎖留著，跳到第 8 步（`## 8.` 那節）交給人（筆記說要丟的 commit 沒丟，後面的閘門都綠也不能發）。todo 清單用 `git rev-parse --short` 的長度，所以先轉換。rebase 完用 `git range-diff vOLD..OLD_DEVELOP vNEW..HEAD` 確認那個 commit 是 `<`（被丟掉）；不是就 `git checkout --detach OLD_DEVELOP` 回到起點重做一次（rebase 已經結束，`--abort` 沒有作用），第二次還不是就當失敗（第 5 點）。
    rerere 已開；重放後仍要 `git add` 才能 continue。每個停點解完（含 rerere 重放）一律用 `bash "$MAIN/.rebase-review/fork-rebase-continue.sh" "$MAIN/.rebase-review"` 收尾（第 2 步已複製進來：rebase 中途工作樹沒有 fork 腳本），**不要自己寫 cont.sh**：它把衝突檔記進 `resolved-files.txt`（去重）、`git add -A`、`rebase --continue`，印出完成或下一個停點（衝突檔、或空 commit 要 `git rebase --skip`）。結束碼 0 完成、1 又停在衝突、2 其他錯誤（含殘留衝突標記，此時什麼都沒 add）。已先 `git add` 過的檔補在後面當參數，才會進清單。有 canary 快取（`~/.cache/orca-fork-canary/<run>`，report.md 的 Upstream 要是 fetch 過的 sha）時，先 `bash "$MAIN/.rebase-review/fork-canary-apply.sh" <快取目錄> <衝突檔>...` 套用：乾淨套上的檔會直接寫入（仍要自己審），套不上的印原因、原檔不動，改手解。之後每個修正 commit（第 1 步第 6 點、第 2、5 步、cherry-pick）改的每個檔也加進去（fork 新增檔、測試、locale 都算：掃描會把它們列為 unmatched，由審查者 C 手動證明）。第 4 步的 hunk 掃描與第 6 步的證明範圍都只看這份清單。適用的條目照它處理、在 PR 說明裡逐條列出；它跟眼前的衝突對不上就以眼前為準，並在完整報告裡註明。
 4. CLEAN = 完全沒衝突、也沒丟 commit；MANUAL = 有任何衝突（**rerere 自動重放的也算**：那是對舊上游錄下的解法，要跟自己解的一樣過 mutation 證明）、丟掉了 commit、或有額外修正 commit。
-5. 自己解：保留 fork 功能、採上游新結構（FORK.md 的 seam 原則）；locale 兩邊只新增 key 時 driver 已合好、不算衝突；還停在 locale 檔，代表兩邊改了同一個字串（driver 留下衝突標記），兩邊 key 都保留、字串照筆記條目或上游新文案決定，之後 `pnpm run verify:localization-catalogs`。沒把握就 `git rebase --abort`，鎖留著，跳到第 8 步（`## 8.` 那節）：那裡會開 PR 並標 `needs-human`。放掉鎖的話，下一次排程會重跑同一個註定失敗的 rebase，每小時推一次失敗通知。
+5. 自己解：保留 fork 功能、採上游新結構（FORK.md 的 seam 原則）；locale 兩邊只新增 key 時 driver 已合好、不算衝突；還停在 locale 檔，代表兩邊改了同一個字串（driver 留下衝突標記），兩邊 key 都保留、字串照筆記條目或上游新文案決定，之後 `R 'pnpm run verify:localization-catalogs'`。沒把握就 `git rebase --abort`，鎖留著，跳到第 8 步（`## 8.` 那節）：那裡會開 PR 並標 `needs-human`。放掉鎖的話，下一次排程會重跑同一個註定失敗的 rebase，每小時推一次失敗通知。
 6. 適用的「fork 自身問題」條目：rebase 完成後照條目改，一條一個 commit（算 MANUAL），跑條目「守它的測試」確認通過。
 7. `git push --force fork HEAD:refs/heads/rebase/vNEW`，然後馬上開 PR（第 2 步可能跑好幾小時，PR 開了才能留心跳）：`git push fork "vNEW^{commit}:refs/heads/ci-base/vNEW"`（上游 tag 是 annotated tag，不加 `^{commit}` 推不上分支），`gh pr create -R audichuang/orca --base ci-base/vNEW --head rebase/vNEW --title "[不合併] develop rebase 到 vNEW 的 CI 驗證"`，記下編號當 `PR`。body 第一行放 `<!-- auto-rebase:old-develop OLD_DEVELOP 的完整 sha -->`（RESUME 靠它），其餘照 PR #22/#29 的格式（不合併的原因、`develop = vOLD + N 個 fork commit` → `vNEW + …` diff 區塊、每個衝突檔怎麼解、用了哪幾條筆記、額外 commit、Merge Danger），不加任何 attribution 行。之後各步有新的衝突解法或修正就 `gh pr edit` 補進說明。
 8. `make fork-check-lint` 直接讀上游 `config/scripts/preflight/changed-checks/run-lint.mjs` 的 `LINT_STEPS` 逐項執行（`config/scripts/fork-lint-run.mjs`），上游增減 lint 項目不用手動同步。以下情況要動它，另外 commit（算 MANUAL）：上游拿掉了 `EXCLUDED` 裡的項目（腳本會報錯要你刪掉那筆排除），或上游換掉 `LINT_STEPS`（`fork-upstream-api.mjs` 會報錯），或上游新增 `oxlint` 以外沒有 package script 的步驟（`fork-lint-run` 會報 `has no package.json script`）。
@@ -94,21 +96,23 @@ git fetch fork --tags && git fetch origin --no-tags '+refs/tags/v*:refs/tags/v*'
 
 ## 2. 本機閘門（一律跑，不分 CLEAN/MANUAL）
 
-先在 PR 留言「本機閘門開始」（心跳；修失敗的每一輪開始時也各留一則）。`pnpm install --frozen-lockfile`，然後 `make -k fork-check-static`（`pnpm tc`、changed-code quality、`fork-check-lint`；`-k` 讓 typecheck 紅了也照跑 lint，lint 本身也會跑完每一步，一輪就列出全部失敗），再 `make fork-check-seams`（`config/fork-seam-tests.txt` 列的 fork seam contract 測試，一個不漏地跑；沒有這個 target 的舊 develop 就略過並註明）。`make fork-footprint` 的輸出貼進 PR 說明（fork 在上游檔案上的足跡，跟上一次 rebase 比）。
+先在 PR 留言「本機閘門開始」（心跳；修失敗的每一輪開始時也各留一則）。在 ubuntu 跑 `R 'make -k fork-check-static'`（`pnpm tc`、changed-code quality、`fork-check-lint`；`-k` 讓 typecheck 紅了也照跑 lint，lint 本身也會跑完每一步，一輪就列出全部失敗），再 `R 'make fork-check-seams'`（`config/fork-seam-tests.txt` 列的 fork seam contract 測試，一個不漏地跑；沒有這個 target 的舊 develop 就略過並註明）。`R 'make fork-footprint'` 的輸出貼進 PR 說明（fork 在上游檔案上的足跡，跟上一次 rebase 比）。
 
-自己寫或改的測試與修正 commit（這一步、第 1 步第 6 點、第 5 步）：不用 type assertion（`as`，`as const` 除外），非用不可就在那一行加 `SAFETY:` 註解；commit 前先 `pnpm run check:code-quality:changed HEAD`（只看工作樹的改動），綠了再跑整輪 static（每輪約 5–6 分鐘，v1.4.246、v1.4.247 都因新測試的 `as` 多跑了一輪以上）。
+自己寫或改的測試與修正 commit（這一步、第 1 步第 6 點、第 5 步）：不用 type assertion（`as`，`as const` 除外），非用不可就在那一行加 `SAFETY:` 註解；commit 前先 `R 'pnpm run check:code-quality:changed HEAD'`（只看工作樹的改動），綠了再跑整輪 static（每輪約 5–6 分鐘，v1.4.246、v1.4.247 都因新測試的 `as` 多跑了一輪以上）。
 
-整套單元測試、e2e、wire、mobile **不在本機跑**：CI 在 Linux 上跑同樣的 make target，一次就有結果。本機在 macOS 跑會多出十來個上游自己的紅（路徑、shell、打包環境），還會跟機器上其他 session 搶 CPU 而逾時，每個都要再拿上游對照，徒增時間（v1.4.241 為此多花約 40 分鐘）。
+整套單元測試、e2e、wire、mobile 交給 CI（Linux 上跑同樣的 make target，那才是 gate），不在 Mac mini 跑：macOS 會多出十來個上游自己的紅（路徑、shell、打包環境），還會跟機器上其他 session 搶 CPU 而逾時，每個都要再拿上游對照，徒增時間（v1.4.241 為此多花約 40 分鐘）。要在推之前先看某一組，用 `R` 在 ubuntu 跑。
 
-**上游基準**：跑閘門前先 `bash config/scripts/fork-wait-for-job.sh "$MAIN/.rebase-review/upstream-red.log.exit"` 等第 1 步的基準。RESUME 沒有這份：`mkdir -p "$MAIN/.rebase-review"` 後在前景跑第 1 步那兩條（先 `pnpm install --frozen-lockfile && git fetch origin main`，再跑腳本）；報告列的候選若已在 HEAD（`git log vNEW..HEAD --grep "cherry picked from commit <候選完整 sha>"` 有結果）就是前一次 run 帶過了，不要重複 cherry-pick。exit 非 0（看 `upstream-red.log`）→ 沒有基準，閘門紅了才對照：在乾淨的 `../ar-$RUN-base`（沒有就照下面「失敗處理」建）執行 `fork-lint-run` 失敗區塊 `✗` 下一行 `>>` 後的完整命令（去掉 `>>` 前綴；package 步驟為 `pnpm run <name>`，`oxlint` 為實際執行檔及參數），兩邊都紅的才是上游的；在完整報告裡註明基準沒跑成。讀 `upstream-red.md`，把它整份貼進 PR 說明。列為紅的每一步都是上游自己的問題，**在跑第一輪閘門之前**就處理：照它列的候選，在上游 `main` 找修正（`git show --stat <候選>` 看是不是修這個失敗；候選沒有就 `git log vNEW..origin/main -- <輸出裡的檔>` 自己找），`git cherry-pick -x <那個 commit>` 進來（算 MANUAL；它的 mutation 證明就是改回去那一步會紅；之後 rebase 到含它的 release 時 git 會以相同 patch 略過，所以不要改動這個 commit；cherry-pick 有衝突而採了 vNEW 那側時 patch 會不同、不會自動略過，這時同一個 run 就寫 known-resolutions 條目，讓下一次 rebase 用標題找到它丟掉），它若新增只有 `en.json` 的 key，**另一個 commit** 補齊其他語系的翻譯（fork-locale-parity 以 vNEW 為基底，會把它們算成 fork key）。上游 `main` 也沒修 → 第 8 步回報。標了 `fork-check-lint skips it` 的那步閘門本來就不跑，不用處理。閘門裡紅、基準裡沒有的步驟是 fork 造成的，要修；同一步兩邊都紅時，比對兩份輸出，多出來的那幾行才是 fork 的。
+**上游基準**：跑閘門前先 `bash config/scripts/fork-wait-for-job.sh "$MAIN/.rebase-review/upstream-red.log.exit"` 等第 1 步的基準。RESUME 沒有這份：`mkdir -p "$MAIN/.rebase-review" && cp config/scripts/fork-remote.sh "$MAIN/.rebase-review/"` 後先 `git fetch origin main`，再跑第 1 步那條 `fork-upstream-red`（同樣經 `fork-remote.sh`，跑完移出結果）；報告列的候選若已在 HEAD（`git log vNEW..HEAD --grep "cherry picked from commit <候選完整 sha>"` 有結果）就是前一次 run 帶過了，不要重複 cherry-pick。exit 非 0（看 `upstream-red.log`）→ 沒有基準，閘門紅了才對照：在乾淨的 `../ar-$RUN-base`（沒有就照下面「失敗處理」建）用 `R` 執行 `fork-lint-run` 失敗區塊 `✗` 下一行 `>>` 後的完整命令（去掉 `>>` 前綴；package 步驟為 `pnpm run <name>`，`oxlint` 為實際執行檔及參數），兩邊都紅的才是上游的；在完整報告裡註明基準沒跑成。讀 `upstream-red.md`，把它整份貼進 PR 說明。列為紅的每一步都是上游自己的問題，**在跑第一輪閘門之前**就處理：照它列的候選，在上游 `main` 找修正（`git show --stat <候選>` 看是不是修這個失敗；候選沒有就 `git log vNEW..origin/main -- <輸出裡的檔>` 自己找），`git cherry-pick -x <那個 commit>` 進來（算 MANUAL；它的 mutation 證明就是改回去那一步會紅；之後 rebase 到含它的 release 時 git 會以相同 patch 略過，所以不要改動這個 commit；cherry-pick 有衝突而採了 vNEW 那側時 patch 會不同、不會自動略過，這時同一個 run 就寫 known-resolutions 條目，讓下一次 rebase 用標題找到它丟掉），它若新增只有 `en.json` 的 key，**另一個 commit** 補齊其他語系的翻譯（fork-locale-parity 以 vNEW 為基底，會把它們算成 fork key）。上游 `main` 也沒修 → 第 8 步回報。標了 `fork-check-lint skips it` 的那步閘門本來就不跑，不用處理。閘門裡紅、基準裡沒有的步驟是 fork 造成的，要修；同一步兩邊都紅時，比對兩份輸出，多出來的那幾行才是 fork 的。
 
 **失敗處理（CI 的 vitest、e2e 失敗）**：在乾淨的上游 worktree 重現同一個檔案。上游 tag 沒有 `Makefile` 和 fork 的 config，所以用 make 底下的原始指令：
 
 ```sh
-[ -d ../ar-$RUN-base ] || git worktree add --detach ../ar-$RUN-base vNEW; cd ../ar-$RUN-base && pnpm install --frozen-lockfile
-LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 pnpm exec vitest run --config config/vitest.config.ts <測試檔>
-pnpm run ensure:electron-runtime && LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 npx playwright test <spec> --config tests/playwright.config.ts --project=electron-headless --workers=1
+[ -d ../ar-$RUN-base ] || git worktree add --detach ../ar-$RUN-base vNEW; cd ../ar-$RUN-base
+bash "$MAIN/.rebase-review/fork-remote.sh" 'pnpm exec vitest run --config config/vitest.config.ts <測試檔>'
+bash "$MAIN/.rebase-review/fork-remote.sh" 'pnpm run ensure:electron-runtime && npx playwright test <spec> --config tests/playwright.config.ts --project=electron-headless --workers=1'
 ```
+
+（ubuntu 那邊已帶 `LC_ALL=C`、`ORCA_BACKGROUND_LAUNCH=1` 與 Xvfb 顯示器。fork 那側的對照在 `MAIN` 用同一條指令。）
 
 只有「fork 失敗、上游通過」才算回歸，要修（修正 commit 算 MANUAL）。兩邊都失敗才可排除（排除只決定回報與要不要修，不會讓紅的 CI 變綠：第 6 步一律要 CI 綠），而且**兩份輸出的尾段都要貼進 PR**，沒貼不准排除。同一個問題修兩輪還不過 → 第 8 步回報，分支照推讓使用者接手。
 
@@ -120,7 +124,7 @@ pnpm run ensure:electron-runtime && LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 npx playwr
   - 型別錯誤、缺檔、mock／API 漂移、同錯重複出現等確定性錯誤直接修，照第 2 步做基準對照。原因未知就繼續查，保留紅燈。
   - 只有已確認的基礎設施暫態（runner 未取得、網路下載失敗；下載要先確認恢復），或已列出測試名稱並附同 SHA fail→pass 證據的不穩定測試，才記錄 job、測試／證據與理由，用 `gh run rerun <id> --failed -R audichuang/orca` 重跑一次，再 `gh-wait run <id> -R audichuang/orca -t 9`。再次失敗就修；fork-check 目標裡不加豁免，required jobs 仍須全部成功。重跑過的 job 在第 8 步完整報告註明。
 - `config/fork-upstream-e2e.txt` 列的上游 spec 紅，而且在乾淨的 vNEW 以同一個斷言紅、上游 `main` 也沒有修正可 cherry-pick：照 FORK.md「Merge gate」把那一行改成註解，另一個 commit（算 MANUAL，證明是兩份失敗輸出），不交人、不問；PR 完整報告寫一行，Bark 不提。反過來，`config/fork-upstream-e2e.txt` 裡寫著「Re-add once upstream」的註解行，每次都在 `../ar-$RUN-base`（乾淨 vNEW）用第 2 步的 playwright 指令跑那支 spec，通過就把它加回清單（另一個 commit），讓 CI 一起驗。
-- fork e2e 失敗另外照 FORK.md「When a fork e2e goes red」下載 artifact 看 `shots/`。spec 在 vNEW 存在就在 vNEW 跑；是 fork 自己的 spec（上游沒有）就在 OLD_DEVELOP 跑（`git worktree add --detach ../ar-$RUN-olddev OLD_DEVELOP && (cd ../ar-$RUN-olddev && pnpm install --frozen-lockfile)`，只重現那一個 spec，用第 2 步的 playwright 指令）。舊 develop 上也失敗就記為「develop 既有紅測試」，照第 2 步處理，仍須讓 required gate 全綠。修正 commit 換了 head，審查者照第 5 步看修正的部分。
+- fork e2e 失敗另外照 FORK.md「When a fork e2e goes red」下載 artifact 看 `shots/`。spec 在 vNEW 存在就在 vNEW 跑；是 fork 自己的 spec（上游沒有）就在 OLD_DEVELOP 跑（`git worktree add --detach ../ar-$RUN-olddev OLD_DEVELOP`，只重現那一個 spec，用第 2 步經 `fork-remote.sh` 的 playwright 指令）。舊 develop 上也失敗就記為「develop 既有紅測試」，照第 2 步處理，仍須讓 required gate 全綠。修正 commit 換了 head，審查者照第 5 步看修正的部分。
 - CI 結果（綠，或每個紅 job 與對照）貼成 PR 留言。留言也是心跳：precheck 看 PR 的更新時間判斷這個 run 還活著，所以第 4、5 步每個階段開始時也各留一則短留言（「盲審開始」「第 2 輪審查開始」）。
 
 ## 4. 盲審（第 2 步本機閘門綠、推上去就開始，跟 CI 同時跑）
@@ -133,15 +137,17 @@ bash "$SKILL_DIR/scripts/review-bundle.sh" vOLD OLD_DEVELOP vNEW HEAD "$MAIN/.re
 
 （`.rebase-review/` 不要 commit。）腳本回非 0 就沒有完整素材可審：當成審查沒通過，不移動 develop，照第 8 步留給人。裡面有 `range-diff.txt`、`extra-commits.diff`、`upstream-touching.diff`、`importer-sweep.txt`、`seam-upstream.diff`、`README.txt`。`seam-upstream.diff` 是上游 vOLD..vNEW 對「fork 改過的上游檔、fork 新檔 import 的上游模組、含 fork seam 關鍵字的檔」的改動，**CLEAN 時它就是審查的主體**：沒有文字衝突不代表上游沒有新增一條繞過 fork seam 的平行路徑（新的 content type switch 沒有 `'git-graph'`、新的 updater 入口沒有 `isForkDistribution()`、重組參數時丟了 `skipRenderLimit`、slot 不再被渲染）。
 
-**會改檔的審查者（C 與 Codex）各用一個自己的 worktree**：`git worktree add --detach ../ar-$RUN-review-<名字> HEAD && (cd ../ar-$RUN-review-<名字> && pnpm install --frozen-lockfile)`，否則改回上游那一側的實驗會污染其他人正在讀的樹；A、B 用 `MAIN` 唯讀。
+**會改檔的審查者（C 與 Codex）各用一個自己的 worktree**：`git worktree add --detach ../ar-$RUN-review-<名字> HEAD`（不 install，測試經 `fork-remote.sh` 在 ubuntu 跑），否則改回上游那一側的實驗會污染其他人正在讀的樹；A、B 用 `MAIN` 唯讀。
 
 **hunk 掃描由你跑**（C 是 `claude -p`，自己跑會被 Bash 的時間上限打斷）：C 的 worktree（`../ar-$RUN-review-c`）建好後，照「等待」的方式在背景跑：
 
 ```sh
-cd ../ar-$RUN-review-c && { node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node && node config/scripts/fork-hunk-guard-scan.mjs vNEW --out "$MAIN/.rebase-review/scan" $(sed 's/^/--only /' "$MAIN/.rebase-review/resolved-files.txt") && node config/scripts/fork-hunk-guard-scan.mjs --report "$MAIN/.rebase-review/scan"; } > "$MAIN/.rebase-review/scan.log" 2>&1; echo $? > "$MAIN/.rebase-review/scan.log.exit"
+cd ../ar-$RUN-review-c && bash "$MAIN/.rebase-review/fork-remote.sh" --pull out/scan "node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node && node config/scripts/fork-hunk-guard-scan.mjs vNEW --out out/scan $(sed 's/^/--only /' "$MAIN/.rebase-review/resolved-files.txt" | tr '\n' ' ') && node config/scripts/fork-hunk-guard-scan.mjs --report out/scan" > "$MAIN/.rebase-review/scan.log" 2>&1; echo $? > "$MAIN/.rebase-review/scan.log.exit"
 ```
 
-`ensure-native-runtime` 不能省：`pnpm install` 把原生模組編成 Electron 版，Node 載不到，碰到它們的 fork 測試會在基準就紅、被排除，守的 hunk 變成假缺口。`resolved-files.txt` 是空的（CLEAN）就不跑；RESUME 沒有這份檔，用同一個規則重建：PR 說明列的衝突檔，加上 `extra-commits.diff` 碰到的每個檔。每個 hunk 約十幾秒到一分鐘。回非 0 看 `scan.log`；結果裡的 `error` 對那個檔重跑一次（新的 `--out`，例如 `scan-retry`）。給 C 的提示裡 `$MAIN` 寫成絕對路徑。
+掃描在 ubuntu 跑（它逐一改回 hunk、跑測試，最吃 CPU）；完成後 `mv out/scan "$MAIN/.rebase-review/scan"`。
+
+`ensure-native-runtime` 不能省（ubuntu 上也一樣）：`pnpm install` 把原生模組編成 Electron 版，Node 載不到，碰到它們的 fork 測試會在基準就紅、被排除，守的 hunk 變成假缺口。`resolved-files.txt` 是空的（CLEAN）就不跑；RESUME 沒有這份檔，用同一個規則重建：PR 說明列的衝突檔，加上 `extra-commits.diff` 碰到的每個檔。每個 hunk 約十幾秒到一分鐘。回非 0 看 `scan.log`；結果裡的 `error` 對那個檔重跑一次（新的 `--out`，例如 `scan-retry`）。給 C 的提示裡 `$MAIN` 寫成絕對路徑。
 
 **同時**開審查者，每個只拿素材資料夾路徑與（自己的）worktree 路徑，**不給 PR 說明、不給你的解衝突理由**（盲審：讓他們自己判斷，不被你的敘述帶著走）：
 
@@ -160,7 +166,7 @@ cd ../ar-$RUN-review-c && { node config/scripts/native-build/node-addons/ensure-
 ## 5. 分流與修正（兩輪，必要時加開一輪）
 
 - 彙整所有結果。每個 BLOCKING 自己去程式碼裡確認：
-  - 確認是真的 → 修、補會變紅的測試、commit（算 MANUAL）、重跑受影響的本機測試與 `make -k fork-check-static`（綠了才推：v1.4.243 有一輪 CI 只因修正 commit 沒先跑 static、被 `audit:anti-slop` 擋下）、`git push --force fork HEAD:refs/heads/rebase/vNEW`，CI 照第 3 步等綠。
+  - 確認是真的 → 修、補會變紅的測試、commit（算 MANUAL）、經 `R` 重跑受影響的測試與 `make -k fork-check-static`（綠了才推：v1.4.243 有一輪 CI 只因修正 commit 沒先跑 static、被 `audit:anti-slop` 擋下）、`git push --force fork HEAD:refs/heads/rebase/vNEW`，CI 照第 3 步等綠。
   - 不同意 → 寫下理由（引用程式碼證據），原文與理由一起進 PR。
 - 有修正就再審一輪：先在 `../ar-$RUN-review-codex` `git checkout --detach <新 head>`，Codex 在那裡用 `task --thread <第一輪的 thread id>`（一樣經 `fork-detached-agent.sh` 啟動；thread 每跑完一次會被自動封存，先 `codex unarchive <thread id>`，否則 job 立刻 failed）看修正後的 diff（**不要用 `--resume-last`**：機器上別的 session 也在跑 Codex，會接錯 thread）；Claude 只開一個新的 `claude -p` 審查者看修正的部分（同第 4 步的跑法）。
 - 有修正時，C 的 worktree 也切到新 head（`git -C ../ar-$RUN-review-c checkout --detach <新 head>`），對修正碰到的檔照第 4 步的方式重跑掃描（`--out` 用新目錄，例如 `scan-r2`），新的審查者用它的結果。
