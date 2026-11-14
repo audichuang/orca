@@ -8,6 +8,7 @@ import { resolveReviewRepository } from '@/lib/source-control/review/review-owne
 import { isGitRepoKind } from '../../../../../../shared/repo-kind'
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
+import { isWorktreeRetiredByRemoval } from '../../../../../../shared/worktree/removal/removal-visibility'
 
 type FilesystemOwnerFields = Pick<Repo, 'connectionId' | 'executionHostId'>
 
@@ -51,7 +52,12 @@ export function getFolderGitWorktrees(
   const result: FolderGitWorktree[] = []
   for (const worktree of worktrees) {
     const repo = repoById.get(worktree.repoId)
-    if (!repo || !worktreeBelongsToRepo(repos, repo, worktree)) {
+    // Why: upstream hides a worktree once its removal is recorded; listing it would offer a workspace being deleted.
+    if (
+      !repo ||
+      isWorktreeRetiredByRemoval(worktree) ||
+      !worktreeBelongsToRepo(repos, repo, worktree)
+    ) {
       continue
     }
     if (isPathInsideOrEqual(folderWorkspace.folderPath, worktree.path)) {
