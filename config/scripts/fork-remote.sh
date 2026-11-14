@@ -163,6 +163,8 @@ fi
 # Why: HEAD equals the local HEAD and the local edits sit staged on it, so HEAD in a command keeps its meaning.
 git -C "$wt" reset -q --soft "$head"
 cd "$wt"
+# Why: fork-check-mobile installs it, and its presence pulls the mobile browser tests into later unit runs, which CI skips.
+rm -rf mobile/node_modules
 lock_hash=$(sha256sum pnpm-lock.yaml | cut -c1-64)
 # Why inside node_modules: git clean would delete an untracked stamp, and a wiped node_modules must reinstall.
 if [ "$(cat node_modules/.fork-remote-lock 2>/dev/null)" != "$lock_hash" ]; then

@@ -247,7 +247,8 @@ fork-check-tests: $(if $(filter all,$(FORK_TESTS)),,fork-base-guard)
 ifeq ($(FORK_TESTS),all)
 	node config/scripts/test-runtime/execution-policy/run-vitest.mjs run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD))
 else
-	pnpm exec vitest run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) --changed $(FORK_BASE)
+	@# Why upstream's runner: it runs vitest on the pinned bun with the env CI uses; plain vitest on node fails tests CI passes.
+	node config/scripts/test-runtime/execution-policy/run-vitest.mjs run --config config/vitest.config.ts $(if $(FORK_TEST_SHARD),--shard=$(FORK_TEST_SHARD)) --changed $(FORK_BASE)
 endif
 
 fork-footprint: fork-base-guard
