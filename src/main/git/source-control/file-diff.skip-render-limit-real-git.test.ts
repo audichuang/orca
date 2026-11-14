@@ -8,8 +8,8 @@ import type {
   GitDiffResult,
   GitDiffTextResult
 } from '../../../shared/git/diff/git-diff-compare-types'
-import { createLocalGitProvider } from '../../providers/local-git-provider'
-import { getDiff } from './file-diff'
+import { createLocalGitProvider } from '../../providers/git/local-provider'
+import { getDiff } from './diffs/file-diff'
 import { invalidateGitReadCaches, settledDiffCache } from './git-read-cache-invalidation'
 
 function git(dir: string, args: string[]): void {
