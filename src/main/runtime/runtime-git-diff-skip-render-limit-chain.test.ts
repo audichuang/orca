@@ -1,5 +1,5 @@
 // Fork seam guard: git.diff skipRenderLimit survives RPC -> zod -> RuntimeGitDiffCommands -> LocalGitProvider -> getDiff.
-import './rpc/unused-default-rpc-methods.test-fixture'
+import './rpc/dispatch/testing/unused-default-rpc-methods.test-fixture'
 import { describe, expect, it, vi } from 'vitest'
 import type { OrcaRuntimeService } from './orca-runtime'
 import { RpcDispatcher } from './rpc/dispatcher'
@@ -7,7 +7,7 @@ import { GIT_METHODS } from './rpc/methods/source-control/git/git'
 import { RuntimeGitDiffCommands } from './integrations/git/runtime-git-diff-commands'
 
 const getDiff = vi.hoisted(() => vi.fn())
-vi.mock('../git/source-control/file-diff', async (importOriginal) => ({
+vi.mock('../git/source-control/diffs/file-diff', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   getDiff
 }))
