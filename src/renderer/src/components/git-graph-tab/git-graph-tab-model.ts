@@ -15,7 +15,7 @@ import {
   selectCrossStoreFolderChildrenById,
   selectSidebarLineageParentIdentities
 } from '@/store/slices/worktrees/metadata/cross-store-lineage-parents'
-import type { SidebarLineageParentIdentities } from '../../../../shared/sidebar-list/worktree-lineage-projection'
+import type { SidebarLineageParentIdentities } from '../../../../shared/sidebar-list/lineage/worktree-lineage-projection'
 import {
   selectFolderWorkspaces,
   selectWorktreesByRepo
