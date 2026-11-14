@@ -57,7 +57,7 @@ export async function importMultiProductFolder(
           { projectGroupId: groupId, name: 'MultiProduct', folderPath: parentPath },
           { runtimeEnvironmentId: null }
         )
-      return `folder:${fw!.id}`
+      return `folder:${fw!.folderWorkspace.id}`
     },
     { groupId, parentPath }
   )
