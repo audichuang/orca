@@ -1,7 +1,7 @@
 // Fork seam guard: descendIntoRepos must cross the projectGroups:scanNested IPC (options is z.unknown()) into scanNestedRepos.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as GitSpawnModule from '../git/command-runner/git-spawn'
-import type * as RepoModule from '../git/repo'
+import type * as RepoDetectionModule from '../git/repositories/discovery/repo-detection'
 
 const { reposMocks, moduleMocks, scanNestedRepos } = await vi.hoisted(async () => {
   const moduleMocks = await import('./repos-remote-test-harness')
@@ -9,8 +9,8 @@ const { reposMocks, moduleMocks, scanNestedRepos } = await vi.hoisted(async () =
 })
 
 vi.mock('electron', () => moduleMocks.electronModuleMock(reposMocks))
-vi.mock('../git/repo', async (importOriginal) =>
-  moduleMocks.gitRepoModuleMock(await importOriginal<typeof RepoModule>())
+vi.mock('../git/repositories/discovery/repo-detection', async (importOriginal) =>
+  moduleMocks.repoDetectionModuleMock(await importOriginal<typeof RepoDetectionModule>())
 )
 vi.mock('../git/command-runner/git-spawn', async (importOriginal) =>
   moduleMocks.gitSpawnModuleMock(reposMocks, await importOriginal<typeof GitSpawnModule>())
@@ -28,7 +28,7 @@ vi.mock('../project-groups/nested-repo-discovery', async (importOriginal) => ({
 }))
 
 import { registerRepoHandlers } from './repos'
-import { getGitRepoRoot, isGitRepo } from '../git/repo'
+import { getGitRepoRoot, isGitRepo } from '../git/repositories/discovery/repo-detection'
 import { createRepoHandlerHarness, resetProjectGroupMocks } from './repos-remote-test-harness'
 
 const { handleMock, mockStore } = reposMocks
