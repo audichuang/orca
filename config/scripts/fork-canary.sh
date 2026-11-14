@@ -8,7 +8,8 @@
 # Exit: 0 green; 1 not green (conflicts and/or failures, the report's Result line says which); 3 setup error.
 # Env: FORK_BASE and UPSTREAM_REMOTE (both set by make fork-canary), CANARY_REF (fork side, default HEAD),
 #      CANARY_UPSTREAM_REF (default <upstream>/main), CANARY_DIR (must not exist; default a fresh ../orca-fork-canary.XXXXXX),
-#      CANARY_OUT (default out/fork-canary), CANARY_KEEP=1.
+#      CANARY_OUT (default out/fork-canary), CANARY_KEEP=1, CANARY_MERGE_ONLY=1 (stop after the merge, keep the worktree,
+#      write no report).
 # Output: each run writes <CANARY_OUT>/<UTC time>-<pid>/report.md and logs/; <CANARY_OUT>/latest.txt names the newest.
 # Nothing is deleted automatically: the canary removes only the worktree it created; old run dirs stay until rm -rf.
 set -uo pipefail
@@ -119,6 +120,13 @@ while IFS= read -r f; do
     git -C "$wt" rm -q -f -- "$f" || die "cannot take upstream's deletion of $f"
   fi
 done <<<"$conflicts"
+
+# Why: fork-remote.sh ran the checks on another host; this rebuilds the same merged tree here to apply resolutions in.
+if [ "${CANARY_MERGE_ONLY:-}" = 1 ]; then
+  CANARY_KEEP=1
+  echo ">> merge only: $n_conflicts conflicts, reset to upstream's side; no install or checks"
+  exit 0
+fi
 
 install_failed=
 install_note=

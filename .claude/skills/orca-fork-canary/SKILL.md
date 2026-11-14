@@ -13,6 +13,8 @@ description: Daily unattended trial merge of the Orca fork's develop into upstre
 
 Shell 是 zsh（macOS）：變數後接 `:` 一律寫 `${v}:`（`$b:config/…` 的 `:c` 會被當成修飾符吃掉；專案 hook 只在有它的 checkout 擋）；glob、`--include=*.ts` 這類參數加引號（沒命中時 zsh 報 `no matches found`、整條不跑），搜尋優先 `rg -g '<glob>'` 或 `git grep -- '<pathspec>'`；macOS 沒有 `timeout`，bash 是 3.2（沒有 `mapfile`、關聯陣列）。
 
+**重的指令一律送 ubuntu**：`pnpm install`、`pnpm tc`、`make fork-canary`、vitest、lint 都經 `config/scripts/fork-remote.sh`（它把當下 checkout 的工作樹快照送到 ubuntu 跑，見腳本開頭），本機（Mac mini）只做 git、讀報告、改檔，所以 `MAIN` 與 `K` 都不需要 `node_modules`。每個 `fork-remote.sh` 呼叫都照下面「等待」的方式跑。結束碼：90 = 什麼都沒跑（ubuntu 連不上）→ 那一步改在本機跑，先在那個 worktree `pnpm install --frozen-lockfile`，重型指令前面加 `FORK_LOCAL_HEAVY=1`（否則專案 hook 會擋），摘要寫「ubuntu 不可用，改本機跑」；91 = 跑了但結果不明 → 經 `fork-remote.sh` 重跑一次，再 91 才照 90 處理；其他是指令本身的結果。`K` 在 ubuntu 那邊的 HEAD 跟本機一樣是上游 main，套好的解法以 staged 的修改送過去。
+
 本文的變數：`MAIN` = Orca 為這次 run 開的 worktree（`pwd -P`，開頭記下）；`S` = 這次的暫存目錄（`S=$(mktemp -d)`）；`OUT` = `$HOME/.cache/orca-fork-canary`（報告放在 run worktree 外，下一次 run 清掉舊 worktree 後，筆記與通知裡的報告路徑仍然有效）。
 
 ## 1. 準備並跑 canary
@@ -30,15 +32,19 @@ Shell 是 zsh（macOS）：變數後接 `:` 一律寫 `${v}:`（`$b:config/…` 
    ```sh
    git fetch -q fork && git fetch -q origin main --tags
    git checkout -q --detach fork/develop
-   pnpm install --frozen-lockfile
-   CANARY_KEEP=1 CANARY_OUT="$OUT" make fork-canary > "$S/canary.out" 2>&1; echo $? > "$S/canary.exit"
+   bash config/scripts/fork-remote.sh --rm --pull out/fork-canary 'make fork-canary' > "$S/canary.out" 2>&1; echo $? > "$S/canary.exit"
    ```
    - 用 `make`：它會帶入 `FORK_BASE` 與 `UPSTREAM_REMOTE`。直接呼叫 `config/scripts/fork-canary.sh` 少了這兩個變數，會 setup error（exit 3）。
-   - `CANARY_KEEP=1` 留下合併好的 worktree，第 2、3 步要在裡面套用解法、驗證。不要為了驗證重跑一次 canary。
-   - 要跑十幾分鐘（typecheck、一百多個 fork 測試檔、上游的 lint），照開頭「等待」的方式跑、等 `$S/canary.exit`。
-4. 讀結果。`make` 會把腳本的 exit code 換成自己的，所以看報告。報告目錄取自這次的輸出，不讀共用的 `latest.txt`（另一個 canary 可能剛好更新它）：`$S/canary.out` 的 `>> report: <路徑>/report.md (exit N)` 那行，`R` = 那個路徑去掉 `/report.md`。`$R/report.md` 的 `Result:` 行是 green / not green / setup error。`$S/canary.out` 裡 `>> kept canary worktree <路徑>; remove it with …` 那行，分號前面是留下的 worktree（下稱 `K`）。
+   - 合併、install、typecheck、一百多個 fork 測試檔、上游的 lint 都在 ubuntu 跑（十幾分鐘），照開頭「等待」的方式等 `$S/canary.exit`。`fork-remote.sh` 先把本機的 rerere 紀錄同步過去，ubuntu 重放的解法跟本機一樣。不要為了驗證重跑一次 canary。
+   - 回 90（ubuntu 不可用）：改跑本機版 `pnpm install --frozen-lockfile && FORK_LOCAL_HEAVY=1 CANARY_KEEP=1 CANARY_OUT="$OUT" make fork-canary > "$S/canary-local.out" 2>&1; echo $? > "$S/canary-local.exit"`，下一點讀 `$S/canary-local.out`：`R` 就是它 `>> report:` 那行的目錄，`K` 是 `>> kept canary worktree <路徑>; …` 那行分號前的路徑，不再另建。
+4. 讀結果。`make` 會把腳本的 exit code 換成自己的，所以看報告。報告目錄取自這次的輸出，不讀共用的 `latest.txt`（另一個 canary 可能剛好更新它）：`$S/canary.out` 的 `>> report: <路徑>/report.md (exit N)` 那行是 ubuntu 上的路徑，那個目錄已拉回 `MAIN/out/fork-canary/` 下同名的地方；搬進 `$OUT`：`d=<目錄名>; mkdir -p "$OUT" && mv "$MAIN/out/fork-canary/$d" "$OUT/$d"; R="$OUT/$d"`。`$R/report.md` 的 `Result:` 行是 green / not green / setup error。報告與 log 裡的絕對路徑指向 ubuntu 上已刪掉的合併樹，看檔案時換成 `K` 裡同一個相對路徑。
    - **setup error**，或 `$S/canary.out` 沒有 `>> report:` 那行（`make` 的前置檢查在腳本開跑前就失敗了，沒有新報告）：跳到「4. 存摘要、收尾」，摘要寫報告的訊息或 `$S/canary.out` 的最後幾行。
    - **green**：跳到「4. 存摘要、收尾」。
+   - **not green**：在本機重建同一棵合併樹 `K`，第 2、3 步在裡面套用解法（只合併、把衝突檔重設成上游那側，不 install、不跑檢查；上游 sha 取報告 `- Upstream:` 那行）：
+     ```sh
+     CANARY_REF=$(git rev-parse HEAD) CANARY_UPSTREAM_REF=<報告的上游 sha> CANARY_MERGE_ONLY=1 CANARY_OUT="$S/merge-only" make fork-canary > "$S/merge.out" 2>&1
+     ```
+     `$S/merge.out` 裡 `>> kept canary worktree <路徑>; remove it with …` 那行，分號前面就是 `K`。`merge only: N conflicts` 的 N 應等於報告的衝突數；不等就在摘要註明，以 `K` 的衝突清單為準。
 
 ## 2. 歸因：哪些是同一件事
 
@@ -51,19 +57,24 @@ Shell 是 zsh（macOS）：變數後接 `:` 一律寫 `${v}:`（`$b:config/…` 
    git merge-file -p "$S/ours" "$S/base" "$S/theirs" > <檔>
    ```
    ours 是上游 main，theirs 是 fork。把解法都套進 `K`，每個解完的檔照原路徑複製一份到 `$R/resolution/files/<路徑>`（auto-rebase 的 `fork-canary-apply.sh` 讀這裡，對應 `report.md` 的 `- Upstream:` sha）。**不要在 `K` commit，也不要跑 `git rerere`**：rerere 的紀錄跨 worktree 共用，這裡對上游 main 解的結果會被下一次 auto-rebase 自動重放。
-2. 在 `K` 跑 `pnpm tc`，再重跑一次 canary 跑過的那批測試檔：
+2. 在 `K` 經 ubuntu 跑 `pnpm tc`，再重跑一次 canary 跑過的那批測試檔，分兩次呼叫，各看自己的結束碼。`vitest.json` 裡是 ubuntu 那棵樹的絕對路徑，先換成相對路徑：
 
    ```sh
-   node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node
-   python3 -c "import json,sys;print('\n'.join(sorted({r['name'] for r in json.load(open(sys.argv[1]))['testResults']})))" "$R/logs/vitest.json" \
-     | xargs env LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 pnpm exec vitest run --config config/vitest.config.ts
+   cd "$K" && bash "$MAIN/config/scripts/fork-remote.sh" pnpm tc > "$S/tc-1.log" 2>&1; echo $? > "$S/tc-1.log.exit"
    ```
 
-   locale 檔兩邊只新增 key 時由 `fork-merge-driver-install.mjs` 登記的 driver 合好，不會出現在衝突清單；出現就代表兩邊改了同一個字串。有 locale 衝突時再跑 `pnpm run verify:localization-catalogs` 與 `node config/scripts/fork-locale-parity.mjs HEAD`。parity 的基底要用 `HEAD`（`K` 的 HEAD 是上游 main），不要用 `FORK_BASE` 或 `make fork-check-lint`：舊 tag 當基底時，上游 main 新加、只放進 en.json 的 key 也會被算成 fork key，報出其他 locale「缺 key」的誤報。
-   `$R/logs/vitest.json` 不存在（報告寫 install 或 test listing 失敗，測試根本沒跑）→ 只跑 `pnpm tc`，測試那部分在條目與摘要寫「未驗證」。
+   ```sh
+   files=$(python3 -c "import json,sys;print(' '.join(sorted({r['name'] for r in json.load(open(sys.argv[1]))['testResults']})))" "$R/logs/vitest.json" | sed -E 's#[^ ]*/orca-fork-canary\.[^/ ]+/##g')
+   cd "$K" && bash "$MAIN/config/scripts/fork-remote.sh" "node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node && pnpm exec vitest run --config config/vitest.config.ts $files" > "$S/vitest-1.log" 2>&1; echo $? > "$S/vitest-1.log.exit"
+   ```
+
+   兩個都照開頭「等待」的方式等（同一個 `K` 的兩次呼叫在 ubuntu 會排隊）。改了解法再驗證就換新的 log 名（`tc-2.log`、`vitest-2.log`）。
+
+   locale 檔兩邊只新增 key 時由 `fork-merge-driver-install.mjs` 登記的 driver 合好，不會出現在衝突清單；出現就代表兩邊改了同一個字串。有 locale 衝突時再經 `fork-remote.sh` 在 `K` 跑 `pnpm run verify:localization-catalogs` 與 `node config/scripts/fork-locale-parity.mjs HEAD`。parity 的基底要用 `HEAD`（`K` 的 HEAD 是上游 main），不要用 `FORK_BASE` 或 `make fork-check-lint`：舊 tag 當基底時，上游 main 新加、只放進 en.json 的 key 也會被算成 fork key，報出其他 locale「缺 key」的誤報。
+   `$R/logs/vitest.json` 不存在（報告寫 install 或 test listing 失敗，測試根本沒跑）→ 只跑 `pnpm tc`（一樣經 `fork-remote.sh`），測試那部分在條目與摘要寫「未驗證」。
 
 3. 套上解法就消失的 typecheck 錯誤和失敗測試，歸到那個衝突的條目。剩下的才是獨立問題，各自是一個根因。
-4. 報告的「Lint failures」列出在合併樹紅的上游 lint 步驟（細節在 `$R/logs/lint.log`）。每一步在 `K` 用 log 裡 `>> pnpm …` 那條指令重跑確認，再看它點名的檔是誰的：全是 fork 改過或新增的（`git -C "$K" diff --name-only "$(git -C "$K" merge-base HEAD MERGE_HEAD)" MERGE_HEAD` 列得出）→ 多半是上游新加的 ratchet 抓到 fork 的檔；有 fork 沒碰過的上游檔 → 上游自己的紅，條目寫「上游自己就紅」與上游之後修好它的 commit（有的話），auto-rebase 會 cherry-pick 它。fork 的情況（baseline 要列 fork 檔、fork 的型別錯誤），照 FORK.md 的做法寫怎麼修（例：`config/*-baseline.txt` 只插入 fork 的行、不重排上游行）。一個 lint 步驟一條，類型多半是「上游改了 fork 依賴的 API」。
+4. 報告的「Lint failures」列出在合併樹紅的上游 lint 步驟（細節在 `$R/logs/lint.log`）。每一步在 `K` 用 log 裡 `>> pnpm …` 那條指令經 `fork-remote.sh` 重跑確認，再看它點名的檔是誰的：全是 fork 改過或新增的（`git -C "$K" diff --name-only "$(git -C "$K" merge-base HEAD MERGE_HEAD)" MERGE_HEAD` 列得出）→ 多半是上游新加的 ratchet 抓到 fork 的檔；有 fork 沒碰過的上游檔 → 上游自己的紅，條目寫「上游自己就紅」與上游之後修好它的 commit（有的話），auto-rebase 會 cherry-pick 它。fork 的情況（baseline 要列 fork 檔、fork 的型別錯誤），照 FORK.md 的做法寫怎麼修（例：`config/*-baseline.txt` 只插入 fork 的行、不重排上游行）。一個 lint 步驟一條，類型多半是「上游改了 fork 依賴的 API」。
 
 例：2026-10-25 那次有 7 個衝突檔、6 個 typecheck 錯誤檔、7 個失敗測試檔，歸因後是 5 個根因，只有 1 個是新的（上游 revert #32320，撞到 fork 在同一段的改動）。
 
@@ -99,11 +110,11 @@ Shell 是 zsh（macOS）：變數後接 `:` 一律寫 `${v}:`（`$b:config/…` 
   - setup error：`canary-last.json` 保留上一次的五個清單，只把 `date` 換成今天、`result` 寫成 `setup error: <一句原因>`，讓人與 auto-rebase 從筆記看得到 canary 壞了幾天；`known-resolutions.md` 沒改就不寫。
   - exit 2 表示這段時間 auto-rebase 改過筆記：重新 `tip`、`git show` 出新版，把這次的改動重新套上（不要蓋掉對方刪掉或新增的條目），再寫一次。第二次還是 2，或任何其他非 0 → 不再試，在摘要寫「筆記沒寫成」與原因。
 - 清 `$OUT` 裡超過 14 天的舊報告：`find "$OUT" -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +`。
-- 只刪 `K`：`git worktree remove --force "$K"`。其他 `orca-fork-canary.` 開頭的不刪：可能是另一個 canary 正在跑，或使用者用 `CANARY_KEEP=1` 留著手動解衝突（腳本與 FORK.md 都規定只列不刪）。
+- 只刪 `K`：送過 ubuntu 的話先 `(cd "$K" && bash "$MAIN/config/scripts/fork-remote.sh" --rm true)` 刪掉那邊對應的工作樹，再 `git worktree remove --force "$K"`。其他 `orca-fork-canary.` 開頭的不刪：可能是另一個 canary 正在跑，或使用者用 `CANARY_KEEP=1` 留著手動解衝突（腳本與 FORK.md 都規定只列不刪）。
 - 最後在對話裡印出摘要，白話、幾行就好：上游 main 的 sha、結果（全綠／幾個根因，各一句、哪些是新的、都已寫進筆記）、筆記有沒有寫成、沒刪的 worktree、報告路徑 `$R/report.md`。使用者事後打開這個 session，看到的應該是結果，而不是一句沒頭沒尾的話。
 
 ## 限制
 
 - 唯一會 push 的是 `fork-canary-notes`，只經 `config/scripts/fork-notes.sh`（不 force）；不推其他分支、不開 PR。
-- 不改 `MAIN` 的追蹤檔（第 1 步的 checkout 與 `pnpm install` 除外），不在 `K` commit 或跑 `git rerere`。會寫的只有筆記分支、`$OUT`、`$S`，以及 `K`（第 2 步在那裡驗證，收尾時刪掉）。
+- 不改 `MAIN` 的追蹤檔（第 1 步的 checkout 除外），不在 `K` commit 或跑 `git rerere`。會寫的只有筆記分支、`$OUT`、`$S`，以及 `K`（第 2 步在那裡驗證，收尾時刪掉）。
 - 不開看得見的 Orca 視窗、不搶焦點（`ORCA_BACKGROUND_LAUNCH=1`）。
