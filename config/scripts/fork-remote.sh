@@ -143,12 +143,9 @@ while [ -z "$slot" ]; do
   fi
 done
 started_at=$(date +%s)
-# A run whose supervisor died with no follower left to clean up: stop its scope before touching the worktree.
-for old in "${run%/*}/${wt##*/}"-*/; do
-  old=${old%/}
-  [ "$old" != "$run" ] && [ ! -s "$old/exit" ] && [ -s "$old/unit" ] || continue
-  flock -n "$old/alive" true && systemctl --user stop "$(cat "$old/unit")" 2>/dev/null
-done
+slice_events=/sys/fs/cgroup$(sed -n 's/^0:://p' /proc/self/cgroup | sed 's#/[^/]*$##')/memory.events
+read_events() { awk '$1 == "high" || $1 == "oom_kill" {printf "%s=%s ", $1, $2}' "$slice_events" 2>/dev/null; }
+events_before=$(read_events)
 code=
 # Why a child bash: set -e is ignored inside an if condition, so a failed install would still run the command.
 setup='set -euo pipefail
@@ -209,6 +206,10 @@ fi
 git -C "$repo" update-ref -d "$ref" || :
 peak=$(cat "/sys/fs/cgroup$(sed -n 's/^0:://p' /proc/self/cgroup)/memory.peak" 2>/dev/null || echo 0)
 echo ">> fork-remote: peak memory $((peak / 1048576)) MB, $(( $(date +%s) - started_at )) s on $(hostname)"
+events_after=$(read_events)
+# Why: a run held at the slice's memory cap times out tests, which reads like a regression.
+[ "$events_after" = "$events_before" ] ||
+  echo ">> fork-remote: WARNING the host's run slice hit its memory cap during this run ($events_before-> $events_after); read timeouts as memory pressure first"
 echo "$code" >"$run/exit"
 EOF
 )
@@ -225,6 +226,14 @@ find "$base/wt" -maxdepth 1 -name '*.used' -mtime +3 2>/dev/null | while read -r
 done
 git -C "$base/repo.git" worktree prune
 find "$base/runs" -mindepth 1 -maxdepth 1 -type d -mtime +7 -exec rm -rf {} + 2>/dev/null || :
+systemctl --user reset-failed 'fork-remote-*' 2>/dev/null || :
+# A run whose supervisor died with no follower left: its leftovers may hold a worktree lock or a slot. Why here and
+# not after the locks: a run waiting behind those locks would never get to clean them.
+for old in "$base"/runs/*/; do
+  old=${old%/}
+  [ -e "$old/started" ] && [ ! -s "$old/exit" ] && [ -s "$old/unit" ] || continue
+  flock -n "$old/alive" true && systemctl --user stop "$(cat "$old/unit")" 2>/dev/null || :
+done
 touch "$wt.used"
 printf '%s' "$2" >"$run/supervisor.sh"
 shift 4
