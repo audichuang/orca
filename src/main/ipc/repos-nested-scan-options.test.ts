@@ -15,13 +15,6 @@ vi.mock('../git/repositories/discovery/repo-detection', async (importOriginal) =
 vi.mock('../git/command-runner/git-spawn', async (importOriginal) =>
   moduleMocks.gitSpawnModuleMock(reposMocks, await importOriginal<typeof GitSpawnModule>())
 )
-vi.mock('../git/worktree', () => moduleMocks.gitWorktreeModuleMock(reposMocks))
-vi.mock('./registered-worktree-roots-cache', () =>
-  moduleMocks.registeredWorktreeRootsCacheModuleMock(reposMocks)
-)
-vi.mock('../worktree-root-preparation', () =>
-  moduleMocks.worktreeRootPreparationModuleMock(reposMocks)
-)
 vi.mock('../project-groups/nested-repo-discovery', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   scanNestedRepos
