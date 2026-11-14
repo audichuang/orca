@@ -20,7 +20,7 @@ src/renderer/src/web/preload-api/web-git-history-graph.test.ts
 src/renderer/src/runtime/runtime-git-history-graph-client.test.ts
 
 # missingSides and blob absence feeding ClipCode copy
-src/main/git/source-control/blob-absence-real-git.test.ts
+src/main/git/source-control/diffs/blob-absence-real-git.test.ts
 src/main/git/source-control/blob-absence-real-git.fork.test.ts
 src/main/git/source-control/file-diff.read-failure.test.ts
 src/main/git/source-control/commit-diff-missing-sides.real-git.test.ts
