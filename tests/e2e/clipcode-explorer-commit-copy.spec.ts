@@ -210,6 +210,11 @@ test('Ctrl/Cmd-click selects commit files without opening them and copies just t
   await file('one.ts').click({ modifiers: [MULTI_SELECT] })
   await file('three.ts').click({ modifiers: [MULTI_SELECT] })
   await expect(files.and(orcaPage.locator('[data-selected]'))).toHaveCount(2)
+  // The selected look is the fork's main.css rule; without it the selection is invisible.
+  const unselectedBackground = await file('two.ts').evaluate(
+    (element) => getComputedStyle(element).backgroundColor
+  )
+  await expect(file('one.ts')).not.toHaveCSS('background-color', unselectedBackground)
   // A selection click must not open the diff.
   await expect(orcaPage.locator('.monaco-diff-editor')).toHaveCount(0)
   await orcaPage.screenshot({ path: path.join(SHOTS_DIR, '02-commit-files-selected.png') })

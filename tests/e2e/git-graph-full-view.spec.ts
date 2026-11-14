@@ -147,6 +147,14 @@ test('opens the Git Graph tab, switches repo and opens a commit file diff', asyn
     'data-selected',
     'true'
   )
+  // The selected look is the fork's main.css rule; without it the selection is invisible.
+  const unselectedBackground = await rows
+    .filter({ hasText: 'Feature B: experiment' })
+    .evaluate((element) => getComputedStyle(element).backgroundColor)
+  await expect(rows.filter({ hasText: 'Post-merge cleanup' })).not.toHaveCSS(
+    'background-color',
+    unselectedBackground
+  )
   await orcaPage.screenshot({
     path: path.join(SHOTS_DIR, '02-git-graph-commit-selected.png'),
     animations: 'disabled'
