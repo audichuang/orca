@@ -9,7 +9,7 @@
 # it means here. Nothing here changes: not the index, HEAD or files.
 # Why git, not rsync: the checks need history and upstream tags (FORK_BASE, vitest --changed, the quality gate).
 # The host keeps one worktree per local checkout with its node_modules (pnpm install reruns when pnpm-lock.yaml
-# changes) and runs with LC_ALL=C, ORCA_BACKGROUND_LAUNCH=1, an Xvfb display, and $FORK_REMOTE_SCRATCH, an empty
+# changes) and runs with LC_ALL=C, ORCA_BACKGROUND_LAUNCH=1, VITEST_MAX_WORKERS=3, an Xvfb display, and $FORK_REMOTE_SCRATCH, an empty
 # directory outside the worktree deleted after the run. Runs from one checkout queue; a dropped SSH session
 # neither stops the run nor loses its output.
 # --pull copies a path inside the checkout back after the run, whatever its exit code; --rm deletes the host
@@ -129,6 +129,20 @@ if ! flock -n 9; then
   echo ">> waiting for another run from this checkout"
   flock 9
 fi
+# Why two slots: the auto-rebase starts four or five runs at once; more than two at ~13G each push the host into swap.
+slot=
+while [ -z "$slot" ]; do
+  for n in 1 2; do
+    exec 7>"${run%/runs/*}/slot.$n.lock"
+    if flock -n 7; then slot=$n; break; fi
+    exec 7>&-
+  done
+  if [ -z "$slot" ]; then
+    [ -n "${slot_note:-}" ] || { echo ">> waiting for a free run slot (2 runs at a time on this host)"; slot_note=1; }
+    sleep 5
+  fi
+done
+started_at=$(date +%s)
 # A run whose supervisor died with no follower left to clean up: stop its scope before touching the worktree.
 for old in "${run%/*}/${wt##*/}"-*/; do
   old=${old%/}
@@ -160,6 +174,9 @@ fi'
 if bash -c "$setup" _ "$repo" "$wt" "$sha" "$head" 8>&-; then
   mkdir -p "$run/scratch"
   export LC_ALL=C ORCA_BACKGROUND_LAUNCH=1 HUSKY=0 FORK_REMOTE_SCRATCH="$run/scratch"
+  # Why: vitest defaults to one worker per core (20 here), and each worker of the shared (isolate: false) project caches
+  # most of the module graph, about 3G; 5 workers still peaked at 21G, 3 stay near 11G.
+  export VITEST_MAX_WORKERS=${VITEST_MAX_WORKERS:-3}
   echo ">> $cmd"
   # Why close 8: a leftover holding it would make a dead supervisor look alive.
   (cd "$wt" && xvfb-run -a -s '-screen 0 1920x1080x24' bash -c "$cmd") 8>&-
@@ -188,6 +205,8 @@ if [ "$remove_after" = 1 ]; then
   rm -f "$wt.used"
 fi
 git -C "$repo" update-ref -d "$ref" || :
+peak=$(cat "/sys/fs/cgroup$(sed -n 's/^0:://p' /proc/self/cgroup)/memory.peak" 2>/dev/null || echo 0)
+echo ">> fork-remote: peak memory $((peak / 1048576)) MB, $(( $(date +%s) - started_at )) s on $(hostname)"
 echo "$code" >"$run/exit"
 EOF
 )
@@ -211,7 +230,11 @@ shift 4
 # Why --expand-environment=no: systemd-run would otherwise expand ${...} in the command before bash sees it.
 unit="fork-remote-${run##*/}.scope"
 printf '%s' "$unit" >"$run/unit"
-setsid nohup systemd-run --user --scope --quiet --expand-environment=no --unit="$unit" bash "$run/supervisor.sh" "$@" </dev/null >"$run/log" 2>&1 &
+# Why its own slice: the user's app.slice caps GUI apps at 20G, and a test run there throttles the desktop and
+# itself. These caps keep runaway runs from taking the host (61G) with them or swapping it to a halt, and the
+# weights let the desktop and the host's other CI work go first.
+systemctl --user set-property --runtime orcaremote.slice MemoryHigh=24G MemoryMax=28G MemorySwapMax=2G CPUWeight=50 IOWeight=50
+setsid nohup systemd-run --user --scope --quiet --expand-environment=no --slice=orcaremote.slice --unit="$unit" bash "$run/supervisor.sh" "$@" </dev/null >"$run/log" 2>&1 &
 for _ in $(seq 60); do
   [ -e "$run/started" ] && exit 0
   sleep 0.5
