@@ -9,6 +9,9 @@ import { getDiffFilePosition } from '../../../editor/diff-file-sequence'
 import { commitFileTargets } from './commit-file-sequence'
 import { useGitHistoryCommitActions } from './use-git-history-commit-actions'
 
+const explain = vi.hoisted(() => vi.fn(async () => undefined))
+vi.mock('./git-history-commit-explain', () => ({ explainCommitWithDefaultAgent: explain }))
+
 const REPO = 'repo-1::/work/repo-1'
 const COMMIT = 'c'.repeat(40)
 const ENTRIES = [
@@ -71,5 +74,13 @@ describe('commit file sequence from the Commits panel (fork)', () => {
     const [tab] = useAppStore.getState().openFiles
     expect(tab).toMatchObject({ worktreeId: REPO, relativePath: 'a.ts' })
     expect(getDiffFilePosition(tab!)).toMatchObject({ index: 0, total: 2 })
+  })
+})
+
+describe('Explain commit from the Commits panel (fork)', () => {
+  it('hands the commit to the fork-owned explain launcher for the active workspace', () => {
+    const { result } = renderActions()
+    result.current.handleCommitAction('explain', ITEM)
+    expect(explain).toHaveBeenCalledWith(REPO, ITEM)
   })
 })
