@@ -124,12 +124,23 @@ shift 8
 exec 8>"$run/alive"
 flock 8
 : >"$run/started"
+# A run whose supervisor and follower both died: its leftovers may hold a worktree lock or a slot.
+# Why while waiting, not once: a run can die after this one started waiting, and nothing else would clean it up.
+reap_stale() {
+  local old
+  for old in "${run%/*}"/*/; do
+    old=${old%/}
+    [ "$old" != "$run" ] && [ -e "$old/started" ] && [ ! -s "$old/exit" ] && [ -s "$old/unit" ] || continue
+    flock -n "$old/alive" true && systemctl --user stop "$(cat "$old/unit")" 2>/dev/null || :
+  done
+}
 exec 9>"$wt.lock"
-if ! flock -n 9; then
-  echo ">> waiting for another run from this checkout"
-  flock 9
-fi
-# Why two slots: the auto-rebase starts four or five runs at once; more than two at ~13G each push the host into swap.
+until flock -n 9; do
+  [ -n "${wt_note:-}" ] || { echo ">> waiting for another run from this checkout"; wt_note=1; }
+  reap_stale
+  sleep 5
+done
+# Why two slots: the auto-rebase starts four or five runs at once; more than two whole-suite runs push the host into swap.
 slot=
 while [ -z "$slot" ]; do
   for n in 1 2; do
@@ -139,6 +150,7 @@ while [ -z "$slot" ]; do
   done
   if [ -z "$slot" ]; then
     [ -n "${slot_note:-}" ] || { echo ">> waiting for a free run slot (2 runs at a time on this host)"; slot_note=1; }
+    reap_stale
     sleep 5
   fi
 done
