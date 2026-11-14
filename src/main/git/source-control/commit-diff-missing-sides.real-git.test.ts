@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { runProcess } from '@orca/process-host'
-import { getCommitDiff } from './commit-diff'
+import { getCommitDiff } from './comparisons/commit-diff'
 
 // Fork contract: ClipCode commit copy (renderer clipcode-commit-copy.ts) reads `missingSides` to
 // tell an absent file from an empty one and to fall back to a merge's other parents.

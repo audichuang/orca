@@ -1,5 +1,5 @@
 // Fork seam guard: git.history RPC -> zod -> RuntimeGitStatusCommands -> LocalGitProvider -> getHistory keeps `graph`.
-import './rpc/unused-default-rpc-methods.test-fixture'
+import './rpc/dispatch/testing/unused-default-rpc-methods.test-fixture'
 import { describe, expect, it, vi } from 'vitest'
 import type { OrcaRuntimeService } from './orca-runtime'
 import { RpcDispatcher } from './rpc/dispatcher'
@@ -7,7 +7,7 @@ import { GIT_METHODS } from './rpc/methods/source-control/git/git'
 import { RuntimeGitStatusCommands } from './integrations/git/runtime-git-status-commands'
 
 const getHistory = vi.hoisted(() => vi.fn())
-vi.mock('../git/history', () => ({ getHistory }))
+vi.mock('../git/source-control/history', () => ({ getHistory }))
 
 describe('git.history graph through the paired-server chain (fork)', () => {
   it('reaches getHistory with graph intact and returns the echoed graph', async () => {
