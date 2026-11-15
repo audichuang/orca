@@ -174,7 +174,7 @@ cd ../ar-$RUN-review-c && { node config/scripts/native-build/node-addons/ensure-
 
 **自動移動**的條件，全部都要成立：
 
-- (CLEAN、沒有任何修正 commit，且審查者 C 對上游碰到的 seam（第 4 步審查者 C 那段的定義）沒有列出「沒有測試會紅」的項目) 或 **合格的 MANUAL**（見下）；
+- (CLEAN、沒有任何修正 commit，且審查者 C 對上游碰到的 seam（第 4 步審查者 C 那段的定義）沒有列出「沒有測試會紅」的項目，FORK.md「Unattended merges」的三種測試債（附證據）除外) 或 **合格的 MANUAL**（見下）；
 - 本機 fork-check-static 與 fork-check-seams 綠（或只有附了雙邊輸出的上游既有失敗）；
 - CI 綠：「Fork PR checks passed」在目前 head 的 conclusion 是 SUCCESS，且它來自 `.github/workflows/fork-pr.yml` 的 job `verify`（它要求整套單元測試與 e2e、wire、mobile 都綠；`gh run list -R audichuang/orca --workflow fork-pr.yml --commit <head>` 對得上；SKIPPED、沒有這個 check、或同名 check 來自別的 workflow 都不算）；
 - 第 5 步的審查通過；
