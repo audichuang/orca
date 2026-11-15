@@ -13,7 +13,7 @@ afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
 })
-function navigationHarness(ready = true) {
+function navigationHarness(ready = true, { provider = true } = {}) {
   const frames = new Map<number, FrameRequestCallback>()
   let nextFrame = 0
   vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
@@ -71,13 +71,21 @@ function navigationHarness(ready = true) {
       return { registration, navigation }
     },
     {
-      wrapper: ({ children }) => (
-        <DiffNavigationProvider
-          filePosition={{ key: `list/${index}`, keyAt: (i) => `list/${i}`, index, total: 3, open }}
-        >
-          {children}
-        </DiffNavigationProvider>
-      )
+      wrapper: provider
+        ? ({ children }) => (
+            <DiffNavigationProvider
+              filePosition={{
+                key: `list/${index}`,
+                keyAt: (i) => `list/${i}`,
+                index,
+                total: 3,
+                open
+              }}
+            >
+              {children}
+            </DiffNavigationProvider>
+          )
+        : undefined
     }
   )
   act(() => result.current.registration.registerDiffEditor(diff))
@@ -126,4 +134,11 @@ it('keeps an arrived cursor when only the file-list context changes', () => {
   h.update()
   h.flushFrame()
   expect(h.line()).toBe(7)
+})
+
+// Upstream renders DiffViewer outside the editor panel (PR page, GitHub dialog); the fork's context default must keep it working there.
+it('scrolls to the first change when no navigation provider wraps the diff', () => {
+  const h = navigationHarness(true, { provider: false })
+  h.flushFrame()
+  expect(h.line()).toBe(2)
 })
