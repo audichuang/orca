@@ -11,7 +11,7 @@
   - (c) main.css 選取樣式：測試債（樣式表 hunk）。要補時照下面的做法。
 
 ### 原條目（搬過來）
-## fork 自身問題（Explain commit 接線與 main.css 選取樣式沒有有效測試；Tab strip 順序）× fork 的 `use-git-history-commit-actions.ts:272`／`git-history-commit-explain.ts`、`src/renderer/src/assets/main.css` 的 `[data-commit-file-path]`／`[data-git-graph-row]` 選取 selector、744da34daa 的 `TabGroupStripActions.tsx` — auto-rebase 2026-11-15
+#### fork 自身問題（Explain commit 接線與 main.css 選取樣式沒有有效測試；Tab strip 順序）× fork 的 `use-git-history-commit-actions.ts:272`／`git-history-commit-explain.ts`、`src/renderer/src/assets/main.css` 的 `[data-commit-file-path]`／`[data-git-graph-row]` 選取 selector、744da34daa 的 `TabGroupStripActions.tsx` — auto-rebase 2026-11-15
 - 類型：fork 自身問題
 - 衝突檔：無
 - 連帶症狀：PR #164 擋住自動移動的就是這幾項（審查者 C、Codex r3、E）。
