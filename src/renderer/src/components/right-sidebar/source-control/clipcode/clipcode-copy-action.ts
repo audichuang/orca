@@ -13,7 +13,7 @@ import { readRuntimeFileBytes } from '@/runtime/files/reads/runtime-paged-file-r
 import { readRuntimeDirectory } from '@/runtime/files/reads/runtime-directory-read'
 import { useAppStore } from '@/store'
 import { isPathInsideOrEqual } from '../../../../../../shared/cross-platform-path'
-import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { getWorktreeGitOwnerTarget, requireGitOwnerTarget } from '../sync/worktree-git-owner-target'

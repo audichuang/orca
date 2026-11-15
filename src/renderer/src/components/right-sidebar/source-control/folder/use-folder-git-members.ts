@@ -3,7 +3,7 @@ import { useAppStore } from '@/store'
 import { useAllWorktrees } from '@/store/slices/worktrees/listing/use-worktree-catalog'
 import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
-import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 import { getFolderGitWorktrees, type FolderGitWorktree } from './folder-git-worktrees'
 
 /** Git members of a folder workspace key; empty for a worktree key or a folder that is gone. */

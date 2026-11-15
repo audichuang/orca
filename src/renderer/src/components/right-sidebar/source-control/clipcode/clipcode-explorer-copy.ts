@@ -2,7 +2,7 @@
 import { basename, joinPath } from '@/lib/path'
 import type { DirEntry } from '../../../../../../shared/file-listing/directory-entry'
 import { sortDirEntries } from '../../../../../../shared/file-listing/file-name-sort'
-import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
+import { mapWithConcurrency } from '../../../../../../shared/concurrency/map-with-concurrency'
 import { isPathOutsideAllowedDirectoriesError } from '../../../../../../shared/file-access/local-file-access'
 import { shouldIncludeFileExplorerEntry } from '../../file-explorer/tree/file-explorer-entries'
 import { buildPayload, CLIPCODE_DEFAULTS, type PayloadFile } from './clipcode-clipboard-format'

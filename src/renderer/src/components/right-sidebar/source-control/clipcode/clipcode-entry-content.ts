@@ -1,7 +1,10 @@
 // Fork-only: content rules every ClipCode copy shares (non-text, size caps).
 import { getRelativePathInsideRoot, joinPath } from '@/lib/path'
 import { isWindowsAbsolutePathLike } from '../../../../../../shared/cross-platform-path'
-import { getUtf8ByteLength, measureUtf8ByteLength } from '../../../../../../shared/utf8-byte-limits'
+import {
+  getUtf8ByteLength,
+  measureUtf8ByteLength
+} from '../../../../../../shared/text/utf8-byte-limits'
 import type { GitDiffResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import {
   CLIPCODE_DEFAULTS,

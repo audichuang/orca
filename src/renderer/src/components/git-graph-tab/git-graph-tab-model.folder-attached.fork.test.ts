@@ -4,8 +4,8 @@ import { makeFolderWorkspace } from '@/store/folder-workspaces/folder-workspace.
 import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
 import { TEST_REPO } from '@/store/repos/repo.test-fixture'
 import type { WorkspaceLineage } from '../../../../shared/worktree/lineage-types'
-import { worktreeWorkspaceKey } from '../../../../shared/workspace-scope'
-import type { Repo } from '../../../../shared/repo-types'
+import { worktreeWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import {
   listGitGraphRepoChoicesFromInputs,

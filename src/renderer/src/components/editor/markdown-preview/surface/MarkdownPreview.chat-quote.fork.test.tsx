@@ -94,8 +94,8 @@ vi.mock('@/i18n/i18n', () => ({
 vi.mock('../../document-images/useLocalImageSrc', () => ({
   useLocalImageSrc: (src?: string) => src
 }))
-vi.mock('../../MermaidBlock', () => ({ default: () => null }))
-vi.mock('../../CodeBlockCopyButton', () => ({
+vi.mock('../../diagrams/MermaidBlock', () => ({ default: () => null }))
+vi.mock('../render-tree/CodeBlockCopyButton', () => ({
   default: ({ children }: { children: React.ReactNode }) => children
 }))
 vi.mock('../../../diff-comments/DiffCommentCard', () => ({ DiffCommentCard: () => null }))

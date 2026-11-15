@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import type { DiffViewerProps } from './diff/monaco-view/diff-viewer-props'
-import { ChangesModeView } from './ChangesModeView'
+import { ChangesModeView } from './panel/ChangesModeView'
 
 const seen: Partial<DiffViewerProps>[] = []
 vi.mock('./diff/monaco-view/DiffViewer', () => ({

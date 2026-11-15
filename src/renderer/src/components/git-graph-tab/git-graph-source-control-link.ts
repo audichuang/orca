@@ -1,6 +1,6 @@
 // Fork-only: links between the Git Graph tab and the right-sidebar Source Control.
 import type { GitHistoryItem } from '../../../../shared/git/history/git-history-types'
-import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
+import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import { useAppStore } from '@/store'
 import { rememberFolderRepo } from '../right-sidebar/source-control/folder/folder-repo-selection'
 
