@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { buildMobileSessionTabSnapshots } from './sync-runtime-graph/mobile-session-snapshots'
 import { createEditorTabsStore } from '../store/slices/editor/editor-slice-test-harness'
+import { acceptedAgentStatuses } from '../store/slices/agent-status/accepted-agent-statuses'
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 
@@ -9,6 +10,8 @@ describe('mobile session snapshots with a Git Graph tab', () => {
     const store = createEditorTabsStore()
     store.setState({
       activeWorktreeId: 'wt-api',
+      // Upstream #41793: mobile snapshots read agent statuses through their projection.
+      agentStatusByPaneKey: acceptedAgentStatuses(),
       repos: [
         {
           id: 'repo-api',
