@@ -51,7 +51,7 @@ Shell 是 zsh（macOS）：變數後接 `:` 一律寫 `${v}:`（`$b:config/…` 
    git merge-file -p "$S/ours" "$S/base" "$S/theirs" > <檔>
    ```
    ours 是上游 main，theirs 是 fork。把解法都套進 `K`，每個解完的檔照原路徑複製一份到 `$R/resolution/files/<路徑>`（auto-rebase 的 `fork-canary-apply.sh` 讀這裡，對應 `report.md` 的 `- Upstream:` sha）。**不要在 `K` commit，也不要跑 `git rerere`**：rerere 的紀錄跨 worktree 共用，這裡對上游 main 解的結果會被下一次 auto-rebase 自動重放。
-2. 在 `K` 跑 `pnpm tc`，再重跑一次 canary 跑過的那批測試檔：
+2. 上游搬了 fork import 的模組（typecheck 一串 `Cannot find module`）時，先在 `K` 跑 `node config/scripts/fork-follow-upstream-moves.mjs "$(git -C "$MAIN" describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*fork*' fork/develop)" HEAD MERGE_HEAD`（FORK_BASE、上游 main、fork），`GONE` 列的手改，條目寫「auto-rebase 照第 1 步跑同一支腳本」並列出 GONE 與手改內容，不必逐檔列路徑。然後在 `K` 跑 `pnpm tc`，再重跑一次 canary 跑過的那批測試檔：
 
    ```sh
    node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node
