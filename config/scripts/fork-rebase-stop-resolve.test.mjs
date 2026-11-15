@@ -45,6 +45,15 @@ describe('resolveImportHunks', () => {
     expect(resolveImportHunks(text).text).toBe("import { Provider } from './fork-context'")
   })
 
+  it('leaves the hunk when this commit points an import at another directory under the same file name', () => {
+    const text = hunk(
+      ["import { format } from './panel/format'"],
+      ["import { format } from './format'"],
+      ["import { format } from '../fork/format'"]
+    )
+    expect(resolveImportHunks(text)).toEqual({ text, resolved: 0, left: 1 })
+  })
+
   it('leaves a hunk with code untouched', () => {
     const text = hunk(['const a = 1'], ['const a = 0'], ['const a = 2'])
     expect(resolveImportHunks(text)).toEqual({ text, resolved: 0, left: 1 })

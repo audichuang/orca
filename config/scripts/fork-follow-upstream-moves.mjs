@@ -93,9 +93,10 @@ function git(...args) {
   return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
 }
 
+// Why -l0: the default rename limit silently drops renames on a release that moves thousands of files.
 function renameMap(from, to) {
   const renames = new Map()
-  for (const line of git('diff', '-M', '--name-status', from, to).split('\n')) {
+  for (const line of git('diff', '-M', '-l0', '--name-status', from, to).split('\n')) {
     const [status, oldPath, newPath] = line.split('\t')
     if (status?.startsWith('R')) {
       renames.set(oldPath, newPath)
