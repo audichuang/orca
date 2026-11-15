@@ -18,7 +18,10 @@ vi.mock('@/store', () => ({ useAppStore: mocks.useAppStore }))
 vi.mock('../../store', () => ({ useAppStore: mocks.useAppStore }))
 vi.mock('../tab-bar/TabBar', () => ({ default: () => null }))
 vi.mock('../tab-bar/TabBarQuickCommandsButton', () => ({
-  TabBarQuickCommandsButton: () => null
+  TabBarQuickCommandsButton: () => <button type="button" data-testid="quick-commands" />
+}))
+vi.mock('./TabGroupPaneActionsMenu', () => ({
+  TabGroupPaneActionsMenu: () => <button type="button" data-testid="pane-actions" />
 }))
 vi.mock('../right-sidebar/source-control/sync/git-graph-tab-launcher', () => ({
   TabStripGitGraphButton: ({ workspaceId, active }: { workspaceId: string; active: boolean }) => (
@@ -47,7 +50,7 @@ vi.mock('./useTabGroupWorkspaceModel', () => ({
 import { TooltipProvider } from '@/components/ui/tooltip'
 import TabGroupPanel from './TabGroupPanel'
 
-function renderPanel(reserveClosedExplorerToggleSpace: boolean) {
+function renderPanel(reserveClosedExplorerToggleSpace: boolean, hasSplitGroups = false) {
   return render(
     <TooltipProvider>
       <TabGroupPanel
@@ -55,7 +58,7 @@ function renderPanel(reserveClosedExplorerToggleSpace: boolean) {
         worktreeId="wt-a"
         isVisible
         isFocused
-        hasSplitGroups={false}
+        hasSplitGroups={hasSplitGroups}
         touchesLeftEdge={false}
         touchesRightEdge
         reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
@@ -77,6 +80,14 @@ describe('TabGroupPanel Git Graph button', () => {
     const button = renderPanel(true).getByTestId('git-graph-button')
     expect(button.dataset.workspace).toBe('wt-a')
     expect(button.textContent).toBe('idle')
+  })
+
+  it('sits between upstream quick commands and pane actions in the strip', () => {
+    const order = Array.from(
+      renderPanel(true, true).container.querySelectorAll('[data-testid]'),
+      (node) => node.getAttribute('data-testid')
+    )
+    expect(order).toEqual(['quick-commands', 'git-graph-button', 'pane-actions'])
   })
 
   it('shows as active when the group is on the Git Graph tab', () => {
