@@ -2,6 +2,186 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-11-15 auto-rebase v1.4.258 → v1.4.259（PR #164，續）— develop 已移動並發 v1.4.259-fork.1（使用者照 needs-human 留言推 develop）
+- RUN=20261115T001732Z（Orca worktree `auto-orca-fork-rebase-run-601-20261115T0017`）。第 0 步：`rebase/v1.4.259` 與 develop 都是 656d81d7dc（使用者 00:15Z 照 needs-human 留言接受三個測試缺口：先重設 `rebase/v1.4.259`、再備份 `backup/develop-v1.4.258-20261114T212705Z` 並 lease 推 develop），沒有 v1.4.259-fork.* tag → 留 `develop-moved 656d81d7dc…`、直接第 7 步。656d81d7dc 的 Fork PR checks 是 run 43648014306 綠、Codex r2 ACCEPTABLE。
+- 第 0 步刪了 run-598 的 worktree（乾淨、不在 rebase、HEAD 7b443b696a 在 `fork/backup/rebase-v1.4.259-20261114T212705Z`）。
+- 發版：tag v1.4.259-fork.1 指 656d81d7dc，main 從 3a75f9484e lease 推；release run 43657541378（00:18:45Z→00:29:36Z）綠，tap 1.4.259-fork.1。`make fork-ci-disable-upstream` 推後與收尾前都沒有要停用的 workflow。MacBook 上 Orca Fork 開著（RUNNING），沒升級，仍是 1.4.258-fork.1。
+- 耗時：發版 11 分（上一條 11 分）。
+- 用掉的 known-resolutions 條目（照做，跟眼前一致；細節見前一條 PR #164 紀錄）整段搬到下面：a0f1cb0ee2／04158606b5、d3b6609ac9、e902c9a65b、fb58871bdb、fb8d6f950b、aaf5295a7f、2050d9fbc6、cc29ae4820、075d6b3b50、17a1dc373b、587562e862、7922a4a0e4、2434a63be9、98bcd7943a、3fe2827bc9（不用做）、03c828eece、0664f1c9bb、「v1.4.259 rebase 只在中間 commit 停下的衝突」。留在 known-resolutions：856c91bba2（下一次 vNEW 含它時丟 f7429b5385）、「v1.4.257 審查者 C 的測試缺口」(a)–(d)（(e) 已在 develop）、「Explain／main.css／Tab strip 順序」測試（另開 PR 補）、PR #164 既有缺口、folder 筆記 owner、`initialCwd`。
+- canary 效益：發版這段沒有用到 canary；rebase 本身的效益見前一條（10 個停點照 canary 條目解）。
+
+### 搬來的 known-resolutions 條目
+
+#### a0f1cb0ee2e68a6978df505c074623334e42662a（#41322 refactor(git): group root modules by concrete domain owners）、04158606b5deb127b0dd5fdd2735f146f171cd19（#41316 refactor(git): group command execution by concrete owners）× fork 376d7ae578（feat(source-control): git 歷史支援多分支、分支篩選與 git 端搜尋(後端)）、de6316aa19（refactor: carry fork values in options objects instead of trailing positional params）、a802816911（test(fork): 補上游接縫的非 UI 契約測試,修正 commit 複製把缺檔當空內容）、44ee6b3ad5（test(project-groups): 補 descendIntoRepos 經 scanNested IPC 傳到 scanNestedRepos 的測試）— canary 2026-11-13
+- 類型：上游改了 fork 依賴的 API（上游把 src/main/git 根目錄的模組搬進子目錄；衝突都只在 import 區）
+- 衝突檔：src/main/git/source-control/history.ts（a0f1cb0ee2 從 src/main/git/history.ts 搬來；報告 fork 欄空白，舊路徑才看得到 99277d0027）、src/main/git/source-control/file-diff.ts（a0f1cb0ee2 改 `../git-runtime-options` → `../command-runner/git-runtime-options`）、src/main/providers/git-provider-contract.ts（04158606b5 把 GitAdmissionTier 的 import 改成 `../../shared/rpc-contract/git-admission-tier-params`）
+- 連帶症狀：typecheck file-diff.skip-render-limit-real-git.test.ts、filesystem-git-status-handlers.ts 的 TS2353 `skipRenderLimit`、local-git-provider.ts 的 TS2322、runtime-git-diff-commands.ts 的 TS2554（衝突檔被重設成上游版）；history-graph-dispatch.real-git.test.ts 的 TS2307 `./history`；repos-nested-scan-options.test.ts 的 TS2307 `../git/runner`／`../git/repo` 與 TS2339 `gitRepoModuleMock`／`gitRunnerModuleMock`。失敗測試 blob-absence-real-git.fork.test.ts、file-diff.read-failure.test.ts、file-diff.skip-render-limit-real-git.test.ts、filesystem-git-history-graph-ipc.test.ts、runtime-git-history-graph-chain.test.ts、history-graph-dispatch.real-git.test.ts、repos-nested-scan-options.test.ts。
+- 處理：
+  - 三個衝突檔的 import 區採上游，再加回 fork 那一行：history.ts 在 `loadGitHistoryFromExecutor` 那行後加 `import { loadGitHistoryGraphFromExecutor } from '../../../shared/git-history-graph-query'`（getHistory 本體的 fork graph 分流 merge-file 會自動合入）；file-diff.ts 在 GitRuntimeOptions 那行後加 `import type { GitDiffReadOptions } from './git-diff-read-options'`；git-provider-contract.ts 在 GitAdmissionTier 那行後加 `import type { GitDiffReadOptions } from '../git/source-control/git-diff-read-options'`。
+  - fork 測試跟上搬家：history-graph-dispatch.real-git.test.ts 的 `from './history'` → `'./source-control/history'`；filesystem-git-history-graph-ipc.test.ts 的 `vi.mock('../../git/history', …)` → `'../../git/source-control/history'`、runtime-git-history-graph-chain.test.ts 的 `vi.mock('../git/history', …)` → `'../git/source-control/history'`（mock 沒綁上時 tc 不會報，測試才紅：一支 spawn git ENOENT、一支 ok:false）。
+  - repos-nested-scan-options.test.ts 照上游 repos-nested-scan.test.ts 的寫法：`import type * as GitRunner from '../git/runner'` → `import type * as GitSpawnModule from '../git/command-runner/git-spawn'`，`RepoModule from '../git/repo'` → `RepoDetectionModule from '../git/repositories/discovery/repo-detection'`；`vi.mock('../git/repo', … gitRepoModuleMock(…RepoModule…))` → `vi.mock('../git/repositories/discovery/repo-detection', async (importOriginal) => moduleMocks.repoDetectionModuleMock(await importOriginal<typeof RepoDetectionModule>()))`；`vi.mock('../git/runner', … gitRunnerModuleMock(…))` → `vi.mock('../git/command-runner/git-spawn', async (importOriginal) => moduleMocks.gitSpawnModuleMock(reposMocks, await importOriginal<typeof GitSpawnModule>()))`；`import { getGitRepoRoot, isGitRepo } from '../git/repo'` → `'../git/repositories/discovery/repo-detection'`。只改這幾處，其他過期的 mock 路徑（`../git/worktree` 等）歸「v1.4.257 rebase 審查者 C 找到的測試缺口」那條的 (e)。
+  - 解法檔在報告 resolution/files（含上面的測試檔）。
+- 守它的測試：config/fork-seam-tests.txt 的 skip-render-limit 組（file-diff.skip-render-limit-real-git、filesystem-git-diff-skip-render-limit-ipc …）、history graph 組（history-graph-dispatch.real-git、filesystem-git-history-graph-ipc、git-history-graph-rpc、runtime-git-history-graph-chain）、blob-absence-real-git.fork、file-diff.read-failure；repos-nested-scan-options.test.ts
+- 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：連同其他條目一起套用後 tc 0 錯誤、canary 的 161 個測試檔 1006 例全過、上游 lint 45 步全過。
+- 2026-11-13 auto-rebase v1.4.258（PR #161）照做，develop 沒移動（上游 folder-setup e2e 紅），條目留著：v1.4.258 只含 04158606b5（a0f1cb0ee2 不在）：git-provider-contract.ts 在 a1b46d2592（fork import 是 `diff-render-limit-options`）、2c31042595（改名 `git-diff-read-options`）兩站衝突；repos-nested-scan-options.test.ts 只改 runner 兩處（修正 commit 112480d477），`../git/repo` 與 `gitRepoModuleMock` 在 v1.4.258 還在。history.ts／file-diff.ts／history graph 測試路徑留給含 a0f1cb0ee2 的 release。
+- 2026-11-13 develop 已推到 rebase/v1.4.258 並發 v1.4.258-fork.1：04158606b5 那部分（git-provider-contract.ts、repos-nested-scan-options 的 runner 兩處）已在 develop 上，不用再做；條目留給含 a0f1cb0ee2 的 release（history.ts／file-diff.ts／history graph 測試路徑、repos-nested-scan-options 的 `../git/repo`→repo-detection）。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過；history graph 組與 repos-nested-scan-options 在其中通過。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### d3b6609ac90538cb5c9745291480e97da3a96bcd（#41475 refactor(rpc): group root modules by defining owner）× fork a802816911（test(fork): 補上游接縫的非 UI 契約測試,修正 commit 複製把缺檔當空內容）、173589d58e（test(git-diff): 補齊 skipRenderLimit 與 history graph 遠端路徑的傳遞鏈測試）、195eebce11（fix(fork): follow upstream's renderer lib and RPC module moves in fork files (upstream 3228095e97, 0314da7ed8)）— canary 2026-11-13
+- 類型：上游改了 fork 依賴的 API（`src/main/runtime/rpc/unused-default-rpc-methods.test-fixture.ts` 搬到 `rpc/dispatch/testing/`）
+- 衝突檔：無
+- 連帶症狀：typecheck 與失敗測試 TS2882／Cannot find module：src/main/runtime/rpc/methods/source-control/git/{git-diff-skip-render-limit,git-history-graph-rpc}.test.ts、src/main/runtime/runtime-git-{diff-skip-render-limit,history-graph}-chain.test.ts
+- 處理：前兩支的 `import '../../../unused-default-rpc-methods.test-fixture'` → `'../../../dispatch/testing/unused-default-rpc-methods.test-fixture'`（同目錄上游 git-conflict-projection.test.ts 的寫法）；後兩支的 `import './rpc/unused-default-rpc-methods.test-fixture'` → `'./rpc/dispatch/testing/unused-default-rpc-methods.test-fixture'`。
+- 守它的測試：上面 4 支本身（都在 config/fork-seam-tests.txt）
+- 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：改完 tc 0 錯誤、4 支在 161 檔重跑裡通過。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過；四支 RPC／runtime 測試在其中通過。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### e902c9a65b691fdffcc5b4200bbf4fda2a12dc73（#41350 refactor(workspace-layout): organize concrete domain owners）× fork 54ba7c76a2（test(git-graph-tab): pin lazy retry and old-client exclusion; rename editor-kind modules）、b3b51f2796（fix(fork): folder 編輯分頁的 relativePath 恢復為相對 folder）— canary 2026-11-13
+- 類型：上游改了 fork 依賴的 API（workspace-layout 的 test-fixture 搬進 commands/、persistence/）
+- 衝突檔：無
+- 連帶症狀：typecheck 與失敗測試 TS2307：src/shared/workspace-layout/old-client/old-client-session-tabs-projection.fork.test.ts（`../workspace-layout-command.test-fixture`）、src/renderer/src/store/slices/store-session-editor-hydration.fork.test.ts（`…/shared/workspace-layout/workspace-layout-profile.test-fixture`）
+- 處理：前者改 `'../commands/workspace-layout-command.test-fixture'`，後者改 `'../../../../shared/workspace-layout/persistence/workspace-layout-profile.test-fixture'`；用到的 `build`、`testContext`、`WS`、`localDesktopSession` 在新檔都還在。
+- 守它的測試：上面兩支本身（都在 config/fork-seam-tests.txt）
+- 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：改完 tc 0 錯誤、兩支在 161 檔重跑裡通過。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過；兩支 workspace layout fixture 測試在其中通過。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### fb58871bdb0c6414b4cf88aa9d7814b0dd43cca0（#41437 refactor(claude): group root modules by defining owners）× fork e857a8b1b2（fix(fork): auto-rebase 的子 agent 不帶 pane 身分啟動）、c348a94e5c（test(fork): fork-detached-agent 測試在 Windows 跳過並用 POSIX hook）— canary 2026-11-13
+- 類型：上游改了 fork 依賴的 API（hook-service.ts 不再 re-export `getManagedScript`，本體搬到 src/main/claude/hooks/hook-script.ts）
+- 衝突檔：無
+- 連帶症狀：失敗測試 config/scripts/fork-detached-agent.test.ts（`TypeError: getManagedScript is not a function`）。config/scripts 的 .ts 不在 `pnpm tc` 範圍，typecheck 抓不到，只有這支測試會紅。
+- 處理：`import { getManagedScript as getClaudeManagedScript } from '../../src/main/claude/hook-service'` → `'../../src/main/claude/hooks/hook-script'`（簽章 `getManagedScript(target: 'local' | 'posix' = 'local', options?)` 沒變）。
+- 守它的測試：config/scripts/fork-detached-agent.test.ts
+- 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：改完在 161 檔重跑裡通過。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過；fork-detached-agent 測試在其中通過。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### fb8d6f950bc9ec2c64fa99ef50d7ff27a866eef2（#41601 refactor(github): organize concrete feature owners）× fork 384d3c4a69（feat(source-control): Git Graph 版面讓出訊息空間、分頁篩選獨立並預設全部分支）— canary 2026-11-13
+- 類型：兩邊各改各的（只在 import 區）
+- 衝突檔：src/shared/editor-tab-view-types.ts
+- 連帶症狀：typecheck git-graph-tab-actions.ts、editor/types/open-file.ts 的 TS2305 `OpenGitGraphState`；上游 lint audit:code-quality:type-aware 與 check:code-quality:changed 的 `no-redundant-type-constituents`（git-graph-tab-actions.ts:138，同一個 error type）；Git Graph 分頁那批失敗測試（GitGraphTabView、git-graph-full-*、git-graph-open-commit 等 component 測試）與 dc13df6962 條目一起消失。
+- 處理：import 區採上游的 `'./github/checks/check-types'`、`'./github/repositories/repository-identity'` 兩行，前面加回 fork 的 `import type { GitHistoryGraphSavedFilter } from './git-history-graph-query-types'`；檔案其他 fork 段落（`OpenGitGraphState` 等）merge-file 自動合入。
+- 守它的測試：`pnpm tc`、config/fork-seam-tests.txt 的 GitGraphTabView.component.test.tsx、git-graph-full-view.component.test.tsx
+- 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：tc 0 錯誤、type-aware 與 changed 兩步通過、161 檔全過。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過（含 type-aware 與 changed-code 兩步）。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### aaf5295a7f45f7507428fcafe1ae89e94df7629e（#41441 feat(tab-group): split pane landing as a command card）× fork 6706c8c6e8（feat(source-control): Git Graph 全螢幕改成 IntelliJ 式佈局,可多選 commit 合併檢視與複製變更檔案）、2989df4b95（fix(clipcode): 擋下會被還原成其他指令的檔名、讀檔後立即丟棄超量內容、切換 commit 時清掉多選;commit 檔案選取改用檔案總管的高亮樣式並補 e2e）— canary 2026-11-13
+- 類型：兩邊各改各的
+- 衝突檔：src/renderer/src/assets/main.css（一個 hunk：上游在 `[data-file-explorer-row][data-selected='true'] {` 前面插入 `.split-pane-landing … jump-palette-item[data-selected='true']` 兩條規則，fork 把那個 selector 擴成三個）
+- 連帶症狀：無獨立症狀（Git Graph／commit 檔案選取的樣式；測試不驗 CSS）
+- 處理：保留上游新增的兩條 `.split-pane-landing` 規則，後面的 selector 用 fork 版 `[data-file-explorer-row][data-selected='true'],\n[data-commit-file-path][data-selected='true'],\n[data-git-graph-row][data-selected='true'] {`。ff01a87397（#41602）也改了這個檔，但在沒衝突的區域，自動合入。
+- 守它的測試：上游 lint check:dead-classes 與 e2e 的 ClipCode commit 檔案選取（9435369a99 補的那支）
+- 驗證（2026-11-13，上游 3bec2aa636f7a5f4ddd6ae1175946ea035c85c05）：上游 lint 45 步全過（含 check:dead-classes）；e2e 未跑。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過（含 `check:dead-classes`）；ClipCode E2E 未驗證。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### 2050d9fbc6e5d92c5992cb5eef5aee0c6b6f9fd9（#41812 refactor: group source-control modules by operation ownership）× fork 416e34ed5b（refactor: finish moving fork params into options objects and pin the remaining hops）、a802816911（test(fork): 補上游接縫的非 UI 契約測試,修正 commit 複製把缺檔當空內容）、99f258ed7d（test: move fork cases out of upstream test files into .fork.test siblings）— canary 2026-11-14
+- 類型：上游改了 fork 依賴的 API
+- 衝突檔：`src/main/git/source-control/diffs/{diff-result,file-diff}.ts`、`src/main/git/source-control/submodules/submodule-diff.ts`、`src/main/runtime/integrations/git/runtime-git-diff-commands.ts`（該檔的 RPC import 另見 #42063）。
+- 連帶症狀：`filesystem-git-status-handlers.ts` 的 `FileDiffOptions` 缺 `skipRenderLimit`；`blob-absence-real-git.fork.test.ts`、`commit-diff-missing-sides.real-git.test.ts`、`file-diff.read-failure.test.ts`、`file-diff.skip-render-limit-real-git.test.ts`、`filesystem-git-diff-skip-render-limit-ipc.test.ts` 失敗。seam 清單列出的 `src/main/git/source-control/blob-absence-real-git.test.ts` 隨上游搬進 `diffs/`。
+- 處理：三個 Git 檔保留上游的新路徑，加入 `../git-diff-read-options` 的 `GitDiffReadOptions`，保留 fork 的內容大小選項（含快取 key 與 submodule 轉發）及缺檔語意；runtime 的 `getBranchDiff` 改從 `comparisons/branch-diff` 載入，保留 `GitDiffReadOptions` 及 options 轉發。`commit-diff.ts` 搬到 `comparisons/`，保留 fork 的 `missingSides` hunk（本次自動合入）。fork 測試的 import 與 vi.mock 一起換：`file-diff`、`git-blob-read` → `diffs/`，`commit-diff` → `comparisons/`，`worktree-diff-stamp` → `input-stamps/`，`submodule-paths` → `submodules/`。更新 `config/fork-seam-tests.txt` 的上游 blob-absence 測試路徑，fork sibling 留原處。
+- 守它的測試：seam 清單的 skip-render-limit 組（含 runtime chain、IPC、真 Git）、blob-absence、commit-diff-missing-sides 和 file-diff.read-failure。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過；搬到 `diffs/` 的上游 `blob-absence-real-git.test.ts` 另跑通過。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### cc29ae4820878be9bba0bad2bd3783231841ba94（#41772 refactor: organize provider modules by defining owner）× fork 416e34ed5b（refactor: finish moving fork params into options objects and pin the remaining hops）— canary 2026-11-14
+- 類型：上游改了 fork 依賴的 API
+- 衝突檔：`src/main/providers/git/provider-contract.ts`（原 `src/main/providers/git-provider-contract.ts`）。
+- 連帶症狀：`src/main/providers/git/local-provider.ts` 的 `getDiff` 簽章不合，`file-diff.skip-render-limit-real-git.test.ts` 找不到舊的 local-git-provider。
+- 處理：保留上游分域結構與 import。契約加回 `../../git/source-control/git-diff-read-options` 的 `GitDiffReadOptions`，保留 `getDiff` 最後的 optional options。local provider 搬至 `git/local-provider.ts`，保留 options 轉發（本次自動合入），真 Git 測試改 import `../../providers/git/local-provider`。若 release 同時含 #42063，`GitAdmissionTier` 採新契約路徑。
+- 守它的測試：`file-diff.skip-render-limit-real-git.test.ts` 的 provider 實際讀取與快取隔離。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### 075d6b3b507b8b6ce0c3202e72a5bb00c4045500（#42063 refactor(rpc): group request contracts by feature owner）× fork 416e34ed5b（refactor: finish moving fork params into options objects and pin the remaining hops）、376d7ae578（feat(source-control): git 歷史支援多分支、分支篩選與 git 端搜尋(後端)）、173589d58e（test(git-diff): 補齊 skipRenderLimit 與 history graph 遠端路徑的傳遞鏈測試）— canary 2026-11-14
+- 類型：上游改了 fork 依賴的 API
+- 衝突檔：`src/shared/rpc-contract/source-control/git-params.ts`、`src/main/runtime/rpc/methods/source-control/git/git-diff-methods.ts`、`src/main/runtime/integrations/git/runtime-git-diff-commands.ts`（與 #41812 共用後者）。
+- 連帶症狀：`src/main/runtime/rpc/methods/source-control/git/git.ts` 的 `args.graph` 型別消失，`git-diff-skip-render-limit.test.ts` 指向舊 `git-params`。
+- 處理：保留上游的 `rpc-contract/source-control/` import，`git-params.ts` 從 `../git-history-graph-params` 加回 `GitHistoryGraphParams`，並保留 fork schema 的 `graph`、`skipRenderLimit`。RPC diff methods 保留 `gitDiffReadArgs`，runtime 保留 `GitDiffReadOptions`；RPC 測試改用新 `git-params` 路徑。產生的 `rpc-params-catalog.generated.ts` 是本次 release/main 分歧，採 main，跑 `pnpm run verify:rpc-params-catalog` 驗證。若包含 #41950 且仍見 observability 的舊 import，見 #41950 條。
+- 守它的測試：`git-diff-skip-render-limit.test.ts`、`git-history-graph-rpc.test.ts` 及兩條 runtime chain。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過（含 `verify:rpc-params-catalog`）。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### 17a1dc373b0ac7c5b1710490815d478f2ae76f56（#42093 refactor: group shared worktree modules by feature）× fork 9c425c7788（fix(fork): follow upstream v1.4.257's renderer owner moves (#40337, #40562, #40688, #40745, #40761, #40777, #40895, #40911, #40936)）— canary 2026-11-14
+- 類型：上游改了 fork 依賴的 API
+- 衝突檔：無
+- 連帶症狀：`GitGraphTabView.tsx` TS2307，`GitGraphTabView.component.test.tsx` import 失敗。
+- 處理：在 `src/renderer/src/components/git-graph-tab/GitGraphTabView.tsx` 將 `shared/worktree/git-identity-display` 改成 `shared/worktree/row-display/git-identity-display`。
+- 守它的測試：`GitGraphTabView.component.test.tsx`。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過；GitGraphTabView.component.test.tsx 在其中通過。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### 587562e862c564a49eb3e35217fbb1595d04bbc5（#42107 refactor: organize shared sidebar list modules by domain）× fork 76cbc192ba（fix(git-graph): resolve folder choices with Source Control's lineage selectors and host-aware repos）— canary 2026-11-14
+- 類型：上游改了 fork 依賴的 API
+- 衝突檔：無
+- 連帶症狀：`git-graph-tab-model.ts` TS2307，`audit:code-quality:type-aware` 和 `check:code-quality:changed` 都把 `SidebarLineageParentIdentities` 報為 error type。
+- 處理：在 `src/renderer/src/components/git-graph-tab/git-graph-tab-model.ts` 將 `shared/sidebar-list/worktree-lineage-projection` 改成 `shared/sidebar-list/lineage/worktree-lineage-projection`。
+- 守它的測試：`GitGraphTabView.component.test.tsx`、`pnpm tc` 和上述兩個 lint 步驟。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過（含 type-aware 與 changed 兩步）。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### 7922a4a0e4b7c139bf27db9888b85e8ff34d44c1（#21108 Scroll combined diff panes with sideways wheel input）× fork 21f353884d（fix(source-control): 依第二輪 QA 修正:combined diff 在 dev StrictMode 不再 crash、多選複製 hash/訊息涵蓋全部選取、Git Graph 可在旁邊開 diff）— canary 2026-11-14
+- 類型：兩邊各改各的
+- 衝突檔：`src/renderer/src/components/editor/diff/sections/DiffSectionBody.tsx`。
+- 連帶症狀：`DiffSectionBody.monaco-strict-reveal.test.tsx`、`DiffSectionBody.real-monaco-strict-reveal.test.tsx`、`DiffSectionBody.image-lazy-identity.fork.test.tsx` 失敗。只合 production 檔後，第一個測試的舊 mock 會漏進真 wheel handler，報 `editor.getContainerDomNode is not a function`。
+- 處理：沿用上游 `installDiffEditorHorizontalWheelScroll(diffEditor)` 和 dispose cleanup；在它前面保留 fork `cancelPendingDisposeRef.current = deferDiffEditorDispose(diffEditor)`，保留重連 guard 和共用的 `editor-lazy-views` 入口。fake Monaco 測試只把 `vi.mock` 改指向 `diff-editor-horizontal-wheel-scroll` 與新 export `installDiffEditorHorizontalWheelScroll`。測試仍驗證生命週期和 image chunk，wheel 行為由上游測試驗證。
+- 守它的測試：上述三個 fork 測試，以及上游 `diff-editor-horizontal-wheel-scroll.test.ts`。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過；上游 `diff-editor-horizontal-wheel-scroll.test.ts` 另跑通過。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### 2434a63be94d8f7fe09a9e35e17f8c4b412faca1（#41249 fix(tab-group): keep a grabbable tab in narrow tab-group strips）× fork 831438e7a1（feat(source-control): Git 介面順手度優化第一批）— canary 2026-11-14
+- 類型：兩邊各改各的
+- 衝突檔：`src/renderer/src/components/tab-group/TabGroupPanel.tsx`。
+- 連帶症狀：`TabGroupPanel.git-graph-button.test.tsx` 的頂右角定位和 active 斷言都紅。
+- 處理：採上游的內層 `@container/tab-strip`、40px tab 下限、窄幅 action 規則及 quick commands fallback。把 `reserveClosedExplorerToggleSpace` 控制的 `TabStripGitGraphButton` 放回同一容器的 action chrome，位於 quick-command wrapper 與 pane actions 之間，保留 `activeTab?.contentType === 'git-graph'`。launcher 現有 260px query 在上游 203px／163px／114px 階段前已隱藏按鈕。`oxlint` 會報直接加回的版本有 404 個有效行、上限 400；將上游 action chrome（quick commands、pane actions、原 ref 與寬度規則）與 fork 按鈕抽到 `TabGroupStripActions.tsx`，由原容器傳入原 props。兩個解法檔要一起套，窄條 e2e 可驗證 drag 與鍵盤焦點。
+- 守它的測試：`TabGroupPanel.git-graph-button.test.tsx`；上游 `tests/e2e/narrow-tab-group-drag-handle.spec.ts`。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過（含 max-lines）；Git Graph 按鈕與 `git-graph-tab-launcher.component.test.tsx` 另跑通過；窄條 e2e 未驗證。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### 98bcd7943a02a32e263393130890939f3c427711（#41838 refactor: organize text generation around concrete owners）× fork 275f5d9d5c（chore(rebase): grandfather the fork's startup-only sync fs reads in v1.4.255's main-sync-fs ratchet）— canary 2026-11-14
+- 類型：兩邊各改各的
+- 衝突檔：`config/main-sync-fs-baseline.txt`。
+- 連帶症狀：`check:main-sync-fs-ratchet` 指出 `src/main/asar-transparent-stat.ts` 有 2 次與 `src/main/updater/fork-distribution.ts` 有 1 次同步呼叫，baseline 都容許 0。
+- 處理：沿用上游 baseline 的既有行序與新路徑，包含 `src/main/automations/external-managers/external-manager-discovery.ts` 及 `src/main/text-generation/prompts/source-control-prompt-files.ts`；插回 `2 src/main/asar-transparent-stat.ts`、`1 src/main/updater/fork-distribution.ts` 兩行。
+- 守它的測試：`pnpm run check:main-sync-fs-ratchet`。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：`check:main-sync-fs-ratchet` 在 45 步內通過；套用本條解法（解法檔與 fe7241058b 那輪逐位元組相同，上游之後 3 個 commit 沒碰這些檔）後，連同其他條目：合併樹 `pnpm tc` 0 錯誤、原批 160 檔 1,003 例全過、上游 lint 45 步全過、seam 清單 95 檔 571 例全過。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）照做，跟眼前一致；develop 沒移動（卡在第 5 步的測試缺口），條目留著。解法在 `rebase/v1.4.259`（收鎖後 `backup/rebase-v1.4.259-*`），見 resolution-history 同日條目。
+
+#### 3fe2827bc9a88e507b38fe33eca60c533c15c10e（#41950 Label Git execution callers, command shapes and priority in traces）× 無 fork commit — canary 2026-11-14
+- 類型：上游自己就紅（#41950 在 #42063 搬動 RPC 契約後帶回舊 import）。
+- 衝突檔：無。
+- 連帶症狀：`src/main/observability/git-execution-spans.ts` TS2307，原樣存在於上游 `fe7241058b`。fork 自 v1.4.258 沒碰這個檔。
+- 處理：若新 tag 已含兩個上游 commit，而且檔案仍引用 `../../shared/rpc-contract/git-admission-tier-params`，改為 `../../shared/rpc-contract/source-control/git-admission-tier-params`。先找上游是否已修；有修復 commit 就用它。此輪觀測到的 main 還有舊路徑。
+- 守它的測試：`pnpm tc`。
+- 驗證（2026-11-14，上游 dd9f8e3994b8a953c22202b319966ebccc337ddf）：上游 main dd9f8e3994 的 `git-execution-spans.ts` 仍是舊 import（`../../shared/rpc-contract/git-admission-tier-params`），上游還沒修；改成 `source-control/` 路徑後 tc 通過。
+- 2026-11-15 auto-rebase v1.4.259（PR #164）：v1.4.259 的 `git-execution-spans.ts` 已是 `source-control/` 新路徑、上游基準 tc 綠，不用做；develop 移動到 v1.4.259 之後可刪。
+
+#### 03c828eece972565ece4b2ae09ef80200a0a1df9（#41744 Run setup scripts for project group folder workspaces）× fork 的 folder 多 repo e2e helper（`tests/e2e/helpers/folder-multi-repo-import.ts`）— auto-rebase 2026-11-15
+- 類型：上游改了 fork 依賴的 API（`createFolderWorkspace` 回傳從 `FolderWorkspace` 改成 `{ folderWorkspace, setup, … }`）
+- 衝突檔：無
+- 連帶症狀：`check:e2e-typecheck-ratchet` 紅：`tests/e2e/helpers/folder-multi-repo-import.ts(60,28): error TS2339: Property 'id' does not exist on type 'FolderWorkspaceCreateResult'`（`pnpm tc` 不含 e2e，canary 也抓不到）
+- 處理：`` return `folder:${fw!.id}` `` → `` return `folder:${fw!.folderWorkspace.id}` ``（PR #164 的 5e70e097be）。
+- 守它的測試：`pnpm run check:e2e-typecheck-ratchet`；folder 多 repo e2e
+- 驗證（2026-11-15，v1.4.259）：改後 ratchet 綠；改回 → `folder-multi-repo-import.ts: 1 type error(s), baseline allows 0.`
+
+#### 0664f1c9bb1c9bd96163266f115de606a184a9c9（#41483 fix: hide deleted workspaces while background cleanup finishes）× fork 的 folder-path repo 與 Git Graph repo 選單（`folder-git-worktrees.ts`、`git-graph-tab-model.ts`）— auto-rebase 2026-11-15
+- 類型：上游改了 fork 依賴的語意（type-compatible，tc／seam 都不紅；Codex 審查找到）
+- 衝突檔：無
+- 連帶症狀：刪除已受理（`removing && removalRecorded`）的 worktree 仍出現在 folder Source Control 的 repo 卡、folder 與一般 workspace 的 Git Graph repo 選單
+- 處理：`getFolderGitWorktrees` 迴圈與 `listGitGraphRepoChoices` 的條件加上上游 `isWorktreeRetiredByRemoval(worktree)`（`shared/worktree/removal/removal-visibility`），只有 `removing` 的 legacy row 保留；新測試 `src/renderer/src/components/git-graph-tab/git-graph-removal-retired.fork.test.ts` 進 seam 清單「git-graph tab type」組（PR #164 的 656d81d7dc，可直接 cherry-pick）。
+- 守它的測試：`git-graph-removal-retired.fork.test.ts`
+- 驗證（2026-11-15，v1.4.259）：各自改回 → `expected [ 'app-main', 'app-deleting', …(1) ] to deeply equal [ 'app-main', 'app-legacy' ]`；Codex r2 ACCEPTABLE。
+
+#### v1.4.259 rebase 只在中間 commit 停下的衝突 × fork 1dd73170a0、484c0f7e28、de9b6c2a78、94c9ebff4a、f315dadaf6、b2c72bd36e、6d74150651、2b149deb5d、bdbdd07788 — auto-rebase 2026-11-15
+- 類型：兩邊各改各的（上游搬家；fork 後面的 commit 又把那段交還上游，canary 合最終樹所以看不到）
+- 衝突檔：`src/shared/workspace-layout/workspace-layout-fact-locations.test.ts`、`src/renderer/src/components/sidebar/worktree-list/listing/use-host-visible-scope.ts`、`src/renderer/src/components/right-sidebar/file-explorer/tree/FileExplorerFilesTreePane.tsx`、`src/shared/workspace-layout/editor-tabs/saved-editor-tab-restore.ts`、`src/main/ipc/filesystem/{filesystem-git-status-handlers,filesystem-gitignore-handlers}.ts`
+- 處理：fact-locations 測試 modify/delete 兩站都 `git rm`（上游 v1.4.259 刪檔）；`use-host-visible-scope.ts`、`saved-editor-tab-restore.ts` 第一站採上游 import 加回 fork 那行，2b149deb5d 那站整檔 `git show vNEW:<檔>`；`FileExplorerFilesTreePane.tsx` 保留上游 `WslHostReadOutage`，94c9ebff4a 加回 ClipCode 兩個 import、f315dadaf6 拿掉；gitignore handlers：6d74150651 把 fork 檔的 import 改成 `../../git/source-control/ignores/huge-folder-ignore`，2b149deb5d `git rm` fork 檔，bdbdd07788 的 import 區用上游 `ignores/check-ignored-paths` 與 `ignores/huge-folder-ignore`（結果與 vNEW 只差 skipRenderLimit 兩行）。
+- 守它的測試：`pnpm tc`、hunk 掃描（這幾檔最後都沒有 fork hunk，或只剩 skipRenderLimit 的 guarded hunk）
+- 驗證（2026-11-15，v1.4.259）：PR #164 A、B、Codex 確認無 fork 行為遺失。
+
 ## 2026-11-15 auto-rebase v1.4.258 → v1.4.259（PR #164）— 沒移動：加開的第 3 輪審查仍有確認為真的 BLOCKING（都在這次新增的測試上）
 - RUN=20261114T212705Z（Orca worktree `auto-orca-fork-rebase-run-598-20261114T2126`）。NEW，OLD_DEVELOP 2bb4c95c70。重型檢查（基準、static、seams、hunk 掃描、e2e 重現）照全域規則經 `fork-remote.sh`（PR #163 分支的檔，複製進 `.rebase-review/`）送 ubuntu，全部成功、沒有回 90／91；Codex 的 worktree 在本機 install（Codex 沙箱連不了 ssh）。
 - 上游基準（fork-upstream-red v1.4.259，ubuntu）：tc、lint、daemon-protocol 全綠。條目 3fe2827bc9（#41950）不用做：v1.4.259 的 `git-execution-spans.ts` 已是新路徑。
