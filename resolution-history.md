@@ -2,6 +2,27 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-11-15 人工收尾 v1.4.259（PR #164、#165）— 測試證明缺口改記測試債，條目從 known-resolutions 移出
+- 使用者接受 PR #164 needs-human 的預設，develop 推到 656d81d7dc，run 601 發 v1.4.259-fork.1。
+- PR #165（8b2345c88d）改 FORK.md「Unattended merges」與技能：樣式表 hunk、原樣搬進 fork 檔的上游程式碼、上游只改 import／型別的無 fork hunk seam 檔，缺測試證明一律是測試債（NON-BLOCKING、附證據、不寫 known-resolutions 條目）；第 2 輪審查等 C 交卷才開。
+- 下面這條原本在 known-resolutions，處理結果：
+  - (a) Tab strip：已由 #165 的 `TabGroupPanel.git-graph-button.test.tsx` 補上（拿掉 Quick Commands 或 Pane Actions 各自紅在順序斷言）。
+  - (b) Explain：測試債（上游對 `agent-detection-target-inventory.ts` 只改 type import 路徑，`pnpm tc` 守）。上游哪天對那個模組做行為改動、它不再是測試債時，照下面寫好的做法補。
+  - (c) main.css 選取樣式：測試債（樣式表 hunk）。要補時照下面的做法。
+
+### 原條目（搬過來）
+## fork 自身問題（Explain commit 接線與 main.css 選取樣式沒有有效測試；Tab strip 順序）× fork 的 `use-git-history-commit-actions.ts:272`／`git-history-commit-explain.ts`、`src/renderer/src/assets/main.css` 的 `[data-commit-file-path]`／`[data-git-graph-row]` 選取 selector、744da34daa 的 `TabGroupStripActions.tsx` — auto-rebase 2026-11-15
+- 類型：fork 自身問題
+- 衝突檔：無
+- 連帶症狀：PR #164 擋住自動移動的就是這幾項（審查者 C、Codex r3、E）。
+- 處理（一條一個 commit，送審前對照 `docs/agents-md-refs/test-antipatterns.md`）：
+  - (a) Tab strip：PR #164 6a938a37e2 的 `TabGroupPanel.git-graph-button.test.tsx` 部分可直接帶（mock 三個子元件成帶 testid 的按鈕，`hasSplitGroups` 參數，斷言 `['quick-commands', 'git-graph-button', 'pane-actions']`；E 與 Codex r3 認可）。**同 commit 的 Explain 案例不要帶。**
+  - (b) Explain：不要 mock `git-history-commit-explain`（Codex r3 退回：只斷言 mock 呼叫）。先讀 `launch-agent-in-new-tab` 與它的上游測試，看它 stub 哪一層、斷言哪個 store 結果，用真 store 跑 `handleCommitAction('explain', item)` → 真 launcher → 斷言新分頁／launch 請求的 agent 與 prompt（含 `Explain the changes introduced by commit`）。驗收：拿掉 `use-git-history-commit-actions.ts` 的 `void explainCommitWithDefaultAgent(activeWorktreeId, item)`、把 `explainCommitWithDefaultAgent` 換成空函式、讓 `getDetectionTargetIdentityForWorktree` 直接 throw，三個都要紅在斷言。加進 seam 清單。
+  - (c) main.css 選取樣式：PR #164 7b443b696a 的 e2e 斷言不算數（取值時在背景轉場中、`oklab(0 0 0 / 0)` 只是字串不同；游標壓在選取列；只跑亮色）。要的話：斷言前把游標移開、等轉場結束（`expect.poll` 讀 computed background 的 alpha > 0，不拿另一列的值當期望），再把游標移到選取列驗 :hover，切暗色主題再驗一次。驗收：四個 hunk（一般、:hover、.dark、.dark :hover）各自拿掉都紅。先試替代做法：讓 commit 檔案列與 Git Graph 列直接帶上游既有的 `data-file-explorer-row` 選取規則、不改 main.css（先 `rg 'data-file-explorer-row' src` 確認沒有行為依賴）——成立的話 main.css 就沒有 fork hunk。
+- 守它的測試：待補
+- 驗證：未驗證
+- 2026-11-15 auto-rebase RUN=20261115T001732Z：使用者照 PR #164 needs-human 留言把 develop 推到 656d81d7dc 並由本 run 發 v1.4.259-fork.1。develop 不含 6a938a37e2、7b443b696a（在 `backup/rebase-v1.4.259-20261114T212705Z`），(a)(b)(c) 都還沒做，適合另開 PR 補（不用等下一次 rebase）。
+
 ## 2026-11-15 auto-rebase v1.4.258 → v1.4.259（PR #164，續）— develop 已移動並發 v1.4.259-fork.1（使用者照 needs-human 留言推 develop）
 - RUN=20261115T001732Z（Orca worktree `auto-orca-fork-rebase-run-601-20261115T0017`）。第 0 步：`rebase/v1.4.259` 與 develop 都是 656d81d7dc（使用者 00:15Z 照 needs-human 留言接受三個測試缺口：先重設 `rebase/v1.4.259`、再備份 `backup/develop-v1.4.258-20261114T212705Z` 並 lease 推 develop），沒有 v1.4.259-fork.* tag → 留 `develop-moved 656d81d7dc…`、直接第 7 步。656d81d7dc 的 Fork PR checks 是 run 43648014306 綠、Codex r2 ACCEPTABLE。
 - 第 0 步刪了 run-598 的 worktree（乾淨、不在 rebase、HEAD 7b443b696a 在 `fork/backup/rebase-v1.4.259-20261114T212705Z`）。

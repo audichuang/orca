@@ -72,18 +72,6 @@
 - 驗證（2026-11-15，v1.4.259）：PR #164 的 f7429b5385；ubuntu 上那支 3 passed，CI run 43645873546 全綠。
 - 2026-11-15 auto-rebase RUN=20261115T001732Z：使用者照 PR #164 needs-human 留言把 develop 推到 656d81d7dc 並由本 run 發 v1.4.259-fork.1。f7429b5385 已在 develop；下一次 rebase 的 vNEW 含 856c91bba2 時照「處理」用標題找到它丟掉，不含就照常重放。
 
-## fork 自身問題（Explain commit 接線與 main.css 選取樣式沒有有效測試；Tab strip 順序）× fork 的 `use-git-history-commit-actions.ts:272`／`git-history-commit-explain.ts`、`src/renderer/src/assets/main.css` 的 `[data-commit-file-path]`／`[data-git-graph-row]` 選取 selector、744da34daa 的 `TabGroupStripActions.tsx` — auto-rebase 2026-11-15
-- 類型：fork 自身問題
-- 衝突檔：無
-- 連帶症狀：PR #164 擋住自動移動的就是這幾項（審查者 C、Codex r3、E）。
-- 處理（一條一個 commit，送審前對照 `docs/agents-md-refs/test-antipatterns.md`）：
-  - (a) Tab strip：PR #164 6a938a37e2 的 `TabGroupPanel.git-graph-button.test.tsx` 部分可直接帶（mock 三個子元件成帶 testid 的按鈕，`hasSplitGroups` 參數，斷言 `['quick-commands', 'git-graph-button', 'pane-actions']`；E 與 Codex r3 認可）。**同 commit 的 Explain 案例不要帶。**
-  - (b) Explain：不要 mock `git-history-commit-explain`（Codex r3 退回：只斷言 mock 呼叫）。先讀 `launch-agent-in-new-tab` 與它的上游測試，看它 stub 哪一層、斷言哪個 store 結果，用真 store 跑 `handleCommitAction('explain', item)` → 真 launcher → 斷言新分頁／launch 請求的 agent 與 prompt（含 `Explain the changes introduced by commit`）。驗收：拿掉 `use-git-history-commit-actions.ts` 的 `void explainCommitWithDefaultAgent(activeWorktreeId, item)`、把 `explainCommitWithDefaultAgent` 換成空函式、讓 `getDetectionTargetIdentityForWorktree` 直接 throw，三個都要紅在斷言。加進 seam 清單。
-  - (c) main.css 選取樣式：PR #164 7b443b696a 的 e2e 斷言不算數（取值時在背景轉場中、`oklab(0 0 0 / 0)` 只是字串不同；游標壓在選取列；只跑亮色）。要的話：斷言前把游標移開、等轉場結束（`expect.poll` 讀 computed background 的 alpha > 0，不拿另一列的值當期望），再把游標移到選取列驗 :hover，切暗色主題再驗一次。驗收：四個 hunk（一般、:hover、.dark、.dark :hover）各自拿掉都紅。先試替代做法：讓 commit 檔案列與 Git Graph 列直接帶上游既有的 `data-file-explorer-row` 選取規則、不改 main.css（先 `rg 'data-file-explorer-row' src` 確認沒有行為依賴）——成立的話 main.css 就沒有 fork hunk。
-- 守它的測試：待補
-- 驗證：未驗證
-- 2026-11-15 auto-rebase RUN=20261115T001732Z：使用者照 PR #164 needs-human 留言把 develop 推到 656d81d7dc 並由本 run 發 v1.4.259-fork.1。develop 不含 6a938a37e2、7b443b696a（在 `backup/rebase-v1.4.259-20261114T212705Z`），(a)(b)(c) 都還沒做，適合另開 PR 補（不用等下一次 rebase）。
-
 ## fork 自身問題（PR #164 審查列出的既有缺口）× fork `comparisons/commit-diff.ts` 的 missingSides、4 個死 vi.mock — auto-rebase 2026-11-15
 - 類型：fork 自身問題
 - 衝突檔：無
