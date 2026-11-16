@@ -1,7 +1,7 @@
 import { useAppStore } from '@/store'
 import { folderOwnerRelativePath } from '@/store/slices/editor/tabs/folder-tab-relative-path'
 import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
-import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
+import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 
 /** Path an Add to chat quote names: a folder tab's file relative to the folder the chat opens in, not to its repo. */
 export function useChatQuoteRelativePath(

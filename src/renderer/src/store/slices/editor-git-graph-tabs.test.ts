@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createEditorTabsStore } from './editor/editor-slice-test-harness'
 import type { AppState } from '../types'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import {
   getRememberedFolderRepo,

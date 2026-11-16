@@ -4,8 +4,8 @@ import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
-import type { NestedRepoCandidate } from '../../../../shared/project-group-types'
-import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
+import type { NestedRepoCandidate } from '../../../../shared/project/groups/project-group-types'
+import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import {
   FOLDER_NESTED_REPO_SCAN_OPTIONS,
   getNewNestedRepoCandidatesFromState

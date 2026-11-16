@@ -4,7 +4,7 @@ import type { EditorSlice } from '../types/editor-slice'
 import type { OpenFile } from '../types/open-file'
 import type { OpenGitGraphState } from '../../../../../../shared/editor-tab-view-types'
 import { openWorkspaceEditorItem } from '../tabs/workspace-editor-item'
-import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 import { rememberFolderRepo } from '@/components/right-sidebar/source-control/folder/folder-repo-selection'
 import {
   dropGitGraphRevealRequestUnlessRepo,

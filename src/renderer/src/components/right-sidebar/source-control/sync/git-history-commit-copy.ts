@@ -1,11 +1,11 @@
 // Fork-only: Copy Full Source for commits in the history graph.
 import { getConnectionId } from '@/lib/workspace/ownership/connection-context'
-import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
+import type { RuntimeClientTarget } from '../../../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import { requireGitOwnerTarget } from './worktree-git-owner-target'
 import { copyClipcodeCommitChanges, getClipcodeRootPath } from '../clipcode/clipcode-copy-action'
-import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
+import { mapWithConcurrency } from '../../../../../../shared/concurrency/map-with-concurrency'
 
 // Why: a shift-selected range can hold hundreds of commits; the runtime RPC queue rejects past 256.
 const COMMIT_LOAD_CONCURRENCY = 6
