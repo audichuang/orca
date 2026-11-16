@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { makeFolderWorkspace } from '@/store/folder-workspaces/folder-workspace.test-fixture'
 import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
-import type { Repo } from '../../../../../../shared/repo-types'
+import type { Repo } from '../../../../../../shared/repository/repo-types'
 import { withFolderPathRepoOwners } from './folder-path-repo-owners'
 
 const repo = (id: string, path: string): Repo => ({

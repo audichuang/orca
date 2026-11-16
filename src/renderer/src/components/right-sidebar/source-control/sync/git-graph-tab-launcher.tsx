@@ -8,7 +8,7 @@ import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { useShortcutKeyDetails } from '@/hooks/useShortcutLabel'
-import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 import {
   listGitGraphRepoChoicesFromInputs,
   selectGitGraphChoiceInputs

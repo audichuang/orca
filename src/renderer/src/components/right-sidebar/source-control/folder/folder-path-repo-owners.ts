@@ -2,13 +2,13 @@
 // also lists every registered repo worktree under the folder path, as its folder panel did.
 import { getIndexedAllWorktrees } from '@/store/slices/worktrees/listing/worktree-catalog-index'
 import { getRepoExecutionHostId } from '../../../../../../shared/execution-host'
-import type { Repo } from '../../../../../../shared/repo-types'
+import type { Repo } from '../../../../../../shared/repository/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import type { AppState } from '@/store/types'
 import type {
   AttachedWorktreeOwner,
   AttachedWorktreeResolution
-} from '../../folder-workspace-attached-worktrees'
+} from '../../folder-workspaces/folder-workspace-attached-worktrees'
 import { getFolderGitWorktrees } from './folder-git-worktrees'
 
 /** Owner card for a registered repo worktree upstream's folder resolution does not attach. */

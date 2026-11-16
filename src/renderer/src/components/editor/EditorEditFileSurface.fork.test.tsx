@@ -3,9 +3,11 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import type { useMarkdownDocuments } from './markdown/documents/useMarkdownDocuments'
-import { EditorEditFileSurface } from './EditorEditFileSurface'
+import { EditorEditFileSurface } from './panel/EditorEditFileSurface'
 
-vi.mock('./ChangesModeView', () => ({ ChangesModeView: () => <div data-testid="changes-view" /> }))
+vi.mock('./panel/ChangesModeView', () => ({
+  ChangesModeView: () => <div data-testid="changes-view" />
+}))
 vi.mock('./external-changes/CustomEditorExternalChangeBanner', () => ({
   CustomEditorExternalChangeBanner: () => <div data-testid="external-change-banner" />
 }))

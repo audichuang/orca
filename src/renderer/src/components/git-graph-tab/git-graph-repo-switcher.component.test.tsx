@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, type RenderResult } from '@testing-library/react'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { GitGraphRepoSwitcher } from './git-graph-repo-switcher'
 import type { GitGraphRepoChoice } from './git-graph-tab-model'
