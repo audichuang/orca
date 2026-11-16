@@ -94,7 +94,7 @@
 ## fork 自身問題（`fork-rebase-continue.sh` 把 rerere 全解的停點報成空 commit）× fork `config/scripts/fork-rebase-continue.sh` — auto-rebase 2026-11-16
 - 類型：fork 自身問題
 - 衝突檔：無
-- 連帶症狀：v1.4.261 rebase 有 12 個停點的衝突全被 rerere 重放並 staged（沒有 U 檔）。`rebase --continue` 停下時 log 裡有 git 每個停點都印的 hint（`You can instead skip this commit: run "git rebase --skip"`），腳本判斷空 commit 的 grep（`nothing to commit|previous cherry-pick is now empty|git rebase --skip`）命中它，就印 `EMPTY commit <sha> <標題>: run 'git rebase --skip'`。照做會丟掉那個 fork commit（這次包括 14d836e9c8 ClipCode 第二輪貼上端對齊、744da34daa、1de1aaca36 等 12 個）。這次的驅動迴圈先看上一個 continue log 有沒有 rerere staged 的檔，有就交給下一次 continue，所以沒有丟 commit（range-diff 只有預期的 f7429b5385、9e1bd7227e 是 `<`）。
+- 連帶症狀：v1.4.261 rebase 的 20 個停點裡，腳本對 17 個印了 EMPTY：只有 9e1bd7227e 真的變空，另外 16 個是衝突全被 rerere 重放並 staged（沒有 U 檔）。`rebase --continue` 停下時 log 裡有 git 每個停點都印的 hint（`You can instead skip this commit: run "git rebase --skip"`），腳本判斷空 commit 的 grep（`nothing to commit|previous cherry-pick is now empty|git rebase --skip`）命中它，就印 `EMPTY commit <sha> <標題>: run 'git rebase --skip'`。照做會丟掉那個 fork commit（這次 16 個，包括 14d836e9c8 ClipCode 第二輪貼上端對齊、72faec4abe fork 發行打包、744da34daa、1de1aaca36）。這次的驅動迴圈先看上一個 continue log 有沒有 rerere staged 的檔，有就交給下一次 continue，所以沒有丟 commit（range-diff 只有預期的 f7429b5385、9e1bd7227e 是 `<`）。
 - 處理：判斷 EMPTY 之前先看 index 對 HEAD 有沒有差異（`git diff --cached --quiet HEAD`）：有（rerere staged 了東西）就印 `STOPPED at <sha> <標題> (rerere resolved every conflict)`、列出 `git diff --cached --name-only HEAD`、exit 1，呼叫端把列出的檔當參數再呼叫一次；grep 拿掉 `git rebase --skip` 那個選項。auto-rebase 技能第 1 步第 3 點同步寫明這種輸出怎麼接。
 - 守它的測試：`config/scripts/fork-rebase-continue.test.sh` 加一例：先錄一個 rerere 解法再重放到停點，斷言輸出不是 `EMPTY commit`，而且 continue 之後那個 commit 還在。
-- 驗證：未驗證（只看過輸出：`.rebase-review/drive-r1.log` 有 12 行 `EMPTY commit`，對應的 commit 都在 `git log v1.4.261..develop`）
+- 驗證：未驗證（只看過輸出：`.rebase-review/drive-r1.log` 有 17 行 `EMPTY commit`，其中 16 個 commit 以標題對照都在 `git log v1.4.261..develop`，只有 9e1bd7227e 不在（真的空））
