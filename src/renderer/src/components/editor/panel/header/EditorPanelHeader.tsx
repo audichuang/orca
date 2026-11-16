@@ -21,10 +21,10 @@ import { EditorPanelHeaderPath } from './EditorPanelHeaderPath'
 import { useDiffNavigation } from '../../diff/review/diff-navigation-context'
 import { useShortcutKeyDetails } from '@/lib/keyboard/useShortcutLabel'
 import { ShortcutKeyCombo } from '@/components/ui/ShortcutKeyCombo'
-import { DiffFileSequenceStatus } from './diff-file-sequence-status'
 import type { ArtifactWriteRequest } from '../../../../../../shared/artifacts/artifacts'
 import { ArtifactPublishButton } from '@/components/artifacts/ArtifactPublishButton'
 import { editorArtifactSourceKey } from '../editor-artifact-upload'
+import { DiffFileSequenceStatus } from '../../diff-file-sequence-status'
 
 const NO_CUSTOM_EDITOR_TITLES: Readonly<Record<CustomEditorToggleValue, string>> = {}
 

@@ -1,7 +1,14 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SourceControlToastTestOptions } from './source-control-toast-test-options'
+
+// Upstream #42265 deleted its shared toast-options test type; the fork test keeps its own.
+type SourceControlToastTestOptions = {
+  id?: string
+  description?: string
+  duration?: number
+  action?: { label: string; onClick: (event: { preventDefault: () => void }) => void }
+}
 
 const { toastError, toastDismiss } = vi.hoisted(() => ({
   toastError: vi.fn<(title: string, options?: SourceControlToastTestOptions) => void>(),

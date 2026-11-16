@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
-import type { NestedRepoCandidate } from '../../../../../../shared/project-group-types'
+import type { NestedRepoCandidate } from '../../../../../../shared/project/groups/project-group-types'
 import {
   FOLDER_NESTED_REPO_SCAN_OPTIONS,
   getNewNestedRepoCandidatesFromState,

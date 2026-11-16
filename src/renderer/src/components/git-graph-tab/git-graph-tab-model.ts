@@ -1,16 +1,16 @@
 // Fork-only: which repo worktrees a Git Graph editor tab can show, and which one it opens on.
 import type { AppState } from '@/store/types'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { isWorktreeRetiredByRemoval } from '../../../../shared/worktree/removal/removal-visibility'
-import { isGitRepoKind } from '../../../../shared/repo-kind'
-import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
+import { isGitRepoKind } from '../../../../shared/repository/repo-kind'
+import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import { getIndexedAllWorktrees } from '@/store/slices/worktrees/listing/worktree-catalog-index'
 import { getIndexedRepoMap } from '@/store/repos/repository-catalog-index'
 import { getFilesystemOwnerKey } from '../right-sidebar/source-control/folder/folder-git-worktrees'
 import { withFolderPathRepoOwners } from '../right-sidebar/source-control/folder/folder-path-repo-owners'
 import { getRememberedFolderRepo } from '../right-sidebar/source-control/folder/folder-repo-selection'
-import { getAttachedWorktreesForFolderWorkspace } from '../right-sidebar/folder-workspace-attached-worktrees'
+import { getAttachedWorktreesForFolderWorkspace } from '../right-sidebar/folder-workspaces/folder-workspace-attached-worktrees'
 import { resolveReviewRepository } from '@/lib/source-control/review/review-owner'
 import {
   selectCrossStoreFolderChildrenById,
