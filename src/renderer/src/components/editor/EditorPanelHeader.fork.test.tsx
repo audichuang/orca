@@ -3,7 +3,7 @@ import type { ComponentProps } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import type { DiffDirection } from './diff-change-boundary'
-import { EditorPanelHeader } from './EditorPanelHeader'
+import { EditorPanelHeader } from './panel/header/EditorPanelHeader'
 
 const navigation = vi.hoisted((): { hint: DiffDirection | null; changeCount: number } => ({
   hint: null,
@@ -18,8 +18,8 @@ vi.mock('@/store/slices/diff-comments/worktree-diff-comments-selector', async (i
   ...(await importOriginal<Record<string, unknown>>()),
   selectWorktreeDiffCommentsOrEmpty: () => []
 }))
-vi.mock('./EditorPanelHeaderPath', () => ({ EditorPanelHeaderPath: () => null }))
-vi.mock('./EditorPanelActionsMenu', () => ({ EditorPanelActionsMenu: () => null }))
+vi.mock('./panel/header/EditorPanelHeaderPath', () => ({ EditorPanelHeaderPath: () => null }))
+vi.mock('./panel/header/EditorPanelActionsMenu', () => ({ EditorPanelActionsMenu: () => null }))
 vi.mock('./diff/review/diff-navigation-context', () => ({
   useDiffNavigation: () => ({
     changeCount: navigation.changeCount,
