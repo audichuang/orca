@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runProcess } from '@orca/process-host'
-import { resolveExecutableCommand } from '../../shared/node-cli-command-resolution'
+import { resolveExecutableCommand } from '../../shared/shell/command-resolution/node-cli-command-resolution'
 import { getHistory } from './source-control/history'
 
 const repos: string[] = []

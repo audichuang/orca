@@ -5,8 +5,8 @@ import {
 } from '../../../../../../shared/execution-host'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
 import { resolveReviewRepository } from '@/lib/source-control/review/review-owner'
-import { isGitRepoKind } from '../../../../../../shared/repo-kind'
-import type { Repo } from '../../../../../../shared/repo-types'
+import { isGitRepoKind } from '../../../../../../shared/repository/repo-kind'
+import type { Repo } from '../../../../../../shared/repository/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { isWorktreeRetiredByRemoval } from '../../../../../../shared/worktree/removal/removal-visibility'
 

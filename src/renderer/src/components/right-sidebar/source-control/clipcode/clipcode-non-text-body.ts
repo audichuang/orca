@@ -1,6 +1,6 @@
 // Non-text file body (placeholder line + wrapped Base64); port of OpenIDEA crates/ide-clip/src/nontext.rs.
 import { encodeBase64Bytes } from '@/lib/base64-bytes'
-import { sha256 } from '../../../../../../shared/sha256'
+import { sha256 } from '../../../../../../shared/hashing/sha256'
 
 export const NON_TEXT_BASE64_LINE_LENGTH = 76
 
