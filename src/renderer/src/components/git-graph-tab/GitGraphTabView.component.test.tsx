@@ -6,12 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import type { GitHistoryResult } from '../../../../shared/git/history/git-history-types'
 import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
-import type { NestedRepoScanResult } from '../../../../shared/project-group-types'
-import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
+import type { NestedRepoScanResult } from '../../../../shared/project/groups/project-group-types'
+import { folderWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import {
   getGitHistoryGraphDraftQuery,
   getGitHistoryGraphFilter,

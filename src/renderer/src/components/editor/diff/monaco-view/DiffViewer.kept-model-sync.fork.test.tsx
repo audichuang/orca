@@ -69,7 +69,7 @@ vi.mock('@/store/slices/diff-comments/diff-comment-owner', () => ({
 vi.mock('@/lib/editor/monaco/monaco-setup', () => ({
   monaco: { Uri: { parse: (path: string) => path }, editor: { getModel: () => null } }
 }))
-vi.mock('../../useContextualCopySetup', () => ({
+vi.mock('../../contextual-copy/useContextualCopySetup', () => ({
   useContextualCopySetup: () => ({ setupCopy: vi.fn(), toastNode: null })
 }))
 vi.mock('../../../diff-comments/useDiffCommentDecorator', () => ({
@@ -89,7 +89,7 @@ vi.mock('./diff-editor-word-wrap-options', () => ({
 vi.mock('./diff-model-swap-view-state', () => ({
   preserveDiffViewStateAcrossModelSwaps: () => ({ dispose: vi.fn() })
 }))
-vi.mock('../../editor-shortcuts', () => ({
+vi.mock('../../commands/editor-shortcuts', () => ({
   installMonacoDiffChangeNavigationShortcut: () => vi.fn()
 }))
 

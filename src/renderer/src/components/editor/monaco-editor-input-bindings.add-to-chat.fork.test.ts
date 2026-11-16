@@ -2,7 +2,7 @@
 // Fork: the Add to chat action quotes the folder-relative path the editor hands it, not the repo-relative one.
 import type { editor } from 'monaco-editor'
 import { expect, it, vi } from 'vitest'
-import { installMonacoEditorInputBindings } from './monaco-editor-input-bindings'
+import { installMonacoEditorInputBindings } from './monaco/monaco-editor-input-bindings'
 
 const chatMenu = vi.hoisted(() => {
   const menu: { quote: string | null } = { quote: null }
@@ -12,7 +12,7 @@ const chatMenu = vi.hoisted(() => {
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 vi.mock('@/store', () => ({ useAppStore: { getState: vi.fn() } }))
 vi.mock('@/i18n/i18n', () => ({ translate: (_key: string, fallback: string) => fallback }))
-vi.mock('./editor-shortcuts', () => ({
+vi.mock('./commands/editor-shortcuts', () => ({
   installEditorSaveShortcut: () => () => undefined,
   installMonacoEditorFindShortcut: () => () => undefined,
   installEditorAddReviewNoteShortcut: () => () => undefined

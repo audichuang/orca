@@ -2,7 +2,7 @@
 // Fork: Monaco's Add to chat names a folder tab's file relative to the folder, not its nested repo.
 import { cleanup, render } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import type { MonacoEditorPropsRef } from './monaco-editor-mount-params'
+import type { MonacoEditorPropsRef } from './monaco/monaco-editor-mount-params'
 
 const mounted = vi.hoisted(() => {
   const state: { propsRef: MonacoEditorPropsRef | null } = { propsRef: null }
@@ -30,17 +30,17 @@ vi.mock('@/store', () => ({
     })
 }))
 vi.mock('../diff-comments/useDiffCommentDecorator', () => ({ useDiffCommentDecorator: vi.fn() }))
-vi.mock('./useContextualCopySetup', () => ({
+vi.mock('./contextual-copy/useContextualCopySetup', () => ({
   useContextualCopySetup: () => ({ setupCopy: vi.fn(), toastNode: null })
 }))
-vi.mock('./use-monaco-editor-mount', () => ({
+vi.mock('./monaco/use-monaco-editor-mount', () => ({
   useMonacoEditorMount: (params: { propsRef: MonacoEditorPropsRef }) => {
     mounted.propsRef = params.propsRef
     return vi.fn()
   }
 }))
 
-import MonacoEditor from './MonacoEditor'
+import MonacoEditor from './monaco/MonacoEditor'
 
 afterEach(cleanup)
 

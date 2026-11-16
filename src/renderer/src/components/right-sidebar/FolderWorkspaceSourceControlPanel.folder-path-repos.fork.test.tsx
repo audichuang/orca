@@ -8,7 +8,7 @@ import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
-import FolderWorkspaceSourceControlPanel from './FolderWorkspaceSourceControlPanel'
+import FolderWorkspaceSourceControlPanel from './folder-workspaces/FolderWorkspaceSourceControlPanel'
 
 vi.mock('./source-control/sync/git-status-refresh', () => ({
   refreshGitStatusForWorktree: async () => {}

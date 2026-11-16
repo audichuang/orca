@@ -32,7 +32,7 @@ import {
   FOLDER_WORKTREE_CARD_CLASS,
   FolderWorktreeSectionHeader
 } from './folder-worktree-section-header'
-import { withFolderPathRepoOwners } from './source-control/folder/folder-path-repo-owners'
+import { withFolderPathRepoOwners } from '../source-control/folder/folder-path-repo-owners'
 const EMPTY_ENTRIES: readonly unknown[] = []
 
 type SectionProps = {

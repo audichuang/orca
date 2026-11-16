@@ -7,7 +7,7 @@ import {
   parseExecutionHostId,
   toRuntimeExecutionHostId
 } from '../../../../../../shared/execution-host'
-import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 
 type FolderRootsState = Pick<AppState, 'folderWorkspaces'>
 type FolderTab = Pick<OpenFile, 'worktreeId' | 'filePath' | 'runtimeEnvironmentId'>

@@ -4,7 +4,7 @@ import type {
   GitBranchChangeEntry,
   GitDiffResult
 } from '../../../../../../shared/git/diff/git-diff-compare-types'
-import { mapWithConcurrency } from '../../../../../../shared/map-with-concurrency'
+import { mapWithConcurrency } from '../../../../../../shared/concurrency/map-with-concurrency'
 import {
   buildGitPayload,
   CLIPCODE_DEFAULTS,

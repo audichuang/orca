@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
-import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
+import type { RuntimeClientTarget } from '../../../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import {
@@ -45,8 +45,8 @@ import { GitHistoryGraphToolbar } from './git-history-graph-toolbar'
 import { useGitGraphBranchContext, useGitGraphSelection } from './use-git-graph-full-view-state'
 import { type GitGraphRevealOptions, useGitGraphViewReveal } from './use-git-graph-reveal'
 import { useGitGraphBranchTree } from './use-git-graph-branch-tree'
-import { useWindowWidth } from '../../use-window-width'
-import { useMeasuredWidth } from '../../right-sidebar-measured-width'
+import { useWindowWidth } from '../../layout/use-window-width'
+import { useMeasuredWidth } from '../../layout/right-sidebar-measured-width'
 import {
   type GitGraphFocusRequest,
   useGitGraphOpenFocus,
