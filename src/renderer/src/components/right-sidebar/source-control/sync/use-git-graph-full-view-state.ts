@@ -1,7 +1,7 @@
 // Fork-only: selection, keyboard navigation and branch context for the full Git Graph.
 import type React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
+import type { RuntimeClientTarget } from '../../../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import type {
   GitHistoryGraphColorId,
   GitHistoryItem,

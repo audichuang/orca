@@ -6,7 +6,7 @@ import { FILE_REPLACE_WITH_UPLOAD_RUNTIME_CAPABILITY } from '../../../../../shar
 import {
   MIN_COMPATIBLE_RUNTIME_CLIENT_VERSION,
   RUNTIME_PROTOCOL_VERSION
-} from '../../../../../shared/protocol-version'
+} from '../../../../../shared/remote-runtime/protocol/protocol-version'
 import {
   installRuntimeFileClientEnvironment,
   runtimeEnvironmentTransportCall,
