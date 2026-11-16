@@ -6,7 +6,7 @@ import { useAppStore } from '@/store'
 import { useGlobalKeybindings } from '@/app-shell/use-global-keybindings'
 import { useAppChromeLayout } from '@/app-shell/use-app-chrome-layout'
 import { useFloatingWorkspacePanel } from '@/app-shell/use-floating-workspace-panel'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 
 vi.mock('@/store/plugins/catalog/plugin-contribution-catalog', () => ({

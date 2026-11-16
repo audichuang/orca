@@ -2,7 +2,7 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { launchAgentInNewTabWithOutcome } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
-import { createNonSecureContextUuid } from '../../../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid } from '../../../../../../shared/identifiers/non-secure-context-uuid'
 import { resolveDefaultAgentForWorktreeNewTab } from '@/lib/agent-session/launch/shortcuts/agent-tab-shortcuts'
 import { getDetectionTargetIdentityForWorktree } from '@/lib/agent-session/launch/inventory/agent-detection-target-inventory'
 import { translate } from '@/i18n/i18n'

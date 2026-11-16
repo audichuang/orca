@@ -1,7 +1,7 @@
 // Fork-only: the Open Git Graph shortcut, kept out of app-command-handlers.ts for its max-lines budget.
 import { useAppStore } from '../store'
 import type { AppState } from '../store/types'
-import type { KeybindingActionId } from '../../../shared/keybindings'
+import type { KeybindingActionId } from '../../../shared/keybindings/types'
 import { resolveGitGraphDefaultRepoWorktreeId } from '../components/git-graph-tab/git-graph-tab-model'
 
 export function createGitGraphCommandHandler(
