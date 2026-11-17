@@ -124,7 +124,16 @@ Notices follow the same line. The canary sends none. The auto-rebase's Bark says
 - `make fork-dmg FORK_VERSION=X.Y.Z-fork.N` still builds locally when CI is unavailable, signed and notarized like CI: the Developer ID must be in the keychain (p12 in 1Password, Agent vault, `aghub Developer ID Application p12`) and `APPLE_API_KEY` (.p8 path), `APPLE_API_KEY_ID`, `APPLE_API_ISSUER` set. `FORK_SIGN_IDENTITY=-` builds ad-hoc without notarization. The fork builder config excludes untracked checkout entries, and the build fails if app.asar still ships one: local dmgs once leaked `.orca/drops` screenshots and `CLAUDE.local.md`.
 - Pushed tags and `backup/*` branches keep released commits reachable; don't protect `main`, or allow force pushes if you do.
 - Install side: `make sync && make update`, never `git pull`, which merges the old and new histories. `sync` refuses on tracked changes, on local `main` commits the fork never had, and on ignored files the new commit would overwrite (`make clean` clears `dist/` and `out/`).
-- After a release, `make fork-wrapup` checks the tag, the Homebrew tap and the MacBook install agree, and lists worktrees whose branch is already in `develop` (prints only, deletes nothing).
+- After a release, `make fork-wrapup` checks the tag, the Homebrew tap and the MacBook install agree, lists worktrees whose branch is already in `develop` or whose commits are kept on a `backup/*` branch, and dry-runs `pnpm reclaim-space` (prints only, deletes nothing).
+
+## Cleanup
+
+Every worktree, branch and cache a task leaves behind has a named remover. One kept on purpose needs a remover and a trigger written where that remover reads them (a skill, this file, the notes branch); a memory or `CLAUDE.local.md` line alone is not enough, since the pipelines read neither. The rehearsal for v1.4.261 stayed after the run it served, because only a memory said when to drop it.
+
+- The auto-rebase removes earlier runs' `auto-orca-fork-rebase-run-*` and `ar-*` worktrees at its start and its own `ar-$RUN-*` at the end; the canary removes its own worktree.
+- A rebase rehearsal goes on a local `rehearsal/<name>` branch with its tip pushed to `backup/rehearsal-<name>-<date>`. Once the auto-rebase moves `develop`, it removes every clean `rehearsal/*` worktree and branch whose tip is on `fork/backup/rehearsal-*`; the backup branch stays.
+- A PR's worktree and branch go once the PR merges, removed by whoever opened it. `make fork-wrapup` lists the ones left over and never deletes: a clean worktree on a pushed branch may still be in use (an open PR, a fresh branch with no commits yet).
+- Build output and test caches in sibling worktrees (`tests/e2e/.cross-version-checkouts`, `node_modules`, Vite and Vitest caches) are upstream's `pnpm reclaim-space`; it keeps recent and active ones, and `--apply` removes the rest.
 
 ## When a fork e2e goes red
 
