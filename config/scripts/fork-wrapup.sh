@@ -34,7 +34,7 @@ else
   fi
 fi
 
-echo "== stale worktrees (branch merged into $fork_remote/develop or gone from $fork_remote)"
+echo "== stale worktrees (branch merged into $fork_remote/develop, or its commits kept on $fork_remote/backup/*)"
 main_wt=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
 develop="refs/remotes/$fork_remote/develop"
 git rev-parse --verify -q "$develop" > /dev/null || { echo "WARN: $develop missing; run git fetch $fork_remote"; exit 0; }
@@ -51,6 +51,12 @@ report() {
     why="not on $fork_remote"
     # Why: a branch never pushed is not merged work; only call it stale when its commits are already in develop.
     git merge-base --is-ancestor "refs/heads/$branch" "$develop" 2> /dev/null || why=
+    # A rehearsal-style branch kept under another name: its own commits live on a backup ref.
+    if [ -z "$why" ]; then
+      local backup
+      backup=$(git for-each-ref --contains "refs/heads/$branch" --format='%(refname:short)' "refs/remotes/$fork_remote/backup/" | head -n 1)
+      [ -z "$backup" ] || why="kept on $backup"
+    fi
   elif git merge-base --is-ancestor "refs/heads/$branch" "$develop" 2> /dev/null; then
     why="merged into $fork_remote/develop"
   fi
@@ -75,4 +81,7 @@ done < <(git worktree list --porcelain; echo)
 report
 [ "$found" = 1 ] || echo "none"
 echo "(Orca-managed worktrees: use orca worktree rm --worktree \"id:<repoId>::<path>\" --force --json instead)"
+
+echo "== build output and test caches in sibling worktrees (dry run; add --apply to reclaim)"
+node config/scripts/worktree-storage/reclaim-worktree-space.mjs 2> /dev/null | grep -E '^Would ' || echo "WARN: reclaim dry run failed (needs pnpm install here); run pnpm reclaim-space"
 exit 0
