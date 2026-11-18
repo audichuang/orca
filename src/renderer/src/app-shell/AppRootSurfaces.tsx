@@ -19,7 +19,6 @@ import { LanguagePackDiscoveryHost } from '../components/languages/LanguagePackD
 import { PluginInstallTrustDialogHost } from '../components/plugins/dialogs/PluginInstallTrustDialog'
 import { TelemetryFirstLaunchSurface } from '../components/TelemetryFirstLaunchSurface'
 import { ZoomOverlay } from '../components/ZoomOverlay'
-import { WslMoveDialogHost } from '../components/wsl-move/WslMoveDialog'
 import { MacosUpdateRequirementHost } from '../components/macos-update-requirement/MacosUpdateRequirementHost'
 import { shouldRenderPetOverlay } from '../components/pet/pet-overlay-visibility'
 import { useAppStore } from '../store/index'
@@ -35,7 +34,7 @@ import {
 import type { FloatingWorkspacePanelState } from './use-floating-workspace-panel'
 import type { OnboardingGate } from './use-onboarding-and-feature-tips'
 
-import { ClipcodeNonTextCopyDialogHost } from '@/components/right-sidebar/source-control/clipcode/clipcode-non-text-copy-dialog'
+import { RootDialogHosts } from './root-dialog-hosts'
 
 const QuickOpen = lazy(() => import('../components/QuickOpen'))
 const WorkspaceCleanupDialog = lazy(
@@ -225,10 +224,8 @@ export const AppRootSurfaces = memo(function AppRootSurfaces(props: {
             <NativeChatAccountUsageDialog />
           </ModalBoundary>
         ) : null}
-        {/* Own store, not activeModal: another modal must never evict a running move. */}
-        <WslMoveDialogHost />
-        {/* Fork: ClipCode copy question; every copy entry point (source control, explorer) asks through it. */}
-        <ClipcodeNonTextCopyDialogHost />
+        {/* Fork: the WSL move and ClipCode copy hosts; see root-dialog-hosts.tsx. */}
+        <RootDialogHosts />
         {/* Opened by toast, SSH host row and terminal pane. */}
         {activeModal === 'node-dist-mirror' ? (
           <ModalBoundary boundaryId="modal.node-dist-mirror" resetKey>
