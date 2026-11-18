@@ -10,7 +10,7 @@ import { useAppStore } from '@/store'
 import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
 import { ConfirmationDialogProvider } from '@/components/confirmation-dialog'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { getDefaultSettings } from '../../../../../../shared/constants'
+import { getDefaultSettings } from '../../../../../../shared/orca-profiles/constants'
 import type { GitHistoryResult } from '../../../../../../shared/git/history/git-history-types'
 import {
   resetGitHistoryGraphFiltersForTest,

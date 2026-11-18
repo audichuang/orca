@@ -116,7 +116,7 @@ src/main/asar-transparent-stat.electron.test.ts
 
 # Agent launch cwd in folder repos: CLI args below the folder root, main pane launch
 src/renderer/src/lib/agent-session/launch/inventory/folder-repo-launch-chat-route.test.ts
-src/main/ipc/pty/pty-agent-pane-launch.fork.test.ts
+src/main/ipc/pty/ipc/spawn-agent-launch.fork.test.ts
 
 # Editor: folder chat quotes, diff review notes, restoring folder tabs saved by the removed git-owner layer
 src/renderer/src/components/editor/useDiffViewerFirstChangeAutoScroll.fork.test.tsx

@@ -1,45 +1,33 @@
 // Fork seam guard: descendIntoRepos must cross the projectGroups:scanNested IPC (options is z.unknown()) into scanNestedRepos.
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as GitSpawnModule from '../git/command-runner/git-spawn'
-import type * as RepoDetectionModule from '../git/repositories/discovery/repo-detection'
+import { describe, expect, it, vi } from 'vitest'
 
-const { reposMocks, moduleMocks, scanNestedRepos } = await vi.hoisted(async () => {
-  const moduleMocks = await import('./repos-remote-test-harness')
-  return { reposMocks: moduleMocks.createReposIpcMocks(), moduleMocks, scanNestedRepos: vi.fn() }
-})
+type IpcHandler = (event: unknown, rawArgs: unknown) => unknown
 
-vi.mock('electron', () => moduleMocks.electronModuleMock(reposMocks))
-vi.mock('../git/repositories/discovery/repo-detection', async (importOriginal) =>
-  moduleMocks.repoDetectionModuleMock(await importOriginal<typeof RepoDetectionModule>())
-)
-vi.mock('../git/command-runner/git-spawn', async (importOriginal) =>
-  moduleMocks.gitSpawnModuleMock(reposMocks, await importOriginal<typeof GitSpawnModule>())
-)
+const { handlers, scanNestedRepos } = vi.hoisted(() => ({
+  handlers: new Map<string, IpcHandler>(),
+  scanNestedRepos: vi.fn()
+}))
+
+vi.mock('electron', () => ({
+  ipcMain: {
+    handle: (channel: string, handler: IpcHandler) => handlers.set(channel, handler),
+    removeHandler: vi.fn()
+  }
+}))
 vi.mock('../project-groups/nested-repo-discovery', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   scanNestedRepos
 }))
 
-import { registerRepoHandlers } from './repos'
-import { getGitRepoRoot, isGitRepo } from '../git/repositories/discovery/repo-detection'
-import { createRepoHandlerHarness, resetProjectGroupMocks } from './repos-remote-test-harness'
-
-const { handleMock, mockStore } = reposMocks
+import { registerProjectGroupHandlers } from './repos/project-group-handlers'
 
 describe('projectGroups:scanNested options (fork descendIntoRepos)', () => {
-  const { handlers, mockWindow, captureHandlers } = createRepoHandlerHarness()
-
-  beforeEach(() => {
-    captureHandlers(handleMock)
-    resetProjectGroupMocks(reposMocks, { isGitRepo, getGitRepoRoot })
-    scanNestedRepos.mockReset().mockResolvedValue({ selectedPath: '/srv/platform', repos: [] })
-    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: same partial Electron/store doubles repos-nested-scan.test.ts registers with; the handler reads only mocked members.
-    registerRepoHandlers(mockWindow as never, mockStore as never, {} as never)
-  })
-
   it('hands descendIntoRepos to scanNestedRepos', async () => {
+    scanNestedRepos.mockResolvedValue({ selectedPath: '/srv/platform', repos: [] })
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the scanNested handler reads none of the window, store or runtime.
+    registerProjectGroupHandlers({} as never, {} as never, {} as never)
     const options = { descendIntoRepos: true, maxDepth: 4 }
-    await handlers.get('projectGroups:scanNested')!(null, { path: '/srv/platform', options })
+    await handlers.get('projectGroups:scanNested')!({}, { path: '/srv/platform', options })
     expect(scanNestedRepos).toHaveBeenCalledWith(
       expect.objectContaining({ path: '/srv/platform', options })
     )

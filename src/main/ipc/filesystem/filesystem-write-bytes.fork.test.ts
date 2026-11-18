@@ -4,8 +4,8 @@ import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { registerFilesystemWriteHandlers } from './filesystem-write-handlers'
-import { replaceLocalFileBytesIfUnchanged } from './local-disk-bytes-replace'
+import { registerFilesystemWriteHandlers } from './mutations/filesystem-write-handlers'
+import { replaceLocalFileBytesIfUnchanged } from '../../filesystem/local-file-io/local-disk-bytes-replace'
 import type { FilesystemHandlerContext } from './filesystem-handler-context'
 
 const handlers = vi.hoisted(() => new Map<string, (_event: unknown, args: unknown) => unknown>())
@@ -19,8 +19,8 @@ vi.mock('electron', () => ({
 vi.mock('./access/local-file-access-resolution', () => ({
   resolveLocalWriteRequestPath: async (path: string) => path
 }))
-vi.mock('./filesystem-mutations', () => ({ registerFilesystemMutationHandlers: vi.fn() }))
-vi.mock('../agent-session-attachment-upload-ipc', () => ({
+vi.mock('./mutations/filesystem-mutations', () => ({ registerFilesystemMutationHandlers: vi.fn() }))
+vi.mock('../agent-attachments/agent-session-attachment-upload-ipc', () => ({
   registerAgentSessionAttachmentUploadHandlers: vi.fn()
 }))
 

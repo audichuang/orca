@@ -1,7 +1,7 @@
 // Fork-only: upstream's folder Source Control lists the folder's attached (lineage) worktrees; the fork
 // also lists every registered repo worktree under the folder path, as its folder panel did.
 import { getIndexedAllWorktrees } from '@/store/slices/worktrees/listing/worktree-catalog-index'
-import { getRepoExecutionHostId } from '../../../../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../../../../shared/execution-host/execution-host'
 import type { Repo } from '../../../../../../shared/repository/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import type { AppState } from '@/store/types'

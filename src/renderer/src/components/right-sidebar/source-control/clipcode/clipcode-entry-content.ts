@@ -1,6 +1,6 @@
 // Fork-only: content rules every ClipCode copy shares (non-text, size caps).
 import { getRelativePathInsideRoot, joinPath } from '@/lib/path'
-import { isWindowsAbsolutePathLike } from '../../../../../../shared/cross-platform-path'
+import { isWindowsAbsolutePathLike } from '../../../../../../shared/file-access/cross-platform-path'
 import {
   getUtf8ByteLength,
   measureUtf8ByteLength

@@ -2,7 +2,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../../shared/execution-host/execution-host'
 import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
 import type { NestedRepoCandidate } from '../../../../shared/project/groups/project-group-types'
 import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'

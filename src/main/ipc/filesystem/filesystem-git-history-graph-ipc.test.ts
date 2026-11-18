@@ -15,7 +15,7 @@ vi.mock('../../git/source-control/history', () => ({ getHistory: mocks.getHistor
 vi.mock('../worktrees/removal/registered-worktree-roots-cache', () => ({
   resolveRegisteredWorktreePath: async (path: string) => path
 }))
-vi.mock('../local-worktree-runtime-options', () => ({
+vi.mock('../worktrees/local-worktree-runtime-options', () => ({
   getLocalGitOptionsForRegisteredWorktree: () => ({}),
   getLocalGitOptionsForRepo: () => ({}),
   getLocalRepoForRegisteredWorktree: () => undefined
@@ -24,7 +24,7 @@ vi.mock('../../providers/execution-host-provider-dispatch', () => ({
   requireReachableGitRoute: () => undefined
 }))
 
-import { registerFilesystemGitStatusHandlers } from './filesystem-git-status-handlers'
+import { registerFilesystemGitStatusHandlers } from './source-control/filesystem-git-status-handlers'
 import type { FilesystemHandlerContext } from './filesystem-handler-context'
 
 beforeEach(() => {

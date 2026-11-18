@@ -1,7 +1,9 @@
 // Fork-only: the colour Git surfaces use to tell many repos apart.
 import { useCallback } from 'react'
-import { DEFAULT_REPO_BADGE_COLOR } from '../../../shared/constants'
-import { resolveRepoBadgeColor } from '../../../shared/repository/appearance/repo-badge-color'
+import {
+  DEFAULT_REPO_BADGE_COLOR,
+  resolveRepoBadgeColor
+} from '../../../shared/repository/appearance/repo-badge-color'
 import type { Repo } from '../../../shared/repository/repo-types'
 import { useAppStore } from '@/store'
 
