@@ -31,13 +31,7 @@ function GitGraphShortcutTooltip({
         <span className="flex items-center gap-1.5">
           {openGitGraphLabel()}
           {shortcut.keys.length > 0 ? (
-            <ShortcutKeyCombo
-              keys={shortcut.keys}
-              doubleTap={shortcut.doubleTap}
-              className="gap-0.5"
-              keyCapClassName="min-w-0 border-background/20 bg-background/10 px-1 py-0 text-2xs text-background shadow-none"
-              separatorClassName="text-2xs text-background/70"
-            />
+            <ShortcutKeyCombo keys={shortcut.keys} doubleTap={shortcut.doubleTap} />
           ) : null}
         </span>
       </TooltipContent>
