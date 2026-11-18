@@ -69,7 +69,7 @@ function listProblems(paths, collected) {
 }
 
 // Why the pattern: playwright reads spec arguments as regexes, so the list may only hold plain paths.
-const UPSTREAM_E2E_PATH = /^tests\/e2e\/[^/]+\.spec\.ts$/
+const UPSTREAM_E2E_PATH = /^tests\/e2e\/(?:[^/]+\/)*[^/]+\.spec\.ts$/
 const PLAIN_PATH = /^[A-Za-z0-9._/-]+$/
 
 function readEntries(file) {
