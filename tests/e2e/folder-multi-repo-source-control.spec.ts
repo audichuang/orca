@@ -9,10 +9,11 @@ import {
 } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { test, expect } from './helpers/orca-app'
-import { expectOneCopyToast } from './helpers/settled-toast-box'
-import { startHiddenRendererFrameCapture } from './helpers/hidden-renderer-frame-capture'
-import { waitForSessionReady } from './helpers/store'
+import { test } from './desktop/electron-fixtures/orca-app'
+import { expect } from '@stablyai/playwright-test'
+import { expectOneCopyToast } from './desktop/electron-fixtures/settled-toast-box'
+import { startHiddenRendererFrameCapture } from './desktop/electron-fixtures/hidden-renderer-frame-capture'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 import {
   clearSourceControlSelections,
   clickExplorerPasteRestore,
@@ -21,12 +22,12 @@ import {
   showSourceControl,
   type RepoKey,
   type ScenarioResult as Result
-} from './helpers/folder-multi-repo-scenario-context'
-import { runLayoutScenarios } from './helpers/folder-multi-repo-layout-scenarios'
-import { runRestoreScenarios } from './helpers/folder-multi-repo-restore-scenarios'
-import { runExternalChangeScenarios } from './helpers/folder-multi-repo-external-change-scenarios'
-import { importMultiProductFolder } from './helpers/folder-multi-repo-import'
-import { runAgentAndBannerScenarios } from './helpers/folder-multi-repo-agent-and-banner-scenarios'
+} from './desktop/electron-fixtures/folder-multi-repo-scenario-context'
+import { runLayoutScenarios } from './desktop/electron-fixtures/folder-multi-repo-layout-scenarios'
+import { runRestoreScenarios } from './desktop/electron-fixtures/folder-multi-repo-restore-scenarios'
+import { runExternalChangeScenarios } from './desktop/electron-fixtures/folder-multi-repo-external-change-scenarios'
+import { importMultiProductFolder } from './desktop/electron-fixtures/folder-multi-repo-import'
+import { runAgentAndBannerScenarios } from './desktop/electron-fixtures/folder-multi-repo-agent-and-banner-scenarios'
 import {
   changedLines,
   expectedPayload,
@@ -34,7 +35,7 @@ import {
   readStatus,
   splitBlocks,
   statsLine
-} from './helpers/folder-multi-repo-expectations'
+} from './desktop/electron-fixtures/folder-multi-repo-expectations'
 
 // Real-app check of upstream's folder-workspace Source Control (#38831) with the fork's seams:
 // registered repos under the folder appear as cards, and ClipCode copy/restore keeps folder-relative paths.
@@ -44,7 +45,12 @@ import {
 // ORCA_MR_FIXTURE_ROOT / ORCA_MR_ARTIFACTS override where the fixture and screenshots/payloads go.
 test.use({ seedTestRepo: false })
 
-const FIXTURE_SCRIPT = path.join(__dirname, 'helpers', 'folder-multi-repo-fixture.sh')
+const FIXTURE_SCRIPT = path.join(
+  __dirname,
+  'desktop',
+  'electron-fixtures',
+  'folder-multi-repo-fixture.sh'
+)
 
 test('folder workspace multi-repo source control, copy and restore', async ({
   orcaPage: page

@@ -18,12 +18,18 @@ import { mkdtempSync, realpathSync, rmSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import type { ElectronApplication, Page } from '@stablyai/playwright-test'
-import { test, expect } from './helpers/orca-app'
-import { waitForSessionReady } from './helpers/store'
-import { createRestartSession } from './helpers/orca-restart'
-import { importMultiProductFolder } from './helpers/folder-multi-repo-import'
+import { test } from './desktop/electron-fixtures/orca-app'
+import { expect } from '@stablyai/playwright-test'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import { createRestartSession } from './desktop/electron-fixtures/orca-restart'
+import { importMultiProductFolder } from './desktop/electron-fixtures/folder-multi-repo-import'
 
-const FIXTURE_SCRIPT = path.join(__dirname, 'helpers', 'folder-multi-repo-fixture.sh')
+const FIXTURE_SCRIPT = path.join(
+  __dirname,
+  'desktop',
+  'electron-fixtures',
+  'folder-multi-repo-fixture.sh'
+)
 
 async function openFolderWorkspace(page: Page, folderKey: string): Promise<void> {
   await page

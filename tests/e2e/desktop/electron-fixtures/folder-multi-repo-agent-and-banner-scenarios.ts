@@ -9,7 +9,7 @@ import {
 } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { expect } from './orca-app'
+import { expect } from '@stablyai/playwright-test'
 import {
   openRepoEditTabInFolder,
   type ExtraScenarioContext

@@ -5,16 +5,17 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import os from 'node:os'
 import path from 'node:path'
 import type { Locator, Page } from '@stablyai/playwright-test'
-import { expect, test } from './helpers/orca-app'
-import { openFileExplorer } from './helpers/file-explorer'
+import { test } from './desktop/electron-fixtures/orca-app'
+import { expect } from '@stablyai/playwright-test'
+import { openFileExplorer } from './editor/file-explorer/file-explorer'
 import {
   clickExplorerPasteRestore,
   clipboardText,
   clipcodeNonTextDialog,
   setClipboard
-} from './helpers/folder-multi-repo-scenario-context'
-import { waitForSessionReady } from './helpers/store'
-import { openSourceControlForWorktree } from './helpers/worktree-registration'
+} from './desktop/electron-fixtures/folder-multi-repo-scenario-context'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import { openSourceControlForWorktree } from './workspaces/repository-fixtures/worktree-registration'
 
 const SHOTS_DIR = process.env.ORCA_E2E_SHOTS_DIR ?? path.join(os.tmpdir(), 'orca-clipcode-shots')
 // Why both: the selection modifier is Cmd on macOS and Ctrl elsewhere.
