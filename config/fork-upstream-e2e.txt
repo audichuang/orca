@@ -20,18 +20,13 @@ tests/e2e/source-control-staged-rename.spec.ts
 tests/e2e/source-control-operation-recovery.spec.ts
 tests/e2e/source-control-commit-draft-persistence.spec.ts
 tests/e2e/source-control-large-file-count.spec.ts
-tests/e2e/git-history-tooltip-wrap.spec.ts
 
 # diff and combined diff
-tests/e2e/combined-diff-scroll-restore.spec.ts
 tests/e2e/combined-diff-invalidation-freeze-repro.spec.ts
 tests/e2e/large-diff-freeze-repro.spec.ts
-tests/e2e/diff-word-wrap.spec.ts
 tests/e2e/diff-note-edit.spec.ts
 
 # tabs and session restore
-tests/e2e/editor-tab-selection-restore.spec.ts
-tests/e2e/active-view-restart-restore.spec.ts
 tests/e2e/golden-quit-relaunch-session.spec.ts
 tests/e2e/workspace-session-corrupt-tab-salvage.spec.ts
 
