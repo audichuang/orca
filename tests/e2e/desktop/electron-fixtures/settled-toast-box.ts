@@ -1,5 +1,5 @@
 import type { Page } from '@stablyai/playwright-test'
-import { expect } from './orca-app'
+import { expect } from '@stablyai/playwright-test'
 
 /** The front sonner toast's box once it stops moving; a toast is visible while still sliding in. */
 export async function settledToastBox(page: Page): Promise<{ top: number; bottom: number }> {

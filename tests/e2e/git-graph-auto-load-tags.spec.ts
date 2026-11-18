@@ -2,10 +2,11 @@ import { execFileSync } from 'node:child_process'
 import { rmSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { expect, test } from './helpers/orca-app'
-import { waitForSessionReady } from './helpers/store'
-import { OPEN_GIT_GRAPH_CHORD } from './helpers/git-graph-shortcut'
-import { openSourceControlForWorktree } from './helpers/worktree-registration'
+import { test } from './desktop/electron-fixtures/orca-app'
+import { expect } from '@stablyai/playwright-test'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import { OPEN_GIT_GRAPH_CHORD } from './desktop/electron-fixtures/git-graph-shortcut'
+import { openSourceControlForWorktree } from './workspaces/repository-fixtures/worktree-registration'
 
 const DEEP_COMMITS = 1100
 // Row ~700: past the first pages, inside the 1000-commit cap.

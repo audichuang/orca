@@ -2,11 +2,15 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { expect, test } from './helpers/orca-app'
-import { waitForSessionReady } from './helpers/store'
-import { OPEN_GIT_GRAPH_CHORD } from './helpers/git-graph-shortcut'
-import { openSourceControlForWorktree } from './helpers/worktree-registration'
-import { clipboardText, setClipboard } from './helpers/folder-multi-repo-scenario-context'
+import { test } from './desktop/electron-fixtures/orca-app'
+import { expect } from '@stablyai/playwright-test'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import { OPEN_GIT_GRAPH_CHORD } from './desktop/electron-fixtures/git-graph-shortcut'
+import { openSourceControlForWorktree } from './workspaces/repository-fixtures/worktree-registration'
+import {
+  clipboardText,
+  setClipboard
+} from './desktop/electron-fixtures/folder-multi-repo-scenario-context'
 
 const SHOTS_DIR = process.env.ORCA_E2E_SHOTS_DIR ?? path.join(os.tmpdir(), 'orca-git-graph-shots')
 

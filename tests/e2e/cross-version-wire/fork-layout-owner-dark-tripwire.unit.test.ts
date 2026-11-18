@@ -13,7 +13,7 @@ import {
   releaseModuleExport,
   REPO_ROOT,
   resolveBaselineReleaseRef
-} from './release-checkout'
+} from './release-checkouts/release-checkout'
 
 const SUITE_TIMEOUT_MS = 180_000
 const LAYOUT_INTENTS_CAPABILITY = 'layout.intents.v1'

@@ -15,7 +15,7 @@ import {
   materializeReleaseCheckout,
   releaseModuleExport,
   resolveBaselineReleaseRef
-} from './release-checkout'
+} from './release-checkouts/release-checkout'
 
 const callRuntimeRpc = vi.hoisted(() => vi.fn())
 vi.mock('../../../src/renderer/src/runtime/rpc/calls/runtime-rpc-call', () => ({

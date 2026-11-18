@@ -3,9 +3,9 @@
 import { cleanup, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
-import { useGlobalKeybindings } from '@/app-shell/use-global-keybindings'
-import { useAppChromeLayout } from '@/app-shell/use-app-chrome-layout'
-import { useFloatingWorkspacePanel } from '@/app-shell/use-floating-workspace-panel'
+import { useGlobalKeybindings } from '@/hooks/app-commands/use-global-keybindings'
+import { useAppChromeLayout } from '@/app-shell/chrome/use-app-chrome-layout'
+import { useFloatingWorkspacePanel } from '@/components/floating-terminal/workspace/use-floating-workspace-panel'
 import type { Repo } from '../../../shared/repository/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 
@@ -16,7 +16,7 @@ vi.mock('@/store/plugins/catalog/plugin-contribution-catalog', () => ({
 }))
 const platform = vi.hoisted((): { current: NodeJS.Platform } => ({ current: 'win32' }))
 vi.mock('@/lib/keyboard/shortcut-platform', () => ({ getShortcutPlatform: () => platform.current }))
-vi.mock('@/app-shell/app-window-chrome', () => ({
+vi.mock('@/app-shell/chrome/app-window-chrome', () => ({
   get shortcutPlatform() {
     return platform.current
   }

@@ -4,7 +4,7 @@ import '@testing-library/jest-dom/vitest'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { ConfirmationDialogProvider } from '@/components/confirmation-dialog'
+import { ConfirmationDialogProvider } from '@/components/dismiss/confirmation/confirmation-dialog'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
