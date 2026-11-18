@@ -17,10 +17,10 @@ const mocks = vi.hoisted(() => {
 vi.mock('@/store', () => ({ useAppStore: mocks.useAppStore }))
 vi.mock('../../store', () => ({ useAppStore: mocks.useAppStore }))
 vi.mock('../tab-bar/TabBar', () => ({ default: () => null }))
-vi.mock('../tab-bar/TabBarQuickCommandsButton', () => ({
+vi.mock('../tab-bar/quick-commands/TabBarQuickCommandsButton', () => ({
   TabBarQuickCommandsButton: () => <button type="button" data-testid="quick-commands" />
 }))
-vi.mock('./TabGroupPaneActionsMenu', () => ({
+vi.mock('./panel/TabGroupPaneActionsMenu', () => ({
   TabGroupPaneActionsMenu: () => <button type="button" data-testid="pane-actions" />
 }))
 vi.mock('../right-sidebar/source-control/sync/git-graph-tab-launcher', () => ({
@@ -33,7 +33,7 @@ vi.mock('../right-sidebar/source-control/sync/git-graph-tab-launcher', () => ({
 vi.mock('@/runtime/browser/client-hosting/client-hosted-browser-row-state', () => ({
   useClientHostedBrowserRows: () => []
 }))
-vi.mock('./useTabGroupWorkspaceModel', () => ({
+vi.mock('./workspace-model/useTabGroupWorkspaceModel', () => ({
   useTabGroupWorkspaceModel: () => ({
     activeTab: { id: 'tab-1', entityId: 'e-1', contentType: mocks.activeContentType.value },
     agentSessionItems: [],
