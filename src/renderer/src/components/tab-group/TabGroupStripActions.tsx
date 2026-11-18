@@ -1,6 +1,6 @@
 import { useRef } from 'react'
-import { TabBarQuickCommandsButton } from '../tab-bar/TabBarQuickCommandsButton'
-import { TabGroupPaneActionsMenu } from './TabGroupPaneActionsMenu'
+import { TabBarQuickCommandsButton } from '../tab-bar/quick-commands/TabBarQuickCommandsButton'
+import { TabGroupPaneActionsMenu } from './panel/TabGroupPaneActionsMenu'
 import { TabStripGitGraphButton } from '../right-sidebar/source-control/sync/git-graph-tab-launcher'
 import { cn } from '@/lib/class-names'
 

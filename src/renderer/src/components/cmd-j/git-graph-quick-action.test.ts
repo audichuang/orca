@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { i18n, loadRendererUiLanguage } from '@/i18n/i18n'
-import { UI_LANGUAGE_SPANISH } from '../../../../shared/ui-language'
+import { UI_LANGUAGE_SPANISH } from '../../../../shared/i18n/ui-language'
 import {
   getUnavailableQuickActionMessage,
   type CmdJQuickActionContext

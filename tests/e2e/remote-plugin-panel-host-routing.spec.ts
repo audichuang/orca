@@ -15,7 +15,7 @@ import {
 import { ISOLATED_FRAMES_E2E, pluginGuest, readInGuest } from './helpers/plugin-frame-guest'
 import { enableDevPlugins } from './helpers/plugin-smoke'
 import { waitForActiveWorktree, waitForSessionReady } from './helpers/store'
-import type { ExecutionHostId } from '../../src/shared/execution-host'
+import type { ExecutionHostId } from '../../src/shared/execution-host/execution-host'
 
 test.use(ISOLATED_FRAMES_E2E)
 

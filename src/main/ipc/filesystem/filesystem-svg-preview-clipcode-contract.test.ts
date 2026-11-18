@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { readLocalFileContent } from './filesystem-file-content-inspection'
+import { readLocalFileContent } from '../../filesystem/local-file-io/filesystem-file-content-inspection'
 
 // Fork contract: ClipCode's svgPreviewText (renderer clipcode-svg-text.ts) decodes an SVG image
 // preview only when the mime is exactly image/svg+xml and the content is base64 of the source.

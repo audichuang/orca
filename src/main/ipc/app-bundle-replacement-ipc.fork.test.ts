@@ -23,7 +23,7 @@ vi.mock('../app-bundle-replacement', () => ({
 vi.mock('./renderer-shutdown-checkpoint', () => ({
   registerRendererShutdownCheckpointHandler: vi.fn()
 }))
-vi.mock('./macos-keyboard-layout-change-notifications', () => ({
+vi.mock('./keyboard/macos-keyboard-layout-change-notifications', () => ({
   registerMacKeyboardLayoutChangeNotifications: vi.fn()
 }))
 

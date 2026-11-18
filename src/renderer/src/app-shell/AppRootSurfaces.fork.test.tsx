@@ -52,7 +52,7 @@ vi.mock('../components/crash-report/CrashReportDialog', () => ({ CrashReportDial
 vi.mock('../components/editor/markdown/documents/MarkdownTemplatePicker', () => ({
   MarkdownTemplatePicker: () => null
 }))
-vi.mock('../components/tab-bar/RecentTabSwitcher', () => ({ default: () => null }))
+vi.mock('../components/tab-bar/recent-switcher/RecentTabSwitcher', () => ({ default: () => null }))
 vi.mock('../components/skills/SkillFreshnessUpdateDialog', () => ({
   SkillFreshnessUpdateDialog: () => null
 }))
