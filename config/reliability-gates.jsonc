@@ -3172,60 +3172,39 @@
       "id": "desktop-relay.region-correction-idle-cutover",
       "title": "Regional correction moves only an idle relay source",
       "maturity": "experimental",
-      "protection": "partial",
+      "protection": "none",
       "owner": "desktop-runtime",
       "layer": "cell-desktop-real-websocket",
       "surfaces": ["regional correction", "idle source cutover", "desktop relay reconnect"],
       "platforms": ["macos", "linux", "windows"],
       "providers": ["cloud-relay"],
-      "coveredPlatforms": ["macos"],
-      "coveredProviders": ["cloud-relay"],
-      "coverageNotes": "Real local WebSocket/control/proof/splice traffic and production SQLite store run with synthetic clock and synthetic token verification. Separate PostgreSQL16 suites validate SQL concurrency. This does not measure production network latency, physical phones, UI, or the production token issuer.",
+      "coveredPlatforms": [],
+      "coveredProviders": [],
+      "coverageNotes": "No current executed protection is claimed after E2E layout cleanup. Historical account: Real local WebSocket/control/proof/splice traffic and production SQLite store run with synthetic clock and synthetic token verification. Separate PostgreSQL16 suites validate SQL concurrency. This does not measure production network latency, physical phones, UI, or the production token issuer.",
       "motivatingLinks": [
         "docs/relay-region-correction/RELAY-REGION-CORRECTION-IDLE-CUTOVER-PLAN.md"
       ],
       "invariant": "Regional optimization never closes an established relay client. The source gates admissions only after actual work is idle, commits the exact assignment atomically, and releases its empty control. A failed target uses ordinary migration recovery; previously sent mutations are not replayed.",
-      "oracle": "Two real TCP WebSocket cells, the actual desktop origin pool, SQLite and an independent execution child verify busy phone/iPad deferral, idle movement, racing arrival rejection, definite-abort admission recovery and observed target-registration failure with ordinary rollback.",
-      "commands": [
-        "ORCA_BACKGROUND_LAUNCH=1 pnpm test tests/e2e/relay-region-correction.unit.test.ts"
-      ],
-      "testFiles": ["tests/e2e/relay-region-correction.unit.test.ts"],
-      "assertionRefs": [
-        {
-          "file": "tests/e2e/relay-region-correction.unit.test.ts",
-          "assertions": [
-            "releases the empty source and recovers normally when the target never registers",
-            "rejects an arrival during cutover and restores admissions after a definite failed commit",
-            "defers for either connected device, then moves after both disconnect without replaying work"
-          ]
-        }
-      ],
-      "evidenceRuns": [
-        {
-          "date": "2026-09-11",
-          "runner": "local",
-          "platform": "macos",
-          "command": "ORCA_BACKGROUND_LAUNCH=1 pnpm test tests/e2e/relay-region-correction.unit.test.ts",
-          "result": "passed",
-          "durationSeconds": 6.44,
-          "summary": "Three real TCP WebSocket cases passed after removing store retention. Log: .tmp/idle-cutover-review/transport-without-retention.log. Does not validate packaged or physical clients."
-        }
-      ],
+      "oracle": "No current executed protection is claimed after E2E layout cleanup. Historical account: Two real TCP WebSocket cells, the actual desktop origin pool, SQLite and an independent execution child verify busy phone/iPad deferral, idle movement, racing arrival rejection, definite-abort admission recovery and observed target-registration failure with ordinary rollback.",
+      "commands": [],
+      "testFiles": [],
+      "assertionRefs": [],
+      "evidenceRuns": [],
       "runtimeBudget": {
         "p95Seconds": 180,
-        "scope": "three local real-WebSocket scenarios with synthetic elapsed time for ordinary recovery"
+        "scope": "Historical prior-selector budget; changed E2E selectors have no new runtime measurement. three local real-WebSocket scenarios with synthetic elapsed time for ordinary recovery"
       },
       "flakeHistory": {
-        "status": "unknown",
-        "evidence": "Local implementation validation; no CI soak history yet."
+        "status": "not-started",
+        "evidence": "No fresh soak for changed E2E selectors. Historical account: Local implementation validation; no CI soak history yet."
       },
       "redGreenEvidence": {
-        "status": "partial",
-        "evidence": "Registry admission accounting negative control and five conflicting operation-identity regressions fail before their fixes and pass afterward. Locked database reconciliation has separate red/green evidence. Full cross-layer counterfactual remains unverified."
+        "status": "missing",
+        "evidence": "No fresh red/green execution for changed E2E selectors. Historical account: Registry admission accounting negative control and five conflicting operation-identity regressions fail before their fixes and pass afterward. Locked database reconciliation has separate red/green evidence. Full cross-layer counterfactual remains unverified."
       },
       "performanceBudget": {
         "required": true,
-        "evidence": "No retained source lease or new mobile timer. Candidate selection is read-only; busy sources immediately defer. Idle cutover reuses normal desktop reconnect and existing migration recovery."
+        "evidence": "Historical prior-selector account; changed E2E selectors have no new performance measurement. No retained source lease or new mobile timer. Candidate selection is read-only; busy sources immediately defer. Idle cutover reuses normal desktop reconnect and existing migration recovery."
       },
       "promotionCriteria": [
         "Collect 100 consecutive CI passes or 14 days of soak.",
@@ -3235,7 +3214,11 @@
       "knownGaps": [
         "Production authentication verifier is mocked.",
         "Synthetic elapsed time is not a wall-clock soak.",
-        "Physical phone lifecycle, packaged mixed versions, SSH execution and production network behavior require separate validation."
+        "Physical phone lifecycle, packaged mixed versions, SSH execution and production network behavior require separate validation.",
+        "E2E layout cleanup retires this complete historical receipt because its exact selector or source changed; it is not current validation. Original receipt verbatim:\n{\n          \"date\": \"2026-09-11\",\n          \"runner\": \"local\",\n          \"platform\": \"macos\",\n          \"command\": \"ORCA_BACKGROUND_LAUNCH=1 pnpm test tests/e2e/relay-region-correction.unit.test.ts\",\n          \"result\": \"passed\",\n          \"durationSeconds\": 6.44,\n          \"summary\": \"Three real TCP WebSocket cases passed after removing store retention. Log: .tmp/idle-cutover-review/transport-without-retention.log. Does not validate packaged or physical clients.\"\n        }",
+        "E2E layout cleanup: original active selector metadata is historical, not current validation:\ncommands: [\n        \"ORCA_BACKGROUND_LAUNCH=1 pnpm test tests/e2e/relay-region-correction.unit.test.ts\"\n      ]\ntestFiles: [\"tests/e2e/relay-region-correction.unit.test.ts\"]\nassertionRefs: [\n        {\n          \"file\": \"tests/e2e/relay-region-correction.unit.test.ts\",\n          \"assertions\": [\n            \"releases the empty source and recovers normally when the target never registers\",\n            \"rejects an arrival during cutover and restores admissions after a definite failed commit\",\n            \"defers for either connected device, then moves after both disconnect without replaying work\"\n          ]\n        }\n      ]",
+        "E2E layout cleanup intentionally removes whole CUT registrations without assertion salvage or equivalent replacement. Surviving remapped selectors are unexecuted future work at the future serial parent (actual parent null): {\"commands\":[],\"testFiles\":[],\"assertionRefs\":[]}",
+        "Historical declared scope before this cleanup: {\"protection\":\"partial\",\"coveredPlatforms\":[\"macos\"],\"coveredProviders\":[\"cloud-relay\"],\"redGreenEvidence\":{\"status\":\"partial\",\"evidence\":\"Registry admission accounting negative control and five conflicting operation-identity regressions fail before their fixes and pass afterward. Locked database reconciliation has separate red/green evidence. Full cross-layer counterfactual remains unverified.\"},\"flakeHistory\":{\"status\":\"unknown\",\"evidence\":\"Local implementation validation; no CI soak history yet.\"},\"runtimeBudget\":{\"p95Seconds\":180,\"scope\":\"three local real-WebSocket scenarios with synthetic elapsed time for ordinary recovery\"},\"performanceBudget\":{\"required\":true,\"evidence\":\"No retained source lease or new mobile timer. Candidate selection is read-only; busy sources immediately defer. Idle cutover reuses normal desktop reconnect and existing migration recovery.\"}}"
       ],
       "demotionRule": "Keep experimental or demote if optimization closes an established client, a gate reopens on ambiguous authority, a mutation is replayed, cleanup is lost, or eligible idle hosts starve."
     },
