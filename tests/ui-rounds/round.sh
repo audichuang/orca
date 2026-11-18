@@ -98,7 +98,7 @@ case "${1:-}" in
     ;;
   reset)
     # The same fixture the folder e2e builds; it removes only its own directories, not the profile.
-    bash "$SRC/tests/e2e/helpers/folder-multi-repo-fixture.sh" "$ROOT" >/dev/null
+    bash "$SRC/tests/e2e/desktop/electron-fixtures/folder-multi-repo-fixture.sh" "$ROOT" >/dev/null
     echo "reset $ROOT/MultiProduct"
     ;;
   kill)
