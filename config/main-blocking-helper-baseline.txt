@@ -83,12 +83,14 @@
 4 src/main/antigravity/native-file-credentials.ts
 13 src/main/antigravity/native-windows-credentials.ts
 1 src/main/antigravity/native-wsl-credentials.ts
+3 src/main/app-bundle-replacement.ts # fork: one stat of app.asar at startup, and again only when a lazy chunk fails to load
 6 src/main/artifacts/artifact-cloud-auth-context.ts
 7 src/main/artifacts/artifact-cloud-service.ts
 2 src/main/artifacts/artifact-create-intent-store.ts # sign-out clear (bestEffortFsyncDirectorySync) plus writeArtifactFileWhileCurrent, whose only sync step is the fenced renameSync; was 8
 1 src/main/artifacts/artifact-guarded-secure-write.ts # per artifact write: writeSecureFileAsync keeps only its renameSync in the fence-check turn so a sign-out clear cannot land between; replaces sync reads, stage and fsync
 1 src/main/artifacts/artifact-publisher.ts
 8 src/main/artifacts/artifact-share-record-store.ts
+1 src/main/asar-transparent-stat.ts # fork: resolves original-fs statSync once for app-bundle-replacement
 1 src/main/automations/bot-automation-service-wiring.ts
 1 src/main/automations/external-managers/external-manager-discovery.ts
 1 src/main/automations/external-managers/scoped-external-automations.ts
@@ -598,7 +600,7 @@
 3 src/main/ipc/accounts/zcode-plan-credentials.ts
 1 src/main/ipc/ai-vault/ai-vault-search.ts
 1 src/main/ipc/ai-vault/ai-vault-subagent-list.ts
-6 src/main/ipc/app.ts
+8 src/main/ipc/app.ts # fork: captureLaunchedAppBundle once at startup; app:isBundleReplaced only after a lazy chunk fails to load
 1 src/main/ipc/automations.ts
 3 src/main/ipc/browser/browser-client-host-cookie-import-ipc.ts
 1 src/main/ipc/browser/browser-extensions.ts
@@ -1496,8 +1498,10 @@
 1 src/main/updater/lifecycle/updater-check-state.ts
 1 src/main/updater/lifecycle/updater-download-install.ts
 5 src/main/updater/lifecycle/updater-install-execution.ts
+1 src/main/updater/lifecycle/updater-menu-checks.ts # fork: isForkDistribution reads package.json once and caches it
 2 src/main/updater/lifecycle/updater-remote-status.ts
-4 src/main/updater/lifecycle/updater-setup.ts
+1 src/main/updater/lifecycle/updater-scheduling.ts # fork: isForkDistribution reads package.json once and caches it
+5 src/main/updater/lifecycle/updater-setup.ts # fork: isForkDistribution reads package.json once and caches it
 1 src/main/updater/lifecycle/windows-update-install-directory.ts
 10 src/main/updater/linux-package/appimage-runtime-identity.ts
 2 src/main/updater/linux-package/linux-package-downloaded-status.ts
@@ -1505,6 +1509,8 @@
 2 src/main/updater/linux-package/linux-package-update-recovery.ts
 4 src/main/updater/linux-package/linux-update-package-type.ts
 1 src/main/updater/linux-package/updater-package-recovery.ts
+1 src/main/updater/nudges/updater-nudge.ts # fork: isForkDistribution reads package.json once and caches it
+1 src/main/updater/releases/updater-build-selection.ts # fork: isForkDistribution reads package.json once and caches it
 8 src/main/updater/serve-update-handoff.ts
 1 src/main/updater/update-install-exit-watchdog.ts
 3 src/main/updater/updater-events.ts
