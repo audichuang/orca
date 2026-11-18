@@ -11,7 +11,10 @@ import { getConnectionId } from '@/lib/workspace/ownership/connection-context'
 import { getConnectionIdFromState } from '@/lib/workspace/ownership/connection-owner-resolution'
 import { ipcOrRuntimeTargetForHostId } from '@/runtime/rpc/targets/runtime-client-target'
 import { useTranslate } from '@/i18n/use-translate'
-import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  type ExecutionHostId
+} from '../../../../shared/execution-host/execution-host'
 import type { Repo } from '../../../../shared/repository/repo-types'
 import type { GitHistoryGraphSavedFilter } from '../../../../shared/git-history-graph-query-types'
 import type { Worktree } from '../../../../shared/worktree/types'
