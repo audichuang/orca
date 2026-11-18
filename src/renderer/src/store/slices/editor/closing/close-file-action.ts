@@ -22,8 +22,7 @@ import { mayShareEditorBackingFile } from '../file-ids/editor-file-ids'
 import { isSameOwnedDocument } from '../file-ids/same-owned-editor-document'
 import { isEditorTabContentType } from '../tabs/editor-tab-content-type'
 import { closeFileTabsThroughLayoutOwner } from '../tabs/editor-tab-close-through-layout-owner'
-import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../../../shared/layout-owner-switch'
-import { forgetClosedGitGraphTabs } from '@/components/git-graph-tab/git-graph-tab-cleanup'
+import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../../../shared/workspace-layout/layout-owner-switch'
 
 import { forgetClosedGitGraphTabs } from '@/components/git-graph-tab/git-graph-tab-cleanup'
 
