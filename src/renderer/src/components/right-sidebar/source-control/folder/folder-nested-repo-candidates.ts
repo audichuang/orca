@@ -1,6 +1,6 @@
 import type { AppState } from '@/store/types'
 import { getIndexedAllWorktrees } from '@/store/slices/worktrees/listing/worktree-catalog-index'
-import { normalizeRuntimePathForComparison } from '../../../../../../shared/cross-platform-path'
+import { normalizeRuntimePathForComparison } from '../../../../../../shared/file-access/cross-platform-path'
 import type { NestedRepoCandidate } from '../../../../../../shared/project/groups/project-group-types'
 import type { Repo } from '../../../../../../shared/repository/repo-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'

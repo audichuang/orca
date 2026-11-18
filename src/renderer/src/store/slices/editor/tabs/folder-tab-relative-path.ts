@@ -1,12 +1,12 @@
 import type { AppState } from '@/store/types'
 import type { OpenFile } from '../types/open-file'
 import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
-import { relativePathInsideRoot } from '../../../../../../shared/cross-platform-path'
+import { relativePathInsideRoot } from '../../../../../../shared/file-access/cross-platform-path'
 import {
   getRepoExecutionHostId,
   parseExecutionHostId,
   toRuntimeExecutionHostId
-} from '../../../../../../shared/execution-host'
+} from '../../../../../../shared/execution-host/execution-host'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 
 type FolderRootsState = Pick<AppState, 'folderWorkspaces'>

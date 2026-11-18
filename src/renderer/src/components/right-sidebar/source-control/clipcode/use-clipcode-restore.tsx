@@ -19,7 +19,7 @@ import {
   releaseEditorSaveHolds,
   requestEditorSaveQuiesceAll
 } from '@/components/editor/editor-save-quiesce-batch'
-import { relativePathInsideRoot } from '../../../../../../shared/cross-platform-path'
+import { relativePathInsideRoot } from '../../../../../../shared/file-access/cross-platform-path'
 import {
   captureFileExplorerOperationGuard,
   getFileExplorerOperationOwner

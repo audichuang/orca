@@ -1,7 +1,7 @@
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { OpenInApplication } from '../../../../shared/ui-chrome-types'
+import type { OpenInApplication } from '../../../../shared/ui-chrome/ui-chrome-types'
 import { SourceControlEntryContextMenu } from './source-control/listing/entry-context-menu'
 import { OpenToSideMenuItem } from './source-control/listing/entry-context-menu-slots'
 import { BranchEntryRow } from './source-control/listing/branch-entry-row'
