@@ -4,10 +4,10 @@ import { GitGraph } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
+import { ShortcutKeyCombo } from '@/components/ui/ShortcutKeyCombo'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { useShortcutKeyDetails } from '@/hooks/useShortcutLabel'
+import { useShortcutKeyDetails } from '@/lib/keyboard/useShortcutLabel'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 import {
   listGitGraphRepoChoicesFromInputs,

@@ -78,7 +78,7 @@ vi.mock('../../../diff-comments/useDiffCommentDecorator', () => ({
 vi.mock('./useDiffViewerFirstChangeAutoScroll', () => ({
   useDiffViewerFirstChangeAutoScroll: vi.fn()
 }))
-vi.mock('@/hooks/use-document-dark-theme', () => ({ useDocumentDarkTheme: () => false }))
+vi.mock('@/hooks/theme/use-document-dark-theme', () => ({ useDocumentDarkTheme: () => false }))
 vi.mock('./diff-editor-line-number-options', () => ({
   applyDiffEditorLineNumberOptions: () => ({ dispose: vi.fn() })
 }))

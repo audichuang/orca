@@ -6,15 +6,16 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Page } from '@stablyai/playwright-test'
-import { expect, test } from './helpers/orca-app'
+import { test } from './desktop/electron-fixtures/orca-app'
+import { expect } from '@stablyai/playwright-test'
 import {
   createRuntimeDesktopPairingOffer,
   launchPairedElectronClient,
   type PairedElectronClient
-} from './helpers/paired-electron-client'
-import { ISOLATED_FRAMES_E2E, pluginGuest, readInGuest } from './helpers/plugin-frame-guest'
-import { enableDevPlugins } from './helpers/plugin-smoke'
-import { waitForActiveWorktree, waitForSessionReady } from './helpers/store'
+} from './remote/paired-runtime/client-hosts/paired-electron-client'
+import { ISOLATED_FRAMES_E2E, pluginGuest, readInGuest } from './plugins/plugin-frame-guest'
+import { enableDevPlugins } from './plugins/plugin-smoke'
+import { waitForActiveWorktree, waitForSessionReady } from './desktop/renderer-probes/store'
 import type { ExecutionHostId } from '../../src/shared/execution-host/execution-host'
 
 test.use(ISOLATED_FRAMES_E2E)
