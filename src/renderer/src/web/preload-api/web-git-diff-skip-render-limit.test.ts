@@ -3,13 +3,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
 const callRuntimeResult = vi.hoisted(() => vi.fn())
-vi.mock('./web-runtime-calls', () => ({ callRuntimeResult }))
-vi.mock('./web-runtime-worktree-catalog', () => ({
+vi.mock('../runtime/client/web-runtime-calls', () => ({ callRuntimeResult }))
+vi.mock('./workspaces/web-runtime-worktree-catalog', () => ({
   resolveRuntimeWorktreeByPath: vi.fn(),
   resolveRuntimeFilePath: async () => ({ worktree: { id: 'wt-1' }, relativePath: 'a.ts' })
 }))
 
-import { createGitApi } from './web-git-api'
+import { createGitApi } from './git/web-git-api'
 
 describe('web git.diff (fork skipRenderLimit)', () => {
   it('sends skipRenderLimit through to the runtime', async () => {

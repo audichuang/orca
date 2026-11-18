@@ -4,10 +4,11 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import os from 'node:os'
 import path from 'node:path'
 import type { Locator, Page } from '@stablyai/playwright-test'
-import { expect, test } from './helpers/orca-app'
-import { openFileExplorer } from './helpers/file-explorer'
-import { waitForSessionReady } from './helpers/store'
-import { openSourceControlForWorktree } from './helpers/worktree-registration'
+import { test } from './desktop/electron-fixtures/orca-app'
+import { expect } from '@stablyai/playwright-test'
+import { openFileExplorer } from './editor/file-explorer/file-explorer'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import { openSourceControlForWorktree } from './workspaces/repository-fixtures/worktree-registration'
 
 function git(cwd: string, args: string[]): string {
   return execFileSync('git', args, { cwd, stdio: 'pipe', encoding: 'utf8' })

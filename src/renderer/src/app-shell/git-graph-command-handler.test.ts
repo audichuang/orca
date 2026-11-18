@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '../store'
-import { createAppCommandHandlers } from './app-command-handlers'
+import { createAppCommandHandlers } from '../lib/app-commands/app-command-handlers'
 import { createGitGraphCommandHandler } from './git-graph-command-handler'
 
 function seed(activeWorktreeId: string | null): void {
