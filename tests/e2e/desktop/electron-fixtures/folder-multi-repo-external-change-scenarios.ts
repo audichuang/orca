@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { expect } from './orca-app'
+import { expect } from '@stablyai/playwright-test'
 import {
   openRepoEditTabInFolder,
   type ExtraScenarioContext

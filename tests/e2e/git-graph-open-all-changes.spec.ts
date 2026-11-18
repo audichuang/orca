@@ -3,10 +3,11 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import type { Page } from '@stablyai/playwright-test'
-import { expect, test } from './helpers/orca-app'
-import { waitForSessionReady } from './helpers/store'
-import { OPEN_GIT_GRAPH_CHORD } from './helpers/git-graph-shortcut'
-import { openSourceControlForWorktree } from './helpers/worktree-registration'
+import { test } from './desktop/electron-fixtures/orca-app'
+import { expect } from '@stablyai/playwright-test'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import { OPEN_GIT_GRAPH_CHORD } from './desktop/electron-fixtures/git-graph-shortcut'
+import { openSourceControlForWorktree } from './workspaces/repository-fixtures/worktree-registration'
 
 // Regression for a one-off "InstantiationService has been disposed" workbench crash: graph file diff
 // (preview tab) -> back to the graph -> "Open all changes" on a many-file commit.

@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@stablyai/playwright-test'
-import { expect } from './orca-app'
-import { openFileExplorer } from './file-explorer'
+import { expect } from '@stablyai/playwright-test'
+import { openFileExplorer } from '../../editor/file-explorer/file-explorer'
 
 export type ScenarioResult = {
   name: string

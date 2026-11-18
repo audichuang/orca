@@ -1,4 +1,4 @@
-import { expect } from './orca-app'
+import { expect } from '@stablyai/playwright-test'
 import { runBinaryAndKeyboardScenarios } from './folder-multi-repo-binary-and-keyboard-scenarios'
 import {
   clearSourceControlSelections,

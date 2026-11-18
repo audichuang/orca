@@ -51,7 +51,7 @@ vi.mock('@/store', () => ({
   useAppStore: (selector: (state: typeof storeState) => unknown) => selector(storeState)
 }))
 
-vi.mock('@/hooks/useShortcutLabel', () => ({ useShortcutLabel: () => 'Unassigned' }))
+vi.mock('@/lib/keyboard/useShortcutLabel', () => ({ useShortcutLabel: () => 'Unassigned' }))
 
 vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback
