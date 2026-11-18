@@ -3,13 +3,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
 const callRuntimeResult = vi.hoisted(() => vi.fn())
-vi.mock('./web-runtime-calls', () => ({ callRuntimeResult }))
-vi.mock('./web-runtime-worktree-catalog', () => ({
+vi.mock('../runtime/client/web-runtime-calls', () => ({ callRuntimeResult }))
+vi.mock('./workspaces/web-runtime-worktree-catalog', () => ({
   resolveRuntimeWorktreeByPath: async () => ({ id: 'wt-1' }),
   resolveRuntimeFilePath: vi.fn()
 }))
 
-import { createGitApi } from './web-git-api'
+import { createGitApi } from './git/web-git-api'
 
 describe('web git.history (fork graph extension)', () => {
   it('sends graph through to the runtime', async () => {

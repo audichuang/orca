@@ -16,7 +16,7 @@ vi.mock('@/components/editor/autosave/editor-autosave', async (importOriginal) =
   }
 })
 
-import { buildEditorExternalWatchEventHandler as createExternalWatchEventHandler } from './editor-external-watch-event-reconciliation'
+import { buildEditorExternalWatchEventHandler as createExternalWatchEventHandler } from '../components/editor/external-changes/watching/editor-external-watch-event-reconciliation'
 import { useAppStore } from '@/store'
 import {
   getOpenFilesForExternalFileChange,
