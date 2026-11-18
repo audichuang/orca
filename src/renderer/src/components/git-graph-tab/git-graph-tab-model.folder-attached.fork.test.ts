@@ -6,7 +6,7 @@ import { TEST_REPO } from '@/store/repos/repo.test-fixture'
 import type { WorkspaceLineage } from '../../../../shared/worktree/lineage-types'
 import { worktreeWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import type { Repo } from '../../../../shared/repository/repo-types'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import {
   listGitGraphRepoChoicesFromInputs,
   listGitGraphRepoChoicesFromState,

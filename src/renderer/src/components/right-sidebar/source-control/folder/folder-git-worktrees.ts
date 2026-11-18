@@ -1,8 +1,8 @@
-import { isPathInsideOrEqual } from '../../../../../../shared/cross-platform-path'
+import { isPathInsideOrEqual } from '../../../../../../shared/file-access/cross-platform-path'
 import {
   getRepoExecutionHostId,
   getRepoSshConnectionId
-} from '../../../../../../shared/execution-host'
+} from '../../../../../../shared/execution-host/execution-host'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspaces/folder-workspace-types'
 import { resolveReviewRepository } from '@/lib/source-control/review/review-owner'
 import { isGitRepoKind } from '../../../../../../shared/repository/repo-kind'

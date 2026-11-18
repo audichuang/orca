@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_REPO_BADGE_COLOR, REPO_COLORS } from '../../../shared/constants'
+import {
+  DEFAULT_REPO_BADGE_COLOR,
+  REPO_COLORS
+} from '../../../shared/repository/appearance/repo-badge-color'
 import { repoDisplayColor } from './repo-display-color'
 
 const repos = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]

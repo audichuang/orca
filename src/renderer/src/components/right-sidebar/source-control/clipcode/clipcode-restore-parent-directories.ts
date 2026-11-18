@@ -1,7 +1,7 @@
 // Copied from upstream components/tab-bar/tab-create-entry-action.ts createParentDirectoriesForNewFile
 // and isExistsError (module-private there), bound to the runtime clients upstream passes in; re-sync on rebase.
 import { joinPath } from '@/lib/path'
-import { getTabEntryParentNotDirectoryMessage } from '../../../tab-bar/tab-create-entry-copy'
+import { getTabEntryParentNotDirectoryMessage } from '../../../tab-bar/create-entry/tab-create-entry-copy'
 import { createRuntimePath } from '@/runtime/files/mutations/runtime-file-mutation-client'
 import { statRuntimePath } from '@/runtime/files/metadata/runtime-file-metadata-client'
 import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
