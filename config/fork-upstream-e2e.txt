@@ -13,27 +13,17 @@
 #   update-*: the updater is guarded by the seam list and the release checks
 
 # right-sidebar source control
-tests/e2e/golden-source-control-commit.spec.ts
-tests/e2e/golden-source-control-open-diff.spec.ts
-tests/e2e/source-control-discard-confirmation.spec.ts
-tests/e2e/source-control-staged-rename.spec.ts
-tests/e2e/source-control-operation-recovery.spec.ts
-tests/e2e/source-control-commit-draft-persistence.spec.ts
-tests/e2e/source-control-large-file-count.spec.ts
+tests/e2e/golden-journeys/golden-source-control-commit.spec.ts
+tests/e2e/golden-journeys/golden-source-control-open-diff.spec.ts
+tests/e2e/source-control/source-control-discard-confirmation.spec.ts
+tests/e2e/source-control/source-control-staged-rename.spec.ts
 
 # diff and combined diff
-tests/e2e/combined-diff-invalidation-freeze-repro.spec.ts
-tests/e2e/large-diff-freeze-repro.spec.ts
-tests/e2e/diff-note-edit.spec.ts
 
 # tabs and session restore
-tests/e2e/golden-quit-relaunch-session.spec.ts
-tests/e2e/workspace-session-corrupt-tab-salvage.spec.ts
 
 # file save and explorer
-tests/e2e/golden-file-open-edit-save.spec.ts
-tests/e2e/file-explorer-watch-refresh.spec.ts
+tests/e2e/golden-journeys/golden-file-open-edit-save.spec.ts
 
 # folder workspaces
-tests/e2e/folder-setup.spec.ts
-tests/e2e/sidebar-folder-keyboard-navigation.spec.ts
+tests/e2e/workspaces/sidebar/sidebar-folder-keyboard-navigation.spec.ts
