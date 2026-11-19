@@ -1,12 +1,15 @@
 {
-  "upstream": "8a63e96e19",
-  "date": "2026-11-19",
-  "report": "~/.cache/orca-fork-canary/20261118T213107Z-76401/report.md",
-  "result": "not green (exit 1): 7 merge conflicts, typecheck errors, failing tests, lint failures",
+  "upstream": "f1989e7969",
+  "date": "2026-11-20",
+  "report": "~/.cache/orca-fork-canary/20261119T213102Z-66013/report.md",
+  "result": "not green (exit 1): 10 merge conflicts, typecheck errors, failing tests, lint failures",
   "conflicts": [
+    ".github/workflows/performance-contracts.yml",
     "config/main-blocking-helper-baseline.txt",
     "pnpm-lock.yaml",
+    "src/main/antigravity/native-account-store.test.ts",
     "src/main/runtime/orchestration/mailbox/formatting/message-formatting.ts",
+    "src/renderer/src/app-shell/AppRootSurfaces.tsx",
     "src/renderer/src/components/managed-runtime/managed-runtime-install-view.ts",
     "src/renderer/src/components/tab-group/TabGroupPanel.tsx",
     "src/renderer/src/runtime/source-control/git/runtime-git-diff-client.ts",
@@ -26,6 +29,7 @@
     "src/renderer/src/runtime/runtime-git-diff-skip-render-limit-client.test.ts"
   ],
   "failingTests": [
+    "src/renderer/src/app-shell/AppRootSurfaces.fork.test.tsx",
     "src/renderer/src/app-shell/git-graph-command-handler.test.ts",
     "src/renderer/src/app-shell/git-graph-shortcut.keybindings.test.ts",
     "src/renderer/src/components/git-graph-tab/GitGraphTabView.component.test.tsx",
