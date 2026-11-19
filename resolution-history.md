@@ -2,6 +2,21 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-11-19 auto-rebase v1.4.263 → v1.4.264（PR #172）— develop 已移動並發 v1.4.264-fork.1
+
+- RUN=20261119T111747Z（Orca worktree `auto-orca-fork-rebase-run-709-20261119T1117`），NEW，OLD_DEVELOP 58244a59bd → develop 41feb7ed46（舊 develop 備份 `backup/develop-v1.4.263-20261119T111747Z`）。MANUAL（rebase 本身 CLEAN，只多 1 個上游 cherry-pick）。重型檢查（static、seams、relay 測試重複跑）經 `orca-remote` 在 ubuntu 跑；審查者 C 與 Codex 的 worktree 在本機。
+- rebase：`git rebase --onto v1.4.264 v1.4.263`，641 個 fork commit 全部原樣重放，沒有停點、沒有 rerere、沒有丟 commit；`--verify`：`0 conflicted or dropped file(s) expected, 0 other difference(s)`；range-diff 全 `=`；`fork-follow-upstream-moves` 沒有 FIX／GONE。上游這版只有 4 個 commit、10 個檔（CLI 瀏覽器目標與 workspace selector #44237、#44336、workflow 同步），fork 都沒碰過。
+- 上游基準：fork-upstream-red v1.4.264 tc、daemon-protocol-crossing 綠；lint 只紅 `check:path-literal-ratchet`（上游新 `journal-file-lock.yml` 指向不存在的檔，fork-check-lint 排除這步，不處理；上游 main 8006a5d68e #43245 是修正）。
+- 本機閘門：static、seams 第 1 輪（a4ac5f04b1）與第 2 輪（41feb7ed46）都綠。
+- CI 第 1 輪（a4ac5f04b1，run 44513976788）紅兩個：(1) 上游測試 `src/main/runtime/mobile-cloud-relay/origin-lifecycle/relay-control-origin-failover.test.ts` > "resumes the same generation on the alternate when the primary stalls"（`AssertionError: expected [] to have a length of 1 but got +0`）：ubuntu 上 fork 10 次紅 6、乾淨 v1.4.264 10 次紅 4（上游自己不穩），上游 main b4deba3a91（#44236 test(relay): make the two-path failover test deterministic）就是修它 → `cherry-pick -x` 成 41feb7ed46（patch-id f7a05c2150 與上游相同，下一次 rebase 到含它的 release 時 git 自動略過，不用寫 known-resolutions 條目），修後 20 次全綠；mutation 證明 = 拿掉修正（a4ac5f04b1）6/10 紅在同一斷言。(2) e2e 6/6 apt 下載逾時。
+- CI 第 2 輪（41feb7ed46，run 44517744132）：18 個 test shard 全綠（含 relay），只紅 e2e 1/6、3/6、6/6 的 `Install headless UI tools`（exit 124，`us-east-2.ec2.archive.ubuntu.com` 下載 fonts-noto-cjk 逾時，runner 已取得、測試沒開始；通過的 shard 用的是 `archive.ubuntu.com`）。本機探同一 URL 12:00–12:29Z 全 503，12:38Z 3/3、12:47Z 2/3、12:56Z 3/3 完整下載後判定恢復，`gh run rerun --failed` 一次，attempt 2 全綠。
+- **建議改：`.github/workflows/fork-pr.yml`「Install headless UI tools」：除了把 `azure.archive.ubuntu.com` 換成 `archive.ubuntu.com`，`*.ec2.archive.ubuntu.com` 也一併換掉（或改用 apt 快取）。** 這是連續第四次撞同一個 ec2 鏡像（v1.4.262、v1.4.263 各一次、這次兩輪），這次多等了約 1 小時。
+- 審查：第 1 輪（a4ac5f04b1）A、B、C、Codex 全 ACCEPTABLE、0 BLOCKING（C：`seam-upstream.diff` 0 檔，沒有上游碰到的 seam）；Codex 2 個 NON-BLOCKING（relay 間歇失敗 → 已修；`journal-file-lock.yml` 缺檔 → 上游 workflow，發版後已停用 `disabled_manually`）。第 2 輪（41feb7ed46）Claude 審查者 D 與 Codex（同 thread 01a1f38c）都 ACCEPTABLE；Codex 自己把兩檔還原到父 commit 重現同一斷言。hunk 掃描：兩個檔都是測試檔（unmatched），由上面手動證明補。
+- 沒做的「fork 自身問題」條目：上游 v1.4.263→v1.4.264 沒碰到點名的檔，這次也沒有停點，照前例沒做；工具缺口條目這次沒踩到。
+- 發版：release run 44530141530 13:06:12Z–13:19:18Z 成功，tap 1.4.264-fork.1；MacBook 上 Orca 開著，沒升級（仍 1.4.263-fork.1）。上游新 workflow `journal-file-lock.yml` 推 main 後已停用。
+- 耗時（RUN 11:17:47Z 起）：rebase → 開 PR 11:20:39Z（3 分）；本機閘門 11:22:25Z → 綠約 11:27Z（5 分，經 ubuntu）；CI 第 1 輪 11:20:44Z–11:32:38Z（12 分）、第 2 輪 attempt 1 11:46:06Z–11:57:51Z（12 分）、rerun 12:56:55Z–13:05:04Z（8 分）；第 2 步修正輪（relay 調查與 cherry-pick）11:32Z → 推上 11:46:00Z（14 分）；盲審 11:23:46Z → A/B/C 11:25:12Z、Codex 第 1 輪 11:30:55Z，第 2 輪 11:46:32Z → D 11:47:17Z、Codex 11:48:18Z（審查共約 25 分）；等鏡像恢復 11:58Z → 12:56Z（58 分）；發版 13 分。全程約 2 小時 5 分，在上一條（1 小時 30 分）的 1.5 倍以內；比上次多的是等鏡像的 58 分，修正輪 14 分（上次 3 分）是因為要在 ubuntu 重複跑 relay 測試取證。
+- canary 效益：這次沒用到任何 `— canary` 條目或快取解法檔（rebase 沒有衝突）。canary 沒料到 relay 測試紅：它只在 release tag 上紅，canary 試合的上游 main 已含 b4deba3a91；也看不到 CI 的 apt 鏡像問題。沒有 canary 這次也不會多花工夫。（前兩次 rebase 都有用到 canary 條目，不到「連續三次沒用」。）
+
 ## 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171）— develop 已移動並發 v1.4.263-fork.1
 
 - RUN=20261118T111746Z（Orca worktree `auto-orca-fork-rebase-run-685-20261118T1117`），NEW，OLD_DEVELOP a92a6dc201 → develop 58244a59bd（舊 develop 備份 `backup/develop-v1.4.262-20261118T111746Z`）。MANUAL。重型檢查都在本機跑（static、seams、hunk 掃描）。
