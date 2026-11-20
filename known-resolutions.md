@@ -49,6 +49,7 @@
 - 2026-11-18 auto-rebase v1.4.261 → v1.4.262（PR #170，develop 已移動）：上游 v1.4.261→v1.4.262 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、workspace-copy-owner、CombinedDiffViewer、commit-area、use-selection、EditorPanelHeader）都沒改或只改 import，與 fork hunk 無重疊（逐檔比 `-U0`），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171，develop 已移動）：上游 v1.4.262→v1.4.263 對條目點名的檔都沒改或只改 import（`git diff -M --stat` 逐檔看過：CombinedDiffViewer、EditorPanelHeader、DiffViewer 各 2 行 import，其餘沒動），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-19 auto-rebase v1.4.263 → v1.4.264（PR #172，develop 已移動）：上游 v1.4.263→v1.4.264 只改 CLI 瀏覽器目標、workspace selector、runtime-feature-interaction 與 workflow，條目點名的檔都沒碰，也不在 resolved-files.txt，照前例沒做；條目留著。
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173，develop 已移動）：上游 v1.4.264→v1.4.265 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.264 v1.4.265` 逐檔為空），也不在 resolved-files.txt，照前例沒做；條目留著。
 
 ## fork 自身問題（上游只改 import 的檔上，活的 fork seam 沒有測試會紅；(2) 已在 v1.4.257 補上）× fork 7b8d63bd35／1577d5756f（原 1387c5f933／53b1e76808、52c72b9b89／4e1c75a4df，folder repo 啟動目錄 `initialCwd`）、b8b8ff19ee（原 308ffd8185、f17169e8a6、e089260726、d123a06c7d，DiffViewer kept-model sync）— auto-rebase 2026-11-11
 - 類型：fork 自身問題
@@ -61,6 +62,7 @@
 - 2026-11-18 auto-rebase v1.4.261 → v1.4.262（PR #170，develop 已移動）：上游 v1.4.261→v1.4.262 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、workspace-copy-owner、CombinedDiffViewer、commit-area、use-selection、EditorPanelHeader）都沒改或只改 import，與 fork hunk 無重疊（逐檔比 `-U0`），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171，develop 已移動）：上游 v1.4.262→v1.4.263 對條目點名的檔都沒改或只改 import（`git diff -M --stat` 逐檔看過：CombinedDiffViewer、EditorPanelHeader、DiffViewer 各 2 行 import，其餘沒動），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-19 auto-rebase v1.4.263 → v1.4.264（PR #172，develop 已移動）：上游 v1.4.263→v1.4.264 只改 CLI 瀏覽器目標、workspace selector、runtime-feature-interaction 與 workflow，條目點名的檔都沒碰，也不在 resolved-files.txt，照前例沒做；條目留著。
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173，develop 已移動）：上游 v1.4.264→v1.4.265 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.264 v1.4.265` 逐檔為空），也不在 resolved-files.txt，照前例沒做；條目留著。
 
 ## fork 自身問題（v1.4.257 rebase 審查者 C 找到、舊 develop 就有的測試缺口）× fork 7b8d63bd35（原 1387c5f933、52c72b9b89；folder workspace 多 repo、`readGitCommandFailureMessage`）、Cmd+J Git Graph 接線、fork 測試的字串 vi.mock — auto-rebase 2026-11-12
 - 類型：fork 自身問題
@@ -77,6 +79,7 @@
 - 2026-11-18 auto-rebase v1.4.261 → v1.4.262（PR #170，develop 已移動）：上游 v1.4.261→v1.4.262 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、workspace-copy-owner、CombinedDiffViewer、commit-area、use-selection、EditorPanelHeader）都沒改或只改 import，與 fork hunk 無重疊（逐檔比 `-U0`），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171，develop 已移動）：上游 v1.4.262→v1.4.263 對條目點名的檔都沒改或只改 import（`git diff -M --stat` 逐檔看過：CombinedDiffViewer、EditorPanelHeader、DiffViewer 各 2 行 import，其餘沒動），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-19 auto-rebase v1.4.263 → v1.4.264（PR #172，develop 已移動）：上游 v1.4.263→v1.4.264 只改 CLI 瀏覽器目標、workspace selector、runtime-feature-interaction 與 workflow，條目點名的檔都沒碰，也不在 resolved-files.txt，照前例沒做；條目留著。
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173，develop 已移動）：上游 v1.4.264→v1.4.265 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.264 v1.4.265` 逐檔為空），也不在 resolved-files.txt，照前例沒做；條目留著。
 
 ## fork 自身問題（PR #164 審查列出的既有缺口）× fork `comparisons/commit-diff.ts` 的 missingSides、4 個死 vi.mock — auto-rebase 2026-11-15
 - 類型：fork 自身問題
@@ -91,6 +94,7 @@
 - 2026-11-18 auto-rebase v1.4.261 → v1.4.262（PR #170，develop 已移動）：上游 v1.4.261→v1.4.262 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、workspace-copy-owner、CombinedDiffViewer、commit-area、use-selection、EditorPanelHeader）都沒改或只改 import，與 fork hunk 無重疊（逐檔比 `-U0`），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171，develop 已移動）：上游 v1.4.262→v1.4.263 對條目點名的檔都沒改或只改 import（`git diff -M --stat` 逐檔看過：CombinedDiffViewer、EditorPanelHeader、DiffViewer 各 2 行 import，其餘沒動），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-19 auto-rebase v1.4.263 → v1.4.264（PR #172，develop 已移動）：上游 v1.4.263→v1.4.264 只改 CLI 瀏覽器目標、workspace selector、runtime-feature-interaction 與 workflow，條目點名的檔都沒碰，也不在 resolved-files.txt，照前例沒做；條目留著。
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173，develop 已移動）：上游 v1.4.264→v1.4.265 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.264 v1.4.265` 逐檔為空），也不在 resolved-files.txt，照前例沒做；條目留著。
 
 ## 869f6bbef71bd3353531ee69e76bbaf48310cee8（#41858 Restore workspace deletion on server hosts；release 上是 12a22b750790826389dcf5a7f5bfcad3b00067be）、c7ebf681736d461cdf383c1c1e96278c350fc7f4（#42275 Revert "fix: explain merged workspace cleanup and keep visible reviews fresh (#41200)"；release 上是 48a88010c2ed0d11df7cd55a9fbdaeecbc2c410b）× 無 fork commit — canary 2026-11-16
 - 類型：上游自己（release 分支與 main 各改一次）；auto-rebase 不用處理
@@ -107,6 +111,7 @@
 - 守它的測試：`config/scripts/fork-rebase-continue.test.sh` 加一例：先錄一個 rerere 解法再重放到停點，斷言輸出不是 `EMPTY commit`，而且 continue 之後那個 commit 還在。
 - 驗證：未驗證（只看過輸出：`.rebase-review/drive-r1.log` 有 17 行 `EMPTY commit`，其中 16 個 commit 以標題對照都在 `git log v1.4.261..develop`，只有 9e1bd7227e 不在（真的空））
 - 2026-11-18 auto-rebase v1.4.261 → v1.4.262（PR #170，develop 已移動）：試做了「判斷 EMPTY 前先 `git diff --cached --quiet HEAD`」與本條的測試案例，但新案例在 temp repo 約一半機率紅：第一輪 `rebase --continue` 時 git 自己報 `fatal: Unable to create …/MERGE_RR.lock: File exists`（rerere.autoupdate 下，`git add -A` 後立刻 continue；正式 rebase 的 cae487484a 停點也撞過一次，`rebase --continue` 印 `could not commit staged changes`，再跑一次 continue 就過）。測試不穩所以沒收。下一個做這條的人：測試先等 `MERGE_RR.lock` 消失或重試一次 continue，並讓腳本在 continue 失敗且 log 有 `MERGE_RR.lock` 時印出原因（不是 EMPTY）。這次的 rebase 沒有 rerere 重放，沒踩到原本的誤報。
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（8 個停點：stop-resolve 解 6 個 HANDLED、2 個 LEFT 手解，沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
 
 ## fork 自身問題（`fork-follow-upstream-moves.mjs` 不處理「fork 新增檔所在目錄被上游改名」與字串路徑）× fork `config/scripts/fork-follow-upstream-moves.mjs` — canary 2026-11-18
 - 類型：fork 自身問題
@@ -116,6 +121,7 @@
 - 守它的測試：`config/scripts/fork-follow-upstream-moves.test.mjs` 加一例：上游把 `t/helpers/a.ts` 搬到 `t/x/a.ts`、fork 新增 `t/helpers/fork-b.ts` 與引用它的 `t/s.spec.ts`，斷言印出 MOVE 與對應 FIX、不是 GONE。
 - 驗證：未驗證（只有這次手動處理的經驗）
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171）：又踩到：14 個 GONE 全是 fork spec 指向搬走的 fork helper；helper 內對上游 `./file-explorer` 的 import 腳本沒列出（fork 檔本身被搬到新目錄），`round.sh` 的字串路徑也沒列出。這次手改，條目仍待做。
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（8 個停點：stop-resolve 解 6 個 HANDLED、2 個 LEFT 手解，沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
 
 ## fork 自身問題（`fork-canary-apply.sh` 的 MERGED 會在中間停點留下重複的 fork import）× fork `config/scripts/fork-canary-apply.sh` — auto-rebase 2026-11-18
 - 類型：fork 自身問題
@@ -125,16 +131,7 @@
 - 守它的測試：`config/scripts/fork-rebase-continue.test.sh` 的 canary-apply 段加一例：快取把一行 import 從中間搬到最後、fork commit 原本在中間加那行，斷言不是 MERGED（或結果沒有重複行）。
 - 驗證：未驗證（只有這次的經驗）
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171）：這次 entry-context-menu.tsx 一樣被報 MERGED，改成 `git checkout --conflict=diff3` 自己解；另見「stop-resolve 誤刪 UA 檔」條：對 file location 衝突的 fork 新增檔，canary-apply 報 FINAL（兩側在新路徑都沒有檔，就整份寫入 canary 最終版），中間停點不該用。
-
-## fork 自身問題（`updater-build-selection.ts` 的 fork 防護沒有測試會紅）× fork 8aa6be4e43（原 72faec4abe；build(fork): 新增個人 fork 的 macOS 發行打包,關閉上游自動更新）— auto-rebase 2026-11-18
-- 類型：fork 自身問題
-- 衝突檔：無
-- 連帶症狀：無（v1.4.262 rebase 審查者 C：把 `src/main/updater/releases/updater-build-selection.ts:94` 的 `|| isForkDistribution()` 拿掉，`updater.fork-distribution.test.ts` 仍 3 passed；同組另外 4 處拿掉都會紅）
-- 處理：在 `updater.fork-distribution.test.ts`（或新的 `.fork.test`）補一例走到 build selection 的路徑，斷言 fork 發行版不選上游 build；拿掉那個 `||` 會紅。這次不擋：上游 v1.4.261→v1.4.262 沒改這個檔。上游改到它時沒有測試就會擋自動移動。
-- 守它的測試：待補
-- 驗證：未驗證（審查者 C 的 mutation）
-- 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171，develop 已移動）：上游 v1.4.262→v1.4.263 對條目點名的檔都沒改或只改 import（`git diff -M --stat` 逐檔看過：CombinedDiffViewer、EditorPanelHeader、DiffViewer 各 2 行 import，其餘沒動），也不在 resolved-files.txt，照前例沒做；條目留著。
-- 2026-11-19 auto-rebase v1.4.263 → v1.4.264（PR #172，develop 已移動）：上游 v1.4.263→v1.4.264 只改 CLI 瀏覽器目標、workspace selector、runtime-feature-interaction 與 workflow，條目點名的檔都沒碰，也不在 resolved-files.txt，照前例沒做；條目留著。
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（8 個停點：stop-resolve 解 6 個 HANDLED、2 個 LEFT 手解，沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
 
 ## fork 自身問題（`fork-rebase-stop-resolve.mjs` 把被上游改名的目錄下的 fork 新增檔誤刪）× fork `config/scripts/fork-rebase-stop-resolve.mjs`、`config/scripts/fork-canary-apply.sh` — auto-rebase 2026-11-18
 - 類型：fork 自身問題
@@ -143,60 +140,12 @@
 - 處理：stop-resolve 對 `AU`/`UA`/`DU`/`UD` 檔，若 `REBASE_HEAD`（或 `REBASE_HEAD^`）在 git 建議的舊目錄有同名檔（從 `git diff -M -l0 vOLD vNEW` 推出目錄改名），照 fork commit 那側處理：新增就寫入 `git show REBASE_HEAD:<舊路徑>`（保留 mode），刪除就 `git rm` 新路徑，印 `HANDLED … (fork file in renamed dir)`；判斷「fork 沒改」時改用舊目錄的路徑。canary-apply 對 `UA` 檔不要用 FINAL（或只在最後一個碰它的 fork commit 才用）。
 - 守它的測試：`config/scripts/fork-rebase-stop-resolve.test.mjs` 加一例：上游把 `t/helpers/` 改名成 `t/x/`、fork 在 `t/helpers/fork-b.ts` 新增，rebase 停在 file location 衝突，斷言 stop-resolve 把 fork 內容放到 `t/x/fork-b.ts` 而不是 `git rm`。
 - 驗證：未驗證（這次的驅動迴圈是一次性腳本 `.rebase-review/drive.sh`，邏輯同上）
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（8 個停點：stop-resolve 解 6 個 HANDLED、2 個 LEFT 手解，沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
 
-## 794c4b0347a0bad83a1cfc1357b24db1864ff741（#43832 fix(diffs): show image diffs and the too-large notice on the phone and remote workspaces）× fork 72b0438c8a（原 7b8d63bd35；feat(source-control): folder workspace 多 repo 變更面板、ClipCode 複製與還原,移植到 v1.4.229）、f9a2e67a07（原 8e4b354557；refactor(fork): runtime git diff 遠端呼叫回到上游的 ...args，少一個衝突點）、f3bd44b7ae（原 b8b8ff19ee；fix(source-control): 修正 folder workspace 多 repo 與 ClipCode 交叉測試找到的問題）— canary 2026-11-19、2026-11-20
-- 類型：兩邊各改各的
-- 衝突檔：src/shared/git/diff/git-diff-compare-types.ts、src/renderer/src/runtime/source-control/git/runtime-git-diff-client.ts
-- 連帶症狀：typecheck 錯誤 src/main/git/source-control/{commit-diff-missing-sides.real-git.test,comparisons/commit-diff,diffs/file-diff,file-diff.read-failure.test}.ts、src/renderer/src/components/right-sidebar/source-control/clipcode/{clipcode-commit-copy.test,clipcode-commit-copy,clipcode-entry-content,clipcode-git-copy}.ts、src/renderer/src/runtime/runtime-git-diff-skip-render-limit-client.test.ts（全是 `missingSides`／`skipRenderLimit` 不存在）；失敗測試 runtime-git-diff-skip-render-limit-client.test.ts；上游 lint `check:e2e-typecheck-ratchet` 的 tests/e2e/cross-version-wire/fork-git-optional-params-downgrade.unit.test.ts（`skipRenderLimit`）。
-- 處理：(1) git-diff-compare-types.ts：`GitDiffBinaryResult` 裡上游新加的 `tooLargeForConnection?: boolean`（含註解）在前，接 fork 的 `missingSides?: ('original' | 'modified')[]`（含註解）；`GitDiffTextResult` 的 fork `missingSides` 自動合入。(2) runtime-git-diff-client.ts：local 分支採上游 `return orTooLargeForConnection(window.api.git.diff({…}))` 的包法，物件裡 `...(args.oldPath ? …)` 之後加回 fork 的 `skipRenderLimit: args.skipRenderLimit,`；簽章的 `skipRenderLimit?: boolean` 與遠端 `{ worktree, ...args }` 自動合入。解法檔在 `~/.cache/orca-fork-canary/20261118T213107Z-76401/resolution/files/`。ClipCode（missingSides）與大 diff 略過上限都保住。行為差異（未驗證，給審查者）：上游讓遠端超過回覆上限的 diff 不再 throw，改回 `kind:'binary'`、兩側 binary、`tooLarge`／`tooLargeForConnection`、沒有 `missingSides`；fork/develop 的 clipcode-git-copy.ts（HEAD 側 `originalIsBinary` → null、index 側 `modifiedIsBinary` → null）與 clipcode-commit-copy.ts（`modifiedIsBinary` → 'binary'）會把它當 binary 排除，不會複製或還原空內容，只是原因從「讀不到」變成「binary」。
-- 守它的測試：config/fork-seam-tests.txt 的 skipRenderLimit 組、missingSides and blob absence 組（`runtime-git-diff-skip-render-limit-client.test.ts`、`commit-diff-missing-sides.real-git.test.ts`、`clipcode-commit-copy.test.ts`）
-- 驗證（2026-11-20，上游 f1989e7969e391197bd38736a9ee5354eac8ba78）：衝突與症狀同上，照上面兩點解出的檔與 2026-11-19 的解法檔逐位元組相同；合併樹套用本次全部條目後 `pnpm tc` 0 錯誤、原批 164 檔 1,021 例全過、`check:e2e-typecheck-ratchet` 過。解法檔改看 `~/.cache/orca-fork-canary/20261119T213102Z-66013/resolution/files/`。
-
-## a6918ecb976ee4176e754bcb27fef6ef7bd5dbb3（上游單親大 commit「Merge in branches」，加 Bots 的 `useBotForWorkspace`／`BotPausedBanner`）× fork aece0da198（原 84f8e9c99f；fix(fork): move the tab strip's action chrome into TabGroupStripActions to keep TabGroupPanel within max-lines）、ef6ef5cfde（原 11be866a5d；feat(source-control): Git 介面順手度優化第一批）— canary 2026-11-19、2026-11-20
-- 類型：兩邊各改各的
-- 衝突檔：src/renderer/src/components/tab-group/TabGroupPanel.tsx
-- 連帶症狀：失敗測試 src/renderer/src/components/tab-group/TabGroupPanel.git-graph-button.test.tsx、src/renderer/src/components/right-sidebar/source-control/sync/git-graph-tab-launcher.component.test.tsx（Tab-strip Git Graph button 那幾例；Commits header 那例屬 selector 換名條）；上游 lint `check:code-quality:changed` 報 TabGroupStripActions.tsx:35 的 `as React.CSSProperties`（衝突檔重設成上游後，同一行轉型同時在 TabGroupPanel 與 TabGroupStripActions，被算成新增；解完就消失，不要加 SAFETY 註解）。
-- 處理：衝突只在 `const quickCommandsSlotRef = useRef…` 那段：保留上游新加的兩行（`// A bot's page chrome sits…` 註解與 `const bot = useBotForWorkspace(reserveClosedExplorerToggleSpace ? worktreeId : null)`），不要加回 `quickCommandsSlotRef`（fork 已搬進 TabGroupStripActions.tsx，`useRef` import 也已不在）。上游其他改動（`toVisibleTabType`、`room`、`BotPausedBanner`、兩個 bots import）自動合入。結果 390 行，`check:max-lines-ratchet` 過。auto-rebase 只在 84f8e9c99f 停點會碰到這段（只有它刪 `quickCommandsSlotRef`、`useRef` import 與 strip JSX，`git show 84f8e9c99f` 查過）；11be866a5d 不碰這幾行，若在那裡停下，保留上游的 `bot` 兩行**和** `quickCommandsSlotRef`（那時 strip 還在 TabGroupPanel），不要整份套 canary 最終檔（同「fork-canary-apply MERGED／FINAL」條的陷阱）。解法檔在 `~/.cache/orca-fork-canary/20261118T213107Z-76401/resolution/files/`。
-- 守它的測試：TabGroupPanel.git-graph-button.test.tsx、git-graph-tab-launcher.component.test.tsx（seam 清單的 Git Graph 組）
-- 驗證（2026-11-19，上游 8a63e96e19c8912955767d81ec2f908c08a75f59）：同上條；`check:code-quality:changed`、`check:max-lines-ratchet` 過。
-- 驗證（2026-11-20，上游 f1989e7969e391197bd38736a9ee5354eac8ba78）：上游 main 這次在同一個檔還有 ddc367adaa（#44502）改 strip JSX，衝突多一段（見「ddc367adaa」條）；本條這段解法不變（保留 `bot` 兩行、不加回 `quickCommandsSlotRef`），結果 390 行，tc、原批測試、`check:code-quality:changed`、`check:max-lines-ratchet` 過。auto-rebase 的停點是 aece0da198（標題同上）。
-
-## a6918ecb976ee4176e754bcb27fef6ef7bd5dbb3（上游「Merge in branches」：`selectCrossStoreFolderChildrenById` 換成 `selectSidebarChildrenByParentIdentity`，`AttachedWorktreeResolverArgs` 改收 `childrenByParentIdentity`）× fork 73d365d6ee（原 eb11e21ddb；fix(git-graph): resolve folder choices with Source Control's lineage selectors and host-aware repos）、a81e2b41be（原 48e81c3002；refactor(fork): hand folder Source Control to upstream's panel (#38831)）— canary 2026-11-19、2026-11-20
-- 類型：上游改了 fork 依賴的 API
-- 衝突檔：無（上游重寫 src/renderer/src/store/slices/worktrees/metadata/cross-store-lineage-parents.ts、right-sidebar/folder-workspaces/{folder-workspace-attached-worktrees.ts,FolderWorkspaceSourceControlPanel.tsx}）
-- 連帶症狀：typecheck 錯誤 src/renderer/src/components/git-graph-tab/git-graph-tab-model.ts（TS2305 `selectCrossStoreFolderChildrenById`、TS2353 `worktreesByRepo`）、src/renderer/src/components/right-sidebar/folder-workspaces/FolderWorkspaceSourceControlPanel.tsx（TS2304 `worktreesByRepo`）；失敗測試 git-graph-command-handler.test.ts、git-graph-shortcut.keybindings.test.ts、GitGraphTabView.component.test.tsx、FolderWorkspaceSourceControlPanel.folder-path-repos.fork.test.tsx、git-graph-removal-retired.fork.test.ts、git-graph-tab-model.folder-attached.fork.test.ts、editor-git-graph-split-open.test.ts、editor-git-graph-tabs.test.ts、sync-runtime-graph-git-graph-tab.test.ts、git-graph-tab-launcher.component.test.tsx（Commits header 那例；Tab-strip 那幾例屬 TabGroupPanel 條）；上游 lint `audit:code-quality:type-aware`（git-graph-tab-model.ts:30、156 的 `any` 交集）與 `check:code-quality:changed` 的 FolderWorkspaceSourceControlPanel.tsx:227 exhaustive-deps。
-- 處理（Git Graph：照上游的 folder 子 worktree 來源，保住 folder repo switcher；不必問）：
-  1. git-graph-tab-model.ts：import 改成只有 `selectSidebarChildrenByParentIdentity`，刪 `SidebarLineageParentIdentities` 的 import；`GitGraphWorkspaceState = Parameters<typeof selectSidebarChildrenByParentIdentity>[0] & Pick<AppState, 'repos' | 'workspaceLineageByChildKey'>`；`GitGraphChoiceInputs` 拿掉 `lineageParentIdentities`、`crossStoreChildrenByFolderId`，換成 `/** selectSidebarChildrenByParentIdentity's view. */ childrenByParentIdentity: ReadonlyMap<string, readonly Worktree[]>`（`repoWorktrees` 留著，`withFolderPathRepoOwners` 要用）；`selectGitGraphChoiceInputs` 回 `childrenByParentIdentity: selectSidebarChildrenByParentIdentity(state)`；`listGitGraphFolderChoices` 呼叫 `getAttachedWorktreesForFolderWorkspace` 時只傳 `childrenByParentIdentity: inputs.childrenByParentIdentity`（拿掉 `worktreesByRepo`、`lineageParentIdentities`、`crossStoreChildrenByFolderId`）。
-  2. FolderWorkspaceSourceControlPanel.tsx（fork 的 `withFolderPathRepoOwners(resolution, worktreesByRepo, repos)` 還要它）：上游刪掉的 `selectWorktreesByRepo` 加回 `@/store/workspaces/catalog/workspace-record-fields` 的 import（與 `selectFolderWorkspaces` 同一個 import），並在 `const childrenByParentIdentity = …` 前加回 `const worktreesByRepo = useAppStore(selectWorktreesByRepo)`。
-  3. git-graph-tab-model.folder-attached.fork.test.ts：`inputs()` 預設改成 `childrenByParentIdentity: new Map()`；remote 那例改傳 `childrenByParentIdentity: new Map([['local|folder:attached', [root]], ['ssh:box|remote-root', [child]]])`；「pairs an attached local worktree…」那例加 `childrenByParentIdentity: new Map([['local|folder:attached', [local]]])`。
-  4. 上游新 selector 會讀 `state.worktreeLineageById`（WeakMap key，undefined 會丟 `Invalid value used as weak map key`）；`createEditorTabsStore()` 沒種這個欄位（真的 store 在 worktree-slice-initial-state.ts 種 `{}`），所以 fork 測試要自己種：editor-git-graph-split-open.test.ts 的 `setup()` 在 `createEditorTabsStore()` 後加 `store.setState({ worktreeLineageById: {} })`（附一行註解）；sync-runtime-graph-git-graph-tab.test.ts 的 `store.setState({…})` 加 `worktreeLineageById: {},`。
-  沒有衝突停點：rebase 全部重放完後，在 tc 前做成一個修正 commit。解法檔（含兩支測試）在 `~/.cache/orca-fork-canary/20261118T213107Z-76401/resolution/files/`。
-- 守它的測試：git-graph-tab-model.folder-attached.fork.test.ts（store 版兩例走真的 `selectSidebarChildrenByParentIdentity`）、FolderWorkspaceSourceControlPanel.folder-path-repos.fork.test.tsx、editor-git-graph-tabs.test.ts、GitGraphTabView.component.test.tsx
-- 驗證（2026-11-19，上游 8a63e96e19c8912955767d81ec2f908c08a75f59）：tc 0 錯誤；上面 9 支失敗測試都在原批 163 檔 1,017 例全過裡；`audit:code-quality:type-aware`、`check:code-quality:changed` 過。
-- 驗證（2026-11-20，上游 f1989e7969e391197bd38736a9ee5354eac8ba78）：症狀相同；這 5 個檔兩側自上次都沒變（`git diff 58244a59bd MERGE_HEAD`、`git diff 8a63e96e19 HEAD` 都空），直接用上次的解法檔（新報告的 `resolution/files/` 也放了一份）；tc 0 錯誤、原批 164 檔 1,021 例全過、`audit:code-quality:type-aware`、`check:code-quality:changed` 過。
-
-## a6918ecb976ee4176e754bcb27fef6ef7bd5dbb3（上游「Merge in branches」在 main blocking-helper baseline 加 `src/main/automations/bot-automation-service-wiring.ts`）× fork 968701a278（原 fff282adf6；fix(fork): baseline the fork's one-shot sync helpers in the main blocking-helper ratchet）— canary 2026-11-19、2026-11-20
-- 類型：兩邊各改各的
-- 衝突檔：config/main-blocking-helper-baseline.txt
-- 連帶症狀：上游 lint `check:main-blocking-helper-ratchet`（app-bundle-replacement.ts、asar-transparent-stat.ts、ipc/app.ts、updater 5 檔超出 baseline，全是 fork 檔或 fork 行）
-- 處理：兩行都留，只插入 fork 行、不重排上游行：`1 src/main/asar-transparent-stat.ts # fork: resolves original-fs statSync once for app-bundle-replacement` 放在上游的 `1 src/main/automations/bot-automation-service-wiring.ts` 前面（字母序）。其他 fork 行（app-bundle-replacement、ipc/app.ts 8、updater 5 檔）自動合入，上游這段沒改它們的列。
-- 守它的測試：上游 lint `check:main-blocking-helper-ratchet`
-- 驗證（2026-11-19，上游 8a63e96e19c8912955767d81ec2f908c08a75f59）：`pnpm run check:main-blocking-helper-ratchet` 過。
-- 驗證（2026-11-20，上游 f1989e7969e391197bd38736a9ee5354eac8ba78）：上游 main 又改了 artifacts 那幾列（#43891 等，衝突塊變大），解法不變：衝突塊整塊採上游，只在 `1 src/main/automations/bot-automation-service-wiring.ts` 前插 fork 的 asar-transparent-stat 行；`check:main-blocking-helper-ratchet` 過。
-
-## ddc367adaa772356205cac47526e98908f9669d6（#44502 fix(tab-strip): anchor the quick-command menu to the pane and restore focus when the trigger is collapsed）× fork aece0da198（fix(fork): move the tab strip's action chrome into TabGroupStripActions to keep TabGroupPanel within max-lines）— canary 2026-11-20
-- 類型：兩邊各改各的（上游改的 strip JSX 已被 fork 搬進 TabGroupStripActions.tsx）
-- 衝突檔：src/renderer/src/components/tab-group/TabGroupPanel.tsx（第二段：strip 的 action chrome JSX）
-- 連帶症狀：無 tc／單元測試症狀（與 a6918ecb97 TabGroupPanel 條同一個衝突檔，失敗測試歸那條）。但不移植的話是無聲的功能退化：上游同一個 commit 把 TabGroupPaneActionsMenu.tsx 的 `isSlotHidden` 改成看 `visibility === 'hidden'`（自動合入），fork 的 TabGroupStripActions 仍用 `@max-[163px]/tab-strip:hidden`（display:none），窄 strip 時 pane actions 選單就不會補出 quick commands，快捷鍵開的選單也沒有錨點。
-- 處理：TabGroupPanel.tsx 的這段採 fork 那側（只留 `<TabGroupStripActions … />`，不要加回上游的 inline JSX）；把上游的改動移植到 fork 的 src/renderer/src/components/tab-group/TabGroupStripActions.tsx：註解第二行後加一行 `Narrow strips park it invisible at the pane's top-right edge instead of display:none, so the shortcut menu still has an anchor rect.`，`<div ref={quickCommandsSlotRef} className="contents @max-[163px]/tab-strip:hidden">` 改成多行的 `<div ref={quickCommandsSlotRef} className="contents @max-[163px]/tab-strip:invisible @max-[163px]/tab-strip:absolute @max-[163px]/tab-strip:end-0 @max-[163px]/tab-strip:top-0 @max-[163px]/tab-strip:block">`（照上游 TabGroupPanel 的寫法，oxfmt 過）。上游的 TabBarQuickCommandsMenu.tsx、TabGroupPaneActionsMenu.tsx 自動合入。auto-rebase 在 aece0da198 停點處理：TabGroupPanel 照 fork commit 刪掉 inline JSX，同時在它新增的 TabGroupStripActions.tsx 套上這個改動（該停點的 TabGroupStripActions.tsx 是 fork commit 新增，不會有衝突標記，要自己改）。解法檔在 `~/.cache/orca-fork-canary/20261119T213102Z-66013/resolution/files/`（含 TabGroupStripActions.tsx）。
-- 守它的測試：上游 e2e tests/e2e/layout/window-tabs/narrow-tab-group-drag-handle.spec.ts（v1.4.264 就有；「a strip too narrow for quick commands offers them in the pane actions menu」正好抓沒移植的退化，ddc367adaa 再加錨點與焦點那例；沒有 @headful）。它還不在 config/fork-upstream-e2e.txt，fork CI 不跑：修正 commit 同時把它加進清單的 tab strip 區（fork 改了這條 strip，符合清單檔頭的收錄條件）。單元測試 TabGroupPanel.git-graph-button.test.tsx 守 strip 結構。
-- 其他停點：ef6ef5cfde（Git 介面順手度優化第一批）只在 slot `</div>` 之後加 `TabStripGitGraphButton`，不碰 slot div 與上面的註解（`git show ef6ef5cfde -- …/TabGroupPanel.tsx` 查過），在那裡停下時保留上游新的 slot div 與註解、加上 fork 的按鈕即可。
-- 驗證（2026-11-20，上游 f1989e7969e391197bd38736a9ee5354eac8ba78）：tc 0 錯誤、原批 164 檔 1,021 例全過、`check:code-quality:changed`、`check:max-lines-ratchet`、oxfmt 過；e2e 未驗證。
-
-## 3994492b528a37800fae17dc72892758a2c99d1f（#44371 feat(agent-cli-update): show why a CLI update failed, and name where a too-old CLI runs）× fork a035a31796（fix(fork): move the WSL move and ClipCode dialog hosts out of AppRootSurfaces to keep it within max-lines）、8270c268a1（feat(clipcode): 複製端支援非文字檔（Include／Exclude／Cancel 對話框））、ec74e5f09f（fix(clipcode): 拿掉唯讀目標覆寫（X13），上游 bytes 存檔對唯讀檔維持原本行為；fork 案例移到 filesystem-write-bytes.fork.test.ts 並列入 seam，fork import 移到上游 import 之後）— canary 2026-11-20
-- 類型：兩邊各改各的
-- 衝突檔：src/renderer/src/app-shell/AppRootSurfaces.tsx（只有 import 區：上游在 `import { WslMoveDialogHost } …` 後面加 `import { AgentCliUpdateFailedDialogHost } from '../components/agent-cli-update/AgentCliUpdateFailedDialogHost'`，fork 刪掉 WslMoveDialogHost import）
-- 連帶症狀：失敗測試 src/renderer/src/app-shell/AppRootSurfaces.fork.test.tsx（mounts the ClipCode non-text copy dialog host；衝突檔重設成上游後沒有 RootDialogHosts）
-- 處理：上游的 `AgentCliUpdateFailedDialogHost` import 一律保留，各停點照 fork commit 自己的改動做：8270c268a1 在 WslMoveDialogHost／AgentCliUpdateFailedDialogHost 兩行之後加 ClipCode import；ec74e5f09f 刪掉那行 ClipCode import（移到 import 區尾端）；a035a31796 刪掉 WslMoveDialogHost import。上游在 JSX 加的 `<AgentCliUpdateFailedDialogHost />`（node-dist-mirror 那段之後）不在 fork 改的行，自動合入，不要搬進 root-dialog-hosts.tsx。最終結果：import 區只少了 WslMoveDialogHost、多了上游那行；`<RootDialogHosts />` 留著。解法檔在 `~/.cache/orca-fork-canary/20261119T213102Z-66013/resolution/files/`（最終版；中間停點不要整份套，同「fork-canary-apply MERGED／FINAL」條）。
-- 守它的測試：AppRootSurfaces.fork.test.tsx
-- 驗證（2026-11-20，上游 f1989e7969e391197bd38736a9ee5354eac8ba78）：tc 0 錯誤、原批 164 檔 1,021 例全過（含 AppRootSurfaces.fork.test.tsx）、`check:max-lines-ratchet` 過。
+## fork 自身問題（seam 清單缺遠端外掛面板的兩支測試、新 ClipCode 測試的 stub 不分 parent）× fork `config/fork-seam-tests.txt`、`clipcode-copy-action.too-large-for-connection.fork.test.ts` — auto-rebase 2026-11-20
+- 類型：fork 自身問題
+- 衝突檔：無
+- 連帶症狀：無（v1.4.265 rebase 審查者 C 與 Codex 第 2 輪的 NON-BLOCKING）
+- 處理：(a) 把 `remote-plugin-panel-session.test.ts`、`remote-plugin-panel-route.test.ts`（拿掉 `openRemotePanelSession` 或 `panelAction` 的 `params` 時會紅，現在的 seam 組兩支都綠）加進 config/fork-seam-tests.txt 的「Remote plugin panels」組。(b) `clipcode-copy-action.too-large-for-connection.fork.test.ts` 第一例的 `callRuntimeRpc` stub 對所有非 PARENT_1 的請求都回第二個 parent 的內容，省略 `parentOid` 也綠：改成精確比對兩個 parent、刪除標記用字面值（Codex 實測這樣改後省略 `parentOid` 會紅）。
+- 守它的測試：(a) 上面兩支；(b) 本身
+- 驗證：未驗證（審查者 C、Codex 的 mutation）
