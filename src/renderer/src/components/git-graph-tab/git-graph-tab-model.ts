@@ -12,11 +12,7 @@ import { withFolderPathRepoOwners } from '../right-sidebar/source-control/folder
 import { getRememberedFolderRepo } from '../right-sidebar/source-control/folder/folder-repo-selection'
 import { getAttachedWorktreesForFolderWorkspace } from '../right-sidebar/folder-workspaces/folder-workspace-attached-worktrees'
 import { resolveReviewRepository } from '@/lib/source-control/review/review-owner'
-import {
-  selectCrossStoreFolderChildrenById,
-  selectSidebarLineageParentIdentities
-} from '@/store/slices/worktrees/metadata/cross-store-lineage-parents'
-import type { SidebarLineageParentIdentities } from '../../../../shared/sidebar-list/lineage/worktree-lineage-projection'
+import { selectSidebarChildrenByParentIdentity } from '@/store/slices/worktrees/metadata/cross-store-lineage-parents'
 import {
   selectFolderWorkspaces,
   selectWorktreesByRepo
@@ -27,7 +23,7 @@ export const GIT_GRAPH_TAB_LABEL = 'Git Graph'
 export type GitGraphRepoChoice = { repo: Repo; worktree: Worktree }
 
 /** Store fields the folder lineage selectors read, as upstream's folder Source Control subscribes them. */
-type GitGraphWorkspaceState = Parameters<typeof selectCrossStoreFolderChildrenById>[0] &
+type GitGraphWorkspaceState = Parameters<typeof selectSidebarChildrenByParentIdentity>[0] &
   Pick<AppState, 'repos' | 'workspaceLineageByChildKey'>
 
 /** What the Git Graph repo choices read; the lineage fields are the folder Source Control selectors' results. */
@@ -39,8 +35,8 @@ export type GitGraphChoiceInputs = Pick<
   repoWorktrees: AppState['worktreesByRepo']
   /** selectFolderWorkspaces's view. */
   folders: AppState['folderWorkspaces']
-  lineageParentIdentities: SidebarLineageParentIdentities | undefined
-  crossStoreChildrenByFolderId: ReadonlyMap<string, readonly Worktree[]>
+  /** selectSidebarChildrenByParentIdentity's view. */
+  childrenByParentIdentity: ReadonlyMap<string, readonly Worktree[]>
 }
 
 export function selectGitGraphChoiceInputs(state: GitGraphWorkspaceState): GitGraphChoiceInputs {
@@ -50,8 +46,7 @@ export function selectGitGraphChoiceInputs(state: GitGraphWorkspaceState): GitGr
     folders: selectFolderWorkspaces(state),
     workspaceLineageByChildKey: state.workspaceLineageByChildKey,
     worktreeLineageById: state.worktreeLineageById,
-    lineageParentIdentities: selectSidebarLineageParentIdentities(state),
-    crossStoreChildrenByFolderId: selectCrossStoreFolderChildrenById(state)
+    childrenByParentIdentity: selectSidebarChildrenByParentIdentity(state)
   }
 }
 
@@ -66,9 +61,7 @@ function listGitGraphFolderChoices(
     folderWorkspaces: inputs.folders ?? [],
     workspaceLineageByChildKey: inputs.workspaceLineageByChildKey,
     worktreeLineageById: inputs.worktreeLineageById,
-    worktreesByRepo: inputs.repoWorktrees,
-    lineageParentIdentities: inputs.lineageParentIdentities,
-    crossStoreChildrenByFolderId: inputs.crossStoreChildrenByFolderId
+    childrenByParentIdentity: inputs.childrenByParentIdentity
   })
   return withFolderPathRepoOwners(resolution, inputs.repoWorktrees, inputs.repos).flatMap(
     (owner) => {

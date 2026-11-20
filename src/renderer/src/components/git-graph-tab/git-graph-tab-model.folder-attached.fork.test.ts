@@ -76,8 +76,7 @@ describe('Git Graph folder choices follow upstream folder Source Control owners'
     folders: [folder],
     workspaceLineageByChildKey: {},
     worktreeLineageById: {},
-    lineageParentIdentities: undefined,
-    crossStoreChildrenByFolderId: new Map(),
+    childrenByParentIdentity: new Map(),
     ...overrides
   })
 
@@ -107,11 +106,10 @@ describe('Git Graph folder choices follow upstream folder Source Control owners'
       inputs({
         repos: [remoteRepo],
         repoWorktrees: { remote: [root, child] },
-        lineageParentIdentities: new Map([
-          ['ssh:box|remote-root', 'local|folder:attached'],
-          ['ssh:box|remote-child', 'ssh:box|remote-root']
-        ]),
-        crossStoreChildrenByFolderId: new Map([['attached', [root]]])
+        childrenByParentIdentity: new Map([
+          ['local|folder:attached', [root]],
+          ['ssh:box|remote-root', [child]]
+        ])
       }),
       FOLDER_KEY
     ).map((choice) => choice.worktree.id)
@@ -142,7 +140,8 @@ describe('Git Graph folder choices follow upstream folder Source Control owners'
         inputs({
           repos,
           repoWorktrees: { shared: [local] },
-          workspaceLineageByChildKey: { [lineage.childWorkspaceKey]: lineage }
+          workspaceLineageByChildKey: { [lineage.childWorkspaceKey]: lineage },
+          childrenByParentIdentity: new Map([['local|folder:attached', [local]]])
         }),
         FOLDER_KEY
       )
