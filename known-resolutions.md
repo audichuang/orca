@@ -111,7 +111,7 @@
 - 守它的測試：`config/scripts/fork-rebase-continue.test.sh` 加一例：先錄一個 rerere 解法再重放到停點，斷言輸出不是 `EMPTY commit`，而且 continue 之後那個 commit 還在。
 - 驗證：未驗證（只看過輸出：`.rebase-review/drive-r1.log` 有 17 行 `EMPTY commit`，其中 16 個 commit 以標題對照都在 `git log v1.4.261..develop`，只有 9e1bd7227e 不在（真的空））
 - 2026-11-18 auto-rebase v1.4.261 → v1.4.262（PR #170，develop 已移動）：試做了「判斷 EMPTY 前先 `git diff --cached --quiet HEAD`」與本條的測試案例，但新案例在 temp repo 約一半機率紅：第一輪 `rebase --continue` 時 git 自己報 `fatal: Unable to create …/MERGE_RR.lock: File exists`（rerere.autoupdate 下，`git add -A` 後立刻 continue；正式 rebase 的 cae487484a 停點也撞過一次，`rebase --continue` 印 `could not commit staged changes`，再跑一次 continue 就過）。測試不穩所以沒收。下一個做這條的人：測試先等 `MERGE_RR.lock` 消失或重試一次 continue，並讓腳本在 continue 失敗且 log 有 `MERGE_RR.lock` 時印出原因（不是 EMPTY）。這次的 rebase 沒有 rerere 重放，沒踩到原本的誤報。
-- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（8 個停點：stop-resolve 解 6 個 HANDLED、2 個 LEFT 手解，沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（13 個停點：stop-resolve 自動解 8 個、手解 5 個（其中 3 個 stop-resolve 報 LEFT），沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
 
 ## fork 自身問題（`fork-follow-upstream-moves.mjs` 不處理「fork 新增檔所在目錄被上游改名」與字串路徑）× fork `config/scripts/fork-follow-upstream-moves.mjs` — canary 2026-11-18
 - 類型：fork 自身問題
@@ -121,7 +121,7 @@
 - 守它的測試：`config/scripts/fork-follow-upstream-moves.test.mjs` 加一例：上游把 `t/helpers/a.ts` 搬到 `t/x/a.ts`、fork 新增 `t/helpers/fork-b.ts` 與引用它的 `t/s.spec.ts`，斷言印出 MOVE 與對應 FIX、不是 GONE。
 - 驗證：未驗證（只有這次手動處理的經驗）
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171）：又踩到：14 個 GONE 全是 fork spec 指向搬走的 fork helper；helper 內對上游 `./file-explorer` 的 import 腳本沒列出（fork 檔本身被搬到新目錄），`round.sh` 的字串路徑也沒列出。這次手改，條目仍待做。
-- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（8 個停點：stop-resolve 解 6 個 HANDLED、2 個 LEFT 手解，沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（13 個停點：stop-resolve 自動解 8 個、手解 5 個（其中 3 個 stop-resolve 報 LEFT），沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
 
 ## fork 自身問題（`fork-canary-apply.sh` 的 MERGED 會在中間停點留下重複的 fork import）× fork `config/scripts/fork-canary-apply.sh` — auto-rebase 2026-11-18
 - 類型：fork 自身問題
@@ -131,7 +131,7 @@
 - 守它的測試：`config/scripts/fork-rebase-continue.test.sh` 的 canary-apply 段加一例：快取把一行 import 從中間搬到最後、fork commit 原本在中間加那行，斷言不是 MERGED（或結果沒有重複行）。
 - 驗證：未驗證（只有這次的經驗）
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171）：這次 entry-context-menu.tsx 一樣被報 MERGED，改成 `git checkout --conflict=diff3` 自己解；另見「stop-resolve 誤刪 UA 檔」條：對 file location 衝突的 fork 新增檔，canary-apply 報 FINAL（兩側在新路徑都沒有檔，就整份寫入 canary 最終版），中間停點不該用。
-- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（8 個停點：stop-resolve 解 6 個 HANDLED、2 個 LEFT 手解，沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（13 個停點：stop-resolve 自動解 8 個、手解 5 個（其中 3 個 stop-resolve 報 LEFT），沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
 
 ## fork 自身問題（`fork-rebase-stop-resolve.mjs` 把被上游改名的目錄下的 fork 新增檔誤刪）× fork `config/scripts/fork-rebase-stop-resolve.mjs`、`config/scripts/fork-canary-apply.sh` — auto-rebase 2026-11-18
 - 類型：fork 自身問題
@@ -140,7 +140,7 @@
 - 處理：stop-resolve 對 `AU`/`UA`/`DU`/`UD` 檔，若 `REBASE_HEAD`（或 `REBASE_HEAD^`）在 git 建議的舊目錄有同名檔（從 `git diff -M -l0 vOLD vNEW` 推出目錄改名），照 fork commit 那側處理：新增就寫入 `git show REBASE_HEAD:<舊路徑>`（保留 mode），刪除就 `git rm` 新路徑，印 `HANDLED … (fork file in renamed dir)`；判斷「fork 沒改」時改用舊目錄的路徑。canary-apply 對 `UA` 檔不要用 FINAL（或只在最後一個碰它的 fork commit 才用）。
 - 守它的測試：`config/scripts/fork-rebase-stop-resolve.test.mjs` 加一例：上游把 `t/helpers/` 改名成 `t/x/`、fork 在 `t/helpers/fork-b.ts` 新增，rebase 停在 file location 衝突，斷言 stop-resolve 把 fork 內容放到 `t/x/fork-b.ts` 而不是 `git rm`。
 - 驗證：未驗證（這次的驅動迴圈是一次性腳本 `.rebase-review/drive.sh`，邏輯同上）
-- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（8 個停點：stop-resolve 解 6 個 HANDLED、2 個 LEFT 手解，沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
+- 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（13 個停點：stop-resolve 自動解 8 個、手解 5 個（其中 3 個 stop-resolve 報 LEFT），沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
 
 ## fork 自身問題（seam 清單缺遠端外掛面板的兩支測試、新 ClipCode 測試的 stub 不分 parent）× fork `config/fork-seam-tests.txt`、`clipcode-copy-action.too-large-for-connection.fork.test.ts` — auto-rebase 2026-11-20
 - 類型：fork 自身問題
