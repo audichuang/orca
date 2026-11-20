@@ -70,8 +70,8 @@ vi.mock('../components/onboarding/telemetry/TelemetryFirstLaunchSurface', () => 
 }))
 vi.mock('./chrome/ZoomOverlay', () => ({ ZoomOverlay: () => null }))
 vi.mock('../components/wsl-move/WslMoveDialog', () => ({ WslMoveDialogHost: () => null }))
-vi.mock('../components/native-chat-recovery/NativeChatResumeRuntimeModal', () => ({
-  NativeChatResumeOnRestartModal: () => null
+vi.mock('../components/native-chat-recovery/toast/NativeChatResumeToastHost', () => ({
+  NativeChatResumeToasts: () => null
 }))
 vi.mock('../components/macos-update-requirement/MacosUpdateRequirementHost', () => ({
   MacosUpdateRequirementHost: () => null
