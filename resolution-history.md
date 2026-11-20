@@ -2,6 +2,37 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-11-21 auto-rebase v1.4.266 → v1.4.267（PR #175）— develop 已移動並發 v1.4.267-fork.1
+
+- RUN=20261120T220838Z（Orca worktree `auto-orca-fork-rebase-run-744-20261120T2208`），NEW，OLD_DEVELOP 9e763a09b3 → develop 7661390f54（舊 develop 備份 `backup/develop-v1.4.266-20261120T220838Z`）。**CLEAN**：0 衝突、0 rerere 重放、0 丟 commit、0 修正 commit。static、seams 經 `orca-remote` 在 ubuntu 跑；上游基準、審查者 C 與 Codex 的 worktree 在本機。
+- 上游 v1.4.266→v1.4.267：5 個 commit，是從 release 分支切的小修版：status bar 拿掉即時密度切換（#44647）、bots onboarding 卡片（#45442）、native chat 淡出迴圈（#45817）、release workflow sync、版本號。
+- rebase：`git rebase --onto v1.4.267 v1.4.266` 646 個 commit 一次完成，0 停點。`--verify`：0 expected、0 other difference。range-diff 646 個 `=`。`fork-follow-upstream-moves`：0 FIX、0 GONE。fork tip 的 9e763a09b3（cherry-pick 上游 main f1f5326e8e #45095）照樣重放：v1.4.267 不含 f1f5326e8e，所以 known-resolutions 的「f1f5326e8e」條還不適用。
+- 上游基準：fork-upstream-red v1.4.267 的 tc、lint、daemon-protocol-crossing 全綠。
+- 本機閘門（ubuntu，199 秒）：`make -k fork-check-static` 綠（lint 48 步），`make fork-check-seams` 綠（97 檔、577 例）。footprint：production 109 檔、1185 行。
+- CI：run 44826911912 第 1 次 attempt（22:11:53Z–22:20:49Z）只有 `fork-check typecheck and quality` 紅，其他 job 全綠。這個 job 在 oxlint 階段被 SIGTERM：exit 143，make 印 `Terminated`，`/usr/bin/time -v` 沒印統計，三個 Post step 都是 `skipped`。步驟形狀跟 v1.4.266 第 1 輪的 job 136201821568 完全相同（那次 log 寫了 `The runner has received a shutdown signal`），這次 log 沒有那行。歸為 runner 關機，`gh run rerun --failed` 重跑一次就綠（job 136608619992，peak RSS 14.08 GB，6 分 37 秒）。advisor 同意重跑。
+- **static job 連三次出問題**：v1.4.265 卡到 30 分上限、v1.4.266 runner 關機、v1.4.267 SIGTERM。綠的 run peak RSS 是 14.0–14.6 GB，託管 runner 只有 16 GB，推測是記憶體貼頂。建議另開一般 PR 改 `.github/workflows/fork-pr.yml`：把 `fork-check-static` 的 typecheck 與 lint 拆成兩個 job（上游 #45095 也是因為這樣，把 typecheck 與 ratchet 拆到各自的 runner）。下一次 static 在 lint 時被 143 或 shutdown 殺掉，就不要再重跑，直接交人。這不是 fork 自身問題條目：rebase 裡改 workflow 拿不出 mutation 證明。
+- 盲審（一輪）：
+  - A、B、C 都 ACCEPTABLE，0 BLOCKING。
+  - Codex（thread 01a1fb09-0eb5-73b0-a745-1d02c9a5f794）第 1 輪 NOT ACCEPTABLE，1 個 BLOCKING：folder Source Control 的 viewport 行為沒有 seam 測試。它的 mutation 讓上游 `section-viewport-presence.ts` 只接受 `'viewport'`，seam 測試仍全綠。
+  - 反駁：`useSectionOnScreen(scrollRoot)` 這條呼叫是 v1.4.267 原樣的上游程式碼，上游也沒改這個 panel。hook 的改動對 `Element | null` 輸入行為不變。fork 唯一的接線 `withFolderPathRepoOwners` 由 `FolderWorkspaceSourceControlPanel.folder-path-repos.fork.test.tsx` 守（C 的 mutation 紅在 `× renders a card for a registered repo under the folder path that has no lineage`）。卡片內容是否掛載由 fork e2e `folder-multi-repo-source-control.spec.ts` 守。Codex 在同一個 thread 撤回 BLOCKING，改判 ACCEPTABLE。
+  - NON-BLOCKING：
+    - `review-bundle.sh` 的 `seam-upstream.diff` 這次是 0 檔。腳本只看上游的 `.ts/.tsx`，import 也只從 fork 新增檔算，所以漏了 `main.css`、`en.json`，以及 fork 改過的 panel import 的 `section-viewport-presence.ts`。審查者都手動補查過。建議另開一般 PR，把 fork 改過的上游檔的 import 與非 TS 重疊檔納入。
+    - `main.css` 的 fork 樣式是 test debt。證據：上游只改第 1163 行，fork hunk 從第 1804 行起。
+    - `AppRootSurfaces.fork.test.tsx` 的兩段死 `vi.mock` 是既有問題，見「PR #164 審查列出的既有缺口」(b)。
+- 用到的筆記條目：
+  - 「上游自己」兩條（4cee4b1ba6…、869f6bbef7…）適用，但不用處理。
+  - canary 2026-11-21 的 470b03e6bb、2d3baba6e2、961ee09ef1、df50c7b293、aefd0a2586、f1f5326e8e 條：上游 commit 都不在 v1.4.267，不適用，留給下一個從 main 切的 release。
+  - 「fork 自身問題」各條：上游沒碰點名的檔，照前例沒做。
+- 發版：v1.4.267-fork.1。release run 44830502885（22:37:39Z–22:51:27Z）綠，tap 1.4.267-fork.1。MacBook 上 Orca Fork 開著，沒有升級（仍是 1.4.266-fork.1）。
+- 耗時（RUN 22:08:38Z 起）：
+  - rebase 到開 PR：22:11:49Z，3 分。
+  - 本機閘門：22:11:56Z 到 22:16:26Z 綠，4.5 分。
+  - CI：第 1 次 attempt 9 分；調查 22:21Z–22:26Z，5 分；重跑 22:26:15Z–22:34:03Z，8 分。
+  - 盲審：22:16:26Z 開始，A 22:18:30Z、B 22:18:46Z、C 22:21:34Z 交卷，Codex 第 1 輪約 22:34Z，反駁後再判 22:36:32Z，共約 20 分。
+  - 發版：14 分。
+  - 全程約 47 分（上一條 1 小時 5 分）。沒有段落超過上一條的 1.5 倍。
+- canary 效益：這次沒用到任何 `— canary` 條目或快取解法檔。v1.4.267 是從 release 分支切的小修版，不含 canary 2026-11-21 試合的上游 main 改動，0 衝突本來就不需要它。canary 也看不到 CI 的 runner 問題。沒有 canary，這次也不會多花工夫。這是連續第 2 次「canary 沒提供用到的東西」，兩次都是 release 分支的小修版；下一個從 main 切的 release 會用到 2026-11-21 那 6 條。
+
 ## 2026-11-20 auto-rebase v1.4.265 → v1.4.266（PR #174）— develop 已移動並發 v1.4.266-fork.1
 
 - RUN=20261120T091811Z（Orca worktree `auto-orca-fork-rebase-run-731-20261120T0917`），NEW，OLD_DEVELOP 6e78d6e40b → develop 9e763a09b3（舊 develop 備份 `backup/develop-v1.4.265-20261120T091811Z`）。MANUAL（0 衝突，3 個額外 commit）。static、seams 經 `orca-remote` 在 ubuntu 跑；上游基準、hunk 掃描、審查者 C／D 與 Codex 的 worktree 在本機。
