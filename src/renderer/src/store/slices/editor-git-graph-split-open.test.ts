@@ -42,6 +42,8 @@ function openCommitFileDiff(
 
 function setup() {
   const store = createEditorTabsStore()
+  // The Git Graph repo choices read the lineage the real store always seeds.
+  store.setState({ worktreeLineageById: {} })
   const graphFileId = store.getState().openGitGraphTab(WS)
   if (!graphFileId) {
     throw new Error('Git Graph tab did not open')
