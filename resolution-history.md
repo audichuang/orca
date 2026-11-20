@@ -10,7 +10,7 @@
 - 上游基準：fork-upstream-red v1.4.267 的 tc、lint、daemon-protocol-crossing 全綠。
 - 本機閘門（ubuntu，199 秒）：`make -k fork-check-static` 綠（lint 48 步），`make fork-check-seams` 綠（97 檔、577 例）。footprint：production 109 檔、1185 行。
 - CI：run 44826911912 第 1 次 attempt（22:11:53Z–22:20:49Z）只有 `fork-check typecheck and quality` 紅，其他 job 全綠。這個 job 在 oxlint 階段被 SIGTERM：exit 143，make 印 `Terminated`，`/usr/bin/time -v` 沒印統計，三個 Post step 都是 `skipped`。步驟形狀跟 v1.4.266 第 1 輪的 job 136201821568 完全相同（那次 log 寫了 `The runner has received a shutdown signal`），這次 log 沒有那行。歸為 runner 關機，`gh run rerun --failed` 重跑一次就綠（job 136608619992，peak RSS 14.08 GB，6 分 37 秒）。advisor 同意重跑。
-- **static job 連三次出問題**：v1.4.265 卡到 30 分上限、v1.4.266 runner 關機、v1.4.267 SIGTERM。綠的 run peak RSS 是 14.0–14.6 GB，託管 runner 只有 16 GB，推測是記憶體貼頂。建議另開一般 PR 改 `.github/workflows/fork-pr.yml`：把 `fork-check-static` 的 typecheck 與 lint 拆成兩個 job（上游 #45095 也是因為這樣，把 typecheck 與 ratchet 拆到各自的 runner）。下一次 static 在 lint 時被 143 或 shutdown 殺掉，就不要再重跑，直接交人。這不是 fork 自身問題條目：rebase 裡改 workflow 拿不出 mutation 證明。
+- **static job 連三次出問題**：v1.4.265 卡到 30 分上限、v1.4.266 runner 關機、v1.4.267 SIGTERM。綠的 run peak RSS 是 14.0–14.6 GB，託管 runner 只有 16 GB，推測是記憶體貼頂。建議另開一般 PR 改 `.github/workflows/fork-pr.yml`：把 `fork-check-static` 的 typecheck 與 lint 拆成兩個 job（上游 #45095 也是因為這樣，把 typecheck 與 ratchet 拆到各自的 runner）。下一次 static 在 lint 時被 143 或 shutdown 殺掉，先照 FORK.md「Who checks what」取證（step 形狀、annotations），再重跑一次；同一個 run 裡重跑後又死，才交人。這不是 fork 自身問題條目：rebase 裡改 workflow 拿不出 mutation 證明。
 - 盲審（一輪）：
   - A、B、C 都 ACCEPTABLE，0 BLOCKING。
   - Codex（thread 01a1fb09-0eb5-73b0-a745-1d02c9a5f794）第 1 輪 NOT ACCEPTABLE，1 個 BLOCKING：folder Source Control 的 viewport 行為沒有 seam 測試。它的 mutation 讓上游 `section-viewport-presence.ts` 只接受 `'viewport'`，seam 測試仍全綠。
