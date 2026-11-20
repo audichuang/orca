@@ -50,6 +50,7 @@
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171，develop 已移動）：上游 v1.4.262→v1.4.263 對條目點名的檔都沒改或只改 import（`git diff -M --stat` 逐檔看過：CombinedDiffViewer、EditorPanelHeader、DiffViewer 各 2 行 import，其餘沒動），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-19 auto-rebase v1.4.263 → v1.4.264（PR #172，develop 已移動）：上游 v1.4.263→v1.4.264 只改 CLI 瀏覽器目標、workspace selector、runtime-feature-interaction 與 workflow，條目點名的檔都沒碰，也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173，develop 已移動）：上游 v1.4.264→v1.4.265 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.264 v1.4.265` 逐檔為空），也不在 resolved-files.txt，照前例沒做；條目留著。
+- 2026-11-20 auto-rebase v1.4.265 → v1.4.266（PR #174，develop 已移動）：上游 v1.4.265→v1.4.266 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.265 v1.4.266` 逐檔為空），也不在 resolved-files.txt，照前例沒做；條目留著。
 
 ## fork 自身問題（上游只改 import 的檔上，活的 fork seam 沒有測試會紅；(2) 已在 v1.4.257 補上）× fork 7b8d63bd35／1577d5756f（原 1387c5f933／53b1e76808、52c72b9b89／4e1c75a4df，folder repo 啟動目錄 `initialCwd`）、b8b8ff19ee（原 308ffd8185、f17169e8a6、e089260726、d123a06c7d，DiffViewer kept-model sync）— auto-rebase 2026-11-11
 - 類型：fork 自身問題
@@ -63,6 +64,7 @@
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171，develop 已移動）：上游 v1.4.262→v1.4.263 對條目點名的檔都沒改或只改 import（`git diff -M --stat` 逐檔看過：CombinedDiffViewer、EditorPanelHeader、DiffViewer 各 2 行 import，其餘沒動），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-19 auto-rebase v1.4.263 → v1.4.264（PR #172，develop 已移動）：上游 v1.4.263→v1.4.264 只改 CLI 瀏覽器目標、workspace selector、runtime-feature-interaction 與 workflow，條目點名的檔都沒碰，也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173，develop 已移動）：上游 v1.4.264→v1.4.265 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.264 v1.4.265` 逐檔為空），也不在 resolved-files.txt，照前例沒做；條目留著。
+- 2026-11-20 auto-rebase v1.4.265 → v1.4.266（PR #174，develop 已移動）：上游 v1.4.265→v1.4.266 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.265 v1.4.266` 逐檔為空），也不在 resolved-files.txt，照前例沒做；條目留著。
 
 ## fork 自身問題（v1.4.257 rebase 審查者 C 找到、舊 develop 就有的測試缺口）× fork 7b8d63bd35（原 1387c5f933、52c72b9b89；folder workspace 多 repo、`readGitCommandFailureMessage`）、Cmd+J Git Graph 接線、fork 測試的字串 vi.mock — auto-rebase 2026-11-12
 - 類型：fork 自身問題
@@ -80,6 +82,7 @@
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171，develop 已移動）：上游 v1.4.262→v1.4.263 對條目點名的檔都沒改或只改 import（`git diff -M --stat` 逐檔看過：CombinedDiffViewer、EditorPanelHeader、DiffViewer 各 2 行 import，其餘沒動），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-19 auto-rebase v1.4.263 → v1.4.264（PR #172，develop 已移動）：上游 v1.4.263→v1.4.264 只改 CLI 瀏覽器目標、workspace selector、runtime-feature-interaction 與 workflow，條目點名的檔都沒碰，也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173，develop 已移動）：上游 v1.4.264→v1.4.265 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.264 v1.4.265` 逐檔為空），也不在 resolved-files.txt，照前例沒做；條目留著。
+- 2026-11-20 auto-rebase v1.4.265 → v1.4.266（PR #174，develop 已移動）：上游 v1.4.265→v1.4.266 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.265 v1.4.266` 逐檔為空），也不在 resolved-files.txt，照前例沒做；條目留著。
 
 ## fork 自身問題（PR #164 審查列出的既有缺口）× fork `comparisons/commit-diff.ts` 的 missingSides、4 個死 vi.mock — auto-rebase 2026-11-15
 - 類型：fork 自身問題
@@ -95,6 +98,7 @@
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171，develop 已移動）：上游 v1.4.262→v1.4.263 對條目點名的檔都沒改或只改 import（`git diff -M --stat` 逐檔看過：CombinedDiffViewer、EditorPanelHeader、DiffViewer 各 2 行 import，其餘沒動），也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-19 auto-rebase v1.4.263 → v1.4.264（PR #172，develop 已移動）：上游 v1.4.263→v1.4.264 只改 CLI 瀏覽器目標、workspace selector、runtime-feature-interaction 與 workflow，條目點名的檔都沒碰，也不在 resolved-files.txt，照前例沒做；條目留著。
 - 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173，develop 已移動）：上游 v1.4.264→v1.4.265 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.264 v1.4.265` 逐檔為空），也不在 resolved-files.txt，照前例沒做；條目留著。
+- 2026-11-20 auto-rebase v1.4.265 → v1.4.266（PR #174，develop 已移動）：上游 v1.4.265→v1.4.266 對條目點名的檔（use-saved-source-control-action-start、use-bulk-actions、use-discard-confirmation、quick-action-context、commit-diff、CombinedDiffViewer、EditorPanelHeader、DiffViewer、commit-area、use-selection、workspace-copy-owner）都沒改（`git diff -M --numstat v1.4.265 v1.4.266` 逐檔為空），也不在 resolved-files.txt，(a) 照前例沒做。(b) 的 `AppRootSurfaces.fork.test.tsx` 兩段死 `vi.mock`（`../components/skills/SkillFreshnessUpdateDialog`、`../components/NativeChatResumeRuntimeModal`）試做過（刪掉後一樣 1 passed），Codex 第 1 輪以 BLOCKING 擋下：本條「守它的測試」寫「待補」，不符合 FORK.md「Unattended merges」fork 自身問題例外要的「條目點名的測試」，刪除又沒有會紅的 mutation；照單全收、從這次 rebase 撤回。下一個做 (b) 的人：走一般 PR 進 develop（那個閘門不要求 mutation 證明），或先把本條「守它的測試」寫成 `src/renderer/src/app-shell/AppRootSurfaces.fork.test.tsx`。條目留著。
 
 ## 869f6bbef71bd3353531ee69e76bbaf48310cee8（#41858 Restore workspace deletion on server hosts；release 上是 12a22b750790826389dcf5a7f5bfcad3b00067be）、c7ebf681736d461cdf383c1c1e96278c350fc7f4（#42275 Revert "fix: explain merged workspace cleanup and keep visible reviews fresh (#41200)"；release 上是 48a88010c2ed0d11df7cd55a9fbdaeecbc2c410b）× 無 fork commit — canary 2026-11-16
 - 類型：上游自己（release 分支與 main 各改一次）；auto-rebase 不用處理
@@ -112,6 +116,7 @@
 - 驗證：未驗證（只看過輸出：`.rebase-review/drive-r1.log` 有 17 行 `EMPTY commit`，其中 16 個 commit 以標題對照都在 `git log v1.4.261..develop`，只有 9e1bd7227e 不在（真的空））
 - 2026-11-18 auto-rebase v1.4.261 → v1.4.262（PR #170，develop 已移動）：試做了「判斷 EMPTY 前先 `git diff --cached --quiet HEAD`」與本條的測試案例，但新案例在 temp repo 約一半機率紅：第一輪 `rebase --continue` 時 git 自己報 `fatal: Unable to create …/MERGE_RR.lock: File exists`（rerere.autoupdate 下，`git add -A` 後立刻 continue；正式 rebase 的 cae487484a 停點也撞過一次，`rebase --continue` 印 `could not commit staged changes`，再跑一次 continue 就過）。測試不穩所以沒收。下一個做這條的人：測試先等 `MERGE_RR.lock` 消失或重試一次 continue，並讓腳本在 continue 失敗且 log 有 `MERGE_RR.lock` 時印出原因（不是 EMPTY）。這次的 rebase 沒有 rerere 重放，沒踩到原本的誤報。
 - 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（13 個停點：stop-resolve 自動解 8 個、手解 5 個（其中 3 個 stop-resolve 報 LEFT），沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
+- 2026-11-20 auto-rebase v1.4.265 → v1.4.266（PR #174）：這次沒踩到（rebase 0 停點、沒有 rerere 重放、沒用 canary-apply；follow-upstream-moves 0 FIX／1 GONE，GONE 是上游刪掉的模組、不是目錄改名）；條目留著。
 
 ## fork 自身問題（`fork-follow-upstream-moves.mjs` 不處理「fork 新增檔所在目錄被上游改名」與字串路徑）× fork `config/scripts/fork-follow-upstream-moves.mjs` — canary 2026-11-18
 - 類型：fork 自身問題
@@ -122,6 +127,7 @@
 - 驗證：未驗證（只有這次手動處理的經驗）
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171）：又踩到：14 個 GONE 全是 fork spec 指向搬走的 fork helper；helper 內對上游 `./file-explorer` 的 import 腳本沒列出（fork 檔本身被搬到新目錄），`round.sh` 的字串路徑也沒列出。這次手改，條目仍待做。
 - 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（13 個停點：stop-resolve 自動解 8 個、手解 5 個（其中 3 個 stop-resolve 報 LEFT），沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
+- 2026-11-20 auto-rebase v1.4.265 → v1.4.266（PR #174）：這次沒踩到（rebase 0 停點、沒有 rerere 重放、沒用 canary-apply；follow-upstream-moves 0 FIX／1 GONE，GONE 是上游刪掉的模組、不是目錄改名）；條目留著。
 
 ## fork 自身問題（`fork-canary-apply.sh` 的 MERGED 會在中間停點留下重複的 fork import）× fork `config/scripts/fork-canary-apply.sh` — auto-rebase 2026-11-18
 - 類型：fork 自身問題
@@ -132,6 +138,7 @@
 - 驗證：未驗證（只有這次的經驗）
 - 2026-11-18 auto-rebase v1.4.262 → v1.4.263（PR #171）：這次 entry-context-menu.tsx 一樣被報 MERGED，改成 `git checkout --conflict=diff3` 自己解；另見「stop-resolve 誤刪 UA 檔」條：對 file location 衝突的 fork 新增檔，canary-apply 報 FINAL（兩側在新路徑都沒有檔，就整份寫入 canary 最終版），中間停點不該用。
 - 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（13 個停點：stop-resolve 自動解 8 個、手解 5 個（其中 3 個 stop-resolve 報 LEFT），沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
+- 2026-11-20 auto-rebase v1.4.265 → v1.4.266（PR #174）：這次沒踩到（rebase 0 停點、沒有 rerere 重放、沒用 canary-apply；follow-upstream-moves 0 FIX／1 GONE，GONE 是上游刪掉的模組、不是目錄改名）；條目留著。
 
 ## fork 自身問題（`fork-rebase-stop-resolve.mjs` 把被上游改名的目錄下的 fork 新增檔誤刪）× fork `config/scripts/fork-rebase-stop-resolve.mjs`、`config/scripts/fork-canary-apply.sh` — auto-rebase 2026-11-18
 - 類型：fork 自身問題
@@ -141,6 +148,7 @@
 - 守它的測試：`config/scripts/fork-rebase-stop-resolve.test.mjs` 加一例：上游把 `t/helpers/` 改名成 `t/x/`、fork 在 `t/helpers/fork-b.ts` 新增，rebase 停在 file location 衝突，斷言 stop-resolve 把 fork 內容放到 `t/x/fork-b.ts` 而不是 `git rm`。
 - 驗證：未驗證（這次的驅動迴圈是一次性腳本 `.rebase-review/drive.sh`，邏輯同上）
 - 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）：這次沒踩到（13 個停點：stop-resolve 自動解 8 個、手解 5 個（其中 3 個 stop-resolve 報 LEFT），沒有 rerere 重放、沒有 file location 衝突、沒用 canary-apply，follow-upstream-moves 0 FIX／0 GONE）；條目留著。
+- 2026-11-20 auto-rebase v1.4.265 → v1.4.266（PR #174）：這次沒踩到（rebase 0 停點、沒有 rerere 重放、沒用 canary-apply；follow-upstream-moves 0 FIX／1 GONE，GONE 是上游刪掉的模組、不是目錄改名）；條目留著。
 
 ## fork 自身問題（seam 清單缺遠端外掛面板的兩支測試、新 ClipCode 測試的 stub 不分 parent）× fork `config/fork-seam-tests.txt`、`clipcode-copy-action.too-large-for-connection.fork.test.ts` — auto-rebase 2026-11-20
 - 類型：fork 自身問題
@@ -149,3 +157,5 @@
 - 處理：(a) 把 `remote-plugin-panel-session.test.ts`、`remote-plugin-panel-route.test.ts`（拿掉 `openRemotePanelSession` 或 `panelAction` 的 `params` 時會紅，現在的 seam 組兩支都綠）加進 config/fork-seam-tests.txt 的「Remote plugin panels」組。(b) `clipcode-copy-action.too-large-for-connection.fork.test.ts` 第一例的 `callRuntimeRpc` stub 對所有非 PARENT_1 的請求都回第二個 parent 的內容，省略 `parentOid` 也綠：改成精確比對兩個 parent、刪除標記用字面值（Codex 實測這樣改後省略 `parentOid` 會紅）。
 - 守它的測試：(a) 上面兩支；(b) 本身
 - 驗證：未驗證（審查者 C、Codex 的 mutation）
+- 2026-11-20 auto-rebase v1.4.265 → v1.4.266（PR #174，develop 已移動）：(b) 已做（8126b2e60d，develop 上現為同 sha；`clipcode-commit-copy.ts:101` `parentOid: null` → `AssertionError: expected [ [ 'gone.ts', …(1) ] ] to deeply equal [ [ 'gone.ts', 'second parent text' ] ]`，舊 stub 同改動 2 passed）。(a) 試做過（seam 清單加兩行），Codex 第 1 輪以 BLOCKING 擋下：清單刪掉其中一行時沒有任何檢查會紅（`fork-test-inventory.mjs check` 仍 exit 0），而 commit 同時改清單與測試，不屬於只改測試檔的例外；照單全收、撤回。上游 v1.4.265→v1.4.266 沒碰外掛面板 seam，所以是既有缺口、不擋。下一個做 (a) 的人：走一般 PR 進 develop。條目只剩 (a)。
+

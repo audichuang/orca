@@ -2,6 +2,30 @@
 
 之前的 auto-rebase、canary 與人工處理各做了什麼，新的在最上面，只增不刪。遇到 `known-resolutions.md` 沒寫到的衝突或問題，先在這裡找同一個檔或同一個 fork commit 的前例照做。auto-rebase 每次 run 都會加一條；用掉的 `known-resolutions.md` 條目整段搬到這裡。只經 `config/scripts/fork-notes.sh` 寫。
 
+## 2026-11-20 auto-rebase v1.4.265 → v1.4.266（PR #174）— develop 已移動並發 v1.4.266-fork.1
+
+- RUN=20261120T091811Z（Orca worktree `auto-orca-fork-rebase-run-731-20261120T0917`），NEW，OLD_DEVELOP 6e78d6e40b → develop 9e763a09b3（舊 develop 備份 `backup/develop-v1.4.265-20261120T091811Z`）。MANUAL（0 衝突，3 個額外 commit）。static、seams 經 `orca-remote` 在 ubuntu 跑；上游基準、hunk 掃描、審查者 C／D 與 Codex 的 worktree 在本機。
+- 上游 v1.4.265→v1.4.266：187 個 commit（同一天的第二個 release：Antigravity 登入、更多 agent 自動安裝、resume-on-restart 改成 toast、側邊欄排序等）。
+- rebase：`git rebase --onto v1.4.266 v1.4.265` 643 個 commit 一次完成，**0 停點**、沒有 rerere 重放；locale 由 merge driver 合併（range-diff 4 個 `!`：74、187、347、348 只差 locale 上下文與 `keybinding-title-copy.ts` 上下文，A 逐 key 比對 11 語系無遺失）。`--verify`：0 expected、0 other difference。range-diff 沒有 `<`。
+- `fork-follow-upstream-moves`：0 FIX、1 GONE：`AppRootSurfaces.fork.test.tsx` mock 的 `native-chat-recovery/NativeChatResumeRuntimeModal` 被上游 #44806（7a98cebb7d）刪掉、換成 `toast/NativeChatResumeToastHost` 的 `NativeChatResumeToasts`。不改時測試紅在 `TypeError: useAppStore.getState is not a function`（toast host 真的渲染）。手改進 e367fbc76f `fix(rebase): follow upstream's module moves`。
+- 額外 commit（最終 3 個）：e367fbc76f（上述）；8126b2e60d `test(fork): pin ClipCode's merge-parent stub to the two named parents`（「seam 清單缺遠端外掛面板…」條 (b)）；9e763a09b3 cherry-pick 上游 main f1f5326e8e（#45095，`-x`）。
+- 上游基準：fork-upstream-red v1.4.266 tc、lint、daemon-protocol-crossing 全綠。但 CI 第 1 輪仍有兩支上游 config/scripts 測試紅：v1.4.266 的 039503ca0a「release: sync workflows with main for v1.4.266 cut」帶進 #45095 的 `pr.yml`，沒帶它改的 `localization-extraction-change-scope.test.mjs`、`pr-aggregate-gate-context.mjs`（FORK.md「Who checks what」寫的 v1.4.243 同型）。在乾淨 v1.4.266 重現 2 failed，cherry-pick f1f5326e8e 後 3 passed（pr.yml 自動合併、無差異）。之後 rebase 到含 f1f5326e8e 的 release 時，這個 commit 會變空被略過（patch 不同、不是靠 patch-id）。
+- 本機閘門：第 1 輪（d57acdc6d1）static、seams 99 檔綠 204 秒；第 3 輪（9e763a09b3）static、seams 97 檔綠 190 秒（第 2 輪 eac53b491c 綠但被重建取代）。
+- CI 第 1 輪 run 44710797341（d57acdc6d1，09:26:54Z–09:45:25Z）：wire、e2e 6 shard、mobile、macOS build 綠；紅 (1) tests 15/18、17/18 兩支上游測試（見上）；(2) `fork-check typecheck and quality` 在 oxlint 中 exit 143，log 寫 `The runner has received a shutdown signal`（GitHub 託管 runner 的基礎設施暫態）。換 head 沒 rerun。CI 第 2 輪 run 44714634342（9e763a09b3，09:54:17Z–10:01:30Z）全綠。
+- 審查：第 1 輪（d57acdc6d1）A、B、C ACCEPTABLE 0 BLOCKING；Codex NOT ACCEPTABLE 2 BLOCKING，都針對這次順手做的筆記清理的**證明形式**：(1) seam 清單加的兩行刪掉時沒有檢查會紅、commit 同時改清單與測試不屬例外；(2) 2919ed3514 刪 AppRootSurfaces 兩段死 `vi.mock`，條目「守它的測試」寫「待補」不符例外。advisor 判斷照條文兩項都成立 → 撤回兩者（從 e367fbc76f 重建，`git diff 6e78d6e40b HEAD -- config/fork-seam-tests.txt` 為空）。第 2 輪（9e763a09b3）新審查者 D 與 Codex（同 thread 01a1f84b）都 ACCEPTABLE。
+- mutation 證明：e367fbc76f 改回舊 mock → `TypeError: useAppStore.getState is not a function`；8126b2e60d `parentOid: null` → `expected [ [ 'gone.ts', …(1) ] ] to deeply equal [ [ 'gone.ts', 'second parent text' ] ]`；`pr-aggregate-gate-context.mjs` :58 改回 → `pr-ready-check-gate.test.mjs > rejects missing, failed, cancelled or incorrectly skipped required results` 紅，:27 crash-only（`ReferenceError: aggregateJobSelectors is not defined`）由 :58 證；`localization-extraction-change-scope.test.mjs` 改回 → `TypeError: Cannot read properties of undefined (reading 'run')`。hunk 掃描：第 1 輪 3 檔都是 fork 新增檔（0 hunk、3 unmatched）；scan-r2 對 `pr-aggregate-gate-context.mjs` 報 2 個 `no-fork-test`（原樣 cherry-pick 的上游檔由上游測試守，D 手動證明）。上游碰到的 seam（C）：`<RootDialogHosts />`、FileExplorer `forkActions`、`forgetClosedGitGraphTabs`、hydration `relativePath`、`sourceControl.openGitGraph`、`updater-setup.ts:154` 拿掉都紅。
+- 測試債：`ui/button.tsx:20`、`ui/dialog.tsx:89`（上游只改 className）；`persisted-ui-state-types.ts`、`host-env/types.ts`、`ui-slice-contract-preferences.ts`、`workspace-layout-command-types.ts`、`workspace-layout-model.ts`（上游只改型別，`git diff -U0 v1.4.265 v1.4.266` 查過）。
+- 既有缺口：`keybinding-title-copy.ts` 的 fork title 文案；`commit-diff.ts:81` missingSides（PR #164 條 (a)）；外掛面板兩支測試不在 seam 清單（撤回後回到既有缺口）。
+- **建議改：FORK.md「Unattended merges」的 fork 自身問題例外句**：補上「seam 清單新增一行」與「刪除解析不到的 `vi.mock`（刪前刪後同樣綠）」各算什麼證明（例如前者以那支測試拿掉接線會紅為證、後者以模組不存在 `git cat-file -e` 失敗加條目點名的測試綠為證）。這次兩項清理只因條文沒寫到而撤回，產品與 CI 都沒問題（規則造成）。
+- 「fork 自身問題」條目：點名的檔上游 v1.4.265→v1.4.266 都沒改，照前例沒做；工具缺口條目這次沒踩到（0 停點）。
+- 發版：release run 44715882490 10:03:08Z–10:19:10Z 成功，tap 1.4.266-fork.1。MacBook SSH 逾時（`connect to host 100.69.9.21 port 22: Operation timed out`），沒升級，請使用者自己 `brew upgrade --cask orca-fork`。
+- 耗時（RUN 09:18:11Z 起）：rebase → 開 PR 09:26:49Z（9 分，含上游基準與 GONE 修正、筆記兩條試做）；本機閘門 09:26Z → 綠 09:30Z（4 分，ubuntu）；CI 第 1 輪 09:26:54Z–09:45:25Z（19 分）；第 2 步修正輪（cherry-pick 與撤回重建，含 static 第 3 輪）09:45Z → 推上 09:54:14Z（9 分）；CI 第 2 輪 09:54:17Z–10:01:30Z（7 分）；盲審 09:30:48Z → A 09:31Z、B 09:33Z、C 09:39Z、Codex r1 09:43:46Z，第 2 輪 09:54Z → Codex r2 09:58:36Z、D 約 10:00Z（審查共約 30 分）；發版 16 分。全程約 1 小時 5 分（上一條 1 小時 32 分）。超過上一條 1.5 倍的段落：rebase 9 分（上一條 6 分，1.5 倍）是同時做了上游基準、GONE 修正與兩條筆記試做；發版 16 分（上一條 12 分）在 1.5 倍內。
+- canary 效益：canary 2026-11-20 對 f1989e7969（已在 v1.4.266 內）的條目這次都不適用（它們的衝突在 v1.4.265 那次已解完），這次 0 衝突本來就不需要它；canary 沒料到的：#44806 讓 AppRootSurfaces fork 測試的 mock 失效（canary 報告的失敗測試有列 `AppRootSurfaces.fork.test.tsx`，但沒寫成條目），以及 release commit 的 workflow sync 帶來的兩支上游測試紅（只出現在 release tag、不在上游 main）。沒有 canary 大概也不多花工夫（約 0–5 分）。連續第 1 次「canary 沒提供用到的東西」。
+
+### 用掉的 known-resolutions 條目（原文）
+
+- 這次沒有整條用完的條目。「seam 清單缺遠端外掛面板…」條的 (b) 已做、(a) 撤回，條目留在 known-resolutions（只剩 (a)）；「PR #164 審查列出的既有缺口」條 (b) 的 AppRootSurfaces 兩段撤回，條目留著。
+
 ## 2026-11-20 auto-rebase v1.4.264 → v1.4.265（PR #173）— develop 已移動並發 v1.4.265-fork.1
 
 - RUN=20261120T001812Z（Orca worktree `auto-orca-fork-rebase-run-722-20261120T0017`），NEW，OLD_DEVELOP 41feb7ed46 → develop 6e78d6e40b（舊 develop 備份 `backup/develop-v1.4.264-20261120T001812Z`）。MANUAL。重型檢查（static、seams、CI 條件重現）經 `orca-remote`／ssh 在 ubuntu 跑；hunk 掃描、審查者 C 與 Codex 的 worktree 在本機。
