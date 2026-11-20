@@ -9,6 +9,7 @@ describe('mobile session snapshots with a Git Graph tab', () => {
     const store = createEditorTabsStore()
     store.setState({
       activeWorktreeId: 'wt-api',
+      worktreeLineageById: {},
       repos: [
         {
           id: 'repo-api',
