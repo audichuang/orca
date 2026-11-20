@@ -15,6 +15,7 @@ import { useAppStore } from '@/store'
 import { isPathInsideOrEqual } from '../../../../../../shared/file-access/cross-platform-path'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 import type { GitStatusEntry } from '../../../../../../shared/git/status/git-status-types'
+import type { GitDiffResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { getWorktreeGitOwnerTarget, requireGitOwnerTarget } from '../sync/worktree-git-owner-target'
 import {
@@ -123,13 +124,25 @@ async function readClipcodeFile(
   return { content: file.content, isBinary: file.isBinary }
 }
 
+// Why: upstream reads a remote diff past the reply budget as a binary placeholder; ClipCode keeps treating it
+// as the failed read it was, so a deleted file tries its next parent and a staged side reads as unreadable.
+async function failIfTooLargeForConnection(read: Promise<GitDiffResult>): Promise<GitDiffResult> {
+  const diff = await read
+  if (diff.kind === 'binary' && diff.tooLargeForConnection) {
+    throw new Error('The diff is too large to send over the connection.')
+  }
+  return diff
+}
+
 export const clipcodeRuntimeReaders: ClipcodeContentReaders = {
-  readDiff: (context, args) => getRuntimeGitDiff(context, args, USER_ACT),
+  readDiff: (context, args) =>
+    failIfTooLargeForConnection(getRuntimeGitDiff(context, args, USER_ACT)),
   readWorkingFile: readClipcodeFile
 }
 
 export const clipcodeCommitReaders: ClipcodeCommitReaders = {
-  readCommitDiff: (context, args) => getRuntimeGitCommitDiff(context, args, USER_ACT)
+  readCommitDiff: (context, args) =>
+    failIfTooLargeForConnection(getRuntimeGitCommitDiff(context, args, USER_ACT))
 }
 
 export function clipcodeExplorerReaders(
