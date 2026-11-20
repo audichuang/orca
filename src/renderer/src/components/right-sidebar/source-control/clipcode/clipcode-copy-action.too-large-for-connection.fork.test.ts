@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import { RuntimeRpcCallError } from '@/runtime/rpc/calls/runtime-rpc-result'
 import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
-import { CLIPCODE_DEFAULTS, DELETED_FILE_MARKER, parseClipboard } from './clipcode-clipboard-format'
+import { CLIPCODE_DEFAULTS, parseClipboard } from './clipcode-clipboard-format'
 import { buildClipcodeCommitCopy } from './clipcode-commit-copy'
 import { clipcodeCommitReaders, clipcodeRuntimeReaders } from './clipcode-copy-action'
 import { buildClipcodeGitCopy } from './clipcode-git-copy'
@@ -25,8 +25,12 @@ const PARENT_2 = '2'.repeat(40)
 describe('ClipCode commit copy on a remote host past the diff reply budget', () => {
   it('reads a merge-deleted file from the next parent when the first is too large to send', async () => {
     vi.mocked(callRuntimeRpc).mockImplementation(async (_target, _method, params) => {
-      if (JSON.stringify(params).includes(PARENT_1)) {
+      const request = JSON.stringify(params)
+      if (request.includes(PARENT_1)) {
         throw tooLarge
+      }
+      if (!request.includes(PARENT_2)) {
+        throw new Error(`unexpected diff request ${request}`)
       }
       return {
         kind: 'text',
@@ -74,7 +78,7 @@ describe('ClipCode commit copy on a remote host past the diff reply budget', () 
 
     const files = parseClipboard(result.payload, CLIPCODE_DEFAULTS.headerFormat)
     expect(files.map((file) => [file.path, file.content.trimEnd()])).toEqual([
-      ['gone.ts', DELETED_FILE_MARKER]
+      ['gone.ts', '// This file has been deleted in this change']
     ])
   })
 })
