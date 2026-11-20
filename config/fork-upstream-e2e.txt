@@ -21,6 +21,7 @@ tests/e2e/source-control/source-control-staged-rename.spec.ts
 # diff and combined diff
 
 # tabs and session restore
+tests/e2e/layout/window-tabs/narrow-tab-group-drag-handle.spec.ts
 
 # file save and explorer
 tests/e2e/golden-journeys/golden-file-open-edit-save.spec.ts
