@@ -6,6 +6,7 @@ import type { GitRuntimeOptions } from '../../command-runner/git-runtime-options
 import { gitRuntimeOptionsKey } from '../git-runtime-options-cache-key'
 import { gitDiffReadDedupe, settledDiffCache } from '../git-read-cache-invalidation'
 import { readWorktreeDiffStamp } from '../input-stamps/worktree-diff-stamp'
+import type { GitDiffReadOptions } from '../git-diff-read-options'
 import { buildDiffResult } from './diff-result'
 import {
   blobConversion,
@@ -30,7 +31,7 @@ import {
   buildSubmodulePointerDiff
 } from '../submodules/submodule-diff'
 
-type FileDiffOptions = GitRuntimeOptions & { oldPath?: string }
+type FileDiffOptions = GitRuntimeOptions & GitDiffReadOptions & { oldPath?: string }
 
 export async function getDiff(
   worktreePath: string,
@@ -46,6 +47,7 @@ export async function getDiff(
     staged,
     compareAgainstHead,
     staged ? (options.oldPath ?? null) : null,
+    options.skipRenderLimit === true,
     ...gitRuntimeOptionsKey(options)
   ])
   // Register before any await so concurrent reads also coalesce settled-cache lookup I/O.
@@ -165,6 +167,8 @@ async function loadDiff(
     staged && options.oldPath !== undefined
       ? blobConversion(worktreePath, options.oldPath, options)
       : conversion
+  let originalMissing = false
+  let modifiedMissing = false
 
   try {
     if (staged) {
@@ -184,6 +188,8 @@ async function loadDiff(
       modifiedContent = rightBlob.content
       modifiedIsBinary = rightBlob.isBinary
       modifiedDeleted = !rightBlob.exists && !rightBlob.failed
+      originalMissing = !leftBlob.exists || leftBlob.failed === true
+      modifiedMissing = !rightBlob.exists || rightBlob.failed === true
       readFailed = leftBlob.failed === true || rightBlob.failed === true
       tooLarge = leftBlob.tooLarge === true || rightBlob.tooLarge === true
     } else {
@@ -203,11 +209,16 @@ async function loadDiff(
       modifiedContent = workingTreeBlob.content
       modifiedIsBinary = workingTreeBlob.isBinary
       modifiedDeleted = !workingTreeBlob.exists
+      originalMissing = !leftBlob.exists || leftBlob.failed === true
+      modifiedMissing = !workingTreeBlob.exists || workingTreeBlob.failed === true
       readFailed = leftBlob.failed === true || workingTreeBlob.failed === true
       tooLarge = leftBlob.tooLarge === true || workingTreeBlob.tooLarge === true
     }
   } catch {
+    // Why: both sides came back unread, so neither empty string is real content.
     readFailed = true
+    originalMissing = true
+    modifiedMissing = true
   }
 
   const result = buildDiffResult(
@@ -216,8 +227,16 @@ async function loadDiff(
     originalIsBinary,
     modifiedIsBinary,
     filePath,
-    tooLarge
+    tooLarge,
+    options
   )
+  // Why: lets callers tell an empty blob from a side that is absent or failed to read (both come back as '').
+  if (originalMissing || modifiedMissing) {
+    result.missingSides = [
+      ...(originalMissing ? ['original' as const] : []),
+      ...(modifiedMissing ? ['modified' as const] : [])
+    ]
+  }
   // Converted output depends on config, keys and tools the stamp doesn't cover.
   const reusable = !readFailed && !(await conversion.hasDriver) && !(await leftConversion.hasDriver)
   // Mark proven deletions so previewers can distinguish them from failed empty reads.

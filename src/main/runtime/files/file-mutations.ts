@@ -18,6 +18,8 @@ import type {
   FileWriteResult
 } from '../../../shared/file-write/file-write-disk-precondition'
 
+import { createReadStream } from 'node:fs'
+
 type RuntimeFileMutationHost = Pick<
   RuntimeFileCommandHost,
   'requireStore' | 'resolveRuntimeFileTarget'
@@ -224,7 +226,7 @@ export class RuntimeFileMutations {
     try {
       return await replaceLocalFileBytesIfUnchanged(
         finalPath,
-        (replacement) => copyFile(tempPath, replacement),
+        (replacement) => replacement.writeFile(createReadStream(tempPath)),
         precondition
       )
     } finally {

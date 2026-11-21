@@ -1,0 +1,358 @@
+# Fork-only PR gate. This fork ships only the macOS arm64 desktop build, so it replaces
+# upstream's pr.yml (disabled on the fork by `make fork-ci-disable-upstream`, not edited,
+# so rebases never conflict here). Merge gate: the "Fork PR checks passed" job, for every PR.
+name: Fork PR Checks
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - converted_to_draft
+
+concurrency:
+  group: fork-pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  UPSTREAM_REPO: https://github.com/stablyai/orca.git
+
+jobs:
+  scope:
+    name: fork PR scope
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      scope: ${{ steps.scope.outputs.scope }}
+      playwright-version: ${{ steps.playwright.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # Why depth 2: the diff is HEAD^1..HEAD of the pull request merge commit.
+          fetch-depth: 2
+          # Keep the full index for README link checks and path diffs, but fetch only scope inputs.
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /config/scripts/fork-pr-scope.mjs
+            /config/scripts/workflow/source-routing/
+            /config/scripts/git/pr-diff-base/
+            /config/scripts/static-analysis/repository-layout/check-readme-local-links.mjs
+            /README.md
+            /package.json
+            /docs/readme/
+          persist-credentials: false
+
+      # Why here: `pnpm lint` checks these links in fork-check-static, which a docs-only PR skips.
+      - name: Check README local links
+        run: node config/scripts/static-analysis/repository-layout/check-readme-local-links.mjs
+
+      - name: Resolve mobile Playwright image version
+        id: playwright
+        run: |
+          node --input-type=module <<'JS'
+          import { appendFileSync, readFileSync } from 'node:fs'
+          const { devDependencies } = JSON.parse(readFileSync('package.json', 'utf8'))
+          const version = devDependencies['playwright-core']
+          if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('playwright-core must pin an exact image version')
+          appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`)
+          JS
+
+      - name: Classify changed paths
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          DIFF_BASE="$(node config/scripts/git/pr-diff-base/git-pull-request-diff-base.mjs "$BASE_SHA")"
+          # Why --no-renames: a code file moved under docs/ must still show its code-side deletion.
+          CHANGED="$(git diff --name-only --no-renames --diff-filter=ACDMRT "$DIFF_BASE" HEAD)"
+          printf '%s\n' "$CHANGED"
+          printf '%s\n' "$CHANGED" | node config/scripts/fork-pr-scope.mjs | tee -a "$GITHUB_OUTPUT"
+
+  # `make fork-check` split in two so its halves run in parallel; together they cover exactly the same checks.
+  fork_check_static:
+    name: fork-check typecheck and quality
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      # Why: FORK_BASE is the newest upstream vX.Y.Z tag, and the fork repo has only -fork tags.
+      - name: Fetch upstream release tags
+        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+
+      # Why: verify:localization-catalogs runs under bun.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: config/.bun-version
+
+      - name: make fork-check-static
+        run: /usr/bin/time -v make fork-check-static
+
+  fork_check_tests:
+    name: fork-check tests (${{ matrix.shard }})
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
+    # 18 full-suite shards balance latency and runner cost; Pro allows 40 concurrent jobs (5 macOS).
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          [
+            1/18,
+            2/18,
+            3/18,
+            4/18,
+            5/18,
+            6/18,
+            7/18,
+            8/18,
+            9/18,
+            10/18,
+            11/18,
+            12/18,
+            13/18,
+            14/18,
+            15/18,
+            16/18,
+            17/18,
+            18/18
+          ]
+    steps:
+      # Why shallow, like upstream: with history, scripts that diff a PR merge ref against HEAD^1 ignore the base a test passes them.
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+          cache-electron-package: 'true'
+
+      # The rest mirrors upstream's unit-tests.yml shard job, which runs the full suite on every PR.
+      - name: Install Electron package binary for tests
+        run: node config/scripts/electron-installation/platform-layout/install-electron-package-binary.mjs
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: config/.bun-version
+
+      # Why: the locked dependency already ships rg for the unit runner architecture.
+      - name: Use bundled ripgrep
+        run: |
+          rg_dir="$GITHUB_WORKSPACE/node_modules/@vscode/ripgrep-universal/bin/linux-arm64"
+          chmod +x "$rg_dir/rg"
+          "$rg_dir/rg" --version
+          echo "$rg_dir" >> "$GITHUB_PATH"
+
+      - name: make fork-check-tests
+        env:
+          ORCA_UNIT_PHASE_REPORT: ci-shards/unit-phases.json
+        run: make fork-check-tests FORK_TESTS=all FORK_TEST_SHARD=${{ matrix.shard }}
+
+      - name: Upload unit timing reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fork-unit-timings-${{ strategy.job-index }}-${{ github.run_attempt }}
+          path: |
+            ci-shards/unit-timings.json
+            ci-shards/unit-assignment.json
+            ci-shards/unit-phases.json
+          retention-days: 7
+
+  cross_version_wire:
+    # Why kept: the fork desktop client talks to hosts running upstream releases.
+    name: fork cross-version wire compatibility
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      - name: Fetch upstream release tags
+        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+
+      # The daemon protocol crossing check runs in fork-check-lint (fork_check_static).
+      - name: make fork-check-wire
+        run: make fork-check-wire
+
+  fork_e2e:
+    # Why on every PR: the unattended upstream rebase PRs merge on this gate, and the fork's UI lives in these specs.
+    name: fork e2e specs (${{ matrix.shard }})
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    # Why six: run 42228204045 has ~1083s of tests; file-level LPT predicts 176-185s per shard plus setup/build, without splitting serial suites.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/6, 2/6, 3/6, 4/6, 5/6, 6/6]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      # Why: FORK_BASE picks which specs the fork changed, and the fork repo has only -fork tags.
+      - name: Fetch upstream release tags
+        run: git fetch --no-tags --filter=blob:none "$UPSTREAM_REPO" 'refs/tags/v*:refs/tags/v*'
+
+      # Same packages and mirror workaround as upstream's e2e.yml shards: Xvfb and a window manager for Electron.
+      - name: Install headless UI tools
+        env:
+          ORCA_E2E_APT_PACKAGES: build-essential fonts-noto-cjk openssh-client python3 ripgrep xvfb zsh openbox x11-utils xdotool
+        run: |
+          read -r -a packages <<< "$ORCA_E2E_APT_PACKAGES"
+          for source in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's|https*://azure\.archive\.ubuntu\.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
+            fi
+          done
+          sudo tee /etc/apt/apt.conf.d/99-orca-e2e >/dev/null <<'APTCONF'
+          Acquire::http::Timeout "15";
+          Acquire::https::Timeout "15";
+          Acquire::Retries "1";
+          APTCONF
+          timeout 120 sudo apt-get update
+          timeout 300 sudo apt-get install -y "${packages[@]}" || timeout 300 sudo apt-get install -y --fix-missing "${packages[@]}"
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: electron
+
+      - name: make fork-check-e2e
+        run: xvfb-run --auto-servernum bash .github/scripts/e2e-with-window-manager.sh env ORCA_E2E_FORWARD_APP_LOGS=1 make fork-check-e2e FORK_E2E_SHARD=${{ matrix.shard }}
+
+      - name: Upload Playwright traces
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fork-e2e-playwright-traces-${{ strategy.job-index }}-${{ github.run_attempt }}
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  fork_mobile_web_app:
+    # Why: fork-check's tests skip the mobile bundling checks without mobile/node_modules; this job installs them.
+    # Upstream's mobile_web_app steps, one after another, in the Makefile so they also run locally.
+    name: fork mobile web app bundle
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.scope.outputs.playwright-version }}-noble
+      volumes:
+        # Keep the hosted runner's Google Chrome and make; the image supplies WebKit and its OS libraries.
+        - /opt/google/chrome:/opt/google/chrome:ro
+        - /usr/bin/make:/usr/local/bin/make:ro
+    defaults:
+      run:
+        shell: bash
+    env:
+      FORK_MOBILE_PLAYWRIGHT_IMAGE: 'true'
+      ORCA_MOBILE_WEB_RENDER_BROWSER: /opt/google/chrome/google-chrome
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: none
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mobile/pnpm-lock.yaml
+
+      - uses: ./.github/actions/install-mobile-dependencies
+
+      - name: make fork-check-mobile
+        run: make fork-check-mobile
+
+  mac_arm64_build:
+    # Same `make fork-dmg` as fork-release.yml, ad-hoc signed: fork builder config, dmg and the app.asar leak check.
+    name: fork macOS arm64 build
+    needs: scope
+    if: needs.scope.outputs.scope == 'full'
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # Why: matches fork-release.yml, whose packaging PTY check timed out under the runner's default login shell.
+      SHELL: /bin/zsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: electron
+
+      # Why: build:desktop bundles the mobile web app, which resolves from mobile/node_modules.
+      - uses: ./.github/actions/install-mobile-dependencies
+
+      # Why not `make build`: it packages with the upstream config, so fork-only packaging broke only at release.
+      - name: make fork-dmg (ad-hoc)
+        run: make fork-dmg FORK_SIGN_IDENTITY=- FORK_VERSION=0.0.0-fork.0
+
+  verify:
+    name: Fork PR checks passed
+    needs:
+      - scope
+      - fork_check_static
+      - fork_check_tests
+      - cross_version_wire
+      - fork_e2e
+      - fork_mobile_web_app
+      - mac_arm64_build
+    if: ${{ !cancelled() && github.event.pull_request.draft != true }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every fork check to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -e '(.scope.result == "success" and .scope.outputs.scope == "docs") as $docs | .scope.result == "success" and (to_entries | all(.value.result == "success" or ($docs and .value.result == "skipped")))' > /dev/null || {
+            echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+            echo "::error::A fork PR check did not succeed."
+            exit 1
+          }

@@ -6,11 +6,12 @@ import type { PendingEditorReveal } from '@/store/slices/editor/types/pending-ed
 import type { GitDiffResult } from '../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../shared/git/status/git-status-types'
 import { CheckRunDetailsPanel } from './check-details/panel/CheckRunDetailsPanel'
-import { CombinedDiffViewer, MarkdownPreview } from './editor-lazy-views'
 import { EditorConflictReviewSurface } from './conflict-review/EditorConflictReviewSurface'
 import { EditorDiffFileSurface } from './panel/EditorDiffFileSurface'
 import { EditorEditFileSurface } from './panel/EditorEditFileSurface'
 import { EditorFileLoadErrorView } from './loading/EditorFileLoadErrorView'
+import { CombinedDiffViewer, MarkdownPreview } from './editor-lazy-views'
+import { forkEditorTabView } from '../git-graph-tab/git-graph-editor-surfaces'
 import { MarkdownPreviewSizeGate } from './markdown-preview/render-tree/MarkdownPreviewSizeGate'
 import {
   HOST_STARTED,
@@ -139,7 +140,12 @@ export function EditorContent({
       activeFile.diffSource === 'combined-commit')
 
   if (activeFile.mode === 'git-graph') {
-    return <GitGraphTab key={activeFile.worktreeId} worktreeId={activeFile.worktreeId} />
+    // Fork: the fork's Git Graph view draws the tab.
+    return (
+      forkEditorTabView(activeFile) ?? (
+        <GitGraphTab key={activeFile.worktreeId} worktreeId={activeFile.worktreeId} />
+      )
+    )
   }
 
   if (activeFile.mode === 'check-details') {

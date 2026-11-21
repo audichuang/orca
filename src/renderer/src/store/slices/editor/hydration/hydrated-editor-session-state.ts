@@ -18,6 +18,8 @@ import {
   shouldHydrateWithOwnedEditorFileId
 } from '../file-ids/hydrated-editor-file-ids'
 
+import { restoredFolderTabRelativePath } from '../tabs/folder-tab-relative-path'
+
 export type HydratedEditorSessionState = Pick<
   AppState,
   | 'openFiles'
@@ -40,7 +42,8 @@ export function buildHydratedEditorSessionState(
   validWorktreeIds: ReadonlySet<string>,
   activeWorktreeId: string | null,
   /** Owners whose editors moved to another host: not stranded here. */
-  movedOwnerKeys: ReadonlySet<string> = new Set()
+  movedOwnerKeys: ReadonlySet<string> = new Set(),
+  folderRoots?: Pick<AppState, 'folderWorkspaces'>
 ): {
   state: HydratedEditorSessionState
   editorFileIdMigrationsByWorktree: Record<string, Map<string, string>>
@@ -110,7 +113,15 @@ export function buildHydratedEditorSessionState(
       openFiles.push({
         id,
         filePath: pf.filePath,
-        relativePath: pf.relativePath,
+        // Fork: sessions saved by the removed folder git-owner layer can hold a repo-relative folder tab path.
+        relativePath: restoredFolderTabRelativePath(folderRoots, {
+          ...pf,
+          worktreeId,
+          gitWorktreeId:
+            'gitWorktreeId' in pf && typeof pf.gitWorktreeId === 'string'
+              ? pf.gitWorktreeId
+              : undefined
+        }),
         worktreeId,
         // Why: re-detect language on hydrate — older sessions stored ids from before extensions like .ipynb were supported.
         language: detectLanguage(pf.relativePath || pf.filePath),

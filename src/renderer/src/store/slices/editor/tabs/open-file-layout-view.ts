@@ -32,7 +32,8 @@ function editorTabViewOf(file: OpenFile): EditorTabView | null {
     case 'conflict-review':
       return { mode: 'conflict-review', ...pickStoredFields(file, ['conflictReview']) }
     case 'git-graph':
-      return { mode: 'git-graph' }
+      // Fork: the fork's Git Graph tab keeps its repo and filter.
+      return { mode: 'git-graph', ...pickStoredFields(file, ['gitGraph']) }
     case 'check-details':
       return { mode: 'check-details', ...pickStoredFields(file, ['checkRunDetails']) }
   }

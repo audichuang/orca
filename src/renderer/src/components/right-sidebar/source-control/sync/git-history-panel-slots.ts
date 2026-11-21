@@ -1,0 +1,33 @@
+// Fork-only: content the fork plugs into upstream's Commits panel.
+import type React from 'react'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
+import type { GitBranchChangeEntry } from '../../../../../../shared/git/diff/git-diff-compare-types'
+import type { SourceControlRowOpenEvent } from '../listing/split-open'
+
+/**
+ * Wraps an expanded commit's file list; `onOpenFile` is the list's own open (a dialog host closes first).
+ * `renderList` paints the rows with the wrapper's multi-selection highlighted.
+ */
+export type GitHistoryCommitFilesMenuRenderer = (
+  entries: readonly GitBranchChangeEntry[],
+  onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void,
+  renderList: (selectedPaths: ReadonlySet<string>) => React.JSX.Element
+) => React.ReactNode
+
+export type GitHistoryPanelSlots = {
+  /** Header icons before help/refresh; stay visible while the section is collapsed. */
+  headerActions?: React.ReactNode
+  /** Branch filter / search row under the header. */
+  toolbar?: React.ReactNode
+  /** Rendered after the last commit (load more). */
+  footer?: React.ReactNode
+  /** Replaces "No commits yet", e.g. when a filter matched nothing. */
+  emptyMessage?: React.ReactNode
+  /** Context menu over the file rows of one commit, or of several merged (newest change per file). */
+  renderCommitFilesMenu?: (
+    items: readonly GitHistoryItem[],
+    ...args: Parameters<GitHistoryCommitFilesMenuRenderer>
+  ) => React.ReactNode
+  /** Commit context menu entry that opens the commit in the Git Graph tab. */
+  onShowCommitInGraph?: (item: GitHistoryItem) => void
+}

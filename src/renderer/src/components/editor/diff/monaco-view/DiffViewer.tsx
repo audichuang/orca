@@ -27,7 +27,7 @@ import { getLargeDiffRenderLimit } from '../../../../../../shared/source-control
 import { useDiffViewerLargeDiffLifecycle } from '../large-files/useDiffViewerLargeDiffLifecycle'
 import { useDiffViewerFirstChangeAutoScroll } from './useDiffViewerFirstChangeAutoScroll'
 import { getDiffViewerLargeDiffSaveAction } from '../large-files/diff-viewer-large-diff-save-action'
-import type { DiffViewerProps } from './diff-viewer-props'
+import { type DiffViewerProps, useKeptModelSync } from './diff-viewer-props'
 import { buildDiffEditorWhitespaceOptions } from './diff-editor-whitespace-options'
 import {
   buildDiffEditorWordWrapOptions,
@@ -69,7 +69,8 @@ export default function DiffViewer({
   onContentChange,
   onSave,
   largeDiffRenderLimit,
-  largeDiffSaveContentAvailable
+  largeDiffSaveContentAvailable,
+  syncKeptModifiedModelOnMount
 }: DiffViewerProps): React.JSX.Element {
   const t = useTranslate()
   const diffWordWrap = useAppStore((s) => s.settings?.diffWordWrap)
@@ -324,6 +325,7 @@ export default function DiffViewer({
     },
     [editable, setupCopy, modelKey, filePath, sideBySide, registerDiffEditor, unregisterDiffEditor]
   )
+  const syncedMount = useKeptModelSync(handleMount, modifiedContent, syncKeptModifiedModelOnMount)
 
   // Snapshot on layout cleanup before unmount, avoiding scroll-time writes.
   useLayoutEffect(() => {
@@ -421,7 +423,7 @@ export default function DiffViewer({
             original={originalContent}
             modified={modifiedContent}
             theme={monacoTheme}
-            onMount={handleMount}
+            onMount={syncedMount}
             // Tab-owned models preserve modified undo across Changes-mode HEAD rotations.
             originalModelPath={currentDiffModelPaths.originalModelPath}
             modifiedModelPath={currentDiffModelPaths.modifiedModelPath}

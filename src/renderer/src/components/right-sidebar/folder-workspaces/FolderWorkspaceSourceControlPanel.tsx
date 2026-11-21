@@ -4,7 +4,10 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { useAppStore } from '@/store/index'
 import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
-import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 import {
   getAttachedWorktreesForFolderWorkspace,
   attachedWorktreeOwnerKey
@@ -33,6 +36,7 @@ import {
   FOLDER_WORKTREE_CARD_CLASS,
   FolderWorktreeSectionHeader
 } from './folder-worktree-section-header'
+import { withFolderPathRepoOwners } from '../source-control/folder/folder-path-repo-owners'
 const EMPTY_ENTRIES: readonly unknown[] = []
 
 type SectionProps = {
@@ -191,6 +195,7 @@ export default function FolderWorkspaceSourceControlPanel() {
   const activeWorktreeId = useAppStore((state) => state.activeWorktreeId)
   const executionHostId = useAppStore((state) => state.activeWorkspaceExecutionHostId)
   const folderWorkspaces = useAppStore(selectFolderWorkspaces)
+  const worktreesByRepo = useAppStore(selectWorktreesByRepo)
   const childrenByParentIdentity = useAppStoreWithHostStatuses(
     selectSidebarChildrenByParentIdentity
   )
@@ -220,13 +225,13 @@ export default function FolderWorkspaceSourceControlPanel() {
   )
   const owners = useMemo(
     () =>
-      resolution.owners.flatMap((owner) => {
+      withFolderPathRepoOwners(resolution, worktreesByRepo, repos).flatMap((owner) => {
         const repo = resolveReviewRepository(repos, owner.worktree)
         return repo && resolution.folderWorkspace
           ? [{ ...owner, repo, placementWorkspaceId: `folder:${resolution.folderWorkspace.id}` }]
           : []
       }),
-    [resolution, repos]
+    [resolution, repos, worktreesByRepo]
   )
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null)
   const [refreshers] = useState(() => new Set<() => void>())

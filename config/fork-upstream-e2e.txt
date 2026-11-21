@@ -1,0 +1,30 @@
+# Upstream e2e specs that fork-check-e2e runs next to the fork's own (CI shards them in fork-pr.yml's fork_e2e job).
+# They guard upstream UI flows the fork edits; none had run on fork code before. Single worker, about 14 min in total.
+# One repo-relative path per line; fork-check-lint (config/scripts/fork-test-inventory.mjs check) fails on a missing,
+# duplicate or fork-added entry, or one tagged @headful. When upstream deletes a listed spec, delete its line here.
+# Never edit an upstream spec to make one pass. A spec that fails on a deliberate fork behavior leaves the list, with a
+# comment naming that behavior.
+#
+# Left out on purpose (silent test.skip or env-dependent, which would pass as a false green):
+#   layout-compat-old-desktop-on-new-server, layout-compat-new-desktop-on-old-server: skip without a packaged executable
+#   golden-tab-bar-agent-launch: runs on win32 only
+#   workspace-layout-oracle-headless: fails on CI without out/orcad, which fork_e2e does not build
+#   persisted-session-production-upgrade: two cases skip silently without PACKAGED_OLD_EXECUTABLE_ENV
+#   update-*: the updater is guarded by the seam list and the release checks
+
+# right-sidebar source control
+tests/e2e/golden-journeys/golden-source-control-commit.spec.ts
+tests/e2e/golden-journeys/golden-source-control-open-diff.spec.ts
+tests/e2e/source-control/source-control-discard-confirmation.spec.ts
+tests/e2e/source-control/source-control-staged-rename.spec.ts
+
+# diff and combined diff
+
+# tabs and session restore
+tests/e2e/layout/window-tabs/narrow-tab-group-drag-handle.spec.ts
+
+# file save and explorer
+tests/e2e/golden-journeys/golden-file-open-edit-save.spec.ts
+
+# folder workspaces
+tests/e2e/workspaces/sidebar/sidebar-folder-keyboard-navigation.spec.ts

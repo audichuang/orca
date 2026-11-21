@@ -13992,7 +13992,8 @@
             "clipboardStagingUnavailable": "无法复制文件，因为 Orca 的临时存储不可用",
             "revealInFinder": "在 Finder 中显示",
             "openContainingFolder": "打开所在文件夹",
-            "revealInFileExplorer": "在文件资源管理器中显示"
+            "revealInFileExplorer": "在文件资源管理器中显示",
+            "duplicateAsResult": "复制为 _result.txt"
           },
           "FileExplorerToolbar": {
             "d238264654": "显示 Git 忽略的文件",
@@ -14015,7 +14016,8 @@
             "d836037d02": "提交",
             "8232c8b2f2": "打开提交 {{value0}}：{{value1}}",
             "e5e81e59a6": "调整提交记录高度",
-            "6d1e0a7c3b": "无法加载提交文件"
+            "6d1e0a7c3b": "无法加载提交文件",
+            "781a8bcf7b": "正在加载图表..."
           },
           "HostedReviewActions": {
             "9845a71e17": "更多操作",
@@ -14378,7 +14380,9 @@
             "keepFile": "保留文件",
             "keepDeletion": "保留删除",
             "refreshAll": "全部刷新",
-            "statusReadFailed": "Git 无法读取此工作区，显示的更改可能不是最新的"
+            "statusReadFailed": "Git 无法读取此工作区，显示的更改可能不是最新的",
+            "commitHashes": "提交哈希",
+            "commitMessages": "提交信息"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "无法启动选定的代理",
@@ -15017,7 +15021,142 @@
                   "0904be2505": "清除消息以重新生成",
                   "1ea9ba37aa": "在设置 -> Git -> 源代码管理 AI 中选择代理"
                 },
-                "completeMergeFailed": "无法完成合并"
+                "completeMergeFailed": "无法完成合并",
+                "bulk": {
+                  "action": {
+                    "bar": {
+                      "8a434c829f": "复制完整源码",
+                      "4139bc5679": "清除选择"
+                    }
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "title": "添加此文件夹中的仓库",
+                        "description": "{{value0}} 下的 Git 仓库，包括嵌套在其他仓库中的仓库。",
+                        "scanning": "正在扫描仓库...",
+                        "failed": "无法扫描此文件夹。",
+                        "none": "此文件夹中的所有仓库都已添加。",
+                        "truncated": "扫描提前结束，可能遗漏了部分仓库。",
+                        "cancel": "取消",
+                        "add": "添加（{{value0}}）"
+                      }
+                    }
+                  }
+                }
+              },
+              "clipcode": {
+                "clipcode": {
+                  "copy": {
+                    "action": {
+                      "e6cdc3a753": "超过 {{value0}} 个 token。",
+                      "21758e255e": "没有可复制的 Git 变更。",
+                      "7828c565da": "（{{value0}} 个因超出大小限制被跳过）",
+                      "65b422bbd1": "已复制 {{value0}} 个 Git 文件",
+                      "7c6daaf4fa": "复制完整源码失败",
+                      "filesCopied": "已复制 {{value0}} 个文件",
+                      "noFiles": "没有可复制的文件。",
+                      "tokenCount": "~{{value0}} 个 token",
+                      "payloadDetails": "{{lines}} 行 · {{chars}} 个字符 · {{words}} 个词",
+                      "nonTextCopied": "以 Base64 复制的非文本文件：{{value0}}。",
+                      "nonTextSkipped": "（{{value0}} 个已跳过：非文本文件）",
+                      "onlyNonTextSkipped": "没有可复制的内容：已跳过 {{value0}} 个非文本文件。",
+                      "unreadableLine": "无法读取：{{value0}}",
+                      "symlinkedFolderLine": "符号链接文件夹：{{value0}}",
+                      "unsafeNameLine": "名称无法跨平台保留：{{value0}}",
+                      "nothingToCopy": "没有可复制的内容"
+                    }
+                  },
+                  "restore": {
+                    "preview": {
+                      "dialog": {
+                        "2c06a4e179": "粘贴并还原",
+                        "87832cd30d": "剪贴板中的文件将写入此文件夹。",
+                        "813199296f": "调整路径（{{value0}}）",
+                        "9a421f14d8": "创建",
+                        "d469ff3b81": "覆盖",
+                        "9cf3526c1f": "删除",
+                        "0d87b3b39d": "跳过",
+                        "677bf0ade9": "取消",
+                        "c0b1b53e49": "还原",
+                        "9bd78385ce": "路径不安全",
+                        "85d6d805ca": "位于文件夹之外",
+                        "67e63b0749": "已不存在",
+                        "becf17b643": "是文件夹",
+                        "4acb11ed21": "复制时已跳过内容",
+                        "ef509f9991": ".git 受保护",
+                        "1f409f3dd6": "路径经过符号链接",
+                        "parentIsFile": "上层路径是文件",
+                        "targetUnreadable": "无法检查现有文件",
+                        "nonUtf8Target": "现有文件不是 UTF-8，不覆盖",
+                        "corruptNonText": "损坏的非文本文件",
+                        "nonTextSize": "非文本文件 · {{value0}}",
+                        "corruptBadge": "已损坏",
+                        "unchanged": "未变更",
+                        "overwriteAll_one": "覆盖 {{count}} 个已有文件",
+                        "overwriteAll_other": "覆盖 {{count}} 个已有文件",
+                        "targetCollision": "另一个条目写入同一个文件"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "复制非文本文件？",
+                          "description": "“包含”会以 Base64 复制它们；“排除”则不复制。",
+                          "found": "非文本文件：{{value0}} 个，共 {{value1}}",
+                          "estimate": "包含它们时的剪贴板大小：约 {{value0}}",
+                          "overLimit": "包含它们时的剪贴板大小：超过 {{value0}}",
+                          "overLimitReason": "对剪贴板来说太大，因此无法使用“包含”。",
+                          "more": "以及另外 {{value0}} 个",
+                          "notRead": "超过 {{value0}} 未读取（以大小占位行复制）：{{value1}}",
+                          "include": "包含",
+                          "exclude": "排除",
+                          "cancel": "取消"
+                        }
+                      }
+                    }
+                  }
+                },
+                "use": {
+                  "clipcode": {
+                    "restore": {
+                      "b124e9c64e": "剪贴板为空或不含文本。",
+                      "1847420a23": "剪贴板中未找到 Snipcode 文件头。",
+                      "af5c90f593": "粘贴并还原失败",
+                      "ae1ec38ef1": "已创建 {{value0}}，已覆盖 {{value1}}，已删除 {{value2}}，已跳过 {{value3}}。",
+                      "19a6f378aa": "…另外还有 {{value0}} 项",
+                      "c9af35dc2d": "失败 {{value0}} 项。",
+                      "folderNotWritable": "文件夹不可写入",
+                      "parentIsFile": "上层文件夹的位置是一个文件",
+                      "targetIsFolder": "目标是文件夹",
+                      "writeFailed": "无法写入文件",
+                      "unchanged": "未变更：{{value0}}。",
+                      "nonTextUpdateRequired": "需要更新此主机上的 Orca server 才能还原非文本文件"
+                    }
+                  }
+                }
+              },
+              "listing": {
+                "entry": {
+                  "context": {
+                    "menu": {
+                      "9137d88b9f": "复制完整源码",
+                      "ce8235a6a4": "在侧边打开",
+                      "showFileHistory": "显示文件历史记录"
+                    }
+                  }
+                },
+                "uncommitted": {
+                  "sections": {
+                    "1a59d5a05b": "复制完整源码"
+                  }
+                }
               }
             }
           },
@@ -15245,7 +15384,12 @@
             "7b1c4e9a02": "在浏览器中打开提交",
             "8c2d5fab13": "复制提交哈希",
             "9d3e60bc24": "复制提交信息",
-            "ae4f71cd35": "解释更改"
+            "ae4f71cd35": "解释更改",
+            "copyFullSource": "复制完整源码",
+            "copyFullSourceMany": "复制完整源码（{{value0}} 个提交）",
+            "copyHashMany": "复制提交哈希（{{value0}} 个提交）",
+            "copyMessageMany": "复制提交信息（{{value0}} 个提交）",
+            "showInGraph": "在 Git Graph 中显示"
           },
           "pull": {
             "policy": {
@@ -15432,6 +15576,96 @@
             "createInProgress": "正在创建 PR...",
             "workspaceHostUnresolved": "无法解析工作区主机。请刷新工作区后重试",
             "branchDiscoveryFailed": "分支发现失败"
+          },
+          "GitHistoryGraph": {
+            "allBranches": "所有分支",
+            "branchCount": "{{value0}} 个分支",
+            "currentBranch": "当前分支",
+            "branchFilter": "分支筛选",
+            "searchBranches": "搜索分支...",
+            "scope": "显示",
+            "sources": "来源",
+            "localBranches": "本地分支",
+            "loadingBranches": "正在加载分支...",
+            "hostTooOld": "此仓库所在主机的 Orca 版本较旧，只能显示当前分支。",
+            "branchesFailed": "无法加载分支",
+            "searchCommits": "搜索提交（author: path:）",
+            "searchCommitsLabel": "搜索提交",
+            "loadMore": "加载更多提交",
+            "noMatchingCommits": "没有符合此筛选条件的提交",
+            "clearAllFilters": "清除筛选",
+            "local": "本地",
+            "showAllBranches": "显示所有分支",
+            "userFilter": "用户",
+            "pathsFilter": "路径",
+            "clearUserFilter": "清除用户筛选",
+            "searchUsers": "搜索用户...",
+            "noUsers": "已加载的提交中没有用户。",
+            "clearPathFilter": "清除路径筛选",
+            "typePath": "相对于仓库的文件或文件夹路径",
+            "typePathHint": "输入路径，然后按 Enter。",
+            "filterByPath": "按 {{value0}} 筛选",
+            "recentPaths": "最近",
+            "clearFilters": "清除",
+            "searchCommitMessages": "搜索提交信息",
+            "tags": "标签"
+          },
+          "GitGraphFullView": {
+            "open": "打开 Git Graph",
+            "description": "当前仓库的提交图。",
+            "message": "提交信息",
+            "author": "作者",
+            "date": "日期",
+            "commit": "提交",
+            "selectCommit": "选择一个提交以查看详情和变更的文件。",
+            "resizeDetails": "调整提交详情宽度",
+            "copyFullSource": "复制所有变更文件的完整源码",
+            "filesInCommits": "变更文件 ({{files}}) · {{commits}} 个提交",
+            "filesChanged": "变更文件 ({{files}})",
+            "toggleBranches": "切换分支面板",
+            "laneContinuesBelow": "往下 {{count}} 列接到 {{sha}} {{subject}}。點一下跳過去。",
+            "laneComesFromAbove": "從上方 {{count}} 列的 {{sha}} {{subject}} 接過來。點一下跳過去。",
+            "laneContinuesPastLoaded": "接到尚未載入的更早 commit。載入更多 commit 後即可跳過去。",
+            "openAllChanges": "打开所有更改",
+            "hideDetails": "隐藏详情",
+            "enterKey": "Enter",
+            "showDetails": "显示详情",
+            "detailsStrip": "详情",
+            "listOptions": "列表选项",
+            "columns": "栏",
+            "twoLineRows": "双行显示",
+            "resetList": "恢复默认",
+            "columnTooNarrow": "列表太窄",
+            "laneContinuesPastLoadedJump": "接到尚未加载的提交 {{sha}}。点击即可加载并跳过去。",
+            "loadingMore": "正在加载更多提交...",
+            "loadCapReached": "已显示前 {{count}} 个提交，这是图表加载的上限。请用 Branch、User 或 Paths 缩小范围。"
+          },
+          "GitGraphBranchSidebar": {
+            "local": "本地",
+            "tags": "标签",
+            "label": "分支与标签",
+            "empty": "尚未加载分支。",
+            "showRef": "不在当前列表中 — 点击以只显示此分支"
+          },
+          "GitGraphCommitInfo": {
+            "author": "作者",
+            "date": "日期",
+            "copySha": "复制提交 SHA",
+            "parents": "父提交",
+            "refs": "引用",
+            "containedIn": "所在分支",
+            "moreBranches": "还有 {{count}} 个",
+            "containedInHint": "只计算末端提交在已加载列表中的分支;列表外的分支不计入。",
+            "children": "子提交",
+            "childrenHint": "已載入的清單中,以這個 commit 為父提交的 commit。"
+          },
+          "RemotePluginPanel": {
+            "declarative": "此面板只能显示这台电脑，无法显示 {{host}} 的数据。",
+            "loading": "正在连接到 {{host}} 上的 {{plugin}}...",
+            "unreachable": "无法连接到 {{host}}。",
+            "missing": "{{host}} 上没有安装或没有启用 {{plugin}}。请在那台安装并启用，才能在这里看到它的数据。",
+            "versionMismatch": "{{plugin}} 在 {{host}} 上是 {{remote}}，这台是 {{local}}。请在两台安装相同版本。",
+            "sessionUnavailable": "那台主机上没有可用的这个插件。"
           }
         }
       },
@@ -17407,6 +17641,11 @@
           "open": "用默认应用打开",
           "downloadOpen": "下载并打开",
           "openFailed": "这台计算机上没有能打开此文件的应用"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}} 个文件",
+          "pressAgainNext": "再按一次前往下一个文件",
+          "pressAgainPrevious": "再按一次前往上一个文件"
         }
       },
       "diff": {
@@ -17731,7 +17970,10 @@
                 "newQuickCommand": "新的快捷命令",
                 "browserRight": "右侧浏览器",
                 "splitBrowser": "拆分浏览器",
-                "browserSplit": "浏览器分屏"
+                "browserSplit": "浏览器分屏",
+                "openGitGraph": "打开 git graph",
+                "gitLog": "git 日志",
+                "commitHistory": "提交历史"
               },
               "newBrowserTabSplitRight": "在右侧分屏中新建浏览器标签页",
               "newBrowserTabSplitRightDescription": "在右侧新建分屏并打开浏览器标签页"
@@ -19429,7 +19671,8 @@
           "workspaceDisconnected": "无法运行“{{action}}” — 工作区已断开连接",
           "noTabGroup": "无法运行“{{action}}” — 没有可用的标签页组",
           "noMovableChat": "无法运行“{{action}}” — 没有活动且可移动的聊天",
-          "clientUnsupported": "无法运行“{{action}}” — 此客户端和运行时不支持该操作"
+          "clientUnsupported": "无法运行“{{action}}” — 此客户端和运行时不支持该操作",
+          "noGitRepo": "无法运行“{{action}}” — 没有可用的 Git 仓库。"
         }
       },
       "plugins": {
@@ -19544,6 +19787,18 @@
         "notAttachedShort": "未重新连接。",
         "dispatchRejectedShort": "智能体拒绝继续。",
         "unsupportedShort": "Orca 无法恢复此聊天。"
+      },
+      "gitGraphTab": {
+        "noRepo": "此工作区没有可用的 Git 仓库。",
+        "repoSwitcher": "仓库",
+        "selectRepo": "选择仓库",
+        "searchRepos": "搜索仓库...",
+        "noRepos": "未找到仓库。",
+        "addRepos": "添加仓库...",
+        "addReposMissing": "{{value0}} 个未添加",
+        "addReposButton": "添加此文件夹中的仓库",
+        "openInSourceControl": "在源代码管理中打开",
+        "revealNotLoaded": "该提交不在已加载的历史记录中。"
       }
     },
     "i18n": {
@@ -24793,7 +25048,8 @@
       "1524825c2c": "切换工作区看板",
       "d286d1ab85": "清除窗格标题",
       "tabNewBrowserSplitRight": "在右侧拆分窗格中新建浏览器标签页",
-      "5468defe61": "折叠/展开所有项目"
+      "5468defe61": "折叠/展开所有项目",
+      "sourceControlOpenGitGraph": "打开 Git Graph"
     },
     "group": {
       "global": "全局",

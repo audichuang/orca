@@ -1,0 +1,150 @@
+# Fork seam contract tests, grouped by seam: each turns red when an upstream change silently drops a fork wiring.
+# The groups are the seam map for the auto-rebase reviewer's mutation pass; `make fork-check-seams` runs them.
+# One repo-relative path per line; fork-check-lint (config/scripts/fork-test-inventory.mjs check) fails on a missing or
+# duplicate entry. A new seam test joins its group.
+
+# skipRenderLimit: IPC, web preload, runtime client, RPC + zod, provider
+src/main/git/source-control/file-diff.skip-render-limit-real-git.test.ts
+src/main/ipc/filesystem/filesystem-git-diff-skip-render-limit-ipc.test.ts
+src/main/runtime/rpc/methods/source-control/git/git-diff-skip-render-limit.test.ts
+src/main/runtime/runtime-git-diff-skip-render-limit-chain.test.ts
+src/renderer/src/runtime/runtime-git-diff-skip-render-limit-client.test.ts
+src/renderer/src/web/preload-api/web-git-diff-skip-render-limit.test.ts
+
+# git.history graph option: IPC, web preload, RPC, runtime chain, renderer client, dispatch
+src/main/git/history-graph-dispatch.real-git.test.ts
+src/main/ipc/filesystem/filesystem-git-history-graph-ipc.test.ts
+src/main/runtime/rpc/methods/source-control/git/git-history-graph-rpc.test.ts
+src/main/runtime/runtime-git-history-graph-chain.test.ts
+src/renderer/src/web/preload-api/web-git-history-graph.test.ts
+src/renderer/src/runtime/runtime-git-history-graph-client.test.ts
+
+# missingSides and blob absence feeding ClipCode copy
+src/main/git/source-control/diffs/blob-absence-real-git.test.ts
+src/main/git/source-control/blob-absence-real-git.fork.test.ts
+src/main/git/source-control/file-diff.read-failure.test.ts
+src/main/git/source-control/commit-diff-missing-sides.real-git.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-commit-copy.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-copy-action.too-large-for-connection.fork.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-explorer-copy.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-git-copy.test.ts
+
+# WSL wake (E9) on fork user acts: Git Graph Refresh, ClipCode copy reads
+src/renderer/src/components/git-graph-tab/GitGraphTabView.component.test.tsx
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-copy-action.wsl-wake.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-copy-action.fork.test.ts
+
+# ClipCode clipboard and preview contracts
+src/main/ipc/filesystem/filesystem-svg-preview-clipcode-contract.test.ts
+src/renderer/src/components/right-sidebar/file-explorer-clipcode-copy.wiring.test.tsx
+src/renderer/src/components/right-sidebar/file-explorer-clipcode-paste.wiring.test.tsx
+src/renderer/src/components/right-sidebar/source-control/panel/panel-clipcode-actions.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/commit/bulk-action-bar.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-format.contract.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-clipboard-restore.contract.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-target-state.ipc-edge.test.ts
+src/renderer/src/components/right-sidebar/source-control/clipcode/clipcode-restore-preview-dialog.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-copy-wiring.test.tsx
+src/renderer/src/components/right-sidebar/file-explorer-row-context-menu.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/listing/section-action-buttons.fork.test.tsx
+
+# Explorer: Duplicate as _result.txt menu item, naming, exclusive copy, open
+src/renderer/src/components/right-sidebar/file-explorer-duplicate-as-result.fork.test.tsx
+
+# Commits dock slots and commit file opens from the Commits panel
+src/renderer/src/components/right-sidebar/source-control/panel/panel-content.fork.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/use-git-history-commit-actions.fork.test.tsx
+
+# Source-control row split-open modifiers and Open to the Side
+src/renderer/src/components/right-sidebar/source-control/listing/split-open.test.ts
+
+# git-graph tab type: hydration, editor tabs, layout, runtime graph sync
+src/renderer/src/runtime/sync-runtime-graph-git-graph-tab.test.ts
+src/renderer/src/store/slices/editor-git-graph-tabs.test.ts
+src/renderer/src/store/slices/editor-git-graph-split-open.test.ts
+src/renderer/src/store/slices/editor/tabs/open-file-layout-view.fork.test.ts
+src/renderer/src/store/slices/tabs-hydration-git-graph.test.ts
+src/renderer/src/components/tab-group/TabGroupPanel.git-graph-button.test.tsx
+src/renderer/src/components/cmd-j/git-graph-quick-action.test.ts
+src/renderer/src/components/git-graph-tab/git-graph-tab-model.folder-attached.fork.test.ts
+src/renderer/src/components/git-graph-tab/git-graph-removal-retired.fork.test.ts
+src/renderer/src/lib/source-control/graph/git-graph-tab.fork.test.ts
+src/renderer/src/components/editor/EditorContent.fork.test.tsx
+src/shared/workspace-layout/old-client/old-client-session-tabs-projection.fork.test.ts
+
+# Commit diff change arrows: the fork's file list keys on upstream's commit diff tab id
+src/renderer/src/components/right-sidebar/source-control/sync/commit-file-sequence.store-tab-id.test.ts
+src/renderer/src/components/editor/EditorPanel.fork.test.tsx
+
+# Upstream component slots and folder routing
+src/renderer/src/components/right-sidebar/source-control/folder/folder-path-repo-owners.test.ts
+src/renderer/src/components/right-sidebar/source-control/folder/folder-git-worktrees.fork.test.ts
+src/renderer/src/components/right-sidebar/FolderWorkspaceSourceControlPanel.folder-path-repos.fork.test.tsx
+src/main/project-groups/nested-repo-discovery.fork.test.ts
+# (the Commits dock slots and toast clearance: panel-content.fork.test.tsx, listed under Commits dock slots)
+src/renderer/src/components/right-sidebar/source-control/sync/git-graph-full-view.component.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-graph.component.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files-menu.test.tsx
+src/renderer/src/components/right-sidebar/source-control/sync/git-history-commit-files.test.tsx
+src/renderer/src/components/right-sidebar/source-control-entry-context-menu.fork.test.tsx
+src/renderer/src/components/editor/EditorPanelHeader.fork.test.tsx
+src/renderer/src/components/editor/EditorEditFileSurface.fork.test.tsx
+src/renderer/src/components/editor/ChangesModeView.fork.test.tsx
+src/renderer/src/components/editor/diff/monaco-view/DiffViewer.kept-model-sync.fork.test.tsx
+
+# Editor save event
+src/renderer/src/components/editor/editor-file-saved-event.contract.test.ts
+
+# Keybinding
+src/renderer/src/app-shell/git-graph-command-handler.test.ts
+src/renderer/src/app-shell/git-graph-shortcut.keybindings.test.ts
+
+# Updater: fork distribution
+src/main/updater/updater.fork-distribution.test.ts
+src/main/updater/fork-distribution.test.ts
+src/main/updater/updater-nudge.fork.test.ts
+
+# Toast clearance
+src/renderer/src/lib/toast-bottom-clearance.test.tsx
+src/renderer/src/components/ui/sonner.fork.test.tsx
+
+# App bundle replaced while running
+src/main/app-bundle-replacement.test.ts
+src/main/ipc/app-bundle-replacement-ipc.fork.test.ts
+src/preload/api/app-bridge.fork.test.ts
+src/renderer/src/app-shell/startup/lazy-chunk-recovery-reload.fork.test.ts
+src/main/asar-transparent-stat.electron.test.ts
+
+# Agent launch cwd in folder repos: CLI args below the folder root, main pane launch
+src/renderer/src/lib/agent-session/launch/inventory/folder-repo-launch-chat-route.test.ts
+src/main/ipc/pty/ipc/spawn-agent-launch.fork.test.ts
+
+# Editor: folder chat quotes, diff review notes, restoring folder tabs saved by the removed git-owner layer
+src/renderer/src/components/editor/useDiffViewerFirstChangeAutoScroll.fork.test.tsx
+src/renderer/src/components/editor/markdown-preview/surface/MarkdownPreview.chat-quote.fork.test.tsx
+src/renderer/src/components/editor/MonacoEditor.chat-quote.fork.test.tsx
+src/renderer/src/components/editor/monaco-editor-input-bindings.add-to-chat.fork.test.ts
+src/renderer/src/components/editor/diff-file-boundary-navigation.test.tsx
+src/renderer/src/store/slices/store-session-editor-hydration.fork.test.ts
+
+# Source-control entry failure toast: git reasons
+src/renderer/src/components/right-sidebar/source-control/commit/source-control-entry-failure-toast.fork.test.ts
+
+# Monaco diff editor deferred dispose: StrictMode Suspense reconnect
+src/renderer/src/components/editor/DiffSectionBody.real-monaco-strict-reveal.test.tsx
+src/renderer/src/components/editor/DiffSectionBody.monaco-strict-reveal.test.tsx
+
+# Diff section image: shared lazy identity from editor-lazy-views
+src/renderer/src/components/editor/diff/sections/DiffSectionBody.image-lazy-identity.fork.test.tsx
+
+# ClipCode restore: temp-file replace through upstream's bytes write (0600 temp, short temp name, kept modes)
+src/main/ipc/filesystem/filesystem-write-bytes.fork.test.ts
+src/main/runtime/files/file-mutations.fork.test.ts
+src/renderer/src/runtime/files/mutations/runtime-file-bytes-write.fork.test.ts
+
+# ClipCode copy: non-text question dialog host mounted at the app root
+src/renderer/src/app-shell/AppRootSurfaces.fork.test.tsx
+
+# Remote plugin panels: host-call routing through upstream's frame host and PluginPanel
+src/renderer/src/components/plugins/frames/use-plugin-frame-host.fork.test.tsx
+src/renderer/src/components/right-sidebar/plugin-panels/PluginPanel.fork.test.tsx

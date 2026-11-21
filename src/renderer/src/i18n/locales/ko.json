@@ -12892,7 +12892,8 @@
             "clipboardStagingUnavailable": "Orca의 임시 저장소를 사용할 수 없기 때문에 파일을 복사할 수 없습니다.",
             "revealInFinder": "Finder에서 보기",
             "openContainingFolder": "포함된 폴더 열기",
-            "revealInFileExplorer": "파일 탐색기에 표시"
+            "revealInFileExplorer": "파일 탐색기에 표시",
+            "duplicateAsResult": "_result.txt로 복제"
           },
           "FileExplorerToolbar": {
             "d238264654": "Git이 무시한 파일 표시",
@@ -12915,7 +12916,8 @@
             "d836037d02": "Commits",
             "8232c8b2f2": "{{value0}} commit 열기: {{value1}}",
             "e5e81e59a6": "commits 크기 조정",
-            "6d1e0a7c3b": "commit 파일을 로드하지 못했습니다"
+            "6d1e0a7c3b": "commit 파일을 로드하지 못했습니다",
+            "781a8bcf7b": "그래프 로드 중..."
           },
           "HostedReviewActions": {
             "9845a71e17": "추가 작업",
@@ -13277,7 +13279,9 @@
             "markResolved": "해결됨으로 표시",
             "keepFile": "파일 유지",
             "keepDeletion": "삭제 유지",
-            "refreshAll": "모두 새로 고침"
+            "refreshAll": "모두 새로 고침",
+            "commitHashes": "Commit 해시",
+            "commitMessages": "Commit 메시지"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "선택한 agent를 시작할 수 없습니다.",
@@ -13894,7 +13898,142 @@
                   "0904be2505": "다시 생성하려면 메시지를 지웁니다.",
                   "1ea9ba37aa": "설정 -> Git -> 소스 제어 AI에서 에이전트를 선택합니다."
                 },
-                "completeMergeFailed": "병합을 완료하지 못했습니다"
+                "completeMergeFailed": "병합을 완료하지 못했습니다",
+                "bulk": {
+                  "action": {
+                    "bar": {
+                      "8a434c829f": "전체 소스 복사",
+                      "4139bc5679": "선택 해제"
+                    }
+                  }
+                }
+              },
+              "folder": {
+                "folder": {
+                  "add": {
+                    "repos": {
+                      "dialog": {
+                        "title": "이 폴더의 저장소 추가",
+                        "description": "{{value0}} 아래의 Git 저장소(다른 저장소 안에 중첩된 저장소 포함).",
+                        "scanning": "저장소를 검색하는 중...",
+                        "failed": "이 폴더를 검색할 수 없습니다.",
+                        "none": "이 폴더의 모든 저장소가 이미 추가되었습니다.",
+                        "truncated": "검색이 일찍 중단되어 일부 저장소가 누락되었을 수 있습니다.",
+                        "cancel": "취소",
+                        "add": "추가({{value0}})"
+                      }
+                    }
+                  }
+                }
+              },
+              "clipcode": {
+                "clipcode": {
+                  "copy": {
+                    "action": {
+                      "e6cdc3a753": "{{value0}} 토큰을 초과합니다.",
+                      "21758e255e": "복사할 Git 변경 사항이 없습니다.",
+                      "7828c565da": "({{value0}}개 건너뜀: 크기 초과)",
+                      "65b422bbd1": "Git 파일 {{value0}}개를 복사했습니다",
+                      "7c6daaf4fa": "전체 소스 복사 실패",
+                      "filesCopied": "파일 {{value0}}개 복사됨",
+                      "noFiles": "복사할 파일이 없습니다.",
+                      "tokenCount": "~{{value0}} 토큰",
+                      "payloadDetails": "{{lines}}줄 · {{chars}}자 · {{words}}단어",
+                      "nonTextCopied": "Base64로 복사한 비텍스트 파일: {{value0}}.",
+                      "nonTextSkipped": "({{value0}}개 건너뜀: 비텍스트 파일)",
+                      "onlyNonTextSkipped": "복사할 내용이 없습니다: 비텍스트 파일 {{value0}}개를 건너뛰었습니다.",
+                      "unreadableLine": "읽을 수 없음: {{value0}}",
+                      "symlinkedFolderLine": "심볼릭 링크 폴더: {{value0}}",
+                      "unsafeNameLine": "이식할 수 없는 이름: {{value0}}",
+                      "nothingToCopy": "복사할 내용이 없습니다"
+                    }
+                  },
+                  "restore": {
+                    "preview": {
+                      "dialog": {
+                        "2c06a4e179": "붙여넣기 및 복원",
+                        "87832cd30d": "클립보드의 파일이 이 폴더에 기록됩니다.",
+                        "813199296f": "경로 조정({{value0}})",
+                        "9a421f14d8": "생성",
+                        "d469ff3b81": "덮어쓰기",
+                        "9cf3526c1f": "삭제",
+                        "0d87b3b39d": "건너뛰기",
+                        "677bf0ade9": "취소",
+                        "c0b1b53e49": "복원",
+                        "9bd78385ce": "안전하지 않은 경로",
+                        "85d6d805ca": "폴더 밖",
+                        "67e63b0749": "이미 없음",
+                        "becf17b643": "폴더임",
+                        "4acb11ed21": "복사할 때 내용이 생략됨",
+                        "ef509f9991": ".git은 보호됨",
+                        "1f409f3dd6": "경로가 심볼릭 링크를 거침",
+                        "parentIsFile": "상위 폴더가 파일임",
+                        "targetUnreadable": "기존 파일을 확인할 수 없음",
+                        "nonUtf8Target": "기존 파일이 UTF-8이 아니므로 덮어쓰지 않습니다",
+                        "corruptNonText": "손상된 비텍스트 파일",
+                        "nonTextSize": "비텍스트 파일 · {{value0}}",
+                        "corruptBadge": "손상됨",
+                        "unchanged": "변경 없음",
+                        "overwriteAll_one": "기존 파일 {{count}}개 덮어쓰기",
+                        "overwriteAll_other": "기존 파일 {{count}}개 덮어쓰기",
+                        "targetCollision": "다른 항목이 같은 파일에 씁니다"
+                      }
+                    }
+                  },
+                  "non": {
+                    "text": {
+                      "copy": {
+                        "dialog": {
+                          "title": "비텍스트 파일을 복사할까요?",
+                          "description": "포함은 Base64로 복사하고, 제외는 복사하지 않습니다.",
+                          "found": "비텍스트 파일: {{value0}}개, 총 {{value1}}",
+                          "estimate": "포함 시 클립보드 크기: 약 {{value0}}",
+                          "overLimit": "포함 시 클립보드 크기: {{value0}} 초과",
+                          "overLimitReason": "클립보드에 비해 너무 커서 포함을 사용할 수 없습니다.",
+                          "more": "외 {{value0}}개",
+                          "notRead": "{{value0}} 초과로 읽지 않음(크기 자리 표시자로 복사): {{value1}}",
+                          "include": "포함",
+                          "exclude": "제외",
+                          "cancel": "취소"
+                        }
+                      }
+                    }
+                  }
+                },
+                "use": {
+                  "clipcode": {
+                    "restore": {
+                      "b124e9c64e": "클립보드가 비어 있거나 텍스트가 없습니다.",
+                      "1847420a23": "클립보드에서 Snipcode 파일 헤더를 찾을 수 없습니다.",
+                      "af5c90f593": "붙여넣기 및 복원 실패",
+                      "ae1ec38ef1": "생성 {{value0}}, 덮어쓰기 {{value1}}, 삭제 {{value2}}, 건너뜀 {{value3}}.",
+                      "19a6f378aa": "…외 {{value0}}개",
+                      "c9af35dc2d": "실패 {{value0}}개.",
+                      "folderNotWritable": "폴더에 쓸 수 없습니다",
+                      "parentIsFile": "상위 폴더 위치에 파일이 있습니다",
+                      "targetIsFolder": "대상이 폴더입니다",
+                      "writeFailed": "파일을 쓸 수 없습니다",
+                      "unchanged": "변경 없음: {{value0}}.",
+                      "nonTextUpdateRequired": "텍스트가 아닌 파일을 복원하려면 이 호스트의 Orca server를 업데이트하세요"
+                    }
+                  }
+                }
+              },
+              "listing": {
+                "entry": {
+                  "context": {
+                    "menu": {
+                      "9137d88b9f": "전체 소스 복사",
+                      "ce8235a6a4": "옆에 열기",
+                      "showFileHistory": "파일 기록 보기"
+                    }
+                  }
+                },
+                "uncommitted": {
+                  "sections": {
+                    "1a59d5a05b": "전체 소스 복사"
+                  }
+                }
               }
             }
           },
@@ -14122,7 +14261,12 @@
             "7b1c4e9a02": "브라우저에서 commit 열기",
             "8c2d5fab13": "commit 해시 복사",
             "9d3e60bc24": "commit 메시지 복사",
-            "ae4f71cd35": "변경 사항 설명"
+            "ae4f71cd35": "변경 사항 설명",
+            "copyFullSource": "전체 소스 복사",
+            "copyFullSourceMany": "전체 소스 복사 (커밋 {{value0}}개)",
+            "copyHashMany": "Commit 해시 복사 (커밋 {{value0}}개)",
+            "copyMessageMany": "Commit 메시지 복사 (커밋 {{value0}}개)",
+            "showInGraph": "Git Graph에서 보기"
           },
           "pull": {
             "policy": {
@@ -14305,6 +14449,96 @@
             "createInProgress": "PR 생성 중...",
             "workspaceHostUnresolved": "워크스페이스 호스트를 확인할 수 없습니다. 워크스페이스를 새로 고친 후 다시 시도하세요.",
             "branchDiscoveryFailed": "브랜치를 감지하지 못했습니다."
+          },
+          "GitHistoryGraph": {
+            "allBranches": "모든 브랜치",
+            "branchCount": "브랜치 {{value0}}개",
+            "currentBranch": "현재 브랜치",
+            "branchFilter": "브랜치 필터",
+            "searchBranches": "브랜치 검색...",
+            "scope": "표시",
+            "sources": "소스",
+            "localBranches": "로컬 브랜치",
+            "loadingBranches": "브랜치 불러오는 중...",
+            "hostTooOld": "이 저장소 호스트의 Orca가 오래되어 현재 브랜치만 표시됩니다.",
+            "branchesFailed": "브랜치를 불러오지 못했습니다",
+            "searchCommits": "커밋 검색 (author: path:)",
+            "searchCommitsLabel": "커밋 검색",
+            "loadMore": "커밋 더 불러오기",
+            "noMatchingCommits": "이 필터와 일치하는 커밋이 없습니다",
+            "clearAllFilters": "필터 지우기",
+            "local": "로컬",
+            "showAllBranches": "모든 브랜치 보기",
+            "userFilter": "사용자",
+            "pathsFilter": "경로",
+            "clearUserFilter": "사용자 필터 지우기",
+            "searchUsers": "사용자 검색...",
+            "noUsers": "불러온 커밋에 사용자가 없습니다.",
+            "clearPathFilter": "경로 필터 지우기",
+            "typePath": "저장소 기준 파일 또는 폴더 경로",
+            "typePathHint": "경로를 입력한 후 Enter를 누르세요.",
+            "filterByPath": "{{value0}}(으)로 필터",
+            "recentPaths": "최근",
+            "clearFilters": "지우기",
+            "searchCommitMessages": "커밋 메시지 검색",
+            "tags": "태그"
+          },
+          "GitGraphFullView": {
+            "open": "Git Graph 열기",
+            "description": "현재 저장소의 커밋 그래프입니다.",
+            "message": "메시지",
+            "author": "작성자",
+            "date": "날짜",
+            "commit": "커밋",
+            "selectCommit": "커밋을 선택하면 세부 정보와 변경된 파일이 표시됩니다.",
+            "resizeDetails": "커밋 세부 정보 크기 조정",
+            "copyFullSource": "변경된 모든 파일의 전체 소스 복사",
+            "filesInCommits": "변경된 파일 ({{files}}) · 커밋 {{commits}}개",
+            "filesChanged": "변경된 파일 ({{files}})",
+            "toggleBranches": "브랜치 패널 전환",
+            "laneContinuesBelow": "{{count}}행 아래 {{sha}} {{subject}}(으)로 이어집니다. 클릭하면 이동합니다.",
+            "laneComesFromAbove": "{{count}}행 위 {{sha}} {{subject}}에서 이어집니다. 클릭하면 이동합니다.",
+            "laneContinuesPastLoaded": "아직 불러오지 않은 이전 커밋으로 이어집니다. 커밋을 더 불러오면 이동할 수 있습니다.",
+            "openAllChanges": "모든 변경 사항 열기",
+            "hideDetails": "세부 정보 숨기기",
+            "enterKey": "Enter",
+            "showDetails": "세부 정보 보기",
+            "detailsStrip": "세부 정보",
+            "listOptions": "목록 옵션",
+            "columns": "열",
+            "twoLineRows": "두 줄로 표시",
+            "resetList": "기본값으로 재설정",
+            "columnTooNarrow": "목록이 너무 좁음",
+            "laneContinuesPastLoadedJump": "로드되지 않은 커밋 {{sha}}(으)로 이어집니다. 클릭하면 불러와서 이동합니다.",
+            "loadingMore": "커밋을 더 불러오는 중...",
+            "loadCapReached": "그래프가 불러오는 최대치인 처음 {{count}}개 커밋을 표시합니다. Branch, User, Paths로 범위를 좁히세요."
+          },
+          "GitGraphBranchSidebar": {
+            "local": "로컬",
+            "tags": "태그",
+            "label": "브랜치 및 태그",
+            "empty": "아직 불러온 브랜치가 없습니다.",
+            "showRef": "현재 목록에 없음 — 클릭하면 이 브랜치만 표시"
+          },
+          "GitGraphCommitInfo": {
+            "author": "작성자",
+            "date": "날짜",
+            "copySha": "커밋 SHA 복사",
+            "parents": "부모 커밋",
+            "refs": "참조",
+            "containedIn": "포함된 브랜치",
+            "moreBranches": "외 {{count}}개",
+            "containedInHint": "불러온 목록에 끝 커밋이 있는 브랜치만 표시하며, 목록 밖의 브랜치는 포함되지 않습니다.",
+            "children": "자식 커밋",
+            "childrenHint": "불러온 목록에서 이 커밋을 부모로 둔 커밋입니다."
+          },
+          "RemotePluginPanel": {
+            "declarative": "This panel shows only this computer. It cannot show data from {{host}}.",
+            "loading": "Connecting to {{plugin}} on {{host}}...",
+            "unreachable": "Could not reach {{host}}.",
+            "missing": "{{plugin}} is not installed or not enabled on {{host}}. Install and enable it there to see that host here.",
+            "versionMismatch": "{{plugin}} is {{remote}} on {{host}} and {{local}} here. Install the same version on both.",
+            "sessionUnavailable": "The plugin is not available on that host."
           }
         }
       },
@@ -16219,6 +16453,11 @@
           "tooLarge": "{{value0}}은(는) 너무 커서 {{value1}}에서 열 수 없습니다({{value2}}, 한도는 {{value3}}).",
           "unsupported": "{{value0}}은(는) 이 파일이 저장된 위치에서 읽을 수 없습니다. 파일을 호스팅하는 Orca 서버를 업데이트하거나 소스로 전환하세요.",
           "readFailed": "{{value1}}에서 사용할 {{value0}}을(를) 읽을 수 없습니다. {{value2}}"
+        },
+        "DiffFileSequenceStatus": {
+          "position": "{{index}}/{{total}}개 파일",
+          "pressAgainNext": "다시 누르면 다음 파일로 이동합니다",
+          "pressAgainPrevious": "다시 누르면 이전 파일로 이동합니다"
         }
       },
       "diff": {
@@ -16540,7 +16779,10 @@
                 "removeWorktree": "작업 트리 제거",
                 "trashWorktree": "워크트리 휴지통으로 이동",
                 "addQuickCommand": "빠른 명령 추가",
-                "newQuickCommand": "새로운 빠른 명령"
+                "newQuickCommand": "새로운 빠른 명령",
+                "openGitGraph": "git graph 열기",
+                "gitLog": "git 로그",
+                "commitHistory": "커밋 기록"
               }
             }
           },
@@ -18166,7 +18408,8 @@
           "workspaceDisconnected": "“{{action}}” 실행 불가 — 워크스페이스 연결이 끊어졌습니다.",
           "noTabGroup": "“{{action}}” 실행 불가 — 사용 가능한 탭 그룹이 없습니다.",
           "noMovableChat": "“{{action}}” 실행 불가 — 이동 가능한 활성 채팅이 없습니다.",
-          "clientUnsupported": "“{{action}}” 실행 불가 — 이 클라이언트와 런타임에서 지원하지 않습니다."
+          "clientUnsupported": "“{{action}}” 실행 불가 — 이 클라이언트와 런타임에서 지원하지 않습니다.",
+          "noGitRepo": "“{{action}}” 실행 불가 — 사용 가능한 Git 저장소가 없습니다."
         }
       },
       "plugins": {
@@ -18236,6 +18479,18 @@
         "notAttachedShort": "다시 연결되지 않았습니다.",
         "dispatchRejectedShort": "에이전트가 계속하기를 거부했습니다.",
         "unsupportedShort": "Orca가 이 채팅을 재개할 수 없습니다."
+      },
+      "gitGraphTab": {
+        "noRepo": "이 워크스페이스에서 사용할 수 있는 Git 저장소가 없습니다.",
+        "repoSwitcher": "저장소",
+        "selectRepo": "저장소 선택",
+        "searchRepos": "저장소 검색...",
+        "noRepos": "저장소를 찾을 수 없습니다.",
+        "addRepos": "저장소 추가...",
+        "addReposMissing": "{{value0}}개 미추가",
+        "addReposButton": "이 폴더의 저장소 추가",
+        "openInSourceControl": "소스 제어에서 열기",
+        "revealNotLoaded": "해당 커밋이 불러온 기록에 없습니다."
       }
     },
     "i18n": {
@@ -22429,7 +22684,8 @@
       "128cce6e6d": "제목 설정…",
       "e9da9f872a": "리뷰 노트를 에이전트에 보내기",
       "1524825c2c": "워크스페이스 보드 전환",
-      "d286d1ab85": "창 제목 지우기"
+      "d286d1ab85": "창 제목 지우기",
+      "sourceControlOpenGitGraph": "Git Graph 열기"
     },
     "group": {
       "global": "글로벌",

@@ -1,0 +1,353 @@
+// Behavioral port of ClipCodeVSCode pathResolver/restoreBase, reduced to the single-root case.
+import { asciiTrim, type ParsedEntry } from './clipcode-clipboard-format'
+import { decodeNonTextVerified, parseNonTextPlaceholderLine } from './clipcode-non-text-body'
+import { isClipcodePlaceholderBody } from './clipcode-placeholder-bodies'
+import { isClipcodePortablePathSegment } from './clipcode-portable-path'
+
+export type ClipcodeRestoreBase =
+  | { kind: 'strip'; segment: string }
+  | { kind: 'add'; prefix: string }
+
+export type ClipcodeRestoreBaseSuggestion = { base: ClipcodeRestoreBase; label: string }
+
+export type ClipcodeRestoreSkipReason =
+  | 'UNSAFE_PATH'
+  | 'PROTECTED_GIT'
+  | 'SYMLINK_IN_PATH'
+  | 'OUTSIDE_ROOT'
+  | 'CONTENT_SKIPPED'
+  | 'TARGET_COLLISION'
+  | 'CORRUPT_NON_TEXT'
+
+/** A text write, or a non-text entry's verified bytes (`sha256` is their lowercase hex hash). */
+export type ClipcodeRestoreWrite =
+  | { relativePath: string; content: string }
+  | { relativePath: string; bytes: Uint8Array; sha256: string }
+
+export type ClipcodeRestorePlan = {
+  writes: ClipcodeRestoreWrite[]
+  deletes: { relativePath: string }[]
+  skipped: { rawPath: string; reason: ClipcodeRestoreSkipReason }[]
+}
+
+function normalizeSystemPath(value: string): string {
+  const normalized = asciiTrim(value).replaceAll('\\', '/').replace(/\/+/g, '/')
+  if (normalized === '/' || /^[A-Za-z]:\/$/.test(normalized)) {
+    return normalized
+  }
+  return normalized.replace(/\/+$/g, '')
+}
+
+function isAbsolutePath(value: string): boolean {
+  return value.startsWith('/') || /^[A-Za-z]:\//.test(value)
+}
+
+function isWindowsStylePath(value: string): boolean {
+  return /^[A-Za-z]:(\/[\s\S]*)?$/.test(value)
+}
+
+function pathKey(value: string): string {
+  const normalized = normalizeSystemPath(value)
+  return isWindowsStylePath(normalized) ? normalized.toLowerCase() : normalized
+}
+
+// Why: Windows and macOS resolve `.git.`, `.git ` and the 8.3 alias `GIT~1` to `.git`, so all of them are blocked.
+function isGitSegment(segment: string): boolean {
+  const folded = segment.toLowerCase()
+  return folded.replace(/[. ]+$/, '') === '.git' || /^git~\d+$/.test(folded)
+}
+
+/** Returns a clean '/'-joined relative path, or undefined when it is empty, absolute or can escape the root. */
+export function sanitizeRelativePath(value: string): string | undefined {
+  const normalized = asciiTrim(value).replaceAll('\\', '/').replace(/\/+/g, '/').replace(/^\/+/, '')
+  if (!normalized || isAbsolutePath(normalized)) {
+    return undefined
+  }
+  const segments = normalized.split('/').filter((segment) => segment && segment !== '.')
+  if (segments.length === 0) {
+    return undefined
+  }
+  // Why: a restored `.git/...` entry could plant hooks or rewrite repo config, so it is never a valid target.
+  // Control characters are refused everywhere (Windows cannot create them), like the plugins.
+  // `\` never reaches a segment here: it was turned into `/` above.
+  if (
+    segments.some((segment) => isGitSegment(segment) || !isClipcodePortablePathSegment(segment))
+  ) {
+    return undefined
+  }
+  return segments.join('/')
+}
+
+function relativizePath(absolutePath: string, rootPath: string): string | undefined {
+  const absolute = normalizeSystemPath(absolutePath)
+  const root = normalizeSystemPath(rootPath)
+  if (!pathKey(absolute).startsWith(`${pathKey(root)}/`)) {
+    return undefined
+  }
+  return sanitizeRelativePath(absolute.slice(root.length + 1))
+}
+
+// Clipboards from another machine carry that machine's absolute paths; align on the root folder name.
+function crossMachineSuffixRelativePath(
+  absolutePath: string,
+  rootPath: string
+): string | undefined {
+  const rootName = normalizeSystemPath(rootPath).split('/').pop()
+  if (!rootName) {
+    return undefined
+  }
+  const windowsStyle = isWindowsStylePath(absolutePath) || isWindowsStylePath(rootPath)
+  const segments = normalizeSystemPath(absolutePath)
+    .replace(/^[A-Za-z]:\//, '')
+    .replace(/^\/+/, '')
+    .split('/')
+    .filter(Boolean)
+  const matches = new Set<string>()
+  for (let index = 0; index < segments.length - 1; index++) {
+    const same = windowsStyle
+      ? segments[index].toLowerCase() === rootName.toLowerCase()
+      : segments[index] === rootName
+    if (!same) {
+      continue
+    }
+    const relativePath = sanitizeRelativePath(segments.slice(index + 1).join('/'))
+    if (relativePath) {
+      matches.add(relativePath)
+    }
+  }
+  // Ambiguous suffixes must not guess a destination.
+  return matches.size === 1 ? [...matches][0] : undefined
+}
+
+export function applyRestoreBase(base: ClipcodeRestoreBase, relativePath: string): string {
+  if (base.kind === 'add') {
+    return `${base.prefix}/${relativePath}`
+  }
+  const slash = relativePath.indexOf('/')
+  return slash !== -1 && relativePath.slice(0, slash) === base.segment
+    ? relativePath.slice(slash + 1)
+    : relativePath
+}
+
+/**
+ * Decides whether the clipboard paths are off by one folder level. Only the deterministic
+ * `clipcode-root` metadata path is ported; without that line nothing is guessed.
+ */
+export function suggestRestoreBase(args: {
+  rootPath: string
+  relativePaths: readonly string[]
+  sourceRoot: string | undefined
+  /** Whether `<rootPath>/<sourceRoot>` is an existing directory. */
+  sourceRootIsDirectory: boolean
+}): ClipcodeRestoreBaseSuggestion | undefined {
+  const { rootPath, sourceRoot } = args
+  const rels = args.relativePaths.filter(
+    (path) => path && !isAbsolutePath(normalizeSystemPath(path))
+  )
+  if (!sourceRoot || rels.length === 0) {
+    return undefined
+  }
+  const targetName = normalizeSystemPath(rootPath).split('/').pop() ?? ''
+  if (targetName === sourceRoot) {
+    return undefined
+  }
+  const nested = rels.filter((path) => path.includes('/'))
+  const firstSegments = new Set(nested.map((path) => path.slice(0, path.indexOf('/'))))
+  if (nested.length > 0 && firstSegments.size === 1 && [...firstSegments][0] === targetName) {
+    return { base: { kind: 'strip', segment: targetName }, label: `${targetName}/` }
+  }
+  if (args.sourceRootIsDirectory) {
+    return { base: { kind: 'add', prefix: sourceRoot }, label: `${sourceRoot}/` }
+  }
+  return undefined
+}
+
+/**
+ * The key two spellings share when the target file system stores them as one file: case-insensitive on
+ * darwin and win32, NFC-normalizing on darwin only. An unknown host (null) folds both, so nothing is overwritten silently.
+ */
+function targetFileKey(relativePath: string, targetPlatform: NodeJS.Platform | null): string {
+  if (targetPlatform === 'win32') {
+    return relativePath.toLowerCase()
+  }
+  if (targetPlatform === 'darwin' || targetPlatform === null) {
+    return relativePath.normalize('NFC').toLowerCase()
+  }
+  return relativePath
+}
+
+export function planClipcodeRestore(args: {
+  rootPath: string
+  entries: readonly ParsedEntry[]
+  base?: ClipcodeRestoreBase
+  /** OS of the host that owns rootPath; null when it is not known yet. */
+  targetPlatform?: NodeJS.Platform | null
+}): ClipcodeRestorePlan {
+  const targetPlatform = args.targetPlatform ?? null
+  const plan: ClipcodeRestorePlan = { writes: [], deletes: [], skipped: [] }
+  // Why: two entries (or a strip-base collision) can resolve to one path; the last one wins so the preview and the write agree.
+  const finalPaths = new Map<string, { relativePath: string; entry: ParsedEntry }>()
+  // Why: where `A.txt` and `a.txt` (or NFC/NFD spellings) are one file, a second spelling must not silently replace the first.
+  const spellingByFoldedPath = new Map<string, string>()
+  const conflictedFoldedPaths = new Set<string>()
+  for (const entry of args.entries) {
+    const rawPath = entry.path
+    const normalized = normalizeSystemPath(rawPath)
+    let relativePath: string | undefined
+    if (isAbsolutePath(normalized)) {
+      relativePath =
+        relativizePath(normalized, args.rootPath) ??
+        crossMachineSuffixRelativePath(normalized, args.rootPath)
+      if (!relativePath) {
+        plan.skipped.push({ rawPath, reason: 'OUTSIDE_ROOT' })
+        continue
+      }
+    } else {
+      const sanitized = sanitizeRelativePath(normalized)
+      relativePath =
+        sanitized && args.base
+          ? sanitizeRelativePath(applyRestoreBase(args.base, sanitized))
+          : sanitized
+      if (!relativePath) {
+        const touchesGit = normalized.split('/').some(isGitSegment)
+        plan.skipped.push({ rawPath, reason: touchesGit ? 'PROTECTED_GIT' : 'UNSAFE_PATH' })
+        continue
+      }
+    }
+    const folded = targetFileKey(relativePath, targetPlatform)
+    const spelling = spellingByFoldedPath.get(folded)
+    if (spelling !== undefined && spelling !== relativePath) {
+      conflictedFoldedPaths.add(folded)
+      plan.skipped.push({ rawPath, reason: 'TARGET_COLLISION' })
+      continue
+    }
+    spellingByFoldedPath.set(folded, relativePath)
+    finalPaths.delete(relativePath)
+    finalPaths.set(relativePath, { relativePath, entry })
+  }
+  for (const { relativePath, entry } of finalPaths.values()) {
+    // Why: skip the whole group so a delete never lands without its replacement.
+    if (conflictedFoldedPaths.has(targetFileKey(relativePath, targetPlatform))) {
+      plan.skipped.push({ rawPath: relativePath, reason: 'TARGET_COLLISION' })
+      continue
+    }
+    if (entry.changeTypes.has('DELETED')) {
+      plan.deletes.push({ relativePath })
+      continue
+    }
+    // Why: an escaped placeholder is text that only looks like one, so it is never decoded nor skipped.
+    const lineBreak = entry.content.indexOf('\n')
+    const nonText = entry.escapedPlaceholder
+      ? undefined
+      : parseNonTextPlaceholderLine(
+          lineBreak === -1 ? entry.content : entry.content.slice(0, lineBreak)
+        )
+    if (nonText) {
+      const body = decodeNonTextVerified(
+        lineBreak === -1 ? '' : entry.content.slice(lineBreak + 1),
+        nonText
+      )
+      if (body.ok) {
+        plan.writes.push({ relativePath, bytes: body.bytes, sha256: nonText.sha256 })
+      } else {
+        plan.skipped.push({ rawPath: relativePath, reason: 'CORRUPT_NON_TEXT' })
+      }
+    } else if (!entry.escapedPlaceholder && isClipcodePlaceholderBody(entry.content)) {
+      plan.skipped.push({ rawPath: relativePath, reason: 'CONTENT_SKIPPED' })
+    } else {
+      // MOVED only carries the new path; the old location is never touched.
+      plan.writes.push({ relativePath, content: entry.content })
+    }
+  }
+  return plan
+}
+
+/**
+ * 'blocked': the path crosses a symlink or could not be verified on the host; 'parentIsFile': a parent
+ * segment is a file; 'unreadable': the target could not be stat'ed. None of them is ever touched.
+ * 'nonUtf8File' / 'unverifiedFile': an existing file that is not UTF-8 or could not be read; it may be
+ * deleted but never overwritten.
+ */
+export type ClipcodeTargetState =
+  | 'file'
+  | 'nonUtf8File'
+  | 'unverifiedFile'
+  | 'directory'
+  | 'missing'
+  | 'blocked'
+  | 'parentIsFile'
+  | 'unreadable'
+
+type ClipcodePreviewSkipReason =
+  | ClipcodeRestoreSkipReason
+  | 'ALREADY_ABSENT'
+  | 'IS_DIRECTORY'
+  | 'PARENT_IS_FILE'
+  | 'TARGET_UNREADABLE'
+  | 'NON_UTF8_TARGET'
+
+const UNTOUCHABLE_STATE_REASON = {
+  blocked: 'SYMLINK_IN_PATH',
+  directory: 'IS_DIRECTORY',
+  parentIsFile: 'PARENT_IS_FILE',
+  unreadable: 'TARGET_UNREADABLE',
+  nonUtf8File: 'NON_UTF8_TARGET',
+  unverifiedFile: 'TARGET_UNREADABLE'
+} as const satisfies Partial<Record<ClipcodeTargetState, ClipcodePreviewSkipReason>>
+
+export type ClipcodeRestorePreview = {
+  create: ClipcodeRestoreWrite[]
+  overwrite: ClipcodeRestoreWrite[]
+  /** Non-text targets that already hold the pasted bytes: never written, no overwrite needed. */
+  unchanged: { relativePath: string; size: number }[]
+  delete: { relativePath: string }[]
+  skipped: { path: string; reason: ClipcodePreviewSkipReason }[]
+}
+
+/**
+ * Classifies a plan against what already exists; a delete only runs when the target is a file.
+ * `existingSha256Of` is the hex SHA-256 of an existing target's bytes, when they were read.
+ */
+export function previewClipcodeRestore(
+  plan: ClipcodeRestorePlan,
+  stateOf: (relativePath: string) => ClipcodeTargetState,
+  existingSha256Of: (relativePath: string) => string | undefined = () => undefined
+): ClipcodeRestorePreview {
+  const preview: ClipcodeRestorePreview = {
+    create: [],
+    overwrite: [],
+    unchanged: [],
+    delete: [],
+    skipped: []
+  }
+  for (const skipped of plan.skipped) {
+    preview.skipped.push({ path: skipped.rawPath, reason: skipped.reason })
+  }
+  for (const write of plan.writes) {
+    const state = stateOf(write.relativePath)
+    // Why: raw bytes carry no encoding to lose, so the non-UTF-8 overwrite guard is text only.
+    const existing =
+      state === 'file' ||
+      ('bytes' in write && (state === 'nonUtf8File' || state === 'unverifiedFile'))
+    if ('bytes' in write && existing && existingSha256Of(write.relativePath) === write.sha256) {
+      preview.unchanged.push({ relativePath: write.relativePath, size: write.bytes.length })
+    } else if (existing || state === 'missing') {
+      const bucket = existing ? preview.overwrite : preview.create
+      bucket.push(write)
+    } else {
+      preview.skipped.push({ path: write.relativePath, reason: UNTOUCHABLE_STATE_REASON[state] })
+    }
+  }
+  for (const del of plan.deletes) {
+    const state = stateOf(del.relativePath)
+    if (state === 'file' || state === 'nonUtf8File' || state === 'unverifiedFile') {
+      preview.delete.push(del)
+    } else {
+      preview.skipped.push({
+        path: del.relativePath,
+        reason: state === 'missing' ? 'ALREADY_ABSENT' : UNTOUCHABLE_STATE_REASON[state]
+      })
+    }
+  }
+  return preview
+}

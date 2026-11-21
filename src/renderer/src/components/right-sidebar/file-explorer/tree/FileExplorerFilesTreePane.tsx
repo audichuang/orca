@@ -9,7 +9,7 @@ import type { RuntimeFileListState } from '@/components/file-actions/quick-open/
 import type { Repo } from '../../../../../../shared/repository/repo-types'
 import type { RightSidebarExplorerView } from '../../../../../../shared/ui-chrome/ui-chrome-types'
 import { FileExplorerTreeStatus } from './FileExplorerTreeStatus'
-import { FileExplorerVirtualRows } from '../panel/FileExplorerVirtualRows'
+import { ClipcodeExplorerVirtualRows } from '../../source-control/clipcode/clipcode-explorer-rows'
 import { canShowAddAsProjectAction } from '../navigation/file-explorer-add-project-action'
 import type { FileExplorerNameFilterProjectionSource } from './file-explorer-name-filter-projection'
 import type { FileExplorerRowProjection } from './file-explorer-row-projection'
@@ -197,7 +197,9 @@ export function FileExplorerFilesTreePane({
         />
       )}
       {showTree && (
-        <FileExplorerVirtualRows
+        <ClipcodeExplorerVirtualRows
+          clipcodeWorktreePath={worktreePath}
+          refreshDir={tree.refreshDir}
           displayDepthOffset={getExplorerDisplayDepth(worktreePath, displayRootPath)}
           virtualizer={virtualizer}
           inlineInputIndex={inlineInputIndex}

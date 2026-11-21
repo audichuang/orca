@@ -267,6 +267,7 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         connectionId?: string
         /** Showing the diff tab or its Retry: a user act that may start a stopped WSL distro. */
         wakeWslDistro?: boolean
+        skipRenderLimit?: boolean
       }
     ): Promise<GitDiffResult> => {
       requireReachableGitRoute(getConnectionExecutionHostId(args.connectionId))
@@ -285,7 +286,8 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
               admissionTier: 'interactive',
               ...(args.oldPath
                 ? { oldPath: validateGitRelativeFilePath(worktreePath, args.oldPath) }
-                : {})
+                : {}),
+              skipRenderLimit: args.skipRenderLimit
             }
           )
       )

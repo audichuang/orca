@@ -43,7 +43,13 @@ async function orTooLargeForConnection(read: Promise<GitDiffResult>): Promise<Gi
 
 export async function getRuntimeGitDiff(
   context: RuntimeGitContext,
-  args: { filePath: string; staged: boolean; compareAgainstHead?: boolean; oldPath?: string },
+  args: {
+    filePath: string
+    staged: boolean
+    compareAgainstHead?: boolean
+    oldPath?: string
+    skipRenderLimit?: boolean
+  },
   options?: GitDiffWakeOptions
 ): Promise<GitDiffResult> {
   const target = context.target
@@ -55,6 +61,7 @@ export async function getRuntimeGitDiff(
         staged: args.staged,
         compareAgainstHead: args.compareAgainstHead,
         ...(args.oldPath ? { oldPath: args.oldPath } : {}),
+        skipRenderLimit: args.skipRenderLimit,
         connectionId: context.connectionId,
         ...localWakeArgs(context, options)
       })
