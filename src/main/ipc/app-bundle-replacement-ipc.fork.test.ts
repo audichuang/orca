@@ -36,7 +36,7 @@ beforeEach(() => {
 
 it('records the launched bundle and answers app:isBundleReplaced from it', async () => {
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the bundle handlers never touch the store.
-  registerAppHandlers({} as never)
+  registerAppHandlers({} as never, { rendererCheckpoint: {} as never })
 
   expect(mocks.captureLaunchedAppBundle).toHaveBeenCalledTimes(1)
   const handler = mocks.handlers.get('app:isBundleReplaced')
