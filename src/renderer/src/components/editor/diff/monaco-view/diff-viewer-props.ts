@@ -1,6 +1,9 @@
 import type { WorkspaceResource } from '@/lib/workspace/ownership/workspace-copy-owner'
 import type { LargeDiffRenderLimit } from '../../../../../../shared/source-control/diff/large-diff-render-limit'
 
+// Fork: re-exported so DiffViewer takes its props and the kept-model sync in one import (max-lines).
+export { useKeptModelSync } from '../../diff-kept-model-sync'
+
 export type DiffViewerProps = {
   modelKey: string
   /** Open-file ID that owns the models, so closing the file releases every view scope. */

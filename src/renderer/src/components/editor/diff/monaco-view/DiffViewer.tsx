@@ -27,7 +27,7 @@ import { getLargeDiffRenderLimit } from '../../../../../../shared/source-control
 import { useDiffViewerLargeDiffLifecycle } from '../large-files/useDiffViewerLargeDiffLifecycle'
 import { useDiffViewerFirstChangeAutoScroll } from './useDiffViewerFirstChangeAutoScroll'
 import { getDiffViewerLargeDiffSaveAction } from '../large-files/diff-viewer-large-diff-save-action'
-import type { DiffViewerProps } from './diff-viewer-props'
+import { type DiffViewerProps, useKeptModelSync } from './diff-viewer-props'
 import { buildDiffEditorWhitespaceOptions } from './diff-editor-whitespace-options'
 import {
   buildDiffEditorWordWrapOptions,
@@ -47,7 +47,6 @@ import {
 import { useMonacoTheme } from '@/lib/editor/appearance/use-monaco-theme'
 import { cn } from '@/lib/class-names'
 import { wholeFileDiffTintClass } from './whole-file-diff-tint'
-import { syncKeptModelValue } from '../../diff-kept-model-sync'
 
 export default function DiffViewer({
   modelKey,
@@ -239,9 +238,6 @@ export default function DiffViewer({
 
   const { setupCopy, toastNode } = useContextualCopySetup()
 
-  const keptModelSyncRef = useRef({ modifiedContent, syncKeptModifiedModelOnMount })
-  keptModelSyncRef.current = { modifiedContent, syncKeptModifiedModelOnMount }
-
   const propsRef = useRef({ relativePath, language, onSave })
   propsRef.current = { relativePath, language, onSave }
   const currentDiffModelPaths = useDiffViewerLargeDiffLifecycle({
@@ -290,10 +286,6 @@ export default function DiffViewer({
       })
       diffEditor.onDidDispose(preserveDiffViewStateAcrossModelSwaps(diffEditor).dispose)
 
-      if (keptModelSyncRef.current.syncKeptModifiedModelOnMount) {
-        syncKeptModelValue(modifiedEditor.getModel(), keptModelSyncRef.current.modifiedContent)
-      }
-
       setupCopy(originalEditor, monaco, filePath, propsRef)
       setupCopy(modifiedEditor, monaco, filePath, propsRef)
       setModifiedEditor(modifiedEditor)
@@ -333,6 +325,7 @@ export default function DiffViewer({
     },
     [editable, setupCopy, modelKey, filePath, sideBySide, registerDiffEditor, unregisterDiffEditor]
   )
+  const syncedMount = useKeptModelSync(handleMount, modifiedContent, syncKeptModifiedModelOnMount)
 
   // Snapshot on layout cleanup before unmount, avoiding scroll-time writes.
   useLayoutEffect(() => {
@@ -430,7 +423,7 @@ export default function DiffViewer({
             original={originalContent}
             modified={modifiedContent}
             theme={monacoTheme}
-            onMount={handleMount}
+            onMount={syncedMount}
             // Tab-owned models preserve modified undo across Changes-mode HEAD rotations.
             originalModelPath={currentDiffModelPaths.originalModelPath}
             modifiedModelPath={currentDiffModelPaths.modifiedModelPath}
