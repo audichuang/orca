@@ -44,6 +44,9 @@ vi.mock('../components/error-boundaries/RecoverableRenderErrorBoundary', () => (
 }))
 // The other root surfaces read app state this test does not build.
 vi.mock('./root-surfaces/AppNotificationCards', () => ({ AppNotificationCards: () => null }))
+vi.mock('../components/bots/avatar-generation-capability-store', () => ({
+  usePrefetchAvatarCapability: () => undefined
+}))
 vi.mock('../components/onboarding/OnboardingLanguageLoading', () => ({
   OnboardingLanguageLoading: () => null
 }))
