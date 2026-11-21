@@ -154,7 +154,7 @@ test('sidebar Commits: file diff, then Open all changes together keeps the workb
     }
     await historyRows.filter({ hasText: 'Add eight files' }).first().click()
     await expect(files).toHaveCount(8, { timeout: 15_000 })
-    await orcaPage.getByRole('button', { name: 'Open all changes together' }).click()
+    await orcaPage.getByRole('button', { name: 'Open all changes', exact: true }).click()
     await expect(orcaPage.locator('.monaco-diff-editor').first()).toBeVisible({ timeout: 20_000 })
     await expectWorkbenchHealthy(orcaPage, errors)
     await historyRows.filter({ hasText: 'Add eight files' }).first().click()

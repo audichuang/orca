@@ -141,16 +141,16 @@ describe('full Git Graph: open a commit', () => {
     )
   })
 
-  it('drops the bottom "Open all changes together" link', async () => {
+  it('drops the bottom "Open all changes" link', async () => {
     renderFullView(vi.fn())
     fireEvent.click(row('Alpha'))
     expect(await screen.findByText('app.ts')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Open all changes together' })).toBeNull()
+    expect(screen.getAllByRole('button', { name: 'Open all changes' })).toHaveLength(1)
   })
 })
 
 describe('sidebar Commits panel', () => {
-  it('keeps the bottom "Open all changes together" link', async () => {
+  it('keeps the bottom "Open all changes" link', async () => {
     const onOpenCommit = vi.fn()
     render(
       <TooltipProvider>
@@ -166,7 +166,7 @@ describe('sidebar Commits panel', () => {
       </TooltipProvider>
     )
     fireEvent.click(screen.getByRole('button', { name: /Show files in commit aaaaaaa/ }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Open all changes together' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Open all changes' }))
     expect(onOpenCommit).toHaveBeenCalledWith(expect.objectContaining({ id: ALPHA.id }))
   })
 })
