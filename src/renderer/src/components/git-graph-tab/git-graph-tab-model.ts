@@ -13,6 +13,7 @@ import { getRememberedFolderRepo } from '../right-sidebar/source-control/folder/
 import { getAttachedWorktreesForFolderWorkspace } from '../right-sidebar/folder-workspaces/folder-workspace-attached-worktrees'
 import { resolveReviewRepository } from '@/lib/source-control/review/review-owner'
 import { selectSidebarChildrenByParentIdentity } from '@/store/slices/worktrees/metadata/cross-store-lineage-parents'
+import type { RuntimeStatuses } from '@/store/slices/runtime-status/views/runtime-status-owner'
 import {
   selectFolderWorkspaces,
   selectWorktreesByRepo
@@ -24,7 +25,7 @@ export type GitGraphRepoChoice = { repo: Repo; worktree: Worktree }
 
 /** Store fields the folder lineage selectors read, as upstream's folder Source Control subscribes them. */
 type GitGraphWorkspaceState = Parameters<typeof selectSidebarChildrenByParentIdentity>[0] &
-  Pick<AppState, 'repos' | 'workspaceLineageByChildKey'>
+  Pick<AppState, 'repos' | 'workspaceLineageByChildKey' | 'runtimeStatusByEnvironmentId'>
 
 /** What the Git Graph repo choices read; the lineage fields are the folder Source Control selectors' results. */
 export type GitGraphChoiceInputs = Pick<
@@ -39,14 +40,17 @@ export type GitGraphChoiceInputs = Pick<
   childrenByParentIdentity: ReadonlyMap<string, readonly Worktree[]>
 }
 
-export function selectGitGraphChoiceInputs(state: GitGraphWorkspaceState): GitGraphChoiceInputs {
+export function selectGitGraphChoiceInputs(
+  state: GitGraphWorkspaceState,
+  statuses: RuntimeStatuses
+): GitGraphChoiceInputs {
   return {
     repos: state.repos,
     repoWorktrees: selectWorktreesByRepo(state),
     folders: selectFolderWorkspaces(state),
     workspaceLineageByChildKey: state.workspaceLineageByChildKey,
     worktreeLineageById: state.worktreeLineageById,
-    childrenByParentIdentity: selectSidebarChildrenByParentIdentity(state)
+    childrenByParentIdentity: selectSidebarChildrenByParentIdentity(state, statuses)
   }
 }
 
@@ -127,7 +131,10 @@ export function listGitGraphRepoChoicesFromState(
   state: GitGraphWorkspaceState,
   workspaceId: string
 ): GitGraphRepoChoice[] {
-  return listGitGraphRepoChoicesFromInputs(selectGitGraphChoiceInputs(state), workspaceId)
+  return listGitGraphRepoChoicesFromInputs(
+    selectGitGraphChoiceInputs(state, state.runtimeStatusByEnvironmentId),
+    workspaceId
+  )
 }
 
 /** The workspace's own repo, or for a folder the member picked last in Source Control, else the first. */

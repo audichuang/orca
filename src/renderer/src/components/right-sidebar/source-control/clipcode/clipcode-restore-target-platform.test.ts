@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PtyOwnerMachineState } from '@/components/terminal-pane/pty-transport/host-ownership/pty-owner-machine-platform'
+import type { RuntimeStatuses } from '@/store/slices/runtime-status/views/runtime-status-owner'
 import { clipcodeRestoreTargetPlatform } from './clipcode-restore-target-platform'
 
 function machineState(): PtyOwnerMachineState {
@@ -8,21 +9,32 @@ function machineState(): PtyOwnerMachineState {
     sshConnectionStates: new Map([['box', { remotePlatform: 'linux' }]]),
     sshStateByEnvironment: new Map([
       ['env', { connectionStates: new Map([['inner', { remotePlatform: 'win32' }]]) }]
-    ]),
-    runtimeStatusByEnvironmentId: new Map([
-      ['env', { kind: 'ready', status: { hostPlatform: 'darwin' } }]
     ])
   } as unknown as PtyOwnerMachineState
 }
 
+function statuses(): RuntimeStatuses {
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the resolver reads only hostPlatform from a ready entry.
+  return new Map([
+    ['env', { kind: 'ready', status: { hostPlatform: 'darwin' } }]
+  ]) as unknown as RuntimeStatuses
+}
+
 describe('clipcodeRestoreTargetPlatform', () => {
   it('uses the client OS for a local folder', () => {
-    expect(clipcodeRestoreTargetPlatform({ kind: 'local' }, machineState(), 'win32')).toBe('win32')
+    expect(
+      clipcodeRestoreTargetPlatform({ kind: 'local' }, machineState(), statuses(), 'win32')
+    ).toBe('win32')
   })
 
   it('uses the OS a direct SSH target reports', () => {
     expect(
-      clipcodeRestoreTargetPlatform({ kind: 'ssh', connectionId: 'box' }, machineState(), 'darwin')
+      clipcodeRestoreTargetPlatform(
+        { kind: 'ssh', connectionId: 'box' },
+        machineState(),
+        statuses(),
+        'darwin'
+      )
     ).toBe('linux')
   })
 
@@ -31,6 +43,7 @@ describe('clipcodeRestoreTargetPlatform', () => {
       clipcodeRestoreTargetPlatform(
         { kind: 'runtime', environmentId: 'env', executionHostId: 'local' },
         machineState(),
+        statuses(),
         'linux'
       )
     ).toBe('darwin')
@@ -41,6 +54,7 @@ describe('clipcodeRestoreTargetPlatform', () => {
       clipcodeRestoreTargetPlatform(
         { kind: 'runtime', environmentId: 'env', executionHostId: 'ssh:inner' },
         machineState(),
+        statuses(),
         'darwin'
       )
     ).toBe('win32')
@@ -48,7 +62,12 @@ describe('clipcodeRestoreTargetPlatform', () => {
 
   it('is unknown while an SSH target has not reported its OS', () => {
     expect(
-      clipcodeRestoreTargetPlatform({ kind: 'ssh', connectionId: 'new' }, machineState(), 'darwin')
+      clipcodeRestoreTargetPlatform(
+        { kind: 'ssh', connectionId: 'new' },
+        machineState(),
+        statuses(),
+        'darwin'
+      )
     ).toBeNull()
   })
 })

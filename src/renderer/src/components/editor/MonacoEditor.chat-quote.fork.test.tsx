@@ -30,6 +30,9 @@ vi.mock('@/store', () => ({
     })
 }))
 vi.mock('../diff-comments/useDiffCommentDecorator', () => ({ useDiffCommentDecorator: vi.fn() }))
+vi.mock('./model-lifetime/buffer-text/editor-new-model-line-ending', () => ({
+  useNewModelLineEnding: vi.fn()
+}))
 vi.mock('./contextual-copy/useContextualCopySetup', () => ({
   useContextualCopySetup: () => ({ setupCopy: vi.fn(), toastNode: null })
 }))

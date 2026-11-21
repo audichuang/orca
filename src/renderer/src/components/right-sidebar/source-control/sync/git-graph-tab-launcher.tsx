@@ -1,7 +1,8 @@
 // Fork-only: entry points to the Git Graph editor tab.
 import React, { useMemo } from 'react'
 import { GitGraph } from 'lucide-react'
-import { useShallow } from 'zustand/react/shallow'
+import { shallow } from 'zustand/shallow'
+import { useAppStoreWithHostStatuses } from '@/store/slices/runtime-status/views/use-runtime-status-view'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ShortcutKeyCombo } from '@/components/ui/ShortcutKeyCombo'
@@ -68,7 +69,7 @@ export function GitGraphTabLauncher({
 
 /** True when Git Graph can open for the workspace; recomputed only when repos, worktrees or folders change. */
 function useWorkspaceHasGitGraphRepo(workspaceId: string): boolean {
-  const inputs = useAppStore(useShallow(selectGitGraphChoiceInputs))
+  const inputs = useAppStoreWithHostStatuses(selectGitGraphChoiceInputs, shallow)
   return useMemo(() => {
     const choices = listGitGraphRepoChoicesFromInputs(inputs, workspaceId)
     // Why mirror resolveGitGraphDefaultRepoWorktreeId: a non-git repo workspace still lists same-host siblings.

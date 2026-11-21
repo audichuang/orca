@@ -4,12 +4,14 @@ import {
   sshTargetRemotePlatform,
   type PtyOwnerMachineState
 } from '@/components/terminal-pane/pty-transport/host-ownership/pty-owner-machine-platform'
+import type { RuntimeStatuses } from '@/store/slices/runtime-status/views/runtime-status-owner'
 import type { FileExplorerOperationOwner } from '../../file-explorer/tree/file-explorer-types'
 
 /** OS of the host whose disk a restore writes to, or null until that host has reported it. */
 export function clipcodeRestoreTargetPlatform(
   owner: FileExplorerOperationOwner,
   state: PtyOwnerMachineState,
+  statuses: RuntimeStatuses,
   clientPlatform: NodeJS.Platform
 ): NodeJS.Platform | null {
   switch (owner.kind) {
@@ -21,7 +23,7 @@ export function clipcodeRestoreTargetPlatform(
       const host = parseExecutionHostId(owner.executionHostId)
       return host?.kind === 'ssh'
         ? sshTargetRemotePlatform(state, host.targetId, owner.environmentId)
-        : runtimeHostPlatform(state, owner.environmentId)
+        : runtimeHostPlatform(statuses, owner.environmentId)
     }
     case 'unresolved':
       return null

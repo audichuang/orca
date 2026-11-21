@@ -4,7 +4,8 @@ import { FolderPlus, PanelRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
-import { useShallow } from 'zustand/react/shallow'
+import { shallow } from 'zustand/shallow'
+import { useAppStoreWithHostStatuses } from '@/store/slices/runtime-status/views/use-runtime-status-view'
 import { useWorktreeMap } from '@/store/slices/worktrees/listing/use-worktree-catalog'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { getConnectionId } from '@/lib/workspace/ownership/connection-context'
@@ -184,7 +185,7 @@ export default function GitGraphTabView({ file }: { file: OpenFile }): React.JSX
   const t = useTranslate()
   const workspaceId = file.worktreeId
   const repoWorktreeId = file.gitGraph?.repoWorktreeId ?? null
-  const choiceInputs = useAppStore(useShallow(selectGitGraphChoiceInputs))
+  const choiceInputs = useAppStoreWithHostStatuses(selectGitGraphChoiceInputs, shallow)
   // Why from the choices: they are filtered to the workspace's host, so a worktree id another host
   // also publishes cannot resolve there, and a removed repo falls out instead of erroring.
   const choices = useMemo(

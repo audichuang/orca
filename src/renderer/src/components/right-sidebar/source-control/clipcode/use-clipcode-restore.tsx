@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { createParentDirectoriesForNewFile } from './clipcode-restore-parent-directories'
 import { clipcodeRestoreTargetPlatform } from './clipcode-restore-target-platform'
 import { useAppStore } from '@/store'
+import { readRuntimeStatuses } from '@/store/slices/runtime-status/views/runtime-status-owner'
 import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import { translate } from '@/i18n/i18n'
 import { readIpcErrorMessage } from '@/runtime/errors/ipc-error'
@@ -133,6 +134,7 @@ export function useClipcodeRestore({
         const targetPlatform = clipcodeRestoreTargetPlatform(
           owner,
           useAppStore.getState(),
+          readRuntimeStatuses(),
           getShortcutPlatform()
         )
         const context: RuntimeFileOperationArgs = {
